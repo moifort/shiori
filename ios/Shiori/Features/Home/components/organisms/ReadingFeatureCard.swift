@@ -3,8 +3,9 @@ import SwiftUI
 /// The book read now, at the head of "En cours" on a phone: its cover the
 /// card's whole height on the leading edge, and beside it the text as the TV
 /// app's card heads the episode playing — the saga over the title, how long it
-/// has been open and how long it runs, how much is left on a small bar, then
-/// the next step on Liquid Glass, and the way to its saga when it has one.
+/// has been open and how long it runs, how much is left on a small bar, then,
+/// held to the card's foot, the next step on Liquid Glass and the way to its
+/// saga when it has one.
 struct ReadingFeatureCard: View {
     let book: Book
     /// How long it has been open.
@@ -14,8 +15,12 @@ struct ReadingFeatureCard: View {
     /// Opens the book's saga. Nil for a standalone book, which draws no button.
     var onOpenSeries: (() -> Void)?
 
-    /// The text's height, which the cover stretches to.
-    @State private var textHeight: CGFloat = 0
+    /// The text's and the buttons' heights, which the cover stretches to.
+    @State private var leadHeight: CGFloat = 0
+    @State private var actionsHeight: CGFloat = 0
+
+    private static let actionsSpacing: CGFloat = 12
+    private static let verticalPadding: CGFloat = 14
 
     private static let coverWidth: CGFloat = 96
 
@@ -27,13 +32,14 @@ struct ReadingFeatureCard: View {
                     book: book,
                     width: Self.coverWidth,
                     showsFormatBadge: false,
-                    minHeight: textHeight,
+                    minHeight: leadHeight + Self.actionsSpacing + actionsHeight
+                        + Self.verticalPadding * 2,
                     cornerRadius: 0
                 )
             }
             .buttonStyle(.plain)
             .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 0) {
                 Button(action: onOpen) {
                     VStack(alignment: .leading, spacing: 0) {
                         Text(overline)
@@ -56,12 +62,19 @@ struct ReadingFeatureCard: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("home-reading-lead")
+                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { leadHeight = $0 }
+                // The buttons sit at the card's foot when the cover runs
+                // taller than the text.
+                Spacer(minLength: Self.actionsSpacing)
                 actions
+                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { actionsHeight = $0 }
             }
-            .padding(.vertical, 14)
+            .padding(.vertical, Self.verticalPadding)
             .padding(.trailing, 14)
-            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { textHeight = $0 }
+            .frame(maxHeight: .infinity, alignment: .top)
         }
+        // Sized to its tallest side, so the text column can fill the cover's height.
+        .fixedSize(horizontal: false, vertical: true)
         .frame(maxWidth: .infinity, alignment: .leading)
         .environment(\.colorScheme, .dark)
         .background {
@@ -78,15 +91,17 @@ struct ReadingFeatureCard: View {
         return "\(series.name) · \(String(localized: "Tome \(volume)"))"
     }
 
-    /// How long it has been open and how long it runs, then its format in an
-    /// outlined tag.
+    /// How long it has been open and how long it runs, then an outlined tag
+    /// when it is listened to: a printed book needs none.
     private var detailLine: some View {
         HStack(spacing: 6) {
             Text([caption, length].compactMap { $0 }.joined(separator: " · "))
                 .font(.caption)
                 .foregroundStyle(.white.opacity(0.75))
                 .lineLimit(1)
-            OutlinedTag(text: book.format == .audiobook ? String(localized: "Audio") : book.format.label)
+            if book.format == .audiobook {
+                OutlinedTag(text: String(localized: "Audio").uppercased())
+            }
         }
     }
 
