@@ -210,6 +210,40 @@ describe('the month’s discoveries', () => {
     expect(prompts[1]).toContain('## Déjà proposés, pas intéressé\n- « Silo » — Hugh Howey')
   })
 
+  test('a dismissal taken back puts the book back where it stood and tells the model nothing', async () => {
+    await look()
+    await SuggestionUseCase.dismiss(reader, 'silo--hugh-howey', 'not-interested')
+
+    expect(await SuggestionUseCase.reconsider(reader, 'silo--hugh-howey')).toBe('reconsidered')
+
+    expect(titles(await look())).toEqual([
+      'La Sanction',
+      'Silo',
+      'Hypérion',
+      'Ilium',
+      'Seveneves',
+      'Expiration',
+    ])
+    expect(fake.data('suggestion-dismissals', `${reader}~silo--hugh-howey`)).toBeNull()
+    await look('2026-11-02T09:00:00Z')
+    expect(prompts[1]).not.toContain('« Silo »')
+  })
+
+  test('a dismissal from an older month taken back leaves the new line as it is', async () => {
+    await look()
+    await SuggestionUseCase.dismiss(reader, 'silo--hugh-howey', 'not-interested')
+    answering(suggested('Neuromancien', 'William Gibson'))
+    await look('2026-11-02T09:00:00Z')
+
+    expect(await SuggestionUseCase.reconsider(reader, 'silo--hugh-howey')).toBe('reconsidered')
+
+    expect(titles(await look('2026-11-02T10:00:00Z'))).toEqual(['Neuromancien'])
+  })
+
+  test('taking back a dismissal the reader never made is not-found', async () => {
+    expect(await SuggestionUseCase.reconsider(reader, 'nothing')).toBe('not-found')
+  })
+
   test('a book added or awaited leaves the line', async () => {
     await look()
     startFakeRequest()

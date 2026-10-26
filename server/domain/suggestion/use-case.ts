@@ -105,6 +105,9 @@ export namespace SuggestionUseCase {
   export const dismiss = (userId: UserId, key: string, reason: DismissalReason) =>
     SuggestionCommand.dismiss(userId, key, reason)
 
+  export const reconsider = (userId: UserId, key: string) =>
+    SuggestionCommand.reconsider(userId, key)
+
   /** The first of the month's pass, called by Cloud Scheduler: the month's
    *  discoveries made, in the language of their last ones, for the readers
    *  who had a selection before, have none for this month, and left the alert

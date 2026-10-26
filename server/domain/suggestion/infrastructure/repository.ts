@@ -66,3 +66,10 @@ export const findDismissals = async (userId: UserId): Promise<Dismissal[]> =>
 export const saveDismissal = async (dismissal: Dismissal): Promise<void> => {
   await dismissals().doc(`${dismissal.userId}~${dismissal.key}`).set(dismissal)
 }
+
+export const findDismissal = async (userId: UserId, key: string): Promise<Dismissal | undefined> =>
+  (await dismissals().doc(`${userId}~${key}`).get()).data()
+
+export const deleteDismissal = async (userId: UserId, key: string): Promise<void> => {
+  await dismissals().doc(`${userId}~${key}`).delete()
+}

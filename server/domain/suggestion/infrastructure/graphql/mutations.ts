@@ -23,4 +23,16 @@ builder.mutationFields((t) => ({
       return true
     },
   }),
+  reconsiderSuggestion: t.boolean({
+    description:
+      'A dismissal taken back: the suggestion may come again and the model is no longer told ' +
+      'of it; turned down this month, it returns to the discoveries where it stood. ' +
+      '`NOT_FOUND` when the reader turned down no such suggestion.',
+    args: { id: t.arg.string({ required: true }) },
+    resolve: async (_root, { id }, context) => {
+      const outcome = await SuggestionUseCase.reconsider(context.userId, id)
+      if (outcome === 'not-found') return notFound('No such dismissal')
+      return true
+    },
+  }),
 }))

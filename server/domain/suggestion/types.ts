@@ -72,6 +72,10 @@ export type Dismissal = {
    *  "Pas intéressé". */
   reason?: DismissalReason
   dismissedAt: Date
+  /** The suggestion as it stood in the line, and where: what a change of mind
+   *  puts back. Absent on the dismissals saved before it could be undone. */
+  suggestion?: Suggestion
+  position?: number
 }
 
 /** How a reference book ranks for the reader: its own heart or stars, or its

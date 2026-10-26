@@ -137,3 +137,24 @@ describe('dismissSuggestion', () => {
     expect(errors?.[0]?.extensions?.code).toBe('NOT_FOUND')
   })
 })
+
+describe('reconsiderSuggestion', () => {
+  test('puts a suggestion turned down back on the line', async () => {
+    await ask(DISCOVERIES)
+    await ask('mutation { dismissSuggestion(id: "eiger-sanction--trevanian") }')
+
+    const reconsidered = await ask(
+      'mutation { reconsiderSuggestion(id: "eiger-sanction--trevanian") }',
+    )
+
+    expect(reconsidered.errors).toBeUndefined()
+    expect(fake.data('suggestion-dismissals', `${reader}~eiger-sanction--trevanian`)).toBeNull()
+    const { data } = await ask(DISCOVERIES)
+    expect(data?.monthlyDiscoveries).toMatchObject({ suggestions: [{ title: 'La Sanction' }] })
+  })
+
+  test('is NOT_FOUND for a suggestion the reader never turned down', async () => {
+    const { errors } = await ask('mutation { reconsiderSuggestion(id: "nothing") }')
+    expect(errors?.[0]?.extensions?.code).toBe('NOT_FOUND')
+  })
+})

@@ -2751,6 +2751,11 @@ type Mutation {
   ): [KindleBook!]! @deprecated(reason: "Connect the Kindle library instead: `startKindleLogin`, then `kindleLibrary`.")
 
   """
+  A dismissal taken back: the suggestion may come again and the model is no longer told of it; turned down this month, it returns to the discoveries where it stood. `NOT_FOUND` when the reader turned down no such suggestion.
+  """
+  reconsiderSuggestion(id: String!): Boolean!
+
+  """
   Ask the world about an author again: one fresh web-grounded model call, whose catalogue replaces the stored one for every reader. An author the model could not describe on their first opening is never asked about again otherwise.
   
   Takes a few seconds. Null when the reader holds no book of the author, and when the model failed or found nothing — the previous catalogue is then kept.
