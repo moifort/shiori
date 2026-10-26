@@ -13,7 +13,11 @@ import type {
   UnexploredGenre,
   YearCount,
 } from '~/domain/analytics/types'
-import { BookFormatEnum, BookLanguageEnum, GenreEnum } from '~/domain/book/infrastructure/graphql/enums'
+import {
+  BookFormatEnum,
+  BookLanguageEnum,
+  GenreEnum,
+} from '~/domain/book/infrastructure/graphql/enums'
 import { SeriesMembershipType } from '~/domain/book/infrastructure/graphql/types'
 import { isAudioSeries, seriesReferenceOf } from '~/domain/series/primitives'
 import { builder } from '~/domain/shared/graphql/builder'
