@@ -355,7 +355,10 @@ struct SeriesPage: View {
             Menu {
                 ForEach(takenFormat.takenAs, id: \.self) { format in
                     Section(format.label) {
-                        Button("À lire", systemImage: "bookmark.fill") {
+                        Button(
+                            format == .audiobook ? "À écouter" : "À lire",
+                            systemImage: "bookmark.fill"
+                        ) {
                             Task { await onAction(.add(volume, author: author, format: format, status: .toRead)) }
                         }
                         .accessibilityIdentifier("series-volume-add-pile-\(format.rawValue)")

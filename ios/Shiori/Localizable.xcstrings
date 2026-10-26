@@ -14197,6 +14197,22 @@
         }
       }
     },
+    "À écouter" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To listen"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "À écouter"
+          }
+        }
+      }
+    },
     "À lire" : {
       "localizations" : {
         "en" : {

@@ -22,7 +22,10 @@ struct FriendBookAddMenu: View {
             if !owned {
                 ForEach(formats, id: \.self) { format in
                     Section(format.label) {
-                        Button("À lire", systemImage: "bookmark.fill") {
+                        Button(
+                            format == .audiobook ? "À écouter" : "À lire",
+                            systemImage: "bookmark.fill"
+                        ) {
                             Task { await onAdd(.toRead, format) }
                         }
                         .accessibilityIdentifier("friend-book-add-pile-\(format.rawValue)")
