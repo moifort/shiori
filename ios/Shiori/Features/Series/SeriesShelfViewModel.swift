@@ -35,12 +35,17 @@ final class SeriesShelfViewModel {
             .compactMap { saga in saga.nextVolume.map { (saga, $0) } }
     }
 
-    /// The volumes announced, the nearest first.
-    var releases: [(series: FollowedSeries, release: FollowedSeries.Release)] {
+    /// The volumes announced, as the saga screen announces each, the nearest
+    /// first; one announced for a date nobody found comes last.
+    var releases: [(series: FollowedSeries, volume: DiscoveredVolume)] {
         followed
-            .compactMap { saga in saga.nextRelease.map { (saga, $0) } }
-            .filter { ReleaseDateText.isUpcoming($0.release.date) }
-            .sorted { ReleaseDateText.lastDay($0.release.date) < ReleaseDateText.lastDay($1.release.date) }
+            .compactMap { saga in saga.announced.map { (saga, $0) } }
+            .filter { $0.volume.date.map { ReleaseDateText.isUpcoming($0) } ?? true }
+            .sorted { lastDay(of: $0.volume) < lastDay(of: $1.volume) }
+    }
+
+    private func lastDay(of volume: DiscoveredVolume) -> String {
+        volume.date.map(ReleaseDateText.lastDay) ?? "\u{FFFF}"
     }
 
     var filters: [SeriesShelfFilter] { SeriesShelfFilter.offered(for: series) }

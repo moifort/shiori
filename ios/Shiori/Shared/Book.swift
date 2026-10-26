@@ -671,4 +671,8 @@ struct FollowedSeries: Identifiable, Codable, Sendable {
     /// Nil until the reader says something about the saga. The two rows of a
     /// saga held in two languages carry the same one.
     var opinion: SeriesOpinion?
+    /// The next volume announced the reader does not hold, as the server lays
+    /// the release watch over the catalogue — the saga screen's release card,
+    /// and what "Prochaines sorties" lists. Only the Series tab's rows carry it.
+    var announced: DiscoveredVolume?
 }

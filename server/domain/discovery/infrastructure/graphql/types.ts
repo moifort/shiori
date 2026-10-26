@@ -74,6 +74,20 @@ export const SagaReleasesType = builder.objectRef<SagaReleases>('SagaReleases').
   }),
 })
 
+builder.objectField(FollowedSeriesType, 'nextRelease', (t) =>
+  t.field({
+    type: DiscoveredVolumeType,
+    nullable: true,
+    description:
+      'The next volume announced the reader does not hold, by the rule of `sagaReleases`: ' +
+      'what the Series tab lists under "Prochaines sorties", drawn as the saga screen ' +
+      'draws it. Read off the release watches in one getAll per page, never the web. ' +
+      'Null on a saga never looked up, on an edition with no language, and outside ' +
+      '`mySeriesPage` and `myFollowedSeries`.',
+    resolve: (followed) => followed.nextRelease ?? null,
+  }),
+)
+
 export const SagaDiscoveryType = builder.objectRef<SagaDiscovery>('SagaDiscovery').implement({
   description: 'One row of the Découvrir tab: a saga the reader follows, and what it has for them.',
   fields: (t) => ({

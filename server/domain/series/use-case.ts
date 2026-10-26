@@ -9,8 +9,14 @@ import {
   DEFAULT_BOOK_LANGUAGE,
   type Genre,
 } from '~/domain/book/types'
-import { catalogueVolumesOf, watchKeyOf } from '~/domain/discovery/business-rules'
+import {
+  catalogueVolumesOf,
+  releasesOf,
+  todayOf,
+  watchKeyOf,
+} from '~/domain/discovery/business-rules'
 import { DiscoveryQuery } from '~/domain/discovery/query'
+import type { FoundVolume, SagaWatch } from '~/domain/discovery/types'
 import { ScanCommand } from '~/domain/scan/command'
 import type { ScanLanguage } from '~/domain/scan/types'
 import {
@@ -84,6 +90,10 @@ export type FollowedSeries = {
   /** The latest date any owned volume is shelved on: what the tab is ordered
    *  and cut into month sections by. */
   shelvedAt: Date
+  /** The soonest volume announced that the reader does not hold, by the rule
+   *  the saga screen's release card follows: the release watch laid over the
+   *  catalogue. Read only for the Series tab's rows (`withReleases`). */
+  nextRelease?: FoundVolume
 }
 
 export type SagaProgress = { readCount: number; totalCount: number }
@@ -173,7 +183,7 @@ export namespace SeriesUseCase {
     const shelf = await shelfOf(userId)
     const held = shelf.sagas.find((row) => row.saga === saga && row.language === language)
     if (!held) return null
-    const [row] = await described(shelf, [held])
+    const [row] = await described(shelf, [held], { withReleases: true })
     return row ?? null
   }
 
@@ -250,7 +260,7 @@ export namespace SeriesUseCase {
       page,
       rowCursorOf,
     )
-    return { items: await described(shelf, items), ...rest }
+    return { items: await described(shelf, items, { withReleases: true }), ...rest }
   }
 
   /** Take a saga off the shelf: every volume the reader holds, or only those
@@ -584,17 +594,32 @@ const shelfOf = async (userId: UserId): Promise<Shelf> => {
 const described = async (
   shelf: Shelf,
   sagas: readonly ShelvedSaga[],
+  { withReleases = false }: { withReleases?: boolean } = {},
 ): Promise<FollowedSeries[]> => {
   const ids = new Set(sagas.map((saga) => saga.id))
+  const watchKeys = withReleases
+    ? sagas.flatMap(({ saga, language }) =>
+        language ? [watchKeyOf({ seriesId: saga, language })] : [],
+      )
+    : []
+  const [catalogues, watches] = await Promise.all([
+    SeriesQuery.byIds(sagas.map(({ saga, language }) => ({ saga, language }))),
+    watchKeys.length > 0 ? DiscoveryQuery.watches(watchKeys) : new Map<string, SagaWatch>(),
+  ])
   const catalogued = cataloguesOf(
     shelf.books.filter((book) => book.series && ids.has(book.series.id)),
-    await SeriesQuery.byIds(sagas.map(({ saga, language }) => ({ saga, language }))),
+    catalogues,
     shelf.opinions,
   )
-  const currentYear = Year(new Date().getUTCFullYear())
+  const now = new Date()
+  const currentYear = Year(now.getUTCFullYear())
   return sagas.map((saga) => {
     const catalogue = catalogued.get(saga.id) ?? null
     const read = readVolumeNumbersOf(saga.books)
+    const watch = saga.language
+      ? watches.get(watchKeyOf({ seriesId: saga.saga, language: saga.language }))
+      : undefined
+    const nextRelease = watch && releasesOf(saga.books, watch, catalogue, todayOf(now)).next
     return {
       id: saga.id,
       saga: saga.saga,
@@ -620,6 +645,7 @@ const described = async (
       ownedCount: Count(saga.books.length),
       books: inSagaOrder(saga.books),
       shelvedAt: saga.shelvedAt,
+      ...(nextRelease ? { nextRelease } : {}),
     }
   })
 }

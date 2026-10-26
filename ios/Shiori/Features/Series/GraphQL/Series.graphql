@@ -71,7 +71,8 @@ fragment SeriesCatalogue on Series {
 # from. For the tab that draws as it scrolls. Only the tab
 # asks for the volumes: each one costs a signed cover URL. The catalogue's spine
 # comes along so the strip can draw the volumes the reader does not own; the server
-# reads every catalogue of the page in one getAll.
+# reads every catalogue of the page in one getAll. `nextRelease` is the volume
+# "Prochaines sorties" lists, as the saga screen's release card draws it.
 query MySeriesPage($limit: Int, $after: String) {
   mySeriesPage(limit: $limit, after: $after) {
     hasMore
@@ -83,6 +84,9 @@ query MySeriesPage($limit: Int, $after: String) {
       }
       catalogue {
         ...CatalogueSpine
+      }
+      nextRelease {
+        ...DiscoveredVolumeFields
       }
     }
   }
@@ -99,6 +103,9 @@ query MyFollowedSeries($seriesId: SeriesId!) {
     }
     catalogue {
       ...CatalogueSpine
+    }
+    nextRelease {
+      ...DiscoveredVolumeFields
     }
   }
 }

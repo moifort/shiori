@@ -842,7 +842,8 @@ enum Showcase {
                 language: language
             ),
             isCatalogued: true,
-            opinion: SeriesOpinion(seriesId: saga.id, rating: saga.rating, favorite: saga.favorite)
+            opinion: SeriesOpinion(seriesId: saga.id, rating: saga.rating, favorite: saga.favorite),
+            announced: sagaReleases(seriesId: saga.id).next
         )
     }
 

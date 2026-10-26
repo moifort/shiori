@@ -7,7 +7,9 @@ mock.module('~/system/firebase', () => ({ db: fakeDb }))
 
 const { SeriesUseCase } = await import('~/domain/series/use-case')
 const { BookCommand } = await import('~/domain/book/command')
-const { SagaKey, SeriesName, VolumeNumber } = await import('~/domain/series/primitives')
+const { ReleaseDate, SagaKey, SeriesName, VolumeNumber } = await import(
+  '~/domain/series/primitives'
+)
 const { AuthorName, BookTitle } = await import('~/domain/shared/primitives')
 const { BookQuery } = await import('~/domain/book/query')
 const { SeriesOpinionCommand } = await import('~/domain/series-opinion/command')
@@ -53,8 +55,9 @@ const followSagas = async (count: number) => {
 
 describe('a page of the Series tab', () => {
   // The catalogues are the heavy documents of the tab: a page reads its own,
-  // not those of every saga the reader follows.
-  test('reads the catalogues of its own sagas only', async () => {
+  // not those of every saga the reader follows — and their release watches,
+  // for "Prochaines sorties".
+  test('reads the catalogues and watches of its own sagas only', async () => {
     await followSagas(12)
     const before = fake.docReads
 
@@ -69,7 +72,34 @@ describe('a page of the Series tab', () => {
     ])
     expect(items.every((saga) => saga.catalogue !== null)).toBe(true)
     expect(hasMore).toBe(true)
-    expect(fake.docReads - before).toBe(5)
+    expect(fake.docReads - before).toBe(10)
+  })
+
+  // The saga screen's release card lays the watch over the catalogue: a volume
+  // the watch found and the catalogue does not hold yet is announced on the
+  // tab too, as on the screen.
+  test('announces the next volume as the saga screen does', async () => {
+    await followSagas(2)
+    fake.seed('saga-watches', 'saga-1--fr', {
+      key: 'saga-1--fr',
+      seriesId: 'saga-1',
+      name: 'Saga 1',
+      language: 'fr',
+      checkedAt: NOW,
+      volumes: [
+        { number: 1, title: 'Saga 1, tome 1', date: '2024-03-01' },
+        { number: 2, title: 'Le Retour', date: '2099-03-12' },
+      ],
+    })
+
+    const { items } = await SeriesUseCase.followedPage(reader, { limit: 5 }, {})
+
+    expect(items.find((saga) => saga.saga === 'saga-1')?.nextRelease).toEqual({
+      number: VolumeNumber(2),
+      title: BookTitle('Le Retour'),
+      date: ReleaseDate('2099-03-12'),
+    })
+    expect(items.find((saga) => saga.saga === 'saga-0')?.nextRelease).toBeUndefined()
   })
 
   test('answers the same rows as the whole list, cut to the page', async () => {
@@ -152,12 +182,12 @@ describe('the name of a row', () => {
 describe('one row of the Series tab', () => {
   // What the tab asks after the reader edited a saga: the row it shows, and
   // only its catalogue — not a page of every saga to find it in.
-  test('answers the same row as the whole list, reading its catalogue only', async () => {
+  test('answers the same row as the whole list, reading its catalogue and watch only', async () => {
     await followSagas(6)
     const before = fake.docReads
 
     const row = await SeriesUseCase.followedOne(reader, SagaKey('saga-3'), 'fr')
-    expect(fake.docReads - before).toBe(1)
+    expect(fake.docReads - before).toBe(2)
 
     const all = await SeriesUseCase.followed(reader)
     expect(row).toEqual(all.find((saga) => String(saga.saga) === 'saga-3') ?? null)

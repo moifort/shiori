@@ -367,7 +367,7 @@ private extension SagaReleases {
     }
 }
 
-private extension DiscoveredVolume {
+extension DiscoveredVolume {
     init(fields: ShioriGraphQL.DiscoveredVolumeFields) {
         self.init(
             number: fields.number,

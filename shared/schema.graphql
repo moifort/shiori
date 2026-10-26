@@ -1495,6 +1495,11 @@ type FollowedSeries {
   name: SeriesName!
 
   """
+  The next volume announced the reader does not hold, by the rule of `sagaReleases`: what the Series tab lists under "Prochaines sorties", drawn as the saga screen draws it. Read off the release watches in one getAll per page, never the web. Null on a saga never looked up, on an edition with no language, and outside `mySeriesPage` and `myFollowedSeries`.
+  """
+  nextRelease: DiscoveredVolume
+
+  """
   What the reader makes of the saga. Null until they say something about it.
   
   Held per saga, so the two editions of a saga held in two languages answer with the same opinion: the split is about editions, this is about the work.

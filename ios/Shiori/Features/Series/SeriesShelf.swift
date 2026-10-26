@@ -84,8 +84,13 @@ extension FollowedSeries {
     /// Set aside by the reader: out of "À suivre", the releases and the home.
     var isSetAside: Bool { state == .unfollowed }
 
-    /// The tag in the card's corner: the next volume's date, "Tome 15 · 12 déc.".
+    /// The tag in the card's corner: the next volume's date, "Tome 15 · 12 déc." —
+    /// the server's when the row carries it, so the card and "Prochaines
+    /// sorties" agree.
     var releaseTag: String? {
+        if let announced, let date = announced.date {
+            return String(localized: "Tome \(announced.number) · \(ReleaseDateText.short(date))")
+        }
         guard let release = nextRelease else { return nil }
         guard let number = release.number else { return ReleaseDateText.short(release.date) }
         return String(localized: "Tome \(number) · \(ReleaseDateText.short(release.date))")

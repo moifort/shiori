@@ -105,7 +105,8 @@ enum SeriesAPI {
                 followedRow(
                     item.fragments.followedSeriesRow,
                     volumes: item.volumes.map(\.fragments.followedVolume),
-                    catalogue: item.catalogue?.fragments.catalogueSpine
+                    catalogue: item.catalogue?.fragments.catalogueSpine,
+                    nextRelease: item.nextRelease?.fragments.discoveredVolumeFields
                 )
             },
             hasMore: data.mySeriesPage.hasMore,
@@ -130,7 +131,8 @@ enum SeriesAPI {
             followedRow(
                 item.fragments.followedSeriesRow,
                 volumes: item.volumes.map(\.fragments.followedVolume),
-                catalogue: item.catalogue?.fragments.catalogueSpine
+                catalogue: item.catalogue?.fragments.catalogueSpine,
+                nextRelease: item.nextRelease?.fragments.discoveredVolumeFields
             )
         }
     }
@@ -140,9 +142,11 @@ enum SeriesAPI {
     static func followedRow(
         _ row: ShioriGraphQL.FollowedSeriesRow,
         volumes: [ShioriGraphQL.FollowedVolume],
-        catalogue: ShioriGraphQL.CatalogueSpine?
+        catalogue: ShioriGraphQL.CatalogueSpine?,
+        nextRelease: ShioriGraphQL.DiscoveredVolumeFields? = nil
     ) -> FollowedSeries {
         var followed = FollowedSeries(row: row)
+        followed.announced = nextRelease.map(DiscoveredVolume.init(fields:))
         followed.volumes = volumes.map(\.asBook)
         followed.isCatalogued = catalogue != nil
         followed.strip = SeriesStripItem.strip(

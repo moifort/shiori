@@ -10,11 +10,11 @@ enum SeriesShelfAction {
 
 /// The series, as the TV app sets out the shows one follows: "À suivre", the
 /// next volume of each saga in progress; "Prochaines sorties", the volumes
-/// announced with the days left; then every saga as the home's cards, two by
+/// announced, each drawn as the saga screen's release card, in a rail; then every saga as the home's cards, two by
 /// row, under their filters — and, at the foot, the sagas set aside.
 struct SeriesShelfPage: View {
     let upNext: [(series: FollowedSeries, volume: FollowedSeries.NextVolume)]
-    let releases: [(series: FollowedSeries, release: FollowedSeries.Release)]
+    let releases: [(series: FollowedSeries, volume: DiscoveredVolume)]
     let filters: [SeriesShelfFilter]
     let filter: SeriesShelfFilter
     let series: [FollowedSeries]
@@ -22,6 +22,8 @@ struct SeriesShelfPage: View {
     let isLoading: Bool
     let errorMessage: String?
     let onAction: (SeriesShelfAction) -> Void
+
+    @State private var releaseInView: String?
 
     private let columns = [GridItem(.flexible(), spacing: 13), GridItem(.flexible(), spacing: 13)]
 
@@ -36,15 +38,9 @@ struct SeriesShelfPage: View {
                     }
                 }
                 if !releases.isEmpty, filter == .all {
-                    VStack(alignment: .leading, spacing: 4) {
-                        RowHeader(title: "Prochaines sorties", style: .inline)
-                            .padding(.horizontal, 20)
-                            .padding(.bottom, 8)
-                        ForEach(releases, id: \.series.id) { entry in
-                            SeriesReleaseRow(series: entry.series, release: entry.release) {
-                                onAction(.openSeries(entry.series))
-                            }
-                        }
+                    VStack(alignment: .leading, spacing: 12) {
+                        RowHeader(title: "Prochaines sorties", style: .inline).padding(.horizontal, 20)
+                        releaseRail
                     }
                 }
                 allSeries
@@ -94,6 +90,45 @@ struct SeriesShelfPage: View {
                 caption: number.map { String(localized: "Tome \($0)") } ?? title,
                 open: open
             )
+        }
+    }
+
+    /// The release cards side by side, the next one showing at the edge; a
+    /// lone card takes the full width. The dots say which one is in view.
+    private var releaseRail: some View {
+        VStack(spacing: 10) {
+            ScrollView(.horizontal) {
+                LazyHStack(alignment: .top, spacing: 12) {
+                    ForEach(releases, id: \.series.id) { entry in
+                        SeriesReleaseCard(
+                            volume: entry.volume,
+                            author: entry.series.author ?? entry.series.name,
+                            isAudio: entry.series.isAudio
+                        ) { onAction(.openSeries(entry.series)) }
+                        .containerRelativeFrame(.horizontal) { width, _ in
+                            releases.count > 1 ? width - 50 : width - 40
+                        }
+                        .id(entry.series.id)
+                    }
+                }
+                .scrollTargetLayout()
+            }
+            .contentMargins(.horizontal, 20, for: .scrollContent)
+            .scrollTargetBehavior(.viewAligned)
+            .scrollIndicators(.hidden)
+            .scrollPosition(id: $releaseInView)
+            if releases.count > 1 {
+                HStack(spacing: 6) {
+                    ForEach(releases, id: \.series.id) { entry in
+                        Circle()
+                            .fill(entry.series.id == (releaseInView ?? releases.first?.series.id)
+                                ? Color.primary : Color.secondary.opacity(0.4))
+                            .frame(width: 6, height: 6)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .accessibilityHidden(true)
+            }
         }
     }
 
@@ -158,7 +193,7 @@ struct SeriesShelfPage: View {
     NavigationStack {
         SeriesShelfPage(
             upNext: series.compactMap { saga in saga.nextVolume.map { (saga, $0) } },
-            releases: series.compactMap { saga in saga.nextRelease.map { (saga, $0) } },
+            releases: series.compactMap { saga in saga.announced.map { (saga, $0) } },
             filters: SeriesShelfFilter.offered(for: series),
             filter: .all,
             series: series,
