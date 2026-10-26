@@ -25,6 +25,7 @@ import { booksNameTheirEdition } from '~/system/migration/migrations/027-books-n
 import { formatsNamedBySubgenres } from '~/system/migration/migrations/028-formats-named-by-subgenres'
 import { englishSagasListedAgain } from '~/system/migration/migrations/029-english-sagas-listed-again'
 import { formatsNamedByTaggedSubgenres } from '~/system/migration/migrations/030-formats-named-by-tagged-subgenres'
+import { facelessAuthorsSoughtAgain } from '~/system/migration/migrations/031-faceless-authors-sought-again'
 import type { Migration } from '~/system/migration/types'
 
 // Forward-only, sequential, no rollback. Adding a new optional field or a new
@@ -62,4 +63,5 @@ export const migrations: Migration[] = [
   formatsNamedBySubgenres,
   englishSagasListedAgain,
   formatsNamedByTaggedSubgenres,
+  facelessAuthorsSoughtAgain,
 ]

@@ -2,6 +2,7 @@ import { chunk } from 'lodash-es'
 import * as favoriteRepository from '~/domain/author/infrastructure/favorite-repository'
 import { openLibraryPortraitOf } from '~/domain/author/infrastructure/open-library'
 import * as repository from '~/domain/author/infrastructure/repository'
+import { wikidataPortraitOf } from '~/domain/author/infrastructure/wikidata'
 import { portraitOf } from '~/domain/author/infrastructure/wikipedia'
 import { AuthorBiography, Nationality } from '~/domain/author/primitives'
 import { authorPrompt } from '~/domain/author/prompts'
@@ -21,9 +22,18 @@ import { isPresent, optionally } from '~/utils/input'
 const logger = createLogger('author')
 
 /** An author's photograph: Wikipedia's, whose page is the one the model
- *  named, else Open Library's, which keeps writers no Wikipedia page shows. */
-const faceOf = async (name: AuthorNameValue, pageTitle?: string) =>
-  (await portraitOf(name, pageTitle)) ?? (await openLibraryPortraitOf(name))
+ *  named, else Wikidata's, which knows which namesake is the writer and finds
+ *  the portrait another language's page shows, else Open Library's, which
+ *  keeps writers no Wikimedia project has a photo of. The three are asked at
+ *  once, so a miss costs one timeout rather than three in a row. */
+const faceOf = async (name: AuthorNameValue, pageTitle?: string) => {
+  const [wikipedia, wikidata, openLibrary] = await Promise.all([
+    portraitOf(name, pageTitle),
+    wikidataPortraitOf(name),
+    openLibraryPortraitOf(name),
+  ])
+  return wikipedia ?? wikidata ?? openLibrary
+}
 
 export namespace AuthorCommand {
   /** Heart an author, or take the heart back: the reader's own, whatever

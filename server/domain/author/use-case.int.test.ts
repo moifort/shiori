@@ -41,6 +41,12 @@ mock.module('~/domain/author/infrastructure/wikipedia', () => ({
   },
 }))
 
+/** The authors Wikidata has a photograph of, by name. */
+const wikidataFaces: Record<string, string> = {}
+mock.module('~/domain/author/infrastructure/wikidata', () => ({
+  wikidataPortraitOf: async (name: string) => wikidataFaces[name],
+}))
+
 /** The authors Open Library has a photograph of, by name. */
 const openLibraryFaces: Record<string, string> = {}
 mock.module('~/domain/author/infrastructure/open-library', () => ({
@@ -69,6 +75,7 @@ beforeEach(() => {
   portraitSearches.length = 0
   for (const title of Object.keys(covers)) delete covers[title]
   for (const name of Object.keys(openLibraryFaces)) delete openLibraryFaces[name]
+  for (const name of Object.keys(wikidataFaces)) delete wikidataFaces[name]
 })
 
 /** One author per saga, each saga catalogued with three volumes. */
@@ -471,6 +478,19 @@ describe('an author’s page', () => {
       'https://covers.openlibrary.org/a/olid/OL1394865A-M.jpg?default=false',
     )
     expect(page?.catalogue?.portraitSoughtAt).toBeUndefined()
+  })
+
+  test('takes Wikidata’s photograph over Open Library’s when Wikipedia has none', async () => {
+    await holdSanderson()
+    faceless.add('Brandon Sanderson')
+    wikidataFaces['Brandon Sanderson'] = 'https://upload.wikimedia.org/sanderson.jpg'
+    openLibraryFaces['Brandon Sanderson'] =
+      'https://covers.openlibrary.org/a/olid/OL1394865A-M.jpg?default=false'
+    answers = [sanderson]
+
+    const page = await AuthorUseCase.page(reader, authorKeyOf('Brandon Sanderson'), 'fr')
+
+    expect(String(page?.catalogue?.portraitUrl)).toBe('https://upload.wikimedia.org/sanderson.jpg')
   })
 
   test('refreshes nothing for an author the reader holds no book of', async () => {

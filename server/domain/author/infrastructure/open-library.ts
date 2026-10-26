@@ -6,8 +6,10 @@ import { isTimeout } from '~/utils/fetch'
 
 const logger = createLogger('open-library-author')
 
-/** A slow answer costs the reader a longer opening for a cosmetic field. */
-const LOOKUP_TIMEOUT_MS = 3000
+/** A slow answer costs the reader a longer opening for a cosmetic field. The
+ *  search and the photo probe share this long: Open Library often takes more
+ *  than two seconds to search, and three apiece timed out good answers. */
+const LOOKUP_TIMEOUT_MS = 5000
 
 type SearchAnswer = { docs?: { key?: string; name?: string; work_count?: number }[] }
 
@@ -28,12 +30,13 @@ const photoUrlOf = (olid: string) =>
 export const openLibraryPortraitOf = async (
   name: AuthorName,
 ): Promise<PortraitUrlType | undefined> => {
+  const signal = AbortSignal.timeout(LOOKUP_TIMEOUT_MS)
   try {
     const query = new URLSearchParams({ q: name, fields: 'key,name,work_count', limit: '5' })
     const response = await fetch(`https://openlibrary.org/search/authors.json?${query}`, {
       // Open Library asks every client to say who it is, and throttles those that don't.
       headers: { 'user-agent': 'Shiori/1.0 (https://github.com/moifort/shiori)' },
-      signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS),
+      signal,
     })
     if (!response.ok) {
       logger.warn('Open Library author search failed', { name, status: response.status })
@@ -49,7 +52,7 @@ export const openLibraryPortraitOf = async (
     const photo = await fetch(url, {
       method: 'HEAD',
       redirect: 'manual',
-      signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS),
+      signal,
     })
     if (photo.status === 404) return undefined
     if (photo.ok || (photo.status >= 300 && photo.status < 400)) return PortraitUrl(url)
