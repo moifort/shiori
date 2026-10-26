@@ -71,6 +71,10 @@ export type SagaWatch = {
   checkedAt: Date
   /** Numbered volumes, in order, in the saga's own format. */
   volumes: FoundVolume[]
+  /** Audible's own listing of the series was asked for on an Audible sync,
+   *  whatever it answered: what keeps the sync from asking again every night.
+   *  Carried over by every later look. */
+  audibleListed?: true
 }
 
 /** What the hourly pass knows of one reader, so it reads their library once a

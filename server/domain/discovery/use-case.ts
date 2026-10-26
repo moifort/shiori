@@ -38,6 +38,7 @@ import {
   releaseEditionOf,
   releasesOf,
   sagasByAuthorOf,
+  sagasToListOnAudible,
   todayOf,
   watchedAuthorsOf,
   watchedSagasOf,
@@ -102,6 +103,11 @@ const logger = createLogger('discovery')
  *  over a few hours rather than in one request the function would not live
  *  through. */
 const CALLS_AT_ONCE = 5
+
+/** How many sagas one Audible sync lists from Audible: a few seconds of a
+ *  reader's sync, and a large library imported long ago is listed over a few
+ *  nights rather than in one. */
+const MAX_LISTED_PER_SYNC = 20
 
 /** Two thirds of the function's 180s ceiling, as the Audible sync keeps: the
  *  budget is checked between steps, so a run overshoots by one step. */
@@ -251,6 +257,66 @@ export namespace DiscoveryUseCase {
         ? await SeriesQuery.byId({ saga: seriesId, language })
         : catalogue
     return releasesOf(held, watches.get(key), written, todayOf(now))
+  }
+
+  /** The sagas an Audible sync holds recordings of, listed straight from
+   *  Audible's own listing of each series: every volume, with its release day
+   *  and cover, written into the watch and into the saga's catalogue, so the
+   *  saga screen draws the covers of the volumes the reader does not hold
+   *  without waiting for the hourly pass. A few calls to Audible's public
+   *  catalogue per saga, and no grounded one.
+   *
+   *  Each saga is asked once (`sagasToListOnAudible`), the ones never looked up
+   *  first, `MAX_LISTED_PER_SYNC` at a time: a library imported long ago is
+   *  listed over a few nights. A saga Audible files under no series keeps its
+   *  watch as it stands, marked as asked; one Audible could not be asked about
+   *  is asked on the next sync. Never throws: covers are no reason to fail a
+   *  sync. */
+  export const listOnAudible = async (
+    sagas: readonly WatchedSaga[],
+    now = new Date(),
+  ): Promise<{ listed: number; left: number }> => {
+    if (sagas.length === 0) return { listed: 0, left: 0 }
+    try {
+      const watches = await DiscoveryQuery.watches(sagas.map(watchKeyOf))
+      const due = sagasToListOnAudible(sagas, watches)
+      let listed = 0
+      for (
+        let start = 0;
+        start < Math.min(due.length, MAX_LISTED_PER_SYNC);
+        start += CALLS_AT_ONCE
+      ) {
+        const end = Math.min(start + CALLS_AT_ONCE, MAX_LISTED_PER_SYNC)
+        const asked = await Promise.all(
+          due.slice(start, end).map(async (saga) => {
+            try {
+              return await listedOnAudible(saga, watches.get(watchKeyOf(saga)), now)
+            } catch (error) {
+              logger.warn('Audible series listing failed', { error, saga: watchKeyOf(saga) })
+              return undefined
+            }
+          }),
+        )
+        // One after the other, as the hourly pass writes them.
+        for (const watch of asked) {
+          if (!watch) continue
+          listed += 1
+          try {
+            await SeriesCommand.recordReleases(
+              watch.seriesId,
+              watch.language,
+              catalogueVolumesOf(watch),
+            )
+          } catch (error) {
+            logger.warn('release dates not recorded', { error, saga: watch.key })
+          }
+        }
+      }
+      return { listed, left: Math.max(0, due.length - MAX_LISTED_PER_SYNC) }
+    } catch (error) {
+      logger.warn('Audible series listing failed', { error })
+      return { listed: 0, left: 0 }
+    }
   }
 
   /** What the author's page shows under its heading: the soonest work
@@ -833,7 +899,7 @@ const lookUp = async (
   const entry = saga.asin ?? previous?.volumes.find((volume) => volume.asin)?.asin
   const direct = audio && entry ? await audibleSeriesOf(entry, saga.language) : undefined
   if (Array.isArray(direct))
-    return keepWatch(saga, now, onAudible(direct, previous?.volumes ?? [], today))
+    return keepWatch(saga, now, onAudible(direct, previous?.volumes ?? [], today), previous)
   const after = previous ? lastVolumeOutOf(previous.volumes, today) : undefined
   const { value, usage } = await generate<ReleasesOutput>({
     step: 'discovery-releases',
@@ -856,14 +922,47 @@ const lookUp = async (
       ? await audibleSeriesOf(confirmed, saga.language)
       : undefined
   if (Array.isArray(listed))
-    return keepWatch(saga, now, onAudible(listed, [...(previous?.volumes ?? []), ...found], today))
-  return keepWatch(saga, now, mergedVolumes(previous?.volumes ?? [], found))
+    return keepWatch(
+      saga,
+      now,
+      onAudible(listed, [...(previous?.volumes ?? []), ...found], today),
+      previous,
+    )
+  return keepWatch(saga, now, mergedVolumes(previous?.volumes ?? [], found), previous)
+}
+
+/** One saga's watch as Audible's own listing of its series gives it, marked as
+ *  asked; the watch it had, marked as asked, when Audible files the recording
+ *  under no series; nothing when Audible could not be asked, or files it under
+ *  none and the saga was never looked up — the hourly pass will. */
+const listedOnAudible = async (
+  saga: WatchedSaga,
+  previous: SagaWatch | undefined,
+  now: Date,
+): Promise<SagaWatch | undefined> => {
+  if (!saga.asin) return undefined
+  const listing = await audibleSeriesOf(saga.asin, saga.language)
+  if (listing === 'unreachable') return undefined
+  if (Array.isArray(listing))
+    return keepWatch(
+      saga,
+      now,
+      onAudible(listing, previous?.volumes ?? [], todayOf(now)),
+      previous,
+      true,
+    )
+  if (!previous) return undefined
+  const watch: SagaWatch = { ...previous, audibleListed: true }
+  await DiscoveryCommand.saveWatch(watch)
+  return watch
 }
 
 const keepWatch = async (
   saga: WatchedSaga,
   now: Date,
   volumes: FoundVolume[],
+  previous: SagaWatch | undefined,
+  listed = previous?.audibleListed === true,
 ): Promise<SagaWatch> => {
   const watch: SagaWatch = {
     key: watchKeyOf(saga),
@@ -873,6 +972,7 @@ const keepWatch = async (
     language: saga.language,
     checkedAt: now,
     volumes,
+    ...(listed ? { audibleListed: true as const } : {}),
   }
   await DiscoveryCommand.saveWatch(watch)
   return watch

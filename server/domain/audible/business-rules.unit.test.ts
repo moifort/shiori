@@ -8,6 +8,7 @@ import {
   bookFrom,
   boughtSince,
   editionYearsFor,
+  heardSagasOf,
   importableFrom,
   listenedMinutesFor,
   listeningChangesFor,
@@ -1044,5 +1045,53 @@ describe('the recording of one volume of a saga', () => {
         wanted,
       ),
     ).toBeUndefined()
+  })
+})
+
+describe('the sagas heard a sync lists from Audible', () => {
+  const saga = 'chronique-du-tueur-de-roi--patrick-rothfuss--audio' as SagaKey
+  const heard = {
+    id: seriesIdOf(saga, 'fr'),
+    saga,
+    name: 'Chronique du tueur de roi' as SeriesName,
+    kind: 'main' as const,
+  }
+
+  test('one per saga and language, through its first recording', () => {
+    const sagas = heardSagasOf([
+      aBook({ audibleAsin: asin('B002V1OF70'), language: 'fr', series: heard }),
+      aBook({
+        id: bookId('book-2'),
+        audibleAsin: asin('B00X57B4KE'),
+        language: 'fr',
+        series: heard,
+      }),
+      aBook({
+        id: bookId('book-3'),
+        audibleAsin: asin('B0EN000001'),
+        language: 'en',
+        series: heard,
+      }),
+    ])
+
+    expect(sagas.map((saga) => [saga.language, saga.asin])).toEqual([
+      ['fr', asin('B002V1OF70')],
+      ['en', asin('B0EN000001')],
+    ])
+    expect(sagas[0]).toMatchObject({ name: heard.name, author: 'Patrick Rothfuss' })
+  })
+
+  test('none for a book with no recording, no language, or a saga read', () => {
+    expect(
+      heardSagasOf([
+        aBook({ language: 'fr', series: heard }),
+        aBook({ audibleAsin: asin('B002V1OF70'), series: heard }),
+        aBook({
+          audibleAsin: asin('B002V1OF70'),
+          language: 'fr',
+          series: { ...heard, saga: 'chronique-du-tueur-de-roi--patrick-rothfuss' as SagaKey },
+        }),
+      ]),
+    ).toEqual([])
   })
 })

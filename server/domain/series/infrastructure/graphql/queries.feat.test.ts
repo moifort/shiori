@@ -356,6 +356,41 @@ describe('opening a saga nobody has catalogued', () => {
     expect(calls).toEqual(['catalogue'])
   })
 
+  // The release watch writes into a catalogue only when it looks: a saga it
+  // looked up before anyone opened it — every saga an Audible sync lists —
+  // would show none of the covers already found until its next look, weeks off.
+  test('writes in what the release watch already found of that edition', async () => {
+    await addVolume('Dune', 1, { language: 'FR' })
+    fake.seed('saga-watches', 'dune--frank-herbert--fr', {
+      key: 'dune--frank-herbert--fr',
+      seriesId: 'dune--frank-herbert',
+      name: 'Dune',
+      language: 'fr',
+      checkedAt: new Date('2026-09-20T08:00:00Z'),
+      volumes: [
+        {
+          number: 2,
+          title: 'Le Messie de Dune',
+          date: '1972-03-01',
+          coverUrl: 'https://covers.example/messie.jpg',
+        },
+      ],
+    })
+    answers = [aCatalogue]
+
+    const result = await execute(
+      '{ series(id: "dune--frank-herbert~fr") { spine { number releases { coverUrl } } } }',
+    )
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.series).toEqual({
+      spine: [
+        { number: 1, releases: [] },
+        { number: 2, releases: [{ coverUrl: 'https://covers.example/messie.jpg' }] },
+      ],
+    })
+  })
+
   // Paid for like the third step of a scan, without a scan: the month's counters
   // must say what the catalogue cost, and must not count a scan that never ran.
   test('records what the catalogue call cost, as a catalogue and not a scan', async () => {

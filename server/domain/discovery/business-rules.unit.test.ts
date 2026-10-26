@@ -36,6 +36,7 @@ import {
   recentReleasesOf,
   releasesOf,
   sagasByAuthorOf,
+  sagasToListOnAudible,
   watchedAuthorsOf,
   watchedSagasOf,
   watchIsStale,
@@ -48,6 +49,7 @@ import type {
   FoundWork,
   SagaDiscovery,
   SagaWatch,
+  WatchedSaga,
 } from './types'
 
 const carl = 'dungeon-crawler-carl--matt-dinniman' as SagaKey
@@ -962,5 +964,44 @@ describe('how often a watch is looked up again', () => {
     )
     expect(prompt).toContain('APRÈS le tome 2')
     expect(prompt).not.toContain('du tome 1 au dernier paru')
+  })
+})
+
+describe('the sagas an Audible sync lists', () => {
+  const heard = (name: string, asin?: string): WatchedSaga => ({
+    seriesId: `${name}--author--audio` as SagaKey,
+    language: 'fr',
+    name: name as SeriesName,
+    ...(asin ? { asin: asin as AudibleAsin } : {}),
+  })
+  const watched = (saga: WatchedSaga, audibleListed?: true): [string, SagaWatch] => [
+    `${saga.seriesId}--fr`,
+    {
+      key: `${saga.seriesId}--fr`,
+      seriesId: saga.seriesId,
+      name: saga.name,
+      language: 'fr',
+      checkedAt: new Date('2026-10-01T00:00:00Z'),
+      volumes: [],
+      ...(audibleListed ? { audibleListed } : {}),
+    },
+  ]
+
+  test('the ones never looked up first, then the ones never listed, never one listed', () => {
+    const looked = heard('looked', 'B000000001')
+    const fresh = heard('fresh', 'B000000002')
+    const listed = heard('listed', 'B000000003')
+    const watches = new Map([watched(looked), watched(listed, true)])
+
+    expect(sagasToListOnAudible([looked, fresh, listed], watches)).toEqual([fresh, looked])
+  })
+
+  test('none without a recording to go in through, nor a saga read', () => {
+    const read: WatchedSaga = {
+      ...heard('read', 'B000000001'),
+      seriesId: 'read--author' as SagaKey,
+    }
+
+    expect(sagasToListOnAudible([heard('silent'), read], new Map())).toEqual([])
   })
 })

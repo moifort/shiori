@@ -105,10 +105,26 @@ mock.module('~/domain/audible/infrastructure/audible-api', () => ({
   landingUrlOf: (marketplace: string) => `https://www.amazon.${marketplace}/ap/maplanding`,
 }))
 
+/** Audible's public catalogue, which lists the volumes of a saga heard after
+ *  a sync: the series as `audibleSeries` stages it, and what it was asked. */
+let audibleSeries: unknown[] | 'unknown' = 'unknown'
+const seriesAsked: string[] = []
+mock.module('~/domain/discovery/infrastructure/audible-catalogue', () => ({
+  audibleEditionOf: async () => 'unknown',
+  audibleProductOf: async () => 'unknown',
+  audibleRecordingOf: async () => 'unknown',
+  audibleSeriesOf: async (asin: string) => {
+    seriesAsked.push(asin)
+    return audibleSeries
+  },
+}))
+
 const { AudibleCommand } = await import('~/domain/audible/command')
 const { AudibleUseCase } = await import('~/domain/audible/use-case')
 const { AudibleQuery } = await import('~/domain/audible/query')
 const { BookQuery } = await import('~/domain/book/query')
+const { DiscoveryQuery } = await import('~/domain/discovery/query')
+const { SeriesQuery } = await import('~/domain/series/query')
 const { BookCommand } = await import('~/domain/book/command')
 const { BookTitle, AuthorName, Year } = await import('~/domain/shared/primitives')
 const { ListeningMinutes } = await import('~/domain/book/primitives')
@@ -147,6 +163,8 @@ beforeEach(() => {
   catalogue = []
   productCalls.length = 0
   searchCalls.length = 0
+  audibleSeries = 'unknown'
+  seriesAsked.length = 0
 })
 
 const connect = async (who: UserId = reader) => {
@@ -706,6 +724,109 @@ describe('the nightly sync', () => {
       editionDated: 0,
     })
     expect(await BookQuery.all(reader)).toHaveLength(1)
+  })
+})
+
+describe('the volumes of a saga heard', () => {
+  const LATER = new Date('2026-09-26T04:00:00.000Z')
+  const saga = 'chronique-du-tueur-de-roi--patrick-rothfuss--audio'
+  const listed = [
+    {
+      number: 1,
+      title: 'Le Nom du vent',
+      asin: 'B002V1OF70',
+      date: '2009-05-12',
+      coverUrl: 'https://m.media-amazon.com/1.jpg',
+    },
+    {
+      number: 2,
+      title: 'La Peur du sage',
+      asin: 'B00X57B4KE',
+      date: '2012-06-20',
+      coverUrl: 'https://m.media-amazon.com/2.jpg',
+    },
+  ]
+  const kingkiller = anItem({
+    purchaseDate: new Date('2026-09-22T00:00:00.000Z'),
+    series: { name: 'Chronique du tueur de roi', position: 1 },
+  })
+  const watchOf = async () => (await DiscoveryQuery.watches([`${saga}--fr`])).get(`${saga}--fr`)
+
+  // The saga screen draws the volumes the reader does not hold from the
+  // catalogue: listed on the sync, they show their covers the same night
+  // rather than once the hourly pass gets round to the saga.
+  test('are listed from Audible, covers and all, on the sync that catalogues one', async () => {
+    await connect()
+    await AudibleCommand.recordImport(reader, NOW)
+    fake.seed('series', `${saga}~fr`, {
+      id: `${saga}~fr`,
+      saga,
+      language: 'fr',
+      name: 'Chronique du tueur de roi',
+      author: 'Patrick Rothfuss',
+      volumes: [
+        { number: 1, title: 'Le Nom du vent', kind: 'main' },
+        { number: 2, title: 'La Peur du sage', kind: 'main' },
+      ],
+    })
+    items = [kingkiller]
+    audibleSeries = listed
+
+    await AudibleUseCase.syncLibrary(reader, LATER)
+
+    expect(seriesAsked).toEqual(['B002V1OF70'])
+    expect((await watchOf())?.volumes.map((volume) => String(volume.coverUrl))).toEqual([
+      'https://m.media-amazon.com/1.jpg',
+      'https://m.media-amazon.com/2.jpg',
+    ])
+    const catalogue = await SeriesQuery.byId({ saga: SagaKey(saga), language: 'fr' })
+    expect(catalogue?.volumes.map((volume) => String(volume.covers?.fr))).toEqual([
+      'https://m.media-amazon.com/1.jpg',
+      'https://m.media-amazon.com/2.jpg',
+    ])
+  })
+
+  test('are listed on an import as well', async () => {
+    await connect()
+    items = [kingkiller]
+    audibleSeries = listed
+
+    await AudibleUseCase.importBooks(reader, [asin('B002V1OF70')])
+
+    expect(seriesAsked).toEqual(['B002V1OF70'])
+    expect((await watchOf())?.audibleListed).toBe(true)
+  })
+
+  // A library imported before the sync listed anything is listed by the next
+  // nights, once: after that the hourly pass keeps the watch.
+  test('are listed once for a saga imported long ago, and not asked again', async () => {
+    await connect()
+    await AudibleCommand.recordImport(reader, LATER)
+    await BookCommand.add(
+      reader,
+      {
+        title: BookTitle('Le Nom du vent'),
+        authors: [AuthorName('Patrick Rothfuss')],
+        format: 'audiobook',
+        language: 'fr',
+        audibleAsin: asin('B002V1OF70'),
+        series: {
+          saga: SagaKey(saga),
+          name: SeriesName('Chronique du tueur de roi'),
+          volume: VolumeNumber(1),
+          kind: 'main',
+        },
+      },
+      NOW,
+    )
+    items = [anItem()]
+    audibleSeries = listed
+
+    await AudibleUseCase.syncLibrary(reader, LATER)
+    await AudibleUseCase.syncLibrary(reader, LATER)
+
+    expect(seriesAsked).toEqual(['B002V1OF70'])
+    expect((await watchOf())?.volumes).toHaveLength(2)
   })
 })
 

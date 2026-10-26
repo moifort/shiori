@@ -118,6 +118,10 @@ mock.module('~/domain/scan/published-cover', () => ({
   shelfCoverOf: async () => undefined,
   publishedCoverOf: async () => 'https://covers.example/carl1.jpg',
   isCoverGone: async () => false,
+  isbnCoversOf: async () => ({}),
+  isbnsInLanguage: () => [],
+  otherEditionCoversOf: async () => [],
+  isImageAt: async () => true,
 }))
 
 const { BookUseCase } = await import('~/domain/book/use-case')
@@ -516,6 +520,75 @@ describe('a saga heard', () => {
 
     expect(calls).toEqual([])
     expect(seriesAsked).toEqual(['B0DM67WR2V', 'B0DM67WR2V'])
+  })
+})
+
+describe('a saga listed on an Audible sync', () => {
+  const heard = {
+    seriesId: carlHeard,
+    language: 'fr' as const,
+    name: SeriesName('Dungeon Crawler Carl'),
+    author: AuthorName('Matt Dinniman'),
+    asin: 'B0DM67WR2V' as never,
+  }
+  const listed = [
+    {
+      number: 1,
+      title: 'Carl 1',
+      asin: 'B0DM67WR2V',
+      date: '2024-11-22',
+      coverUrl: 'https://m.media-amazon.com/carl1.jpg',
+    },
+  ]
+  const watchOf = async () =>
+    (await DiscoveryQuery.watches([`${carlHeard}--fr`])).get(`${carlHeard}--fr`)
+
+  test('is listed from Audible alone, with no grounded call', async () => {
+    audibleSeries = listed
+
+    expect(await DiscoveryUseCase.listOnAudible([heard], now)).toEqual({ listed: 1, left: 0 })
+
+    expect(calls).toEqual([])
+    expect(String((await watchOf())?.volumes[0]?.coverUrl)).toBe(
+      'https://m.media-amazon.com/carl1.jpg',
+    )
+  })
+
+  // Audible files some recordings under no series: asking every night would
+  // cost a call a saga for nothing. The watch is kept as it was, marked.
+  test('is marked as asked when Audible files it under no series, and not asked again', async () => {
+    await stock(reader, 'audiobook')
+    await DiscoveryUseCase.watchDueSagas(now)
+    const before = await watchOf()
+    seriesAsked.length = 0
+
+    await DiscoveryUseCase.listOnAudible([heard], now)
+    await DiscoveryUseCase.listOnAudible([heard], now)
+
+    expect(seriesAsked).toEqual(['B0DM67WR2V'])
+    expect(await watchOf()).toEqual({ ...before, audibleListed: true } as never)
+  })
+
+  test('writes nothing for a saga never looked up that Audible files under no series', async () => {
+    await DiscoveryUseCase.listOnAudible([heard], now)
+
+    expect(await watchOf()).toBeUndefined()
+  })
+
+  test('stays marked once the hourly pass looks the saga up again', async () => {
+    audibleSeries = listed
+    await stock(reader, 'audiobook')
+    await DiscoveryUseCase.listOnAudible([heard], now)
+
+    await DiscoveryUseCase.watchDueSagas(new Date('2026-12-26T08:00:00Z'))
+
+    expect((await watchOf())?.audibleListed).toBe(true)
+  })
+
+  test('leaves a saga read to the hourly pass', async () => {
+    await DiscoveryUseCase.listOnAudible([{ ...heard, seriesId: carl }], now)
+
+    expect(seriesAsked).toEqual([])
   })
 })
 

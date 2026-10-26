@@ -110,6 +110,26 @@ export const watchedSagasOf = (followed: readonly FollowedSeries[]): WatchedSaga
   return [...sagas.values()]
 }
 
+/** The sagas heard an Audible sync lists straight from Audible: every one held
+ *  through a recording whose series listing was never asked for, the ones
+ *  never looked up at all first, since they have nothing to show yet. A
+ *  listing asked for once is not asked again: the hourly pass keeps it. */
+export const sagasToListOnAudible = (
+  sagas: readonly WatchedSaga[],
+  watches: ReadonlyMap<string, SagaWatch>,
+): WatchedSaga[] => {
+  const unlisted = sagas.filter(
+    (saga) =>
+      saga.asin !== undefined &&
+      isAudioSeries(saga.seriesId) &&
+      watches.get(watchKeyOf(saga))?.audibleListed !== true,
+  )
+  return [
+    ...unlisted.filter((saga) => !watches.has(watchKeyOf(saga))),
+    ...unlisted.filter((saga) => watches.has(watchKeyOf(saga))),
+  ]
+}
+
 /** The furthest numbered volume of a saga the reader holds in that language,
  *  and when they added it — a novella or a companion is numbered apart from
  *  the volumes a watch lists. */

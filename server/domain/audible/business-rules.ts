@@ -33,7 +33,9 @@ import type {
   ReadingStatus,
   SeriesEntry,
 } from '~/domain/book/types'
-import { SeriesName, seriesKeyOf, VolumeNumber } from '~/domain/series/primitives'
+import { watchKeyOf } from '~/domain/discovery/business-rules'
+import type { WatchedSaga } from '~/domain/discovery/types'
+import { isAudioSeries, SeriesName, seriesKeyOf, VolumeNumber } from '~/domain/series/primitives'
 import type { SagaKey, VolumeNumber as VolumeNumberValue } from '~/domain/series/types'
 import { AuthorName, BookTitle, Year } from '~/domain/shared/primitives'
 import { titleWithoutSaga } from '~/domain/shared/saga-title'
@@ -289,6 +291,27 @@ export const seriesVolumesFor = (
     if (!membership?.volume || membership.saga !== book.series.saga) return []
     return [{ bookId: book.id, volume: membership.volume }]
   })
+}
+
+/** Every saga heard the reader holds a recording of in a language, as the
+ *  release watch keys it: the recording is the way into Audible's own listing
+ *  of the series. One per saga and language, through its first recording. */
+export const heardSagasOf = (books: readonly Book[]): WatchedSaga[] => {
+  const sagas = new Map<string, WatchedSaga>()
+  for (const book of books) {
+    const { audibleAsin, series, language } = book
+    if (!audibleAsin || !series || !language || !isAudioSeries(series.saga)) continue
+    const saga: WatchedSaga = {
+      seriesId: series.saga,
+      language,
+      name: series.name,
+      ...(book.authors[0] ? { author: book.authors[0] } : {}),
+      asin: audibleAsin,
+    }
+    const key = watchKeyOf(saga)
+    if (!sagas.has(key)) sagas.set(key, saga)
+  }
+  return [...sagas.values()]
 }
 
 /** Audible names a language rather than coding it, and does so in English on

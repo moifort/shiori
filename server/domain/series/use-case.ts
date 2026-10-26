@@ -9,6 +9,8 @@ import {
   DEFAULT_BOOK_LANGUAGE,
   type Genre,
 } from '~/domain/book/types'
+import { catalogueVolumesOf, watchKeyOf } from '~/domain/discovery/business-rules'
+import { DiscoveryQuery } from '~/domain/discovery/query'
 import { ScanCommand } from '~/domain/scan/command'
 import type { ScanLanguage } from '~/domain/scan/types'
 import {
@@ -26,6 +28,7 @@ import {
   provisionalCatalogueOf,
   withShelvedVolumes,
 } from '~/domain/series/business-rules'
+import { SeriesCommand } from '~/domain/series/command'
 import {
   isAudioSeries,
   keyWithAuthorReversed,
@@ -450,13 +453,15 @@ export namespace SeriesUseCase {
         : undefined
     if (!source) return null
 
-    const { series, usage } = await ScanCommand.catalogueSeries(
+    const { series: catalogued, usage } = await ScanCommand.catalogueSeries(
       seriesId,
       source.name,
       source.author,
       language,
       edition,
     )
+    const series =
+      catalogued && edition ? await withWatchWrittenIn(catalogued, edition) : catalogued
     // Telemetry: the catalogue is already built, so a failed counter write is
     // logged rather than turned into an error the reader has to read.
     if (usage)
@@ -468,6 +473,27 @@ export namespace SeriesUseCase {
     // unrelated book write to appear.
     if (series) await AnalyticsUseCase.markStale(userId)
     return series ? withShelvedVolumes(series, held) : null
+  }
+}
+
+/** A catalogue just built, with what the release watch already found of that
+ *  edition written in. The watch writes into a catalogue only when it looks,
+ *  so a saga watched before anyone opened it — every saga an Audible sync
+ *  lists — would otherwise wait weeks for its next look to show the covers and
+ *  dates already found. The catalogue as built when nothing was watched or the
+ *  write fails: it stands either way. */
+const withWatchWrittenIn = async (series: Series, edition: BookLanguage): Promise<Series> => {
+  try {
+    const key = watchKeyOf({ seriesId: series.saga, language: edition })
+    const watch = (await DiscoveryQuery.watches([key])).get(key)
+    if (!watch) return series
+    return (
+      (await SeriesCommand.recordReleases(series.saga, edition, catalogueVolumesOf(watch))) ??
+      series
+    )
+  } catch (error) {
+    logger.warn('release dates not recorded', { error, saga: series.id })
+    return series
   }
 }
 

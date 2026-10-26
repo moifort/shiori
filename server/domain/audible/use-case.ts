@@ -6,6 +6,7 @@ import {
   boughtSince,
   editionYearsFor,
   heardByAsin,
+  heardSagasOf,
   importableFrom,
   listenedMinutesFor,
   listeningChangesFor,
@@ -33,6 +34,7 @@ import type { Book, BookLanguage } from '~/domain/book/types'
 import { BookUseCase } from '~/domain/book/use-case'
 import { watchKeyOf } from '~/domain/discovery/business-rules'
 import { DiscoveryQuery } from '~/domain/discovery/query'
+import { DiscoveryUseCase } from '~/domain/discovery/use-case'
 import { SeriesQuery } from '~/domain/series/query'
 import type { SagaKey, SeriesName, VolumeNumber } from '~/domain/series/types'
 import { SeriesUseCase } from '~/domain/series/use-case'
@@ -98,6 +100,9 @@ export namespace AudibleUseCase {
         }),
       )
     }
+    // The volumes of these sagas the reader does not hold, with their covers,
+    // for the saga screen: from Audible now rather than the hourly pass.
+    await DiscoveryUseCase.listOnAudible(heardSagasOf([...owned, ...imported]))
 
     await AudibleCommand.recordImport(userId)
     return imported
@@ -159,6 +164,7 @@ export namespace AudibleUseCase {
       renumbers.length +
       editionYears.length +
       bought.length
+    const added: Book[] = []
     const write = async () => {
       await bulkSave(links, async (link) =>
         BookCommand.linkToAudible(userId, link.bookId, link.audibleAsin),
@@ -189,12 +195,18 @@ export namespace AudibleUseCase {
       await bulkSave(editionYears, async ({ bookId, editionYear }) =>
         BookCommand.edit(userId, bookId, { editionYear }, now),
       )
-      await bulkSave(await SeriesUseCase.filedAfterCatalogues(bought.map(bookFrom)), async (book) =>
-        BookCommand.add(userId, book, now),
+      await bulkSave(
+        await SeriesUseCase.filedAfterCatalogues(bought.map(bookFrom)),
+        async (book) => {
+          added.push(await BookCommand.add(userId, book, now))
+        },
       )
     }
     // A night with nothing new leaves the dashboard as it was.
     if (changed > 0) await AnalyticsUseCase.whileStale(userId, write)
+    // Every night, not only on a new title: a library imported before the
+    // sagas heard were listed from Audible is listed over the next nights.
+    await DiscoveryUseCase.listOnAudible(heardSagasOf([...linked, ...added]), now)
 
     await AudibleCommand.recordImport(userId, now)
     return {
