@@ -75,9 +75,9 @@ struct SeriesScreen: View {
             }
             if viewModel.friend == nil { ownerToolbar }
         }
-        // What the AI is writing, said in the bar: the page under it stays
-        // readable and every action at hand.
-        .generatingInBar(viewModel.generating)
+        // The AI at work, said by a pill floating over the page: the page
+        // under it stays readable and every action at hand.
+        .generatingPill(viewModel.isGenerating)
         // The stars commit on the tap and the control cannot show the call
         // itself, so the wait is made visible by a scrim.
         .overlay {

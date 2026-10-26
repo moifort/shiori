@@ -1069,6 +1069,22 @@
         }
       }
     },
+    "%lld sem." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld wk"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld sem."
+          }
+        }
+      }
+    },
     "%lld semaines offertes" : {
       "localizations" : {
         "en" : {
@@ -1385,22 +1401,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lldmin"
-          }
-        }
-      }
-    },
-    "%lld sem." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld wk"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld sem."
           }
         }
       }
@@ -6141,22 +6141,6 @@
         }
       }
     },
-    "Il y a %lldj" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lldd ago"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Il y a %lldj"
-          }
-        }
-      }
-    },
     "Il y a %lld sem." : {
       "localizations" : {
         "en" : {
@@ -6169,6 +6153,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Il y a %lld sem."
+          }
+        }
+      }
+    },
+    "Il y a %lldj" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lldd ago"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il y a %lldj"
           }
         }
       }
@@ -6697,54 +6697,6 @@
         }
       }
     },
-    "L'IA cherche les parutions" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "AI is looking for new releases"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "L'IA cherche les parutions"
-          }
-        }
-      }
-    },
-    "L'IA complète la fiche" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "AI is completing the record"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "L'IA complète la fiche"
-          }
-        }
-      }
-    },
-    "L'IA complète le catalogue" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "AI is completing the catalogue"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "L'IA complète le catalogue"
-          }
-        }
-      }
-    },
     "L'IA de Shiori est momentanément indisponible. Rien n'a été décompté ; réessayez dans un moment." : {
       "localizations" : {
         "en" : {
@@ -6757,6 +6709,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "L'IA de Shiori est momentanément indisponible. Rien n'a été décompté ; réessayez dans un moment."
+          }
+        }
+      }
+    },
+    "L'IA prépare la fiche" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI is preparing the page"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'IA prépare la fiche"
           }
         }
       }
@@ -13701,22 +13669,6 @@
         }
       }
     },
-    "depuis %lldj" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "for %lldd"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "depuis %lldj"
-          }
-        }
-      }
-    },
     "depuis %lld sem." : {
       "localizations" : {
         "en" : {
@@ -13729,6 +13681,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "depuis %lld sem."
+          }
+        }
+      }
+    },
+    "depuis %lldj" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "for %lldd"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "depuis %lldj"
           }
         }
       }
@@ -14197,22 +14165,6 @@
         }
       }
     },
-    "À écouter" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "To listen"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "À écouter"
-          }
-        }
-      }
-    },
     "À lire" : {
       "localizations" : {
         "en" : {
@@ -14305,6 +14257,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "À venir : Tome %lld"
+          }
+        }
+      }
+    },
+    "À écouter" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To listen"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "À écouter"
           }
         }
       }

@@ -98,9 +98,9 @@ struct BookScreen: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { toolbar }
         // The AI at work — a shelf book described on its first opening:
-        // said in the bar, so the page under it stays readable and every
-        // action stays at hand.
-        .generatingInBar(viewModel.isDescribing ? "L'IA complète la fiche" : nil)
+        // said by a pill floating over the page, so the page under it stays
+        // readable and every action stays at hand.
+        .generatingPill(viewModel.isDescribing)
         // Toolbar actions close their menu before the mutation leaves, so the
         // call is made visible by a scrim rather than by the control itself.
         .overlay {

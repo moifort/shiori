@@ -93,7 +93,7 @@ struct UpcomingBookPage: View {
         // The bar's buttons float over the page as it scrolls, as on a book's.
         .scrollEdgeEffectHidden(true, for: .top)
         .background(Color(.systemGroupedBackground))
-        .generatingInBar(isDescribing ? "L'IA complète la fiche" : nil)
+        .generatingPill(isDescribing)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             if showsClose {

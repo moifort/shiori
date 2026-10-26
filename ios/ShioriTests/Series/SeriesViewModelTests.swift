@@ -39,7 +39,7 @@ struct SeriesViewModelTests {
 
         #expect(asked.all == ["catalogue"])
         #expect(viewModel.series?.isAwaitingCatalogue == false)
-        #expect(viewModel.generating == nil)
+        #expect(!viewModel.isGenerating)
     }
 
     @Test func storedCatalogueIsNotBuiltAgain() async {

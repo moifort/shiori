@@ -113,9 +113,9 @@ struct AuthorScreen: View {
                 }
             }
         }
-        // What the AI is writing, said in the bar: the page under it stays
-        // readable and every action at hand.
-        .generatingInBar(viewModel.isGenerating ? "L'IA complète la fiche" : nil)
+        // The AI at work, said by a pill floating over the page: the page
+        // under it stays readable and every action at hand.
+        .generatingPill(viewModel.isGenerating)
         .alert("Fiche non mise à jour", isPresented: $viewModel.refreshFailed) {
             Button("OK", role: .cancel) {}
         } message: {

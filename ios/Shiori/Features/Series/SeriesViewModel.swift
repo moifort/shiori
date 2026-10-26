@@ -81,13 +81,9 @@ final class SeriesViewModel {
         return series.spine.first { !$0.isForthcoming(asOf: year, in: language, datedUpTo: datedUpTo) }
     }
 
-    /// What the AI is writing for this screen, said in its bar; nil when
-    /// nothing is being written.
-    var generating: LocalizedStringKey? {
-        if isCataloguing { return "L'IA complète le catalogue" }
-        if isLookingUpReleases { return "L'IA cherche les parutions" }
-        return nil
-    }
+    /// Whether the AI is preparing something for this screen: its catalogue
+    /// or the releases to come.
+    var isGenerating: Bool { isCataloguing || isLookingUpReleases }
 
     /// The saga's name, from the catalogue or else from a volume held.
     var name: String { series?.name ?? owned.first?.series?.name ?? "" }

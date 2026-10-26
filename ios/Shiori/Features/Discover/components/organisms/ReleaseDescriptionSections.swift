@@ -1,8 +1,8 @@
 import SwiftUI
 
 /// Under a shown book's facts: its summary, once the AI wrote it. While it
-/// writes, the page says so in its bar (`generatingInBar`), readable and usable
-/// underneath; the summary appears in place when it is done.
+/// writes, the page says so with a floating pill (`generatingPill`), readable
+/// and usable underneath; the summary appears in place when it is done.
 struct ReleaseDescriptionSections: View {
     let isDescribing: Bool
     let synopsis: String?
