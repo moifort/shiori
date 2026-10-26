@@ -400,8 +400,6 @@ struct HomePage: View {
         }
     }
 
-    private static let seriesCardHeight: CGFloat = 176
-
     /// The sagas in progress, the last one shelved first.
     @ViewBuilder private var seriesRow: some View {
         if !dashboard.series.isEmpty {
@@ -410,29 +408,16 @@ struct HomePage: View {
                     onAction(.showSeries(SeriesRequest(state: .inProgress)))
                 }
                 if isCompact {
-                    // Two rows that scroll sideways, the cards wide enough
-                    // for the next column to be cut by the edge: the row says
-                    // it goes on.
-                    ScrollView(.horizontal) {
-                        // Spaced as the poster rows above.
-                        LazyHGrid(
-                            rows: [GridItem(.fixed(Self.seriesCardHeight), spacing: 13),
-                                   GridItem(.fixed(Self.seriesCardHeight), spacing: 13)],
-                            spacing: 13
-                        ) {
-                            ForEach(dashboard.series) { series in
-                                SeriesShowCard(series: series, tag: releaseTag(of: series)) {
-                                    onAction(.openSeries(series.id))
-                                }
-                                .frame(width: SeriesCardRail.cardWidth, height: Self.seriesCardHeight)
-                                .transition(.homeCard)
+                    // The Library tab's series rail, the same cards; the home
+                    // already pads its rows.
+                    SeriesCardRail(
+                        cards: dashboard.series.map { series in
+                            SeriesCardRail.Card(progress: series, tag: releaseTag(of: series)) {
+                                onAction(.openSeries(series.id))
                             }
-                        }
-                        .scrollTargetLayout()
-                    }
-                    .scrollIndicators(.hidden)
-                    .scrollTargetBehavior(.viewAligned)
-                    .scrollClipDisabled()
+                        },
+                        inset: 0
+                    )
                 } else {
                     let columns = isSideBySide ? 4 : 2
                     // Whole rows only, past the first, and three at most: the
