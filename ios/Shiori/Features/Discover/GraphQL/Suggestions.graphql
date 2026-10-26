@@ -18,6 +18,10 @@ mutation DismissSuggestion($id: String!, $reason: DismissalReason!) {
   dismissSuggestion(id: $id, reason: $reason)
 }
 
+mutation ReconsiderSuggestion($id: String!) {
+  reconsiderSuggestion(id: $id)
+}
+
 fragment SuggestionFields on Suggestion {
   id
   format

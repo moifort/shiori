@@ -16,6 +16,8 @@ struct HomeClient: Sendable {
     var awaited: @Sendable (ReleaseFormat) async throws -> [AwaitedEdition]
     var dismissSuggestion: @Sendable (_ id: String, DismissalReason) async throws -> Void
     var stopAwaiting: @Sendable (_ editionId: String) async throws -> Void
+    /// A dismissal taken back from the carousel's red thumb.
+    var reconsiderSuggestion: @Sendable (_ id: String) async throws -> Void = { _ in }
     var genreInsights: @Sendable () async throws -> GenreInsights
     /// The book read now, finished from its card.
     var finish: @Sendable (_ bookId: String) async throws -> Void = { _ in }
@@ -33,6 +35,7 @@ extension HomeClient {
         awaited: { try await AwaitedAPI.awaited(format: $0) },
         dismissSuggestion: { try await SuggestionsAPI.dismiss(id: $0, reason: $1) },
         stopAwaiting: { try await AwaitedAPI.stop(id: $0) },
+        reconsiderSuggestion: { try await SuggestionsAPI.reconsider(id: $0) },
         genreInsights: { try await HomeAPI.genreInsights() },
         finish: { _ = try await BookAPI.setStatus(id: $0, status: .read) },
         rate: { _ = try await BookAPI.rate(id: $0, stars: $1) }

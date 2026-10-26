@@ -302,6 +302,37 @@ final class HomeViewModel {
         await loadDiscoveries()
     }
 
+    /// The carousel's thumb, pressed and pressed again: each write waits on
+    /// the one before for the same discovery, so a dismissal taken back at
+    /// once never reaches the server before the dismissal itself.
+    private var thumbWrites: [Suggestion.ID: Task<Void, Never>] = [:]
+
+    /// "Pas intéressé" from the carousel: held on screen, its thumb red,
+    /// until the reader leaves the page.
+    func turnDown(_ suggestion: Suggestion) {
+        hold(suggestion)
+        queueThumbWrite(for: suggestion) { [client] in
+            try await client.dismissSuggestion(suggestion.id, .notInterested)
+        }
+    }
+
+    /// The red thumb pressed again: the dismissal is taken back, and the
+    /// discovery stays in the line.
+    func takeBack(_ suggestion: Suggestion) {
+        queueThumbWrite(for: suggestion) { [client] in
+            try await client.reconsiderSuggestion(suggestion.id)
+        }
+    }
+
+    private func queueThumbWrite(for suggestion: Suggestion, _ write: @escaping @Sendable () async throws -> Void) {
+        let previous = thumbWrites[suggestion.id]
+        thumbWrites[suggestion.id] = Task {
+            await previous?.value
+            do { try await write() } catch { _ = reportError(error) }
+            await loadDiscoveries()
+        }
+    }
+
     func stopAwaiting(_ edition: AwaitedEdition) async {
         do { try await client.stopAwaiting(edition.id) } catch { _ = reportError(error) }
     }

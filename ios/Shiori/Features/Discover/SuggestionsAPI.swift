@@ -245,6 +245,15 @@ enum SuggestionsAPI {
             changesLibrary: false
         )
     }
+
+    /// A dismissal taken back: the suggestion returns to the line.
+    static func reconsider(id: String) async throws {
+        _ = try await GraphQLHelpers.perform(
+            GraphQLClient.shared.apollo,
+            mutation: ShioriGraphQL.ReconsiderSuggestionMutation(id: id),
+            changesLibrary: false
+        )
+    }
 }
 
 extension Suggestion {

@@ -38,6 +38,8 @@ enum HomeAction {
     case awaitDiscovery(Suggestion, ReleaseFormat)
     /// A discovery turned down from the carousel's thumb: "Pas intéressé".
     case dismissDiscovery(Suggestion)
+    /// The red thumb pressed again: the dismissal taken back.
+    case reconsiderDiscovery(Suggestion)
 }
 
 /// The home screen in the TV app's grammar: a hero with the month's discovery
@@ -118,6 +120,7 @@ struct HomePage: View {
                         onAdd: { onAction(.addDiscovery($0, $1)) },
                         onAwait: { onAction(.awaitDiscovery($0, $1)) },
                         onDismiss: { onAction(.dismissDiscovery($0)) },
+                        onReconsider: { onAction(.reconsiderDiscovery($0)) },
                         onShowDiscover: { onAction(.showDiscover) },
                         backdropCover: dashboard.leadCoverURL,
                         pull: pull

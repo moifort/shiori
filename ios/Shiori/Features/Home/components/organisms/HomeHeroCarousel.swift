@@ -58,6 +58,8 @@ struct HomeHeroCarousel: View {
     let onAwait: (Suggestion, ReleaseFormat) -> Void
     /// "Pas intéressé": the model leaves it out, and the next look skips it.
     let onDismiss: (Suggestion) -> Void
+    /// The red thumb pressed again: the reader changed their mind.
+    var onReconsider: (Suggestion) -> Void = { _ in }
     /// Découvrir, from the page that says the month is done.
     var onShowDiscover: () -> Void = {}
     /// The cover whose colours the month's last page takes: the library's,
@@ -71,8 +73,9 @@ struct HomeHeroCarousel: View {
     /// The discoveries just added or awaited from their "+", which turns into
     /// a check to say so before the line moves on.
     @State private var taken: Set<Suggestion.ID> = []
-    /// The discoveries just turned down, whose thumb fills to say so: they
-    /// leave the line with the ones taken, once the reader leaves the page.
+    /// The discoveries just turned down, whose thumb turns red to say so:
+    /// they leave the line with the ones taken, once the reader leaves the
+    /// page. Pressed again, the thumb takes the dismissal back.
     @State private var dismissed: Set<Suggestion.ID> = []
 
     /// How tall the carousel stands: room for three lines of why.
@@ -219,12 +222,17 @@ struct HomeHeroCarousel: View {
                     .sensoryFeedback(.success, trigger: taken.contains(suggestion.id))
                     .accessibilityIdentifier("home-discovery-menu")
                     // Turned down, the thumb fills and presses down as the
-                    // button turns red. Never disabled once done: dimmed,
-                    // the red went unseen.
+                    // button turns red; pressed again, it comes back up as
+                    // it was. Never disabled once done: dimmed, the red went
+                    // unseen.
                     Button {
-                        guard !isDismissed else { return }
-                        withAnimation(.snappy) { _ = dismissed.insert(suggestion.id) }
-                        onDismiss(suggestion)
+                        if isDismissed {
+                            withAnimation(.snappy) { _ = dismissed.remove(suggestion.id) }
+                            onReconsider(suggestion)
+                        } else {
+                            withAnimation(.snappy) { _ = dismissed.insert(suggestion.id) }
+                            onDismiss(suggestion)
+                        }
                     } label: {
                         Label(
                             isDismissed ? "Écarté" : "Pas intéressé",
@@ -234,12 +242,15 @@ struct HomeHeroCarousel: View {
                         .font(.headline)
                         .foregroundStyle(.white)
                         .contentTransition(.symbolEffect(.replace))
-                        .symbolEffect(.bounce.down.byLayer, value: isDismissed)
+                        // Down when turned down, back up when taken back.
+                        .symbolEffect(isDismissed ? .bounce.down.byLayer : .bounce.up.byLayer, value: isDismissed)
                     }
                     .buttonStyle(.glass(isDismissed ? .regular.tint(Self.turnedDownRed) : .regular))
                     .buttonBorderShape(.circle)
                     .disabled(taken.contains(suggestion.id))
-                    .sensoryFeedback(.impact(weight: .medium), trigger: isDismissed)
+                    .sensoryFeedback(trigger: isDismissed) { _, turnedDown in
+                        .impact(weight: turnedDown ? .medium : .light)
+                    }
                     .accessibilityIdentifier("home-discovery-dismiss")
                 }
                 .controlSize(.extraLarge)
