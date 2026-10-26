@@ -88,7 +88,7 @@ struct LibraryShelvesPage: View {
         seriesRail
         authorsRail
         bookRail(.read, shelves.readRecently, context: .read)
-        lovedRail
+        bookRail(.loved, shelves.favorites, context: .lovedByYear)
         if !shelves.genres.isEmpty {
             VStack(alignment: .leading, spacing: 12) {
                 RowHeader(title: "Par genre", style: .inline)
@@ -127,36 +127,6 @@ struct LibraryShelvesPage: View {
                 .contentMargins(.horizontal, 20, for: .scrollContent)
             }
             .accessibilityIdentifier("library-rail-\(shelf.rawValue)")
-        }
-    }
-
-    /// "Coups de cœur": the hearted books and, among them, each hearted saga
-    /// as a stack of its volumes, all the one shelved last first.
-    @ViewBuilder private var lovedRail: some View {
-        if !shelves.favorites.isEmpty || !shelves.lovedSeries.isEmpty {
-            let books = shelves.favorites.map { book in
-                (date: book.shelvedAt, item: PosterRow.Item(book: book, label: PosterLabel.of(book, in: .lovedByYear)))
-            }
-            let sagas = shelves.lovedSeries.compactMap { saga in
-                PosterRow.Item(saga: saga) { onAction(.openSeries(saga)) }.map { (date: saga.shelvedAt, item: $0) }
-            }
-            let items = (sagas + books)
-                .sorted { ($0.date ?? .distantPast) > ($1.date ?? .distantPast) }
-                .map(\.item)
-            VStack(alignment: .leading, spacing: 12) {
-                RowHeader(title: LocalizedStringKey(BookShelf.loved.title), style: .inline) {
-                    onAction(.openShelf(.loved))
-                }
-                .padding(.horizontal, 20)
-                PosterRow(
-                    items: items,
-                    onOpen: { onAction(.openBook($0)) },
-                    onMenu: { onAction(.menu($0, $1)) }
-                )
-                .contentMargins(.horizontal, 20, for: .scrollContent)
-                .padding(.top, sagas.isEmpty ? 0 : SeriesStackPoster.rise)
-            }
-            .accessibilityIdentifier("library-rail-loved")
         }
     }
 

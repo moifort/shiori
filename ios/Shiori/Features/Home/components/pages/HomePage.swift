@@ -424,7 +424,7 @@ struct HomePage: View {
                                 SeriesShowCard(series: series, tag: releaseTag(of: series)) {
                                     onAction(.openSeries(series.id))
                                 }
-                                .frame(width: 250, height: Self.seriesCardHeight)
+                                .frame(width: SeriesCardRail.cardWidth, height: Self.seriesCardHeight)
                                 .transition(.homeCard)
                             }
                         }

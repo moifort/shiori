@@ -23,13 +23,6 @@ enum LibraryAPI {
             toRead: shelves.toRead.map(\.fragments.bookSummary.asBook),
             readRecently: shelves.readRecently.map(\.fragments.bookSummary.asBook),
             favorites: shelves.favorites.map(\.fragments.bookSummary.asBook),
-            lovedSeries: shelves.lovedSeries.map { row in
-                SeriesAPI.followedRow(
-                    row.fragments.followedSeriesRow,
-                    volumes: row.volumes.map(\.fragments.followedVolume),
-                    catalogue: row.catalogue?.fragments.catalogueSpine
-                )
-            },
             hasDropped: shelves.hasDropped,
             genres: shelves.genres.map {
                 GenreShelf(
@@ -67,7 +60,7 @@ enum LibraryAPI {
     /// The hearted sagas of "Coups de cœur" in a view, the one shelved last first.
     static func lovedSeries(_ view: ShelvesView) async throws -> [FollowedSeries] {
         #if DEBUG
-        if Showcase.isOn { return Showcase.libraryShelves(view: view).lovedSeries }
+        if Showcase.isOn { return Showcase.lovedSeries(view: view) }
         #endif
         let data = try await GraphQLHelpers.fetch(
             GraphQLClient.shared.apollo,

@@ -78,18 +78,8 @@ query LibraryShelves($format: BookFormat, $genre: Genre, $subgenre: Subgenre) {
     readRecently {
       ...BookSummary
     }
-    # The hearted sagas stand for their volumes: one stack each in the rail.
-    favorites(excludeLovedSeries: true) {
+    favorites {
       ...BookSummary
-    }
-    lovedSeries {
-      ...FollowedSeriesRow
-      volumes {
-        ...FollowedVolume
-      }
-      catalogue {
-        ...CatalogueSpine
-      }
     }
     hasDropped
     genres {

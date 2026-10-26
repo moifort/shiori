@@ -2366,7 +2366,7 @@ type LibraryShelves {
     """
     Leave out the volumes of the sagas the reader hearted, which `lovedSeries` draws whole.
     """
-    excludeLovedSeries: Boolean
+    excludeLovedSeries: Boolean @deprecated(reason: "The rail draws the hearted books alone, never a saga in their place.")
   ): [Book!]!
 
   """
@@ -3013,7 +3013,9 @@ type Mutation {
   """
   setReadingStatus(id: BookId!, status: ReadingStatus!): Book!
 
-  """Keep a saga close, or stop. Leaves the rating alone."""
+  """
+  Keep a saga close, or stop. A heart lifts the saga below three stars to five, and gives its stars to the volumes read and left unrated; taking it back leaves every star.
+  """
   setSeriesFavorite(favorite: Boolean!, seriesId: SeriesId!): SeriesOpinion!
 
   """

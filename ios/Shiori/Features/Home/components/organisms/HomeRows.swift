@@ -183,21 +183,8 @@ struct PosterRow: View {
         /// What a tap opens, when it is not the book itself: a release, a
         /// friend's favourite.
         var open: (() -> Void)?
-        /// A saga drawn as a stack of its volumes in place of one book: a
-        /// hearted saga among the favourites. `book` is then its front volume.
-        var saga: FollowedSeries?
-        var id: String { saga.map { "saga-\($0.id)" } ?? book.id }
+        var id: String { book.id }
         var caption: String { label.caption }
-
-        /// A saga as a stack of its volumes, opening what `open` says; nil
-        /// when the reader holds none of them.
-        init?(saga: FollowedSeries, open: @escaping () -> Void) {
-            guard let front = saga.volumes.first(where: { $0.coverURL != nil }) ?? saga.volumes.first else { return nil }
-            book = front
-            label = PosterLabel(caption: saga.volumeCountText)
-            self.saga = saga
-            self.open = open
-        }
 
         init(book: Book, caption: String, open: (() -> Void)? = nil) {
             self.book = book
@@ -243,21 +230,15 @@ struct PosterRow: View {
     private var posters: some View {
         ForEach(items) { item in
             Button { item.open?() ?? onOpen(item.book) } label: {
-                Group {
-                    if let saga = item.saga {
-                        SeriesStackPoster(saga: saga, width: coverWidth)
-                    } else {
-                        PosterCover(book: item.book, label: item.label, width: coverWidth)
-                    }
-                }
-                .contentShape(.rect)
+                PosterCover(book: item.book, label: item.label, width: coverWidth)
+                    .contentShape(.rect)
             }
             .buttonStyle(.plain)
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel(Text("\(item.saga?.name ?? item.book.title), \(item.caption)"))
+            .accessibilityLabel(Text("\(item.book.title), \(item.caption)"))
             .accessibilityAddTraits(.isButton)
-            .accessibilityIdentifier(item.saga == nil ? "book-tile" : "series-stack")
-            .bookContextMenu(item.book, onAction: item.saga == nil ? onMenu.map { menu in { menu(item.book, $0) } } : nil)
+            .accessibilityIdentifier("book-tile")
+            .bookContextMenu(item.book, onAction: onMenu.map { menu in { menu(item.book, $0) } })
             .transition(.homeCard)
         }
     }

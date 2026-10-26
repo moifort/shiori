@@ -86,7 +86,9 @@ builder.mutationFields((t) => ({
 
   setSeriesFavorite: t.field({
     type: SeriesOpinionType,
-    description: 'Keep a saga close, or stop. Leaves the rating alone.',
+    description:
+      'Keep a saga close, or stop. A heart lifts the saga below three stars to five, and ' +
+      'gives its stars to the volumes read and left unrated; taking it back leaves every star.',
     args: {
       seriesId: t.arg({ type: 'SeriesId', required: true }),
       favorite: t.arg.boolean({ required: true }),

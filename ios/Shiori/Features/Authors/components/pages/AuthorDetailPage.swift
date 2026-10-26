@@ -190,16 +190,9 @@ struct AuthorDetailPage: View {
         if !page.sagas.isEmpty {
             VStack(alignment: .leading, spacing: 12) {
                 RowHeader(title: "Séries", style: .inline).padding(.horizontal, 20)
-                LazyVGrid(columns: [GridItem(.flexible(), spacing: 13), GridItem(.flexible(), spacing: 13)], spacing: 13) {
-                    ForEach(page.sagas) { saga in
-                        SeriesShowCard(series: saga.progress, tag: saga.releaseTag, isCompact: true) {
-                            send(.openSeries(SeriesDestination(seriesId: saga.seriesId)))
-                        }
-                        .frame(height: 128)
-                        .accessibilityIdentifier("author-saga")
-                    }
+                SeriesCardRail(series: page.sagas) { saga in
+                    send(.openSeries(SeriesDestination(seriesId: saga.seriesId)))
                 }
-                .padding(.horizontal, 20)
             }
         }
     }

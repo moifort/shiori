@@ -732,15 +732,12 @@ enum Showcase {
             }
         }
         let keptIds = Set(kept.map(\.id))
-        let loved = lovedSagas(holding: keptIds)
-        let lovedVolumes = Set(loved.flatMap { $0.volumes.map(\.id) })
         return LibraryShelves(
             formats: BookFormat.allCases.filter { format in inGenre.contains { $0.format == format } },
             recent: Array(kept.prefix(20)),
             toRead: Array(kept.filter { $0.status == .toRead }.prefix(20)),
             readRecently: Array(kept.filter { $0.status == .read }.prefix(20)),
-            favorites: Array(kept.filter { $0.favorite && !lovedVolumes.contains($0.id) }.prefix(20)),
-            lovedSeries: loved,
+            favorites: Array(kept.filter(\.favorite).prefix(20)),
             hasDropped: kept.contains { $0.status == .dropped },
             genres: genres.values.sorted { ($0.count, $1.genre.label) > ($1.count, $0.genre.label) },
             subgenres: subgenres.sorted { ($0.value, $1.key) > ($1.value, $0.key) }.map(\.key),
@@ -752,8 +749,16 @@ enum Showcase {
         )
     }
 
+    /// The series of "Coups de cœur": the hearted sagas holding a book of
+    /// the view, the one shelved last first.
+    static func lovedSeries(view: ShelvesView) -> [FollowedSeries] {
+        lovedSagas(holding: Set(shelved.filter { book in
+            (view.format == nil || book.format == view.format) && (view.genre == nil || book.genre == view.genre)
+        }.map(\.id)))
+    }
+
     /// The hearted sagas holding one of the books given, the one shelved
-    /// last first: the series of "Coups de cœur".
+    /// last first.
     private static func lovedSagas(holding ids: Set<String>) -> [FollowedSeries] {
         sagas.map(followed)
             .filter { series in series.opinion?.favorite == true && series.volumes.contains { ids.contains($0.id) } }

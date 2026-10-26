@@ -1,4 +1,4 @@
-import type { BookLanguage } from '~/domain/book/types'
+import type { Book, BookLanguage } from '~/domain/book/types'
 import type { SeriesOpinion } from '~/domain/series-opinion/types'
 
 type Following = Pick<SeriesOpinion, 'unfollowed' | 'unfollowedLanguages'>
@@ -33,3 +33,12 @@ export const followingAfter = (
   else aside.add(language)
   return { unfollowed: undefined, unfollowedLanguages: aside.size > 0 ? [...aside] : undefined }
 }
+
+/** The volumes a heart given to their saga rates with the saga's stars: those
+ *  the reader finished without judging them on their own. A volume not read
+ *  yet stays unrated, since stars mark a book read and would say the reader
+ *  finished what they have not opened; a volume rated on its own keeps its
+ *  stars. */
+export const volumesRatedByHeart = <Volume extends Pick<Book, 'status' | 'rating'>>(
+  volumes: readonly Volume[],
+): Volume[] => volumes.filter((volume) => volume.status === 'read' && volume.rating === undefined)

@@ -74,6 +74,7 @@ LibraryShelvesType.implement({
           description:
             'Leave out the volumes of the sagas the reader hearted, which `lovedSeries` ' +
             'draws whole.',
+          deprecationReason: 'The rail draws the hearted books alone, never a saga in their place.',
         }),
       },
       resolve: (shelves, args) =>

@@ -6,7 +6,10 @@ struct SeriesCardRail: View {
     let series: [FollowedSeries]
     let onOpen: (FollowedSeries) -> Void
 
-    private static let cardSize = CGSize(width: 200, height: 128)
+    static let cardSize = CGSize(width: 200, height: 128)
+    /// Every series rail draws its cards this wide: the Library tab, the
+    /// favourites, an author's page and the home.
+    static let cardWidth = cardSize.width
     /// Fewer and a second row would stand half empty.
     static let twoRowsFrom = 4
 

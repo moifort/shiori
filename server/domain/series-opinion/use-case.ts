@@ -1,8 +1,10 @@
 import type { WriteBatch } from 'firebase-admin/firestore'
 import { AnalyticsUseCase } from '~/domain/analytics/use-case'
+import { BookCommand } from '~/domain/book/command'
 import { BookQuery } from '~/domain/book/query'
 import type { Book, BookLanguage, StarRating } from '~/domain/book/types'
 import type { SagaKey, VolumeNumber } from '~/domain/series/types'
+import { volumesRatedByHeart } from '~/domain/series-opinion/business-rules'
 import { SeriesOpinionCommand } from '~/domain/series-opinion/command'
 import type { SeriesOpinion } from '~/domain/series-opinion/types'
 import type { UserId } from '~/domain/shared/types'
@@ -15,10 +17,20 @@ export namespace SeriesOpinionUseCase {
   export const rate = (userId: UserId, seriesId: SagaKey, rating: StarRating | undefined) =>
     withAnalytics(userId, (batch) => SeriesOpinionCommand.rate(userId, seriesId, rating, batch))
 
-  export const setFavorite = (userId: UserId, seriesId: SagaKey, favorite: boolean) =>
-    withAnalytics(userId, (batch) =>
-      SeriesOpinionCommand.setFavorite(userId, seriesId, favorite, batch),
-    )
+  /** A heart given to a saga rates, with the saga's stars, the volumes the
+   *  reader finished and left unrated, in the same batch. Taking it back
+   *  leaves those stars, as on a book. */
+  export const setFavorite = async (userId: UserId, seriesId: SagaKey, favorite: boolean) => {
+    const rated = favorite ? volumesRatedByHeart(await BookQuery.bySeries(userId, seriesId)) : []
+    return withAnalytics(userId, async (batch) => {
+      const opinion = await SeriesOpinionCommand.setFavorite(userId, seriesId, favorite, batch)
+      const { rating } = opinion
+      if (rating !== undefined)
+        for (const volume of rated)
+          await BookCommand.rate(userId, volume.id, rating, new Date(), batch)
+      return opinion
+    })
+  }
 
   /** The dashboard's progress bars leave out an edition set aside, so
    *  following reaches the view as a heart does. The editions the reader holds

@@ -16,7 +16,8 @@ enum BookShelfAction {
 /// row, under the shelf's headings — the journal's periods for "Récemment"
 /// and the books read, the years for the favourites, none for the pile and
 /// the books given up on, which a sentence explains. "Coups de cœur" draws
-/// the hearted sagas first, as cards two by row, in place of their volumes.
+/// the hearted sagas first, in the Library tab's series rail, in place of
+/// their volumes.
 struct BookShelfPage: View {
     let shelf: BookShelf
     let sections: [ListSection<Book>]
@@ -83,25 +84,16 @@ struct BookShelfPage: View {
         .refreshable { onAction(.refresh) }
     }
 
-    private let seriesColumns = Array(repeating: GridItem(.flexible(), spacing: 13), count: 2)
-
+    /// The hearted sagas as the Library tab draws its series: the same rail
+    /// of cards, two rows once there are enough of them.
     @ViewBuilder private var seriesSection: some View {
         if !lovedSeries.isEmpty {
-            Text("Séries")
-                .font(.title2.weight(.bold))
-                .padding(.horizontal, 20)
-                .padding(.top, 22)
-                .padding(.bottom, 12)
-                .accessibilityAddTraits(.isHeader)
-            LazyVGrid(columns: seriesColumns, spacing: 13) {
-                ForEach(lovedSeries) { saga in
-                    SeriesShowCard(series: saga.progress, tag: saga.releaseTag, isCompact: true) {
-                        onAction(.openSeries(saga))
-                    }
-                    .frame(height: 128)
-                }
+            VStack(alignment: .leading, spacing: 12) {
+                RowHeader(title: "Séries", style: .inline)
+                    .padding(.horizontal, 20)
+                SeriesCardRail(series: lovedSeries) { onAction(.openSeries($0)) }
             }
-            .padding(.horizontal, 20)
+            .padding(.top, 22)
             .accessibilityIdentifier("loved-series")
         }
     }
@@ -190,7 +182,7 @@ extension ReadingStatus {
         BookShelfPage(
             shelf: .loved,
             sections: ListSection.byYear(Showcase.shelved.filter(\.favorite), on: \.shelvedAt),
-            lovedSeries: Showcase.libraryShelves(view: ShelvesView()).lovedSeries,
+            lovedSeries: Showcase.lovedSeries(view: ShelvesView()),
             formats: [.book, .manga, .audiobook],
             isLoading: false,
             errorMessage: nil,

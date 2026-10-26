@@ -1533,22 +1533,6 @@
         }
       }
     },
-    "1 tome" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "1 volume"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "1 tome"
-          }
-        }
-      }
-    },
     "1 tome à ajouter" : {
       "localizations" : {
         "en" : {

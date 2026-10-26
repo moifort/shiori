@@ -36,7 +36,7 @@ extension LibraryClient {
     static let preview = LibraryClient(
         shelves: { Showcase.libraryShelves(view: $0) },
         shelf: { Showcase.shelfPage($0, limit: $1, after: $2) },
-        lovedSeries: { Showcase.libraryShelves(view: $0).lovedSeries }
+        lovedSeries: { Showcase.lovedSeries(view: $0) }
     )
 }
 #endif
