@@ -471,14 +471,14 @@ describe('building the view', () => {
 
   // The card reads as the top of the Series tab: the saga whose latest volume
   // was shelved most recently first, whatever the reader thinks of it.
-  test('puts the sagas in progress in the Series tab order, and shows six', () => {
+  test('puts the sagas in progress in the Series tab order, and shows twelve', () => {
     const sagaOf = (name: string): Series => ({
       ...catalogue,
       id: seriesIdOf(name as SagaKey),
       saga: name as SagaKey,
       name: SeriesName(name),
     })
-    const sagas = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'].map(sagaOf)
+    const sagas = 'abcdefghijklmn'.split('').map(sagaOf)
     const firstVolume = (saga: Series, finishedAt: string, rating?: number) =>
       book(`${saga.id}-1`, {
         status: 'read',
@@ -511,12 +511,18 @@ describe('building the view', () => {
         firstVolume(sagas[5], '2026-05-01'),
         firstVolume(sagas[6], '2026-06-01'),
         firstVolume(sagas[7], '2026-07-01'),
+        ...['2025-06-01', '2025-07-01', '2025-08-01', '2025-09-01', '2025-10-01', '2025-11-01'].map(
+          (finishedAt, index) => firstVolume(sagas[8 + index], finishedAt),
+        ),
       ],
     })
 
     const series = dashboardOf(view, day('2026-09-15')).series
 
-    expect(series.map((entry) => String(entry.saga))).toEqual(['a', 'h', 'g', 'f', 'e', 'd'])
+    expect(series.map((entry) => String(entry.saga))).toEqual([
+      ...['a', 'h', 'g', 'f', 'e', 'd', 'c', 'b'],
+      ...['n', 'm', 'l', 'k'],
+    ])
     // What the card draws beside each saga: the heart, else the stars.
     expect(series[4]).toMatchObject({ saga: 'e', rating: 4, favorite: false })
   })

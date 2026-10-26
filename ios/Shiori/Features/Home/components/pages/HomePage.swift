@@ -4,9 +4,9 @@ import SwiftUI
 enum HomeAction {
     /// A row's header: the Library tab on the books it lists.
     case showLibrary(LibraryRequest)
-    /// "Mes séries"'s header: the Series tab on the sagas in progress.
+    /// "Séries en cours"'s header: the Series tab on the sagas in progress.
     case showSeries(SeriesRequest)
-    /// A card of "Mes séries".
+    /// A card of "Séries en cours".
     case openSeries(String)
     case openBook(Book)
     /// The figures over the hero: the statistics, beside or over the page.
@@ -408,7 +408,7 @@ struct HomePage: View {
     @ViewBuilder private var seriesRow: some View {
         if !dashboard.series.isEmpty {
             VStack(alignment: .leading, spacing: 12) {
-                RowHeader(title: "Mes séries", detail: String(localized: "tout voir"), style: headerStyle) {
+                RowHeader(title: "Séries en cours", detail: String(localized: "tout voir"), style: headerStyle) {
                     onAction(.showSeries(SeriesRequest(state: .inProgress)))
                 }
                 if isCompact {
@@ -437,9 +437,11 @@ struct HomePage: View {
                     .scrollClipDisabled()
                 } else {
                     let columns = isSideBySide ? 4 : 2
-                    // Whole rows only, past the first: the rest is a tap away.
+                    // Whole rows only, past the first, and three at most: the
+                    // rest is a tap away.
+                    let rows = min(dashboard.series.count / columns, 3)
                     let shown = dashboard.series.count > columns
-                        ? Array(dashboard.series.prefix(dashboard.series.count / columns * columns))
+                        ? Array(dashboard.series.prefix(rows * columns))
                         : dashboard.series
                     LazyVGrid(
                         columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: columns),
@@ -675,6 +677,16 @@ extension Dashboard {
         series: [
             .init(id: "a", name: "One Piece", readCount: 107, totalCount: 110, favorite: true),
             .init(id: "b", name: "Chronique du tueur de roi", readCount: 1, totalCount: 2, rating: 4),
+            .init(id: "c", name: "Les Cantos d'Hypérion", readCount: 2, totalCount: 4, rating: 5),
+            .init(id: "d", name: "Dune", readCount: 3, totalCount: 6),
+            .init(id: "e", name: "La Tour sombre", readCount: 4, totalCount: 8, rating: 3.5),
+            .init(id: "f", name: "Fondation", readCount: 2, totalCount: 7),
+            .init(id: "g", name: "L'Assassin royal", readCount: 6, totalCount: 13, favorite: true),
+            .init(id: "h", name: "La Passe-miroir", readCount: 3, totalCount: 4),
+            .init(id: "i", name: "Vagabond", readCount: 20, totalCount: 37),
+            .init(id: "j", name: "Le Cycle de Ender", readCount: 1, totalCount: 5, rating: 4),
+            .init(id: "k", name: "Red Rising", isAudio: true, readCount: 3, totalCount: 7),
+            .init(id: "l", name: "Les Annales du Disque-monde", readCount: 9, totalCount: 41),
         ],
         favoriteCount: 6,
         hasAudiobooks: true,

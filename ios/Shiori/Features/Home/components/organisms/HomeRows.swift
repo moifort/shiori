@@ -297,7 +297,7 @@ struct NewsTile: View {
     }
 }
 
-/// A saga in progress as a card of "Mes séries", as the TV app draws a show
+/// A saga in progress as a card of "Séries en cours", as the TV app draws a show
 /// under "Up Next": the cover of the volume shelved last across the card, the
 /// name, how far the reader is, and the news of it in a tag — a volume out, the
 /// next one's date.

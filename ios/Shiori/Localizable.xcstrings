@@ -7685,22 +7685,6 @@
         }
       }
     },
-    "Mes séries" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "My series"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mes séries"
-          }
-        }
-      }
-    },
     "Message envoyé" : {
       "localizations" : {
         "en" : {

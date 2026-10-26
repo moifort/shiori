@@ -50,7 +50,7 @@ const YEARS_SHOWN = 9
 const READING_SHOWN = 10
 /** The pile's covers on the home screen: a row that scrolls, not the whole pile. */
 const TO_READ_SHOWN = 12
-const SERIES_SHOWN = 6
+const SERIES_SHOWN = 12
 const TOP_GENRES = 4
 
 /** Bumped whenever the view gains a figure or a rule changes, so a view stored
