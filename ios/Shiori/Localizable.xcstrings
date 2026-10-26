@@ -13605,6 +13605,22 @@
         }
       }
     },
+    "Écarté" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turned down"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Écarté"
+          }
+        }
+      }
+    },
     "Économie" : {
       "localizations" : {
         "en" : {
