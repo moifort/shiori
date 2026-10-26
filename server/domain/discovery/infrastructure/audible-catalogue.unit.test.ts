@@ -199,6 +199,60 @@ describe('audibleSeriesOf', () => {
     ])
     expect(asked.some((url) => url.includes('PL_HLDR') || url.includes('B0CN2PZH51'))).toBe(false)
   })
+
+  // Kings of Sin bought on audible.co.uk: the US store answers its ASIN with a
+  // bare product and no series.
+  test('asks the UK store for an English recording the US store does not know', async () => {
+    const asked = storesAnswer({
+      fr: {},
+      uk: {
+        products: {
+          B0C4YZLLB1: {
+            asin: 'B0C4YZLLB1',
+            relationships: [
+              {
+                asin: 'B0C4YXSERIES',
+                relationship_type: 'series',
+                relationship_to_product: 'parent',
+              },
+            ],
+          },
+          B0C4YXSERIES: {
+            asin: 'B0C4YXSERIES',
+            relationships: [
+              {
+                asin: 'B0C4YZLLB1',
+                sequence: '1',
+                relationship_type: 'series',
+                relationship_to_product: 'child',
+              },
+            ],
+          },
+        },
+        search: [
+          {
+            asin: 'B0C4YZLLB1',
+            title: 'King of Wrath',
+            language: 'english',
+            release_date: '2023-05-02',
+            product_images: { '500': 'https://m.media-amazon.com/images/I/wrath.jpg' },
+          },
+        ],
+      },
+    })
+
+    const volumes = await audibleSeriesOf(AudibleAsin('B0C4YZLLB1'), 'en')
+
+    expect(volumes).toMatchObject([
+      {
+        number: 1,
+        title: 'King of Wrath',
+        coverUrl: 'https://m.media-amazon.com/images/I/wrath.jpg',
+      },
+    ])
+    expect(asked[0]).toContain('api.audible.com')
+    expect(asked.slice(1).every((url) => url.includes('api.audible.co.uk'))).toBe(true)
+  })
 })
 
 describe('audibleEditionOf', () => {

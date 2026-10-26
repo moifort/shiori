@@ -293,8 +293,8 @@ const comparable = (title: string) => title.normalize('NFC').trim().toLowerCase(
 const askAudible = async <Answer>(
   language: BookLanguage,
   path: string,
+  domain = API_DOMAINS[language] ?? US_API_DOMAIN,
 ): Promise<Answer | 'unreachable'> => {
-  const domain = API_DOMAINS[language] ?? US_API_DOMAIN
   try {
     const response = await fetch(`https://${domain}/1.0/catalog/${path}`, {
       signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS),
@@ -323,8 +323,26 @@ const isPlaceholder = (entry: Relationship) => entry.sku?.startsWith('PL_HLDR_')
  *  says of the printed book or of another language. A placeholder is not a
  *  recording, so a volume Audible holds nothing but a placeholder for is left
  *  out. `unknown` when the recording belongs to no series Audible knows in
- *  that language. */
+ *  that language.
+ *
+ *  An English recording is asked of the US store, then of the UK one: an
+ *  ASIN is a store's own, and a library bought on audible.co.uk holds ASINs
+ *  the US store knows nothing of. */
 export const audibleSeriesOf = async (
+  asin: AudibleAsinType,
+  language: BookLanguage,
+): Promise<FoundVolume[] | 'unknown' | 'unreachable'> => {
+  const stores = language === 'en' ? ENGLISH_API_DOMAINS : [API_DOMAINS[language] ?? US_API_DOMAIN]
+  for (const domain of stores) {
+    const volumes = await seriesIn(domain, asin, language)
+    if (volumes !== 'unknown') return volumes
+  }
+  return 'unknown'
+}
+
+/** The series of that recording as one store lists it. */
+const seriesIn = async (
+  domain: string,
   asin: AudibleAsinType,
   language: BookLanguage,
 ): Promise<FoundVolume[] | 'unknown' | 'unreachable'> => {
@@ -332,6 +350,7 @@ export const audibleSeriesOf = async (
   const recording = await askAudible<ProductAnswer>(
     language,
     `products/${asin}?${withRelationships}`,
+    domain,
   )
   if (recording === 'unreachable') return recording
   const seriesAsin = recording.product?.relationships?.find(
@@ -341,6 +360,7 @@ export const audibleSeriesOf = async (
   const series = await askAudible<ProductAnswer>(
     language,
     `products/${seriesAsin}?${withRelationships}`,
+    domain,
   )
   if (series === 'unreachable') return series
   const numbers = new Map<string, number>()
@@ -360,6 +380,7 @@ export const audibleSeriesOf = async (
   const listed = await askAudible<{ products?: Product[] }>(
     language,
     `products?asins=${[...numbers.keys()].join(',')}&response_groups=product_attrs,media&image_sizes=500`,
+    domain,
   )
   if (listed === 'unreachable') return listed
   const expected = AUDIBLE_LANGUAGES[language]

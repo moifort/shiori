@@ -23,6 +23,7 @@ import { titlesWithoutTheirAuthor } from '~/system/migration/migrations/025-titl
 import { titlesSingleSpaced } from '~/system/migration/migrations/026-titles-single-spaced'
 import { booksNameTheirEdition } from '~/system/migration/migrations/027-books-name-their-edition'
 import { formatsNamedBySubgenres } from '~/system/migration/migrations/028-formats-named-by-subgenres'
+import { englishSagasListedAgain } from '~/system/migration/migrations/029-english-sagas-listed-again'
 import type { Migration } from '~/system/migration/types'
 
 // Forward-only, sequential, no rollback. Adding a new optional field or a new
@@ -58,4 +59,5 @@ export const migrations: Migration[] = [
   titlesSingleSpaced,
   booksNameTheirEdition,
   formatsNamedBySubgenres,
+  englishSagasListedAgain,
 ]
