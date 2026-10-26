@@ -1,4 +1,5 @@
 import { chunk } from 'lodash-es'
+import * as favoriteRepository from '~/domain/author/infrastructure/favorite-repository'
 import { openLibraryPortraitOf } from '~/domain/author/infrastructure/open-library'
 import * as repository from '~/domain/author/infrastructure/repository'
 import { portraitOf } from '~/domain/author/infrastructure/wikipedia'
@@ -13,7 +14,7 @@ import type { AiStepUsage } from '~/domain/scan/types'
 import { SeriesName, VolumeNumber } from '~/domain/series/primitives'
 import type { Language } from '~/domain/shared/language'
 import { AuthorName, BookTitle, Year } from '~/domain/shared/primitives'
-import type { AuthorName as AuthorNameValue } from '~/domain/shared/types'
+import type { AuthorName as AuthorNameValue, UserId } from '~/domain/shared/types'
 import { createLogger } from '~/system/logger'
 import { isPresent, optionally } from '~/utils/input'
 
@@ -25,6 +26,22 @@ const faceOf = async (name: AuthorNameValue, pageTitle?: string) =>
   (await portraitOf(name, pageTitle)) ?? (await openLibraryPortraitOf(name))
 
 export namespace AuthorCommand {
+  /** Heart an author, or take the heart back: the reader's own, whatever
+   *  their books say. Answers what is now true. */
+  export const setFavorite = async (
+    userId: UserId,
+    key: AuthorKey,
+    favorite: boolean,
+    at: Date = new Date(),
+  ): Promise<boolean> => {
+    if (favorite) await favoriteRepository.save({ userId, authorKey: key, favoritedAt: at })
+    else await favoriteRepository.remove(userId, key)
+    return favorite
+  }
+
+  export const deleteFavoritesOf = (userId: UserId): Promise<void> =>
+    favoriteRepository.removeAllByUser(userId)
+
   /** Record an author's catalogue. Nothing in it is per reader, so the write
    *  simply replaces whatever was there. */
   export const catalogue = (entry: Author): Promise<Author> => repository.save(entry)

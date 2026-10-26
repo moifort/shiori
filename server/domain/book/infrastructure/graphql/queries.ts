@@ -1,4 +1,9 @@
-import { ReadingStatusEnum } from '~/domain/book/infrastructure/graphql/enums'
+import {
+  BookFormatEnum,
+  GenreEnum,
+  heldAs,
+  ReadingStatusEnum,
+} from '~/domain/book/infrastructure/graphql/enums'
 import {
   BookCoverType,
   BookType,
@@ -65,6 +70,23 @@ builder.queryFields((t) => ({
         required: false,
         description: 'Keep only books in this status. Omit for the whole library.',
       }),
+      format: t.arg({
+        type: BookFormatEnum,
+        required: false,
+        description: 'Keep only books of this format: the pill over the grid.',
+      }),
+      genre: t.arg({
+        type: GenreEnum,
+        required: false,
+        description:
+          'Keep only books of this genre: a shelf opened from the genre page. Ordered in ' +
+          'memory from the library scan, which a genre needs no index for.',
+      }),
+      subgenre: t.arg({
+        type: 'Subgenre',
+        required: false,
+        description: 'Keep only books carrying this subgenre, whatever its case.',
+      }),
       limit: t.arg.int({ defaultValue: 60, description: 'Maximum books in the page' }),
       after: t.arg({
         type: 'BookId',
@@ -80,6 +102,9 @@ builder.queryFields((t) => ({
           favorite: args.favorite ?? undefined,
           loved: args.loved ?? undefined,
           status: args.status ?? undefined,
+          format: heldAs(args.format).format,
+          genre: args.genre ?? undefined,
+          subgenre: args.subgenre ?? undefined,
         },
       ),
   }),

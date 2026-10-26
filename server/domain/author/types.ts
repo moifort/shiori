@@ -1,7 +1,7 @@
 import type { Brand } from 'ts-brand'
 import type { CoverUrl } from '~/domain/book/types'
 import type { SagaKey, SeriesName, VolumeNumber } from '~/domain/series/types'
-import type { AuthorName, BookTitle, Count, Year } from '~/domain/shared/types'
+import type { AuthorName, BookTitle, Count, UserId, Year } from '~/domain/shared/types'
 
 /** An author as the reader's library knows them, folded the way series keys are
  *  folded — diacritics dropped, punctuation collapsed — so "Tolkien, J.R.R." on
@@ -90,3 +90,7 @@ export type AuthorMiss = {
   key: AuthorKey
   missedAt: Date
 }
+
+/** An author the reader hearted: theirs alone, never shared. Absent when they
+ *  have not, rather than stored as "not hearted". */
+export type AuthorFavorite = { userId: UserId; authorKey: AuthorKey; favoritedAt: Date }

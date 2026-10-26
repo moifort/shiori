@@ -335,3 +335,14 @@ export type LibrarySection = {
   opinion?: { rating?: StarRating; favorite: boolean }
   books: BookView[]
 }
+
+/** What a view of the Library tab keeps: one status or the hearted books, and
+ *  one format, genre or subgenre — the pills over the rails and the grids. */
+export type LibraryView = {
+  favorite?: boolean
+  loved?: boolean
+  status?: ReadingStatus
+  format?: BookFormat
+  genre?: Genre
+  subgenre?: Subgenre
+}

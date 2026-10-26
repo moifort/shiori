@@ -69,7 +69,7 @@ export const findAllByUser = (userId: UserId): Promise<Book[]> =>
  *  Each filter combination needs its composite index (firestore.indexes.json). */
 export const findShelfPage = async (
   userId: UserId,
-  view: { favorite?: boolean; statuses?: readonly ReadingStatus[] },
+  view: { favorite?: boolean; statuses?: readonly ReadingStatus[]; format?: BookFormat },
   limit: number,
   after?: BookId,
 ): Promise<{ books: Book[]; hasMore: boolean }> => {
@@ -78,6 +78,7 @@ export const findShelfPage = async (
   if (view.statuses?.length === 1) query = query.where('status', '==', view.statuses[0])
   else if (view.statuses) query = query.where('status', 'in', [...view.statuses])
   if (view.favorite) query = query.where('favorite', '==', true)
+  if (view.format) query = query.where('format', '==', view.format)
   query = query.orderBy('shelvedAt', 'desc').orderBy('title', 'asc')
   if (after) {
     const cursor = await books().doc(after).get()

@@ -1,6 +1,7 @@
 import { match } from 'ts-pattern'
 import { AdminCommand } from '~/domain/admin/command'
 import {
+  heartedFirst,
   inActivityOrder,
   inAuthorOrder,
   inNameOrder,
@@ -39,7 +40,9 @@ export type AuthorOrder = 'loved' | 'name' | 'recent'
 
 /** An author of the Authors tab: what the library says, and the portrait once
  *  somebody has opened their page. */
-export type FollowedAuthor = ShelvedAuthor<Book> & { portraitUrl?: PortraitUrl }
+/** `favorite` is the reader's own heart on the author, apart from the hearts
+ *  their books and sagas carry. */
+export type FollowedAuthor = ShelvedAuthor<Book> & { portraitUrl?: PortraitUrl; favorite?: boolean }
 
 /** Everything an author's page draws, in one answer: what the world knows of
  *  them, and what the reader holds and thinks of their work. */
@@ -74,14 +77,34 @@ export namespace AuthorUseCase {
     filter: { favorite?: boolean },
     order: AuthorOrder = 'loved',
   ): Promise<{ items: FollowedAuthor[]; hasMore: boolean; endCursor: string | null }> => {
-    const matching = matchingAuthorFilter(await shelvedAuthors(userId), filter)
+    const [shelved, hearted] = await Promise.all([
+      shelvedAuthors(userId),
+      AuthorQuery.favoriteKeys(userId),
+    ])
+    const matching = matchingAuthorFilter(shelved, filter, hearted)
     const ranked = match(order)
       .with('name', () => inNameOrder(matching))
       .with('recent', () => inActivityOrder(matching))
-      .with('loved', () => inAuthorOrder(matching))
+      .with('loved', () => heartedFirst(inAuthorOrder(matching), hearted))
       .exhaustive()
     const { items, ...rest } = pageAfter(ranked, page, (author) => author.key)
-    return { items: await withPortraits(items), ...rest }
+    return { items: await withPortraits(items, userId), ...rest }
+  }
+
+  /** The authors of the books `keep` keeps, the one shelved last first, as
+   *  many as `limit`, with their portraits: the Library tab's rail of authors,
+   *  narrowed to its format or genre. The catalogues of those alone are read. */
+  export const recent = async (
+    userId: UserId,
+    keep: (book: Book) => boolean,
+    limit: number,
+  ): Promise<FollowedAuthor[]> => {
+    const [books, opinions] = await Promise.all([
+      BookQuery.all(userId),
+      SeriesOpinionQuery.all(userId),
+    ])
+    const authors = inActivityOrder(shelvedAuthorsOf(books.filter(keep), opinions))
+    return withPortraits(authors.slice(0, limit), userId)
   }
 
   /** An author's page, their catalogue built the first time anybody opens it:
@@ -109,8 +132,9 @@ export namespace AuthorUseCase {
     ])
     const awaitingCatalogue = found === 'unasked'
     const catalogue = found === 'unasked' ? null : found
+    const hearted = await AuthorQuery.favoriteKeys(userId)
     return {
-      author: { ...shelved, portraitUrl: catalogue?.portraitUrl },
+      author: { ...shelved, portraitUrl: catalogue?.portraitUrl, favorite: hearted.has(key) },
       catalogue,
       awaitingCatalogue,
       sagas: inPageOrder(sagas),
@@ -133,14 +157,18 @@ export namespace AuthorUseCase {
    *  only the rows about to be drawn should be passed. */
   export const withPortraits = async (
     authors: readonly ShelvedAuthor<Book>[],
+    userId?: UserId,
   ): Promise<FollowedAuthor[]> => {
-    const portraits = new Map(
-      (await AuthorQuery.byKeys(authors.map((author) => author.key))).map((catalogue) => [
-        catalogue.key,
-        catalogue.portraitUrl,
-      ]),
-    )
-    return authors.map((author) => ({ ...author, portraitUrl: portraits.get(author.key) }))
+    const [catalogues, hearted] = await Promise.all([
+      AuthorQuery.byKeys(authors.map((author) => author.key)),
+      userId ? AuthorQuery.favoriteKeys(userId) : new Set<AuthorKey>(),
+    ])
+    const portraits = new Map(catalogues.map((catalogue) => [catalogue.key, catalogue.portraitUrl]))
+    return authors.map((author) => ({
+      ...author,
+      portraitUrl: portraits.get(author.key),
+      favorite: hearted.has(author.key),
+    }))
   }
 
   /** The author's catalogue asked of the world again, at the reader's request:

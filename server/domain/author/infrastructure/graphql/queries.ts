@@ -38,6 +38,12 @@ export const FollowedAuthorType = builder.objectRef<FollowedAuthor>('FollowedAut
         'one. Null until then: the app draws their initials.',
       resolve: (author) => author.portraitUrl ?? null,
     }),
+    favorite: t.boolean({
+      description:
+        'The reader hearted the author themself, apart from the hearts their books and ' +
+        'sagas carry: the heart of the author page. Those authors lead `LOVED`.',
+      resolve: (author) => author.favorite === true,
+    }),
     bookCount: t.field({
       type: 'Count',
       description: 'Books of theirs in the library. A book with two authors counts for both.',
@@ -237,8 +243,9 @@ const AuthorOrderEnum = builder.enumType('AuthorOrder', {
     LOVED: {
       value: 'loved',
       description:
-        'The ones the reader loves first: most hearts, then the best mean of stars, ' +
-        'then the most books, then by name.',
+        'The ones the reader loves first: those they hearted themself, then most ' +
+        'hearts on their books and sagas, then the best mean of stars, then the most ' +
+        'books, then by name.',
     },
     NAME: {
       value: 'name',
@@ -278,7 +285,7 @@ builder.queryFields((t) => ({
     type: FollowedAuthorPageType,
     description:
       'One page of the authors in the library, in the `order` asked — the ones the ' +
-      'reader loves first unless told otherwise. `favorite` keeps the authors with at least one heart. Read `hasMore`, ' +
+      'reader loves first unless told otherwise. `favorite` keeps the authors hearted or with at least one heart on their books. Read `hasMore`, ' +
       'then pass `endCursor` as `after` for the next page; a cursor naming an author no ' +
       'longer there restarts from the top. Reads the page’s author catalogues, for ' +
       'their portraits, in one getAll.',

@@ -195,11 +195,24 @@ export const inNameOrder = <Author extends { name: string }>(
   })
 
 /** The authors a view of the tab keeps: every one, or those with a heart. */
-export const matchingAuthorFilter = <Author extends { favoriteCount: number }>(
+export const matchingAuthorFilter = <Author extends { key: AuthorKey; favoriteCount: number }>(
   authors: readonly Author[],
   filter: { favorite?: boolean },
+  hearted: ReadonlySet<AuthorKey> = new Set(),
 ): Author[] =>
-  filter.favorite ? authors.filter((author) => author.favoriteCount > 0) : [...authors]
+  filter.favorite
+    ? authors.filter((author) => author.favoriteCount > 0 || hearted.has(author.key))
+    : [...authors]
+
+/** The authors the reader hearted themself lead, in the order given: what
+ *  "Préférés" lists first, before the hearts their books carry. */
+export const heartedFirst = <Author extends { key: AuthorKey }>(
+  authors: readonly Author[],
+  hearted: ReadonlySet<AuthorKey>,
+): Author[] => [
+  ...authors.filter((author) => hearted.has(author.key)),
+  ...authors.filter((author) => !hearted.has(author.key)),
+]
 
 const newestShelvedFirst = <Book extends AuthoredBook>(books: readonly Book[]): Book[] =>
   [...books].sort(shelfOrder)

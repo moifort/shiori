@@ -1,3 +1,4 @@
+import { AuthorCommand } from '~/domain/author/command'
 import { AuthorCatalogueType } from '~/domain/author/infrastructure/graphql/queries'
 import { AuthorUseCase } from '~/domain/author/use-case'
 import { builder } from '~/domain/shared/graphql/builder'
@@ -16,5 +17,16 @@ builder.mutationFields((t) => ({
     args: { key: t.arg({ type: 'AuthorKey', required: true }) },
     resolve: (_root, args, { userId, event }) =>
       AuthorUseCase.recatalogue(userId, args.key, languageOf(event)),
+  }),
+  setAuthorFavorite: t.boolean({
+    description:
+      'Heart an author, or take the heart back: the reader own, apart from the hearts ' +
+      'their books carry, never shared. Answers what is now true. One write.',
+    args: {
+      key: t.arg({ type: 'AuthorKey', required: true }),
+      favorite: t.arg.boolean({ required: true, description: 'True hearts, false takes it back' }),
+    },
+    resolve: (_root, args, { userId }) =>
+      AuthorCommand.setFavorite(userId, args.key, args.favorite),
   }),
 }))

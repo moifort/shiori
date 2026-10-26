@@ -1,5 +1,6 @@
 import { AnalyticsCommand } from '~/domain/analytics/command'
 import { AudibleCommand } from '~/domain/audible/command'
+import { AuthorCommand } from '~/domain/author/command'
 import { AwaitedEditionCommand } from '~/domain/awaited-edition/command'
 import { coverPrefixOf } from '~/domain/book/business-rules'
 import { BookCommand } from '~/domain/book/command'
@@ -65,6 +66,7 @@ export namespace UserUseCase {
       AudibleCommand.deleteForUser(userId),
       KindleCommand.deleteForUser(userId),
       SeriesOpinionCommand.deleteAllForUser(userId),
+      AuthorCommand.deleteFavoritesOf(userId),
       FriendshipCommand.deleteAllForUser(userId),
       NotificationCommand.deleteForUser(userId),
       DiscoveryCommand.deleteForUser(userId),

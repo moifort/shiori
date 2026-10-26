@@ -10,6 +10,7 @@ import type {
   CoverSource,
   CoverUrl,
   LibrarySection,
+  LibraryView,
   Publisher,
   ReadingStatus,
   Recommendation,
@@ -1073,4 +1074,20 @@ export const formatSettledBySubgenres = <S extends string>(
     format: named,
     subgenres: subgenres.filter((subgenre) => formatNamedBy(subgenre) === undefined),
   }
+}
+
+/** The book belongs to the format, genre and subgenre a view of the Library
+ *  tab is narrowed to. A subgenre matches whatever its case, as the reader
+ *  typed it or a scan wrote it. */
+export const inLibraryView = (
+  book: Pick<Book, 'format' | 'genre' | 'subgenres'>,
+  view: Pick<LibraryView, 'format' | 'genre' | 'subgenre'>,
+): boolean => {
+  if (view.format && book.format !== view.format) return false
+  if (view.genre && book.genre !== view.genre) return false
+  if (view.subgenre) {
+    const wanted = view.subgenre.toLocaleLowerCase()
+    if (!book.subgenres.some((tagged) => tagged.label.toLocaleLowerCase() === wanted)) return false
+  }
+  return true
 }

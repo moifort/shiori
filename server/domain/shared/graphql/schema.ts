@@ -36,6 +36,10 @@ import '~/domain/series-opinion/infrastructure/graphql/mutations'
 import '~/domain/author/infrastructure/graphql/queries'
 import '~/domain/author/infrastructure/graphql/mutations'
 
+// The Library tab's entry screen: its rails of books, series and authors. After
+// the three domains it draws.
+import '~/domain/library/infrastructure/graphql/queries'
+
 // Analytics (the home dashboard, read from a view the book writes keep fresh).
 // After book and series: it borrows their scalars and the Genre enum.
 import '~/domain/analytics/infrastructure/graphql/types'

@@ -414,7 +414,7 @@ scalar AuthorName
 """How `myAuthorsPage` lists the authors."""
 enum AuthorOrder {
   """
-  The ones the reader loves first: most hearts, then the best mean of stars, then the most books, then by name.
+  The ones the reader loves first: those they hearted themself, then most hearts on their books and sagas, then the best mean of stars, then the most books, then by name.
   """
   LOVED
 
@@ -1410,6 +1410,11 @@ type FollowedAuthor {
   """
   books: [Book!]!
 
+  """
+  The reader hearted the author themself, apart from the hearts their books and sagas carry: the heart of the author page. Those authors lead `LOVED`.
+  """
+  favorite: Boolean!
+
   """Hearted books plus hearted sagas: what the list is ranked on first."""
   favoriteCount: Count!
 
@@ -2045,6 +2050,18 @@ type GenreShare {
   genre: Genre!
 }
 
+"""A genre of the reader library, as the tile of "Par genre" draws it."""
+type GenreShelf {
+  """Books of that genre the view keeps."""
+  count: Count!
+
+  """
+  The book shelved last of that genre that has a cover, drawn tilted in the tile. Null when none has one.
+  """
+  cover: Book
+  genre: Genre!
+}
+
 """
 One place on the taste map: how many of its books the reader finished against how they rated them. Only places with three rated books are drawn.
 """
@@ -2323,6 +2340,57 @@ The rating and the heart a reader gave a saga, as its library heading shows them
 type LibrarySectionOpinion {
   favorite: Boolean!
   rating: StarRating
+}
+
+"""
+The Library tab entry screen: its pills and its rails, in the view asked. Every field reads the one library scan the request shares: asking for all of them costs one scan, plus the catalogues of the series and the authors drawn.
+"""
+type LibraryShelves {
+  """
+  The authors of the view books, the one shelved last first, a dozen at most, with their portraits: their catalogues in one getAll.
+  """
+  authors: [FollowedAuthor!]!
+
+  """
+  "Coups de cœur": the hearted books, newest on `shelvedAt` first. Twenty books at most, covers signed for those alone.
+  """
+  favorites: [Book!]!
+
+  """
+  The formats the library holds — under a genre, those of its books — in the order the pills list them. Never narrowed by `format` itself.
+  """
+  formats: [BookFormat!]!
+
+  """The genres of the books the view keeps, the most held first."""
+  genres: [GenreShelf!]!
+
+  """Whether the view holds a book given up on: the "Abandonnés" row."""
+  hasDropped: Boolean!
+
+  """
+  "Lus récemment": the books read, the one finished last first. Twenty books at most, covers signed for those alone.
+  """
+  readRecently: [Book!]!
+
+  """
+  "Récemment": every book, newest on `shelvedAt` first. Twenty books at most, covers signed for those alone.
+  """
+  recent: [Book!]!
+
+  """
+  The sagas holding a book of the view, the one shelved last first, a dozen at most; the ones set aside left out. Reads those catalogues in one getAll.
+  """
+  series: [FollowedSeries!]!
+
+  """
+  Under a `genre`, its subgenres the reader used, the most used first, in the language of `Accept-Language`: the pills of the genre page. Empty otherwise.
+  """
+  subgenres: [Subgenre!]!
+
+  """
+  "Pile à lire": the pile, the book added last first. Twenty books at most, covers signed for those alone.
+  """
+  toRead: [Book!]!
 }
 
 """
@@ -2864,6 +2932,15 @@ type Mutation {
   Fails with `AUDIBLE_NOT_CONNECTED` when no account is linked: there is no library to sync, so there is no setting to keep.
   """
   setAudibleAutoSync(enabled: Boolean!): AudibleAccount!
+
+  """
+  Heart an author, or take the heart back: the reader own, apart from the hearts their books carry, never shared. Answers what is now true. One write.
+  """
+  setAuthorFavorite(
+    """True hearts, false takes it back"""
+    favorite: Boolean!
+    key: AuthorKey!
+  ): Boolean!
 
   """Keep a book close, or stop. Leaves the star rating alone."""
   setBookFavorite(favorite: Boolean!, id: BookId!): Book!
@@ -3444,6 +3521,14 @@ type Query {
     """
     favorite: Boolean
 
+    """Keep only books of this format: the pill over the grid."""
+    format: BookFormat
+
+    """
+    Keep only books of this genre: a shelf opened from the genre page. Ordered in memory from the library scan, which a genre needs no index for.
+    """
+    genre: Genre
+
     """Maximum books in the page"""
     limit: Int = 60
 
@@ -3454,6 +3539,9 @@ type Query {
 
     """Keep only books in this status. Omit for the whole library."""
     status: ReadingStatus
+
+    """Keep only books carrying this subgenre, whatever its case."""
+    subgenre: Subgenre
   ): LibraryPage!
 
   """
@@ -3462,6 +3550,20 @@ type Query {
   `coverUrl` is always null here: signing the whole library would cost more than the search, and a signature outlives no index kept for days. Ask `bookCovers` for the rows drawn. One scan of the library.
   """
   librarySearchIndex: [Book!]!
+
+  """
+  The Library tab entry screen, narrowed to a format pill, or to a genre and one of its subgenres on a genre page. Each rail opens on `libraryPage` with the same filter.
+  """
+  libraryShelves(
+    """The format pill"""
+    format: BookFormat
+
+    """A genre page"""
+    genre: Genre
+
+    """A subgenre pill of the genre page, matched whatever its case"""
+    subgenre: Subgenre
+  ): LibraryShelves!
 
   """
   The signed-in user, resolved from the auth token.
@@ -3485,7 +3587,7 @@ type Query {
   ): MonthlyDiscoveries!
 
   """
-  One page of the authors in the library, in the `order` asked — the ones the reader loves first unless told otherwise. `favorite` keeps the authors with at least one heart. Read `hasMore`, then pass `endCursor` as `after` for the next page; a cursor naming an author no longer there restarts from the top. Reads the page’s author catalogues, for their portraits, in one getAll.
+  One page of the authors in the library, in the `order` asked — the ones the reader loves first unless told otherwise. `favorite` keeps the authors hearted or with at least one heart on their books. Read `hasMore`, then pass `endCursor` as `after` for the next page; a cursor naming an author no longer there restarts from the top. Reads the page’s author catalogues, for their portraits, in one getAll.
   """
   myAuthorsPage(
     """Cursor: the `endCursor` of the previous page"""

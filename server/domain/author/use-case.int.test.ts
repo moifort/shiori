@@ -48,6 +48,7 @@ mock.module('~/domain/author/infrastructure/open-library', () => ({
 }))
 
 const { AuthorUseCase } = await import('~/domain/author/use-case')
+const { AuthorCommand } = await import('~/domain/author/command')
 const { authorKeyOf } = await import('~/domain/author/primitives')
 const { BookCommand } = await import('~/domain/book/command')
 const { SeriesOpinionCommand } = await import('~/domain/series-opinion/command')
@@ -95,9 +96,10 @@ const writeSagas = async (count: number) => {
 }
 
 describe('a page of the Authors tab', () => {
-  // The library and the opinions are one scan each; the page's own author
-  // catalogues are read in one getAll, for their portraits, and no saga's.
-  test('reads the library, the opinions and the page’s author catalogues', async () => {
+  // The library, the opinions and the reader's hearted authors are one scan
+  // each; the page's own author catalogues are read in one getAll, for their
+  // portraits, and no saga's.
+  test('reads the library, the opinions, the hearts and the page’s author catalogues', async () => {
     await writeSagas(12)
     const docReads = fake.docReads
     const queryReads = fake.queryReads
@@ -107,7 +109,38 @@ describe('a page of the Authors tab', () => {
     expect(items).toHaveLength(5)
     expect(hasMore).toBe(true)
     expect(fake.docReads - docReads).toBe(5)
-    expect(fake.queryReads - queryReads).toBe(2)
+    expect(fake.queryReads - queryReads).toBe(3)
+  })
+
+  test('puts the authors the reader hearted first, and says so', async () => {
+    await writeSagas(3)
+    await SeriesOpinionCommand.setFavorite(reader, SagaKey('saga-2'), true)
+    await AuthorCommand.setFavorite(reader, authorKeyOf(AuthorName('Author 0')), true)
+    startFakeRequest()
+
+    const { items } = await AuthorUseCase.followedPage(reader, { limit: 10 }, {})
+    const favorites = await AuthorUseCase.followedPage(reader, { limit: 10 }, { favorite: true })
+
+    expect(items.map((author) => String(author.name))).toEqual([
+      'Author 0',
+      'Author 2',
+      'Author 1',
+    ])
+    expect(items[0]?.favorite).toBe(true)
+    expect(items[1]?.favorite).toBe(false)
+    expect(favorites.items).toHaveLength(2)
+  })
+
+  test('takes the heart back', async () => {
+    await writeSagas(1)
+    const key = authorKeyOf(AuthorName('Author 0'))
+    await AuthorCommand.setFavorite(reader, key, true)
+    await AuthorCommand.setFavorite(reader, key, false)
+    startFakeRequest()
+
+    const { items } = await AuthorUseCase.followedPage(reader, { limit: 10 }, {})
+
+    expect(items[0]?.favorite).toBe(false)
   })
 
   test('puts the author the reader loves first', async () => {
