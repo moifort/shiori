@@ -18,6 +18,10 @@ struct PosterCover: View {
     /// How dark the cover is drawn under its line: a little, as the TV app
     /// dims its posters; more for a volume not out yet.
     var dimming: Double = 0.12
+    /// The white bookmark hanging from the top edge: a book being read.
+    var marksReading = false
+    /// How far a recording got, in percent: a short bar before the line.
+    var progress: Int?
 
     static let cornerRadius: CGFloat = 8
 
@@ -36,21 +40,59 @@ struct PosterCover: View {
                         .padding(6)
                 }
             }
+            .overlay(alignment: .topLeading) {
+                if marksReading {
+                    BookmarkRibbon(width: width < 110 ? 12 : 14)
+                        .padding(.leading, width < 110 ? 10 : 12)
+                }
+            }
             .overlay(alignment: .bottom) {
-                Text(caption)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(captionColor)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
-                    .shadow(color: .black.opacity(0.5), radius: 4)
-                    .padding(.horizontal, 6)
-                    .padding(.bottom, 9)
+                HStack(spacing: 6) {
+                    if let progress {
+                        ProgressBar(fraction: Double(progress) / 100, width: width < 110 ? 30 : 40)
+                    }
+                    Text(caption)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(captionColor)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                }
+                .shadow(color: .black.opacity(0.5), radius: 4)
+                .padding(.horizontal, 6)
+                .padding(.bottom, 9)
             }
             // The thin light rim inside the edge the TV app's posters carry.
             .overlay {
                 RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous)
                     .strokeBorder(.white.opacity(0.22), lineWidth: 1)
             }
+    }
+
+    /// A poster with the line and marks the Library tab gives it.
+    init(book: Book, label: PosterLabel, width: CGFloat = 102, showsAudioTag: Bool = true) {
+        self.book = book
+        caption = label.caption
+        self.width = width
+        self.showsAudioTag = showsAudioTag
+        dimming = label.dimming
+        marksReading = label.marksReading
+        progress = label.progress
+    }
+
+    init(
+        book: Book,
+        caption: String,
+        width: CGFloat = 102,
+        showsAudioTag: Bool = true,
+        captionColor: Color = .white,
+        dimming: Double = 0.12
+    ) {
+        self.book = book
+        self.caption = caption
+        self.width = width
+        self.showsAudioTag = showsAudioTag
+        self.captionColor = captionColor
+        self.dimming = dimming
     }
 
     /// The cover as drawn here: without a photo, the typeset stand-in keeps
@@ -98,6 +140,16 @@ struct PosterCover: View {
             }
             .allowsHitTesting(false)
     }
+}
+
+#Preview("Labels") {
+    HStack(spacing: 13) {
+        PosterCover(book: .preview, label: PosterLabel(caption: "depuis 6j", marksReading: true))
+        PosterCover(book: .previewFromShelf, label: PosterLabel(caption: "68%", marksReading: true, progress: 68))
+        PosterCover(book: .preview, label: PosterLabel(caption: "Abandonné", dimming: PosterLabel.setAsideDimming))
+    }
+    .padding()
+    .background(.black)
 }
 
 #Preview {

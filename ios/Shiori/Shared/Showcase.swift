@@ -718,6 +718,62 @@ enum Showcase {
         return LibraryPageResult(books: page, hasMore: start + page.count < matching.count)
     }
 
+    /// The Library tab's entry screen, drawn from the shelf as the server
+    /// draws it.
+    static func libraryShelves(view: ShelvesView) -> LibraryShelves {
+        let inGenre = shelved.filter { book in
+            (view.genre == nil || book.genre == view.genre)
+                && (view.subgenre == nil || book.subgenres.contains { $0.caseInsensitiveCompare(view.subgenre ?? "") == .orderedSame })
+        }
+        let kept = inGenre.filter { view.format == nil || $0.format == view.format }
+        var genres: [BookGenre: GenreShelf] = [:]
+        for book in kept {
+            guard let genre = book.genre else { continue }
+            let shelf = genres[genre]
+            genres[genre] = GenreShelf(
+                genre: genre,
+                count: (shelf?.count ?? 0) + 1,
+                coverURL: shelf?.coverURL ?? book.coverURL
+            )
+        }
+        var subgenres: [String: Int] = [:]
+        if view.genre != nil {
+            for book in shelved where book.genre == view.genre {
+                for subgenre in book.subgenres { subgenres[subgenre, default: 0] += 1 }
+            }
+        }
+        let keptIds = Set(kept.map(\.id))
+        return LibraryShelves(
+            formats: BookFormat.allCases.filter { format in inGenre.contains { $0.format == format } },
+            recent: Array(kept.prefix(20)),
+            toRead: Array(kept.filter { $0.status == .toRead }.prefix(20)),
+            readRecently: Array(kept.filter { $0.status == .read }.prefix(20)),
+            favorites: Array(kept.filter(\.favorite).prefix(20)),
+            hasDropped: kept.contains { $0.status == .dropped },
+            genres: genres.values.sorted { ($0.count, $1.genre.label) > ($1.count, $0.genre.label) },
+            subgenres: subgenres.sorted { ($0.value, $1.key) > ($1.value, $0.key) }.map(\.key),
+            series: sagas.map(followed)
+                .filter { series in series.volumes.contains { keptIds.contains($0.id) } }
+                .sorted { ($0.shelvedAt ?? .distantPast) > ($1.shelvedAt ?? .distantPast) },
+            authors: authorsPage(limit: 12, after: nil, order: .recent).items
+                .filter { author in author.books.contains { keptIds.contains($0.id) } }
+        )
+    }
+
+    /// One page of a shelf of the Library tab, as the server pages it.
+    static func shelfPage(_ query: ShelfQuery, limit: Int, after: String?) -> LibraryPageResult {
+        let view = query.view
+        let matching = shelved.filter { book in
+            (view.format == nil || book.format == view.format)
+                && (view.genre == nil || book.genre == view.genre)
+                && (query.serverStatus == nil || book.status == query.serverStatus)
+                && (!query.favorite || book.favorite)
+        }
+        let start = after.flatMap { id in matching.firstIndex { $0.id == id }.map { $0 + 1 } } ?? 0
+        let page = Array(matching.dropFirst(start).prefix(limit))
+        return LibraryPageResult(books: page, hasMore: start + page.count < matching.count)
+    }
+
     // MARK: - Series
 
     /// The saga's catalogue: every volume out, then the one announced.
@@ -825,6 +881,29 @@ enum Showcase {
         case .loved: authors.sorted { ($0.favoriteCount, $0.bookCount) > ($1.favoriteCount, $1.bookCount) }
         }
         return CursorPage(sorted, limit: limit, after: after, cursor: \.id)
+    }
+
+    /// An author's page, drawn from the shelf: their sagas and their other
+    /// books, and one of each they do not hold.
+    static func authorPage(key: String) -> AuthorPage? {
+        guard let author = authorsPage(limit: 200, after: nil, order: .recent).items.first(where: { $0.key == key })
+        else { return nil }
+        let sagas = sagas.filter { $0.authors.contains(author.name) }.map(followed)
+        return AuthorPage(
+            author: author,
+            readCount: author.books.filter { $0.status == .read }.count,
+            nationality: local("Américain", "American"),
+            birthYear: 1972,
+            deathYear: nil,
+            biography: local(
+                "Auteur américain, dessinateur de bandes dessinées avant de publier en ligne une série de science-fiction devenue un phénomène, traduite dans le monde entier et adaptée en livre audio.",
+                "American author, a cartoonist before he published online a science-fiction series that became a phenomenon, translated worldwide and adapted as an audiobook."
+            ),
+            sagas: sagas,
+            printSagasNotHeld: [],
+            books: author.books.filter { $0.series == nil },
+            booksNotHeld: [AuthorWork(title: local("Le Jour des morts", "The Day of the Dead"), publishedIn: 2015, coverURL: nil)]
+        )
     }
 
     /// The saga page: its catalogue, what the reader thinks of it, their volumes.

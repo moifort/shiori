@@ -19,10 +19,92 @@ enum LibraryAPI {
             favorite: filter == .favorites ? .some(true) : .none,
             loved: mode == .favorites ? .some(true) : .none,
             status: GraphQLHelpers.graphQLNullable(filter?.status.map(Self.graphQLStatus)),
+            format: .none,
+            genre: .none,
+            subgenre: .none,
             limit: .some(Int32(limit)),
             after: GraphQLHelpers.graphQLNullable(after)
         )
         let data = try await GraphQLHelpers.fetch(GraphQLClient.shared.apollo, query: query)
+        return LibraryPageResult(
+            books: data.libraryPage.books.map { $0.fragments.bookSummary.asBook },
+            hasMore: data.libraryPage.hasMore
+        )
+    }
+
+    /// The Library tab's entry screen in a view: one request, one scan.
+    static func shelves(_ view: ShelvesView) async throws -> LibraryShelves {
+        #if DEBUG
+        if Showcase.isOn { return Showcase.libraryShelves(view: view) }
+        #endif
+        let data = try await GraphQLHelpers.fetch(
+            GraphQLClient.shared.apollo,
+            query: ShioriGraphQL.LibraryShelvesQuery(
+                format: GraphQLHelpers.graphQLNullable(view.format.map(graphQLFormat)),
+                genre: GraphQLHelpers.graphQLNullable(view.genre.map(graphQLGenre)),
+                subgenre: GraphQLHelpers.graphQLNullable(view.subgenre)
+            )
+        )
+        let shelves = data.libraryShelves
+        return LibraryShelves(
+            formats: shelves.formats.map(\.asDomain),
+            recent: shelves.recent.map(\.fragments.bookSummary.asBook),
+            toRead: shelves.toRead.map(\.fragments.bookSummary.asBook),
+            readRecently: shelves.readRecently.map(\.fragments.bookSummary.asBook),
+            favorites: shelves.favorites.map(\.fragments.bookSummary.asBook),
+            hasDropped: shelves.hasDropped,
+            genres: shelves.genres.map {
+                GenreShelf(
+                    genre: $0.genre.asDomain,
+                    count: $0.count,
+                    coverURL: $0.cover?.coverUrl.flatMap(URL.init(string:))
+                )
+            },
+            subgenres: shelves.subgenres,
+            series: shelves.series.map { row in
+                SeriesAPI.followedRow(
+                    row.fragments.followedSeriesRow,
+                    volumes: row.volumes.map(\.fragments.followedVolume),
+                    catalogue: row.catalogue?.fragments.catalogueSpine
+                )
+            },
+            authors: shelves.authors.map { author in
+                FollowedAuthor(
+                    key: author.key,
+                    name: author.name,
+                    indexLetter: author.indexLetter,
+                    portraitURL: author.portraitUrl.flatMap(URL.init(string:)),
+                    bookCount: author.bookCount,
+                    seriesCount: author.seriesCount,
+                    favoriteCount: author.favoriteCount,
+                    averageRating: author.averageRating,
+                    shelvedAt: GraphQLHelpers.parseISO8601(author.shelvedAt),
+                    books: [],
+                    favorite: author.favorite
+                )
+            }
+        )
+    }
+
+    /// One page of a shelf of the Library tab, in the server's order.
+    static func shelfPage(_ query: ShelfQuery, limit: Int, after: String?) async throws -> LibraryPageResult {
+        #if DEBUG
+        if Showcase.isOn { return Showcase.shelfPage(query, limit: limit, after: after) }
+        #endif
+        let view = query.view
+        let data = try await GraphQLHelpers.fetch(
+            GraphQLClient.shared.apollo,
+            query: ShioriGraphQL.LibraryPageQuery(
+                favorite: query.favorite ? .some(true) : .none,
+                loved: .none,
+                status: GraphQLHelpers.graphQLNullable(query.serverStatus.map(graphQLStatus)),
+                format: GraphQLHelpers.graphQLNullable(view.format.map(graphQLFormat)),
+                genre: GraphQLHelpers.graphQLNullable(view.genre.map(graphQLGenre)),
+                subgenre: GraphQLHelpers.graphQLNullable(view.subgenre),
+                limit: .some(Int32(limit)),
+                after: GraphQLHelpers.graphQLNullable(after)
+            )
+        )
         return LibraryPageResult(
             books: data.libraryPage.books.map { $0.fragments.bookSummary.asBook },
             hasMore: data.libraryPage.hasMore

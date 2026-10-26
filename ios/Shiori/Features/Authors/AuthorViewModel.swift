@@ -27,6 +27,8 @@ final class AuthorViewModel {
     var isGenerating: Bool { isRefreshing || isCataloguing }
     /// The refresh came back with nothing: the page on screen is the old one.
     var refreshFailed = false
+    /// The reader hearted the author: the heart in the bar.
+    private(set) var isFavorite = false
 
     /// Offered by Découvrir as an author a friend loves, whom the reader may
     /// hold nothing of: the page is then built from `name`.
@@ -43,14 +45,11 @@ final class AuthorViewModel {
     func load() async {
         isLoading = true
         defer { isLoading = false }
-        let (client, key) = (client, key)
-        async let found = try? client.releases(key)
         do {
             let fresh = try await client.page(key, isOffered ? name : nil)
-            let foundReleases = await found
             withAnimation(page == nil ? nil : .smooth) {
                 page = fresh
-                if let foundReleases { releases = foundReleases }
+                isFavorite = fresh?.author.favorite ?? isFavorite
             }
             if fresh == nil { errorMessage = nil }
         } catch {
@@ -71,6 +70,20 @@ final class AuthorViewModel {
         } catch {
             guard !isCancellation(error) else { return }
             _ = reportError(error)
+        }
+    }
+
+    /// Hearts the author, or takes the heart back: drawn at once, put back if
+    /// the server refused.
+    func toggleFavorite() async {
+        let wanted = !isFavorite
+        isFavorite = wanted
+        do {
+            isFavorite = try await client.setFavorite(key, wanted)
+        } catch {
+            isFavorite = !wanted
+            guard !isCancellation(error) else { return }
+            errorMessage = reportError(error)
         }
     }
 

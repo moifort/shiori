@@ -41,10 +41,8 @@ struct ContentView: View {
     @State private var libraryMode: LibraryRequest?
     /// The same for the Library tab's series shelf.
     @State private var seriesMode: SeriesRequest?
-    /// The shelf each of Bibliothèque and Découvrir shows. Held here so that
-    /// arriving on either tab brings it back to the books, whatever the
-    /// reader left it on.
-    @State private var libraryShelf: LibraryShelf = .books
+    /// The shelf Découvrir shows. Held here so that arriving on the tab
+    /// brings it back to the books, whatever the reader left it on.
     @State private var discoverShelf: LibraryShelf = .books
     /// A book a scan's review asked to await, handed to Découvrir, which
     /// shows the reader its tile.
@@ -187,9 +185,6 @@ struct ContentView: View {
                 } else {
                     lastContentTab = tab
                 }
-                // Each visit opens on the books, unless the dashboard asked
-                // for the series shelf on its way here.
-                if tab == .library { libraryShelf = seriesMode == nil ? .books : .series }
                 if tab == .discover { discoverShelf = .books }
             }
     }
@@ -247,8 +242,7 @@ struct ContentView: View {
                 LibraryTab(
                     onAdd: { showAddSheet = true },
                     libraryRequest: $libraryMode,
-                    seriesRequest: $seriesMode,
-                    shelf: $libraryShelf
+                    seriesRequest: $seriesMode
                 )
             }
             Tab(

@@ -79,9 +79,9 @@ final class AuthorListViewModel {
 
     private static func cache(for order: AuthorListOrder) -> SnapshotCache<[FollowedAuthor]> {
         switch order {
-        case .name: SnapshotCache("authors-by-name", version: 6)
-        case .recent: SnapshotCache("authors-by-activity", version: 6)
-        case .loved: SnapshotCache("authors-all", version: 6)
+        case .name: SnapshotCache("authors-by-name", version: 7)
+        case .recent: SnapshotCache("authors-by-activity", version: 7)
+        case .loved: SnapshotCache("authors-all", version: 7)
         }
     }
 

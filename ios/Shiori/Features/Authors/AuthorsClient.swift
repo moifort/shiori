@@ -18,6 +18,8 @@ struct AuthorsClient: Sendable {
     /// One page of the Authors shelf after the given cursor, in that order.
     var list: @Sendable (_ limit: Int, _ after: String?, AuthorListOrder)
         async throws -> CursorPage<FollowedAuthor>
+    /// Hearts the author or takes the heart back; answers what is now true.
+    var setFavorite: @Sendable (_ key: String, Bool) async throws -> Bool = { _, favorite in favorite }
 }
 
 extension AuthorsClient {
@@ -28,6 +30,7 @@ extension AuthorsClient {
         refresh: { try await AuthorsAPI.refresh(key: $0) },
         stopAwaiting: { try await AwaitedAPI.stop(id: $0) },
         addBook: { try await BookAddition.add($0, lookingUp: $1, source: .author) },
-        list: { try await AuthorsAPI.myAuthorsPage(limit: $0, after: $1, order: $2) }
+        list: { try await AuthorsAPI.myAuthorsPage(limit: $0, after: $1, order: $2) },
+        setFavorite: { try await AuthorsAPI.setFavorite(key: $0, favorite: $1) }
     )
 }

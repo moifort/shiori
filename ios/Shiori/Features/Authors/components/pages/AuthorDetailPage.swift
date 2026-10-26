@@ -4,33 +4,31 @@ import SwiftUI
 enum AuthorAction {
     case openBook(Book)
     case openSeries(SeriesDestination)
-    /// A saga the reader holds nothing of, started with its first volume.
-    case startSaga(AuthorSeries, author: String, format: AuthorShelfFormat)
-    case addWork(AuthorWork, author: String, format: AuthorShelfFormat)
-    case openAwaited(AwaitedEdition)
-    case stopAwaiting(AwaitedEdition)
+    /// A book of theirs the reader does not hold, opened to be added.
+    case openWork(AuthorWork)
+    case menu(Book, BookQuickAction)
     case refresh
 }
 
-/// An author's page, laid out as a saga's is: who they are and what the reader
-/// made of them, then — through a Livre / Audio switch that filters everything
-/// below it, a saga heard being a saga of its own — their sagas and their books
-/// outside any saga, what the reader holds first, then what they could add,
-/// each with a `+` that puts it on the pile.
+/// An author's page, as the TV app draws a person: their round portrait in the
+/// middle of their own colours blurred, the name, where they come from and
+/// when they were born, three lines of biography, then their figures. Under
+/// it, their series as the cards of "Toutes les séries", their books outside
+/// any series on two rows that scroll together, and what the reader does not
+/// hold yet — announced, or never added — dimmed: a tap opens it.
 struct AuthorDetailPage: View {
     let name: String
     /// Nil until the server answered, or when the reader holds nothing of them.
     let page: AuthorPage?
-    let releases: [ReleaseFormat: AuthorReleases]
     let isLoading: Bool
     let errorMessage: String?
-    /// The saga or the work being added, its "+" turning.
-    let adding: String?
     let onAction: (AuthorAction) async -> Void
 
-    /// The side of the switch the reader picked; nil opens on the format they
-    /// hold most of this author in.
-    @State private var format: AuthorShelfFormat?
+    @State private var showsWholeBiography = false
+
+    private static let portraitSize: CGFloat = 160
+    /// Fewer and a second row would stand half empty.
+    private static let twoRowsFrom = 6
 
     var body: some View {
         Group {
@@ -46,96 +44,85 @@ struct AuthorDetailPage: View {
                 ) { await onAction(.refresh) }
             }
         }
+        .background(Color(.systemGroupedBackground))
         .navigationTitle(name)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarTitleDisplayMode(.inline)
         .refreshable { await onAction(.refresh) }
     }
 
-    private func open(_ destination: SeriesDestination) {
-        Task { await onAction(.openSeries(destination)) }
+    private func send(_ action: AuthorAction) {
+        Task { await onAction(action) }
     }
 
     private func content(_ page: AuthorPage) -> some View {
-        let shown = format ?? usualFormat(page)
-        return List {
-            header(page)
-            Section {
-                Picker("Format", selection: Binding(get: { shown }, set: { format = $0 })) {
-                    ForEach(AuthorShelfFormat.allCases) { format in
-                        Label(format.label, systemImage: format.symbol).tag(format)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .listRowBackground(Color.clear)
-                .listRowInsets(EdgeInsets())
-                .accessibilityIdentifier("author-format")
+        ScrollView {
+            VStack(alignment: .leading, spacing: 30) {
+                hero(page)
+                seriesSection(page)
+                booksSection(page)
+                discoverSection(page)
             }
-            if let shownReleases = releases[shown.releaseFormat], !shownReleases.isEmpty {
-                AuthorReleasesSection(
-                    releases: shownReleases,
-                    author: page.author.name,
-                    isAudio: shown == .audio,
-                    onOpenAwaited: { edition in Task { await onAction(.openAwaited(edition)) } },
-                    onStopAwaiting: { edition in Task { await onAction(.stopAwaiting(edition)) } }
-                )
-            }
-            sagas(page, in: shown)
-            books(page, in: shown)
+            .padding(.bottom, 32)
         }
-        .listStyle(.insetGrouped)
-        .labelStyle(.row)
+        .ignoresSafeArea(edges: .top)
     }
 
-    // MARK: - Header
+    // MARK: - Hero
 
-    private func header(_ page: AuthorPage) -> some View {
-        Section {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(alignment: .center, spacing: 16) {
-                    AuthorAvatar(initials: page.author.initials, portraitURL: page.author.portraitURL, size: 84)
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(page.author.name)
-                            .font(.title3.weight(.semibold))
-                            .fixedSize(horizontal: false, vertical: true)
-                            .copyable(page.author.name)
-                        if let origin = origin(page) {
-                            Text(origin)
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                        }
-                        Text(figures(page.author))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .padding(.top, 2)
-                    }
-                    Spacer(minLength: 0)
+    private func hero(_ page: AuthorPage) -> some View {
+        VStack(spacing: 14) {
+            AuthorAvatar(initials: page.author.initials, portraitURL: page.author.portraitURL, size: Self.portraitSize)
+                .shadow(color: .black.opacity(0.4), radius: 18, y: 10)
+                .padding(.top, 128)
+            VStack(spacing: 4) {
+                Text(page.author.name)
+                    .font(.title.weight(.bold))
+                    .multilineTextAlignment(.center)
+                    .copyable(page.author.name)
+                if let origin = origin(page) {
+                    Text(origin)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
                 }
-                if let biography = page.biography {
+            }
+            .padding(.horizontal, 20)
+            if let biography = page.biography {
+                Button { withAnimation(.smooth) { showsWholeBiography.toggle() } } label: {
                     Text(biography)
                         .font(.callout)
-                        .foregroundStyle(.secondary)
-                        .copyable(biography)
-                }
-            }
-            .padding(.vertical, 6)
-
-            if page.author.favoriteCount > 0 {
-                LabeledInfoRow(title: "Coups de cœur", value: "\(page.author.favoriteCount)", icon: "heart")
-            }
-            if let rating = page.author.averageRating {
-                Label {
-                    LabeledContent("Note moyenne") {
-                        HStack(spacing: 6) {
-                            RatingStars(rating: (rating * 2).rounded() / 2, font: .subheadline)
-                            Text(rating, format: .number.precision(.fractionLength(1)))
-                                .foregroundStyle(.secondary)
+                        .foregroundStyle(.primary.opacity(0.85))
+                        .lineLimit(showsWholeBiography ? nil : 3)
+                        .multilineTextAlignment(.leading)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .overlay(alignment: .bottomTrailing) {
+                            if !showsWholeBiography {
+                                Text("PLUS")
+                                    .font(.callout.weight(.bold))
+                                    .foregroundStyle(.secondary)
+                                    .padding(.leading, 24)
+                                    .background(
+                                        LinearGradient(
+                                            colors: [.clear, Color(.systemGroupedBackground)],
+                                            startPoint: .leading,
+                                            endPoint: .init(x: 0.3, y: 0.5)
+                                        )
+                                    )
+                            }
                         }
-                    }
-                } icon: {
-                    Image(systemName: "star").foregroundStyle(.secondary)
+                        .contentShape(.rect)
                 }
+                .buttonStyle(.plain)
+                .padding(.horizontal, 20)
             }
-            LabeledInfoRow(title: "Lus", value: "\(page.readCount)", icon: "checkmark")
+            figures(page)
+                .padding(.horizontal, 20)
+                .padding(.top, 4)
+        }
+        .frame(maxWidth: .infinity)
+        .background(alignment: .top) {
+            CoverBackdrop(url: page.author.portraitURL, fadeHeight: 140, ground: Color(.systemGroupedBackground))
+                .frame(height: 380)
         }
     }
 
@@ -152,203 +139,136 @@ struct AuthorDetailPage: View {
         return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
 
-    private func figures(_ author: FollowedAuthor) -> String {
-        let books = author.bookCount == 1
-            ? String(localized: "1 livre")
-            : String(localized: "\(author.bookCount) livres")
-        switch author.seriesCount {
-        case 0: return books
-        case 1: return String(localized: "\(books), 1 série")
-        default: return String(localized: "\(books), \(author.seriesCount) séries")
+    /// The author's figures, spread across the width: read, on the pile, the
+    /// mean of the stars, the series.
+    private func figures(_ page: AuthorPage) -> some View {
+        let held = page.books + page.sagas.flatMap(\.volumes)
+        let pile = held.filter { $0.status == .toRead }.count
+        var items: [(value: String, label: String)] = [
+            (page.readCount.formatted(), String(localized: "lus")),
+            (pile.formatted(), String(localized: "à lire")),
+        ]
+        if let rating = page.author.averageRating {
+            items.append(("★ \(rating.formatted(.number.precision(.fractionLength(1))))", String(localized: "moyenne")))
         }
+        let series = page.author.seriesCount
+        items.append((series.formatted(), series > 1 ? String(localized: "séries") : String(localized: "série")))
+        return HStack(alignment: .top) {
+            ForEach(Array(items.enumerated()), id: \.offset) { _, item in
+                VStack(spacing: 2) {
+                    Text(item.value)
+                        .font(.headline)
+                    Text(item.label.localizedUppercase)
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity)
+            }
+        }
+        .accessibilityElement(children: .combine)
     }
 
-    /// The format the reader holds most of this author in: a reader who listens
-    /// to them opens on their recordings.
-    private func usualFormat(_ page: AuthorPage) -> AuthorShelfFormat {
-        let held = page.sagas.flatMap(\.volumes) + page.books
-        let audio = held.filter { AuthorShelfFormat.audio.holds($0) }.count
-        return audio > held.count - audio ? .audio : .print
-    }
+    // MARK: - Sections
 
-    // MARK: - Sagas
-
-    /// The sagas of the format on screen: the saga heard is a saga of its own,
-    /// with its own spine, so the switch shows one or the other whole.
     @ViewBuilder
-    private func sagas(_ page: AuthorPage, in format: AuthorShelfFormat) -> some View {
-        let held = page.sagas.filter { $0.isAudio == (format == .audio) }
-        let notHeld = page.sagasNotHeld(in: format)
-        if !held.isEmpty || !notHeld.isEmpty {
-            Section("Séries") {
-                ForEach(held) { saga in
-                    // A tap rather than a button, as on the Series tab: a
-                    // button would claim the drag that scrolls the covers.
-                    SeriesRow(entry: saga, showsAuthor: false)
-                        .contentShape(Rectangle())
-                        .onTapGesture { open(SeriesDestination(seriesId: saga.seriesId)) }
-                        .accessibilityElement(children: .combine)
-                        .accessibilityAddTraits(.isButton)
-                        .edgeToEdgeSeparator()
-                        .accessibilityIdentifier("author-saga")
-                }
-                ForEach(notHeld) { saga in
-                    sagaNotHeld(saga, author: page.author.name, in: format)
-                        .edgeToEdgeSeparator()
-                }
-            }
-        }
-    }
-
-    /// Opens on the saga screen, as a saga the reader holds does: the server
-    /// catalogues it there from the name and author the page gives.
-    private func sagaNotHeld(_ saga: AuthorSeries, author: String, in format: AuthorShelfFormat) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(saga.name)
-                    .font(.body.weight(.medium))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
-                Spacer(minLength: 0)
-                addButton(id: saga.id, label: "Commencer « \(saga.name) »") {
-                    await onAction(.startSaga(saga, author: author, format: format))
-                }
-            }
-            ScrollView(.horizontal) {
-                HStack(spacing: 10) {
-                    ForEach(1...max(1, min(saga.volumeCount ?? 1, 12)), id: \.self) { number in
-                        BookCover(
-                            book: placeholderVolume(of: saga, number: number, author: author),
-                            width: 44,
-                            showsFormatBadge: false
-                        )
-                        .opacity(0.35)
-                        .overlay(alignment: .bottom) {
-                            Text(verbatim: "\(number)")
-                                .font(.caption2.weight(.bold).monospacedDigit())
-                                .foregroundStyle(.secondary)
-                                .padding(.bottom, 4)
+    private func seriesSection(_ page: AuthorPage) -> some View {
+        if !page.sagas.isEmpty {
+            VStack(alignment: .leading, spacing: 12) {
+                RowHeader(title: "Séries", style: .inline).padding(.horizontal, 20)
+                LazyVGrid(columns: [GridItem(.flexible(), spacing: 13), GridItem(.flexible(), spacing: 13)], spacing: 13) {
+                    ForEach(page.sagas) { saga in
+                        SeriesShowCard(series: saga.progress, tag: saga.releaseTag, isCompact: true) {
+                            send(.openSeries(SeriesDestination(seriesId: saga.seriesId)))
                         }
+                        .frame(height: 128)
+                        .accessibilityIdentifier("author-saga")
                     }
                 }
+                .padding(.horizontal, 20)
             }
-            .scrollIndicators(.hidden)
-            .accessibilityHidden(true)
         }
-        .padding(.vertical, 2)
-        .contentShape(Rectangle())
-        .onTapGesture {
-            open(SeriesDestination(seriesId: saga.id, proposal: saga.proposal))
-        }
-        .accessibilityAddTraits(.isButton)
-        .accessibilityIdentifier("author-saga-not-held")
     }
-
-    /// A volume of a saga the reader holds nothing of: the first one wears the
-    /// cover Open Library found, the others the placeholder.
-    private func placeholderVolume(of saga: AuthorSeries, number: Int, author: String) -> Book {
-        var book = Book(id: "\(saga.id)-\(number)", title: saga.name, authors: [author], status: .toRead)
-        if number == 1 { book.coverURL = saga.coverURL }
-        return book
-    }
-
-    // MARK: - Books
 
     @ViewBuilder
-    private func books(_ page: AuthorPage, in format: AuthorShelfFormat) -> some View {
-        let held = page.books.filter(format.holds)
-        let notHeld = page.booksNotHeld(in: format)
-        if !held.isEmpty || !notHeld.isEmpty {
-            Section("Livres") {
-                ForEach(held) { book in
-                    Button { Task { await onAction(.openBook(book)) } } label: {
-                        BookRow(
-                            title: book.title,
-                            // The page is the author's: their name on every
-                            // row would say nothing.
-                            authorLine: "",
-                            cover: book,
-                            status: book.status,
-                            rating: book.shownRating,
-                            ratingIsInherited: book.ratingIsInherited,
-                            publishedIn: book.firstPublishedIn,
-                            statusTag: book.status,
-                            isFavorite: book.favorite,
-                            isHidden: book.hidden
-                        )
-                    }
-                    .tint(.primary)
-                    .edgeToEdgeSeparator()
-                    .accessibilityIdentifier("author-book")
-                }
-                ForEach(notHeld) { work in
-                    workNotHeld(work, author: page.author.name, in: format)
-                        .edgeToEdgeSeparator()
-                }
+    private func booksSection(_ page: AuthorPage) -> some View {
+        if !page.books.isEmpty {
+            VStack(alignment: .leading, spacing: 12) {
+                RowHeader(title: "Livres", style: .inline).padding(.horizontal, 20)
+                PosterRow(
+                    items: page.books.map { .init(book: $0, label: PosterLabel.of($0, in: .recent)) },
+                    rows: page.books.count >= Self.twoRowsFrom ? 2 : 1,
+                    onOpen: { send(.openBook($0)) },
+                    onMenu: { book, action in send(.menu(book, action)) }
+                )
+                .contentMargins(.horizontal, 20, for: .scrollContent)
             }
         }
     }
 
-    private func workNotHeld(_ work: AuthorWork, author: String, in format: AuthorShelfFormat) -> some View {
-        HStack(alignment: .center, spacing: 12) {
-            BookCover(book: {
-                var book = Book(id: work.id, title: work.title, authors: [author], status: .toRead)
-                book.coverURL = work.coverURL
-                return book
-            }())
-                .opacity(0.45)
-            VStack(alignment: .leading, spacing: 3) {
-                Text(work.title)
-                    .font(.body.weight(.medium))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
-                if let year = work.publishedIn {
-                    Text(verbatim: String(year))
-                        .font(.subheadline)
-                        .foregroundStyle(.tertiary)
-                }
-            }
-            .accessibilityElement(children: .combine)
-            Spacer(minLength: 8)
-            addButton(id: work.id, label: "Ajouter « \(work.title) » à ma liste à lire") {
-                await onAction(.addWork(work, author: author, format: format))
+    /// What the reader does not hold: the volumes announced of their series,
+    /// the series never started, the books never added — dimmed, the year or
+    /// the date in the cover.
+    @ViewBuilder
+    private func discoverSection(_ page: AuthorPage) -> some View {
+        let items = discoveries(page)
+        if !items.isEmpty {
+            VStack(alignment: .leading, spacing: 12) {
+                RowHeader(title: "À découvrir", style: .inline).padding(.horizontal, 20)
+                PosterRow(items: items) { _ in }
+                    .contentMargins(.horizontal, 20, for: .scrollContent)
             }
         }
-        .padding(.vertical, 4)
-        .accessibilityIdentifier("author-book-not-held")
     }
 
-    private func addButton(id: String, label: LocalizedStringKey, action: @escaping () async -> Void) -> some View {
-        Group {
-            if adding == id {
-                ProgressView().controlSize(.small)
-            } else {
-                Button { Task { await action() } } label: {
-                    Image(systemName: "plus.circle.fill")
-                        .font(.title3)
-                        .symbolRenderingMode(.hierarchical)
-                }
-                .buttonStyle(.borderless)
-                .accessibilityLabel(Text(label))
-            }
+    private func discoveries(_ page: AuthorPage) -> [PosterRow.Item] {
+        let author = page.author.name
+        let announced: [PosterRow.Item] = page.sagas.compactMap { saga in
+            guard let release = saga.nextRelease else { return nil }
+            let book = Book(
+                id: "announced-\(saga.id)",
+                title: release.title,
+                authors: [author],
+                format: saga.isAudio ? .audiobook : .book,
+                coverURL: release.coverURL,
+                status: .toRead
+            )
+            return PosterRow.Item(
+                book: book,
+                label: PosterLabel(caption: ReleaseDateText.short(release.date), dimming: PosterLabel.setAsideDimming),
+                open: { send(.openSeries(SeriesDestination(seriesId: saga.seriesId))) }
+            )
         }
+        let sagas: [PosterRow.Item] = page.sagasNotHeld(in: .print).map { saga in
+            let book = Book(id: "saga-\(saga.id)", title: saga.name, authors: [author], coverURL: saga.coverURL, status: .toRead)
+            return PosterRow.Item(
+                book: book,
+                label: PosterLabel(caption: String(localized: "Série"), dimming: PosterLabel.setAsideDimming),
+                open: { send(.openSeries(SeriesDestination(seriesId: saga.id, proposal: saga.proposal))) }
+            )
+        }
+        let works: [PosterRow.Item] = page.booksNotHeld(in: .print).map { work in
+            let book = Book(id: "work-\(work.id)", title: work.title, authors: [author], coverURL: work.coverURL, status: .toRead)
+            return PosterRow.Item(
+                book: book,
+                label: PosterLabel(
+                    caption: work.publishedIn.map { String($0) } ?? "",
+                    dimming: PosterLabel.setAsideDimming
+                ),
+                open: { send(.openWork(work)) }
+            )
+        }
+        return announced + sagas + works
     }
 }
 
 #Preview {
     NavigationStack {
-        AuthorDetailPage(
-            name: "Robin Hobb", page: .preview, releases: [:], isLoading: false,
-            errorMessage: nil, adding: nil
-        ) { _ in }
+        AuthorDetailPage(name: "Robin Hobb", page: .preview, isLoading: false, errorMessage: nil) { _ in }
     }
 }
 
 #Preview("Holds nothing of them") {
     NavigationStack {
-        AuthorDetailPage(
-            name: "Robin Hobb", page: nil, releases: [:], isLoading: false,
-            errorMessage: nil, adding: nil
-        ) { _ in }
+        AuthorDetailPage(name: "Robin Hobb", page: nil, isLoading: false, errorMessage: nil) { _ in }
     }
 }

@@ -12,12 +12,22 @@ struct AuthorScreen: View {
     @Environment(\.detailClosing) private var closing
     @State private var viewModel: AuthorViewModel
     @State private var selectedBook: Book?
-    @State private var openAwaited: AwaitedEdition?
     @State private var openSeries: SeriesDestination?
+    @State private var openWork: AuthorWork?
+    @State private var destination: LibraryDestination?
+    @State private var quick: BookQuickRequest?
+    private let library: LibraryClient
 
     /// - Parameter isOffered: offered by Découvrir as an author a friend loves,
     ///   whom the reader may hold nothing of: the page is then built from `name`.
-    init(key: String, name: String, isOffered: Bool = false, client: AuthorsClient = .live) {
+    init(
+        key: String,
+        name: String,
+        isOffered: Bool = false,
+        client: AuthorsClient = .live,
+        library: LibraryClient = .live
+    ) {
+        self.library = library
         _viewModel = State(initialValue: AuthorViewModel(key: key, name: name, isOffered: isOffered, client: client))
     }
 
@@ -25,18 +35,14 @@ struct AuthorScreen: View {
         AuthorDetailPage(
             name: viewModel.name,
             page: viewModel.page,
-            releases: viewModel.releases,
             isLoading: viewModel.isLoading,
-            errorMessage: viewModel.errorMessage,
-            adding: viewModel.adding
+            errorMessage: viewModel.errorMessage
         ) { action in
             switch action {
             case let .openBook(book): selectedBook = book
             case let .openSeries(destination): openSeries = destination
-            case let .startSaga(saga, author, format): await viewModel.start(saga, author: author, format: format)
-            case let .addWork(work, author, format): await viewModel.add(work, author: author, format: format)
-            case let .openAwaited(edition): openAwaited = edition
-            case let .stopAwaiting(edition): await viewModel.stopAwaiting(edition)
+            case let .openWork(work): openWork = work
+            case let .menu(book, action): quick = BookQuickRequest(book: book, action: action)
             case .refresh: await viewModel.load()
             }
         }
@@ -51,11 +57,18 @@ struct AuthorScreen: View {
                 onDeleted: { _ in Task { await viewModel.load() } }
             )
         }
-        .pushesDetail(item: $openAwaited) { edition in
-            AwaitedEditionScreen(edition: edition) {
-                Task { await viewModel.stopAwaiting(edition) }
+        .pushesDetail(item: $openWork) { work in
+            AuthorWorkPage(
+                work: work,
+                author: viewModel.page?.author.name ?? viewModel.name,
+                isAdding: viewModel.adding == work.id
+            ) {
+                await viewModel.add(work, author: viewModel.page?.author.name ?? viewModel.name, format: .print)
+                openWork = nil
             }
         }
+        .pushesDetail(item: $destination) { LibraryDestinationScreen(destination: $0, client: library) }
+        .performsBookQuickActions($quick, client: library) { destination = $0 }
         .onReceive(NotificationCenter.default.publisher(for: .shioriAwaitedEditionsDidChange)) { _ in
             Task { await viewModel.load() }
         }
@@ -77,6 +90,15 @@ struct AuthorScreen: View {
                 }
             }
             if viewModel.page != nil {
+                ToolbarItem(placement: .primaryAction) {
+                    AsyncToolbarButton(
+                        title: viewModel.isFavorite ? "Retirer des préférés" : "Préféré",
+                        systemImage: viewModel.isFavorite ? "heart.fill" : "heart"
+                    ) {
+                        await viewModel.toggleFavorite()
+                    }
+                    .accessibilityIdentifier("author-favorite")
+                }
                 ToolbarItem(placement: .primaryAction) {
                     Menu {
                         Button("Mettre à jour", systemImage: "arrow.clockwise") {

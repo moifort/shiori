@@ -179,31 +179,45 @@ struct ReadingLeadCard: View {
 struct PosterRow: View {
     struct Item: Identifiable {
         let book: Book
-        let caption: String
+        let label: PosterLabel
         /// What a tap opens, when it is not the book itself: a release, a
         /// friend's favourite.
         var open: (() -> Void)?
         var id: String { book.id }
+        var caption: String { label.caption }
+
+        init(book: Book, caption: String, open: (() -> Void)? = nil) {
+            self.book = book
+            label = PosterLabel(caption: caption)
+            self.open = open
+        }
+
+        init(book: Book, label: PosterLabel, open: (() -> Void)? = nil) {
+            self.book = book
+            self.label = label
+            self.open = open
+        }
     }
 
     let items: [Item]
     var coverWidth: CGFloat = 102
+    /// Two rows that scroll together, as an author's books: only when the
+    /// row holds enough to fill both.
+    var rows = 1
     let onOpen: (Book) -> Void
+    /// The long press on a cover; nil leaves the covers without one.
+    var onMenu: ((Book, BookQuickAction) -> Void)?
 
     var body: some View {
         ScrollView(.horizontal) {
-            LazyHStack(alignment: .top, spacing: 13) {
-                ForEach(items) { item in
-                    Button { item.open?() ?? onOpen(item.book) } label: {
-                        PosterCover(book: item.book, caption: item.caption, width: coverWidth)
-                            .contentShape(.rect)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityElement(children: .ignore)
-                    .accessibilityLabel(Text("\(item.book.title), \(item.caption)"))
-                    .accessibilityAddTraits(.isButton)
-                    .accessibilityIdentifier("book-tile")
-                    .transition(.homeCard)
+            Group {
+                if rows > 1 {
+                    LazyHGrid(
+                        rows: Array(repeating: GridItem(.fixed(coverWidth * 1.5), spacing: 13), count: rows),
+                        spacing: 13
+                    ) { posters }
+                } else {
+                    LazyHStack(alignment: .top, spacing: 13) { posters }
                 }
             }
             .scrollTargetLayout()
@@ -211,6 +225,22 @@ struct PosterRow: View {
         .scrollIndicators(.hidden)
         .scrollTargetBehavior(.viewAligned)
         .scrollClipDisabled()
+    }
+
+    private var posters: some View {
+        ForEach(items) { item in
+            Button { item.open?() ?? onOpen(item.book) } label: {
+                PosterCover(book: item.book, label: item.label, width: coverWidth)
+                    .contentShape(.rect)
+            }
+            .buttonStyle(.plain)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text("\(item.book.title), \(item.caption)"))
+            .accessibilityAddTraits(.isButton)
+            .accessibilityIdentifier("book-tile")
+            .bookContextMenu(item.book, onAction: onMenu.map { menu in { menu(item.book, $0) } })
+            .transition(.homeCard)
+        }
     }
 }
 
@@ -306,6 +336,10 @@ struct SeriesShowCard: View {
     /// "Tome 11 disponible", "Tome 6 · 5 nov.": the release of the saga, if
     /// any, in the same glass either way.
     var tag: String?
+    /// The smaller card of a rail on two rows: the name on two lines.
+    var isCompact = false
+    /// A saga set aside: the card greyed, to say it sleeps.
+    var isSetAside = false
     let onOpen: () -> Void
 
     var body: some View {
@@ -313,16 +347,17 @@ struct SeriesShowCard: View {
             VStack(alignment: .leading, spacing: 3) {
                 Spacer(minLength: 0)
                 Text(series.name)
-                    .font(.headline)
-                    .lineLimit(1)
+                    .font(isCompact ? .subheadline.weight(.semibold) : .headline)
+                    .lineLimit(isCompact ? 2 : 1)
+                    .multilineTextAlignment(.leading)
                 progressLine
             }
             .foregroundStyle(.white)
-            .padding(12)
+            .padding(isCompact ? 10 : 12)
             .frame(maxWidth: .infinity, alignment: .leading)
             // At least a card's height, more with larger text.
-            .frame(minHeight: 176)
-            .background { artwork }
+            .frame(minHeight: isCompact ? 128 : 176)
+            .background { artwork.saturation(isSetAside ? 0 : 1).opacity(isSetAside ? 0.55 : 1) }
             .overlay(alignment: .topLeading) {
                 if let tag {
                     Text(tag)
@@ -386,17 +421,10 @@ struct SeriesShowCard: View {
     /// How far the reader is through the saga, as the TV app sets an
     /// episode's: a short white bar, then "3 sur 10 lus" beside it.
     private var progressLine: some View {
-        HStack(spacing: 8) {
-            Capsule()
-                .fill(.white.opacity(0.3))
-                .frame(width: 40, height: 4)
-                .overlay(alignment: .leading) {
-                    Capsule()
-                        .fill(.white)
-                        .frame(width: 40 * fraction, height: 4)
-                }
+        HStack(spacing: isCompact ? 6 : 8) {
+            ProgressBar(fraction: Double(fraction), width: isCompact ? 24 : 40)
             Text(progressText)
-                .font(.caption)
+                .font(isCompact ? .caption2 : .caption)
                 .foregroundStyle(.white.opacity(0.8))
                 .lineLimit(1)
         }

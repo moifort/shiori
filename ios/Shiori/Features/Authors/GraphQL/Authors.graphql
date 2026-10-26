@@ -18,13 +18,15 @@ fragment FollowedAuthorRow on FollowedAuthor {
   name
   indexLetter
   portraitUrl
+  favorite
   bookCount
   seriesCount
   favoriteCount
   averageRating
   shelvedAt
+  # Each with what its cover's line says: stars, "Ajouté", the bookmark.
   books {
-    ...FollowedVolume
+    ...BookSummary
   }
 }
 
@@ -45,6 +47,7 @@ query AuthorPage($key: AuthorKey!, $offered: AuthorName, $waitForCatalogue: Bool
       name
       indexLetter
       portraitUrl
+      favorite
       bookCount
       readCount
       seriesCount
@@ -98,4 +101,9 @@ mutation RefreshAuthor($key: AuthorKey!) {
   refreshAuthor(key: $key) {
     key
   }
+}
+
+# Heart the author, or take the heart back. Answers what is now true.
+mutation SetAuthorFavorite($key: AuthorKey!, $favorite: Boolean!) {
+  setAuthorFavorite(key: $key, favorite: $favorite)
 }

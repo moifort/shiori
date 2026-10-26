@@ -29,6 +29,9 @@ struct FollowedAuthor: Identifiable, Codable, Sendable {
     let shelvedAt: Date?
     /// Their books, newest shelved first, each with its cover and status.
     let books: [Book]
+    /// The reader hearted the author themself, apart from the hearts their
+    /// books and sagas carry: the heart of the author's page.
+    var favorite = false
 
     /// The author's initials, drawn in the avatar until the author has a
     /// portrait of their own: the first letter of the first and last words, so

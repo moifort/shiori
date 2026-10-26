@@ -183,6 +183,7 @@ extension ShioriGraphQL.BookSummary {
             id: id,
             title: title,
             authors: authors,
+            authorKeys: authorKeys,
             format: format.asDomain,
             media: media.asDomain,
             genre: genre?.asDomain,
@@ -195,7 +196,8 @@ extension ShioriGraphQL.BookSummary {
             rating: rating,
             seriesRating: seriesRating,
             favorite: favorite,
-            shelvedAt: GraphQLHelpers.parseISO8601(shelvedAt)
+            shelvedAt: GraphQLHelpers.parseISO8601(shelvedAt),
+            statusChangedAt: GraphQLHelpers.parseISO8601(statusChangedAt)
         )
     }
 }

@@ -13,6 +13,9 @@ enum AuthorsAPI {
     /// `waitForCatalogue` false answers at once for an author nobody described,
     /// with `isAwaitingCatalogue` set; true waits while the AI builds it.
     static func page(key: String, offered: String? = nil, waitForCatalogue: Bool = false) async throws -> AuthorPage? {
+        #if DEBUG
+        if Showcase.isOn { return Showcase.authorPage(key: key) }
+        #endif
         let data = try await GraphQLHelpers.fetch(
             GraphQLClient.shared.apollo,
             query: ShioriGraphQL.AuthorPageQuery(
@@ -35,7 +38,8 @@ enum AuthorsAPI {
                 favoriteCount: author.favoriteCount,
                 averageRating: author.averageRating,
                 shelvedAt: nil,
-                books: []
+                books: [],
+                favorite: author.favorite
             ),
             readCount: author.readCount,
             nationality: page.catalogue?.nationality,
@@ -72,6 +76,18 @@ enum AuthorsAPI {
             changesLibrary: false
         )
         return data.refreshAuthor != nil
+    }
+
+    /// Hearts the author, or takes the heart back. Answers what is now true.
+    static func setFavorite(key: String, favorite: Bool) async throws -> Bool {
+        #if DEBUG
+        if Showcase.isOn { return favorite }
+        #endif
+        let data = try await GraphQLHelpers.perform(
+            GraphQLClient.shared.apollo,
+            mutation: ShioriGraphQL.SetAuthorFavoriteMutation(key: key, favorite: favorite)
+        )
+        return data.setAuthorFavorite
     }
 
     /// One page of the authors the reader holds books of, in the order the
@@ -117,7 +133,8 @@ extension FollowedAuthor {
             favoriteCount: row.favoriteCount,
             averageRating: row.averageRating,
             shelvedAt: GraphQLHelpers.parseISO8601(row.shelvedAt),
-            books: row.books.map(\.fragments.followedVolume.asBook)
+            books: row.books.map(\.fragments.bookSummary.asBook),
+            favorite: row.favorite
         )
     }
 }

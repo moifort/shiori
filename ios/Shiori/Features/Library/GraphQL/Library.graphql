@@ -5,14 +5,28 @@
 # `loved` is the favourites view: the books judged, hearts first then stars,
 # which the app cuts into sections by rank rather than by month. `favorite` is
 # the "Favoris" filter: the hearted books alone, by date.
+# `format`, `genre` and `subgenre` are the pills over a shelf and the genre
+# page it was opened from.
 query LibraryPage(
   $favorite: Boolean
   $loved: Boolean
   $status: ReadingStatus
+  $format: BookFormat
+  $genre: Genre
+  $subgenre: Subgenre
   $limit: Int
   $after: BookId
 ) {
-  libraryPage(favorite: $favorite, loved: $loved, status: $status, limit: $limit, after: $after) {
+  libraryPage(
+    favorite: $favorite
+    loved: $loved
+    status: $status
+    format: $format
+    genre: $genre
+    subgenre: $subgenre
+    limit: $limit
+    after: $after
+  ) {
     hasMore
     books {
       ...BookSummary
@@ -26,6 +40,8 @@ fragment BookSummary on Book {
   id
   title
   authors
+  # What a long press opens the author's page with.
+  authorKeys
   format
   media
   genre
@@ -38,10 +54,64 @@ fragment BookSummary on Book {
   seriesRating
   favorite
   shelvedAt
+  # How long a book given up on has been set down.
+  statusChangedAt
   series {
     id
     name
     volume
     kind
+  }
+}
+
+# The Library tab's entry screen, in one request and one scan of the library:
+# the format pills, the rails of books, the genre tiles, and the series and
+# authors rails. Under a genre page, its subgenre pills too.
+query LibraryShelves($format: BookFormat, $genre: Genre, $subgenre: Subgenre) {
+  libraryShelves(format: $format, genre: $genre, subgenre: $subgenre) {
+    formats
+    recent {
+      ...BookSummary
+    }
+    toRead {
+      ...BookSummary
+    }
+    readRecently {
+      ...BookSummary
+    }
+    favorites {
+      ...BookSummary
+    }
+    hasDropped
+    genres {
+      genre
+      count
+      cover {
+        id
+        coverUrl
+      }
+    }
+    subgenres
+    series {
+      ...FollowedSeriesRow
+      volumes {
+        ...FollowedVolume
+      }
+      catalogue {
+        ...CatalogueSpine
+      }
+    }
+    authors {
+      key
+      name
+      indexLetter
+      portraitUrl
+      favorite
+      bookCount
+      seriesCount
+      favoriteCount
+      averageRating
+      shelvedAt
+    }
   }
 }

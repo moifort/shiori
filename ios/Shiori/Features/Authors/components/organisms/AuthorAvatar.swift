@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// An author's face: their portrait once their page has been opened and
-/// Wikipedia had one, their initials in the accent tint otherwise — and while
+/// Wikipedia had one, their initials on a slate disc otherwise — and while
 /// the portrait loads, so the circle never flashes empty.
 struct AuthorAvatar: View {
     let initials: String
@@ -21,12 +21,21 @@ struct AuthorAvatar: View {
         .accessibilityHidden(true)
     }
 
+    /// The initials in white on a slate disc, as the TV app draws a cast
+    /// member it has no photograph of.
     private var monogram: some View {
         Text(initials)
-            .font(size > 50 ? .title2.weight(.semibold) : .subheadline.weight(.semibold))
-            .foregroundStyle(.tint)
+            .font(.system(size: max(13, size / 3.4), weight: .semibold))
+            .foregroundStyle(.white.opacity(0.9))
             .frame(width: size, height: size)
-            .background(.tint.opacity(0.15), in: .circle)
+            .background(
+                LinearGradient(
+                    colors: [Color(red: 0.23, green: 0.29, blue: 0.35), Color(red: 0.12, green: 0.16, blue: 0.2)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                ),
+                in: .circle
+            )
     }
 }
 

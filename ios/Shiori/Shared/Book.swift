@@ -333,6 +333,10 @@ struct Book: Identifiable, Hashable, Codable, Sendable {
     /// The date the Library tab files the book under, as the server decides it:
     /// finished, else started, else added. Only the list rows carry it.
     var shelvedAt: Date?
+    /// When the book last moved between the pile, the reading, the read and
+    /// the dropped: how long a book given up on has been set down. Only the
+    /// list rows carry it.
+    var statusChangedAt: Date?
 
     /// The stars a row draws: the book's own rating, else its saga's. A saga
     /// rated as a whole rates each of its unrated volumes, and a rating given
