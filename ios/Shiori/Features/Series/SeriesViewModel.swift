@@ -239,6 +239,20 @@ final class SeriesViewModel {
         }
     }
 
+    /// The saga corrected from its edit form; the volumes held are read again,
+    /// since the format and a name the catalogue lacks are theirs. Answers the
+    /// message to show, or nil once saved.
+    func correct(_ correction: SeriesCorrection) async -> String? {
+        do {
+            let corrected = try await client.correct(seriesId, correction)
+            if let corrected { series = corrected }
+            await load()
+            return nil
+        } catch {
+            return reportError(error)
+        }
+    }
+
     func mergeCandidates() async throws -> [FollowedSeries] {
         try await client.mergeCandidates()
     }

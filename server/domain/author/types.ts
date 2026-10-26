@@ -81,7 +81,31 @@ export type Author = {
   series: AuthorSeries[]
   books: AuthorWork[]
   cataloguedAt: Date
+  /** The fields a reader corrected by hand, which no later catalogue call or
+   *  portrait lookup writes over. Absent until the first correction. */
+  corrected?: AuthorCorrectableField[]
 }
+
+/** What a reader may correct of an author's catalogue: the facts and the face.
+ *  The name is the books', and the bibliography the model's. */
+export const AUTHOR_CORRECTABLE_FIELDS = [
+  'nationality',
+  'birthYear',
+  'deathYear',
+  'biography',
+  'portraitUrl',
+] as const
+export type AuthorCorrectableField = (typeof AUTHOR_CORRECTABLE_FIELDS)[number]
+
+/** A reader's correction of an author's catalogue: a field absent is left
+ *  alone, one set to undefined is cleared. */
+export type AuthorCorrection = Partial<Pick<Author, AuthorCorrectableField>>
+
+/** Where a portrait offered to the reader comes from. */
+export type PortraitSource = 'wikipedia' | 'wikidata' | 'openLibrary' | 'web'
+
+/** A portrait the reader may give an author, as the portrait picker offers it. */
+export type PortraitChoice = { source: PortraitSource; url: PortraitUrl; isCurrent: boolean }
 
 /** An author the catalogue call could not describe — it failed or found
  *  nothing. Remembered for good, so that no later opening waits on the same

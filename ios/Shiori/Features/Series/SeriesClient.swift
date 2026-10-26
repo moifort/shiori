@@ -35,6 +35,9 @@ struct SeriesClient: Sendable {
     var page: @Sendable (_ limit: Int, _ after: String?) async throws -> CursorPage<FollowedSeries>
     /// One row of the Series tab, read again after a change.
     var followedRow: @Sendable (_ seriesId: String) async throws -> FollowedSeries?
+    /// The saga corrected by hand: its catalogue for everyone, the format on
+    /// the reader's volumes. Answers the edition as the screen draws it.
+    var correct: @Sendable (_ seriesId: String, SeriesCorrection) async throws -> BookSeries? = { _, _ in nil }
 }
 
 extension SeriesClient {
@@ -58,6 +61,7 @@ extension SeriesClient {
         addBook: { try await BookAddition.add($0, lookingUp: $1, source: .series) },
         subgenres: { try await BookAPI.subgenres() },
         page: { try await SeriesAPI.mySeriesPage(limit: $0, after: $1) },
-        followedRow: { try await SeriesAPI.followedSeries(seriesId: $0) }
+        followedRow: { try await SeriesAPI.followedSeries(seriesId: $0) },
+        correct: { try await SeriesAPI.correct(seriesId: $0, correction: $1) }
     )
 }

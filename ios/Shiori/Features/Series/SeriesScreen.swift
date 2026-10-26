@@ -15,6 +15,8 @@ struct SeriesScreen: View {
 
     @State private var viewModel: SeriesViewModel
     @State private var isEditingGenre = false
+    /// The form correcting the saga's name, format and description.
+    @State private var isEditing = false
     @State private var isRating = false
     /// The sheet picking the saga this one, a duplicate, is folded into.
     @State private var isMerging = false
@@ -129,6 +131,17 @@ struct SeriesScreen: View {
                 count: viewModel.opinion?.volumeCount ?? max(viewModel.highestOwnedVolume, 1)
             ) { count in
                 await viewModel.declareVolumeCount(count)
+            }
+        }
+        .sheet(isPresented: $isEditing) {
+            SeriesEditSheet(
+                name: viewModel.name,
+                format: viewModel.takenFormat,
+                description: viewModel.series?.description,
+                isAudio: viewModel.series?.isAudio ?? (viewModel.takenFormat == .audiobook),
+                isCatalogued: viewModel.series.map { !$0.isProvisional && !$0.isAwaitingCatalogue } ?? false
+            ) { correction in
+                await viewModel.correct(correction)
             }
         }
         .sheet(isPresented: $isEditingGenre) {
@@ -267,6 +280,7 @@ struct SeriesScreen: View {
                     ownedCount: viewModel.owned.count
                 ) { action in
                     switch action {
+                    case .edit: isEditing = true
                     case .declareVolumeCount: isDeclaringVolumeCount = true
                     case .merge: isMerging = true
                     case .delete:

@@ -25,45 +25,59 @@ enum AuthorsAPI {
             ),
             requestTimeout: firstOpeningTimeout
         )
-        guard let page = data.authorPage else { return nil }
-        let author = page.author
-        return AuthorPage(
-            author: FollowedAuthor(
-                key: author.key,
-                name: author.name,
-                indexLetter: author.indexLetter,
-                portraitURL: author.portraitUrl.flatMap(URL.init(string:)),
-                bookCount: author.bookCount,
-                seriesCount: author.seriesCount,
-                favoriteCount: author.favoriteCount,
-                averageRating: author.averageRating,
-                shelvedAt: nil,
-                books: [],
-                favorite: author.favorite
-            ),
-            readCount: author.readCount,
-            nationality: page.catalogue?.nationality,
-            birthYear: page.catalogue?.birthYear,
-            deathYear: page.catalogue?.deathYear,
-            biography: page.catalogue?.biography,
-            sagas: page.sagas.map { saga in
-                SeriesAPI.followedRow(
-                    saga.fragments.followedSeriesRow,
-                    volumes: saga.volumes.map(\.fragments.followedVolume),
-                    catalogue: saga.catalogue?.fragments.catalogueSpine
-                )
-            },
-            sagasNotHeld: page.sagasNotHeld.map { AuthorSeries($0.fragments.authorSeriesFields) },
-            books: page.books.map { $0.fragments.bookSummary.asBook },
-            booksNotHeld: page.booksNotHeld.map { AuthorWork(
-                    title: $0.title,
-                    publishedIn: $0.publishedIn,
-                    coverURL: $0.coverUrl.flatMap(URL.init(string:))
-                ) },
-            isAwaitingCatalogue: page.awaitingCatalogue
-        )
+        return data.authorPage.map { AuthorPage(fields: $0.fragments.authorPageFields) }
     }
 
+    /// Corrects what the world knows of the author, in the shared catalogue.
+    /// Answers the page as it now reads. Throws `PORTRAIT_NOT_AN_IMAGE` when
+    /// the portrait address serves no image.
+    static func correct(key: String, correction: AuthorCorrection) async throws -> AuthorPage {
+        let data = try await GraphQLHelpers.perform(
+            GraphQLClient.shared.apollo,
+            mutation: ShioriGraphQL.CorrectAuthorMutation(
+                key: key,
+                nationality: nullable(correction.nationality),
+                birthYear: nullable(correction.birthYear),
+                deathYear: nullable(correction.deathYear),
+                biography: nullable(correction.biography),
+                portraitUrl: correction.portraitURL.map { .some($0.absoluteString) } ?? .none
+            )
+        )
+        return AuthorPage(fields: data.correctAuthor.fragments.authorPageFields)
+    }
+
+    /// The faces the reader may give the author: the one drawn now first.
+    /// Empty when the reader no longer holds a book of theirs.
+    static func portraitChoices(key: String) async throws -> [PortraitChoice] {
+        #if DEBUG
+        if Showcase.isOn {
+            // The showcase's own faces: the author's, then another's as a second find.
+            let faces = Showcase.authorsPage(limit: 200, after: nil, order: .recent).items
+                .sorted { ($0.key == key ? 0 : 1) < ($1.key == key ? 0 : 1) }
+                .compactMap(\.portraitURL)
+            return zip(faces.prefix(3), [PortraitChoice.Source.wikipedia, .wikidata, .openLibrary]).enumerated().map {
+                PortraitChoice(source: $1.1, url: $1.0, isCurrent: $0 == 0)
+            }
+        }
+        #endif
+        let data = try await GraphQLHelpers.fetch(
+            GraphQLClient.shared.apollo,
+            query: ShioriGraphQL.AuthorPortraitChoicesQuery(key: key)
+        )
+        return (data.authorPortraitChoices ?? []).compactMap { choice in
+            URL(string: choice.url).map { url in
+                PortraitChoice(source: .init(choice.source), url: url, isCurrent: choice.isCurrent)
+            }
+        }
+    }
+
+    private static func nullable<Value>(_ change: BookCorrection.Change<Value>?) -> GraphQLNullable<Value> {
+        switch change {
+        case nil: .none
+        case let .set(value): .some(value)
+        case .clear: .null
+        }
+    }
 
     /// Hearts the author, or takes the heart back. Answers what is now true.
     static func setFavorite(key: String, favorite: Bool) async throws -> Bool {
@@ -137,5 +151,57 @@ private extension AuthorSeries {
             firstVolumeTitle: saga.firstVolumeTitle,
             coverURL: saga.coverUrl.flatMap(URL.init(string:))
         )
+    }
+}
+
+extension AuthorPage {
+    init(fields page: ShioriGraphQL.AuthorPageFields) {
+        let author = page.author
+        self.init(
+            author: FollowedAuthor(
+                key: author.key,
+                name: author.name,
+                indexLetter: author.indexLetter,
+                portraitURL: author.portraitUrl.flatMap(URL.init(string:)),
+                bookCount: author.bookCount,
+                seriesCount: author.seriesCount,
+                favoriteCount: author.favoriteCount,
+                averageRating: author.averageRating,
+                shelvedAt: nil,
+                books: [],
+                favorite: author.favorite
+            ),
+            readCount: author.readCount,
+            nationality: page.catalogue?.nationality,
+            birthYear: page.catalogue?.birthYear,
+            deathYear: page.catalogue?.deathYear,
+            biography: page.catalogue?.biography,
+            sagas: page.sagas.map { saga in
+                SeriesAPI.followedRow(
+                    saga.fragments.followedSeriesRow,
+                    volumes: saga.volumes.map(\.fragments.followedVolume),
+                    catalogue: saga.catalogue?.fragments.catalogueSpine
+                )
+            },
+            sagasNotHeld: page.sagasNotHeld.map { AuthorSeries($0.fragments.authorSeriesFields) },
+            books: page.books.map { $0.fragments.bookSummary.asBook },
+            booksNotHeld: page.booksNotHeld.map { AuthorWork(
+                    title: $0.title,
+                    publishedIn: $0.publishedIn,
+                    coverURL: $0.coverUrl.flatMap(URL.init(string:))
+                ) },
+            isAwaitingCatalogue: page.awaitingCatalogue
+        )
+    }
+}
+
+private extension PortraitChoice.Source {
+    init(_ source: GraphQLEnum<ShioriGraphQL.PortraitSource>) {
+        switch source {
+        case .case(.wikipedia): self = .wikipedia
+        case .case(.wikidata): self = .wikidata
+        case .case(.openLibrary): self = .openLibrary
+        default: self = .web
+        }
     }
 }

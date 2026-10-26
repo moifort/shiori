@@ -630,6 +630,40 @@ export namespace BookCommand {
     return { moved: going.length, remaining: volumes.length - going.length }
   }
 
+  /** Correct the reader's volumes of one saga all at once — only those of one
+   *  edition when `edition` names a language: the name they carry, for a saga
+   *  no catalogue names; the kind of object they are, for a saga scanned as
+   *  novels that is a manga. Each keeps its saga, its number and its media; a
+   *  format that changes the saga — a recording — is the caller's to refuse.
+   *  Returns how many books changed. */
+  export const correctSeries = async (
+    userId: UserId,
+    saga: SagaKey,
+    edition: BookLanguage | undefined,
+    { name, format }: { name?: SeriesName; format?: BookFormat },
+    now = new Date(),
+    batch?: WriteBatch,
+  ): Promise<number> => {
+    const volumes = await repository.findBySaga(userId, saga)
+    const changing = volumes.filter(
+      (volume) =>
+        (!edition || volume.language === edition) &&
+        ((format && volume.format !== format) ||
+          (name && volume.series && volume.series.name !== name)),
+    )
+    for (const volume of changing)
+      await repository.save(
+        {
+          ...volume,
+          ...(format ? { format, media: mediaFor(format, volume.media) } : {}),
+          ...(name && volume.series ? { series: { ...volume.series, name } } : {}),
+          updatedAt: now,
+        },
+        batch,
+      )
+    return changing.length
+  }
+
   /** Give every reader's volumes of a saga in one edition the name that
    *  edition's catalogue gives it: a book carries whatever a scan or an import
    *  wrote — "Red Rising [French Edition]" — where the saga screen shows the

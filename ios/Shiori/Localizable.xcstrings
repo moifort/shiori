@@ -1757,6 +1757,22 @@
         }
       }
     },
+    "Actuel" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Current"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Actuel"
+          }
+        }
+      }
+    },
     "Actuelle" : {
       "localizations" : {
         "en" : {
@@ -2681,6 +2697,22 @@
         }
       }
     },
+    "Aucun portrait trouvé pour cet auteur. Collez l'adresse d'une image." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No portrait found for this author. Paste an image address."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun portrait trouvé pour cet auteur. Collez l'adresse d'une image."
+          }
+        }
+      }
+    },
     "Aucun résultat" : {
       "localizations" : {
         "en" : {
@@ -3497,6 +3529,22 @@
         }
       }
     },
+    "Cette adresse mène à une page, pas à une image. Ouvrez la photo seule, puis copiez son adresse." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This address leads to a page, not an image. Open the photo on its own, then copy its address."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cette adresse mène à une page, pas à une image. Ouvrez la photo seule, puis copiez son adresse."
+          }
+        }
+      }
+    },
     "Cette semaine" : {
       "localizations" : {
         "en" : {
@@ -3637,6 +3685,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Chinois"
+          }
+        }
+      }
+    },
+    "Choisir ce portrait" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose this portrait"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choisir ce portrait"
           }
         }
       }
@@ -4997,6 +5061,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Décrivez ce que vous faisiez et ce qui s'est passé."
+          }
+        }
+      }
+    },
+    "Décès" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Died"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Décès"
           }
         }
       }
@@ -6793,6 +6873,38 @@
         }
       }
     },
+    "L'année de décès précède celle de naissance." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The year of death comes before the year of birth."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'année de décès précède celle de naissance."
+          }
+        }
+      }
+    },
+    "L'année doit être un nombre à partir de 1450." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The year must be a number from 1450 on."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'année doit être un nombre à partir de 1450."
+          }
+        }
+      }
+    },
     "L'année doit être un nombre." : {
       "localizations" : {
         "en" : {
@@ -8037,6 +8149,22 @@
         }
       }
     },
+    "Naissance" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Born"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Naissance"
+          }
+        }
+      }
+    },
     "Narrateur" : {
       "localizations" : {
         "en" : {
@@ -8065,6 +8193,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Narrateurs"
+          }
+        }
+      }
+    },
+    "Nationalité" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nationality"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nationalité"
           }
         }
       }
@@ -9525,6 +9669,22 @@
         }
       }
     },
+    "Portrait" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Portrait"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Portrait"
+          }
+        }
+      }
+    },
     "Portugais" : {
       "localizations" : {
         "en" : {
@@ -10081,6 +10241,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Recherche des couvertures…"
+          }
+        }
+      }
+    },
+    "Recherche des portraits…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Looking for portraits…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recherche des portraits…"
           }
         }
       }
@@ -12741,6 +12917,22 @@
         }
       }
     },
+    "Une série a besoin d'un nom." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A series needs a name."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Une série a besoin d'un nom."
+          }
+        }
+      }
+    },
     "Utilisateurs" : {
       "localizations" : {
         "en" : {
@@ -13425,6 +13617,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Web"
+          }
+        }
+      }
+    },
+    "Wikidata" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wikidata"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wikidata"
+          }
+        }
+      }
+    },
+    "Wikipédia" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wikipedia"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wikipédia"
           }
         }
       }

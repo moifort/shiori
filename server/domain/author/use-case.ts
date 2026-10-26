@@ -18,13 +18,18 @@ import { AuthorCommand } from '~/domain/author/command'
 import { AuthorQuery } from '~/domain/author/query'
 import type {
   Author,
+  AuthorCorrection,
   AuthorKey,
   AuthorWork,
+  PortraitChoice,
   PortraitUrl,
   ShelvedAuthor,
 } from '~/domain/author/types'
+import { CoverUrl } from '~/domain/book/primitives'
 import { BookQuery } from '~/domain/book/query'
 import type { Book } from '~/domain/book/types'
+import { CatalogueCorrectionCommand } from '~/domain/catalogue-correction/command'
+import { isImageAt } from '~/domain/scan/published-cover'
 import { type FollowedSeries, SeriesUseCase } from '~/domain/series/use-case'
 import { SeriesOpinionQuery } from '~/domain/series-opinion/query'
 import type { Language } from '~/domain/shared/language'
@@ -169,6 +174,61 @@ export namespace AuthorUseCase {
       portraitUrl: portraits.get(author.key),
       favorite: hearted.has(author.key),
     }))
+  }
+
+  /** Correct what the world knows of an author, where the model or the
+   *  portrait lookups were wrong or found nothing: in the shared catalogue, for
+   *  every reader, kept from every later call. Every change is logged under the
+   *  reader's name, apart from the catalogue. Free: nothing is asked of the
+   *  model.
+   *
+   *  A portrait's address must serve an image: a pasted link to a page would
+   *  leave every reader with the initials.
+   *
+   *  Answers the author's page as it now reads, without building a missing
+   *  catalogue; null when the reader holds no book of the author,
+   *  `not-an-image` for a portrait that is none. */
+  export const correct = async (
+    userId: UserId,
+    key: AuthorKey,
+    language: Language,
+    correction: AuthorCorrection,
+  ): Promise<AuthorPage | null | 'not-an-image'> => {
+    const shelved = (await shelvedAuthors(userId)).find((author) => author.key === key)
+    if (!shelved) return null
+    if (correction.portraitUrl && !(await isImageAt(CoverUrl(correction.portraitUrl))))
+      return 'not-an-image'
+    const known = await AuthorQuery.byKey(key)
+    await AuthorCommand.correct(known, key, shelved.name, correction)
+    await CatalogueCorrectionCommand.record(
+      userId,
+      'author',
+      key,
+      (Object.keys(correction) as (keyof AuthorCorrection)[]).map((field) => ({
+        field,
+        before: known?.[field] ?? null,
+        after: correction[field] ?? null,
+      })),
+    )
+    return page(userId, key, language, undefined, { waitForCatalogue: false })
+  }
+
+  /** The faces the reader may give an author: the one drawn now first, then
+   *  what Wikipedia, Wikidata and Open Library find for their name. Free, as a
+   *  book's covers are. Null when the reader holds no book of the author. */
+  export const portraitChoices = async (
+    userId: UserId,
+    key: AuthorKey,
+  ): Promise<PortraitChoice[] | null> => {
+    const shelved = (await shelvedAuthors(userId)).find((author) => author.key === key)
+    if (!shelved) return null
+    const known = await AuthorQuery.byKey(key)
+    const found = await AuthorQuery.portraitsFor(known?.name ?? shelved.name)
+    const current = known?.portraitUrl
+    const choices = found.map((choice) => ({ ...choice, isCurrent: choice.url === current }))
+    return current && !choices.some((choice) => choice.isCurrent)
+      ? [{ source: 'web', url: current, isCurrent: true }, ...choices]
+      : [...choices.filter((choice) => choice.isCurrent), ...choices.filter((c) => !c.isCurrent)]
   }
 
   /** The author's catalogue asked of the world again, at the reader's request:

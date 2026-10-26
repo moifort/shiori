@@ -22,6 +22,10 @@ final class AuthorViewModel {
 
     /// What the AI is writing for this page, said in its bar.
     var isGenerating: Bool { isCataloguing }
+    /// The faces the portrait picker offers; nil while they are sought.
+    private(set) var portraitChoices: [PortraitChoice]?
+    private(set) var portraitChoicesFailed: String?
+
     /// The reader hearted the author: the heart in the bar.
     private(set) var isFavorite = false
 
@@ -79,6 +83,37 @@ final class AuthorViewModel {
             isFavorite = !wanted
             guard !isCancellation(error) else { return }
             errorMessage = reportError(error)
+        }
+    }
+
+    /// The author corrected from the edit form or the portrait picker: the
+    /// page takes the server's answer. Answers the message to show, or nil
+    /// once saved.
+    func correct(_ correction: AuthorCorrection) async -> String? {
+        do {
+            if let corrected = try await client.correct(key, correction) {
+                withAnimation(.smooth) { page = corrected }
+            }
+            return nil
+        } catch let error as APIError where error.domainCode == "PORTRAIT_NOT_AN_IMAGE" {
+            // The link to a page, pasted for its photo: the reader's slip,
+            // nothing for Sentry.
+            return String(localized: "Cette adresse mène à une page, pas à une image. Ouvrez la photo seule, puis copiez son adresse.")
+        } catch {
+            return reportError(error)
+        }
+    }
+
+    /// The faces the portrait picker offers, sought when it opens: nil while
+    /// they are, and `portraitChoicesFailed` says why they could not be.
+    func loadPortraitChoices() async {
+        portraitChoices = nil
+        portraitChoicesFailed = nil
+        do {
+            portraitChoices = try await client.portraitChoices(key)
+        } catch {
+            guard !isCancellation(error) else { return }
+            portraitChoicesFailed = reportError(error)
         }
     }
 

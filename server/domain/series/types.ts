@@ -70,6 +70,10 @@ export type Series = {
    *  and is an opinion the model restitutes inconsistently. */
   volumes: Volume[]
   catalogedAt: Date
+  /** The fields a reader corrected by hand, which no later catalogue call
+   *  writes over: the model was wrong once on them already. Absent until the
+   *  first correction. */
+  corrected?: SeriesCorrectableField[]
   /** Drawn on the fly from a reader's own count of the volumes, for a saga
    *  nobody has catalogued: their volumes at their numbers, the saga's name
    *  standing in for the rest. Never stored — the shared catalogue holds what
@@ -80,6 +84,15 @@ export type Series = {
    *  catalogue is being asked for. Never stored. */
   awaitingCatalogue?: true
 }
+
+/** What a reader may correct of an edition's catalogue. The volume list is
+ *  not among them: it is the release watch's and the model's. */
+export const SERIES_CORRECTABLE_FIELDS = ['name', 'description'] as const
+export type SeriesCorrectableField = (typeof SERIES_CORRECTABLE_FIELDS)[number]
+
+/** A reader's correction of an edition's catalogue: a field absent is left
+ *  alone, a description set to undefined is cleared. */
+export type SeriesCorrection = { name?: SeriesName; description?: SeriesDescription | undefined }
 
 /** A saga in one edition language: what a catalogue is looked up by. The
  *  language is absent for the volumes that record none. */

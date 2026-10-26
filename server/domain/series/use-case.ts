@@ -5,10 +5,12 @@ import { BookCommand, type NewBook } from '~/domain/book/command'
 import { BookQuery } from '~/domain/book/query'
 import {
   type Book,
+  type BookFormat,
   type BookLanguage,
   DEFAULT_BOOK_LANGUAGE,
   type Genre,
 } from '~/domain/book/types'
+import { CatalogueCorrectionCommand } from '~/domain/catalogue-correction/command'
 import {
   catalogueVolumesOf,
   releasesOf,
@@ -47,6 +49,7 @@ import { SeriesQuery } from '~/domain/series/query'
 import type {
   SagaKey,
   Series,
+  SeriesCorrection,
   SeriesEdition,
   SeriesId,
   SeriesName,
@@ -336,6 +339,75 @@ export namespace SeriesUseCase {
       },
       (moved) => moved > 0,
     )
+  }
+
+  /** Correct an edition by hand, where the model was wrong or said nothing.
+   *
+   *  The name and the description are the catalogue's, so they are corrected
+   *  there, for every reader of the edition, and kept from every later
+   *  catalogue call; the new name is written into every reader's volumes, as a
+   *  catalogue call writes its own. An edition nobody catalogued has no
+   *  catalogue to correct: its name is the reader's volumes', renamed alone,
+   *  and it takes no description — a document written for one would mark the
+   *  edition catalogued, and its volumes would never be listed. Every change
+   *  to a catalogue is logged under the reader's name, apart from it.
+   *
+   *  The format is the reader's books', every volume of the edition they
+   *  hold. A recording is another edition with a spine of its own, so a saga
+   *  is never moved to or from one here.
+   *
+   *  Answers the edition as the saga screen draws it, `not-found` when the
+   *  reader holds no volume of it, `audio-format` and `not-catalogued` for the
+   *  two refusals. */
+  export const correct = async (
+    userId: UserId,
+    seriesId: SagaKey,
+    language: ScanLanguage,
+    edition: BookLanguage | undefined,
+    { format, ...correction }: SeriesCorrection & { format?: BookFormat },
+  ): Promise<Series | null | 'not-found' | 'audio-format' | 'not-catalogued'> => {
+    const shelf = await BookQuery.bySeries(userId, seriesId)
+    const opened = { saga: seriesId, language: editionOpened(shelf, language, edition) }
+    if (!shelf.some((book) => book.language === opened.language)) return 'not-found'
+    if (format && (format === 'audiobook' || isAudioSeries(seriesId))) return 'audio-format'
+    const known = await SeriesQuery.byId(opened)
+    if ('description' in correction && !known) return 'not-catalogued'
+
+    if (known && Object.keys(correction).length > 0) {
+      await SeriesCommand.correct(known, correction)
+      await CatalogueCorrectionCommand.record(userId, 'series', known.id, [
+        ...(correction.name ? [{ field: 'name', before: known.name, after: correction.name }] : []),
+        ...('description' in correction
+          ? [
+              {
+                field: 'description',
+                before: known.description ?? null,
+                after: correction.description ?? null,
+              },
+            ]
+          : []),
+      ])
+      if (correction.name && correction.name !== known.name)
+        await BookCommand.nameSeries(known.id, correction.name)
+    }
+    const name = known ? undefined : correction.name
+    if (name || format)
+      await AnalyticsUseCase.afterWrite(
+        userId,
+        (batch) =>
+          BookCommand.correctSeries(
+            userId,
+            seriesId,
+            opened.language,
+            { name, format },
+            new Date(),
+            batch,
+          ),
+        (changed) => changed > 0,
+      )
+    return describe(userId, seriesId, language, opened.language, undefined, {
+      waitForCatalogue: false,
+    })
   }
 
   /** One saga's catalogue in one edition, built the first time somebody asks

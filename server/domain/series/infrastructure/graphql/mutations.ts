@@ -1,5 +1,5 @@
 import { match, P } from 'ts-pattern'
-import { BookLanguageEnum } from '~/domain/book/infrastructure/graphql/enums'
+import { BookFormatEnum, BookLanguageEnum } from '~/domain/book/infrastructure/graphql/enums'
 import {
   DEPRECATED_EDITION_LANGUAGE,
   SeriesType,
@@ -36,6 +36,48 @@ builder.mutationFields((t) => ({
     resolve: (_root, args, { userId, event }) => {
       const { saga, language } = seriesReferenceOf(args.seriesId, args.language ?? undefined)
       return SeriesUseCase.recatalogue(userId, saga, languageOf(event), language)
+    },
+  }),
+
+  correctSeries: t.field({
+    type: SeriesType,
+    nullable: true,
+    description:
+      'Correct an edition where the model was wrong or said nothing. Omitted fields ' +
+      'are left alone; a `description` passed as null is cleared. Free: no model call.\n\n' +
+      'The name and the description are the catalogue’s: corrected there for every ' +
+      'reader of the edition, never written over by a later catalogue call, the name ' +
+      'written into every reader’s volumes. An edition nobody catalogued is renamed on ' +
+      'the reader’s volumes alone. The format is the reader’s: every volume they hold ' +
+      'of the edition takes it.\n\n' +
+      'Answers the edition as `series` with `waitForCatalogue: false` would. ' +
+      '`NOT_FOUND` when the reader holds no volume of it; `BAD_USER_INPUT` for ' +
+      '`AUDIOBOOK`, or any format on a saga heard — a recording is an edition of its ' +
+      'own — and for a description on an edition nobody catalogued.',
+    args: {
+      seriesId: t.arg({ type: 'SeriesId', required: true }),
+      name: t.arg({ type: 'SeriesName', required: false }),
+      format: t.arg({ type: BookFormatEnum, required: false }),
+      description: t.arg({ type: 'SeriesDescription', required: false }),
+    },
+    resolve: async (_root, args, { userId, event }) => {
+      const { saga, language } = seriesReferenceOf(args.seriesId)
+      return match(
+        await SeriesUseCase.correct(userId, saga, languageOf(event), language, {
+          ...(args.name ? { name: args.name } : {}),
+          // A wire `ebook` is a book held on a screen: the format is `book`.
+          ...(args.format ? { format: args.format === 'ebook' ? 'book' : args.format } : {}),
+          ...(args.description !== undefined ? { description: args.description ?? undefined } : {}),
+        }),
+      )
+        .with('not-found', () => notFound('Series not found'))
+        .with('audio-format', () =>
+          badUserInput('A saga heard and a saga read are separate editions'),
+        )
+        .with('not-catalogued', () =>
+          badUserInput('An edition nobody catalogued has no description to correct'),
+        )
+        .otherwise((series) => series)
     },
   }),
 

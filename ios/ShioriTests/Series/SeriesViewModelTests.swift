@@ -198,4 +198,25 @@ struct SeriesViewModelTests {
         #expect(viewModel.isFollowed)
         #expect(viewModel.errorMessage != nil)
     }
+
+    @Test func correctionReadsTheVolumesAgain() async {
+        let calls = Calls()
+        var client = SeriesClient.preview
+        let screen = client.screen
+        client.screen = { id, proposal in
+            calls.record("screen")
+            return try await screen(id, proposal)
+        }
+        client.correct = { _, correction in
+            calls.record("correct \(correction.format?.rawValue ?? "-")")
+            return SeriesFixtures.screen.series
+        }
+        let viewModel = model(client)
+        await viewModel.load()
+
+        let failure = await viewModel.correct(SeriesCorrection(format: .manga))
+
+        #expect(failure == nil)
+        #expect(calls.all == ["screen", "correct manga", "screen"])
+    }
 }

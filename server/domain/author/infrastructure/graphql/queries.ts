@@ -4,7 +4,7 @@ import {
   sagaCountOf,
   sagasNotHeldOf,
 } from '~/domain/author/business-rules'
-import type { Author, AuthorSeries, AuthorWork } from '~/domain/author/types'
+import type { Author, AuthorSeries, AuthorWork, PortraitChoice } from '~/domain/author/types'
 import { type AuthorPage, AuthorUseCase, type FollowedAuthor } from '~/domain/author/use-case'
 import { BookType } from '~/domain/book/infrastructure/graphql/types'
 import { BookQuery } from '~/domain/book/query'
@@ -188,7 +188,7 @@ export const AuthorCatalogueType = builder.objectRef<Author>('Author').implement
   }),
 })
 
-const AuthorPageType = builder.objectRef<AuthorPage>('AuthorPage').implement({
+export const AuthorPageType = builder.objectRef<AuthorPage>('AuthorPage').implement({
   description: 'Everything an author’s page draws, in one answer.',
   fields: (t) => ({
     author: t.field({ type: FollowedAuthorType, resolve: (page) => page.author }),
@@ -245,6 +245,28 @@ const AuthorPageType = builder.objectRef<AuthorPage>('AuthorPage').implement({
       type: [AuthorWorkType],
       description: 'The author’s other books outside any saga, which the reader does not hold.',
       resolve: (page) => page.booksNotHeld,
+    }),
+  }),
+})
+
+const PortraitSourceEnum = builder.enumType('PortraitSource', {
+  description: 'Where a portrait offered for an author comes from.',
+  values: {
+    WIKIPEDIA: { value: 'wikipedia', description: 'The photo of the author’s Wikipedia page.' },
+    WIKIDATA: { value: 'wikidata', description: 'The image Wikidata records for the writer.' },
+    OPEN_LIBRARY: { value: 'openLibrary', description: 'Open Library’s photo of the author.' },
+    WEB: { value: 'web', description: 'An image no known source serves: most often one pasted.' },
+  } as const,
+})
+
+const PortraitChoiceType = builder.objectRef<PortraitChoice>('PortraitChoice').implement({
+  description: 'A portrait the reader may give an author, as the portrait picker offers it.',
+  fields: (t) => ({
+    source: t.field({ type: PortraitSourceEnum, resolve: (choice) => choice.source }),
+    url: t.field({ type: 'PortraitUrl', resolve: (choice) => choice.url }),
+    isCurrent: t.boolean({
+      description: 'The portrait the author is drawn with now.',
+      resolve: (choice) => choice.isCurrent,
     }),
   }),
 })
@@ -327,6 +349,18 @@ builder.queryFields((t) => ({
         { favorite: args.favorite ?? undefined },
         args.order ?? 'loved',
       ),
+  }),
+
+  authorPortraitChoices: t.field({
+    type: [PortraitChoiceType],
+    nullable: true,
+    description:
+      'The portraits the reader may give an author, for `correctAuthor`: the one drawn ' +
+      'now first, then what Wikipedia, Wikidata and Open Library find for their name. ' +
+      'Free: no model call, three lookups at once. Null when the reader holds no book ' +
+      'of the author.',
+    args: { key: t.arg({ type: 'AuthorKey', required: true }) },
+    resolve: (_root, args, { userId }) => AuthorUseCase.portraitChoices(userId, args.key),
   }),
 
   authorPage: t.field({

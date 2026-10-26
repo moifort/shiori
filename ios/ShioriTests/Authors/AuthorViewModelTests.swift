@@ -74,6 +74,48 @@ struct AuthorViewModelTests {
 
         #expect(viewModel.errorMessage != nil)
     }
+
+    @Test func correctionDrawsThePageTheServerAnswers() async {
+        let sent = Calls()
+        let base = AuthorPage.preview
+        let corrected = AuthorPage(
+            author: base.author,
+            readCount: base.readCount,
+            nationality: base.nationality,
+            birthYear: base.birthYear,
+            deathYear: base.deathYear,
+            biography: "Autrice de l'Assassin royal.",
+            sagas: base.sagas,
+            sagasNotHeld: base.sagasNotHeld,
+            books: base.books,
+            booksNotHeld: base.booksNotHeld
+        )
+        var client = AuthorsClient.preview
+        client.correct = { [corrected] _, correction in
+            if case let .set(text) = correction.biography { sent.record(text) }
+            return corrected
+        }
+        let viewModel = model(client)
+        await viewModel.load()
+
+        let failure = await viewModel.correct(AuthorCorrection(biography: .set("Autrice de l'Assassin royal.")))
+
+        #expect(failure == nil)
+        #expect(sent.all == ["Autrice de l'Assassin royal."])
+        #expect(viewModel.page?.biography == "Autrice de l'Assassin royal.")
+    }
+
+    @Test func failedCorrectionLeavesThePageAndSaysWhy() async {
+        var client = AuthorsClient.preview
+        client.correct = { _, _ in throw Boom() }
+        let viewModel = model(client)
+        await viewModel.load()
+
+        let failure = await viewModel.correct(AuthorCorrection(nationality: .clear))
+
+        #expect(failure != nil)
+        #expect(viewModel.page?.nationality == AuthorPage.preview.nationality)
+    }
 }
 
 @MainActor

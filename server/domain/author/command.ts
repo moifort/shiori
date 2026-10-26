@@ -1,4 +1,5 @@
 import { chunk } from 'lodash-es'
+import { keepingCorrections, withCorrection } from '~/domain/author/business-rules'
 import * as favoriteRepository from '~/domain/author/infrastructure/favorite-repository'
 import { openLibraryPortraitOf } from '~/domain/author/infrastructure/open-library'
 import * as repository from '~/domain/author/infrastructure/repository'
@@ -7,7 +8,13 @@ import { portraitOf } from '~/domain/author/infrastructure/wikipedia'
 import { AuthorBiography, Nationality } from '~/domain/author/primitives'
 import { authorPrompt } from '~/domain/author/prompts'
 import { AUTHOR_SCHEMA, type AuthorOutput } from '~/domain/author/schemas'
-import type { Author, AuthorKey, AuthorSeries, AuthorWork } from '~/domain/author/types'
+import type {
+  Author,
+  AuthorCorrection,
+  AuthorKey,
+  AuthorSeries,
+  AuthorWork,
+} from '~/domain/author/types'
 import type { BookLanguage, CoverUrl } from '~/domain/book/types'
 import { generate } from '~/domain/scan/gemini'
 import { openLibraryCoverByTitle } from '~/domain/scan/open-library'
@@ -56,10 +63,27 @@ export namespace AuthorCommand {
    *  simply replaces whatever was there. */
   export const catalogue = (entry: Author): Promise<Author> => repository.save(entry)
 
+  /** Write a reader's correction into an author's catalogue, for every reader,
+   *  the fields it names marked so that no later catalogue call or portrait
+   *  lookup writes over them. An author nobody could describe gets a
+   *  catalogue holding the correction alone: the model is never asked about a
+   *  miss again, so nothing is lost. */
+  export const correct = (
+    current: Author | null,
+    key: AuthorKey,
+    name: AuthorNameValue,
+    correction: AuthorCorrection,
+    at: Date = new Date(),
+  ): Promise<Author> =>
+    repository.save(
+      withCorrection(current ?? { key, name, series: [], books: [], cataloguedAt: at }, correction),
+    )
+
   /** Ask again for the face of an author catalogued without one, by their
    *  name, and store what it says — the portrait, or when it was sought.
    *  Never throws: the page keeps the catalogue it had. */
   export const seekPortrait = async (author: Author): Promise<Author> => {
+    if (author.corrected?.includes('portraitUrl')) return author
     const portraitUrl = await faceOf(author.name)
     try {
       return await catalogue(
@@ -117,8 +141,9 @@ export namespace AuthorCommand {
         withCovers(series, openLibrary),
         withCovers(books, openLibrary),
       ])
-      const portraitUrl = foundPortrait ?? (await repository.findByKey(key))?.portraitUrl
-      const author = await catalogue({
+      const previous = await repository.findByKey(key)
+      const portraitUrl = foundPortrait ?? previous?.portraitUrl
+      const built: Author = {
         key,
         name: signedName,
         nationality: optionally(value.nationality, Nationality),
@@ -130,7 +155,8 @@ export namespace AuthorCommand {
         series: coveredSeries,
         books: coveredBooks,
         cataloguedAt: new Date(),
-      })
+      }
+      const author = await catalogue(keepingCorrections(built, previous))
       return { author, usage }
     } catch (error) {
       logger.error('author catalogue generation failed', { error, key })

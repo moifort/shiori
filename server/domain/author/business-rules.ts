@@ -1,10 +1,12 @@
 import { authorKeyOf } from '~/domain/author/primitives'
-import type {
-  Author,
-  AuthorKey,
-  AuthorSeries,
-  AuthorWork,
-  ShelvedAuthor,
+import {
+  AUTHOR_CORRECTABLE_FIELDS,
+  type Author,
+  type AuthorCorrection,
+  type AuthorKey,
+  type AuthorSeries,
+  type AuthorWork,
+  type ShelvedAuthor,
 } from '~/domain/author/types'
 import { shelfDateOf, shelfOrder, shelfTitleOrder } from '~/domain/book/business-rules'
 import type { BookFormat, BookLanguage, ReadingStatus } from '~/domain/book/types'
@@ -346,4 +348,36 @@ export const isPortraitWorthSeeking = (
   if (author.portraitUrl) return false
   if (!author.portraitSoughtAt) return true
   return now.getTime() - author.portraitSoughtAt.getTime() >= PORTRAIT_RETRY_DAYS * 86_400_000
+}
+
+/** An author's catalogue asked of the world again, keeping what readers
+ *  corrected by hand on the stored one — even a field they cleared: the model
+ *  was wrong on it once, and its next answer is no better source. */
+export const keepingCorrections = (fresh: Author, previous: Author | null): Author => {
+  const corrected = previous?.corrected
+  if (!previous || !corrected?.length) return fresh
+  const kept: Author = { ...fresh, corrected }
+  for (const field of corrected) {
+    if (previous[field] === undefined) delete kept[field]
+    else Object.assign(kept, { [field]: previous[field] })
+  }
+  // A face chosen by hand is no face to seek.
+  if (corrected.includes('portraitUrl')) delete kept.portraitSoughtAt
+  return kept
+}
+
+/** An author's catalogue with a reader's correction written in, each field it
+ *  names marked as corrected for good. */
+export const withCorrection = (author: Author, correction: AuthorCorrection): Author => {
+  const fields = AUTHOR_CORRECTABLE_FIELDS.filter((field) => field in correction)
+  const written: Author = {
+    ...author,
+    corrected: [...new Set([...(author.corrected ?? []), ...fields])],
+  }
+  for (const field of fields) {
+    if (correction[field] === undefined) delete written[field]
+    else Object.assign(written, { [field]: correction[field] })
+  }
+  if (fields.includes('portraitUrl')) delete written.portraitSoughtAt
+  return written
 }

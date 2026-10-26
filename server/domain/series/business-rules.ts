@@ -3,6 +3,7 @@ import type {
   ReleaseDate,
   SagaKey,
   Series,
+  SeriesCorrection,
   SeriesId,
   SeriesMiss,
   SeriesName,
@@ -11,6 +12,7 @@ import type {
   VolumeKind,
   VolumeNumber,
 } from '~/domain/series/types'
+import { SERIES_CORRECTABLE_FIELDS } from '~/domain/series/types'
 import { Year } from '~/domain/shared/primitives'
 import { lovedFirst, lovedRankOf } from '~/domain/shared/rating'
 import { bareTitleOf } from '~/domain/shared/saga-title'
@@ -753,4 +755,28 @@ export const keepingReleases = (fresh: Series, previous: Series | null): Series 
   return watched.length === 0
     ? { ...fresh, volumes }
     : { ...fresh, volumes: inCatalogueOrder([...volumes, ...watched]) }
+}
+
+/** A catalogue asked again of the world, keeping what readers corrected by
+ *  hand on the stored one — the name, the description, even cleared: the model
+ *  was wrong on them once, and its next answer is no better source. */
+export const keepingCorrections = (fresh: Series, previous: Series | null): Series => {
+  const corrected = previous?.corrected
+  if (!previous || !corrected?.length) return fresh
+  const kept: Series = { ...fresh, corrected }
+  for (const field of corrected)
+    if (field === 'name') kept.name = previous.name
+    else if (previous.description) kept.description = previous.description
+    else delete kept.description
+  return kept
+}
+
+/** An edition's catalogue with a reader's correction written in, each field
+ *  it names marked as corrected for good. */
+export const withCorrection = (series: Series, correction: SeriesCorrection): Series => {
+  const fields = SERIES_CORRECTABLE_FIELDS.filter((field) => field in correction)
+  const corrected = [...new Set([...(series.corrected ?? []), ...fields])]
+  const written: Series = { ...series, ...correction, corrected }
+  if ('description' in correction && !correction.description) delete written.description
+  return written
 }

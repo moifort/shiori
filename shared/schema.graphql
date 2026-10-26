@@ -2632,6 +2632,31 @@ type Mutation {
   ): Me!
 
   """
+  Correct what the world knows of an author, where the model or the portrait lookups were wrong or found nothing. Omitted fields are left alone; one passed as null is cleared. Written into the shared catalogue, for every reader, and never written over by a later catalogue call or portrait lookup. Free: no model call.
+  
+  Answers the author’s page as `authorPage` with `waitForCatalogue: false` would. `NOT_FOUND` when the reader holds no book of the author; `PORTRAIT_NOT_AN_IMAGE` when `portraitUrl` does not serve an image.
+  """
+  correctAuthor(
+    biography: AuthorBiography
+    birthYear: Year
+    deathYear: Year
+    key: AuthorKey!
+    nationality: Nationality
+
+    """One `authorPortraitChoices` offered, or an address the reader pasted."""
+    portraitUrl: PortraitUrl
+  ): AuthorPage!
+
+  """
+  Correct an edition where the model was wrong or said nothing. Omitted fields are left alone; a `description` passed as null is cleared. Free: no model call.
+  
+  The name and the description are the catalogue’s: corrected there for every reader of the edition, never written over by a later catalogue call, the name written into every reader’s volumes. An edition nobody catalogued is renamed on the reader’s volumes alone. The format is the reader’s: every volume they hold of the edition takes it.
+  
+  Answers the edition as `series` with `waitForCatalogue: false` would. `NOT_FOUND` when the reader holds no volume of it; `BAD_USER_INPUT` for `AUDIOBOOK`, or any format on a saga heard — a recording is an edition of its own — and for a description on an edition nobody catalogued.
+  """
+  correctSeries(description: SeriesDescription, format: BookFormat, name: SeriesName, seriesId: SeriesId!): Series
+
+  """
   Say how many volumes a saga has, for a saga nobody has catalogued: `series` then answers with a provisional catalogue drawn from the count — the reader's volumes at their numbers, the saga's name standing in for the rest — and the Series tab and the dashboard measure the saga against it.
   
   Kept on the reader's own opinion, never written into the shared catalogue: a count typed by one reader is not a fact about the world. It stops mattering the day a catalogue exists — a scan of one of its volumes, or `refreshSeries`, builds one.
@@ -3194,6 +3219,31 @@ enum Plan {
 }
 
 """
+A portrait the reader may give an author, as the portrait picker offers it.
+"""
+type PortraitChoice {
+  """The portrait the author is drawn with now."""
+  isCurrent: Boolean!
+  source: PortraitSource!
+  url: PortraitUrl!
+}
+
+"""Where a portrait offered for an author comes from."""
+enum PortraitSource {
+  """Open Library’s photo of the author."""
+  OPEN_LIBRARY
+
+  """An image no known source serves: most often one pasted."""
+  WEB
+
+  """The image Wikidata records for the writer."""
+  WIKIDATA
+
+  """The photo of the author’s Wikipedia page."""
+  WIKIPEDIA
+}
+
+"""
 An author's photograph as Wikipedia serves it. Always HTTPS, never a URL a model wrote.
 """
 scalar PortraitUrl
@@ -3259,6 +3309,11 @@ type Query {
     """
     waitForCatalogue: Boolean = true
   ): AuthorPage
+
+  """
+  The portraits the reader may give an author, for `correctAuthor`: the one drawn now first, then what Wikipedia, Wikidata and Open Library find for their name. Free: no model call, three lookups at once. Null when the reader holds no book of the author.
+  """
+  authorPortraitChoices(key: AuthorKey!): [PortraitChoice!]
 
   """
   What the author page shows under its heading, in one format: the soonest work announced and the ones out in the last three months, outside the sagas the reader holds — the Découvrir Authors shelf’s row for that author. Empty for an author the reader holds nothing of in that format, or never looked up yet.

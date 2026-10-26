@@ -72,6 +72,27 @@ enum SeriesAPI {
         return data.series.map { BookSeries(catalogue: $0.fragments.seriesCatalogue) }
     }
 
+    /// Corrects the edition: its name and description in the shared
+    /// catalogue, the format on the reader's own volumes. Answers the edition
+    /// as the screen draws it.
+    static func correct(seriesId: String, correction: SeriesCorrection) async throws -> BookSeries? {
+        let description: GraphQLNullable<String> = switch correction.description {
+        case nil: .none
+        case let .set(text): .some(text)
+        case .clear: .null
+        }
+        let data = try await GraphQLHelpers.perform(
+            GraphQLClient.shared.apollo,
+            mutation: ShioriGraphQL.CorrectSeriesMutation(
+                seriesId: seriesId,
+                name: correction.name.map { .some($0) } ?? .none,
+                format: correction.format.map { .some(LibraryAPI.graphQLFormat($0)) } ?? .none,
+                description: description
+            )
+        )
+        return data.correctSeries.map { BookSeries(catalogue: $0.fragments.seriesCatalogue) }
+    }
+
     /// Adds a volume of a saga heard as Audible describes it, through the
     /// reader's account, filed under the saga at its number in the edition
     /// `seriesId` names, on the pile. Throws `NOT_FOUND` when Audible sells no

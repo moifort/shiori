@@ -16,6 +16,10 @@ struct AuthorScreen: View {
     @State private var openWork: AuthorWork?
     @State private var destination: LibraryDestination?
     @State private var quick: BookQuickRequest?
+    /// The form correcting the author's facts and biography.
+    @State private var isEditing = false
+    /// The sheet giving the author another face.
+    @State private var isPickingPortrait = false
     private let library: LibraryClient
 
     /// - Parameter isOffered: offered by Découvrir as an author a friend loves,
@@ -89,7 +93,7 @@ struct AuthorScreen: View {
                     }
                 }
             }
-            if viewModel.page != nil {
+            if let page = viewModel.page {
                 ToolbarItem(placement: .primaryAction) {
                     AsyncToolbarButton(
                         title: viewModel.isFavorite ? "Retirer des préférés" : "Préféré",
@@ -99,7 +103,36 @@ struct AuthorScreen: View {
                     }
                     .accessibilityIdentifier("author-favorite")
                 }
+                // Only an author the reader holds a book of: the server corrects
+                // no one else.
+                if page.author.bookCount > 0 {
+                    ToolbarItem(placement: .primaryAction) {
+                        AuthorActionsMenu { action in
+                            switch action {
+                            case .edit: isEditing = true
+                            case .portrait: isPickingPortrait = true
+                            }
+                        }
+                    }
+                }
             }
+        }
+        .sheet(isPresented: $isEditing) {
+            if let page = viewModel.page {
+                AuthorEditSheet(page: page) { correction in
+                    await viewModel.correct(correction)
+                }
+            }
+        }
+        .sheet(isPresented: $isPickingPortrait) {
+            PortraitPickerSheet(
+                initials: viewModel.page?.author.initials ?? "",
+                choices: viewModel.portraitChoices,
+                loadFailed: viewModel.portraitChoicesFailed
+            ) { choice in
+                await viewModel.correct(AuthorCorrection(portraitURL: choice.url))
+            }
+            .task { await viewModel.loadPortraitChoices() }
         }
         // The AI at work, said by a pill floating over the page: the page
         // under it stays readable and every action at hand.

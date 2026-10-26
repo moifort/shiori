@@ -2,6 +2,7 @@ import SwiftUI
 
 /// Everything the "…" menu of a saga can ask for.
 enum SeriesMenuAction {
+    case edit
     case declareVolumeCount
     case merge
     case delete
@@ -20,6 +21,10 @@ struct SeriesActionsMenu: View {
 
     var body: some View {
         Menu {
+            Button("Modifier", systemImage: "pencil") {
+                onAction(.edit)
+            }
+            .accessibilityIdentifier("series-edit")
             // The count is the reader's own: they can correct it for as long
             // as it is what the screen is drawn from.
             if isProvisional {

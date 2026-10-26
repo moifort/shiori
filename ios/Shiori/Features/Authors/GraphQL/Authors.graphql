@@ -41,45 +41,49 @@ fragment FollowedAuthorRow on FollowedAuthor {
 # builds the catalogue while the reader's books are on screen.
 query AuthorPage($key: AuthorKey!, $offered: AuthorName, $waitForCatalogue: Boolean!) {
   authorPage(key: $key, offered: $offered, waitForCatalogue: $waitForCatalogue) {
-    awaitingCatalogue
-    author {
-      key
-      name
-      indexLetter
-      portraitUrl
-      favorite
-      bookCount
-      readCount
-      seriesCount
-      favoriteCount
-      averageRating
+    ...AuthorPageFields
+  }
+}
+
+fragment AuthorPageFields on AuthorPage {
+  awaitingCatalogue
+  author {
+    key
+    name
+    indexLetter
+    portraitUrl
+    favorite
+    bookCount
+    readCount
+    seriesCount
+    favoriteCount
+    averageRating
+  }
+  catalogue {
+    nationality
+    birthYear
+    deathYear
+    biography
+  }
+  sagas {
+    ...FollowedSeriesRow
+    volumes {
+      ...FollowedVolume
     }
     catalogue {
-      nationality
-      birthYear
-      deathYear
-      biography
+      ...CatalogueSpine
     }
-    sagas {
-      ...FollowedSeriesRow
-      volumes {
-        ...FollowedVolume
-      }
-      catalogue {
-        ...CatalogueSpine
-      }
-    }
-    sagasNotHeld {
-      ...AuthorSeriesFields
-    }
-    books {
-      ...BookSummary
-    }
-    booksNotHeld {
-      title
-      publishedIn
-      coverUrl
-    }
+  }
+  sagasNotHeld {
+    ...AuthorSeriesFields
+  }
+  books {
+    ...BookSummary
+  }
+  booksNotHeld {
+    title
+    publishedIn
+    coverUrl
   }
 }
 
@@ -98,4 +102,38 @@ fragment AuthorSeriesFields on AuthorSeries {
 # Heart the author, or take the heart back. Answers what is now true.
 mutation SetAuthorFavorite($key: AuthorKey!, $favorite: Boolean!) {
   setAuthorFavorite(key: $key, favorite: $favorite)
+}
+
+# Correct what the world knows of the author, in the shared catalogue: every
+# field sent is written, one sent as null cleared, and none is written over by
+# a later catalogue call. Answers the page as it now reads.
+# `PORTRAIT_NOT_AN_IMAGE` when the portrait address serves no image.
+mutation CorrectAuthor(
+  $key: AuthorKey!
+  $nationality: Nationality
+  $birthYear: Year
+  $deathYear: Year
+  $biography: AuthorBiography
+  $portraitUrl: PortraitUrl
+) {
+  correctAuthor(
+    key: $key
+    nationality: $nationality
+    birthYear: $birthYear
+    deathYear: $deathYear
+    biography: $biography
+    portraitUrl: $portraitUrl
+  ) {
+    ...AuthorPageFields
+  }
+}
+
+# The faces the reader may give the author: the one drawn now first, then what
+# Wikipedia, Wikidata and Open Library find for the name. Free.
+query AuthorPortraitChoices($key: AuthorKey!) {
+  authorPortraitChoices(key: $key) {
+    source
+    url
+    isCurrent
+  }
 }

@@ -228,3 +228,19 @@ fragment SeriesOpinionFields on SeriesOpinion {
   unfollowedLanguages
   volumeCount
 }
+
+# Correct the edition where the AI was wrong or said nothing. The name and the
+# description are the catalogue's, corrected for every reader of the edition
+# and never written over by a later catalogue call; the format is the reader's
+# own volumes'. A field left out is left alone, a description sent as null is
+# cleared. Answers the edition as the screen draws it.
+mutation CorrectSeries(
+  $seriesId: SeriesId!
+  $name: SeriesName
+  $format: BookFormat
+  $description: SeriesDescription
+) {
+  correctSeries(seriesId: $seriesId, name: $name, format: $format, description: $description) {
+    ...SeriesCatalogue
+  }
+}

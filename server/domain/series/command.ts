@@ -1,13 +1,15 @@
 import type { BookLanguage } from '~/domain/book/types'
 import {
   type FoundVolume,
+  keepingCorrections,
   keepingReleases,
   withBareTitles,
+  withCorrection,
   withReleases,
 } from '~/domain/series/business-rules'
 import * as repository from '~/domain/series/infrastructure/repository'
 import { seriesIdOf } from '~/domain/series/primitives'
-import type { SagaKey, Series, SeriesEdition } from '~/domain/series/types'
+import type { SagaKey, Series, SeriesCorrection, SeriesEdition } from '~/domain/series/types'
 
 export namespace SeriesCommand {
   /** Record a saga's catalogue in one edition, or refresh one already known.
@@ -18,9 +20,21 @@ export namespace SeriesCommand {
    *  volumes — dates, titles and covers — is carried over, since the model's
    *  fresh list knows nothing of it. Nothing here is per user, so one reader
    *  refreshing the catalogue improves it for everyone reading that edition.
-   *  Its volumes are titled without the saga's name and number. */
-  export const catalogue = async (entry: Series): Promise<Series> =>
-    repository.save(keepingReleases(withBareTitles(entry), await repository.findById(entry)))
+   *  Its volumes are titled without the saga's name and number, and what a
+   *  reader corrected by hand — the name, the description — stays as they
+   *  wrote it. */
+  export const catalogue = async (entry: Series): Promise<Series> => {
+    const previous = await repository.findById(entry)
+    return repository.save(
+      keepingCorrections(keepingReleases(withBareTitles(entry), previous), previous),
+    )
+  }
+
+  /** Write a reader's correction into an edition's catalogue, for every reader
+   *  of it, the fields it names marked so that no later catalogue call writes
+   *  over them. */
+  export const correct = (series: Series, correction: SeriesCorrection): Promise<Series> =>
+    repository.save(withCorrection(series, correction))
 
   /** Write what the release watch found of one edition into that edition's
    *  catalogue. An edition nobody catalogued is left alone: the watch is no

@@ -4,6 +4,7 @@ import { AuthorCommand } from '~/domain/author/command'
 import { AwaitedEditionCommand } from '~/domain/awaited-edition/command'
 import { coverPrefixOf } from '~/domain/book/business-rules'
 import { BookCommand } from '~/domain/book/command'
+import { CatalogueCorrectionCommand } from '~/domain/catalogue-correction/command'
 import { DiscoveryCommand } from '~/domain/discovery/command'
 import { EntitlementCommand } from '~/domain/entitlement/command'
 import { FriendshipCommand } from '~/domain/friendship/command'
@@ -67,6 +68,7 @@ export namespace UserUseCase {
       KindleCommand.deleteForUser(userId),
       SeriesOpinionCommand.deleteAllForUser(userId),
       AuthorCommand.deleteFavoritesOf(userId),
+      CatalogueCorrectionCommand.deleteAllForUser(userId),
       FriendshipCommand.deleteAllForUser(userId),
       NotificationCommand.deleteForUser(userId),
       DiscoveryCommand.deleteForUser(userId),

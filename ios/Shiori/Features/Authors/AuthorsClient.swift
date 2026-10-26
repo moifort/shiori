@@ -18,6 +18,11 @@ struct AuthorsClient: Sendable {
         async throws -> CursorPage<FollowedAuthor>
     /// Hearts the author or takes the heart back; answers what is now true.
     var setFavorite: @Sendable (_ key: String, Bool) async throws -> Bool = { _, favorite in favorite }
+    /// What the world knows of the author, corrected in the shared catalogue;
+    /// answers the page as it now reads.
+    var correct: @Sendable (_ key: String, AuthorCorrection) async throws -> AuthorPage? = { _, _ in nil }
+    /// The faces the reader may give the author, the one drawn now first.
+    var portraitChoices: @Sendable (_ key: String) async throws -> [PortraitChoice] = { _ in [] }
 }
 
 extension AuthorsClient {
@@ -28,6 +33,8 @@ extension AuthorsClient {
         stopAwaiting: { try await AwaitedAPI.stop(id: $0) },
         addBook: { try await BookAddition.add($0, lookingUp: $1, source: .author) },
         list: { try await AuthorsAPI.myAuthorsPage(limit: $0, after: $1, order: $2) },
-        setFavorite: { try await AuthorsAPI.setFavorite(key: $0, favorite: $1) }
+        setFavorite: { try await AuthorsAPI.setFavorite(key: $0, favorite: $1) },
+        correct: { try await AuthorsAPI.correct(key: $0, correction: $1) },
+        portraitChoices: { try await AuthorsAPI.portraitChoices(key: $0) }
     )
 }

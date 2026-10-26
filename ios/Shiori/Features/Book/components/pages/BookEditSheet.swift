@@ -482,8 +482,9 @@ private struct DateField: View {
 }
 
 /// A form row as Vinarium's edit form draws one: the icon and title leading,
-/// the field trailing where the value was.
-private struct LabeledField<Field: View>: View {
+/// the field trailing where the value was. Shared by every edit form, so a
+/// saga's and an author's read as a book's.
+struct LabeledField<Field: View>: View {
     let title: LocalizedStringKey
     let icon: String
     @ViewBuilder let field: Field
