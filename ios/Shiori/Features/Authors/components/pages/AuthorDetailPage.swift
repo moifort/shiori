@@ -10,8 +10,8 @@ enum AuthorAction {
     case refresh
 }
 
-/// An author's page, as the TV app draws a person: their round portrait in the
-/// middle of their own colours blurred, the name, where they come from and
+/// An author's page, as the TV app draws a person: their round portrait over
+/// their first cover blurred, the name, where they come from and
 /// when they were born, three lines of biography, then their figures. Under
 /// it, their series as the cards of "Toutes les séries", their books outside
 /// any series on two rows that scroll together, and what the reader does not
@@ -45,9 +45,11 @@ struct AuthorDetailPage: View {
             }
         }
         .background(Color(.systemGroupedBackground))
+        // The name stays the page's title for the Back button's history, but
+        // the bar does not show it: the hero says it, as on a book's page.
         .navigationTitle(name)
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarTitleDisplayMode(.inline)
+        .toolbar(removing: .title)
         .refreshable { await onAction(.refresh) }
     }
 
@@ -65,6 +67,8 @@ struct AuthorDetailPage: View {
             }
             .padding(.bottom, 32)
         }
+        // The bar's buttons float over the portrait as it scrolls, as on a book's.
+        .scrollEdgeEffectHidden(true, for: .top)
         .ignoresSafeArea(edges: .top)
     }
 
@@ -121,7 +125,7 @@ struct AuthorDetailPage: View {
         }
         .frame(maxWidth: .infinity)
         .background(alignment: .top) {
-            CoverBackdrop(url: page.author.portraitURL, fadeHeight: 140, ground: Color(.systemGroupedBackground))
+            CoverBackdrop(url: page.backdropURL, fadeHeight: 140, ground: Color(.systemGroupedBackground))
                 .frame(height: 380)
         }
     }

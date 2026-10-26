@@ -76,6 +76,18 @@ struct AuthorPage: Sendable {
     /// Nobody had described the author: only the reader's books, while the AI
     /// builds the catalogue the screen asks for next.
     var isAwaitingCatalogue = false
+
+    /// The cover the hero's ground is blurred from, as the TV app sets a film
+    /// over a person: the first the page draws — their first saga's card, else
+    /// their first book, else one they could add. A portrait blurs into the
+    /// brown of skin and studio grey, so it is the last resort.
+    var backdropURL: URL? {
+        let covers: [URL?] = sagas.map(\.cardCoverURL)
+            + books.map(\.coverURL)
+            + printSagasNotHeld.map(\.coverURL)
+            + booksNotHeld.map(\.coverURL)
+        return covers.compactMap(\.self).first ?? author.portraitURL
+    }
 }
 
 /// A saga the author wrote that the reader holds nothing of.
