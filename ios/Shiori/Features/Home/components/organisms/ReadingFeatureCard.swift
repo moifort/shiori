@@ -101,6 +101,7 @@ struct ReadingFeatureCard: View {
             HStack(spacing: 8) {
                 Button(action: onFinish) {
                     Label("Marquer lu", systemImage: "checkmark")
+                        .labelStyle(.caption)
                         .font(.caption.weight(.semibold))
                         .lineLimit(1)
                         .fixedSize()

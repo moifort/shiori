@@ -140,6 +140,7 @@ struct ReadingLeadCard: View {
             HStack(spacing: 8) {
                 Button(action: onFinish) {
                     Label("Marquer lu", systemImage: "checkmark")
+                        .labelStyle(.caption)
                         .font(.caption.weight(.semibold))
                         .lineLimit(1)
                         .fixedSize()
@@ -150,7 +151,7 @@ struct ReadingLeadCard: View {
                 Button(action: onRate) {
                     Group {
                         if ratingLabelled {
-                            Label("Noter", systemImage: "star")
+                            Label("Noter", systemImage: "star").labelStyle(.caption)
                         } else {
                             Label("Noter", systemImage: "star").labelStyle(.iconOnly)
                         }
