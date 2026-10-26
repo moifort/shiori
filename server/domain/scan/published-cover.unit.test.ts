@@ -244,6 +244,16 @@ describe('isImageAt', () => {
     expect(methods).toEqual(['HEAD', 'GET'])
   })
 
+  test('takes an address behind a bot wall, which the phone loads', async () => {
+    coverAnswers(new Response('<html>Just a moment…</html>', { status: 403 }))
+    expect(await isImageAt(pasted)).toBe(true)
+  })
+
+  test('refuses an address that is gone', async () => {
+    coverAnswers(new Response('<html>Not found</html>', { status: 404 }))
+    expect(await isImageAt(pasted)).toBe(false)
+  })
+
   test('refuses an address that cannot be reached', async () => {
     coverAnswers(new Error('The operation timed out.'))
     expect(await isImageAt(pasted)).toBe(false)

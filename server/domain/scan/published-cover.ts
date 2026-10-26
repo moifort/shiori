@@ -133,12 +133,18 @@ export const isCoverGone = async (url: CoverUrl): Promise<boolean> => {
   }
 }
 
+/** Statuses of a bot wall — Cloudflare's challenge on Booknode's CDN — that turns
+ *  the server away from an image the reader's phone loads and draws. */
+const BOT_WALL_STATUSES = new Set([401, 403, 429])
+
 /** Whether an address a reader pasted serves an image: the link to a shop's
  *  page about the book, copied in place of its cover's, would be drawn as the
  *  placeholder for good. Asked with HEAD first, then with GET for a server that
  *  refuses HEAD. Following redirects, as the app's image loader does. A server
  *  that cannot be reached says no: the reader is told at once, rather than left
- *  with a cover that never draws. Never throws. */
+ *  with a cover that never draws. A server that turns this one away says yes:
+ *  it shows nothing either way, and the image is drawn by the phone, which the
+ *  wall lets through. Never throws. */
 export const isImageAt = async (url: CoverUrl): Promise<boolean> => {
   const answer = (method: 'HEAD' | 'GET') =>
     fetch(url, { method, signal: AbortSignal.timeout(PROBE_TIMEOUT_MS) })
@@ -147,6 +153,11 @@ export const isImageAt = async (url: CoverUrl): Promise<boolean> => {
     if (!response.ok) {
       await response.body?.cancel()
       response = await answer('GET')
+    }
+    if (BOT_WALL_STATUSES.has(response.status)) {
+      await response.body?.cancel()
+      logger.info('pasted cover behind a bot wall', { status: response.status, url })
+      return true
     }
     const type = response.headers.get('content-type') ?? ''
     const length = Number(response.headers.get('content-length') ?? Number.NaN)
