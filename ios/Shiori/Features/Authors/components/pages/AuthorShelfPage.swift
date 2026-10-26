@@ -53,7 +53,6 @@ struct AuthorShelfPage: View {
         }
         .background(Color(.systemGroupedBackground))
         .navigationTitle("Auteurs")
-        .navigationBarTitleDisplayMode(.large)
         .refreshable { onAction(.refresh) }
         .overlay {
             if authors.isEmpty {

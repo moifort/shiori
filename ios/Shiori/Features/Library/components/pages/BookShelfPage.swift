@@ -76,7 +76,6 @@ struct BookShelfPage: View {
         }
         .background(Color(.systemGroupedBackground))
         .navigationTitle(shelf.title)
-        .navigationBarTitleDisplayMode(.large)
         .refreshable { onAction(.refresh) }
     }
 

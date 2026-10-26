@@ -1,26 +1,22 @@
 import SwiftUI
 
 extension View {
-    /// The magnifier in the bar of a pushed shelf, as the TV app keeps its
-    /// search a tap away on every page: it opens the library's search sheet.
-    func searchesLibrary() -> some View {
-        modifier(LibrarySearchButton())
+    /// The bar of a pushed shelf, the home's: its name on the left and the
+    /// magnifier on the right, leaving as the reader scrolls down. The TV app
+    /// keeps its search a tap away on every page; the magnifier opens the
+    /// library's search sheet.
+    func searchesLibrary(_ title: String) -> some View {
+        modifier(LibrarySearchButton(title: title))
     }
 }
 
 private struct LibrarySearchButton: ViewModifier {
+    let title: String
     @State private var showsSearch = false
 
     func body(content: Content) -> some View {
         content
-            .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    ToolbarIconButton(title: "Rechercher", systemImage: "magnifyingglass") {
-                        showsSearch = true
-                    }
-                    .accessibilityIdentifier("library-search")
-                }
-            }
+            .scrollAwayBar(title) { showsSearch = true }
             .sheet(isPresented: $showsSearch) { LibrarySearchScreen() }
     }
 }

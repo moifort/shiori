@@ -57,7 +57,6 @@ struct SeriesShelfPage: View {
         }
         .background(Color(.systemGroupedBackground))
         .navigationTitle("Séries")
-        .navigationBarTitleDisplayMode(.large)
         .refreshable { onAction(.refresh) }
         .overlay {
             if series.isEmpty, upNext.isEmpty {

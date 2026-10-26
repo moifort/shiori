@@ -38,11 +38,6 @@ struct LibraryShelvesPage: View {
     let errorMessage: String?
     let onAction: (LibraryShelvesAction) -> Void
 
-    /// Whether the entry screen's bar shows its title and search, as the
-    /// home's does: shown at the top, sent away while scrolling down, called
-    /// back by scrolling up, as Safari brings its bar back.
-    @State private var barCalled = true
-
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 30) {
@@ -58,20 +53,9 @@ struct LibraryShelvesPage: View {
             .padding(.top, 4)
             .padding(.bottom, 32)
         }
-        .onScrollGeometryChange(for: CGFloat.self) { geometry in
-            geometry.contentOffset.y + geometry.contentInsets.top
-        } action: { old, offset in
-            guard genre == nil else { return }
-            let called = if offset <= 6 { true }
-                else if offset > old + 4 { false }
-                else if offset < old - 4 { true }
-                else { barCalled }
-            guard called != barCalled else { return }
-            withAnimation(.smooth(duration: 0.25)) { barCalled = called }
-        }
         .background(Color(.systemGroupedBackground))
         .navigationTitle(genre?.label ?? String(localized: "Bibliothèque"))
-        .modifier(EntryBar(isEntry: genre == nil, isCalled: barCalled) { onAction(.search) })
+        .scrollAwayBar(genre?.label ?? String(localized: "Bibliothèque")) { onAction(.search) }
         .refreshable { onAction(.refresh) }
         .overlay(alignment: .top) {
             if isLoading, shelves.isEmpty { ProgressView().padding(.top, 120) }
@@ -179,45 +163,6 @@ struct LibraryShelvesPage: View {
                 title: genre == nil ? "Votre bibliothèque est vide" : "Aucun livre de ce genre",
                 message: "Scannez la couverture d'un livre pour commencer."
             )
-        }
-    }
-}
-
-/// The entry screen's bar, drawn as the home's: the page's name on the left
-/// and the search on the right, both going away together. A genre page keeps
-/// the system's large title.
-private struct EntryBar: ViewModifier {
-    let isEntry: Bool
-    let isCalled: Bool
-    let onSearch: () -> Void
-
-    func body(content: Content) -> some View {
-        if isEntry {
-            content
-                // The bar keeps the title for VoiceOver and the Back button,
-                // and draws its own on the left.
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .principal) { Text(verbatim: "").accessibilityHidden(true) }
-                    if isCalled {
-                        ToolbarItem(placement: .topBarLeading) {
-                            Text("Bibliothèque")
-                                .font(.title2.weight(.bold))
-                                .fixedSize()
-                                .accessibilityHidden(true)
-                        }
-                        .sharedBackgroundVisibility(.hidden)
-                        ToolbarItem(placement: .topBarTrailing) {
-                            Button(action: onSearch) {
-                                Label("Rechercher", systemImage: "magnifyingglass")
-                            }
-                            .labelStyle(.iconOnly)
-                            .accessibilityIdentifier("library-search")
-                        }
-                    }
-                }
-        } else {
-            content
         }
     }
 }

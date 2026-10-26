@@ -36,7 +36,7 @@ struct AuthorShelfScreen: View {
             case .refresh: Task { await viewModel.load() }
             }
         }
-        .searchesLibrary()
+        .searchesLibrary(String(localized: "Auteurs"))
         .pushesDetail(item: $destination) { LibraryDestinationScreen(destination: $0, client: library) }
         .performsBookQuickActions($quick, client: library) { destination = $0 }
         .task { await viewModel.loadOnAppear() }

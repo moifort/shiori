@@ -45,7 +45,6 @@ struct LibraryShelvesScreen: View {
             .onChange(of: seriesRequest?.wrappedValue, initial: true) { takeSeriesRequest() }
         } else {
             page
-                .searchesLibrary()
                 .pushesDetail(item: $destination) { opened in
                     LibraryDestinationScreen(destination: opened, client: client)
                 }

@@ -46,7 +46,7 @@ struct BookShelfScreen: View {
                 )
             }
         }
-        .searchesLibrary()
+        .searchesLibrary(shelf.title)
         .pushesDetail(item: $destination) { LibraryDestinationScreen(destination: $0, client: client) }
         .performsBookQuickActions($quick, client: client) { destination = $0 }
         .task { await viewModel.loadOnAppear() }

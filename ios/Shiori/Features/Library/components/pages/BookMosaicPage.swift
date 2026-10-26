@@ -73,7 +73,6 @@ struct BookMosaicPage: View {
         }
         .background(Color(.systemGroupedBackground))
         .navigationTitle(BookShelf.all.title)
-        .navigationBarTitleDisplayMode(.large)
         .refreshable { onAction(.refresh) }
     }
 }
