@@ -69,7 +69,7 @@ query AuthorPage($key: AuthorKey!, $offered: AuthorName, $waitForCatalogue: Bool
         ...CatalogueSpine
       }
     }
-    printSagasNotHeld: sagasNotHeld(audio: false) {
+    sagasNotHeld {
       ...AuthorSeriesFields
     }
     books {
@@ -83,11 +83,12 @@ query AuthorPage($key: AuthorKey!, $offered: AuthorName, $waitForCatalogue: Bool
   }
 }
 
-# A saga of the author the reader holds nothing of in one format, with the id
-# its catalogue is keyed on in that format: the saga heard is a saga of its own.
+# A saga of the author the reader holds nothing of in any format, offered in the
+# format they take the author in, with the id its catalogue is keyed on in it.
 fragment AuthorSeriesFields on AuthorSeries {
   id
   name
+  audio
   author
   volumeCount
   firstVolumeTitle

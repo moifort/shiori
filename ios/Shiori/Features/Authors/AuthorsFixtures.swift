@@ -40,7 +40,7 @@ extension AuthorPage {
         deathYear: nil,
         biography: "Autrice de fantasy, connue pour les cycles de l'Assassin royal et des Aventuriers de la mer.",
         sagas: [],
-        printSagasNotHeld: [
+        sagasNotHeld: [
             AuthorSeries(
                 id: "les-aventuriers-de-la-mer--robin-hobb",
                 name: "Les Aventuriers de la mer",

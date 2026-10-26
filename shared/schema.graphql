@@ -457,9 +457,9 @@ type AuthorPage {
   sagas: [FollowedSeries!]!
 
   """
-  The author’s sagas the reader holds nothing of in one format: on paper, or heard when `audio` is set — the saga heard is a saga of its own, so one read and never heard is one to discover among the recordings. Each with the id its catalogue is keyed on in that format.
+  The author’s sagas the reader holds nothing of, in any format, offered on paper, or heard when `audio` is set. Without `audio`, offered in the format most of the reader’s books of the author are in. Each with the id its catalogue is keyed on in that format, in the reader’s language.
   """
-  sagasNotHeld(audio: Boolean!): [AuthorSeries!]!
+  sagasNotHeld(audio: Boolean): [AuthorSeries!]!
 }
 
 """
@@ -482,6 +482,9 @@ type AuthorReleases {
 
 """A saga the author wrote that the reader holds nothing of."""
 type AuthorSeries {
+  """Offered among the recordings: `id` names the saga heard."""
+  audio: Boolean!
+
   """
   The author as the catalogue spells them: with `name`, what `series` needs to describe a saga the reader holds nothing of.
   """

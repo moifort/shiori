@@ -253,15 +253,22 @@ struct AuthorDetailPage: View {
                 open: { send(.openSeries(SeriesDestination(seriesId: saga.seriesId))) }
             )
         }
-        let sagas: [PosterRow.Item] = page.sagasNotHeld(in: .print).map { saga in
-            let book = Book(id: "saga-\(saga.id)", title: saga.name, authors: [author], coverURL: saga.coverURL, status: .toRead)
+        let sagas: [PosterRow.Item] = page.sagasNotHeld.map { saga in
+            let book = Book(
+                id: "saga-\(saga.id)",
+                title: saga.name,
+                authors: [author],
+                format: saga.isAudio ? .audiobook : .book,
+                coverURL: saga.coverURL,
+                status: .toRead
+            )
             return PosterRow.Item(
                 book: book,
                 label: PosterLabel(caption: String(localized: "Série"), dimming: PosterLabel.setAsideDimming),
                 open: { send(.openSeries(SeriesDestination(seriesId: saga.id, proposal: saga.proposal))) }
             )
         }
-        let works: [PosterRow.Item] = page.booksNotHeld(in: .print).map { work in
+        let works: [PosterRow.Item] = page.booksNotHeld.map { work in
             let book = Book(id: "work-\(work.id)", title: work.title, authors: [author], coverURL: work.coverURL, status: .toRead)
             return PosterRow.Item(
                 book: book,

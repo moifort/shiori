@@ -56,19 +56,10 @@ struct AuthorPage: Sendable {
     /// The reader's sagas of this author, read into first, as the Series tab
     /// draws them.
     let sagas: [FollowedSeries]
-    /// Their sagas the reader holds nothing of on paper. Nothing is offered
-    /// among the recordings: the catalogue does not know which titles were
-    /// recorded, and the Audio side showed the same offers as the Livre one.
-    let printSagasNotHeld: [AuthorSeries]
-
-    func sagasNotHeld(in format: AuthorShelfFormat) -> [AuthorSeries] {
-        format == .audio ? [] : printSagasNotHeld
-    }
-
-    /// Their other books outside any saga, offered on the Livre side only.
-    func booksNotHeld(in format: AuthorShelfFormat) -> [AuthorWork] {
-        format == .audio ? [] : booksNotHeld
-    }
+    /// Their sagas the reader holds nothing of, on paper or heard: a saga
+    /// held in either format is never offered. Offered in the format the
+    /// reader takes the author in, in the app's language.
+    let sagasNotHeld: [AuthorSeries]
     /// The reader's books of theirs outside any saga, read ones first.
     let books: [Book]
     /// Their other books outside any saga, which the reader does not hold.
@@ -84,7 +75,7 @@ struct AuthorPage: Sendable {
     var backdropURL: URL? {
         let covers: [URL?] = sagas.map(\.cardCoverURL)
             + books.map(\.coverURL)
-            + printSagasNotHeld.map(\.coverURL)
+            + sagasNotHeld.map(\.coverURL)
             + booksNotHeld.map(\.coverURL)
         return covers.compactMap(\.self).first ?? author.portraitURL
     }
@@ -95,6 +86,8 @@ struct AuthorSeries: Identifiable, Sendable {
     /// The id its catalogue is keyed on: a volume added with it joins the saga.
     let id: String
     let name: String
+    /// Offered among the recordings: the id names the saga heard.
+    var isAudio = false
     /// The author as the catalogue spells them, which the id was folded from:
     /// with the name, what the saga screen catalogues the saga from.
     let author: String

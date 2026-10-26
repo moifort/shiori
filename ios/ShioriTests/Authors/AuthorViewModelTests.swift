@@ -57,7 +57,7 @@ struct AuthorViewModelTests {
             return .preview
         }
         let viewModel = model(client)
-        let saga = AuthorPage.preview.printSagasNotHeld[0]
+        let saga = AuthorPage.preview.sagasNotHeld[0]
 
         await viewModel.start(saga, author: "Robin Hobb", format: .audio)
 

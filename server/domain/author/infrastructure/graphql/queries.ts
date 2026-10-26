@@ -1,4 +1,9 @@
-import { indexLetterOf, sagaCountOf, sagasNotHeldOf } from '~/domain/author/business-rules'
+import {
+  indexLetterOf,
+  preferredFormatOf,
+  sagaCountOf,
+  sagasNotHeldOf,
+} from '~/domain/author/business-rules'
 import type { Author, AuthorSeries, AuthorWork } from '~/domain/author/types'
 import { type AuthorPage, AuthorUseCase, type FollowedAuthor } from '~/domain/author/use-case'
 import { BookType } from '~/domain/book/infrastructure/graphql/types'
@@ -89,7 +94,7 @@ export const FollowedAuthorType = builder.objectRef<FollowedAuthor>('FollowedAut
 })
 
 const AuthorSeriesType = builder
-  .objectRef<AuthorSeries & { id: SeriesId; author: AuthorName }>('AuthorSeries')
+  .objectRef<AuthorSeries & { id: SeriesId; author: AuthorName; audio: boolean }>('AuthorSeries')
   .implement({
     description: 'A saga the author wrote that the reader holds nothing of.',
     fields: (t) => ({
@@ -102,6 +107,10 @@ const AuthorSeriesType = builder
         resolve: (saga) => saga.id,
       }),
       name: t.field({ type: 'SeriesName', resolve: (saga) => saga.name }),
+      audio: t.boolean({
+        description: 'Offered among the recordings: `id` names the saga heard.',
+        resolve: (saga) => saga.audio,
+      }),
       author: t.field({
         type: 'AuthorName',
         description:
@@ -208,21 +217,24 @@ const AuthorPageType = builder.objectRef<AuthorPage>('AuthorPage').implement({
     sagasNotHeld: t.field({
       type: [AuthorSeriesType],
       description:
-        'The author’s sagas the reader holds nothing of in one format: on paper, or ' +
-        'heard when `audio` is set — the saga heard is a saga of its own, so one read ' +
-        'and never heard is one to discover among the recordings. Each with the id ' +
-        'its catalogue is keyed on in that format.',
-      args: { audio: t.arg.boolean({ required: true }) },
-      resolve: ({ catalogue, sagas }, args, { event }) =>
-        catalogue
-          ? sagasNotHeldOf(catalogue, sagas, args.audio ? 'audiobook' : 'book').map((saga) => ({
-              ...saga,
-              // Offered in the reader's language, the edition its catalogue is asked in.
-              id: seriesIdOf(saga.saga, languageOf(event)),
-              // The spelling the saga's key was folded from.
-              author: catalogue.name,
-            }))
-          : [],
+        'The author’s sagas the reader holds nothing of, in any format, offered on ' +
+        'paper, or heard when `audio` is set. Without `audio`, offered in the format ' +
+        'most of the reader’s books of the author are in. Each with the id its ' +
+        'catalogue is keyed on in that format, in the reader’s language.',
+      args: { audio: t.arg.boolean({ required: false }) },
+      resolve: ({ author, catalogue, sagas }, args, { event }) => {
+        if (!catalogue) return []
+        const audio = args.audio ?? preferredFormatOf(author.books) === 'audiobook'
+        const format = audio ? 'audiobook' : 'book'
+        return sagasNotHeldOf(catalogue, sagas, format).map((saga) => ({
+          ...saga,
+          // Offered in the reader's language, the edition its catalogue is asked in.
+          id: seriesIdOf(saga.saga, languageOf(event)),
+          // The spelling the saga's key was folded from.
+          author: catalogue.name,
+          audio,
+        }))
+      },
     }),
     books: t.field({
       type: [BookType],

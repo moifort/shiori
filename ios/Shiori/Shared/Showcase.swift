@@ -889,7 +889,7 @@ enum Showcase {
                 "American author, a cartoonist before he published online a science-fiction series that became a phenomenon, translated worldwide and adapted as an audiobook."
             ),
             sagas: sagas,
-            printSagasNotHeld: [],
+            sagasNotHeld: [],
             books: author.books.filter { $0.series == nil },
             booksNotHeld: [AuthorWork(title: local("Le Jour des morts", "The Day of the Dead"), publishedIn: 2015, coverURL: nil)]
         )

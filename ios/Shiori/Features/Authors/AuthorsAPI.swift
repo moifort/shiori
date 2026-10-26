@@ -53,7 +53,7 @@ enum AuthorsAPI {
                     catalogue: saga.catalogue?.fragments.catalogueSpine
                 )
             },
-            printSagasNotHeld: page.printSagasNotHeld.map { AuthorSeries($0.fragments.authorSeriesFields) },
+            sagasNotHeld: page.sagasNotHeld.map { AuthorSeries($0.fragments.authorSeriesFields) },
             books: page.books.map { $0.fragments.bookSummary.asBook },
             booksNotHeld: page.booksNotHeld.map { AuthorWork(
                     title: $0.title,
@@ -131,6 +131,7 @@ private extension AuthorSeries {
         self.init(
             id: saga.id,
             name: saga.name,
+            isAudio: saga.audio,
             author: saga.author,
             volumeCount: saga.volumeCount,
             firstVolumeTitle: saga.firstVolumeTitle,

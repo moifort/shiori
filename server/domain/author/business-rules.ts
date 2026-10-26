@@ -8,7 +8,7 @@ import type {
 } from '~/domain/author/types'
 import { shelfDateOf, shelfOrder, shelfTitleOrder } from '~/domain/book/business-rules'
 import type { BookFormat, BookLanguage, ReadingStatus } from '~/domain/book/types'
-import { isAudioSeries, sagaKeyFor, seriesKeyOf } from '~/domain/series/primitives'
+import { sagaKeyFor, seriesKeyOf } from '~/domain/series/primitives'
 import type { SagaKey, SeriesState } from '~/domain/series/types'
 import { Count } from '~/domain/shared/primitives'
 import type { AuthorName } from '~/domain/shared/types'
@@ -226,11 +226,11 @@ const mostUsedSpelling = (spellings: ReadonlyMap<AuthorName, number>): AuthorNam
   return chosen
 }
 
-/** The sagas of an author's catalogue the reader holds no volume of in one
- *  format, each with the id its catalogue would be keyed on in that format, so a
+/** The sagas of an author's catalogue the reader holds no volume of, in any
+ *  format, each with the id its catalogue would be keyed on in `format`, so a
  *  volume added from the author's page files into the saga the Series tab and
- *  the saga screen know. A saga read on paper and never heard is one to
- *  discover among the recordings: the saga heard is a saga of its own.
+ *  the saga screen know. A saga heard is not one to discover on paper, nor one
+ *  read among the recordings: the reader already has it.
  *
  *  A saga the reader holds is recognised by that id, by its folded name, by a
  *  name folded into the other's ("Le Problème à trois corps" and "Trilogie du
@@ -242,17 +242,15 @@ export const sagasNotHeldOf = (
   held: readonly { saga: SagaKey; name: string; books?: readonly { title: string }[] }[],
   format: BookFormat,
 ): (AuthorSeries & { saga: SagaKey })[] => {
-  const heard = format === 'audiobook'
-  const sameFormat = held.filter((row) => isAudioSeries(row.saga) === heard)
-  const heldIds = new Set(sameFormat.map((row) => row.saga))
-  const heldNames = sameFormat.map((saga) => slugify(saga.name))
+  const heldIds = new Set(held.map((row) => sagaKeyFor(row.saga, 'book')))
+  const heldNames = held.map((saga) => slugify(saga.name))
   const heldTitles = new Set(
-    sameFormat.flatMap((saga) => (saga.books ?? []).map((book) => slugify(book.title))),
+    held.flatMap((saga) => (saga.books ?? []).map((book) => slugify(book.title))),
   )
   const isHeld = (saga: AuthorSeries & { saga: SagaKey }) => {
     const name = slugify(saga.name)
     return (
-      heldIds.has(saga.saga) ||
+      heldIds.has(sagaKeyFor(saga.saga, 'book')) ||
       heldNames.some((heldName) => namesMeet(name, heldName)) ||
       (saga.firstVolumeTitle !== undefined && heldTitles.has(slugify(saga.firstVolumeTitle)))
     )
@@ -261,6 +259,14 @@ export const sagasNotHeldOf = (
     .map((saga) => ({ ...saga, saga: seriesKeyOf(saga.name, catalogue.name, format) }))
     .filter((saga) => !isHeld(saga))
 }
+
+/** The format the reader takes an author in: heard when most of their books of
+ *  them are recordings, read otherwise. What their page offers the sagas they
+ *  hold nothing of in. */
+export const preferredFormatOf = (books: readonly { format: BookFormat }[]): BookFormat =>
+  books.filter((book) => book.format === 'audiobook').length * 2 > books.length
+    ? 'audiobook'
+    : 'book'
 
 /** Two folded saga names that are one saga: equal, or one standing whole-word
  *  inside the other. */

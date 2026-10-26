@@ -9,6 +9,7 @@ import {
   isPortraitWorthSeeking,
   mainLanguageOf,
   matchingAuthorFilter,
+  preferredFormatOf,
   sagaCountOf,
   sagasNotHeldOf,
   shelvedAuthorsOf,
@@ -243,14 +244,27 @@ describe('the author page', () => {
     ])
   })
 
-  test('offers a saga read and never heard among the recordings, keyed as heard', () => {
+  test('offers among the recordings only the sagas held in no format, keyed as heard', () => {
     const heard = sagasNotHeldOf(catalogue, held, 'audiobook')
 
-    expect(heard.map((saga) => String(saga.saga))).toEqual([
-      'archives-de-roshar--brandon-sanderson--audio',
-      'fils-des-brumes--brandon-sanderson--audio',
-      'skyward--brandon-sanderson--audio',
+    expect(heard.map((saga) => String(saga.saga))).toEqual(['skyward--brandon-sanderson--audio'])
+  })
+
+  test('does not offer on paper a saga the reader only heard', () => {
+    const heardOnly = [
+      { saga: seriesKeyOf('Skyward', 'Brandon Sanderson', 'audiobook'), name: 'Skyward' },
+    ]
+
+    expect(sagasNotHeldOf(catalogue, heardOnly, 'book').map((saga) => saga.name)).toEqual([
+      SeriesName('Les Archives de Roshar'),
+      SeriesName('Fils-des-Brumes'),
     ])
+  })
+
+  test('offers in the format most of the author’s books are in', () => {
+    expect(preferredFormatOf([{ format: 'audiobook' }, { format: 'audiobook' }])).toBe('audiobook')
+    expect(preferredFormatOf([{ format: 'audiobook' }, { format: 'book' }])).toBe('book')
+    expect(preferredFormatOf([])).toBe('book')
   })
 
   test('recognises a saga held under another name, by its name or its first volume', () => {
@@ -277,7 +291,7 @@ describe('the author page', () => {
     ]
 
     expect(sagasNotHeldOf(liu, heldHeard, 'audiobook')).toEqual([])
-    expect(sagasNotHeldOf(liu, heldHeard, 'book')).toHaveLength(2)
+    expect(sagasNotHeldOf(liu, heldHeard, 'book')).toEqual([])
   })
 
   test('counts a saga read and heard once', () => {
