@@ -28,3 +28,14 @@ struct AuthorActionsMenu: View {
         .accessibilityIdentifier("author-menu")
     }
 }
+
+#Preview {
+    NavigationStack {
+        Text(verbatim: "Robin Hobb")
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    AuthorActionsMenu { _ in }
+                }
+            }
+    }
+}
