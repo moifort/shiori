@@ -1,15 +1,19 @@
 import SwiftUI
 
 /// What the home screen's carousel puts forward, a page each: what comes out
-/// within the week first, then the month's discoveries.
+/// within the week first, then the month's discoveries — or, once the reader
+/// took or turned down every one, the page that says the month is done.
 enum HomeHeroItem: Identifiable {
     case release(HomeRelease)
     case discovery(Suggestion)
+    /// The month's discoveries all taken or turned down, `YYYY-MM`.
+    case monthDone(String)
 
     var id: String {
         switch self {
         case let .release(release): "release-\(release.id)"
         case let .discovery(suggestion): "discovery-\(suggestion.id)"
+        case let .monthDone(month): "month-done-\(month)"
         }
     }
 
@@ -18,8 +22,13 @@ enum HomeHeroItem: Identifiable {
 
     /// The releases due within the week, the soonest first, then the
     /// discoveries: a date announced to the month or the year is not one the
-    /// week can hold.
-    static func items(releases: [HomeRelease], discoveries: [Suggestion], today: Date = .now) -> [HomeHeroItem] {
+    /// week can hold. A month whose discoveries ran out closes on its page.
+    static func items(
+        releases: [HomeRelease],
+        discoveries: [Suggestion],
+        doneMonth: String? = nil,
+        today: Date = .now
+    ) -> [HomeHeroItem] {
         let start = today.formatted(.iso8601.year().month().day())
         let end = Calendar.current.date(byAdding: .day, value: releaseWindow, to: today)?
             .formatted(.iso8601.year().month().day()) ?? start
@@ -29,15 +38,16 @@ enum HomeHeroItem: Identifiable {
                 return date >= start && date <= end
             }
             .sorted { ($0.date ?? "", $0.name) < ($1.date ?? "", $1.name) }
-        return soon.map(HomeHeroItem.release) + discoveries.map(HomeHeroItem.discovery)
+        let done = discoveries.isEmpty ? doneMonth.map { [HomeHeroItem.monthDone($0)] } ?? [] : []
+        return soon.map(HomeHeroItem.release) + discoveries.map(HomeHeroItem.discovery) + done
     }
 }
 
 /// The top of the home screen on a phone, as the TV app opens: what comes out
 /// this week, then the month's discoveries, one page each, swiped sideways,
 /// every page over its own cover's colours — the cover, what it is, the way to
-/// it on Liquid Glass and, for a discovery, the "+" that adds or awaits it —
-/// with the dots that say where the reader stands. Its colours run up under
+/// it on Liquid Glass and, for a discovery, the "+" that adds or awaits it and
+/// the thumb that turns it down — with the dots that say where the reader stands. Its colours run up under
 /// the bars, and it stops short enough for the rows to show under it.
 struct HomeHeroCarousel: View {
     /// Never empty.
@@ -46,6 +56,13 @@ struct HomeHeroCarousel: View {
     let onOpen: (Suggestion) -> Void
     let onAdd: (Suggestion, ReadingStatus) -> Void
     let onAwait: (Suggestion, ReleaseFormat) -> Void
+    /// "Pas intéressé": the model leaves it out, and the next look skips it.
+    let onDismiss: (Suggestion) -> Void
+    /// Découvrir, from the page that says the month is done.
+    var onShowDiscover: () -> Void = {}
+    /// The cover whose colours the month's last page takes: the library's,
+    /// as the wait on the selection does.
+    var backdropCover: URL?
     /// How far the page is pulled down past its top: the backdrops grow by as
     /// much from their foot, so the pull never uncovers what lies above them.
     var pull: CGFloat = 0
@@ -54,6 +71,9 @@ struct HomeHeroCarousel: View {
     /// The discoveries just added or awaited from their "+", which turns into
     /// a check to say so before the line moves on.
     @State private var taken: Set<Suggestion.ID> = []
+    /// The discoveries just turned down, whose thumb fills to say so: they
+    /// leave the line with the ones taken, once the reader leaves the page.
+    @State private var dismissed: Set<Suggestion.ID> = []
 
     /// How tall the carousel stands: room for three lines of why.
     static let height: CGFloat = 508
@@ -72,6 +92,7 @@ struct HomeHeroCarousel: View {
                         switch item {
                         case let .release(release): releasePage(release)
                         case let .discovery(suggestion): discoveryPage(suggestion)
+                        case let .monthDone(month): monthDonePage(month)
                         }
                     }
                     .containerRelativeFrame(.horizontal)
@@ -163,7 +184,7 @@ struct HomeHeroCarousel: View {
                     Button { onOpen(suggestion) } label: {
                         Label("Découvrir", systemImage: "sparkles")
                             .font(.headline)
-                            .frame(width: 170)
+                            .frame(width: 150)
                     }
                     .buttonStyle(.glassProminent)
                     .tint(.white)
@@ -191,12 +212,78 @@ struct HomeHeroCarousel: View {
                     }
                     .buttonStyle(.glass)
                     .buttonBorderShape(.circle)
+                    .disabled(dismissed.contains(suggestion.id))
                     .sensoryFeedback(.success, trigger: taken.contains(suggestion.id))
                     .accessibilityIdentifier("home-discovery-menu")
+                    Button {
+                        withAnimation(.snappy) { _ = dismissed.insert(suggestion.id) }
+                        onDismiss(suggestion)
+                    } label: {
+                        Label(
+                            "Pas intéressé",
+                            systemImage: dismissed.contains(suggestion.id) ? "hand.thumbsdown.fill" : "hand.thumbsdown"
+                        )
+                        .labelStyle(.iconOnly)
+                        .font(.headline)
+                        .contentTransition(.symbolEffect(.replace))
+                    }
+                    .buttonStyle(.glass)
+                    .buttonBorderShape(.circle)
+                    .disabled(taken.contains(suggestion.id) || dismissed.contains(suggestion.id))
+                    .sensoryFeedback(.impact(weight: .light), trigger: dismissed.contains(suggestion.id))
+                    .accessibilityIdentifier("home-discovery-dismiss")
                 }
                 .controlSize(.extraLarge)
             }
         }
+    }
+
+    /// The month's discoveries all taken or turned down: where the cover
+    /// would stand, the month's stack gone through, a check on its front
+    /// cover; what the month was, that it is done, when the next ones come,
+    /// and the way to Découvrir, which always has more.
+    private func monthDonePage(_ month: String) -> some View {
+        VStack(spacing: 0) {
+            Spacer(minLength: 0)
+            DoneStack()
+            Text(MonthlyDiscoveries.title(month: month))
+                .font(.footnote.weight(.semibold))
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .glassEffect(.clear, in: .capsule)
+                .padding(.top, 18)
+            Text("Vous avez fait le tour")
+                .font(.title.weight(.bold))
+                .padding(.top, 10)
+            Text(MonthlyDiscoveries.nextArrivalLine(month: month))
+                .font(.subheadline)
+                .foregroundStyle(.white.opacity(0.85))
+                .padding(.top, 4)
+            Button(action: onShowDiscover) {
+                Label("Explorer Découvrir", systemImage: "sparkles")
+                    .font(.headline)
+                    .frame(width: 220)
+            }
+            .buttonStyle(.glassProminent)
+            .tint(.white)
+            .foregroundStyle(.black)
+            .controlSize(.extraLarge)
+            .padding(.top, 16)
+            .accessibilityIdentifier("home-month-done-discover")
+        }
+        .multilineTextAlignment(.center)
+        .foregroundStyle(.white)
+        .padding(.horizontal, 28)
+        .padding(.bottom, 40)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .environment(\.colorScheme, .dark)
+        .background {
+            CoverBackdrop(url: backdropCover, fadeHeight: Self.fadeHeight)
+                .padding(.top, -Self.backdropRise)
+                .scaleEffect(1 + pull / (Self.height + Self.backdropRise), anchor: .bottom)
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("home-month-done")
     }
 
     /// A page as the TV app draws one: the cover, the badge, the title, what
@@ -281,6 +368,42 @@ struct HomeHeroCarousel: View {
     }
 }
 
+/// The month's covers gone through, in the cover's room: three glass covers
+/// fanned out as the empty shelf draws its stack, a check on the front one.
+private struct DoneStack: View {
+    var body: some View {
+        ZStack {
+            cover.rotationEffect(.degrees(-7)).offset(x: -14, y: 4)
+            cover.rotationEffect(.degrees(6)).offset(x: 14, y: 6)
+            cover
+                .overlay {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 40, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.92))
+                }
+                .shadow(color: .black.opacity(0.45), radius: 18, y: 12)
+        }
+        .frame(width: 150, height: 206)
+        .accessibilityHidden(true)
+    }
+
+    private var cover: some View {
+        RoundedRectangle(cornerRadius: 10, style: .continuous)
+            .fill(
+                LinearGradient(
+                    colors: [.white.opacity(0.2), .white.opacity(0.06)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
+            .overlay {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .strokeBorder(.white.opacity(0.24), lineWidth: 1)
+            }
+            .frame(width: 130, height: 192)
+    }
+}
+
 /// Where the reader stands among a carousel's pages: a dot each, the current
 /// one drawn long.
 private struct PageDots: View {
@@ -308,7 +431,24 @@ private struct PageDots: View {
             onOpenRelease: { _ in },
             onOpen: { _ in },
             onAdd: { _, _ in },
-            onAwait: { _, _ in }
+            onAwait: { _, _ in },
+            onDismiss: { _ in }
+        )
+        Color.clear.frame(height: 600)
+    }
+    .background(Color(.systemGroupedBackground))
+}
+
+#Preview("Month done") {
+    ScrollView {
+        HomeHeroCarousel(
+            items: [.monthDone("2026-10")],
+            onOpenRelease: { _ in },
+            onOpen: { _ in },
+            onAdd: { _, _ in },
+            onAwait: { _, _ in },
+            onDismiss: { _ in },
+            backdropCover: Book.preview.coverURL
         )
         Color.clear.frame(height: 600)
     }

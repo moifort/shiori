@@ -350,6 +350,9 @@ struct HomeScreen: View {
                     case let .awaitDiscovery(suggestion, format):
                         viewModel.hold(suggestion)
                         Task { await SuggestionViewModel(suggestion: suggestion, client: .live).awaitEdition(format) }
+                    case let .dismissDiscovery(suggestion):
+                        viewModel.hold(suggestion)
+                        Task { await viewModel.dismiss(suggestion, reason: .notInterested) }
                     }
                 }
                 .refreshable { await viewModel.load() }

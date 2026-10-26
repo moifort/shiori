@@ -36,6 +36,8 @@ enum HomeAction {
     case addDiscovery(Suggestion, ReadingStatus)
     /// A discovery's edition awaited from the carousel's "+".
     case awaitDiscovery(Suggestion, ReleaseFormat)
+    /// A discovery turned down from the carousel's thumb: "Pas intéressé".
+    case dismissDiscovery(Suggestion)
 }
 
 /// The home screen in the TV app's grammar: a hero with the month's discovery
@@ -115,6 +117,9 @@ struct HomePage: View {
                         onOpen: { onAction(.openDiscovery($0)) },
                         onAdd: { onAction(.addDiscovery($0, $1)) },
                         onAwait: { onAction(.awaitDiscovery($0, $1)) },
+                        onDismiss: { onAction(.dismissDiscovery($0)) },
+                        onShowDiscover: { onAction(.showDiscover) },
+                        backdropCover: dashboard.leadCoverURL,
                         pull: pull
                     )
                 } else if dashboard.libraryIsEmpty, opensOnHero {
@@ -207,7 +212,12 @@ struct HomePage: View {
 
     /// What the carousel shows: the week's releases, then the discoveries.
     private var heroItems: [HomeHeroItem] {
-        HomeHeroItem.items(releases: releases, discoveries: shownDiscoveries, today: today)
+        HomeHeroItem.items(
+            releases: releases,
+            discoveries: shownDiscoveries,
+            doneMonth: discoveries?.doneMonth(today: today),
+            today: today
+        )
     }
 
     private var showsCarousel: Bool {
@@ -242,7 +252,12 @@ struct HomePage: View {
     ) -> Bool {
         guard isCompact, let dashboard else { return false }
         if dashboard.libraryIsEmpty { return true }
-        let items = HomeHeroItem.items(releases: releases, discoveries: discoveries?.shownOnHome ?? [], today: today)
+        let items = HomeHeroItem.items(
+            releases: releases,
+            discoveries: discoveries?.shownOnHome ?? [],
+            doneMonth: discoveries?.doneMonth(today: today),
+            today: today
+        )
         return !items.isEmpty || isSearchingDiscoveries
     }
 
@@ -606,6 +621,13 @@ extension MonthlyDiscoveries {
     /// ready.
     var shownOnHome: [Suggestion] {
         status == .ready ? suggestions : []
+    }
+
+    /// The month, once its selection is made and the reader took or turned
+    /// down every discovery in it: the carousel closes on the page that says
+    /// so. Nil while any is left, and for another month's line.
+    func doneMonth(today: Date = .now) -> String? {
+        status == .ready && suggestions.isEmpty && month == Self.month(of: today) ? month : nil
     }
 }
 

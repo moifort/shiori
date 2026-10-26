@@ -5433,6 +5433,22 @@
         }
       }
     },
+    "Explorer Découvrir" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Explore Discover"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Explorer Découvrir"
+          }
+        }
+      }
+    },
     "Facturation indisponible" : {
       "localizations" : {
         "en" : {
@@ -7185,6 +7201,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Les offres ne sont pas disponibles pour le moment."
+          }
+        }
+      }
+    },
+    "Les prochaines arrivent en %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The next ones arrive in %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les prochaines arrivent en %@"
           }
         }
       }
@@ -12737,6 +12769,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vous"
+          }
+        }
+      }
+    },
+    "Vous avez fait le tour" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You’ve seen them all"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vous avez fait le tour"
           }
         }
       }

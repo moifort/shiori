@@ -163,6 +163,12 @@ struct MonthlyDiscoveries: Hashable, Sendable, Codable {
         String(localized: "Plus de découvertes ce mois-ci : prochaines en \(Self.monthName(Self.month(after: month))).")
     }
 
+    /// The home's last page once the month's discoveries ran out: "Les
+    /// prochaines arrivent en novembre".
+    static func nextArrivalLine(month: String, locale: Locale = .current) -> String {
+        String(localized: "Les prochaines arrivent en \(monthName(Self.month(after: month), locale: locale))")
+    }
+
     /// `YYYY-MM` of the month a date falls in, in UTC as the server counts.
     static func month(of date: Date) -> String {
         var calendar = Calendar(identifier: .gregorian)
