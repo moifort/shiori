@@ -206,12 +206,10 @@ struct BookHero<Actions: View>: View {
                         .lineLimit(2)
                         .accessibilityIdentifier("book-state")
                 }
-                // Only a recording is tagged: paper is what a book is taken
-                // to be, and the facts under the hero name its format.
-                if book.format == .audiobook {
-                    // Clear over the hero's colours: no glass behind the word.
-                    OutlinedTag(text: String(localized: "Audio"), isFrosted: false)
-                }
+                // Only a foreign edition and a recording are tagged: paper in
+                // the phone's language is what a book is taken to be. Clear
+                // over the hero's colours: no glass behind the words.
+                CoverTags(book: book, isFrosted: false)
                 if let countdown {
                     OutlinedTag(text: countdown, isFrosted: false)
                         .accessibilityLabel(Text("Dans \(countdown)"))
@@ -235,7 +233,6 @@ struct BookHero<Actions: View>: View {
                 parts.append(String(localized: "\(pages) pages"))
             }
         }
-        if let language = book.language, language.isForeign { parts.append(language.label) }
         return parts.joined(separator: " · ")
     }
 

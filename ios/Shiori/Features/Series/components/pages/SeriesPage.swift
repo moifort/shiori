@@ -276,7 +276,7 @@ struct SeriesPage: View {
 
     private func ownedPoster(_ book: Book, volume: Volume) -> some View {
         Button { Task { await onAction(.openBook(book)) } } label: {
-            PosterCover(book: book, caption: caption(volume), showsAudioTag: false)
+            PosterCover(book: book, caption: caption(volume), showsEditionTags: false)
                 .contentShape(.rect)
         }
         .buttonStyle(.plain)
@@ -319,7 +319,7 @@ struct SeriesPage: View {
                         status: .toRead
                     ),
                     caption: day ?? caption(volume),
-                    showsAudioTag: false,
+                    showsEditionTags: false,
                     dimming: day == nil ? 0.12 : 0.5
                 )
                 // A volume out the reader lacks is dimmed whole; an announced

@@ -2,17 +2,18 @@ import SwiftUI
 
 /// A cover as the TV app sets a poster on its shelves: dimmed a little, a
 /// thin light rim inside the edge, the cover melting into a blur at its foot
-/// where a short line sits in white, and a recording's "Audio" in an outlined
-/// tag in the top corner rather than headphones. The home's pile and a book's
+/// where a short line sits in white, and in the top corner outlined tags for
+/// a foreign edition's language and a recording's "Audio", rather than
+/// headphones. The home's pile and a book's
 /// saga draw their covers with it.
 struct PosterCover: View {
     let book: Book
     /// The line inside the foot: how long on the pile, "Tome 3".
     let caption: String
     var width: CGFloat = 102
-    /// "Audio" in the corner of a recording. Off where the context already
-    /// says it: a saga's volumes under a recording's own page.
-    var showsAudioTag = true
+    /// The language and "Audio" tags in the corner. Off where the context
+    /// already says them: a saga's volumes under one edition's own page.
+    var showsEditionTags = true
     /// The line's colour: orange for the day a volume comes out.
     var captionColor: Color = .white
     /// How dark the cover is drawn under its line: a little, as the TV app
@@ -37,8 +38,8 @@ struct PosterCover: View {
             }
             .overlay { footBlur }
             .overlay(alignment: .topTrailing) {
-                if showsAudioTag, book.format == .audiobook {
-                    OutlinedTag(text: String(localized: "Audio"))
+                if showsEditionTags {
+                    CoverTags(book: book)
                         .padding(6)
                 }
             }
@@ -77,11 +78,11 @@ struct PosterCover: View {
     }
 
     /// A poster with the line and marks the Library tab gives it.
-    init(book: Book, label: PosterLabel, width: CGFloat = 102, showsAudioTag: Bool = true) {
+    init(book: Book, label: PosterLabel, width: CGFloat = 102, showsEditionTags: Bool = true) {
         self.book = book
         caption = label.caption
         self.width = width
-        self.showsAudioTag = showsAudioTag
+        self.showsEditionTags = showsEditionTags
         dimming = label.dimming
         marksReading = label.marksReading
         progress = label.progress
@@ -92,14 +93,14 @@ struct PosterCover: View {
         book: Book,
         caption: String,
         width: CGFloat = 102,
-        showsAudioTag: Bool = true,
+        showsEditionTags: Bool = true,
         captionColor: Color = .white,
         dimming: Double = 0.12
     ) {
         self.book = book
         self.caption = caption
         self.width = width
-        self.showsAudioTag = showsAudioTag
+        self.showsEditionTags = showsEditionTags
         self.captionColor = captionColor
         self.dimming = dimming
     }

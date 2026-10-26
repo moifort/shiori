@@ -91,17 +91,16 @@ struct ReadingFeatureCard: View {
         return "\(series.name) · \(String(localized: "Tome \(volume)"))"
     }
 
-    /// How long it has been open and how long it runs, then an outlined tag
-    /// when it is listened to: a printed book needs none.
+    /// How long it has been open and how long it runs, then outlined tags for
+    /// a foreign edition and a recording: a printed book in the phone's
+    /// language needs none.
     private var detailLine: some View {
         HStack(spacing: 6) {
             Text([caption, length].compactMap { $0 }.joined(separator: " · "))
                 .font(.caption)
                 .foregroundStyle(.white.opacity(0.75))
                 .lineLimit(1)
-            if book.format == .audiobook {
-                OutlinedTag(text: String(localized: "Audio"))
-            }
+            CoverTags(book: book)
         }
     }
 

@@ -86,6 +86,7 @@ struct SeriesShelfPage: View {
                 title: title,
                 authors: entry.series.author.map { [$0] } ?? [],
                 format: entry.series.isAudio ? .audiobook : .book,
+                language: entry.series.language,
                 coverURL: coverURL,
                 status: .toRead
             )

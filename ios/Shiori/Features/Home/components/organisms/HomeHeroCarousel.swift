@@ -324,13 +324,11 @@ struct HomeHeroCarousel: View {
             Button(action: onOpen) {
                 VStack(spacing: 0) {
                     BookCover(book: cover, width: 160, showsFormatBadge: false, isBound: true)
-                        // A recording says so in the tag the posters carry,
-                        // on a blur of the cover, rather than with headphones.
+                        // A recording and a foreign edition say so in the tags
+                        // the posters carry, rather than with headphones.
                         .overlay(alignment: .topTrailing) {
-                            if cover.format == .audiobook {
-                                OutlinedTag(text: String(localized: "Audio"))
-                                    .padding(7)
-                            }
+                            CoverTags(book: cover)
+                                .padding(7)
                         }
                         .shadow(color: .black.opacity(0.5), radius: 22, y: 14)
                     Text(badge)

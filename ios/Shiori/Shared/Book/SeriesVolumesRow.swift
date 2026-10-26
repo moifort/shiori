@@ -65,8 +65,8 @@ struct SeriesVolumesRow: View {
         Button {
             if !isCurrent { onOpenVolume(volume) }
         } label: {
-            // No "Audio" tag: on a recording's page, its saga is heard too.
-            PosterCover(book: volume, caption: caption, showsAudioTag: false)
+            // No tags: on a book's page, its saga is in the same language and heard too.
+            PosterCover(book: volume, caption: caption, showsEditionTags: false)
                 .overlay {
                     if isCurrent {
                         RoundedRectangle(cornerRadius: PosterCover.cornerRadius + 3, style: .continuous)
@@ -99,7 +99,7 @@ struct SeriesVolumesRow: View {
             PosterCover(
                     book: Book(id: id, title: title, authors: [], coverURL: coverURL, status: .toRead),
                     caption: day ?? caption,
-                    showsAudioTag: false,
+                    showsEditionTags: false,
                     dimming: day == nil ? 0.12 : 0.5
                 )
                 // A volume out the reader lacks is dimmed whole; an announced

@@ -21,7 +21,7 @@ struct SeriesReleaseRow: View {
                     ),
                     caption: "",
                     width: 46,
-                    showsAudioTag: false
+                    showsEditionTags: false
                 )
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title)
