@@ -21,18 +21,18 @@ private func book(_ id: String, _ status: ReadingStatus, shelved days: Int) -> B
 
 struct PosterLabelTests {
     @Test func thePileSaysHowLongABookHasWaited() {
-        #expect(PosterLabel.waited(daysAgo(0), now: now, calendar: calendar) == "Aujourd'hui")
-        #expect(PosterLabel.waited(daysAgo(1), now: now, calendar: calendar) == "Hier")
-        #expect(PosterLabel.waited(daysAgo(10), now: now, calendar: calendar) == "10 jours")
-        #expect(PosterLabel.waited(daysAgo(21), now: now, calendar: calendar) == "3 sem.")
-        #expect(PosterLabel.waited(daysAgo(65), now: now, calendar: calendar) == "2 mois")
-        #expect(PosterLabel.waited(daysAgo(400), now: now, calendar: calendar) == "1 an")
+        #expect(PosterLabel.waited(daysAgo(0), now: now, calendar: calendar) == String(localized: "Aujourd'hui"))
+        #expect(PosterLabel.waited(daysAgo(1), now: now, calendar: calendar) == String(localized: "Hier"))
+        #expect(PosterLabel.waited(daysAgo(10), now: now, calendar: calendar) == String(localized: "\(10) jours"))
+        #expect(PosterLabel.waited(daysAgo(21), now: now, calendar: calendar) == String(localized: "\(3) sem."))
+        #expect(PosterLabel.waited(daysAgo(65), now: now, calendar: calendar) == String(localized: "\(2) mois"))
+        #expect(PosterLabel.waited(daysAgo(400), now: now, calendar: calendar) == String(localized: "1 an"))
     }
 
     @Test func aPaperBookBeingReadWearsTheBookmarkAndNoPercentage() {
         let label = PosterLabel.of(book("p", .reading, shelved: 6), in: .recent, now: now, calendar: calendar)
 
-        #expect(label.caption == "depuis 6j")
+        #expect(label.caption == String(localized: "depuis \(6)j"))
         #expect(label.marksReading)
         #expect(label.progress == nil)
     }
@@ -57,13 +57,13 @@ struct PosterLabelTests {
     }
 
     @Test func aBookReadAndUnratedSaysWhen() {
-        #expect(PosterLabel.of(book("r", .read, shelved: 1), in: .read, now: now, calendar: calendar).caption == "Lu hier")
+        #expect(PosterLabel.of(book("r", .read, shelved: 1), in: .read, now: now, calendar: calendar).caption == String(localized: "Lu hier"))
     }
 
     @Test func aBookGivenUpOnIsDimmed() {
         let label = PosterLabel.of(book("d", .dropped, shelved: 30), in: .recent, now: now, calendar: calendar)
 
-        #expect(label.caption == "Abandonné")
+        #expect(label.caption == String(localized: "Abandonné"))
         #expect(label.dimming == PosterLabel.setAsideDimming)
     }
 
@@ -87,10 +87,10 @@ struct JournalSectionTests {
         let titles = ListSection.byPeriod(rows, on: \.shelvedAt, now: now, calendar: calendar).map(\.title)
 
         #expect(titles.count == 6)
-        #expect(titles[0] == "Aujourd'hui")
-        #expect(titles[1] == "Hier")
-        #expect(titles[2] == "La semaine dernière")
-        #expect(titles[3].hasPrefix("Plus tôt en"))
+        #expect(titles[0] == String(localized: "Aujourd'hui"))
+        #expect(titles[1] == String(localized: "Hier"))
+        #expect(titles[2] == String(localized: "La semaine dernière"))
+        #expect(titles[3] == String(localized: "Plus tôt en \(now.formatted(.dateTime.month(.wide)))"))
         #expect(titles[5].contains("2025"))
     }
 
