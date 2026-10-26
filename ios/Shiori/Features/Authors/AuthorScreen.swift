@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// An author's page, connected: `AuthorViewModel` loads and acts on it, this
-/// screen holds the menu, the sheets and the alerts, and `AuthorDetailPage`
+/// screen holds the bar, the sheets and the alerts, and `AuthorDetailPage`
 /// draws it.
 ///
 /// The first opening, by anyone, builds the author's shared catalogue on the
@@ -99,28 +99,11 @@ struct AuthorScreen: View {
                     }
                     .accessibilityIdentifier("author-favorite")
                 }
-                ToolbarItem(placement: .primaryAction) {
-                    Menu {
-                        Button("Mettre à jour", systemImage: "arrow.clockwise") {
-                            Task { await viewModel.refreshCatalogue() }
-                        }
-                        .accessibilityIdentifier("author-refresh")
-                    } label: {
-                        Image(systemName: "ellipsis")
-                    }
-                    .accessibilityLabel(Text("Plus d'actions"))
-                    .accessibilityIdentifier("author-menu")
-                }
             }
         }
         // The AI at work, said by a pill floating over the page: the page
         // under it stays readable and every action at hand.
         .generatingPill(viewModel.isGenerating)
-        .alert("Fiche non mise à jour", isPresented: $viewModel.refreshFailed) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text("Shiori n'a rien trouvé de plus sur cet auteur. L'ancienne fiche est conservée ; réessayez plus tard.")
-        }
         .alert(
             "Une erreur est survenue",
             isPresented: .init(

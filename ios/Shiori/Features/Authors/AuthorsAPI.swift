@@ -64,19 +64,6 @@ enum AuthorsAPI {
         )
     }
 
-    /// Asks the world about the author again, for a page that came out empty
-    /// or thin: the fresh catalogue replaces the stored one, for everyone.
-    /// False when it could not be rebuilt, in which case the old one stands.
-    /// One grounded model call, so it waits as long as a first opening does.
-    static func refresh(key: String) async throws -> Bool {
-        let data = try await GraphQLHelpers.perform(
-            GraphQLClient.shared.apollo,
-            mutation: ShioriGraphQL.RefreshAuthorMutation(key: key),
-            requestTimeout: firstOpeningTimeout,
-            changesLibrary: false
-        )
-        return data.refreshAuthor != nil
-    }
 
     /// Hearts the author, or takes the heart back. Answers what is now true.
     static func setFavorite(key: String, favorite: Bool) async throws -> Bool {

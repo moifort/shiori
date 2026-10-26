@@ -49,17 +49,6 @@ struct AuthorViewModelTests {
         #expect(viewModel.releases.isEmpty)
     }
 
-    @Test func emptyRefreshSaysTheOldPageStands() async {
-        var client = AuthorsClient.preview
-        client.refresh = { _ in false }
-        let viewModel = model(client)
-
-        await viewModel.refreshCatalogue()
-
-        #expect(viewModel.refreshFailed)
-        #expect(viewModel.isRefreshing == false)
-    }
-
     @Test func sagaStartsWithItsFirstVolumeInTheSaga() async {
         let asked = Calls()
         var client = AuthorsClient.preview

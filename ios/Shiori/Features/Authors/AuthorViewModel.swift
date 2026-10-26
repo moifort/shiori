@@ -16,17 +16,12 @@ final class AuthorViewModel {
     var errorMessage: String?
     /// The saga or the work being added, its "+" turning.
     private(set) var adding: String?
-    /// The refresh is one grounded model call and takes a while: the page stays
-    /// usable meanwhile, and its bar says the AI is at work.
-    private(set) var isRefreshing = false
     /// The AI is building the catalogue of an author nobody had described: the
     /// reader's books are on screen meanwhile, and every action at hand.
     private(set) var isCataloguing = false
 
     /// What the AI is writing for this page, said in its bar.
-    var isGenerating: Bool { isRefreshing || isCataloguing }
-    /// The refresh came back with nothing: the page on screen is the old one.
-    var refreshFailed = false
+    var isGenerating: Bool { isCataloguing }
     /// The reader hearted the author: the heart in the bar.
     private(set) var isFavorite = false
 
@@ -83,23 +78,6 @@ final class AuthorViewModel {
         } catch {
             isFavorite = !wanted
             guard !isCancellation(error) else { return }
-            errorMessage = reportError(error)
-        }
-    }
-
-    /// Asks the world about the author again. The page is read afresh when the
-    /// catalogue was rebuilt; otherwise the reader is told the old one stands.
-    func refreshCatalogue() async {
-        guard !isGenerating else { return }
-        isRefreshing = true
-        defer { isRefreshing = false }
-        do {
-            if try await client.refresh(key) {
-                await load()
-            } else {
-                refreshFailed = true
-            }
-        } catch {
             errorMessage = reportError(error)
         }
     }

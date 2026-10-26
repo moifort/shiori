@@ -14,6 +14,7 @@ builder.mutationFields((t) => ({
       'not describe on their first opening is never asked about again otherwise.\n\n' +
       'Takes a few seconds. Null when the reader holds no book of the author, and when ' +
       'the model failed or found nothing — the previous catalogue is then kept.',
+    deprecationReason: 'The author page no longer offers it.',
     args: { key: t.arg({ type: 'AuthorKey', required: true }) },
     resolve: (_root, args, { userId, event }) =>
       AuthorUseCase.recatalogue(userId, args.key, languageOf(event)),

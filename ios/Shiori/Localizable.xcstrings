@@ -5561,22 +5561,6 @@
         }
       }
     },
-    "Fiche non mise à jour" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Page not updated"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fiche non mise à jour"
-          }
-        }
-      }
-    },
     "Fiches enrichies par l'IA" : {
       "localizations" : {
         "en" : {
@@ -11201,22 +11185,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Shiori n'a pas réussi à constituer le catalogue de cette série. Réessayez plus tard, ou scannez la couverture d'un de ses tomes."
-          }
-        }
-      }
-    },
-    "Shiori n'a rien trouvé de plus sur cet auteur. L'ancienne fiche est conservée ; réessayez plus tard." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Shiori found nothing more about this author. The old page is kept; try again later."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Shiori n'a rien trouvé de plus sur cet auteur. L'ancienne fiche est conservée ; réessayez plus tard."
           }
         }
       }

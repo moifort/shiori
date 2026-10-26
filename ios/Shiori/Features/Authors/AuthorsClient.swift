@@ -10,8 +10,6 @@ struct AuthorsClient: Sendable {
     var catalogue: @Sendable (_ key: String, _ offered: String?) async throws -> AuthorPage?
     /// What the author announced or brought out lately, in each format.
     var releases: @Sendable (_ key: String) async throws -> [ReleaseFormat: AuthorReleases]
-    /// True when the catalogue was rebuilt.
-    var refresh: @Sendable (_ key: String) async throws -> Bool
     var stopAwaiting: @Sendable (_ editionId: String) async throws -> Void
     /// "Look the book up, then add it".
     var addBook: @Sendable (BookDraft, BookAddition.LookUp?) async throws -> Book
@@ -27,7 +25,6 @@ extension AuthorsClient {
         page: { try await AuthorsAPI.page(key: $0, offered: $1) },
         catalogue: { try await AuthorsAPI.page(key: $0, offered: $1, waitForCatalogue: true) },
         releases: { try await DiscoverAPI.authorReleases(key: $0) },
-        refresh: { try await AuthorsAPI.refresh(key: $0) },
         stopAwaiting: { try await AwaitedAPI.stop(id: $0) },
         addBook: { try await BookAddition.add($0, lookingUp: $1, source: .author) },
         list: { try await AuthorsAPI.myAuthorsPage(limit: $0, after: $1, order: $2) },

@@ -61,7 +61,6 @@ extension AuthorsClient {
         page: { _, _ in .preview },
         catalogue: { _, _ in .preview },
         releases: { _ in [:] },
-        refresh: { _ in true },
         stopAwaiting: { _ in },
         addBook: { _, _ in .preview },
         list: { limit, after, _ in
