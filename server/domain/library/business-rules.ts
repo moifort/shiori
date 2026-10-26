@@ -18,13 +18,13 @@ export const formatsOf = (books: readonly Pick<Book, 'format'>[]): BookFormat[] 
 }
 
 /** Each rail of the entry screen, from the books a view keeps (already in
- *  shelf order): what moved last, the pile, the books read and the hearted
- *  ones, each the newest first and cut to a rail. */
+ *  shelf order): what moved last, the pile and the books read, each the
+ *  newest first and cut to a rail. "Coups de cœur" needs the saga opinions
+ *  too, and is drawn by the use case. */
 export const railsOf = <T extends Book>(shelved: readonly T[]) => ({
   recent: shelved.slice(0, RAIL_LIMIT),
   toRead: shelved.filter((book) => book.status === 'to-read').slice(0, RAIL_LIMIT),
   readRecently: shelved.filter((book) => book.status === 'read').slice(0, RAIL_LIMIT),
-  favorites: shelved.filter((book) => book.favorite === true).slice(0, RAIL_LIMIT),
 })
 
 /** The genres of the books a view keeps, the most held first, then by name:

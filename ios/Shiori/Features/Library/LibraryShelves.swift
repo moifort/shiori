@@ -97,6 +97,4 @@ struct ShelfQuery: Hashable, Sendable {
 
     var serverStatus: ReadingStatus? { status ?? shelf.status }
     var favorite: Bool { shelf == .loved }
-    /// "Coups de cœur" draws a hearted saga as one card above its books.
-    var excludeLovedSeries: Bool { shelf == .loved }
 }

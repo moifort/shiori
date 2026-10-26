@@ -256,6 +256,30 @@ export const heartedSagasOf = (
 ): Set<SagaKey> =>
   new Set(opinions.flatMap((opinion) => (opinion.favorite === true ? [opinion.seriesId] : [])))
 
+/** The fewest stars that put a book among "Coups de cœur". */
+export const LOVED_FLOOR = 4
+
+/** What the reader said of each saga, keyed by saga: what a volume they left
+ *  unrated inherits. */
+export const sagaJudgementsOf = (
+  opinions: readonly { seriesId: SagaKey; favorite?: boolean; rating?: StarRating }[],
+): Map<SagaKey, { favorite?: boolean; rating?: StarRating }> =>
+  new Map(opinions.map((opinion) => [opinion.seriesId, opinion]))
+
+/** Whether a book sits among "Coups de cœur": hearted, rated four stars or
+ *  more, or — left unrated — a volume of a saga the reader hearted or rated
+ *  four stars or more, whose judgement it inherits. A volume rated on its own
+ *  is judged on its own stars. */
+export const isLovedBook = (
+  book: Pick<Book, 'favorite' | 'rating' | 'series'>,
+  sagas: ReadonlyMap<SagaKey, { favorite?: boolean; rating?: StarRating }>,
+): boolean => {
+  if (book.favorite === true) return true
+  if (book.rating !== undefined) return book.rating >= LOVED_FLOOR
+  const saga = book.series ? sagas.get(book.series.saga) : undefined
+  return saga?.favorite === true || (saga?.rating ?? 0) >= LOVED_FLOOR
+}
+
 /** Whether a book is drawn on its own among the favourites: not a volume of a
  *  saga the reader hearted, which the saga's card already stands for. */
 export const outsideHeartedSagas = (

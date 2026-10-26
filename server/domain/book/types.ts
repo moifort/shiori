@@ -336,7 +336,7 @@ export type LibrarySection = {
   books: BookView[]
 }
 
-/** What a view of the Library tab keeps: one status or the hearted books, and
+/** What a view of the Library tab keeps: one status or "Coups de cœur", and
  *  one format, genre or subgenre — the pills over the rails and the grids. */
 export type LibraryView = {
   favorite?: boolean

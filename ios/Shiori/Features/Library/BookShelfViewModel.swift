@@ -26,8 +26,7 @@ final class BookShelfViewModel {
 
     private(set) var query: ShelfQuery
     private(set) var books: [Book] = []
-    /// On "Coups de cœur", the hearted sagas, drawn as cards above the books
-    /// in place of their volumes.
+    /// On "Coups de cœur", the hearted sagas, drawn as cards above the books.
     private(set) var lovedSeries: [FollowedSeries] = []
     private(set) var isLoading = false
     private(set) var errorMessage: String?
@@ -133,8 +132,7 @@ final class BookShelfViewModel {
                 hasMore = more && kept.count == fetched.count
             }
             if formats.isEmpty, query.view.format == nil {
-                // The hearted sagas count too: their volumes are drawn as the
-                // saga's card, not among the books.
+                // The hearted sagas count too, whatever page is loaded.
                 let held = fetched + loved.flatMap(\.volumes)
                 formats = BookFormat.allCases.filter { format in held.contains { $0.format == format } }
             }

@@ -2,12 +2,20 @@ import { AuthorUseCase, type FollowedAuthor } from '~/domain/author/use-case'
 import {
   heartedSagasOf,
   inLibraryView,
+  isLovedBook,
   outsideHeartedSagas,
+  sagaJudgementsOf,
   subgenresOf,
 } from '~/domain/book/business-rules'
 import { BookQuery } from '~/domain/book/query'
 import type { BookFormat, BookLanguage, BookView, Subgenre } from '~/domain/book/types'
-import { formatsOf, genreShelvesOf, railsOf, shelvedInView } from '~/domain/library/business-rules'
+import {
+  formatsOf,
+  genreShelvesOf,
+  RAIL_LIMIT,
+  railsOf,
+  shelvedInView,
+} from '~/domain/library/business-rules'
 import type { GenreShelf, ShelvesView } from '~/domain/library/types'
 import { type FollowedSeries, SeriesUseCase } from '~/domain/series/use-case'
 import { SeriesOpinionQuery } from '~/domain/series-opinion/query'
@@ -39,8 +47,27 @@ export namespace LibraryUseCase {
     userId: UserId,
     view: ShelvesView,
     rail: ShelfRail,
-  ): Promise<BookView[]> =>
-    BookQuery.withSignedCovers(railsOf(shelvedInView(await BookQuery.all(userId), view))[rail])
+  ): Promise<BookView[]> => {
+    if (rail === 'favorites') return favorites(userId, view)
+    return BookQuery.withSignedCovers(
+      railsOf(shelvedInView(await BookQuery.all(userId), view))[rail],
+    )
+  }
+
+  /** "Coups de cœur": what the reader loved, a volume left unrated judged by
+   *  its saga — read beside the saga opinions. */
+  const favorites = async (userId: UserId, view: ShelvesView): Promise<BookView[]> => {
+    const [books, opinions] = await Promise.all([
+      BookQuery.all(userId),
+      SeriesOpinionQuery.all(userId),
+    ])
+    const sagas = sagaJudgementsOf(opinions)
+    return BookQuery.withSignedCovers(
+      shelvedInView(books, view)
+        .filter((book) => isLovedBook(book, sagas))
+        .slice(0, RAIL_LIMIT),
+    )
+  }
 
   /** "Coups de cœur" beside the hearted sagas: the hearted books, less the
    *  volumes of a saga the reader hearted, which `lovedSeries` draws whole. */
@@ -52,9 +79,13 @@ export namespace LibraryUseCase {
       BookQuery.all(userId),
       SeriesOpinionQuery.all(userId),
     ])
+    const sagas = sagaJudgementsOf(opinions)
     const hearted = heartedSagasOf(opinions)
-    const kept = shelvedInView(books, view).filter((book) => outsideHeartedSagas(book, hearted))
-    return BookQuery.withSignedCovers(railsOf(kept).favorites)
+    return BookQuery.withSignedCovers(
+      shelvedInView(books, view)
+        .filter((book) => isLovedBook(book, sagas) && outsideHeartedSagas(book, hearted))
+        .slice(0, RAIL_LIMIT),
+    )
   }
 
   /** The sagas of "Coups de cœur": those the reader hearted holding a book of

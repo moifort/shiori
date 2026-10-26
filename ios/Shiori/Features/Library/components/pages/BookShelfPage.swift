@@ -16,8 +16,8 @@ enum BookShelfAction {
 /// row, under the shelf's headings — the journal's periods for "Récemment"
 /// and the books read, the years for the favourites, none for the pile and
 /// the books given up on, which a sentence explains. "Coups de cœur" draws
-/// the hearted sagas first, in the Library tab's series rail, in place of
-/// their volumes.
+/// the hearted sagas first, in the Library tab's series rail, above every
+/// book loved — their volumes among them.
 struct BookShelfPage: View {
     let shelf: BookShelf
     let sections: [ListSection<Book>]
@@ -181,7 +181,7 @@ extension ReadingStatus {
     NavigationStack {
         BookShelfPage(
             shelf: .loved,
-            sections: ListSection.byYear(Showcase.shelved.filter(\.favorite), on: \.shelvedAt),
+            sections: ListSection.byYear(Showcase.shelved.filter(Showcase.isLoved), on: \.shelvedAt),
             lovedSeries: Showcase.lovedSeries(view: ShelvesView()),
             formats: [.book, .manga, .audiobook],
             isLoading: false,

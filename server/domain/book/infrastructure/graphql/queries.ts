@@ -54,8 +54,9 @@ builder.queryFields((t) => ({
       favorite: t.arg.boolean({
         required: false,
         description:
-          'Keep only the books the reader hearted, newest first as everywhere else: the ' +
-          '"Favoris" filter, where `loved` is the favourites view.',
+          '"Coups de cœur", newest first as everywhere else: the books hearted or rated four ' +
+          'stars or more, and the unrated volumes of a saga hearted or rated four stars or ' +
+          'more. Ordered in memory from the library scan and the saga opinions.',
       }),
       excludeLovedSeries: t.arg.boolean({
         required: false,
@@ -63,6 +64,7 @@ builder.queryFields((t) => ({
           'Beside `favorite`: leave out the volumes of the sagas the reader hearted, ' +
           'which "Coups de cœur" draws as their saga above the books ' +
           '(`libraryShelves.lovedSeries`). Ordered in memory from the library scan.',
+        deprecationReason: '"Coups de cœur" draws every volume it holds again.',
       }),
       loved: t.arg.boolean({
         required: false,

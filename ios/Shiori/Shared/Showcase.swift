@@ -737,7 +737,7 @@ enum Showcase {
             recent: Array(kept.prefix(20)),
             toRead: Array(kept.filter { $0.status == .toRead }.prefix(20)),
             readRecently: Array(kept.filter { $0.status == .read }.prefix(20)),
-            favorites: Array(kept.filter(\.favorite).prefix(20)),
+            favorites: Array(kept.filter(isLoved).prefix(20)),
             hasDropped: kept.contains { $0.status == .dropped },
             genres: genres.values.sorted { ($0.count, $1.genre.label) > ($1.count, $0.genre.label) },
             subgenres: subgenres.sorted { ($0.value, $1.key) > ($1.value, $0.key) }.map(\.key),
@@ -765,18 +765,29 @@ enum Showcase {
             .sorted { ($0.shelvedAt ?? .distantPast) > ($1.shelvedAt ?? .distantPast) }
     }
 
+    /// Whether a book sits among "Coups de cœur", as the server judges it:
+    /// hearted, four stars or more, or unrated in a saga hearted or rated
+    /// four stars or more.
+    static func isLoved(_ book: Book) -> Bool {
+        if book.favorite { return true }
+        if let rating = book.rating { return rating >= 4 }
+        return lovedSagaVolumeIds.contains(book.id)
+    }
+
+    private static let lovedSagaVolumeIds = Set(
+        sagas.map(followed)
+            .filter { $0.opinion?.favorite == true || ($0.opinion?.rating ?? 0) >= 4 }
+            .flatMap { $0.volumes.map(\.id) }
+    )
+
     /// One page of a shelf of the Library tab, as the server pages it.
     static func shelfPage(_ query: ShelfQuery, limit: Int, after: String?) -> LibraryPageResult {
         let view = query.view
-        let lovedVolumes = query.excludeLovedSeries
-            ? Set(lovedSagas(holding: Set(shelved.map(\.id))).flatMap { $0.volumes.map(\.id) })
-            : []
         let matching = shelved.filter { book in
             (view.format == nil || book.format == view.format)
                 && (view.genre == nil || book.genre == view.genre)
                 && (query.serverStatus == nil || book.status == query.serverStatus)
-                && (!query.favorite || book.favorite)
-                && !lovedVolumes.contains(book.id)
+                && (!query.favorite || isLoved(book))
         }
         let start = after.flatMap { id in matching.firstIndex { $0.id == id }.map { $0 + 1 } } ?? 0
         let page = Array(matching.dropFirst(start).prefix(limit))

@@ -89,7 +89,6 @@ enum LibraryAPI {
             GraphQLClient.shared.apollo,
             query: ShioriGraphQL.LibraryPageQuery(
                 favorite: query.favorite ? .some(true) : .none,
-                excludeLovedSeries: query.excludeLovedSeries ? .some(true) : .none,
                 status: GraphQLHelpers.graphQLNullable(query.serverStatus.map(graphQLStatus)),
                 format: GraphQLHelpers.graphQLNullable(view.format.map(graphQLFormat)),
                 genre: GraphQLHelpers.graphQLNullable(view.genre.map(graphQLGenre)),

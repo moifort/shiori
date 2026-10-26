@@ -67,7 +67,9 @@ LibraryShelvesType.implement({
     favorites: t.field({
       type: [BookType],
       description:
-        '"Coups de cœur": the hearted books, newest on `shelvedAt` first. Twenty books at most, covers signed for those alone.',
+        '"Coups de cœur": the books hearted or rated four stars or more, and the unrated ' +
+        'volumes of a saga hearted or rated four stars or more, newest on `shelvedAt` ' +
+        'first. Twenty books at most, covers signed for those alone.',
       args: {
         excludeLovedSeries: t.arg.boolean({
           required: false,
