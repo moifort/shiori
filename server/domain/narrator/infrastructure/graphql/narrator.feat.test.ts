@@ -328,3 +328,43 @@ describe('correcting a narrator', () => {
     })
   })
 })
+
+describe('the Library tab', () => {
+  const narratorsRail = async (args = '') => {
+    const result = await execute(
+      `{ libraryShelves${args} { narrators { key name portraitUrl bookCount } } }`,
+    )
+    expect(result.errors).toBeUndefined()
+    return (result.data as { libraryShelves: { narrators: unknown[] } }).libraryShelves.narrators
+  }
+
+  test('lines up who reads the recordings, the one shelved last first, with their faces', async () => {
+    await addBook(
+      'title: "Dune", authors: ["Frank Herbert"], format: AUDIOBOOK, narrators: ["Bernard Gabay"]',
+    )
+    await narratorPage('key: "bernard-gabay"')
+    await addBook(
+      'title: "Fondation", authors: ["Isaac Asimov"], format: AUDIOBOOK, narrators: ["Frédéric Kneip"]',
+    )
+    await addBook('title: "La Peste", authors: ["Albert Camus"]')
+
+    expect(await narratorsRail()).toEqual([
+      { key: 'frederic-kneip', name: 'Frédéric Kneip', portraitUrl: null, bookCount: 1 },
+      {
+        key: 'bernard-gabay',
+        name: 'Bernard Gabay',
+        portraitUrl: 'https://upload.wikimedia.org/gabay.jpg',
+        bookCount: 1,
+      },
+    ])
+    // Drawn from the stored faces: nothing is asked of the model or Wikipedia.
+    expect(modelCalls).toEqual(['Bernard Gabay'])
+  })
+
+  test('is empty under a view that holds no recording', async () => {
+    await addBook(
+      'title: "Dune", authors: ["Frank Herbert"], format: AUDIOBOOK, narrators: ["Bernard Gabay"]',
+    )
+    expect(await narratorsRail('(format: BOOK)')).toEqual([])
+  })
+})

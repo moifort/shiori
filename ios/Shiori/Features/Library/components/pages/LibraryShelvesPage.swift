@@ -8,6 +8,7 @@ enum LibraryShelvesAction {
     case openSeries(FollowedSeries)
     case openAuthors
     case openAuthor(FollowedAuthor)
+    case openNarrator(NarratorRow)
     case openGenre(BookGenre)
     case selectFormat(BookFormat?)
     case selectSubgenre(String?)
@@ -18,13 +19,14 @@ enum LibraryShelvesAction {
 
 /// The Library tab's entry screen, as the TV app lays out its library: the
 /// bar's title with the search beside it, the format pills, then rails in a fixed
-/// order — what moved last, the pile, the series, the authors, the books read,
+/// order — what moved last, the pile, the series, the authors and the
+/// narrators, the books read,
 /// the favourites, the genres — and the rows of every book and of those given
 /// up on. A rail with nothing in it is not drawn, and no header counts.
 ///
 /// A genre page is the same screen narrowed to a genre: its subgenres take
-/// the pills, and the rails are its pile, its books read, its series and its
-/// authors.
+/// the pills, and the rails are its pile, its books read, its series, its
+/// authors and its narrators.
 struct LibraryShelvesPage: View {
     let shelves: LibraryShelves
     /// The format pills offered, and the one chosen.
@@ -87,6 +89,7 @@ struct LibraryShelvesPage: View {
         bookRail(.toRead, shelves.toRead, context: .pile)
         seriesRail
         authorsRail
+        narratorsRail
         bookRail(.read, shelves.readRecently, context: .read)
         bookRail(.loved, shelves.favorites, context: .lovedByYear)
         if !shelves.genres.isEmpty {
@@ -104,6 +107,7 @@ struct LibraryShelvesPage: View {
         bookRail(.read, shelves.readRecently, context: .read, title: "Lus")
         seriesRail
         authorsRail
+        narratorsRail
     }
 
     @ViewBuilder
@@ -146,9 +150,22 @@ struct LibraryShelvesPage: View {
             VStack(alignment: .leading, spacing: 12) {
                 RowHeader(title: "Auteurs", style: .inline) { onAction(.openAuthors) }
                     .padding(.horizontal, 20)
-                AuthorPortraitRail(authors: shelves.authors) { onAction(.openAuthor($0)) }
+                PersonPortraitRail(people: shelves.authors) { onAction(.openAuthor($0)) }
             }
             .accessibilityIdentifier("library-rail-authors")
+        }
+    }
+
+    /// Who reads the recordings, under the authors. No list of its own to
+    /// open: each face opens the narrator's page.
+    @ViewBuilder private var narratorsRail: some View {
+        if !shelves.narrators.isEmpty {
+            VStack(alignment: .leading, spacing: 12) {
+                RowHeader(title: "Narrateurs", style: .inline)
+                    .padding(.horizontal, 20)
+                PersonPortraitRail(people: shelves.narrators) { onAction(.openNarrator($0)) }
+            }
+            .accessibilityIdentifier("library-rail-narrators")
         }
     }
 

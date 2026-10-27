@@ -1,5 +1,6 @@
 import { AdminCommand } from '~/domain/admin/command'
 import {
+  inActivityOrder,
   inPageOrder,
   isPortraitWorthSeeking,
   standaloneBooksOf,
@@ -56,6 +57,35 @@ export type NarratorPage = {
 }
 
 export namespace NarratorUseCase {
+  /** The narrators of the recordings `keep` keeps, the one shelved last
+   *  first, as many as `limit`, with their faces: the Library tab's rail of
+   *  narrators, under its authors. Only the entries of those drawn are read,
+   *  in one getAll; nothing is asked of the model or of Wikipedia. */
+  export const recent = async (
+    userId: UserId,
+    keep: (book: Book) => boolean,
+    limit: number,
+  ): Promise<FollowedNarrator[]> => {
+    const [books, opinions] = await Promise.all([
+      BookQuery.all(userId),
+      SeriesOpinionQuery.all(userId),
+    ])
+    const narrators = inActivityOrder(shelvedNarratorsOf(books.filter(keep), opinions)).slice(
+      0,
+      limit,
+    )
+    const [entries, hearted] = await Promise.all([
+      NarratorQuery.byKeys(narrators.map((narrator) => narrator.key)),
+      NarratorQuery.favoriteKeys(userId),
+    ])
+    const portraits = new Map(entries.map((entry) => [entry.key, entry.portraitUrl]))
+    return narrators.map((narrator) => ({
+      ...narrator,
+      portraitUrl: portraits.get(narrator.key),
+      favorite: hearted.has(narrator.key),
+    }))
+  }
+
   /** A narrator's page, their catalogue built the first time anybody opens
    *  it, as an author's is: one grounded call and a Wikipedia lookup, paid
    *  once for everyone, written in the language of whoever opened it.

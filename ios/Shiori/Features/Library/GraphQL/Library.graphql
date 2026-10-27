@@ -110,6 +110,11 @@ query LibraryShelves($format: BookFormat, $genre: Genre, $subgenre: Subgenre) {
       averageRating
       shelvedAt
     }
+    narrators {
+      key
+      name
+      portraitUrl
+    }
   }
 }
 

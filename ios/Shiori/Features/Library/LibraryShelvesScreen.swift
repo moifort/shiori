@@ -69,6 +69,8 @@ struct LibraryShelvesScreen: View {
             case let .openSeries(series): destination = .series(series.seriesId)
             case .openAuthors: destination = .authors
             case let .openAuthor(author): destination = .author(AuthorDestination(author))
+            case let .openNarrator(narrator):
+                destination = .narrator(NarratorDestination(key: narrator.key, name: narrator.name))
             case let .openGenre(genre): destination = .genre(genre)
             case let .selectFormat(format): Task { await viewModel.select(format: format) }
             case let .selectSubgenre(subgenre): Task { await viewModel.select(subgenre: subgenre) }

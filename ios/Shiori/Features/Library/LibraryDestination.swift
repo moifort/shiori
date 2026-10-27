@@ -10,6 +10,7 @@ enum LibraryDestination: Identifiable, Hashable {
     case series(String)
     case authors
     case author(AuthorDestination)
+    case narrator(NarratorDestination)
     case genre(BookGenre)
 
     var id: String {
@@ -21,6 +22,7 @@ enum LibraryDestination: Identifiable, Hashable {
         case let .series(id): "series-\(id)"
         case .authors: "authors"
         case let .author(author): "author-\(author.key)"
+        case let .narrator(narrator): "narrator-\(narrator.key)"
         case let .genre(genre): "genre-\(genre.rawValue)"
         }
     }
@@ -62,6 +64,8 @@ struct LibraryDestinationScreen: View {
             AuthorShelfScreen()
         case let .author(author):
             AuthorScreen(key: author.key, name: author.name)
+        case let .narrator(narrator):
+            NarratorScreen(key: narrator.key, name: narrator.name)
         case let .genre(genre):
             LibraryShelvesScreen(genre: genre, client: client)
         }

@@ -4,6 +4,7 @@ import { BookType } from '~/domain/book/infrastructure/graphql/types'
 import type { BookView } from '~/domain/book/types'
 import type { GenreShelf, LibraryShelves } from '~/domain/library/types'
 import { LibraryUseCase } from '~/domain/library/use-case'
+import { FollowedNarratorType } from '~/domain/narrator/infrastructure/graphql/queries'
 import { FollowedSeriesType } from '~/domain/series/infrastructure/graphql/queries'
 import { builder } from '~/domain/shared/graphql/builder'
 import { languageOf } from '~/domain/shared/language'
@@ -122,6 +123,14 @@ LibraryShelvesType.implement({
         'The authors of the view books, the one shelved last first, a dozen at most, ' +
         'with their portraits: their catalogues in one getAll.',
       resolve: (shelves) => LibraryUseCase.authors(shelves.userId, shelves.view),
+    }),
+    narrators: t.field({
+      type: [FollowedNarratorType],
+      description:
+        'Who reads the view’s recordings, the one shelved last first, a dozen at most, ' +
+        'with their faces: their entries in one getAll. Empty when the view holds no ' +
+        'audiobook.',
+      resolve: (shelves) => LibraryUseCase.narrators(shelves.userId, shelves.view),
     }),
   }),
 })

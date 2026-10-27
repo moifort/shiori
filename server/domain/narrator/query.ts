@@ -9,6 +9,10 @@ import type { AuthorName, UserId } from '~/domain/shared/types'
 export namespace NarratorQuery {
   export const byKey = (key: NarratorKey): Promise<Narrator | null> => repository.findByKey(key)
 
+  /** Several narrators at once, in one getAll: those absent are left out. */
+  export const byKeys = (keys: readonly NarratorKey[]): Promise<Narrator[]> =>
+    repository.findManyByKeys(keys)
+
   /** The narrators the reader hearted, by key: one query a request. */
   export const favoriteKeys = async (userId: UserId): Promise<Set<NarratorKey>> =>
     new Set(

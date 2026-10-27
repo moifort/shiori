@@ -53,6 +53,13 @@ enum LibraryAPI {
                     books: [],
                     favorite: author.favorite
                 )
+            },
+            narrators: shelves.narrators.map { narrator in
+                NarratorRow(
+                    key: narrator.key,
+                    name: narrator.name,
+                    portraitURL: narrator.portraitUrl.flatMap(URL.init(string:))
+                )
             }
         )
     }

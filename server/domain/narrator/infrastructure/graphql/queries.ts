@@ -13,58 +13,62 @@ import { builder } from '~/domain/shared/graphql/builder'
 import { languageOf } from '~/domain/shared/language'
 import { Count } from '~/domain/shared/primitives'
 
-const FollowedNarratorType = builder.objectRef<FollowedNarrator>('FollowedNarrator').implement({
-  description:
-    'Who reads recordings the reader holds. Derived from the books on every ' +
-    'request, never stored.',
-  fields: (t) => ({
-    key: t.field({ type: 'NarratorKey', resolve: (narrator) => narrator.key }),
-    name: t.field({
-      type: 'NarratorName',
-      description: 'The spelling most of the reader’s recordings use.',
-      resolve: (narrator) => narrator.name,
+export const FollowedNarratorType = builder
+  .objectRef<FollowedNarrator>('FollowedNarrator')
+  .implement({
+    description:
+      'Who reads recordings the reader holds. Derived from the books on every ' +
+      'request, never stored.',
+    fields: (t) => ({
+      key: t.field({ type: 'NarratorKey', resolve: (narrator) => narrator.key }),
+      name: t.field({
+        type: 'NarratorName',
+        description: 'The spelling most of the reader’s recordings use.',
+        resolve: (narrator) => narrator.name,
+      }),
+      portraitUrl: t.field({
+        type: 'PortraitUrl',
+        nullable: true,
+        description:
+          'Their photograph, when Wikipedia has one. Null: the app draws their initials.',
+        resolve: (narrator) => narrator.portraitUrl ?? null,
+      }),
+      favorite: t.boolean({
+        description:
+          'The reader hearted the narrator themself, apart from the hearts their ' +
+          'recordings and sagas carry.',
+        resolve: (narrator) => narrator.favorite === true,
+      }),
+      bookCount: t.field({
+        type: 'Count',
+        description: 'Recordings of theirs in the library.',
+        resolve: (narrator) => Count(narrator.books.length),
+      }),
+      readCount: t.field({
+        type: 'Count',
+        description: 'Recordings of theirs the reader has listened to.',
+        resolve: (narrator) =>
+          Count(narrator.books.filter((book) => book.status === 'read').length),
+      }),
+      seriesCount: t.field({
+        type: 'Count',
+        description: 'Sagas heard in their voice.',
+        resolve: (narrator) => Count(sagaCountOf(narrator.seriesIds)),
+      }),
+      favoriteCount: t.field({
+        type: 'Count',
+        description: 'Hearted recordings plus hearted sagas.',
+        resolve: (narrator) => narrator.favoriteCount,
+      }),
+      averageRating: t.float({
+        nullable: true,
+        description:
+          'The mean of the stars given to their recordings and sagas. Null when ' +
+          'nothing of theirs is rated.',
+        resolve: (narrator) => narrator.averageRating ?? null,
+      }),
     }),
-    portraitUrl: t.field({
-      type: 'PortraitUrl',
-      nullable: true,
-      description: 'Their photograph, when Wikipedia has one. Null: the app draws their initials.',
-      resolve: (narrator) => narrator.portraitUrl ?? null,
-    }),
-    favorite: t.boolean({
-      description:
-        'The reader hearted the narrator themself, apart from the hearts their ' +
-        'recordings and sagas carry.',
-      resolve: (narrator) => narrator.favorite === true,
-    }),
-    bookCount: t.field({
-      type: 'Count',
-      description: 'Recordings of theirs in the library.',
-      resolve: (narrator) => Count(narrator.books.length),
-    }),
-    readCount: t.field({
-      type: 'Count',
-      description: 'Recordings of theirs the reader has listened to.',
-      resolve: (narrator) => Count(narrator.books.filter((book) => book.status === 'read').length),
-    }),
-    seriesCount: t.field({
-      type: 'Count',
-      description: 'Sagas heard in their voice.',
-      resolve: (narrator) => Count(sagaCountOf(narrator.seriesIds)),
-    }),
-    favoriteCount: t.field({
-      type: 'Count',
-      description: 'Hearted recordings plus hearted sagas.',
-      resolve: (narrator) => narrator.favoriteCount,
-    }),
-    averageRating: t.float({
-      nullable: true,
-      description:
-        'The mean of the stars given to their recordings and sagas. Null when ' +
-        'nothing of theirs is rated.',
-      resolve: (narrator) => narrator.averageRating ?? null,
-    }),
-  }),
-})
+  })
 
 const NarratorCatalogueType = builder.objectRef<Narrator>('Narrator').implement({
   description:

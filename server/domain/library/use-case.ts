@@ -17,11 +17,13 @@ import {
   shelvedInView,
 } from '~/domain/library/business-rules'
 import type { GenreShelf, ShelvesView } from '~/domain/library/types'
+import { type FollowedNarrator, NarratorUseCase } from '~/domain/narrator/use-case'
 import { type FollowedSeries, SeriesUseCase } from '~/domain/series/use-case'
 import { SeriesOpinionQuery } from '~/domain/series-opinion/query'
 import type { UserId } from '~/domain/shared/types'
 
-/** The most series cards and author portraits the entry screen's rails draw. */
+/** The most series cards and author or narrator portraits the entry screen's
+ *  rails draw. */
 const PEOPLE_LIMIT = 12
 
 /** The most subgenre pills a genre page offers: the most used ones. */
@@ -141,4 +143,10 @@ export namespace LibraryUseCase {
    *  first, with their portraits. */
   export const authors = (userId: UserId, view: ShelvesView): Promise<FollowedAuthor[]> =>
     AuthorUseCase.recent(userId, (book) => inLibraryView(book, view), PEOPLE_LIMIT)
+
+  /** The narrators rail, under the authors: who reads the view's recordings,
+   *  the one shelved last first, with their faces. Empty when the view holds
+   *  no audiobook. */
+  export const narrators = (userId: UserId, view: ShelvesView): Promise<FollowedNarrator[]> =>
+    NarratorUseCase.recent(userId, (book) => inLibraryView(book, view), PEOPLE_LIMIT)
 }

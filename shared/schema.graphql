@@ -2432,6 +2432,11 @@ type LibraryShelves {
   lovedSeries: [FollowedSeries!]!
 
   """
+  Who reads the view’s recordings, the one shelved last first, a dozen at most, with their faces: their entries in one getAll. Empty when the view holds no audiobook.
+  """
+  narrators: [FollowedNarrator!]!
+
+  """
   "Lus récemment": the books read, the one finished last first. Twenty books at most, covers signed for those alone.
   """
   readRecently: [Book!]!

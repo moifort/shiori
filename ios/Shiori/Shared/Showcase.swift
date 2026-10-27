@@ -749,7 +749,11 @@ enum Showcase {
                 .filter { series in series.volumes.contains { keptIds.contains($0.id) } }
                 .sorted { ($0.shelvedAt ?? .distantPast) > ($1.shelvedAt ?? .distantPast) },
             authors: authorsPage(limit: 12, after: nil, order: .recent).items
-                .filter { author in author.books.contains { keptIds.contains($0.id) } }
+                .filter { author in author.books.contains { keptIds.contains($0.id) } },
+            narrators: kept.filter { $0.format == .audiobook }
+                .flatMap(\.narrators)
+                .reduce(into: [String]()) { names, name in if !names.contains(name) { names.append(name) } }
+                .map { NarratorRow(key: narratorKey($0), name: $0) }
         )
     }
 

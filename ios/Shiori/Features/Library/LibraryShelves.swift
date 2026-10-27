@@ -15,7 +15,7 @@ struct ShelvesView: Hashable, Codable, Sendable {
 }
 
 /// The Library tab's entry screen as the server drew it: the format pills, the
-/// rails of books, the genre tiles and the series and authors rails. A rail
+/// rails of books, the genre tiles and the series, authors and narrators rails. A rail
 /// with nothing in it is not drawn.
 struct LibraryShelves: Codable, Sendable {
     /// The formats the library holds — under a genre page, its books' — as the
@@ -32,6 +32,9 @@ struct LibraryShelves: Codable, Sendable {
     var subgenres: [String] = []
     var series: [FollowedSeries] = []
     var authors: [FollowedAuthor] = []
+    /// Who reads the view's recordings, the one shelved last first. Empty
+    /// without an audiobook.
+    var narrators: [NarratorRow] = []
 
     /// Nothing at all in the view: the empty library.
     var isEmpty: Bool { recent.isEmpty }
