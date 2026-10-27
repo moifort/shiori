@@ -145,6 +145,29 @@ struct PosterLabel: Hashable, Sendable {
         }
     }
 
+    /// How long a book has waited on the pile, as its page says it: "ajouté
+    /// aujourd'hui", "à lire depuis hier", "à lire depuis 6j", "à lire depuis
+    /// 3 sem.", "à lire depuis 2 mois", "à lire depuis 2 ans".
+    static func toReadSince(_ date: Date, now: Date, calendar: Calendar = .current) -> String {
+        switch Span(from: date, to: now, calendar: calendar) {
+        case .today: String(localized: "ajouté aujourd'hui")
+        case .yesterday: String(localized: "à lire depuis hier")
+        case let .days(days): String(localized: "à lire depuis \(days)j")
+        case let .weeks(weeks): String(localized: "à lire depuis \(weeks) sem.")
+        case let .months(months): String(localized: "à lire depuis \(months) mois")
+        case let .years(years): years == 1 ? String(localized: "à lire depuis 1 an") : String(localized: "à lire depuis \(years) ans")
+        }
+    }
+
+    /// When a book was finished, as its page says it: "lu le 3 oct.", and
+    /// past a year only the year, "lu en 2025".
+    static func readOn(_ date: Date, now: Date, calendar: Calendar = .current) -> String {
+        if case .years = Span(from: date, to: now, calendar: calendar) {
+            return String(localized: "lu en \(String(calendar.component(.year, from: date)))")
+        }
+        return String(localized: "lu le \(date.formatted(.dateTime.day().month(.abbreviated)))")
+    }
+
     /// A span between two days as a cover says it: in days under two weeks, in
     /// weeks under a month, in months under a year.
     enum Span: Equatable {

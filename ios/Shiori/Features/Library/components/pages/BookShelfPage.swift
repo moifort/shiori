@@ -5,6 +5,7 @@ enum BookShelfAction {
     case openBook(Book)
     case openSeries(FollowedSeries)
     case selectStatus(ReadingStatus?)
+    case selectGrouping(ShelfGrouping)
     case selectFormat(BookFormat?)
     case menu(Book, BookQuickAction)
     case reached(String)
@@ -23,9 +24,12 @@ struct BookShelfPage: View {
     let shelf: BookShelf
     let sections: [ListSection<Book>]
     var lovedSeries: [FollowedSeries] = []
-    /// The pills: the statuses over "Récemment", else the formats held.
+    /// The pills: the statuses over "Récemment", by date or by genre over the
+    /// books read and the favourites, else the formats held.
     var statuses: [ReadingStatus] = []
     var selectedStatus: ReadingStatus?
+    var groupings: [ShelfGrouping] = []
+    var selectedGrouping: ShelfGrouping = .date
     var formats: [BookFormat] = []
     var selectedFormat: BookFormat?
     /// The share button is gathering every page of "Coups de cœur".
@@ -124,6 +128,13 @@ struct BookShelfPage: View {
                 selected: selectedStatus?.rawValue
             ) { onAction(.selectStatus($0.flatMap(ReadingStatus.init(rawValue:)))) }
             .padding(.bottom, 4)
+        } else if !groupings.isEmpty {
+            FilterPills(
+                pills: groupings.map { FilterPills.Pill(id: $0.rawValue, label: $0.label) },
+                selected: selectedGrouping.rawValue,
+                allLabel: nil
+            ) { onAction(.selectGrouping($0.flatMap(ShelfGrouping.init(rawValue:)) ?? .date)) }
+            .padding(.bottom, 4)
         } else if !formats.isEmpty {
             FilterPills(
                 pills: formats.map { FilterPills.Pill(id: $0.rawValue, label: $0.shelfLabel) },
@@ -203,7 +214,22 @@ extension ReadingStatus {
             shelf: .loved,
             sections: ListSection.byYear(Showcase.shelved.filter(Showcase.isLoved), on: \.shelvedAt),
             lovedSeries: Showcase.lovedSeries(view: ShelvesView()),
-            formats: [.book, .manga, .audiobook],
+            groupings: ShelfGrouping.allCases,
+            isLoading: false,
+            errorMessage: nil,
+            hasMore: false,
+            loadMoreFailed: false
+        ) { _ in }
+    }
+}
+
+#Preview("Read by genre") {
+    NavigationStack {
+        BookShelfPage(
+            shelf: .read,
+            sections: ListSection.byGenre(Showcase.shelved),
+            groupings: ShelfGrouping.allCases,
+            selectedGrouping: .genre,
             isLoading: false,
             errorMessage: nil,
             hasMore: false,

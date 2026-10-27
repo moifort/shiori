@@ -86,7 +86,7 @@ struct NarratorDetailPage: View {
                     .font(.title.weight(.bold))
                     .multilineTextAlignment(.center)
                     .copyable(page.name)
-                Label(origin(page) ?? String(localized: "Narration"), systemImage: "waveform")
+                Text(origin(page) ?? String(localized: "Narrateur"))
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
@@ -108,10 +108,10 @@ struct NarratorDetailPage: View {
         }
     }
 
-    /// "Narration · Français · 1960": the voice first, then who they are.
+    /// "Narrateur · Français · 1960": the voice first, then who they are.
     private func origin(_ page: NarratorPage) -> String? {
         PersonBiography.origin(nationality: page.nationality, birthYear: page.birthYear, deathYear: page.deathYear)
-            .map { String(localized: "Narration · \($0)") }
+            .map { String(localized: "Narrateur · \($0)") }
     }
 
     /// The narrator's figures, spread across the width: listened, on the pile,

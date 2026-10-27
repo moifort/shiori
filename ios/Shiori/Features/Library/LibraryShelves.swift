@@ -101,3 +101,33 @@ struct ShelfQuery: Hashable, Sendable {
     var serverStatus: ReadingStatus? { status ?? shelf.status }
     var favorite: Bool { shelf == .loved }
 }
+
+/// How the books read and the favourites are cut under their headings: by the
+/// date they were shelved, or by genre.
+enum ShelfGrouping: String, CaseIterable, Sendable {
+    case date, genre
+
+    var label: String {
+        switch self {
+        case .date: String(localized: "Par date")
+        case .genre: String(localized: "Par genre")
+        }
+    }
+}
+
+extension ListSection where Row == Book {
+    /// The books under their genre, the genre holding the most first, each in
+    /// the order given; the books without one close the list.
+    static func byGenre(_ books: [Book]) -> [ListSection<Book>] {
+        let grouped = Dictionary(grouping: books, by: \.genre)
+        let genres = grouped.keys.compactMap(\.self).sorted { lhs, rhs in
+            let (left, right) = (grouped[lhs, default: []].count, grouped[rhs, default: []].count)
+            return left != right ? left > right : lhs.label.localizedStandardCompare(rhs.label) == .orderedAscending
+        }
+        var sections = genres.map { ListSection(id: $0.rawValue, title: $0.label, rows: grouped[$0, default: []]) }
+        if let unsorted = grouped[nil] {
+            sections.append(ListSection(id: "none", title: String(localized: "Sans genre"), rows: unsorted))
+        }
+        return sections
+    }
+}

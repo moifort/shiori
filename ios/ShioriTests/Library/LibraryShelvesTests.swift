@@ -29,6 +29,20 @@ struct PosterLabelTests {
         #expect(PosterLabel.waited(daysAgo(400), now: now, calendar: calendar) == String(localized: "1 an"))
     }
 
+    @Test func aBookPageSaysHowLongTheBookHasWaitedInTheLargestUnit() {
+        #expect(PosterLabel.toReadSince(daysAgo(0), now: now, calendar: calendar) == String(localized: "ajouté aujourd'hui"))
+        #expect(PosterLabel.toReadSince(daysAgo(6), now: now, calendar: calendar) == String(localized: "à lire depuis \(6)j"))
+        #expect(PosterLabel.toReadSince(daysAgo(21), now: now, calendar: calendar) == String(localized: "à lire depuis \(3) sem."))
+        #expect(PosterLabel.toReadSince(daysAgo(40), now: now, calendar: calendar) == String(localized: "à lire depuis \(1) mois"))
+        #expect(PosterLabel.toReadSince(daysAgo(965), now: now, calendar: calendar) == String(localized: "à lire depuis \(2) ans"))
+    }
+
+    @Test func aBookReadOverAYearAgoSaysOnlyTheYear() {
+        #expect(PosterLabel.readOn(daysAgo(400), now: now, calendar: calendar) == String(localized: "lu en \(String(2025))"))
+        let day = daysAgo(20).formatted(.dateTime.day().month(.abbreviated))
+        #expect(PosterLabel.readOn(daysAgo(20), now: now, calendar: calendar) == String(localized: "lu le \(day)"))
+    }
+
     @Test func aPaperBookBeingReadWearsTheBookmarkAndNoPercentage() {
         let label = PosterLabel.of(book("p", .reading, shelved: 6), in: .recent, now: now, calendar: calendar)
 
@@ -207,6 +221,29 @@ struct BookShelfViewModelTests {
         viewModel.apply(book("a", .reading, shelved: 0))
 
         #expect(viewModel.books.isEmpty)
+    }
+
+    @Test func theBooksReadAreCutByGenreOrByDateWithoutFormatPills() async {
+        var dune = book("dune", .read, shelved: 0)
+        dune.genre = .scienceFiction
+        dune.format = .manga
+        var hobbit = book("hobbit", .read, shelved: 1)
+        hobbit.genre = .fantasy
+        var hyperion = book("hyperion", .read, shelved: 2)
+        hyperion.genre = .scienceFiction
+        let untagged = book("untagged", .read, shelved: 3)
+        let viewModel = BookShelfViewModel(client: serving([dune, hobbit, hyperion, untagged]), shelf: .read, now: { now })
+        await viewModel.load()
+
+        #expect(viewModel.shownFormats.isEmpty)
+        #expect(viewModel.groupingPills == [.date, .genre])
+
+        viewModel.select(grouping: .genre)
+
+        #expect(viewModel.sections.map(\.title) == [
+            BookGenre.scienceFiction.label, BookGenre.fantasy.label, String(localized: "Sans genre"),
+        ])
+        #expect(viewModel.sections[0].rows.map(\.id) == ["dune", "hyperion"])
     }
 
     @Test func formatPillsShowOnlyWithTwoFormats() async {

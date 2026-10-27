@@ -353,6 +353,9 @@ struct SeriesShowCard: View {
                 progressLine
             }
             .foregroundStyle(.white)
+            // Lifts the white text off a pale cover, now the card is no longer
+            // darkened under it.
+            .shadow(color: .black.opacity(0.35), radius: 6, y: 1)
             .padding(isCompact ? 10 : 12)
             .frame(maxWidth: .infinity, alignment: .leading)
             // At least a card's height, more with larger text.
@@ -388,8 +391,8 @@ struct SeriesShowCard: View {
         .accessibilityElement(children: .combine)
     }
 
-    /// The cover across the card, darkened toward its foot and its leading
-    /// edge, where the text sits, along an eased curve.
+    /// The cover across the card, melting into a blur at its foot as the
+    /// posters do, under a light veil where the text sits.
     private var artwork: some View {
         // Held to the card's size: filled, the cover would otherwise grow the
         // card to its own proportions.
@@ -400,21 +403,44 @@ struct SeriesShowCard: View {
                     CoverImage(url: url) { Color.clear } fallback: { Color.clear }
                 }
                 .clipped()
+                footBlur(url)
             }
+            // A light veil at the foot only, the blur doing the rest: white
+            // text stays readable on a pale cover without dimming the card.
             LinearGradient(
                 stops: (0...10).map { step in
                     let t = Double(step) / 10
-                    return .init(color: .black.opacity(0.85 * t * t * (3 - 2 * t)), location: 0.1 + 0.9 * t)
+                    return .init(color: .black.opacity(0.3 * t * t * (3 - 2 * t)), location: 0.4 + 0.6 * t)
                 },
                 startPoint: .top,
                 endPoint: .bottom
             )
-            LinearGradient(
-                colors: [.black.opacity(0.35), .clear],
-                startPoint: .leading,
-                endPoint: .trailing
-            )
         }
+    }
+
+    /// The cover blurred under the name and the progress, more the lower it
+    /// goes, as PosterCover melts a cover under its line: the print never
+    /// fights the text. Scaled up before the blur so the edges blur on the
+    /// cover rather than on the card's transparent border.
+    private func footBlur(_ url: URL) -> some View {
+        Color.clear
+            .overlay {
+                CoverImage(url: url) { Color.clear } fallback: { Color.clear }
+                    .scaleEffect(1.15)
+                    .blur(radius: isCompact ? 8 : 10, opaque: true)
+            }
+            .clipped()
+            .mask {
+                LinearGradient(
+                    stops: (0...10).map { step in
+                        let t = Double(step) / 10
+                        return .init(color: .black.opacity(t * t * (3 - 2 * t)), location: 0.3 + 0.5 * t)
+                    },
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            }
+            .allowsHitTesting(false)
     }
 
     /// How far the reader is through the saga, as the TV app sets an

@@ -8357,6 +8357,22 @@
         }
       }
     },
+    "Narrateur · %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Narrator · %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Narrateur · %@"
+          }
+        }
+      }
+    },
     "Narrateurs" : {
       "localizations" : {
         "en" : {
@@ -8401,38 +8417,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Narrateurs préférés"
-          }
-        }
-      }
-    },
-    "Narration" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Narrator"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Narration"
-          }
-        }
-      }
-    },
-    "Narration · %@" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Narrator · %@"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Narration · %@"
           }
         }
       }
@@ -11393,6 +11377,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sans date"
+          }
+        }
+      }
+    },
+    "Sans genre" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No genre"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sans genre"
           }
         }
       }
@@ -14549,6 +14549,22 @@
         }
       }
     },
+    "lu en %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "read in %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "lu en %@"
+          }
+        }
+      }
+    },
     "lu en %lld jours" : {
       "localizations" : {
         "en" : {
@@ -15093,6 +15109,54 @@
         }
       }
     },
+    "à lire depuis %lld ans" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "to read for %lld years"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "à lire depuis %lld ans"
+          }
+        }
+      }
+    },
+    "à lire depuis %lld mois" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "to read for %lld months"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "à lire depuis %lld mois"
+          }
+        }
+      }
+    },
+    "à lire depuis %lld sem." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "to read for %lld wk"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "à lire depuis %lld sem."
+          }
+        }
+      }
+    },
     "à lire depuis %lldj" : {
       "localizations" : {
         "en" : {
@@ -15105,6 +15169,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "à lire depuis %lldj"
+          }
+        }
+      }
+    },
+    "à lire depuis 1 an" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "to read for 1 year"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "à lire depuis 1 an"
+          }
+        }
+      }
+    },
+    "à lire depuis hier" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "to read since yesterday"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "à lire depuis hier"
           }
         }
       }

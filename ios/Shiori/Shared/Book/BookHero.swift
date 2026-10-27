@@ -299,30 +299,25 @@ extension BookHero where Actions == EmptyView {
 
 extension BookState {
     /// Where the reader's own copy stands, as the home's card says it, the
-    /// units set against their figures: "à lire depuis 6j", "depuis 3j",
-    /// "lu le 3 oct.". The colour is the status's, for whoever draws it.
+    /// in days, then weeks, months and years as the covers count them: "à lire
+    /// depuis 6j", "à lire depuis 2 ans", "depuis 3 sem.", "lu le 3 oct.",
+    /// "lu en 2025". The colour is the status's, for whoever draws it.
     static func reading(of book: Book) -> BookState {
-        let day: (Date) -> String = { $0.formatted(.dateTime.day().month(.abbreviated)) }
         let tint = book.status.tint
         switch book.status {
         case .toRead:
             if book.forthcoming { return .forthcoming }
             guard let added = book.addedAt else { return BookState(text: book.status.label.lowercased(), tint: tint) }
-            let days = added.daysAgo()
-            return BookState(
-                text: days == 0 ? String(localized: "ajouté aujourd'hui") : String(localized: "à lire depuis \(days)j"),
-                tint: tint
-            )
+            return BookState(text: PosterLabel.toReadSince(added, now: .now), tint: tint)
         case .reading:
             guard let started = book.startedAt else { return BookState(text: book.status.label.lowercased(), tint: tint) }
-            let days = started.daysAgo()
-            return BookState(
-                text: days == 0 ? String(localized: "commencé aujourd'hui") : String(localized: "depuis \(days)j"),
-                tint: tint
-            )
+            let opened = started.daysAgo() == 0
+                ? String(localized: "commencé aujourd'hui")
+                : PosterLabel.open(started, now: .now)
+            return BookState(text: opened, tint: tint)
         case .read:
             guard let finished = book.finishedAt else { return BookState(text: book.status.label.lowercased(), tint: tint) }
-            return BookState(text: String(localized: "lu le \(day(finished))"), tint: tint)
+            return BookState(text: PosterLabel.readOn(finished, now: .now), tint: tint)
         case .dropped:
             return BookState(text: book.status.label.lowercased(), tint: tint)
         }
