@@ -104,6 +104,7 @@ extension AuthorListOrder {
     }
 }
 
+#if DEBUG
 #Preview {
     NavigationStack {
         AuthorShelfPage(
@@ -116,3 +117,4 @@ extension AuthorListOrder {
         ) { _ in }
     }
 }
+#endif

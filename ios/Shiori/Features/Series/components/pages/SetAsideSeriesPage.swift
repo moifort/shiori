@@ -40,8 +40,10 @@ struct SetAsideSeriesPage: View {
     }
 }
 
+#if DEBUG
 #Preview {
     NavigationStack {
         SetAsideSeriesPage(series: SeriesFixtures.followed, isLoading: false, onOpen: { _ in }, onFollow: { _ in })
     }
 }
+#endif

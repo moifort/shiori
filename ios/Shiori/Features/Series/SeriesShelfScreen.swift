@@ -79,8 +79,10 @@ struct SeriesDestinationID: Identifiable, Hashable {
     let id: String
 }
 
+#if DEBUG
 #Preview {
     NavigationStack {
         SeriesShelfScreen(client: .preview)
     }
 }
+#endif

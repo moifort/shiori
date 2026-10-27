@@ -188,6 +188,7 @@ struct SeriesShelfPage: View {
     }
 }
 
+#if DEBUG
 #Preview {
     let series = SeriesFixtures.followed
     NavigationStack {
@@ -203,3 +204,4 @@ struct SeriesShelfPage: View {
         ) { _ in }
     }
 }
+#endif

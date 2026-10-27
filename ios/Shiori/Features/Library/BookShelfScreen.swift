@@ -80,8 +80,10 @@ struct BookMosaicScreen: View {
     }
 }
 
+#if DEBUG
 #Preview {
     NavigationStack {
         BookShelfScreen(shelf: .recent, client: .preview)
     }
 }
+#endif

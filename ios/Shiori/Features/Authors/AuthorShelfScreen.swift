@@ -46,8 +46,10 @@ struct AuthorShelfScreen: View {
     }
 }
 
+#if DEBUG
 #Preview {
     NavigationStack {
         AuthorShelfScreen(client: .preview, library: .preview)
     }
 }
+#endif

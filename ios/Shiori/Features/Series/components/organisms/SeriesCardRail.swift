@@ -54,7 +54,9 @@ struct SeriesCardRail: View {
     }
 }
 
+#if DEBUG
 #Preview {
     SeriesCardRail(series: SeriesFixtures.followed) { _ in }
         .background(.black)
 }
+#endif

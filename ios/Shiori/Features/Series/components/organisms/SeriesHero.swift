@@ -157,6 +157,7 @@ struct SeriesFan {
     }
 }
 
+#if DEBUG
 #Preview {
     let screen = SeriesFixtures.screen
     ScrollView {
@@ -172,3 +173,4 @@ struct SeriesFan {
     }
     .background(Color(.systemGroupedBackground))
 }
+#endif

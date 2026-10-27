@@ -101,6 +101,8 @@ struct LibraryShelvesScreen: View {
     }
 }
 
+#if DEBUG
 #Preview {
     LibraryShelvesScreen(client: .preview)
 }
+#endif

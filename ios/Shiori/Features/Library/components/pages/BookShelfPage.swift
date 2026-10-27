@@ -163,6 +163,7 @@ extension ReadingStatus {
     }
 }
 
+#if DEBUG
 #Preview("Recent") {
     NavigationStack {
         BookShelfPage(
@@ -204,3 +205,4 @@ extension ReadingStatus {
         ) { _ in }
     }
 }
+#endif

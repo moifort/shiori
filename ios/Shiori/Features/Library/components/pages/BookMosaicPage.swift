@@ -77,6 +77,7 @@ struct BookMosaicPage: View {
     }
 }
 
+#if DEBUG
 #Preview {
     NavigationStack {
         BookMosaicPage(
@@ -89,3 +90,4 @@ struct BookMosaicPage: View {
         ) { _ in }
     }
 }
+#endif

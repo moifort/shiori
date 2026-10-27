@@ -180,6 +180,7 @@ extension BookFormat {
     }
 }
 
+#if DEBUG
 #Preview("Library") {
     NavigationStack {
         LibraryShelvesPage(
@@ -211,3 +212,4 @@ extension BookFormat {
         LibraryShelvesPage(shelves: LibraryShelves(), formats: [], selectedFormat: nil, isLoading: false, errorMessage: nil) { _ in }
     }
 }
+#endif
