@@ -13,35 +13,35 @@ query NarratorPage($key: NarratorKey!, $offered: NarratorName, $waitForCatalogue
 }
 
 fragment NarratorPageFields on NarratorPage {
-    awaitingCatalogue
-    narrator {
-      key
-      name
-      portraitUrl
-      favorite
-      bookCount
-      readCount
-      seriesCount
-      averageRating
+  awaitingCatalogue
+  narrator {
+    key
+    name
+    portraitUrl
+    favorite
+    bookCount
+    readCount
+    seriesCount
+    averageRating
+  }
+  catalogue {
+    nationality
+    birthYear
+    deathYear
+    biography
+  }
+  sagas {
+    ...FollowedSeriesRow
+    volumes {
+      ...FollowedVolume
     }
     catalogue {
-      nationality
-      birthYear
-      deathYear
-      biography
+      ...CatalogueSpine
     }
-    sagas {
-      ...FollowedSeriesRow
-      volumes {
-        ...FollowedVolume
-      }
-      catalogue {
-        ...CatalogueSpine
-      }
-    }
-    books {
-      ...BookSummary
-    }
+  }
+  books {
+    ...BookSummary
+  }
 }
 
 # Correct what the world knows of the narrator, for every reader: omitted
