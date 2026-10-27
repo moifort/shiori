@@ -30,21 +30,21 @@ struct SeriesShelfPage: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 30) {
-                if !upNext.isEmpty, filter == .all {
+                if !upNext.isEmpty {
                     VStack(alignment: .leading, spacing: 12) {
                         RowHeader(title: "À suivre", style: .inline).padding(.horizontal, 20)
                         PosterRow(items: upNext.map(upNextItem)) { _ in }
                             .contentMargins(.horizontal, 20, for: .scrollContent)
                     }
                 }
-                if !releases.isEmpty, filter == .all {
+                if !releases.isEmpty {
                     VStack(alignment: .leading, spacing: 12) {
                         RowHeader(title: "Prochaines sorties", style: .inline).padding(.horizontal, 20)
                         releaseRail
                     }
                 }
                 allSeries
-                if hasSetAside, filter == .all {
+                if hasSetAside {
                     setAsideRow
                 }
             }
