@@ -48,6 +48,9 @@ final class BookShelfViewModel {
     /// "Récemment" shows six months, the rest of the library is a tap away
     /// in "Tous les livres".
     private static let recentMonths = 6
+    /// Never fewer than the rail it was opened from drew, the server's
+    /// `RAIL_LIMIT`: a format whose last book is older would open empty.
+    private static let recentFloor = 20
 
     private var pageSize: Int { shelf == .all ? 140 : 60 }
     private var prefetchThreshold: Int { shelf == .all ? 42 : 12 }
@@ -176,7 +179,7 @@ final class BookShelfViewModel {
         do {
             let page = try await client.shelf(query, pageSize, last.id)
             guard requested == generation else { return }
-            let kept = withinShelf(page.books)
+            let kept = withinShelf(page.books, below: books.count)
             books += kept
             hasMore = page.hasMore && kept.count == page.books.count
             for format in BookFormat.allCases where !formats.contains(format) && kept.contains(where: { $0.format == format }) && query.view.format == nil {
@@ -200,12 +203,15 @@ final class BookShelfViewModel {
         Task { await loadMore() }
     }
 
-    /// "Récemment" stops six months back.
-    private func withinShelf(_ fetched: [Book]) -> [Book] {
+    /// "Récemment" stops six months back, past the books its rail drew.
+    /// `shown` is how many rows the grid already holds above `fetched`.
+    private func withinShelf(_ fetched: [Book], below shown: Int = 0) -> [Book] {
         guard shelf == .recent,
               let limit = Calendar.current.date(byAdding: .month, value: -Self.recentMonths, to: now())
         else { return fetched }
-        return fetched.filter { ($0.shelvedAt ?? .distantPast) >= limit }
+        return fetched.enumerated()
+            .filter { index, book in shown + index < Self.recentFloor || (book.shelvedAt ?? .distantPast) >= limit }
+            .map(\.element)
     }
 
     /// Puts back a book its page just changed, or drops it from a shelf it no

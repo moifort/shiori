@@ -168,13 +168,25 @@ struct BookShelfViewModelTests {
     }
 
     @Test func recentlyStopsSixMonthsBack() async {
-        let books = [book("new", .toRead, shelved: 3), book("old", .read, shelved: 250)]
-        let viewModel = BookShelfViewModel(client: serving(books), shelf: .recent, now: { now })
+        let recent = (1...20).map { book("new\($0)", .toRead, shelved: $0) }
+        let viewModel = BookShelfViewModel(client: serving(recent + [book("old", .read, shelved: 250)]), shelf: .recent, now: { now })
 
         await viewModel.load()
 
-        #expect(viewModel.books.map(\.id) == ["new"])
+        #expect(viewModel.books.map(\.id) == recent.map(\.id))
         #expect(viewModel.hasMore == false)
+    }
+
+    @Test func recentlyKeepsTheRailsBooksPastSixMonths() async {
+        var old = book("old", .read, shelved: 250)
+        old.format = .manga
+        let viewModel = BookShelfViewModel(
+            client: serving([old]), shelf: .recent, view: ShelvesView(format: .manga), now: { now }
+        )
+
+        await viewModel.load()
+
+        #expect(viewModel.books.map(\.id) == ["old"])
     }
 
     @Test func aStatusPillNarrowsRecently() async {
