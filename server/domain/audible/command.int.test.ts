@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test'
 import { randomBytes } from 'node:crypto'
 import type { UserId } from '~/domain/shared/types'
+import { fakeAudibleApi, stageAudibleApi } from '~/test/fake-audible-api'
 import { fakeDb, resetFakeFirestore, startFakeRequest } from '~/test/fake-firestore'
 
 mock.module('~/system/firebase', () => ({ db: fakeDb }))
@@ -14,7 +15,7 @@ mock.module('~/system/config', () => ({ config: () => ({ audibleKey }) }))
 let registrations: string[] = []
 let registerFails: Error | undefined
 
-mock.module('~/domain/audible/infrastructure/audible-api', () => ({
+const audibleApi = {
   login: async (marketplace: string) => ({
     loginUrl: `https://www.amazon.${marketplace}/ap/signin?openid.oa2.code_challenge=xyz`,
     session: { codeVerifier: 'verifier-1', serial: 'SERIAL1', marketplace, createdAt: NOW },
@@ -35,7 +36,8 @@ mock.module('~/domain/audible/infrastructure/audible-api', () => ({
   },
   library: async () => ({ items: [], credentials: {} }),
   landingUrlOf: (marketplace: string) => `https://www.amazon.${marketplace}/ap/maplanding`,
-}))
+}
+mock.module('~/domain/audible/infrastructure/audible-api', () => fakeAudibleApi)
 
 const { AudibleCommand } = await import('~/domain/audible/command')
 const { AudibleQuery } = await import('~/domain/audible/query')
@@ -47,6 +49,7 @@ let fake = resetFakeFirestore()
 
 beforeEach(() => {
   fake = resetFakeFirestore()
+  stageAudibleApi(audibleApi)
   registrations = []
   registerFails = undefined
 })

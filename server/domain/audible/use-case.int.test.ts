@@ -4,6 +4,7 @@ import type { AudibleItem, LastPosition } from 'audible-api-ts'
 import type { AudibleAsin } from '~/domain/audible/types'
 import { seriesIdOf } from '~/domain/series/primitives'
 import type { UserId } from '~/domain/shared/types'
+import { fakeAudibleApi, stageAudibleApi } from '~/test/fake-audible-api'
 import { fakeDb, resetFakeFirestore, startFakeRequest } from '~/test/fake-firestore'
 
 mock.module('~/system/firebase', () => ({ db: fakeDb }))
@@ -39,7 +40,7 @@ const rotated = {
   expiresAt: new Date('2026-09-19T14:00:00.000Z'),
 }
 
-mock.module('~/domain/audible/infrastructure/audible-api', () => ({
+const audibleApi = {
   login: async (marketplace: string) => ({
     loginUrl: `https://www.amazon.${marketplace}/ap/signin`,
     session: { codeVerifier: 'verifier-1', serial: 'SERIAL1', marketplace, createdAt: NOW },
@@ -103,7 +104,8 @@ mock.module('~/domain/audible/infrastructure/audible-api', () => ({
     }
   },
   landingUrlOf: (marketplace: string) => `https://www.amazon.${marketplace}/ap/maplanding`,
-}))
+}
+mock.module('~/domain/audible/infrastructure/audible-api', () => fakeAudibleApi)
 
 /** Audible's public catalogue, which lists the volumes of a saga heard after
  *  a sync: the series as `audibleSeries` stages it, and what it was asked. */
@@ -155,6 +157,7 @@ let fake = resetFakeFirestore()
 
 beforeEach(() => {
   fake = resetFakeFirestore()
+  stageAudibleApi(audibleApi)
   items = []
   positions = []
   libraryCalls.length = 0
