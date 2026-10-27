@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test'
+import { afterEach, beforeEach, describe, expect, mock, setSystemTime, spyOn, test } from 'bun:test'
 import { graphql } from 'graphql'
 import type { UserId } from '~/domain/shared/types'
 import { fakeDb, resetFakeFirestore } from '~/test/fake-firestore'
@@ -339,13 +339,17 @@ describe('the Library tab', () => {
   }
 
   test('lines up who reads the recordings, the one shelved last first, with their faces', async () => {
+    setSystemTime(new Date('2026-10-01T09:00:00Z'))
     await addBook(
       'title: "Dune", authors: ["Frank Herbert"], format: AUDIOBOOK, narrators: ["Bernard Gabay"]',
     )
     await narratorPage('key: "bernard-gabay"')
+    // A day apart, so the order never rests on two writes in one millisecond.
+    setSystemTime(new Date('2026-10-02T09:00:00Z'))
     await addBook(
       'title: "Fondation", authors: ["Isaac Asimov"], format: AUDIOBOOK, narrators: ["Frédéric Kneip"]',
     )
+    setSystemTime()
     await addBook('title: "La Peste", authors: ["Albert Camus"]')
 
     expect(await narratorsRail()).toEqual([
@@ -366,5 +370,67 @@ describe('the Library tab', () => {
       'title: "Dune", authors: ["Frank Herbert"], format: AUDIOBOOK, narrators: ["Bernard Gabay"]',
     )
     expect(await narratorsRail('(format: BOOK)')).toEqual([])
+  })
+})
+
+describe('the narrators list', () => {
+  const narratorsPage = async (args: string) => {
+    const result = await execute(
+      `{ myNarratorsPage(${args}) { hasMore endCursor items { key name favorite books { title } } } }`,
+    )
+    expect(result.errors).toBeUndefined()
+    return (
+      result.data as {
+        myNarratorsPage: {
+          hasMore: boolean
+          endCursor: string | null
+          items: { key: string; name: string; favorite: boolean; books: { title: string }[] }[]
+        }
+      }
+    ).myNarratorsPage
+  }
+
+  beforeEach(async () => {
+    setSystemTime(new Date('2026-10-01T09:00:00Z'))
+    await addBook(
+      'title: "Dune", authors: ["Frank Herbert"], format: AUDIOBOOK, narrators: ["Bernard Gabay"]',
+    )
+    setSystemTime(new Date('2026-10-02T09:00:00Z'))
+    await addBook(
+      'title: "Fondation", authors: ["Isaac Asimov"], format: AUDIOBOOK, narrators: ["Frédéric Kneip"]',
+    )
+    await addBook('title: "La Peste", authors: ["Albert Camus"]')
+    setSystemTime()
+  })
+
+  test('lists who reads the recordings, with their recordings, in the order asked', async () => {
+    const recent = await narratorsPage('order: RECENT')
+    expect(
+      recent.items.map((narrator) => [narrator.name, narrator.books.map((b) => b.title)]),
+    ).toEqual([
+      ['Frédéric Kneip', ['Fondation']],
+      ['Bernard Gabay', ['Dune']],
+    ])
+    expect((await narratorsPage('order: NAME')).items.map((n) => n.key)).toEqual([
+      'bernard-gabay',
+      'frederic-kneip',
+    ])
+  })
+
+  test('puts the narrators the reader hearted first', async () => {
+    await execute('mutation { setNarratorFavorite(key: "frederic-kneip", favorite: true) }')
+    const loved = await narratorsPage('order: LOVED')
+    expect(loved.items.map((narrator) => [narrator.key, narrator.favorite])).toEqual([
+      ['frederic-kneip', true],
+      ['bernard-gabay', false],
+    ])
+  })
+
+  test('pages after the cursor', async () => {
+    const first = await narratorsPage('order: NAME, limit: 1')
+    expect(first).toMatchObject({ hasMore: true, endCursor: 'bernard-gabay' })
+    const next = await narratorsPage('order: NAME, limit: 1, after: "bernard-gabay"')
+    expect(next.items.map((narrator) => narrator.key)).toEqual(['frederic-kneip'])
+    expect(next.hasMore).toBe(false)
   })
 })

@@ -124,7 +124,14 @@ export const unshelvedAuthorOf = <Book>(
  *
  *  Done on the server rather than on the phone because the list is paginated:
  *  ordered on the client, a page landing late would reshuffle what is drawn. */
-export const inAuthorOrder = <Author extends ShelvedAuthor<unknown>>(
+export const inAuthorOrder = <
+  Author extends {
+    name: string
+    books: readonly unknown[]
+    favoriteCount: number
+    averageRating?: number
+  },
+>(
   authors: readonly Author[],
 ): Author[] =>
   [...authors].sort(
@@ -231,9 +238,9 @@ export const matchingAuthorFilter = <Author extends { key: AuthorKey; favoriteCo
 
 /** The authors the reader hearted themself lead, in the order given: what
  *  "Préférés" lists first, before the hearts their books carry. */
-export const heartedFirst = <Author extends { key: AuthorKey }>(
+export const heartedFirst = <Key extends string, Author extends { key: Key }>(
   authors: readonly Author[],
-  hearted: ReadonlySet<AuthorKey>,
+  hearted: ReadonlySet<Key>,
 ): Author[] => [
   ...authors.filter((author) => hearted.has(author.key)),
   ...authors.filter((author) => !hearted.has(author.key)),

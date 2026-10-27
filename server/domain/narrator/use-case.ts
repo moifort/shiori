@@ -1,11 +1,16 @@
+import { match } from 'ts-pattern'
 import { AdminCommand } from '~/domain/admin/command'
 import {
+  heartedFirst,
   inActivityOrder,
+  inAuthorOrder,
+  inNameOrder,
   inPageOrder,
   isPortraitWorthSeeking,
   standaloneBooksOf,
 } from '~/domain/author/business-rules'
 import type { PortraitChoice, PortraitUrl } from '~/domain/author/types'
+import type { AuthorOrder } from '~/domain/author/use-case'
 import { CoverUrl } from '~/domain/book/primitives'
 import { BookQuery } from '~/domain/book/query'
 import type { Book, NarratorName } from '~/domain/book/types'
@@ -28,6 +33,7 @@ import { isImageAt } from '~/domain/scan/published-cover'
 import { type FollowedSeries, SeriesUseCase } from '~/domain/series/use-case'
 import { SeriesOpinionQuery } from '~/domain/series-opinion/query'
 import type { Language } from '~/domain/shared/language'
+import { pageAfter } from '~/domain/shared/page'
 import type { UserId } from '~/domain/shared/types'
 import { createLogger } from '~/system/logger'
 
@@ -57,6 +63,30 @@ export type NarratorPage = {
 }
 
 export namespace NarratorUseCase {
+  /** One page of the Library's narrators list, ordered as the authors' is:
+   *  the loved ones first, by name, or the one shelved last first. Which
+   *  narrators a page holds depends on the books and the opinions alone; only
+   *  the page's own entries are read, in one getAll, for their faces. */
+  export const followedPage = async (
+    userId: UserId,
+    page: { limit: number; after?: string },
+    order: AuthorOrder = 'loved',
+  ): Promise<{ items: FollowedNarrator[]; hasMore: boolean; endCursor: string | null }> => {
+    const [books, opinions, hearted] = await Promise.all([
+      BookQuery.all(userId),
+      SeriesOpinionQuery.all(userId),
+      NarratorQuery.favoriteKeys(userId),
+    ])
+    const shelved = shelvedNarratorsOf(books, opinions)
+    const ranked = match(order)
+      .with('name', () => inNameOrder(shelved))
+      .with('recent', () => inActivityOrder(shelved))
+      .with('loved', () => heartedFirst(inAuthorOrder(shelved), hearted))
+      .exhaustive()
+    const { items, ...rest } = pageAfter(ranked, page, (narrator) => narrator.key)
+    return { items: await withFaces(items, hearted), ...rest }
+  }
+
   /** The narrators of the recordings `keep` keeps, the one shelved last
    *  first, as many as `limit`, with their faces: the Library tab's rail of
    *  narrators, under its authors. Only the entries of those drawn are read,
@@ -74,10 +104,16 @@ export namespace NarratorUseCase {
       0,
       limit,
     )
-    const [entries, hearted] = await Promise.all([
-      NarratorQuery.byKeys(narrators.map((narrator) => narrator.key)),
-      NarratorQuery.favoriteKeys(userId),
-    ])
+    return withFaces(narrators, await NarratorQuery.favoriteKeys(userId))
+  }
+
+  /** These narrators with their faces, the entries read in one getAll: only
+   *  the rows about to be drawn should be passed. */
+  const withFaces = async (
+    narrators: readonly ShelvedNarrator<Book>[],
+    hearted: ReadonlySet<NarratorKey>,
+  ): Promise<FollowedNarrator[]> => {
+    const entries = await NarratorQuery.byKeys(narrators.map((narrator) => narrator.key))
     const portraits = new Map(entries.map((entry) => [entry.key, entry.portraitUrl]))
     return narrators.map((narrator) => ({
       ...narrator,

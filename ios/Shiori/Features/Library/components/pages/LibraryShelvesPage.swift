@@ -8,6 +8,7 @@ enum LibraryShelvesAction {
     case openSeries(FollowedSeries)
     case openAuthors
     case openAuthor(FollowedAuthor)
+    case openNarrators
     case openNarrator(NarratorRow)
     case openGenre(BookGenre)
     case selectFormat(BookFormat?)
@@ -156,12 +157,12 @@ struct LibraryShelvesPage: View {
         }
     }
 
-    /// Who reads the recordings, under the authors. No list of its own to
-    /// open: each face opens the narrator's page.
+    /// Who reads the recordings, under the authors: the header opens the
+    /// whole list, as the authors' does, each face the narrator's page.
     @ViewBuilder private var narratorsRail: some View {
         if !shelves.narrators.isEmpty {
             VStack(alignment: .leading, spacing: 12) {
-                RowHeader(title: "Narrateurs", style: .inline)
+                RowHeader(title: "Narrateurs", style: .inline) { onAction(.openNarrators) }
                     .padding(.horizontal, 20)
                 PersonPortraitRail(people: shelves.narrators) { onAction(.openNarrator($0)) }
             }

@@ -80,3 +80,23 @@ query NarratorPortraitChoices($key: NarratorKey!) {
 mutation SetNarratorFavorite($key: NarratorKey!, $favorite: Boolean!) {
   setNarratorFavorite(key: $key, favorite: $favorite)
 }
+
+# One page of the narrators of the reader's recordings, in the order the list is
+# drawn in, as the authors' shelf is: each with every recording in their voice,
+# covers signed for this page alone.
+query MyNarratorsPage($limit: Int, $after: String, $order: AuthorOrder) {
+  myNarratorsPage(limit: $limit, after: $after, order: $order) {
+    hasMore
+    endCursor
+    items {
+      key
+      name
+      portraitUrl
+      favorite
+      shelvedAt
+      books {
+        ...BookSummary
+      }
+    }
+  }
+}

@@ -1,5 +1,5 @@
 import { sagaCountOf } from '~/domain/author/business-rules'
-import { PortraitChoiceType } from '~/domain/author/infrastructure/graphql/queries'
+import { AuthorOrderEnum, PortraitChoiceType } from '~/domain/author/infrastructure/graphql/queries'
 import { BookType } from '~/domain/book/infrastructure/graphql/types'
 import { BookQuery } from '~/domain/book/query'
 import type { Narrator } from '~/domain/narrator/types'
@@ -67,6 +67,40 @@ export const FollowedNarratorType = builder
           'nothing of theirs is rated.',
         resolve: (narrator) => narrator.averageRating ?? null,
       }),
+      shelvedAt: t.field({
+        type: 'DateTime',
+        description:
+          'The date their newest recording is shelved on, which the list ordered by ' +
+          '`RECENT` is sorted by.',
+        resolve: (narrator) => narrator.shelvedAt,
+      }),
+      books: t.field({
+        type: [BookType],
+        description:
+          'Their recordings in the library, newest shelved first: what the list draws as ' +
+          'a strip of covers. Covers are signed only for the rows that select this field.',
+        resolve: (narrator) => BookQuery.withSignedCovers(narrator.books),
+      }),
+    }),
+  })
+
+const FollowedNarratorPageType = builder
+  .objectRef<{ items: FollowedNarrator[]; hasMore: boolean; endCursor: string | null }>(
+    'FollowedNarratorPage',
+  )
+  .implement({
+    description: 'One page of the narrators of the reader’s recordings, plus whether more follow.',
+    fields: (t) => ({
+      items: t.field({ type: [FollowedNarratorType], resolve: (page) => page.items }),
+      hasMore: t.exposeBoolean('hasMore', {
+        description: 'Whether more narrators follow this page',
+      }),
+      endCursor: t.string({
+        nullable: true,
+        description:
+          'The last narrator of the page, to pass as `after` for the next. Null on an empty page.',
+        resolve: (page) => page.endCursor,
+      }),
     }),
   })
 
@@ -125,6 +159,29 @@ export const NarratorPageType = builder.objectRef<NarratorPage>('NarratorPage').
 })
 
 builder.queryFields((t) => ({
+  myNarratorsPage: t.field({
+    type: FollowedNarratorPageType,
+    description:
+      'One page of the narrators of the reader’s recordings, in the `order` asked, as ' +
+      '`myAuthorsPage` lists the authors. Read `hasMore`, then pass `endCursor` as ' +
+      '`after` for the next page; a cursor naming a narrator no longer there restarts ' +
+      'from the top. Reads the page’s narrator entries, for their faces, in one getAll: ' +
+      'nothing is asked of the model or of Wikipedia.',
+    args: {
+      limit: t.arg.int({ defaultValue: 40, description: 'Maximum narrators in the page' }),
+      after: t.arg.string({
+        required: false,
+        description: 'Cursor: the `endCursor` of the previous page',
+      }),
+      order: t.arg({ type: AuthorOrderEnum, defaultValue: 'loved', description: 'Row order' }),
+    },
+    resolve: (_root, args, { userId }) =>
+      NarratorUseCase.followedPage(
+        userId,
+        { limit: Math.max(1, Math.min(args.limit ?? 40, 200)), after: args.after ?? undefined },
+        args.order ?? 'loved',
+      ),
+  }),
   narratorPortraitChoices: t.field({
     type: [PortraitChoiceType],
     nullable: true,

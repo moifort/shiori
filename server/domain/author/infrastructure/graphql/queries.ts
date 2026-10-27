@@ -271,8 +271,10 @@ export const PortraitChoiceType = builder.objectRef<PortraitChoice>('PortraitCho
   }),
 })
 
-const AuthorOrderEnum = builder.enumType('AuthorOrder', {
-  description: 'How `myAuthorsPage` lists the authors.',
+export const AuthorOrderEnum = builder.enumType('AuthorOrder', {
+  description:
+    'How `myAuthorsPage` lists the authors, and `myNarratorsPage` the narrators, ' +
+    'counted on their recordings.',
   values: {
     LOVED: {
       value: 'loved',

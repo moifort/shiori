@@ -65,6 +65,43 @@ enum NarratorsAPI {
         )
         return data.setNarratorFavorite
     }
+
+    /// One page of the narrators of the reader's recordings, in the order the
+    /// list is drawn in.
+    static func myNarratorsPage(
+        limit: Int,
+        after: String?,
+        order: AuthorListOrder
+    ) async throws -> CursorPage<FollowedNarrator> {
+        #if DEBUG
+        if Showcase.isOn {
+            return Showcase.narratorsPage(limit: limit, after: after, order: order)
+        }
+        #endif
+        let data = try await GraphQLHelpers.fetch(
+            GraphQLClient.shared.apollo,
+            query: ShioriGraphQL.MyNarratorsPageQuery(
+                limit: .some(Int32(limit)),
+                after: after.map { .some($0) } ?? .none,
+                order: .some(.case(order.graphQL))
+            )
+        )
+        let page = data.myNarratorsPage
+        return CursorPage(
+            items: page.items.map { row in
+                FollowedNarrator(
+                    key: row.key,
+                    name: row.name,
+                    portraitURL: row.portraitUrl.flatMap(URL.init(string:)),
+                    shelvedAt: GraphQLHelpers.parseISO8601(row.shelvedAt),
+                    books: row.books.map(\.fragments.bookSummary.asBook),
+                    favorite: row.favorite
+                )
+            },
+            hasMore: page.hasMore,
+            endCursor: page.endCursor
+        )
+    }
 }
 
 private extension NarratorPage {

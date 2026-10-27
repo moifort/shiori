@@ -18,8 +18,11 @@ struct AuthorShelfScreen: View {
     }
 
     var body: some View {
-        AuthorShelfPage(
-            authors: viewModel.authors,
+        PersonShelfPage(
+            title: "Auteurs",
+            failureTitle: "Auteurs indisponibles",
+            rowIdentifier: "author-row",
+            people: viewModel.people,
             order: viewModel.order,
             isLoading: viewModel.isLoading,
             errorMessage: viewModel.errorMessage,
@@ -27,7 +30,7 @@ struct AuthorShelfScreen: View {
             loadMoreFailed: viewModel.loadMoreFailed
         ) { action in
             switch action {
-            case let .openAuthor(author): destination = .author(AuthorDestination(author))
+            case let .openPerson(author): destination = .author(AuthorDestination(author))
             case let .openBook(book): destination = .book(book)
             case let .order(order): Task { await viewModel.show(order) }
             case let .menu(book, action): quick = BookQuickRequest(book: book, action: action)

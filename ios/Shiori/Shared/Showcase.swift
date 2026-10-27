@@ -940,6 +940,27 @@ enum Showcase {
         name.folding(options: .diacriticInsensitive, locale: nil).lowercased().replacingOccurrences(of: " ", with: "-")
     }
 
+    /// The Library's narrators list, drawn from the shelf's recordings.
+    static func narratorsPage(limit: Int, after: String?, order: AuthorListOrder) -> CursorPage<FollowedNarrator> {
+        let heard = shelved.filter { $0.format == .audiobook }
+        let names = Array(Set(heard.flatMap(\.narrators)))
+        let narrators = names.map { name -> FollowedNarrator in
+            let theirs = heard.filter { $0.narrators.contains(name) }
+            return FollowedNarrator(
+                key: narratorKey(name),
+                name: name,
+                shelvedAt: theirs.compactMap(\.shelvedAt).max(),
+                books: theirs
+            )
+        }
+        let sorted = switch order {
+        case .recent: narrators.sorted { ($0.shelvedAt ?? .distantPast) > ($1.shelvedAt ?? .distantPast) }
+        case .name: narrators.sorted { $0.name < $1.name }
+        case .loved: narrators.sorted { $0.books.count > $1.books.count }
+        }
+        return CursorPage(sorted, limit: limit, after: after, cursor: \.id)
+    }
+
     /// A narrator's page, drawn from the shelf's recordings in their voice.
     static func narratorPage(key: String) -> NarratorPage? {
         let fold = narratorKey

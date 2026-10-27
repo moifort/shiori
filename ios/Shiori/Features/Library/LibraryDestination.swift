@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// What the Library tab pushes: a book, one of its shelves, the series, the
-/// authors, a genre page. Each pushed screen pushes the next one on its own.
+/// authors, the narrators, a genre page. Each pushed screen pushes the next one on its own.
 enum LibraryDestination: Identifiable, Hashable {
     case book(Book)
     case shelf(BookShelf, ShelvesView = ShelvesView(), status: ReadingStatus? = nil)
@@ -10,6 +10,7 @@ enum LibraryDestination: Identifiable, Hashable {
     case series(String)
     case authors
     case author(AuthorDestination)
+    case narrators
     case narrator(NarratorDestination)
     case genre(BookGenre)
 
@@ -22,6 +23,7 @@ enum LibraryDestination: Identifiable, Hashable {
         case let .series(id): "series-\(id)"
         case .authors: "authors"
         case let .author(author): "author-\(author.key)"
+        case .narrators: "narrators"
         case let .narrator(narrator): "narrator-\(narrator.key)"
         case let .genre(genre): "genre-\(genre.rawValue)"
         }
@@ -64,6 +66,8 @@ struct LibraryDestinationScreen: View {
             AuthorShelfScreen()
         case let .author(author):
             AuthorScreen(key: author.key, name: author.name)
+        case .narrators:
+            NarratorShelfScreen(library: client)
         case let .narrator(narrator):
             NarratorScreen(key: narrator.key, name: narrator.name)
         case let .genre(genre):

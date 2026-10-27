@@ -15,6 +15,9 @@ struct NarratorsClient: Sendable {
     var correct: @Sendable (_ key: String, PersonCorrection) async throws -> NarratorPage? = { _, _ in nil }
     /// The faces the reader may give the narrator, the one drawn now first.
     var portraitChoices: @Sendable (_ key: String) async throws -> [PortraitChoice] = { _ in [] }
+    /// One page of the Library's narrators list after the given cursor, in that order.
+    var list: @Sendable (_ limit: Int, _ after: String?, AuthorListOrder)
+        async throws -> CursorPage<FollowedNarrator> = { _, _, _ in CursorPage(items: [], hasMore: false, endCursor: nil) }
 }
 
 extension NarratorsClient {
@@ -23,7 +26,8 @@ extension NarratorsClient {
         catalogue: { try await NarratorsAPI.page(key: $0, offered: $1, waitForCatalogue: true) },
         setFavorite: { try await NarratorsAPI.setFavorite(key: $0, favorite: $1) },
         correct: { try await NarratorsAPI.correct(key: $0, correction: $1) },
-        portraitChoices: { try await NarratorsAPI.portraitChoices(key: $0) }
+        portraitChoices: { try await NarratorsAPI.portraitChoices(key: $0) },
+        list: { try await NarratorsAPI.myNarratorsPage(limit: $0, after: $1, order: $2) }
     )
 }
 
@@ -52,6 +56,9 @@ extension NarratorsClient {
         catalogue: { _, _ in .preview },
         setFavorite: { _, favorite in favorite },
         correct: { _, _ in .preview },
-        portraitChoices: { _ in PortraitChoice.previews }
+        portraitChoices: { _ in PortraitChoice.previews },
+        list: { limit, after, _ in
+            CursorPage(FollowedNarrator.previews, limit: limit, after: after, cursor: \.id)
+        }
     )
 }

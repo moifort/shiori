@@ -125,7 +125,7 @@ struct AuthorListViewModelTests {
 
         await viewModel.load()
 
-        #expect(viewModel.authors.map(\.key) == FollowedAuthor.previews.map(\.key))
+        #expect(viewModel.people.map(\.key) == FollowedAuthor.previews.map(\.key))
     }
 
     @Test func failureOverRowsKeepsThem() async {
@@ -141,7 +141,7 @@ struct AuthorListViewModelTests {
         fails.isOn = true
         await viewModel.load()
 
-        #expect(viewModel.authors.count == FollowedAuthor.previews.count)
+        #expect(viewModel.people.count == FollowedAuthor.previews.count)
     }
 
     @Test func cappedPagesFollowOneAnother() async {
@@ -155,7 +155,7 @@ struct AuthorListViewModelTests {
 
         await viewModel.load()
 
-        let ids = viewModel.authors.map(\.id)
+        let ids = viewModel.people.map(\.id)
         #expect(ids.count == FollowedAuthor.previews.count)
         #expect(cursors.all == ["top"] + ids.dropLast())
     }

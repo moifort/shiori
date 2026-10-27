@@ -411,7 +411,9 @@ An author name as printed, 1 to 200 characters. Example: "Patrick Rothfuss".
 """
 scalar AuthorName
 
-"""How `myAuthorsPage` lists the authors."""
+"""
+How `myAuthorsPage` lists the authors, and `myNarratorsPage` the narrators, counted on their recordings.
+"""
 enum AuthorOrder {
   """
   The ones the reader loves first: those they hearted themself, then most hearts on their books and sagas, then the best mean of stars, then the most books, then by name.
@@ -1479,6 +1481,11 @@ type FollowedNarrator {
   bookCount: Count!
 
   """
+  Their recordings in the library, newest shelved first: what the list draws as a strip of covers. Covers are signed only for the rows that select this field.
+  """
+  books: [Book!]!
+
+  """
   The reader hearted the narrator themself, apart from the hearts their recordings and sagas carry.
   """
   favorite: Boolean!
@@ -1500,6 +1507,25 @@ type FollowedNarrator {
 
   """Sagas heard in their voice."""
   seriesCount: Count!
+
+  """
+  The date their newest recording is shelved on, which the list ordered by `RECENT` is sorted by.
+  """
+  shelvedAt: DateTime!
+}
+
+"""
+One page of the narrators of the reader’s recordings, plus whether more follow.
+"""
+type FollowedNarratorPage {
+  """
+  The last narrator of the page, to pass as `after` for the next. Null on an empty page.
+  """
+  endCursor: String
+
+  """Whether more narrators follow this page"""
+  hasMore: Boolean!
+  items: [FollowedNarrator!]!
 }
 
 """A saga the reader owns at least one volume of."""
@@ -3816,6 +3842,20 @@ type Query {
     language: BookLanguage @deprecated(reason: "The series id names the edition. Read only beside a bare saga key, which builds older than the edition ids send.")
     seriesId: SeriesId!
   ): FollowedSeries
+
+  """
+  One page of the narrators of the reader’s recordings, in the `order` asked, as `myAuthorsPage` lists the authors. Read `hasMore`, then pass `endCursor` as `after` for the next page; a cursor naming a narrator no longer there restarts from the top. Reads the page’s narrator entries, for their faces, in one getAll: nothing is asked of the model or of Wikipedia.
+  """
+  myNarratorsPage(
+    """Cursor: the `endCursor` of the previous page"""
+    after: String
+
+    """Maximum narrators in the page"""
+    limit: Int = 40
+
+    """Row order"""
+    order: AuthorOrder = LOVED
+  ): FollowedNarratorPage!
 
   """
   Every saga the reader owns a volume of, alphabetically.
