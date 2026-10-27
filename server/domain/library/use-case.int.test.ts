@@ -259,7 +259,8 @@ describe('"Coups de cœur" with the hearted series', () => {
 })
 
 // "Coups de cœur" is what the reader loved: a heart, four and a half stars or
-// more, or — on a volume they left unrated — the heart or the stars of its saga.
+// more, or — on a volume read they left unrated — the heart or the stars of its
+// saga. The next volume of a loved saga, not read yet, is not among them.
 describe('"Coups de cœur" holds every book the reader loved', () => {
   const lovedLibrary = async () => {
     const hearted = await shelve({ title: 'Dune', days: 0, status: 'read' })
@@ -268,18 +269,20 @@ describe('"Coups de cœur" holds every book the reader loved', () => {
     await BookCommand.rate(reader, highStars.id, StarRating(4.5))
     const fourStars = await shelve({ title: 'Ubik', days: 2, status: 'read' })
     await BookCommand.rate(reader, fourStars.id, StarRating(4))
-    const inherited = await shelve({ title: 'Red Rising', days: 3, saga: 'Rising' })
+    const inherited = await shelve({ title: 'Red Rising', days: 3, saga: 'Rising', status: 'read' })
     if (inherited.series)
       await SeriesOpinionCommand.setFavorite(reader, inherited.series.saga, true)
     const ratedLow = await shelve({ title: 'Golden Son', days: 4, saga: 'Rising' })
     await BookCommand.rate(reader, ratedLow.id, StarRating(2))
-    const fromStars = await shelve({ title: 'Hypérion', days: 5, saga: 'Cantos' })
+    const fromStars = await shelve({ title: 'Hypérion', days: 5, saga: 'Cantos', status: 'read' })
     if (fromStars.series)
       await SeriesOpinionCommand.rate(reader, fromStars.series.saga, StarRating(4.5))
     const fromFewStars = await shelve({ title: 'Fondation', days: 6, saga: 'Fondation' })
     if (fromFewStars.series)
       await SeriesOpinionCommand.rate(reader, fromFewStars.series.saga, StarRating(4))
     await shelve({ title: 'Le Nom du vent', days: 7 })
+    await shelve({ title: 'Morning Star', days: 8, saga: 'Rising' })
+    await shelve({ title: "La Chute d'Hypérion", days: 9, saga: 'Cantos', status: 'reading' })
     startFakeRequest()
   }
   const loved = ['Dune', 'Silo', 'Red Rising', 'Hypérion']
@@ -304,7 +307,7 @@ describe('"Coups de cœur" holds every book the reader loved', () => {
   })
 })
 
-describe('the pile in sections', () => {
+describe('the pile in sections', () =>
   test('reads the library, the award winners and the hearted narrators once each', async () => {
     await shelve({ title: 'Fondation', days: 9, status: 'read', author: 'Isaac Asimov' })
     await shelve({ title: 'Hypérion', days: 5, status: 'reading', author: 'Dan Simmons' })
@@ -329,5 +332,4 @@ describe('the pile in sections', () => {
     // The library, the award winners, and the narrators hearted.
     expect(fake.queryReads - before.queries).toBe(3)
     expect(fake.docReads - before.docs).toBe(0)
-  })
-})
+  }))

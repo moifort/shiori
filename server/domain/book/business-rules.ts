@@ -267,15 +267,18 @@ export const sagaJudgementsOf = (
   new Map(opinions.map((opinion) => [opinion.seriesId, opinion]))
 
 /** Whether a book sits among "Coups de cœur": hearted, rated four and a half
- *  stars or more, or — left unrated — a volume of a saga the reader hearted or
- *  rated four and a half stars or more, whose judgement it inherits. A volume rated on its own
- *  is judged on its own stars. */
+ *  stars or more, or — left unrated — a volume read of a saga the reader
+ *  hearted or rated four and a half stars or more, whose judgement it
+ *  inherits. A volume not read yet inherits nothing: the reader has not
+ *  judged it, and the next volume of a loved saga is still on the pile. A
+ *  volume rated on its own is judged on its own stars. */
 export const isLovedBook = (
-  book: Pick<Book, 'favorite' | 'rating' | 'series'>,
+  book: Pick<Book, 'favorite' | 'rating' | 'series' | 'status'>,
   sagas: ReadonlyMap<SagaKey, { favorite?: boolean; rating?: StarRating }>,
 ): boolean => {
   if (book.favorite === true) return true
   if (book.rating !== undefined) return book.rating >= LOVED_FLOOR
+  if (book.status !== 'read') return false
   const saga = book.series ? sagas.get(book.series.saga) : undefined
   return saga?.favorite === true || (saga?.rating ?? 0) >= LOVED_FLOOR
 }
