@@ -2,7 +2,8 @@ import Foundation
 
 /// "Coups de cœur" as a message for WhatsApp or any chat: cut by genre, then
 /// by format, a saga on one line whatever number of its volumes are loved, a
-/// book outside any saga on its own line. Bold and italics are WhatsApp's
+/// book outside any saga on its own line. A recording counts as the book it
+/// reads, as paper and screen already do. Bold and italics are WhatsApp's
 /// asterisks and underscores, which other apps show as they are.
 enum LovedShareMessage {
     static func text(books: [Book], series: [FollowedSeries]) -> String {
@@ -13,8 +14,7 @@ enum LovedShareMessage {
             entries.append(entry)
         }
         for saga in series {
-            let format = saga.volumes.first?.format ?? (saga.isAudio ? .audiobook : .book)
-            add(Entry(genre: saga.genre, format: format, name: saga.name, author: saga.author, isSeries: true))
+            add(Entry(genre: saga.genre, format: saga.volumes.first?.format ?? .book, name: saga.name, author: saga.author, isSeries: true))
         }
         for book in books {
             if let membership = book.series, !membership.name.isEmpty {
@@ -47,6 +47,14 @@ enum LovedShareMessage {
         let name: String
         let author: String?
         let isSeries: Bool
+
+        init(genre: BookGenre?, format: BookFormat, name: String, author: String?, isSeries: Bool) {
+            self.genre = genre
+            self.format = format == .audiobook ? .book : format
+            self.name = name
+            self.author = author
+            self.isSeries = isSeries
+        }
 
         /// One saga per format: its loved volumes and its heart are one line.
         var key: String {

@@ -64,9 +64,7 @@ struct LovedShareMessageTests {
         • Le Nom du vent — Patrick Rothfuss
 
         *Science-fiction*
-        _Livre_
         • Les Furtifs — Alain Damasio
-        _Livre audio_
         • Projet Dernière Chance — Andy Weir
 
         *Autre*
@@ -86,5 +84,26 @@ struct LovedShareMessageTests {
         )
 
         #expect(text.components(separatedBy: "Roshar").count == 2)
+    }
+
+    @Test func aRecordingAndAnEbookSitAmongTheBooks() {
+        var ebook = book("Le Nom du vent", by: "Patrick Rothfuss", .fantasy, series: "Chronique du tueur de roi", volume: 1)
+        ebook.media = [.digital]
+        let text = LovedShareMessage.text(
+            books: [
+                ebook,
+                book("La Peur du sage", by: "Patrick Rothfuss", .fantasy, .audiobook, series: "Chronique du tueur de roi", volume: 2),
+                book("Elantris", by: "Brandon Sanderson", .fantasy, .audiobook),
+            ],
+            series: []
+        )
+
+        #expect(text == """
+        Mes coups de cœur 📚
+
+        *Fantastique*
+        • Chronique du tueur de roi (série) — Patrick Rothfuss
+        • Elantris — Brandon Sanderson
+        """)
     }
 }
