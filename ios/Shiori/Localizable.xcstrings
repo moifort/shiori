@@ -7973,6 +7973,22 @@
         }
       }
     },
+    "Mes coups de cœur 📚" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "My favourite reads 📚"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mes coups de cœur 📚"
+          }
+        }
+      }
+    },
     "Mes favoris" : {
       "localizations" : {
         "en" : {

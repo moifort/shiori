@@ -148,6 +148,25 @@ final class BookShelfViewModel {
         isLoading = false
     }
 
+    /// "Coups de cœur" as a message, every page of it, not only the ones
+    /// scrolled to. Nil when the server failed, which the page then says.
+    func shareMessage() async -> String? {
+        do {
+            var all: [Book] = []
+            var more = true
+            while more {
+                let page = try await client.shelf(query, 200, all.last?.id)
+                all += page.books
+                more = page.hasMore && !page.books.isEmpty
+            }
+            return LovedShareMessage.text(books: all, series: lovedSeries)
+        } catch {
+            guard !isCancellation(error) else { return nil }
+            errorMessage = reportError(error)
+            return nil
+        }
+    }
+
     func loadMore() async {
         guard hasMore, !isLoadingMore, let last = books.last else { return }
         let requested = generation

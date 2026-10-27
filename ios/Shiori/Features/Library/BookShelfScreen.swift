@@ -10,6 +10,8 @@ struct BookShelfScreen: View {
     @State private var viewModel: BookShelfViewModel
     @State private var destination: LibraryDestination?
     @State private var quick: BookQuickRequest?
+    @State private var shareText: SharedText?
+    @State private var isPreparingShare = false
 
     init(shelf: BookShelf, view: ShelvesView = ShelvesView(), status: ReadingStatus? = nil, client: LibraryClient = .live) {
         self.shelf = shelf
@@ -39,6 +41,7 @@ struct BookShelfScreen: View {
                     selectedStatus: viewModel.query.status,
                     formats: viewModel.shownFormats,
                     selectedFormat: viewModel.query.view.format,
+                    isPreparingShare: isPreparingShare,
                     isLoading: viewModel.isLoading,
                     errorMessage: viewModel.errorMessage,
                     hasMore: viewModel.hasMore,
@@ -50,6 +53,11 @@ struct BookShelfScreen: View {
         .searchesLibrary(shelf.title)
         .pushesDetail(item: $destination) { LibraryDestinationScreen(destination: $0, client: client) }
         .performsBookQuickActions($quick, client: client) { destination = $0 }
+        .sheet(item: $shareText) { shared in
+            ActivityView(text: shared.text)
+                .presentationDetents([.medium, .large])
+                .ignoresSafeArea()
+        }
         .task { await viewModel.loadOnAppear() }
         .onReceive(NotificationCenter.default.publisher(for: .shioriDataDidChange)) { _ in
             Task { await viewModel.load(keepingDepth: true) }
@@ -66,8 +74,20 @@ struct BookShelfScreen: View {
         case let .reached(id): viewModel.prefetchIfNeeded(for: id)
         case .loadMore: Task { await viewModel.loadMore() }
         case .refresh: Task { await viewModel.load() }
+        case .share:
+            isPreparingShare = true
+            Task {
+                if let text = await viewModel.shareMessage() { shareText = SharedText(text: text) }
+                isPreparingShare = false
+            }
         }
     }
+}
+
+/// A message on its way to the share sheet.
+private struct SharedText: Identifiable {
+    let id = UUID()
+    let text: String
 }
 
 /// "Tous les livres", connected.

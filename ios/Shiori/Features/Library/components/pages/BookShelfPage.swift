@@ -10,6 +10,7 @@ enum BookShelfAction {
     case reached(String)
     case loadMore
     case refresh
+    case share
 }
 
 /// One shelf of the Library tab, opened from its rail: its posters three by
@@ -27,6 +28,8 @@ struct BookShelfPage: View {
     var selectedStatus: ReadingStatus?
     var formats: [BookFormat] = []
     var selectedFormat: BookFormat?
+    /// The share button is gathering every page of "Coups de cœur".
+    var isPreparingShare = false
     let isLoading: Bool
     let errorMessage: String?
     let hasMore: Bool
@@ -81,7 +84,23 @@ struct BookShelfPage: View {
         }
         .background(Color(.systemGroupedBackground))
         .navigationTitle(shelf.title)
+        .toolbar { shareButton }
         .refreshable { onAction(.refresh) }
+    }
+
+    /// On "Coups de cœur", beside the search, the whole shelf sent as a
+    /// message: WhatsApp, Messages, a mail.
+    @ToolbarContentBuilder private var shareButton: some ToolbarContent {
+        if shelf == .loved, !sections.isEmpty || !lovedSeries.isEmpty {
+            ToolbarItem(placement: .topBarTrailing) {
+                if isPreparingShare {
+                    ProgressView()
+                } else {
+                    ToolbarIconButton(title: "Partager", systemImage: "square.and.arrow.up") { onAction(.share) }
+                        .accessibilityIdentifier("loved-share")
+                }
+            }
+        }
     }
 
     /// The hearted sagas as the Library tab draws its series: the same rail
