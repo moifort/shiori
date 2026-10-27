@@ -1,35 +1,40 @@
 import SwiftUI
 
 extension BookGenre {
-    /// One symbol per genre, outlined like the rest of the app's vocabulary.
-    /// Nineteen are SF Symbols; SF has no rocket, ghost or feather, so those
-    /// three live in the asset catalog, drawn on Apple's symbol template by
-    /// `ios/tools/generate-symbols.swift`. Draw with `image` rather than
-    /// `Image(systemName:)` so both kinds resolve.
+    /// One symbol per genre, filled as Apple Books draws its genres, and its
+    /// glyph where SF Symbols has one: the dragon of "SF et fantasy" (a
+    /// lizard), the flower of "Romance", the bust of "Biographies et
+    /// mémoires", the fork and knife of "Cuisine et vin", the balloon of
+    /// "Tourisme et voyages", the leaf of "Santé et bien-être". Apple Books
+    /// has no glyph SF Symbols can draw for its typewriter, pipe or tower, so
+    /// literature, crime and history take the nearest. SF has no rocket,
+    /// ghost or feather either: those three live in the asset catalog, drawn
+    /// on Apple's symbol template by `ios/tools/generate-symbols.swift`. Draw
+    /// with `image` rather than `Image(systemName:)` so both kinds resolve.
     var symbol: String {
         switch self {
-        case .fantasy: "wand.and.sparkles"
+        case .fantasy: "lizard.fill"
         case .scienceFiction: "rocket"
         case .horror: "ghost"
         case .crime: "magnifyingglass"
-        case .thriller: "waveform.path.ecg"
-        case .romance: "heart"
-        case .historicalFiction: "scroll"
-        case .adventure: "map"
-        case .literaryFiction: "quote.opening"
-        case .humor: "face.smiling"
+        case .thriller: "eye.fill"
+        case .romance: "camera.macro"
+        case .historicalFiction: "crown.fill"
+        case .adventure: "map.fill"
+        case .literaryFiction: "text.book.closed.fill"
+        case .humor: "face.smiling.inverse"
         case .poetry: "feather"
-        case .drama: "theatermasks"
-        case .biography: "person.text.rectangle"
-        case .history: "building.columns"
-        case .essay: "lightbulb"
+        case .drama: "theatermasks.fill"
+        case .biography: "person.bust.fill"
+        case .history: "building.columns.fill"
+        case .essay: "brain.head.profile.fill"
         case .science: "atom"
-        case .selfHelp: "figure.mind.and.body"
+        case .selfHelp: "leaf.fill"
         case .business: "chart.line.uptrend.xyaxis"
-        case .art: "paintpalette"
-        case .cooking: "frying.pan"
-        case .travel: "airplane"
-        case .other: "tag"
+        case .art: "paintpalette.fill"
+        case .cooking: "fork.knife"
+        case .travel: "balloon.fill"
+        case .other: "tag.fill"
         }
     }
 
