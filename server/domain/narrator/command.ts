@@ -1,3 +1,4 @@
+import { keepingCorrectionsOf, withCorrectionOf } from '~/domain/author/business-rules'
 import { portraitOf } from '~/domain/author/infrastructure/wikipedia'
 import { Nationality } from '~/domain/author/primitives'
 import type { NarratorName } from '~/domain/book/types'
@@ -6,7 +7,13 @@ import * as repository from '~/domain/narrator/infrastructure/repository'
 import { NarratorBiography } from '~/domain/narrator/primitives'
 import { narratorPrompt } from '~/domain/narrator/prompts'
 import { NARRATOR_SCHEMA, type NarratorOutput } from '~/domain/narrator/schemas'
-import type { Narrator, NarratorKey } from '~/domain/narrator/types'
+import {
+  NARRATOR_CORRECTABLE_FIELDS,
+  type Narrator,
+  type NarratorCorrectableField,
+  type NarratorCorrection,
+  type NarratorKey,
+} from '~/domain/narrator/types'
 import { generate } from '~/domain/scan/gemini'
 import type { AiStepUsage } from '~/domain/scan/types'
 import type { Language } from '~/domain/shared/language'
@@ -41,10 +48,25 @@ export namespace NarratorCommand {
   export const deleteFavoritesOf = (userId: UserId): Promise<void> =>
     favoriteRepository.removeAllByUser(userId)
 
+  /** Write a reader's correction into a narrator's entry, for every reader,
+   *  the fields it names marked so that no later catalogue call or portrait
+   *  lookup writes over them. A narrator nobody described gets an entry
+   *  holding the correction alone, and the model is not asked about them. */
+  export const correct = (
+    current: Narrator | null,
+    key: NarratorKey,
+    name: NarratorName,
+    correction: NarratorCorrection,
+  ): Promise<Narrator> =>
+    repository.save(
+      withCorrectionOf(NARRATOR_CORRECTABLE_FIELDS, current ?? { key, name }, correction),
+    )
+
   /** Ask Wikipedia again for the face of a narrator described without one, by
    *  their name, and store what it says — the portrait, or when it was sought.
    *  Free: no model call. Never throws: the page draws the initials. */
   export const seekPortrait = async (known: Narrator, at: Date = new Date()): Promise<Narrator> => {
+    if (known.corrected?.includes('portraitUrl')) return known
     const portraitUrl = await faceOf(known.name)
     const entry: Narrator = portraitUrl
       ? { ...known, portraitUrl, portraitSoughtAt: undefined }
@@ -97,7 +119,7 @@ export namespace NarratorCommand {
             cataloguedAt: at,
           }
         : { key, name: known?.name ?? name, ...face, missedAt: at }
-      return { narrator: await save(narrator), usage }
+      return { narrator: await save(kept(narrator, known)), usage }
     } catch (error) {
       logger.error('narrator catalogue generation failed', { error, key })
       const portraitUrl = known?.portraitUrl ?? (await faceOf(name))
@@ -106,9 +128,13 @@ export namespace NarratorCommand {
         ...(portraitUrl ? { portraitUrl, portraitSoughtAt: undefined } : { portraitSoughtAt: at }),
         missedAt: at,
       }
-      return { narrator: await save(missed) }
+      return { narrator: await save(kept(missed, known)) }
     }
   }
+
+  /** A fresh entry with what readers corrected on the stored one. */
+  const kept = (fresh: Narrator, previous: Narrator | null) =>
+    keepingCorrectionsOf<NarratorCorrectableField, Narrator>(fresh, previous)
 
   /** Stores the entry, logging a failed write rather than failing the page:
    *  the reader still sees what was found. */

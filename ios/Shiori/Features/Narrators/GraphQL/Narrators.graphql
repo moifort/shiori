@@ -8,6 +8,11 @@
 # narrator of a friend's recording whom the reader may hold nothing of.
 query NarratorPage($key: NarratorKey!, $offered: NarratorName, $waitForCatalogue: Boolean!) {
   narratorPage(key: $key, offered: $offered, waitForCatalogue: $waitForCatalogue) {
+    ...NarratorPageFields
+  }
+}
+
+fragment NarratorPageFields on NarratorPage {
     awaitingCatalogue
     narrator {
       key
@@ -37,6 +42,37 @@ query NarratorPage($key: NarratorKey!, $offered: NarratorName, $waitForCatalogue
     books {
       ...BookSummary
     }
+}
+
+# Correct what the world knows of the narrator, for every reader: omitted
+# fields are left alone, null ones cleared. Answers the page as it now reads.
+mutation CorrectNarrator(
+  $key: NarratorKey!
+  $nationality: Nationality
+  $birthYear: Year
+  $deathYear: Year
+  $biography: NarratorBiography
+  $portraitUrl: PortraitUrl
+) {
+  correctNarrator(
+    key: $key
+    nationality: $nationality
+    birthYear: $birthYear
+    deathYear: $deathYear
+    biography: $biography
+    portraitUrl: $portraitUrl
+  ) {
+    ...NarratorPageFields
+  }
+}
+
+# The faces the reader may give the narrator: the one drawn now first, then
+# Wikipedia's. Free on the server.
+query NarratorPortraitChoices($key: NarratorKey!) {
+  narratorPortraitChoices(key: $key) {
+    source
+    url
+    isCurrent
   }
 }
 

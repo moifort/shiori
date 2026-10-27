@@ -1,4 +1,5 @@
 import { sagaCountOf } from '~/domain/author/business-rules'
+import { PortraitChoiceType } from '~/domain/author/infrastructure/graphql/queries'
 import { BookType } from '~/domain/book/infrastructure/graphql/types'
 import { BookQuery } from '~/domain/book/query'
 import type { Narrator } from '~/domain/narrator/types'
@@ -85,7 +86,7 @@ const NarratorCatalogueType = builder.objectRef<Narrator>('Narrator').implement(
   }),
 })
 
-const NarratorPageType = builder.objectRef<NarratorPage>('NarratorPage').implement({
+export const NarratorPageType = builder.objectRef<NarratorPage>('NarratorPage').implement({
   description: 'Everything a narrator’s page draws, in one answer.',
   fields: (t) => ({
     narrator: t.field({ type: FollowedNarratorType, resolve: (page) => page.narrator }),
@@ -120,6 +121,16 @@ const NarratorPageType = builder.objectRef<NarratorPage>('NarratorPage').impleme
 })
 
 builder.queryFields((t) => ({
+  narratorPortraitChoices: t.field({
+    type: [PortraitChoiceType],
+    nullable: true,
+    description:
+      'The faces the reader may give a narrator, as a book’s covers are offered: the ' +
+      'one drawn now first, then what Wikipedia shows for their name. Free: no model ' +
+      'call. Null when the reader holds no recording of theirs.',
+    args: { key: t.arg({ type: 'NarratorKey', required: true }) },
+    resolve: (_root, args, { userId }) => NarratorUseCase.portraitChoices(userId, args.key),
+  }),
   narratorPage: t.field({
     type: NarratorPageType,
     nullable: true,

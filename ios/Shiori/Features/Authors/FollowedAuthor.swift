@@ -110,3 +110,10 @@ struct AuthorWork: Identifiable, Sendable {
     /// Nil draws the placeholder.
     let coverURL: URL?
 }
+
+extension AuthorPage {
+    /// What the edit form opens on.
+    var facts: PersonFacts {
+        PersonFacts(nationality: nationality, birthYear: birthYear, deathYear: deathYear, biography: biography)
+    }
+}

@@ -107,7 +107,7 @@ struct AuthorScreen: View {
                 // no one else.
                 if page.author.bookCount > 0 {
                     ToolbarItem(placement: .primaryAction) {
-                        AuthorActionsMenu { action in
+                        PersonActionsMenu { action in
                             switch action {
                             case .edit: isEditing = true
                             case .portrait: isPickingPortrait = true
@@ -119,7 +119,7 @@ struct AuthorScreen: View {
         }
         .sheet(isPresented: $isEditing) {
             if let page = viewModel.page {
-                AuthorEditSheet(page: page) { correction in
+                PersonEditSheet(facts: page.facts) { correction in
                     await viewModel.correct(correction)
                 }
             }
@@ -130,7 +130,7 @@ struct AuthorScreen: View {
                 choices: viewModel.portraitChoices,
                 loadFailed: viewModel.portraitChoicesFailed
             ) { choice in
-                await viewModel.correct(AuthorCorrection(portraitURL: choice.url))
+                await viewModel.correct(PersonCorrection(portraitURL: choice.url))
             }
             .task { await viewModel.loadPortraitChoices() }
         }

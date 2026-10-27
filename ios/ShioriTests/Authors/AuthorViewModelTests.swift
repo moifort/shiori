@@ -98,7 +98,7 @@ struct AuthorViewModelTests {
         let viewModel = model(client)
         await viewModel.load()
 
-        let failure = await viewModel.correct(AuthorCorrection(biography: .set("Autrice de l'Assassin royal.")))
+        let failure = await viewModel.correct(PersonCorrection(biography: .set("Autrice de l'Assassin royal.")))
 
         #expect(failure == nil)
         #expect(sent.all == ["Autrice de l'Assassin royal."])
@@ -111,7 +111,7 @@ struct AuthorViewModelTests {
         let viewModel = model(client)
         await viewModel.load()
 
-        let failure = await viewModel.correct(AuthorCorrection(nationality: .clear))
+        let failure = await viewModel.correct(PersonCorrection(nationality: .clear))
 
         #expect(failure != nil)
         #expect(viewModel.page?.nationality == AuthorPage.preview.nationality)

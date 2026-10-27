@@ -31,7 +31,7 @@ enum AuthorsAPI {
     /// Corrects what the world knows of the author, in the shared catalogue.
     /// Answers the page as it now reads. Throws `PORTRAIT_NOT_AN_IMAGE` when
     /// the portrait address serves no image.
-    static func correct(key: String, correction: AuthorCorrection) async throws -> AuthorPage {
+    static func correct(key: String, correction: PersonCorrection) async throws -> AuthorPage {
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
             mutation: ShioriGraphQL.CorrectAuthorMutation(
@@ -71,7 +71,8 @@ enum AuthorsAPI {
         }
     }
 
-    private static func nullable<Value>(_ change: BookCorrection.Change<Value>?) -> GraphQLNullable<Value> {
+    /// A field the form left alone is not sent; one emptied is sent as null.
+    static func nullable<Value>(_ change: BookCorrection.Change<Value>?) -> GraphQLNullable<Value> {
         switch change {
         case nil: .none
         case let .set(value): .some(value)
@@ -195,7 +196,7 @@ extension AuthorPage {
     }
 }
 
-private extension PortraitChoice.Source {
+extension PortraitChoice.Source {
     init(_ source: GraphQLEnum<ShioriGraphQL.PortraitSource>) {
         switch source {
         case .case(.wikipedia): self = .wikipedia

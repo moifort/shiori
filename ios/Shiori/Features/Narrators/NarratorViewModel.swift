@@ -13,6 +13,9 @@ final class NarratorViewModel {
     /// The AI is describing a narrator nobody had: the reader's recordings are
     /// on screen meanwhile, and every action at hand.
     private(set) var isCataloguing = false
+    /// The faces the portrait picker offers; nil while they are sought.
+    private(set) var portraitChoices: [PortraitChoice]?
+    private(set) var portraitChoicesFailed: String?
 
     private let client: NarratorsClient
 
@@ -66,6 +69,37 @@ final class NarratorViewModel {
             page?.favorite = !wanted
             guard !isCancellation(error) else { return }
             errorMessage = reportError(error)
+        }
+    }
+
+    /// The narrator corrected from the edit form or the portrait picker: the
+    /// page takes the server's answer. Answers the message to show, or nil
+    /// once saved.
+    func correct(_ correction: PersonCorrection) async -> String? {
+        do {
+            if let corrected = try await client.correct(key, correction) {
+                withAnimation(.smooth) { page = corrected }
+            }
+            return nil
+        } catch let error as APIError where error.domainCode == "PORTRAIT_NOT_AN_IMAGE" {
+            // The link to a page, pasted for its photo: the reader's slip,
+            // nothing for Sentry.
+            return String(localized: "Cette adresse mène à une page, pas à une image. Ouvrez la photo seule, puis copiez son adresse.")
+        } catch {
+            return reportError(error)
+        }
+    }
+
+    /// The faces the portrait picker offers, sought when it opens: nil while
+    /// they are, and `portraitChoicesFailed` says why they could not be.
+    func loadPortraitChoices() async {
+        portraitChoices = nil
+        portraitChoicesFailed = nil
+        do {
+            portraitChoices = try await client.portraitChoices(key)
+        } catch {
+            guard !isCancellation(error) else { return }
+            portraitChoicesFailed = reportError(error)
         }
     }
 }

@@ -16,7 +16,42 @@ enum NarratorsAPI {
                 waitForCatalogue: waitForCatalogue
             )
         )
-        return data.narratorPage.map(NarratorPage.init(page:))
+        return data.narratorPage.map { NarratorPage(fields: $0.fragments.narratorPageFields) }
+    }
+
+    /// Corrects what the world knows of the narrator, for every reader.
+    /// Answers the page as it now reads. Throws `PORTRAIT_NOT_AN_IMAGE` when
+    /// the portrait address serves no image.
+    static func correct(key: String, correction: PersonCorrection) async throws -> NarratorPage {
+        let data = try await GraphQLHelpers.perform(
+            GraphQLClient.shared.apollo,
+            mutation: ShioriGraphQL.CorrectNarratorMutation(
+                key: key,
+                nationality: AuthorsAPI.nullable(correction.nationality),
+                birthYear: AuthorsAPI.nullable(correction.birthYear),
+                deathYear: AuthorsAPI.nullable(correction.deathYear),
+                biography: AuthorsAPI.nullable(correction.biography),
+                portraitUrl: correction.portraitURL.map { .some($0.absoluteString) } ?? .none
+            )
+        )
+        return NarratorPage(fields: data.correctNarrator.fragments.narratorPageFields)
+    }
+
+    /// The faces the reader may give the narrator: the one drawn now first.
+    /// Empty when the reader holds no recording of theirs.
+    static func portraitChoices(key: String) async throws -> [PortraitChoice] {
+        #if DEBUG
+        if Showcase.isOn { return [] }
+        #endif
+        let data = try await GraphQLHelpers.fetch(
+            GraphQLClient.shared.apollo,
+            query: ShioriGraphQL.NarratorPortraitChoicesQuery(key: key)
+        )
+        return (data.narratorPortraitChoices ?? []).compactMap { choice in
+            URL(string: choice.url).map { url in
+                PortraitChoice(source: .init(choice.source), url: url, isCurrent: choice.isCurrent)
+            }
+        }
     }
 
     /// Hearts the narrator, or takes the heart back. Answers what is now true.
@@ -33,7 +68,7 @@ enum NarratorsAPI {
 }
 
 private extension NarratorPage {
-    init(page: ShioriGraphQL.NarratorPageQuery.Data.NarratorPage) {
+    init(fields page: ShioriGraphQL.NarratorPageFields) {
         let narrator = page.narrator
         self.init(
             key: narrator.key,

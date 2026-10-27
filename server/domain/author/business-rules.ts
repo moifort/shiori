@@ -2,6 +2,7 @@ import { authorKeyOf } from '~/domain/author/primitives'
 import {
   AUTHOR_CORRECTABLE_FIELDS,
   type Author,
+  type AuthorCorrectableField,
   type AuthorCorrection,
   type AuthorKey,
   type AuthorSeries,
@@ -373,34 +374,56 @@ export const isPortraitWorthSeeking = (
   return now.getTime() - author.portraitSoughtAt.getTime() >= PORTRAIT_RETRY_DAYS * 86_400_000
 }
 
-/** An author's catalogue asked of the world again, keeping what readers
- *  corrected by hand on the stored one — even a field they cleared: the model
- *  was wrong on it once, and its next answer is no better source. */
-export const keepingCorrections = (fresh: Author, previous: Author | null): Author => {
+/** A shared catalogue entry a reader may correct by hand: an author's, a
+ *  narrator's. `corrected` names the fields written by hand. */
+type Correctable<Field extends string> = { corrected?: Field[]; portraitSoughtAt?: Date }
+
+/** An entry asked of the world again, keeping what readers corrected by hand
+ *  on the stored one — even a field they cleared: the model was wrong on it
+ *  once, and its next answer is no better source. */
+export const keepingCorrectionsOf = <Field extends string, Entry extends Correctable<Field>>(
+  fresh: Entry,
+  previous: Entry | null,
+): Entry => {
   const corrected = previous?.corrected
   if (!previous || !corrected?.length) return fresh
-  const kept: Author = { ...fresh, corrected }
+  const kept: Record<string, unknown> = { ...fresh, corrected }
+  const before: Record<string, unknown> = previous
   for (const field of corrected) {
-    if (previous[field] === undefined) delete kept[field]
-    else Object.assign(kept, { [field]: previous[field] })
+    if (before[field] === undefined) delete kept[field]
+    else kept[field] = before[field]
   }
   // A face chosen by hand is no face to seek.
-  if (corrected.includes('portraitUrl')) delete kept.portraitSoughtAt
-  return kept
+  if (corrected.includes('portraitUrl' as Field)) delete kept.portraitSoughtAt
+  return kept as Entry
 }
+
+/** An entry with a reader's correction written in, each field it names among
+ *  `fields` marked as corrected for good. */
+export const withCorrectionOf = <Field extends string, Entry extends Correctable<Field>>(
+  fields: readonly Field[],
+  entry: Entry,
+  correction: Partial<Record<Field, unknown>>,
+): Entry => {
+  const named = fields.filter((field) => field in correction)
+  const written = {
+    ...entry,
+    corrected: [...new Set([...(entry.corrected ?? []), ...named])],
+  } as Record<string, unknown>
+  for (const field of named) {
+    if (correction[field] === undefined) delete written[field]
+    else written[field] = correction[field]
+  }
+  if (named.includes('portraitUrl' as Field)) delete written.portraitSoughtAt
+  return written as Entry
+}
+
+/** An author's catalogue asked of the world again, keeping what readers
+ *  corrected by hand on the stored one. */
+export const keepingCorrections = (fresh: Author, previous: Author | null): Author =>
+  keepingCorrectionsOf<AuthorCorrectableField, Author>(fresh, previous)
 
 /** An author's catalogue with a reader's correction written in, each field it
  *  names marked as corrected for good. */
-export const withCorrection = (author: Author, correction: AuthorCorrection): Author => {
-  const fields = AUTHOR_CORRECTABLE_FIELDS.filter((field) => field in correction)
-  const written: Author = {
-    ...author,
-    corrected: [...new Set([...(author.corrected ?? []), ...fields])],
-  }
-  for (const field of fields) {
-    if (correction[field] === undefined) delete written[field]
-    else Object.assign(written, { [field]: correction[field] })
-  }
-  if (fields.includes('portraitUrl')) delete written.portraitSoughtAt
-  return written
-}
+export const withCorrection = (author: Author, correction: AuthorCorrection): Author =>
+  withCorrectionOf(AUTHOR_CORRECTABLE_FIELDS, author, correction)

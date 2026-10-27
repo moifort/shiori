@@ -2694,6 +2694,24 @@ type Mutation {
   ): AuthorPage!
 
   """
+  Correct what the world knows of a narrator, where the model or Wikipedia was wrong or found nothing. Omitted fields are left alone; one passed as null is cleared. Written into the shared entry, for every reader, and never written over by a later catalogue call or portrait lookup. Free: no model call.
+  
+  Answers the narrator’s page as `narratorPage` with `waitForCatalogue: false` would. `NOT_FOUND` when the reader holds no recording of theirs; `PORTRAIT_NOT_AN_IMAGE` when `portraitUrl` does not serve an image.
+  """
+  correctNarrator(
+    biography: NarratorBiography
+    birthYear: Year
+    deathYear: Year
+    key: NarratorKey!
+    nationality: Nationality
+
+    """
+    One `narratorPortraitChoices` offered, or an address the reader pasted.
+    """
+    portraitUrl: PortraitUrl
+  ): NarratorPage!
+
+  """
   Correct an edition where the model was wrong or said nothing. Omitted fields are left alone; a `description` passed as null is cleared. Free: no model call.
   
   The name and the description are the catalogue’s: corrected there for every reader of the edition, never written over by a later catalogue call, the name written into every reader’s volumes. An edition nobody catalogued is renamed on the reader’s volumes alone. The format is the reader’s: every volume they hold of the edition takes it.
@@ -3860,6 +3878,11 @@ type Query {
     """
     waitForCatalogue: Boolean = true
   ): NarratorPage
+
+  """
+  The faces the reader may give a narrator, as a book’s covers are offered: the one drawn now first, then what Wikipedia shows for their name. Free: no model call. Null when the reader holds no recording of theirs.
+  """
+  narratorPortraitChoices(key: NarratorKey!): [PortraitChoice!]
 
   """The alerts the reader switched on, for the settings screen."""
   notificationSettings: NotificationSettings!

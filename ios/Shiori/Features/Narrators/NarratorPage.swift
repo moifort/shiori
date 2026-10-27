@@ -40,6 +40,11 @@ struct NarratorPage: Sendable {
         return ends.compactMap { $0?.first }.map(String.init).joined().uppercased()
     }
 
+    /// What the edit form opens on.
+    var facts: PersonFacts {
+        PersonFacts(nationality: nationality, birthYear: birthYear, deathYear: deathYear, biography: biography)
+    }
+
     /// The cover the hero's ground is blurred from: the first the page draws.
     var backdropURL: URL? {
         let covers: [URL?] = sagas.map(\.cardCoverURL) + books.map(\.coverURL)

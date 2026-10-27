@@ -57,7 +57,25 @@ export type Narrator = {
   /** When the model last failed or knew nothing of them: no opening asks
    *  again for a month. Absent once they are described. */
   missedAt?: Date
+  /** The fields a reader corrected by hand, which no later catalogue call or
+   *  portrait lookup writes over. Absent until the first correction. */
+  corrected?: NarratorCorrectableField[]
 }
+
+/** What a reader may correct of a narrator: the facts and the face, as of an
+ *  author. The name is the recordings'. */
+export const NARRATOR_CORRECTABLE_FIELDS = [
+  'nationality',
+  'birthYear',
+  'deathYear',
+  'biography',
+  'portraitUrl',
+] as const
+export type NarratorCorrectableField = (typeof NARRATOR_CORRECTABLE_FIELDS)[number]
+
+/** A reader's correction of a narrator: a field absent is left alone, one set
+ *  to undefined is cleared. */
+export type NarratorCorrection = Partial<Pick<Narrator, NarratorCorrectableField>>
 
 /** A narrator the reader hearted: theirs alone, never shared. Absent when they
  *  have not, rather than stored as "not hearted". */

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, mock, test } from 'bun:test'
+import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test'
 import { graphql } from 'graphql'
 import type { UserId } from '~/domain/shared/types'
 import { fakeDb, resetFakeFirestore } from '~/test/fake-firestore'
@@ -233,5 +233,98 @@ describe('a book', () => {
     )
     const result = await execute(`{ book(id: "${id}") { narratorKeys } }`)
     expect(result.data).toEqual({ book: { narratorKeys: ['frederic-kneip', 'bernard-gabay'] } })
+  })
+})
+
+describe('correcting a narrator', () => {
+  // A pasted address is checked to serve an image: a page does not.
+  beforeEach(() => {
+    spyOn(globalThis, 'fetch').mockImplementation(
+      (async (url: string) =>
+        new Response(null, {
+          headers: url.includes('/page')
+            ? { 'content-type': 'text/html' }
+            : { 'content-type': 'image/jpeg', 'content-length': '250000' },
+        })) as unknown as typeof fetch,
+    )
+  })
+  afterEach(() => {
+    ;(globalThis.fetch as unknown as { mockRestore?: () => void }).mockRestore?.()
+  })
+
+  const gabay =
+    'title: "Dune", authors: ["Frank Herbert"], format: AUDIOBOOK, narrators: ["Bernard Gabay"]'
+
+  const correct = (fields: string) =>
+    execute(`mutation { correctNarrator(key: "bernard-gabay", ${fields}) {
+      narrator { portraitUrl }
+      catalogue { nationality birthYear deathYear biography }
+    } }`)
+
+  test('writes the fields passed, clears those passed as null, and answers the page', async () => {
+    await addBook(gabay)
+    await narratorPage('key: "bernard-gabay"')
+
+    const result = await correct(
+      'biography: "Voix de Dune.", nationality: null, birthYear: 1958, portraitUrl: "https://example.com/gabay.jpg"',
+    )
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data).toEqual({
+      correctNarrator: {
+        narrator: { portraitUrl: 'https://example.com/gabay.jpg' },
+        catalogue: {
+          nationality: null,
+          birthYear: 1958,
+          deathYear: null,
+          biography: 'Voix de Dune.',
+        },
+      },
+    })
+  })
+
+  test('describes a narrator nobody had, with no model call then or later', async () => {
+    await addBook(gabay)
+    await correct('biography: "Voix de Dune."')
+    const page = await narratorPage('key: "bernard-gabay"')
+    expect(page?.catalogue?.biography).toBe('Voix de Dune.')
+    expect(modelCalls).toEqual([])
+  })
+
+  test('keeps the face chosen by hand after a miss, with no further model call', async () => {
+    modelAnswer = 'fails'
+    await addBook(gabay)
+    await narratorPage('key: "bernard-gabay"')
+    await correct('portraitUrl: "https://example.com/gabay.jpg"')
+    expect((await narratorPage('key: "bernard-gabay"'))?.narrator.portraitUrl).toBe(
+      'https://example.com/gabay.jpg',
+    )
+    expect(modelCalls).toEqual(['Bernard Gabay'])
+  })
+
+  test('refuses an address that leads to a page', async () => {
+    await addBook(gabay)
+    const result = await correct('portraitUrl: "https://example.com/page"')
+    expect(result.errors?.[0]?.extensions?.code).toBe('PORTRAIT_NOT_AN_IMAGE')
+  })
+
+  test('is not found for a narrator the reader holds nothing of', async () => {
+    const result = await correct('biography: "Voix de Dune."')
+    expect(result.errors?.[0]?.extensions?.code).toBe('NOT_FOUND')
+  })
+
+  test('offers the face drawn now first, then Wikipedia’s', async () => {
+    await addBook(gabay)
+    await narratorPage('key: "bernard-gabay"')
+    await correct('portraitUrl: "https://example.com/gabay.jpg"')
+    const result = await execute(
+      '{ narratorPortraitChoices(key: "bernard-gabay") { source url isCurrent } }',
+    )
+    expect(result.data).toEqual({
+      narratorPortraitChoices: [
+        { source: 'WEB', url: 'https://example.com/gabay.jpg', isCurrent: true },
+        { source: 'WIKIPEDIA', url: 'https://upload.wikimedia.org/gabay.jpg', isCurrent: false },
+      ],
+    })
   })
 })

@@ -20,7 +20,7 @@ struct AuthorsClient: Sendable {
     var setFavorite: @Sendable (_ key: String, Bool) async throws -> Bool = { _, favorite in favorite }
     /// What the world knows of the author, corrected in the shared catalogue;
     /// answers the page as it now reads.
-    var correct: @Sendable (_ key: String, AuthorCorrection) async throws -> AuthorPage? = { _, _ in nil }
+    var correct: @Sendable (_ key: String, PersonCorrection) async throws -> AuthorPage? = { _, _ in nil }
     /// The faces the reader may give the author, the one drawn now first.
     var portraitChoices: @Sendable (_ key: String) async throws -> [PortraitChoice] = { _ in [] }
 }

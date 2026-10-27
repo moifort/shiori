@@ -10,13 +10,20 @@ struct NarratorsClient: Sendable {
     var catalogue: @Sendable (_ key: String, _ offered: String?) async throws -> NarratorPage?
     /// Hearts the narrator or takes the heart back; answers what is now true.
     var setFavorite: @Sendable (_ key: String, Bool) async throws -> Bool
+    /// What the world knows of the narrator, corrected for every reader;
+    /// answers the page as it now reads.
+    var correct: @Sendable (_ key: String, PersonCorrection) async throws -> NarratorPage? = { _, _ in nil }
+    /// The faces the reader may give the narrator, the one drawn now first.
+    var portraitChoices: @Sendable (_ key: String) async throws -> [PortraitChoice] = { _ in [] }
 }
 
 extension NarratorsClient {
     static let live = NarratorsClient(
         page: { try await NarratorsAPI.page(key: $0, offered: $1) },
         catalogue: { try await NarratorsAPI.page(key: $0, offered: $1, waitForCatalogue: true) },
-        setFavorite: { try await NarratorsAPI.setFavorite(key: $0, favorite: $1) }
+        setFavorite: { try await NarratorsAPI.setFavorite(key: $0, favorite: $1) },
+        correct: { try await NarratorsAPI.correct(key: $0, correction: $1) },
+        portraitChoices: { try await NarratorsAPI.portraitChoices(key: $0) }
     )
 }
 
@@ -43,6 +50,8 @@ extension NarratorsClient {
     static let preview = NarratorsClient(
         page: { _, _ in .preview },
         catalogue: { _, _ in .preview },
-        setFavorite: { _, favorite in favorite }
+        setFavorite: { _, favorite in favorite },
+        correct: { _, _ in .preview },
+        portraitChoices: { _ in PortraitChoice.previews }
     )
 }

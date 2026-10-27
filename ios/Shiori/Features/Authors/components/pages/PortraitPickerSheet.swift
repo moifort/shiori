@@ -1,8 +1,9 @@
 import SwiftUI
 
-/// The faces a reader may give an author, opened from the "…" menu of their
-/// page, as a book's covers are: the one drawn now first, then what Wikipedia,
-/// Wikidata and Open Library found, each under its source. An image address
+/// The faces a reader may give an author or a narrator, opened from the "…"
+/// menu of their page, as a book's covers are: the one drawn now first, then
+/// what Wikipedia — and for an author Wikidata and Open Library — found, each
+/// under its source. An image address
 /// pasted below joins them as one more choice. Nothing here calls the AI.
 ///
 /// The face drawn now is picked when the sheet opens, so confirming stays off
@@ -14,7 +15,7 @@ struct PortraitPickerSheet: View {
     let choices: [PortraitChoice]?
     /// Why they could not be sought.
     let loadFailed: String?
-    /// Answers nil once the author is drawn with it, or the message to show.
+    /// Answers nil once they are drawn with it, or the message to show.
     let onChoose: (PortraitChoice) async -> String?
     @Environment(\.dismiss) private var dismiss
 

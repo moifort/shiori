@@ -259,7 +259,7 @@ const PortraitSourceEnum = builder.enumType('PortraitSource', {
   } as const,
 })
 
-const PortraitChoiceType = builder.objectRef<PortraitChoice>('PortraitChoice').implement({
+export const PortraitChoiceType = builder.objectRef<PortraitChoice>('PortraitChoice').implement({
   description: 'A portrait the reader may give an author, as the portrait picker offers it.',
   fields: (t) => ({
     source: t.field({ type: PortraitSourceEnum, resolve: (choice) => choice.source }),

@@ -1,15 +1,15 @@
 import SwiftUI
 
-/// Everything the "…" menu of an author can ask for.
-enum AuthorMenuAction {
+/// Everything the "…" menu of an author or a narrator can ask for.
+enum PersonMenuAction {
     case edit
     case portrait
 }
 
-/// The "…" in an author's corner, for an author the reader holds books of:
-/// correcting what the AI wrote, as a book's menu does.
-struct AuthorActionsMenu: View {
-    let onAction: (AuthorMenuAction) -> Void
+/// The "…" in an author's or a narrator's corner, for one the reader holds
+/// books of: correcting what the AI wrote, as a book's menu does.
+struct PersonActionsMenu: View {
+    let onAction: (PersonMenuAction) -> Void
 
     var body: some View {
         Menu {
@@ -34,7 +34,7 @@ struct AuthorActionsMenu: View {
         Text(verbatim: "Robin Hobb")
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
-                    AuthorActionsMenu { _ in }
+                    PersonActionsMenu { _ in }
                 }
             }
     }

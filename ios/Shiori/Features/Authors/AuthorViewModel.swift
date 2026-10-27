@@ -89,7 +89,7 @@ final class AuthorViewModel {
     /// The author corrected from the edit form or the portrait picker: the
     /// page takes the server's answer. Answers the message to show, or nil
     /// once saved.
-    func correct(_ correction: AuthorCorrection) async -> String? {
+    func correct(_ correction: PersonCorrection) async -> String? {
         do {
             if let corrected = try await client.correct(key, correction) {
                 withAnimation(.smooth) { page = corrected }

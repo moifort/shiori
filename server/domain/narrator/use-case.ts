@@ -4,17 +4,26 @@ import {
   isPortraitWorthSeeking,
   standaloneBooksOf,
 } from '~/domain/author/business-rules'
-import type { PortraitUrl } from '~/domain/author/types'
+import type { PortraitChoice, PortraitUrl } from '~/domain/author/types'
+import { CoverUrl } from '~/domain/book/primitives'
 import { BookQuery } from '~/domain/book/query'
 import type { Book, NarratorName } from '~/domain/book/types'
+import { CatalogueCorrectionCommand } from '~/domain/catalogue-correction/command'
 import {
+  isDescribed,
   isWorthDescribing,
   shelvedNarratorsOf,
   unshelvedNarratorOf,
 } from '~/domain/narrator/business-rules'
 import { NarratorCommand } from '~/domain/narrator/command'
 import { NarratorQuery } from '~/domain/narrator/query'
-import type { Narrator, NarratorKey, ShelvedNarrator } from '~/domain/narrator/types'
+import type {
+  Narrator,
+  NarratorCorrection,
+  NarratorKey,
+  ShelvedNarrator,
+} from '~/domain/narrator/types'
+import { isImageAt } from '~/domain/scan/published-cover'
 import { type FollowedSeries, SeriesUseCase } from '~/domain/series/use-case'
 import { SeriesOpinionQuery } from '~/domain/series-opinion/query'
 import type { Language } from '~/domain/shared/language'
@@ -78,11 +87,77 @@ export namespace NarratorUseCase {
     const entry = found === 'unasked' ? null : found
     return {
       narrator: { ...shelved, portraitUrl: entry?.portraitUrl, favorite: hearted.has(key) },
-      catalogue: entry?.cataloguedAt ? entry : null,
+      catalogue: isDescribed(entry) ? entry : null,
       awaitingCatalogue,
       sagas: inPageOrder(sagas),
       books: standaloneBooksOf(shelved.books),
     }
+  }
+
+  /** Correct what the world knows of a narrator, for every reader: the
+   *  fields the correction names, kept from then on over anything the model
+   *  or Wikipedia says. Who changed what is recorded apart. A portrait's
+   *  address must serve an image.
+   *
+   *  Answers the narrator's page as it now reads, without describing them;
+   *  null when the reader holds no recording of theirs, `not-an-image` for a
+   *  portrait that is none. */
+  export const correct = async (
+    userId: UserId,
+    key: NarratorKey,
+    language: Language,
+    correction: NarratorCorrection,
+  ): Promise<NarratorPage | null | 'not-an-image'> => {
+    const shelved = await shelvedNarrator(userId, key)
+    if (!shelved) return null
+    if (correction.portraitUrl && !(await isImageAt(CoverUrl(correction.portraitUrl))))
+      return 'not-an-image'
+    const known = await NarratorQuery.byKey(key)
+    await NarratorCommand.correct(known, key, shelved.name, correction)
+    await CatalogueCorrectionCommand.record(
+      userId,
+      'narrator',
+      key,
+      (Object.keys(correction) as (keyof NarratorCorrection)[]).map((field) => ({
+        field,
+        before: known?.[field] ?? null,
+        after: correction[field] ?? null,
+      })),
+    )
+    return page(userId, key, language, undefined, { waitForCatalogue: false })
+  }
+
+  /** The faces the reader may give a narrator: the one drawn now first, then
+   *  what Wikipedia shows for their name. Free. Null when the reader holds no
+   *  recording of theirs. */
+  export const portraitChoices = async (
+    userId: UserId,
+    key: NarratorKey,
+  ): Promise<PortraitChoice[] | null> => {
+    const shelved = await shelvedNarrator(userId, key)
+    if (!shelved) return null
+    const known = await NarratorQuery.byKey(key)
+    const found = await NarratorQuery.portraitFor(known?.name ?? shelved.name)
+    const current = known?.portraitUrl
+    const choices: PortraitChoice[] = []
+    if (current)
+      choices.push({
+        source: found === current ? 'wikipedia' : 'web',
+        url: current,
+        isCurrent: true,
+      })
+    if (found && found !== current)
+      choices.push({ source: 'wikipedia', url: found, isCurrent: false })
+    return choices
+  }
+
+  /** The narrator among the reader's recordings, null when they hold none. */
+  const shelvedNarrator = async (userId: UserId, key: NarratorKey) => {
+    const [books, opinions] = await Promise.all([
+      BookQuery.all(userId),
+      SeriesOpinionQuery.all(userId),
+    ])
+    return shelvedNarratorsOf(books, opinions).find((narrator) => narrator.key === key) ?? null
   }
 
   /** The stored entry, else one built now — unless the model failed on this

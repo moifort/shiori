@@ -1,16 +1,17 @@
 import SwiftUI
 
-/// Correcting what the world knows of an author, laid out as a book's form:
-/// where they come from, when they lived, who they are. Written into the
-/// shared catalogue, so every reader sees the correction, and never written
-/// over by the AI after it. The name is the books' and is corrected there.
+/// Correcting what the world knows of an author or a narrator, laid out as a
+/// book's form: where they come from, when they lived, who they are. Written
+/// into the shared catalogue, so every reader sees the correction, and never
+/// written over by the AI after it. The name is the books' and is corrected
+/// there.
 ///
 /// The form edits text as the reader sees it and works out the difference only
 /// on save, so a field left alone is never sent and one emptied is cleared.
-struct AuthorEditSheet: View {
-    let page: AuthorPage
+struct PersonEditSheet: View {
+    let facts: PersonFacts
     /// Answers nil once saved, or the message to show when the save failed.
-    let onSave: (AuthorCorrection) async -> String?
+    let onSave: (PersonCorrection) async -> String?
     @Environment(\.dismiss) private var dismiss
 
     @State private var nationality: String
@@ -20,13 +21,13 @@ struct AuthorEditSheet: View {
     @State private var isSaving = false
     @State private var errorMessage: String?
 
-    init(page: AuthorPage, onSave: @escaping (AuthorCorrection) async -> String?) {
-        self.page = page
+    init(facts: PersonFacts, onSave: @escaping (PersonCorrection) async -> String?) {
+        self.facts = facts
         self.onSave = onSave
-        _nationality = State(initialValue: page.nationality ?? "")
-        _birthYear = State(initialValue: page.birthYear.map(String.init) ?? "")
-        _deathYear = State(initialValue: page.deathYear.map(String.init) ?? "")
-        _biography = State(initialValue: page.biography ?? "")
+        _nationality = State(initialValue: facts.nationality ?? "")
+        _birthYear = State(initialValue: facts.birthYear.map(String.init) ?? "")
+        _deathYear = State(initialValue: facts.deathYear.map(String.init) ?? "")
+        _biography = State(initialValue: facts.biography ?? "")
     }
 
     var body: some View {
@@ -102,12 +103,12 @@ struct AuthorEditSheet: View {
         return nil
     }
 
-    private var correction: AuthorCorrection {
-        var correction = AuthorCorrection()
-        correction.nationality = change(from: page.nationality, to: optional(nationality))
-        correction.birthYear = change(from: page.birthYear, to: Int(trimmed(birthYear)))
-        correction.deathYear = change(from: page.deathYear, to: Int(trimmed(deathYear)))
-        correction.biography = change(from: page.biography, to: optional(biography))
+    private var correction: PersonCorrection {
+        var correction = PersonCorrection()
+        correction.nationality = change(from: facts.nationality, to: optional(nationality))
+        correction.birthYear = change(from: facts.birthYear, to: Int(trimmed(birthYear)))
+        correction.deathYear = change(from: facts.deathYear, to: Int(trimmed(deathYear)))
+        correction.biography = change(from: facts.biography, to: optional(biography))
         return correction
     }
 
@@ -136,5 +137,5 @@ struct AuthorEditSheet: View {
 }
 
 #Preview {
-    AuthorEditSheet(page: .preview) { _ in nil }
+    PersonEditSheet(facts: AuthorPage.preview.facts) { _ in nil }
 }

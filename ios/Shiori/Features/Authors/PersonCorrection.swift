@@ -1,9 +1,9 @@
 import Foundation
 
-/// What the reader changed on an author in the edit form or the portrait
-/// picker. A nil property was not touched and is not sent; `.clear` empties a
+/// What the reader changed on an author or a narrator in the edit form or the
+/// portrait picker. A nil property was not touched and is not sent; `.clear` empties a
 /// field the reader deleted.
-struct AuthorCorrection: Equatable, Sendable {
+struct PersonCorrection: Equatable, Sendable {
     var nationality: BookCorrection.Change<String>?
     var birthYear: BookCorrection.Change<Int>?
     var deathYear: BookCorrection.Change<Int>?
@@ -11,10 +11,20 @@ struct AuthorCorrection: Equatable, Sendable {
     /// A face picked among those offered, or an address pasted. Never cleared.
     var portraitURL: URL?
 
-    var isEmpty: Bool { self == AuthorCorrection() }
+    var isEmpty: Bool { self == PersonCorrection() }
 }
 
-/// A face the reader may give an author, as the portrait picker offers it.
+/// What the world knows of a person — an author, a narrator — as the edit
+/// form opens on it.
+struct PersonFacts: Equatable, Sendable {
+    var nationality: String?
+    var birthYear: Int?
+    var deathYear: Int?
+    var biography: String?
+}
+
+/// A face the reader may give an author or a narrator, as the portrait picker
+/// offers it.
 struct PortraitChoice: Identifiable, Hashable, Sendable {
     enum Source: Hashable, Sendable {
         case wikipedia
@@ -26,7 +36,7 @@ struct PortraitChoice: Identifiable, Hashable, Sendable {
 
     let source: Source
     let url: URL
-    /// The face the author is drawn with now.
+    /// The face they are drawn with now.
     let isCurrent: Bool
 
     var id: URL { url }
