@@ -23,6 +23,7 @@ struct FriendBookScreen: View {
     @State private var showsSaga = false
     @State private var openAwaited: AwaitedEdition?
     @State private var openAuthor: AuthorDestination?
+    @State private var openNarrator: NarratorDestination?
 
     init(
         friendId: String,
@@ -53,6 +54,7 @@ struct FriendBookScreen: View {
                     switch action {
                     case .openSeries: showsSaga = true
                     case let .openAuthor(author): openAuthor = author
+                    case let .openNarrator(narrator): openNarrator = narrator
                     case let .openAwaited(edition): openAwaited = edition
                     case let .stopAwaiting(edition): await viewModel.stopAwaiting(edition)
                     case let .add(status, format):
@@ -78,6 +80,9 @@ struct FriendBookScreen: View {
         // hold nothing of theirs, and the page then lists it all to add.
         .pushesDetail(item: $openAuthor) { author in
             AuthorScreen(key: author.key, name: author.name, isOffered: true)
+        }
+        .pushesDetail(item: $openNarrator) { narrator in
+            NarratorScreen(key: narrator.key, name: narrator.name)
         }
         .pushesDetail(item: $openAwaited) { edition in
             AwaitedEditionScreen(edition: edition) {

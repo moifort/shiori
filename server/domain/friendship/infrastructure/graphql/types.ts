@@ -24,6 +24,7 @@ import type {
   FriendSagaPage,
   LovedAuthor,
 } from '~/domain/friendship/use-case'
+import { narratorKeyOf } from '~/domain/narrator/primitives'
 import { SeriesStateEnum } from '~/domain/series/infrastructure/graphql/enums'
 import { isAudioSeries } from '~/domain/series/primitives'
 import { builder } from '~/domain/shared/graphql/builder'
@@ -139,6 +140,13 @@ export const FriendBookType = builder.objectRef<FriendBook>('FriendBook').implem
     }),
     durationMinutes: t.int({ nullable: true, resolve: (book) => book.durationMinutes ?? null }),
     narrators: t.field({ type: ['NarratorName'], resolve: (book) => book.narrators ?? [] }),
+    narratorKeys: t.field({
+      type: ['NarratorKey'],
+      description:
+        'The key of each narrator, in the order of `narrators`: what opens their ' +
+        'page from the book.',
+      resolve: (book) => (book.narrators ?? []).map(narratorKeyOf),
+    }),
     isbn13: t.field({ type: 'Isbn13', nullable: true, resolve: (book) => book.isbn13 ?? null }),
     amazonUrl: t.string({
       description:

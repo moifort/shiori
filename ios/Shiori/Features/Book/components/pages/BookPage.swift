@@ -29,6 +29,8 @@ struct BookPage: View {
     var onOpenVolume: (Book) -> Void = { _ in }
     /// An author's page, from the hero's author line.
     var onOpenAuthor: ((AuthorDestination) -> Void)? = nil
+    /// A narrator's page, from the hero's "Lu par" line.
+    var onOpenNarrator: ((NarratorDestination) -> Void)? = nil
     /// The editions of this book the reader awaits in the app's language.
     var awaited: [AwaitedEdition] = []
     var onOpenAwaited: (AwaitedEdition) -> Void = { _ in }
@@ -135,7 +137,8 @@ struct BookPage: View {
             book: book,
             state: book.status == .dropped ? nil : .reading(of: book),
             isAwaited: !awaited.isEmpty,
-            onOpenAuthor: onOpenAuthor
+            onOpenAuthor: onOpenAuthor,
+            onOpenNarrator: onOpenNarrator
         ) {
             // Sideways past the width, from edge to edge, rather than a
             // label cut or an icon dropped.

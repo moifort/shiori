@@ -122,6 +122,7 @@ fragment BookDetail on Book {
   durationMinutes
   listeningProgress
   narrators
+  narratorKeys
   audibleUrl
   amazonUrl
   language

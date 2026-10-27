@@ -282,6 +282,9 @@ struct Book: Identifiable, Hashable, Codable, Sendable {
     /// Who reads the recording. Empty on anything but an audiobook, and empty on
     /// an audiobook no Audible import ever named.
     var narrators: [String] = []
+    /// The key of each narrator's page, in the order of `narrators`, as the
+    /// server folds them. Nil where the book came without them.
+    var narratorKeys: [String]?
     /// How far into the recording the Audible player last stopped, in whole
     /// percent. Nil on anything but an audiobook the player opened.
     var listeningProgress: Int?

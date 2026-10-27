@@ -13,7 +13,7 @@ import type { BookFormat, BookLanguage, ReadingStatus } from '~/domain/book/type
 import { sagaKeyFor, seriesKeyOf } from '~/domain/series/primitives'
 import type { SagaKey, SeriesState } from '~/domain/series/types'
 import { Count } from '~/domain/shared/primitives'
-import type { AuthorName } from '~/domain/shared/types'
+import type { AuthorName, Count as CountValue } from '~/domain/shared/types'
 import { slugify } from '~/utils/slug'
 
 type AuthoredBook = {
@@ -38,17 +38,39 @@ type SagaOpinion = { seriesId: SagaKey; rating?: number; favorite?: boolean }
 export const shelvedAuthorsOf = <Book extends AuthoredBook>(
   books: readonly Book[],
   opinions: readonly SagaOpinion[],
-): ShelvedAuthor<Book>[] => {
+): ShelvedAuthor<Book>[] => shelvedPeopleOf(books, opinions, (book) => book.authors, authorKeyOf)
+
+/** Everyone the library credits on a book — its authors, a recording's
+ *  narrators — with what the reader made of their books and sagas, one row
+ *  per name as `keyOf` folds it, the spelling most books use kept. */
+export const shelvedPeopleOf = <
+  Book extends Omit<AuthoredBook, 'authors'>,
+  Name extends string,
+  Key extends string,
+>(
+  books: readonly Book[],
+  opinions: readonly SagaOpinion[],
+  namesOf: (book: Book) => readonly Name[],
+  keyOf: (name: Name) => Key,
+): {
+  key: Key
+  name: Name
+  books: Book[]
+  seriesIds: SagaKey[]
+  shelvedAt: Date
+  favoriteCount: CountValue
+  averageRating?: number
+}[] => {
   const opinionOf = new Map(opinions.map((opinion) => [opinion.seriesId, opinion]))
-  const byKey = new Map<AuthorKey, { books: Book[]; spellings: Map<AuthorName, number> }>()
+  const byKey = new Map<Key, { books: Book[]; spellings: Map<Name, number> }>()
   for (const book of newestShelvedFirst(books)) {
-    // A book listing the same author twice is still one book of theirs.
-    const keys = new Set<AuthorKey>()
-    for (const name of book.authors) {
-      const key = authorKeyOf(name)
+    // A book listing the same person twice is still one book of theirs.
+    const keys = new Set<Key>()
+    for (const name of namesOf(book)) {
+      const key = keyOf(name)
       const known = byKey.get(key) ?? {
         books: [] as Book[],
-        spellings: new Map<AuthorName, number>(),
+        spellings: new Map<Name, number>(),
       }
       if (!keys.has(key)) known.books.push(book)
       keys.add(key)
@@ -58,7 +80,7 @@ export const shelvedAuthorsOf = <Book extends AuthoredBook>(
   }
   return [...byKey].map(([key, { books, spellings }]) => {
     const newest = books[0]
-    if (!newest) throw new Error('an author is only ever made from a book')
+    if (!newest) throw new Error('a person is only ever made from a book')
     const seriesIds = [...new Set(books.flatMap((book) => (book.series ? [book.series.saga] : [])))]
     const sagaOpinions = seriesIds.flatMap((id) => opinionOf.get(id) ?? [])
     const ratings = [...books, ...sagaOpinions].flatMap((judged) =>
@@ -216,15 +238,16 @@ export const heartedFirst = <Author extends { key: AuthorKey }>(
   ...authors.filter((author) => !hearted.has(author.key)),
 ]
 
-const newestShelvedFirst = <Book extends AuthoredBook>(books: readonly Book[]): Book[] =>
-  [...books].sort(shelfOrder)
+const newestShelvedFirst = <Book extends Omit<AuthoredBook, 'authors'>>(
+  books: readonly Book[],
+): Book[] => [...books].sort(shelfOrder)
 
 /** The spelling used most, the first met — the newest book — breaking a tie. */
-const mostUsedSpelling = (spellings: ReadonlyMap<AuthorName, number>): AuthorName => {
-  let chosen: AuthorName | undefined
+const mostUsedSpelling = <Name extends string>(spellings: ReadonlyMap<Name, number>): Name => {
+  let chosen: Name | undefined
   for (const [name, count] of spellings)
     if (chosen === undefined || count > (spellings.get(chosen) ?? 0)) chosen = name
-  if (chosen === undefined) throw new Error('an author is only ever made from a spelling')
+  if (chosen === undefined) throw new Error('a person is only ever made from a spelling')
   return chosen
 }
 

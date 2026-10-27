@@ -283,6 +283,8 @@ enum Showcase {
             pageCount: saga.pages,
             durationMinutes: saga.minutes.indices.contains(number - 1) ? saga.minutes[number - 1] : nil,
             narrators: saga.narrators,
+            // Folded as the server keys them: the hero's "Lu par" opens the page.
+            narratorKeys: saga.narrators.map(narratorKey),
             listeningProgress: status == .reading ? saga.listeningProgress : nil,
             language: language,
             series: SeriesMembership(id: saga.id, name: saga.name, volume: number, kind: .main),
@@ -924,6 +926,32 @@ enum Showcase {
             sagasNotHeld: [],
             books: author.books.filter { $0.series == nil },
             booksNotHeld: [AuthorWork(title: local("Le Jour des morts", "The Day of the Dead"), publishedIn: 2015, coverURL: nil)]
+        )
+    }
+
+    /// A narrator's name folded roughly as the server folds it.
+    static func narratorKey(_ name: String) -> String {
+        name.folding(options: .diacriticInsensitive, locale: nil).lowercased().replacingOccurrences(of: " ", with: "-")
+    }
+
+    /// A narrator's page, drawn from the shelf's recordings in their voice.
+    static func narratorPage(key: String) -> NarratorPage? {
+        let fold = narratorKey
+        let heard = books.filter { $0.format == .audiobook && $0.narrators.contains { fold($0) == key } }
+        guard let name = heard.first?.narrators.first(where: { fold($0) == key }) else { return nil }
+        let narrated = sagas.filter { $0.isAudio && $0.narrators.contains(name) }
+        let rated = heard.compactMap(\.rating)
+        return NarratorPage(
+            key: key,
+            name: name,
+            portraitURL: nil,
+            favorite: true,
+            bookCount: heard.count,
+            readCount: heard.filter { $0.status == .read }.count,
+            seriesCount: narrated.count,
+            averageRating: rated.isEmpty ? nil : Double(rated.reduce(0, +)) / Double(rated.count),
+            sagas: narrated.map(followed),
+            books: heard.filter { $0.series == nil }
         )
     }
 

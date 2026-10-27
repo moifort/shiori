@@ -183,6 +183,7 @@ query FriendBook($userId: UserId!, $bookId: BookId!) {
     pageCount
     durationMinutes
     narrators
+    narratorKeys
     isbn13
     audibleUrl
     amazonUrl

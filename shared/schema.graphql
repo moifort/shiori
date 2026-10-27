@@ -816,6 +816,11 @@ type Book {
   media: [BookMedium!]!
 
   """
+  The key of each narrator, in the order of `narrators`: what opens their page from the book.
+  """
+  narratorKeys: [NarratorKey!]!
+
+  """
   Who reads the recording, at most five. Empty on anything but an audiobook, and empty on an audiobook no import ever named.
   """
   narrators: [NarratorName!]!
@@ -1461,6 +1466,42 @@ type FollowedAuthorPage {
   items: [FollowedAuthor!]!
 }
 
+"""
+Who reads recordings the reader holds. Derived from the books on every request, never stored.
+"""
+type FollowedNarrator {
+  """
+  The mean of the stars given to their recordings and sagas. Null when nothing of theirs is rated.
+  """
+  averageRating: Float
+
+  """Recordings of theirs in the library."""
+  bookCount: Count!
+
+  """
+  The reader hearted the narrator themself, apart from the hearts their recordings and sagas carry.
+  """
+  favorite: Boolean!
+
+  """Hearted recordings plus hearted sagas."""
+  favoriteCount: Count!
+  key: NarratorKey!
+
+  """The spelling most of the reader’s recordings use."""
+  name: NarratorName!
+
+  """
+  Their photograph, when Wikipedia has one. Null: the app draws their initials.
+  """
+  portraitUrl: PortraitUrl
+
+  """Recordings of theirs the reader has listened to."""
+  readCount: Count!
+
+  """Sagas heard in their voice."""
+  seriesCount: Count!
+}
+
 """A saga the reader owns at least one volume of."""
 type FollowedSeries {
   """
@@ -1689,6 +1730,11 @@ type FriendBook {
   How far into the recording its owner got, as on their own book page: where the book stands on the shelf, not what they thought of it.
   """
   listeningProgress: Percentage
+
+  """
+  The key of each narrator, in the order of `narrators`: what opens their page from the book.
+  """
+  narratorKeys: [NarratorKey!]!
   narrators: [NarratorName!]!
 
   """
@@ -3009,6 +3055,15 @@ type Mutation {
   setKindleAutoSync(enabled: Boolean!): KindleAccount!
 
   """
+  Heart a narrator, or take the heart back: the reader’s own, apart from the hearts their recordings carry, never shared. Answers what is now true. One write.
+  """
+  setNarratorFavorite(
+    """True hearts, false takes it back"""
+    favorite: Boolean!
+    key: NarratorKey!
+  ): Boolean!
+
+  """
   Move a book along the pile. The reading dates are stamped by the move, and only corrected afterwards through updateBook: going back to TO_READ clears them.
   """
   setReadingStatus(id: BookId!, status: ReadingStatus!): Book!
@@ -3111,9 +3166,28 @@ type Mutation {
 }
 
 """
+A narrator as the library folds their name, as an author is: diacritics dropped, punctuation collapsed. Derived, never typed. Example: "bernard-gabay".
+"""
+scalar NarratorKey
+
+"""
 Who reads an audiobook aloud, 1 to 200 characters. Not an AuthorName: a narrator is not the author of what they read. Example: "Bernard Gabay".
 """
 scalar NarratorName
+
+"""Everything a narrator’s page draws, in one answer."""
+type NarratorPage {
+  """
+  The reader’s recordings of theirs outside any saga, listened ones first.
+  """
+  books: [Book!]!
+  narrator: FollowedNarrator!
+
+  """
+  The reader’s sagas heard in their voice, as the Series tab draws them: the ones listened into first, then those not started, then those set aside.
+  """
+  sagas: [FollowedSeries!]!
+}
 
 """
 Where an author comes from, as a demonym, 1 to 100 characters. Example: "Américain".
@@ -3744,6 +3818,18 @@ type Query {
   The reader's own shelf exactly as their friends see it: the same lists, the same order, the books marked "do not share" left out. Uncut, where a friend's view stops at thirty of each.
   """
   myShelf: FriendProfile!
+
+  """
+  One narrator’s page: the reader’s recordings in their voice, grouped by saga. Free — no model call: Wikipedia is asked for the portrait the first time anybody opens it, and again a month after a miss. Null when the reader holds no recording of theirs and no `offered` names them.
+  """
+  narratorPage(
+    key: NarratorKey!
+
+    """
+    The narrator as a friend’s recording names them, for one the reader holds nothing of. Ignored unless it folds into `key`.
+    """
+    offered: NarratorName
+  ): NarratorPage
 
   """The alerts the reader switched on, for the settings screen."""
   notificationSettings: NotificationSettings!

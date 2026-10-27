@@ -6,6 +6,8 @@ enum FriendBookAction {
     case openSeries
     /// An author's page, from the hero's author line.
     case openAuthor(AuthorDestination)
+    /// A narrator's page, from the hero's "Lu par" line.
+    case openNarrator(NarratorDestination)
     /// An edition awaited, opened as Découvrir opens it.
     case openAwaited(AwaitedEdition)
     case stopAwaiting(AwaitedEdition)
@@ -69,7 +71,8 @@ struct FriendBookPage: View {
             state: friendState,
             isAwaited: !awaited.isEmpty,
             showsLength: false,
-            onOpenAuthor: { author in Task { await onAction(.openAuthor(author)) } }
+            onOpenAuthor: { author in Task { await onAction(.openAuthor(author)) } },
+            onOpenNarrator: { narrator in Task { await onAction(.openNarrator(narrator)) } }
         ) {
             ScrollView(.horizontal) {
                 heroButtons

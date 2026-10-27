@@ -220,6 +220,7 @@ extension ShioriGraphQL.BookDetail {
             pageCount: pageCount,
             durationMinutes: durationMinutes,
             narrators: narrators,
+            narratorKeys: narratorKeys,
             listeningProgress: listeningProgress.map { Int($0) },
             audibleURL: audibleUrl.flatMap(URL.init(string:)),
             amazonURL: URL(string: amazonUrl),

@@ -7,6 +7,7 @@
       "Shiori/Features/Book/GraphQL/*.graphql",
       "Shiori/Features/Series/GraphQL/*.graphql",
       "Shiori/Features/Authors/GraphQL/*.graphql",
+      "Shiori/Features/Narrators/GraphQL/*.graphql",
       "Shiori/Features/Home/GraphQL/*.graphql",
       "Shiori/Features/Scan/GraphQL/*.graphql",
       "Shiori/Features/Import/GraphQL/*.graphql",

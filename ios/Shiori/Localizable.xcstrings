@@ -2489,6 +2489,22 @@
         }
       }
     },
+    "Aucun de vos livres audio n'est lu par %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "None of your audiobooks is narrated by %@."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun de vos livres audio n'est lu par %@."
+          }
+        }
+      }
+    },
     "Aucun jour facturé" : {
       "localizations" : {
         "en" : {
@@ -2533,6 +2549,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Aucun livre Kindle sur ce compte. Vérifiez la boutique : une bibliothèque française ne s'ouvre pas depuis amazon.com."
+          }
+        }
+      }
+    },
+    "Aucun livre audio de ce narrateur dans votre bibliothèque." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No audiobook by this narrator in your library."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun livre audio de ce narrateur dans votre bibliothèque."
           }
         }
       }
@@ -8181,6 +8213,22 @@
         }
       }
     },
+    "Narration" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Narrator"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Narration"
+          }
+        }
+      }
+    },
     "Nationalité" : {
       "localizations" : {
         "en" : {
@@ -8977,6 +9025,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ouvre la fiche de l'auteur"
+          }
+        }
+      }
+    },
+    "Ouvre la fiche du narrateur" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opens the narrator's page"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ouvre la fiche du narrateur"
           }
         }
       }
@@ -14641,6 +14705,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "à lire depuis %lldj"
+          }
+        }
+      }
+    },
+    "à écouter" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "to listen"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "à écouter"
           }
         }
       }

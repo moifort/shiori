@@ -443,6 +443,7 @@ enum FriendsAPI {
         friendBook.book.pageCount = row.pageCount
         friendBook.book.durationMinutes = row.durationMinutes
         friendBook.book.narrators = row.narrators
+        friendBook.book.narratorKeys = row.narratorKeys
         friendBook.book.isbn13 = row.isbn13
         friendBook.book.note = row.note
         friendBook.book.authorKeys = row.authorKeys

@@ -9,6 +9,7 @@ import { DiscoveryCommand } from '~/domain/discovery/command'
 import { EntitlementCommand } from '~/domain/entitlement/command'
 import { FriendshipCommand } from '~/domain/friendship/command'
 import { KindleCommand } from '~/domain/kindle/command'
+import { NarratorCommand } from '~/domain/narrator/command'
 import { NotificationCommand } from '~/domain/notification/command'
 import { QuotaCommand } from '~/domain/quota/command'
 import { SeriesOpinionCommand } from '~/domain/series-opinion/command'
@@ -68,6 +69,7 @@ export namespace UserUseCase {
       KindleCommand.deleteForUser(userId),
       SeriesOpinionCommand.deleteAllForUser(userId),
       AuthorCommand.deleteFavoritesOf(userId),
+      NarratorCommand.deleteFavoritesOf(userId),
       CatalogueCorrectionCommand.deleteAllForUser(userId),
       FriendshipCommand.deleteAllForUser(userId),
       NotificationCommand.deleteForUser(userId),

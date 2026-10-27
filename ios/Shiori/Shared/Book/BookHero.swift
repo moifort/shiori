@@ -23,6 +23,9 @@ struct BookHero<Actions: View>: View {
     /// Opens an author's page from the author line, a chevron after it. Nil
     /// draws the line alone, as where the book came without its authors' keys.
     var onOpenAuthor: ((AuthorDestination) -> Void)? = nil
+    /// Opens a narrator's page from the "Lu par" line, as the author line
+    /// opens an author's. Nil draws the line alone.
+    var onOpenNarrator: ((NarratorDestination) -> Void)? = nil
     var coverWidth: CGFloat = 108
     /// The day a book to come is out, as a calendar leaf on glass in the
     /// corner level with the cover's top, as the saga's release card pins it.
@@ -113,12 +116,7 @@ struct BookHero<Actions: View>: View {
             .foregroundStyle(.white)
             .padding(.trailing, besideLeaf)
             authorLine
-            if let narratorLine = book.narratorLine {
-                Text("Lu par \(narratorLine)")
-                    .font(.caption)
-                    .foregroundStyle(.white.opacity(0.7))
-                    .lineLimit(1)
-            }
+            narratorLine
             detailLine
                 .padding(.top, 5)
         }
@@ -172,6 +170,45 @@ struct BookHero<Actions: View>: View {
             }
         } else {
             line
+        }
+    }
+
+    /// Who reads the recording, and the way to their page, as the author line
+    /// leads to the author's: one narrator opens at once, several offer the
+    /// choice, each by name.
+    @ViewBuilder private var narratorLine: some View {
+        if let narratorLine = book.narratorLine {
+            let line = Text("Lu par \(narratorLine)")
+                .font(.caption)
+                .foregroundStyle(.white.opacity(0.7))
+                .lineLimit(1)
+            let narrators = book.narratorDestinations
+            if let onOpenNarrator, let first = narrators.first {
+                let label = HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    line
+                    Image(systemName: "chevron.right")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(.white.opacity(0.5))
+                        .accessibilityHidden(true)
+                }
+                .contentShape(.rect)
+                if narrators.count == 1 {
+                    Button { onOpenNarrator(first) } label: { label }
+                        .buttonStyle(.plain)
+                        .accessibilityHint(Text("Ouvre la fiche du narrateur"))
+                        .accessibilityIdentifier("book-narrator-link")
+                } else {
+                    Menu {
+                        ForEach(narrators) { narrator in
+                            Button(narrator.name, systemImage: "waveform") { onOpenNarrator(narrator) }
+                        }
+                    } label: { label }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("book-narrator-link")
+                }
+            } else {
+                line
+            }
         }
     }
 
@@ -244,6 +281,13 @@ extension Book {
     var authorDestinations: [AuthorDestination] {
         guard let authorKeys, authorKeys.count == authors.count else { return [] }
         return zip(authorKeys, authors).map { AuthorDestination(key: $0, name: $1) }
+    }
+
+    /// Each narrator with the key of their page, for the hero to open it.
+    /// Empty when the keys did not come with the book, or do not match.
+    var narratorDestinations: [NarratorDestination] {
+        guard let narratorKeys, narratorKeys.count == narrators.count else { return [] }
+        return zip(narratorKeys, narrators).map { NarratorDestination(key: $0, name: $1) }
     }
 }
 

@@ -29,6 +29,7 @@ struct BookScreen: View {
     /// Another volume of the saga, from the row of volumes.
     @State private var openVolume: Book?
     @State private var openAuthor: AuthorDestination?
+    @State private var openNarrator: NarratorDestination?
     @Environment(\.dismiss) private var dismissPresentation
     @Environment(\.detailClosing) private var closing
 
@@ -76,6 +77,7 @@ struct BookScreen: View {
                     },
                     onOpenVolume: { openVolume = $0 },
                     onOpenAuthor: { openAuthor = $0 },
+                    onOpenNarrator: { openNarrator = $0 },
                     awaited: viewModel.offer.awaited,
                     onOpenAwaited: { openAwaited = $0 },
                     onStopAwaiting: { edition in Task { await viewModel.stopAwaiting(edition) } },
@@ -207,6 +209,9 @@ struct BookScreen: View {
         }
         .pushesDetail(item: $openAuthor) { author in
             AuthorScreen(key: author.key, name: author.name)
+        }
+        .pushesDetail(item: $openNarrator) { narrator in
+            NarratorScreen(key: narrator.key, name: narrator.name)
         }
         .alert(
             "Une erreur est survenue",

@@ -20,6 +20,7 @@ import type {
   Synopsis,
 } from '~/domain/book/types'
 import type { KindleAsin } from '~/domain/kindle/types'
+import type { NarratorKey } from '~/domain/narrator/types'
 import type { DeviceToken } from '~/domain/notification/types'
 import type { SeriesDescription, SeriesId, SeriesName, VolumeNumber } from '~/domain/series/types'
 import type {
@@ -72,6 +73,7 @@ export const builder = new SchemaBuilder<{
     Publisher: { Input: Publisher; Output: Publisher }
     Isbn13: { Input: Isbn13; Output: Isbn13 }
     NarratorName: { Input: NarratorName; Output: NarratorName }
+    NarratorKey: { Input: NarratorKey; Output: NarratorKey }
     Subgenre: { Input: Subgenre; Output: Subgenre }
     Synopsis: { Input: Synopsis; Output: Synopsis }
     PageCount: { Input: PageCount; Output: PageCount }

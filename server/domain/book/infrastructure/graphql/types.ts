@@ -23,6 +23,7 @@ import type {
   SeriesMembership,
   ShelfVocabulary,
 } from '~/domain/book/types'
+import { narratorKeyOf } from '~/domain/narrator/primitives'
 import { isHeldVolumeForthcoming } from '~/domain/series/business-rules'
 import { VolumeKindEnum } from '~/domain/series/infrastructure/graphql/enums'
 import { SeriesQuery } from '~/domain/series/query'
@@ -204,6 +205,13 @@ export const BookType = builder.objectRef<BookView>('Book').implement({
         'Who reads the recording, at most five. Empty on anything but an ' +
         'audiobook, and empty on an audiobook no import ever named.',
       resolve: (book) => book.narrators ?? [],
+    }),
+    narratorKeys: t.field({
+      type: ['NarratorKey'],
+      description:
+        'The key of each narrator, in the order of `narrators`: what opens their ' +
+        'page from the book.',
+      resolve: (book) => (book.narrators ?? []).map(narratorKeyOf),
     }),
     pageCount: t.field({
       type: 'PageCount',

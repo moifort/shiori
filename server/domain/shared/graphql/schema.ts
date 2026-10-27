@@ -35,6 +35,9 @@ import '~/domain/series-opinion/infrastructure/graphql/mutations'
 // and series-opinion: an author row shows a saga as the Series tab draws it.
 import '~/domain/author/infrastructure/graphql/queries'
 import '~/domain/author/infrastructure/graphql/mutations'
+// A narrator's page draws sagas as the Series tab does, as an author's does.
+import '~/domain/narrator/infrastructure/graphql/queries'
+import '~/domain/narrator/infrastructure/graphql/mutations'
 
 // The Library tab's entry screen: its rails of books, series and authors. After
 // the three domains it draws.
