@@ -38,10 +38,17 @@ struct BookPage: View {
     /// it changes rather than over it.
     var secondPage: AnyView? = nil
 
-    /// Bumped by "Remarques" when the reader already wrote some: the page
-    /// holding them scrolls to them rather than opening the form again.
-    @State private var noteRequest = 0
+    /// The comment the page holding it scrolls to: the reader's remarks on
+    /// "Remarques" once written, rather than the form again, and a comment
+    /// just written or changed, once its sheet is gone.
+    @State private var commentRequest = CommentRequest(anchor: Self.noteAnchor)
     private static let noteAnchor = "book-note-anchor"
+    private static let recommendationAnchor = "book-recommendation-anchor"
+
+    private struct CommentRequest: Equatable {
+        let anchor: String
+        var count = 0
+    }
 
     var body: some View {
         // On an unfolded iPhone Duo the book takes a page — the hero, its saga,
@@ -77,6 +84,21 @@ struct BookPage: View {
                 }
             }
         }
+        .onChange(of: book.note) { old, new in
+            if new != nil, new != old { revealComment(Self.noteAnchor) }
+        }
+        .onChange(of: book.recommendation) { old, new in
+            if new != nil, new != old { revealComment(Self.recommendationAnchor) }
+        }
+    }
+
+    /// Scrolls to a comment after its sheet has slid away, so the reader sees
+    /// the page move to what they wrote.
+    private func revealComment(_ anchor: String) {
+        Task {
+            try? await Task.sleep(for: .milliseconds(450))
+            commentRequest = CommentRequest(anchor: anchor, count: commentRequest.count + 1)
+        }
     }
 
     // MARK: - Layout
@@ -87,10 +109,10 @@ struct BookPage: View {
             ScrollView {
                 VStack(spacing: 0) { content }
             }
-            // Only the page that holds the remarks has their anchor: on an
+            // Only the page that holds the comments has their anchors: on an
             // unfolded Duo the other one ignores the request.
-            .onChange(of: noteRequest) {
-                withAnimation(.smooth) { proxy.scrollTo(Self.noteAnchor, anchor: .center) }
+            .onChange(of: commentRequest) {
+                withAnimation(.smooth) { proxy.scrollTo(commentRequest.anchor, anchor: .center) }
             }
         }
         .background(Color(.systemGroupedBackground))
@@ -231,7 +253,11 @@ struct BookPage: View {
     /// reader to them; their bubble opens the form.
     private var noteButton: some View {
         Button {
-            if book.note == nil { onEditNote() } else { noteRequest += 1 }
+            if book.note == nil {
+                onEditNote()
+            } else {
+                commentRequest = CommentRequest(anchor: Self.noteAnchor, count: commentRequest.count + 1)
+            }
         } label: {
             HeroButtonLabel(title: "Remarques", systemImage: "text.bubble")
         }
@@ -379,6 +405,7 @@ struct BookPage: View {
                             sender: recommendation.recommenderName ?? String(localized: "Conseillé"),
                             action: onEditRecommendation
                         )
+                        .id(Self.recommendationAnchor)
                         .accessibilityIdentifier("book-recommendation-comment")
                     }
                     if let note = book.note {
