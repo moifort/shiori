@@ -305,7 +305,7 @@ describe('"Coups de cœur" holds every book the reader loved', () => {
 })
 
 describe('the pile in sections', () => {
-  test('reads the library once and the award winners once, whatever the sections', async () => {
+  test('reads the library, the award winners and the hearted narrators once each', async () => {
     await shelve({ title: 'Fondation', days: 9, status: 'read', author: 'Isaac Asimov' })
     await shelve({ title: 'Hypérion', days: 5, status: 'reading', author: 'Dan Simmons' })
     await shelve({ title: 'Dune', days: 1, author: 'Frank Herbert' })
@@ -326,7 +326,8 @@ describe('the pile in sections', () => {
       ['new-authors', ['Dune']],
     ])
     expect(formats).toEqual(['book'])
-    expect(fake.queryReads - before.queries).toBe(2)
+    // The library, the award winners, and the narrators hearted.
+    expect(fake.queryReads - before.queries).toBe(3)
     expect(fake.docReads - before.docs).toBe(0)
   })
 })

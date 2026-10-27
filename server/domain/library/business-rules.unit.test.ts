@@ -4,6 +4,7 @@ import { BookId, NarratorName, StarRating } from '~/domain/book/primitives'
 import type { Book, BookFormat, ReadingStatus } from '~/domain/book/types'
 import { PILE_SECTION_LIMIT, pileFormatsOf, pileSectionsOf } from '~/domain/library/business-rules'
 import type { PileSectionKind } from '~/domain/library/types'
+import { narratorKeyOf } from '~/domain/narrator/primitives'
 import { SagaKey, SeriesName, seriesIdOf, VolumeNumber } from '~/domain/series/primitives'
 import { AuthorName, BookTitle, PersonName, UserId } from '~/domain/shared/primitives'
 
@@ -104,7 +105,7 @@ describe('the pile sections', () => {
     expect(section(books, 'favorite-authors')).toEqual(['Elantris', 'Substance mort'])
   })
 
-  test('offers the recordings read by a favourite narrator', () => {
+  test('offers the recordings read by a narrator the reader hearted, not one they rated', () => {
     const books = [
       book({
         title: 'Leviathan',
@@ -116,7 +117,14 @@ describe('the pile sections', () => {
       book({ title: 'Caliban', format: 'audiobook', narrator: 'Jefferson Mays' }),
       book({ title: 'Silo', format: 'audiobook', narrator: 'Tim Gerard Reynolds' }),
     ]
-    expect(section(books, 'favorite-narrators')).toEqual(['Caliban'])
+    const hearted = new Set([narratorKeyOf(NarratorName('Tim Gerard Reynolds'))])
+
+    expect(
+      pileSectionsOf(books, [], {}, hearted)
+        .find((s) => s.kind === 'favorite-narrators')
+        ?.picks.map((pick) => String(pick.book.title)),
+    ).toEqual(['Silo'])
+    expect(section(books, 'favorite-narrators')).toBeUndefined()
   })
 
   test('finds the award winners, a translation keeping its title included, with the prize', () => {

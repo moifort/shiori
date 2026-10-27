@@ -10,6 +10,7 @@ import {
 import { BOOK_FORMATS, type Book, type BookFormat } from '~/domain/book/types'
 import type { GenreShelf, PilePick, PileSection, ShelvesView } from '~/domain/library/types'
 import { narratorKeyOf } from '~/domain/narrator/primitives'
+import type { NarratorKey } from '~/domain/narrator/types'
 import { slugify } from '~/utils/slug'
 
 /** The most covers a rail of the entry screen draws: a few screens' width, the
@@ -88,6 +89,7 @@ export const pileSectionsOf = <T extends Book>(
   books: readonly T[],
   works: readonly AwardedWork[],
   view: ShelvesView,
+  heartedNarrators: ReadonlySet<NarratorKey> = new Set(),
 ): PileSection<T>[] => {
   const offered = books.filter((book) => inLibraryView(book, view))
   const pile = shelvedOf(offered.filter((book) => book.status === 'to-read'))
@@ -111,7 +113,7 @@ export const pileSectionsOf = <T extends Book>(
       ),
     },
     { kind: 'favorite-authors', picks: picks(byFavoriteAuthors(pile, books)) },
-    { kind: 'favorite-narrators', picks: picks(byFavoriteNarrators(pile, books)) },
+    { kind: 'favorite-narrators', picks: picks(byFavoriteNarrators(pile, heartedNarrators)) },
     { kind: 'awarded', picks: awardedOf(pile, works) },
     { kind: 'new-authors', picks: picks(byNewAuthors(pile, read)) },
   ]
@@ -152,13 +154,13 @@ const byFavoriteAuthors = <T extends Book>(pile: readonly T[], books: readonly B
 }
 
 /** "Narrateurs préférés": the pile's recordings read by a voice the reader
- *  rated a recording of four stars or more, or hearted. */
-const byFavoriteNarrators = <T extends Book>(pile: readonly T[], books: readonly Book[]): T[] => {
-  const favorites = new Set(
-    books.filter(isFavorite).flatMap((book) => book.narrators.map((name) => narratorKeyOf(name))),
-  )
-  return pile.filter((book) => book.narrators.some((name) => favorites.has(narratorKeyOf(name))))
-}
+ *  hearted. Not by the stars their recordings got, as authors are: a voice
+ *  reads every kind of story, the ones the reader dislikes too, so a book
+ *  loved says nothing of its narrator. */
+const byFavoriteNarrators = <T extends Book>(
+  pile: readonly T[],
+  hearted: ReadonlySet<NarratorKey>,
+): T[] => pile.filter((book) => book.narrators.some((name) => hearted.has(narratorKeyOf(name))))
 
 /** "Primés": the pile's books that won one of Découvrir's awards, matched as
  *  a shelf photo is — the same title by an author who agrees — so a

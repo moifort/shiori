@@ -22,6 +22,7 @@ import {
   shelvedInView,
 } from '~/domain/library/business-rules'
 import type { GenreShelf, PileSection, ShelvesView } from '~/domain/library/types'
+import { NarratorQuery } from '~/domain/narrator/query'
 import { type FollowedNarrator, NarratorUseCase } from '~/domain/narrator/use-case'
 import { type FollowedSeries, SeriesUseCase } from '~/domain/series/use-case'
 import { SeriesOpinionQuery } from '~/domain/series-opinion/query'
@@ -166,11 +167,16 @@ export namespace LibraryUseCase {
     userId: UserId,
     view: ShelvesView,
   ): Promise<PileSection<BookView>[]> => {
-    const [books, found] = await Promise.all([BookQuery.all(userId), AwardQuery.foundWinners()])
+    const [books, found, hearted] = await Promise.all([
+      BookQuery.all(userId),
+      AwardQuery.foundWinners(),
+      NarratorQuery.favoriteKeys(userId),
+    ])
     const sections = pileSectionsOf(
       books,
       worksOf(AWARDS, (award) => winnersOf(award, found)),
       view,
+      hearted,
     )
     const offered = [
       ...new Map(sections.flatMap((s) => s.picks.map((p) => [p.book.id, p.book]))).values(),

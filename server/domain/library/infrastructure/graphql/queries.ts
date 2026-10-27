@@ -171,8 +171,8 @@ const PileSectionKindEnum = builder.enumType('PileSectionKind', {
     FAVORITE_NARRATORS: {
       value: 'favorite-narrators',
       description:
-        '"Narrateurs préférés": recordings read by a voice the reader rated a recording of ' +
-        'four stars or more, or hearted.',
+        '"Narrateurs préférés": recordings read by a voice the reader hearted — not one ' +
+        'whose recordings they rated: a narrator reads every kind of story.',
     },
     AWARDED: {
       value: 'awarded',
