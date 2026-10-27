@@ -8,9 +8,23 @@ mock.module('~/domain/scan/bnf', () => ({ bnfEditionsOf: async () => [] }))
 mock.module('~/system/object-store', () => ({
   objectStore: () => ({ downloadUrl: async () => 'https://fake.store/cover' }),
 }))
+/** The narrators the model was asked about, in order. */
+const modelCalls: string[] = []
+/** What the model says of the narrator; `fails` makes it throw. */
+let modelAnswer: Record<string, unknown> | 'fails' = {
+  name: 'Bernard Gabay',
+  nationality: 'Français',
+  birthYear: 1960,
+  deathYear: null,
+  biography: 'Comédien, voix française de Robert Downey Jr.',
+  wikipediaTitle: 'Bernard_Gabay',
+}
 mock.module('~/domain/scan/gemini', () => ({
-  generate: async ({ step }: { step: string }) => {
-    throw new Error(`no model call expected, got "${step}"`)
+  generate: async ({ step, parts }: { step: string; parts: { text: string }[] }) => {
+    if (step !== 'narrator') throw new Error(`no model call expected, got "${step}"`)
+    modelCalls.push(parts[0]?.text.match(/Narrateur : (.+)/)?.[1] ?? '')
+    if (modelAnswer === 'fails') throw new Error('model down')
+    return { value: modelAnswer, usage: undefined }
   },
 }))
 mock.module('~/domain/scan/open-library', () => ({
@@ -18,12 +32,12 @@ mock.module('~/domain/scan/open-library', () => ({
   openLibraryCoverOf: async () => undefined,
   openLibraryCoverByTitle: async () => undefined,
 }))
-/** The names Wikipedia was asked about, in order. */
+/** The names Wikipedia was asked about, in order, with the page the model named. */
 const portraitSearches: string[] = []
 let wikipediaHasFace = true
 mock.module('~/domain/author/infrastructure/wikipedia', () => ({
-  portraitOf: async (name: string) => {
-    portraitSearches.push(name)
+  portraitOf: async (name: string, pageTitle?: string) => {
+    portraitSearches.push(pageTitle ? `${name} (${pageTitle})` : name)
     return wikipediaHasFace ? 'https://upload.wikimedia.org/gabay.jpg' : undefined
   },
 }))
@@ -35,6 +49,15 @@ beforeEach(() => {
   resetFakeFirestore()
   portraitSearches.length = 0
   wikipediaHasFace = true
+  modelCalls.length = 0
+  modelAnswer = {
+    name: 'Bernard Gabay',
+    nationality: 'Français',
+    birthYear: 1960,
+    deathYear: null,
+    biography: 'Comédien, voix française de Robert Downey Jr.',
+    wikipediaTitle: 'Bernard_Gabay',
+  }
 })
 
 const execute = (source: string) => graphql({ schema, source, contextValue: { event: {}, userId } })
@@ -56,6 +79,13 @@ type Page = {
     seriesCount: number
     averageRating: number | null
   }
+  catalogue: {
+    nationality: string | null
+    birthYear: number | null
+    deathYear: number | null
+    biography: string | null
+  } | null
+  awaitingCatalogue: boolean
   sagas: { id: string; name: string }[]
   books: { title: string }[]
 }
@@ -64,6 +94,8 @@ const narratorPage = async (args: string) => {
   const result = await execute(
     `{ narratorPage(${args}) {
       narrator { key name portraitUrl favorite bookCount readCount seriesCount averageRating }
+      catalogue { nationality birthYear deathYear biography }
+      awaitingCatalogue
       sagas { id name }
       books { title }
     } }`,
@@ -107,22 +139,68 @@ describe('a narrator’s page', () => {
     expect(page?.books.map((book) => book.title)).toEqual(['L’Étranger'])
   })
 
-  test('asks Wikipedia once, then reads the stored face', async () => {
+  test('is described by the model on the first opening, then read for everyone', async () => {
     await addBook(
       'title: "Dune", authors: ["Frank Herbert"], format: AUDIOBOOK, narrators: ["Bernard Gabay"]',
     )
+    const first = await narratorPage('key: "bernard-gabay"')
     await narratorPage('key: "bernard-gabay"')
-    await narratorPage('key: "bernard-gabay"')
-    expect(portraitSearches).toEqual(['Bernard Gabay'])
+
+    expect(first?.catalogue).toEqual({
+      nationality: 'Français',
+      birthYear: 1960,
+      deathYear: null,
+      biography: 'Comédien, voix française de Robert Downey Jr.',
+    })
+    expect(first?.awaitingCatalogue).toBe(false)
+    expect(modelCalls).toEqual(['Bernard Gabay'])
+    // On the page the model named.
+    expect(portraitSearches).toEqual(['Bernard Gabay (Bernard_Gabay)'])
   })
 
-  test('remembers a miss rather than asking again at every opening', async () => {
+  test('answers at once without waiting for the model, which the next ask builds', async () => {
+    await addBook(
+      'title: "Dune", authors: ["Frank Herbert"], format: AUDIOBOOK, narrators: ["Bernard Gabay"]',
+    )
+    const quick = await narratorPage('key: "bernard-gabay", waitForCatalogue: false')
+    expect(quick?.awaitingCatalogue).toBe(true)
+    expect(quick?.catalogue).toBeNull()
+    expect(quick?.books.map((book) => book.title)).toEqual(['Dune'])
+    expect(modelCalls).toEqual([])
+
+    const built = await narratorPage('key: "bernard-gabay"')
+    expect(built?.catalogue?.biography).toBe('Comédien, voix française de Robert Downey Jr.')
+    expect(
+      (await narratorPage('key: "bernard-gabay", waitForCatalogue: false'))?.awaitingCatalogue,
+    ).toBe(false)
+  })
+
+  test('remembers a narrator the model knows nothing of, with the face Wikipedia gives', async () => {
+    modelAnswer = { name: 'Bernard Gabay', biography: null, wikipediaTitle: null }
+    await addBook(
+      'title: "Dune", authors: ["Frank Herbert"], format: AUDIOBOOK, narrators: ["Bernard Gabay"]',
+    )
+    const page = await narratorPage('key: "bernard-gabay"')
+    expect(page?.catalogue).toBeNull()
+    expect(page?.narrator.portraitUrl).toBe('https://upload.wikimedia.org/gabay.jpg')
+    expect(
+      (await narratorPage('key: "bernard-gabay", waitForCatalogue: false'))?.awaitingCatalogue,
+    ).toBe(false)
+    expect(modelCalls).toEqual(['Bernard Gabay'])
+  })
+
+  test('still draws the recordings when the model fails, and does not ask again at once', async () => {
+    modelAnswer = 'fails'
     wikipediaHasFace = false
     await addBook(
       'title: "Dune", authors: ["Frank Herbert"], format: AUDIOBOOK, narrators: ["Bernard Gabay"]',
     )
-    expect((await narratorPage('key: "bernard-gabay"'))?.narrator.portraitUrl).toBeNull()
+    const page = await narratorPage('key: "bernard-gabay"')
+    expect(page?.books.map((book) => book.title)).toEqual(['Dune'])
+    expect(page?.catalogue).toBeNull()
+    expect(page?.narrator.portraitUrl).toBeNull()
     await narratorPage('key: "bernard-gabay"')
+    expect(modelCalls).toEqual(['Bernard Gabay'])
     expect(portraitSearches).toEqual(['Bernard Gabay'])
   })
 

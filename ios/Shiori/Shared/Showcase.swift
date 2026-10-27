@@ -274,6 +274,9 @@ enum Showcase {
             id: "\(saga.id)-\(number)",
             title: saga.title(number),
             authors: saga.authors,
+            // Folded as the server keys them: the hero's author line and its
+            // "Lu par" open their pages.
+            authorKeys: saga.authors.map(narratorKey),
             format: saga.format,
             media: saga.media,
             publisher: saga.publisher,
@@ -283,7 +286,6 @@ enum Showcase {
             pageCount: saga.pages,
             durationMinutes: saga.minutes.indices.contains(number - 1) ? saga.minutes[number - 1] : nil,
             narrators: saga.narrators,
-            // Folded as the server keys them: the hero's "Lu par" opens the page.
             narratorKeys: saga.narrators.map(narratorKey),
             listeningProgress: status == .reading ? saga.listeningProgress : nil,
             language: language,
@@ -951,7 +953,13 @@ enum Showcase {
             seriesCount: narrated.count,
             averageRating: rated.isEmpty ? nil : Double(rated.reduce(0, +)) / Double(rated.count),
             sagas: narrated.map(followed),
-            books: heard.filter { $0.series == nil }
+            books: heard.filter { $0.series == nil },
+            nationality: local("Français", "French"),
+            birthYear: 1963,
+            biography: local(
+                "Comédien français, formé au théâtre, il prête sa voix au doublage et aux livres audio depuis les années 1990. Ses lectures de science-fiction, d'Hypérion à Dune, lui ont valu plusieurs prix du livre audio.",
+                "French actor trained on stage, he has voiced dubbing and audiobooks since the 1990s. His science fiction readings, from Hyperion to Dune, won him several audiobook awards."
+            )
         )
     }
 

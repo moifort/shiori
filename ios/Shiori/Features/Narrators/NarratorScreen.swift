@@ -2,6 +2,10 @@ import SwiftUI
 
 /// A narrator's page, connected: `NarratorViewModel` loads and acts on it, this
 /// screen holds the bar and the pushes, and `NarratorDetailPage` draws it.
+///
+/// The first opening, by anyone, has the AI describe the narrator on the
+/// server, portrait included, which takes a few seconds: the reader's
+/// recordings are drawn first, and the pill says the AI is at work.
 struct NarratorScreen: View {
     @Environment(\.dismiss) private var dismissPresentation
     @Environment(\.detailClosing) private var closing
@@ -36,7 +40,10 @@ struct NarratorScreen: View {
             case .refresh: await viewModel.load()
             }
         }
-        .task { await viewModel.load() }
+        .task {
+            await viewModel.load()
+            await viewModel.buildCatalogueIfAwaiting()
+        }
         .pushesDetail(item: $selectedBook) { book in
             BookScreen(
                 bookId: book.id,
@@ -74,6 +81,8 @@ struct NarratorScreen: View {
                 }
             }
         }
+        // The AI at work, said by a pill floating over the page.
+        .generatingPill(viewModel.isCataloguing)
         .alert(
             "Une erreur est survenue",
             isPresented: .init(

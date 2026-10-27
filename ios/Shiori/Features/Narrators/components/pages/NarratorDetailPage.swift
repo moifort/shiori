@@ -9,7 +9,8 @@ enum NarratorAction {
 }
 
 /// A narrator's page, drawn as an author's is: their round portrait over their
-/// first cover blurred, the name, their figures, then the sagas heard in their
+/// first cover blurred, the name, where they come from and when they were
+/// born, three lines of biography, their figures, then the sagas heard in their
 /// voice as the cards of "Toutes les séries" and their other recordings — each
 /// opened to be rated, as anywhere else.
 struct NarratorDetailPage: View {
@@ -85,11 +86,15 @@ struct NarratorDetailPage: View {
                     .font(.title.weight(.bold))
                     .multilineTextAlignment(.center)
                     .copyable(page.name)
-                Label("Narration", systemImage: "waveform")
+                Label(origin(page) ?? String(localized: "Narration"), systemImage: "waveform")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
             .padding(.horizontal, 20)
+            if let biography = page.biography {
+                PersonBiography(text: biography)
+                    .padding(.horizontal, 20)
+            }
             if page.bookCount > 0 {
                 figures(page)
                     .padding(.horizontal, 20)
@@ -101,6 +106,12 @@ struct NarratorDetailPage: View {
             CoverBackdrop(url: page.backdropURL, fadeHeight: 240, ground: Color(.systemGroupedBackground))
                 .frame(height: 600)
         }
+    }
+
+    /// "Narration · Français · 1960": the voice first, then who they are.
+    private func origin(_ page: NarratorPage) -> String? {
+        PersonBiography.origin(nationality: page.nationality, birthYear: page.birthYear, deathYear: page.deathYear)
+            .map { String(localized: "Narration · \($0)") }
     }
 
     /// The narrator's figures, spread across the width: listened, on the pile,

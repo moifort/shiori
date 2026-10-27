@@ -19,7 +19,7 @@ import {
   Synopsis,
 } from '~/domain/book/primitives'
 import { KindleAsin } from '~/domain/kindle/primitives'
-import { NarratorKey } from '~/domain/narrator/primitives'
+import { NarratorBiography, NarratorKey } from '~/domain/narrator/primitives'
 import { DeviceToken } from '~/domain/notification/primitives'
 import { SeriesDescription, SeriesId, SeriesName, VolumeNumber } from '~/domain/series/primitives'
 import {
@@ -167,6 +167,15 @@ builder.scalarType('NarratorKey', {
     'dropped, punctuation collapsed. Derived, never typed. Example: "bernard-gabay".',
   serialize: (value) => value as string,
   parseValue: validatedParse('NarratorKey', NarratorKey),
+})
+
+builder.scalarType('NarratorBiography', {
+  description:
+    'A few sentences on who a narrator is — the actor or the voice, and what made ' +
+    'their name — 1 to 2000 characters, written in the language of whoever opened ' +
+    'their page first.',
+  serialize: (value) => value as string,
+  parseValue: validatedParse('NarratorBiography', NarratorBiography),
 })
 
 builder.scalarType('Subgenre', {

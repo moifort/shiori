@@ -1,7 +1,7 @@
-import { shelvedPeopleOf } from '~/domain/author/business-rules'
+import { PORTRAIT_RETRY_DAYS, shelvedPeopleOf } from '~/domain/author/business-rules'
 import type { BookFormat, NarratorName } from '~/domain/book/types'
 import { narratorKeyOf } from '~/domain/narrator/primitives'
-import type { NarratorKey, ShelvedNarrator } from '~/domain/narrator/types'
+import type { Narrator, NarratorKey, ShelvedNarrator } from '~/domain/narrator/types'
 import type { SagaKey } from '~/domain/series/types'
 import { Count } from '~/domain/shared/primitives'
 
@@ -45,3 +45,13 @@ export const unshelvedNarratorOf = <Book>(
   narratorKeyOf(name) === key
     ? { key, name, books: [], seriesIds: [], shelvedAt: now, favoriteCount: Count(0) }
     : null
+
+/** Whether the model is to be asked who a narrator is: never once described,
+ *  and not a month after it failed on them — every opening would otherwise
+ *  wait on the same grounded call. */
+export const isWorthDescribing = (known: Narrator | null, now: Date): boolean => {
+  if (!known) return true
+  if (known.cataloguedAt) return false
+  if (!known.missedAt) return true
+  return now.getTime() - known.missedAt.getTime() >= PORTRAIT_RETRY_DAYS * 86_400_000
+}

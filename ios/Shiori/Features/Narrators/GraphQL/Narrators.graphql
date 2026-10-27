@@ -1,10 +1,14 @@
-# Everything a narrator's page draws, in one request: the reader's recordings in
-# their voice, the sagas as the Series tab draws them, the rest with everything
-# their row shows. Free on the server — Wikipedia alone is asked for the face,
-# the first time anybody opens it. `offered` names a narrator of a friend's
-# recording whom the reader may hold nothing of.
-query NarratorPage($key: NarratorKey!, $offered: NarratorName) {
-  narratorPage(key: $key, offered: $offered) {
+# Everything a narrator's page draws, in one request: who they are, the
+# reader's recordings in their voice, the sagas as the Series tab draws them,
+# the rest with everything their row shows. The first opening, by anyone,
+# builds the narrator's shared catalogue — a web-grounded model call and a
+# Wikipedia lookup for the face. `waitForCatalogue: false` answers at once for
+# a narrator nobody described, `awaitingCatalogue` set; the screen then asks
+# again with true while the recordings are on screen. `offered` names a
+# narrator of a friend's recording whom the reader may hold nothing of.
+query NarratorPage($key: NarratorKey!, $offered: NarratorName, $waitForCatalogue: Boolean!) {
+  narratorPage(key: $key, offered: $offered, waitForCatalogue: $waitForCatalogue) {
+    awaitingCatalogue
     narrator {
       key
       name
@@ -14,6 +18,12 @@ query NarratorPage($key: NarratorKey!, $offered: NarratorName) {
       readCount
       seriesCount
       averageRating
+    }
+    catalogue {
+      nationality
+      birthYear
+      deathYear
+      biography
     }
     sagas {
       ...FollowedSeriesRow

@@ -10,6 +10,9 @@ final class NarratorViewModel {
     private(set) var page: NarratorPage?
     private(set) var isLoading = true
     var errorMessage: String?
+    /// The AI is describing a narrator nobody had: the reader's recordings are
+    /// on screen meanwhile, and every action at hand.
+    private(set) var isCataloguing = false
 
     private let client: NarratorsClient
 
@@ -33,6 +36,21 @@ final class NarratorViewModel {
         } catch {
             guard !isCancellation(error) else { return }
             errorMessage = reportError(error)
+        }
+    }
+
+    /// Builds the catalogue of a narrator the page found awaiting one: the
+    /// recordings stay on screen while the AI writes it, then it slides in.
+    func buildCatalogueIfAwaiting() async {
+        guard page?.isAwaitingCatalogue == true, !isCataloguing else { return }
+        isCataloguing = true
+        defer { isCataloguing = false }
+        do {
+            let built = try await client.catalogue(key, name)
+            withAnimation(.smooth) { if let built { page = built } }
+        } catch {
+            guard !isCancellation(error) else { return }
+            _ = reportError(error)
         }
     }
 

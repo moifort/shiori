@@ -8229,6 +8229,22 @@
         }
       }
     },
+    "Narration · %@" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Narration · %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Narrator · %@"
+          }
+        }
+      }
+    },
     "Nationalité" : {
       "localizations" : {
         "en" : {

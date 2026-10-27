@@ -3166,6 +3166,21 @@ type Mutation {
 }
 
 """
+What the world knows of a narrator, shared by every reader and built the first time somebody opens their page. Holds nothing of any reader.
+"""
+type Narrator {
+  biography: NarratorBiography
+  birthYear: Year
+  deathYear: Year
+  nationality: Nationality
+}
+
+"""
+A few sentences on who a narrator is — the actor or the voice, and what made their name — 1 to 2000 characters, written in the language of whoever opened their page first.
+"""
+scalar NarratorBiography
+
+"""
 A narrator as the library folds their name, as an author is: diacritics dropped, punctuation collapsed. Derived, never typed. Example: "bernard-gabay".
 """
 scalar NarratorKey
@@ -3178,9 +3193,19 @@ scalar NarratorName
 """Everything a narrator’s page draws, in one answer."""
 type NarratorPage {
   """
+  Answered to `narratorPage(waitForCatalogue: false)` when nobody has described the narrator yet: `catalogue` is null and the page shows the reader’s recordings. The app asks `narratorPage` again with the default, which builds it.
+  """
+  awaitingCatalogue: Boolean!
+
+  """
   The reader’s recordings of theirs outside any saga, listened ones first.
   """
   books: [Book!]!
+
+  """
+  Null when nobody has described the narrator yet, or the model could not: the page still shows the reader’s recordings. A miss is asked about again a month on.
+  """
+  catalogue: Narrator
   narrator: FollowedNarrator!
 
   """
@@ -3820,7 +3845,7 @@ type Query {
   myShelf: FriendProfile!
 
   """
-  One narrator’s page: the reader’s recordings in their voice, grouped by saga. Free — no model call: Wikipedia is asked for the portrait the first time anybody opens it, and again a month after a miss. Null when the reader holds no recording of theirs and no `offered` names them.
+  One narrator’s page: the reader’s recordings in their voice, grouped by saga, and who they are. Built on first sight when nobody has opened it yet: one web-grounded model call for the facts and the biography, in the language of `Accept-Language`, and Wikipedia for the portrait. That first opening takes a few seconds; every later one, by anyone, reads the stored catalogue. Null when the reader holds no recording of theirs and no `offered` names them.
   """
   narratorPage(
     key: NarratorKey!
@@ -3829,6 +3854,11 @@ type Query {
     The narrator as a friend’s recording names them, for one the reader holds nothing of. Ignored unless it folds into `key`.
     """
     offered: NarratorName
+
+    """
+    False answers at once when nobody has described the narrator: the reader’s recordings with `awaitingCatalogue` set, and no model call. The app draws them, then asks again with the default to build the catalogue.
+    """
+    waitForCatalogue: Boolean = true
   ): NarratorPage
 
   """The alerts the reader switched on, for the settings screen."""

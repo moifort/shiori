@@ -2,14 +2,19 @@ import Foundation
 
 enum NarratorsAPI {
     /// A narrator's page. Nil when the reader holds no recording of theirs,
-    /// unless `offered` names them.
-    static func page(key: String, offered: String?) async throws -> NarratorPage? {
+    /// unless `offered` names them. `waitForCatalogue` false answers at once
+    /// for a narrator nobody described, the AI not asked yet.
+    static func page(key: String, offered: String?, waitForCatalogue: Bool = false) async throws -> NarratorPage? {
         #if DEBUG
         if Showcase.isOn { return Showcase.narratorPage(key: key) }
         #endif
         let data = try await GraphQLHelpers.fetch(
             GraphQLClient.shared.apollo,
-            query: ShioriGraphQL.NarratorPageQuery(key: key, offered: offered.map { .some($0) } ?? .none)
+            query: ShioriGraphQL.NarratorPageQuery(
+                key: key,
+                offered: offered.map { .some($0) } ?? .none,
+                waitForCatalogue: waitForCatalogue
+            )
         )
         return data.narratorPage.map(NarratorPage.init(page:))
     }
@@ -46,7 +51,12 @@ private extension NarratorPage {
                     catalogue: saga.catalogue?.fragments.catalogueSpine
                 )
             },
-            books: page.books.map { $0.fragments.bookSummary.asBook }
+            books: page.books.map { $0.fragments.bookSummary.asBook },
+            nationality: page.catalogue?.nationality,
+            birthYear: page.catalogue?.birthYear,
+            deathYear: page.catalogue?.deathYear,
+            biography: page.catalogue?.biography,
+            isAwaitingCatalogue: page.awaitingCatalogue
         )
     }
 }

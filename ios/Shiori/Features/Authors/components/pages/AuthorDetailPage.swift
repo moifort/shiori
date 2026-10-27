@@ -24,10 +24,7 @@ struct AuthorDetailPage: View {
     let errorMessage: String?
     let onAction: (AuthorAction) async -> Void
 
-    @State private var showsWholeBiography = false
-
     private static let portraitSize: CGFloat = 160
-    private static var more: Text { Text("PLUS").font(.callout.weight(.bold)) }
     /// Fewer and a second row would stand half empty.
     private static let twoRowsFrom = 6
 
@@ -93,40 +90,8 @@ struct AuthorDetailPage: View {
             }
             .padding(.horizontal, 20)
             if let biography = page.biography {
-                Button { withAnimation(.smooth) { showsWholeBiography.toggle() } } label: {
-                    Text(biography)
-                        .font(.callout)
-                        .foregroundStyle(.primary.opacity(0.85))
-                        .lineLimit(showsWholeBiography ? nil : 3)
-                        .multilineTextAlignment(.leading)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        // The last line fades out where PLUS sits rather than
-                        // under a patch of the page's colour: the cover's
-                        // colours run under the biography.
-                        .mask {
-                            Color.black
-                                .overlay(alignment: .bottomTrailing) {
-                                    if !showsWholeBiography {
-                                        HStack(spacing: 0) {
-                                            LinearGradient(colors: [.clear, .black], startPoint: .leading, endPoint: .trailing)
-                                                .frame(width: 24)
-                                            Self.more.opacity(0).padding(.leading, 6).background(.black)
-                                        }
-                                        .fixedSize()
-                                        .blendMode(.destinationOut)
-                                    }
-                                }
-                                .compositingGroup()
-                        }
-                        .overlay(alignment: .bottomTrailing) {
-                            if !showsWholeBiography {
-                                Self.more.foregroundStyle(.secondary)
-                            }
-                        }
-                        .contentShape(.rect)
-                }
-                .buttonStyle(.plain)
-                .padding(.horizontal, 20)
+                PersonBiography(text: biography)
+                    .padding(.horizontal, 20)
             }
             figures(page)
                 .padding(.horizontal, 20)
@@ -141,17 +106,8 @@ struct AuthorDetailPage: View {
         }
     }
 
-    /// "Américain · 1975", "Française · 1903 – 1987". The year alone rather
-    /// than "né en": the word would have to agree with an author the app does
-    /// not know the gender of.
     private func origin(_ page: AuthorPage) -> String? {
-        let years: String? = switch (page.birthYear, page.deathYear) {
-        case let (born?, died?): "\(String(born)) – \(String(died))"
-        case let (born?, nil): String(born)
-        default: nil
-        }
-        let parts = [page.nationality, years].compactMap(\.self)
-        return parts.isEmpty ? nil : parts.joined(separator: " · ")
+        PersonBiography.origin(nationality: page.nationality, birthYear: page.birthYear, deathYear: page.deathYear)
     }
 
     /// The author's figures, spread across the width: read, on the pile, the

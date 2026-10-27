@@ -1,13 +1,17 @@
 import type { Brand } from 'ts-brand'
-import type { PortraitUrl } from '~/domain/author/types'
+import type { Nationality, PortraitUrl } from '~/domain/author/types'
 import type { NarratorName } from '~/domain/book/types'
 import type { SagaKey } from '~/domain/series/types'
-import type { Count, UserId } from '~/domain/shared/types'
+import type { Count, UserId, Year } from '~/domain/shared/types'
 
 /** A narrator as the reader's recordings name them, folded as an author is —
  *  diacritics dropped, punctuation collapsed — so "Frédéric Kneip" and
  *  "Frederic Kneip" meet. Derived, never typed. */
 export type NarratorKey = Brand<string, 'NarratorKey'>
+
+/** A few sentences on who a narrator is: the actor or the voice, and what
+ *  made their name. */
+export type NarratorBiography = Brand<string, 'NarratorBiography'>
 
 /** A narrator the reader holds at least one recording of. Derived per request
  *  from the books and the saga opinions, never stored, as an author is.
@@ -31,17 +35,28 @@ export type ShelvedNarrator<Book> = {
   averageRating?: number
 }
 
-/** What the world knows of a narrator: their face, at `narrators/{key}`,
- *  shared by every reader and holding no reference to any. No model call
- *  builds it: Wikipedia is asked for the portrait, by name, the first time
- *  somebody opens the narrator's page. Never exposed through library sharing. */
+/** What the world knows of a narrator, at `narrators/{key}`, shared by every
+ *  reader and holding no reference to any. Built as an author's catalogue is,
+ *  the first time somebody opens the narrator's page: one grounded call for
+ *  who they are, then Wikipedia for their face, on the page the model named.
+ *  Never exposed through library sharing. */
 export type Narrator = {
   key: NarratorKey
   name: NarratorName
+  nationality?: Nationality
+  birthYear?: Year
+  deathYear?: Year
+  biography?: NarratorBiography
   portraitUrl?: PortraitUrl
   /** When Wikipedia was last asked for a portrait it did not have. Absent once
    *  one is found. */
   portraitSoughtAt?: Date
+  /** When the model described them. Absent on an entry holding the portrait
+   *  alone, which the next opening asks the model about. */
+  cataloguedAt?: Date
+  /** When the model last failed or knew nothing of them: no opening asks
+   *  again for a month. Absent once they are described. */
+  missedAt?: Date
 }
 
 /** A narrator the reader hearted: theirs alone, never shared. Absent when they
