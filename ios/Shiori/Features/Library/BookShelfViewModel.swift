@@ -4,7 +4,8 @@ import SwiftUI
 /// Owns one shelf of the Library tab opened from its rail — "Récemment", the
 /// pile, the books read, the favourites, the books given up on, every book —
 /// loaded by pages, with its pills: the statuses over "Récemment", by date or
-/// by genre over the books read and the favourites, the formats elsewhere.
+/// by genre over the favourites, none over the books read, the formats
+/// elsewhere.
 @MainActor
 @Observable
 final class BookShelfViewModel {
@@ -38,7 +39,7 @@ final class BookShelfViewModel {
     /// shelf opened under a format already chosen is handed the opener's,
     /// since its pages hold that format alone.
     private(set) var formats: [BookFormat] = []
-    /// How the books read and the favourites are cut: by date, or by genre.
+    /// How the favourites are cut: by date, or by genre.
     private(set) var grouping: ShelfGrouping = .date
 
     private var loaded = false
@@ -58,22 +59,23 @@ final class BookShelfViewModel {
     private var prefetchThreshold: Int { shelf == .all ? 42 : 12 }
 
     /// The pills over the grid: the statuses over "Récemment", the groupings
-    /// over the books read and the favourites — whose formats the Library tab
-    /// already chooses above them — otherwise the formats, shown only when
-    /// there are two to choose from.
+    /// over the favourites, none over the books read — whose formats the
+    /// Library tab already chooses above them, as the favourites' — otherwise
+    /// the formats, shown only when there are two to choose from.
     var statusPills: [ReadingStatus] {
         shelf == .recent ? [.toRead, .reading, .read] : []
     }
 
     var groupingPills: [ShelfGrouping] {
-        Self.groupedShelves.contains(shelf) ? ShelfGrouping.allCases : []
+        shelf == .loved ? ShelfGrouping.allCases : []
     }
 
     var shownFormats: [BookFormat] {
-        shelf != .recent && !Self.groupedShelves.contains(shelf) && formats.count > 1 ? formats : []
+        shelf != .recent && !Self.formatsAbove.contains(shelf) && formats.count > 1 ? formats : []
     }
 
-    private static let groupedShelves: Set<BookShelf> = [.read, .loved]
+    /// The shelves whose formats the Library tab's own pills already choose.
+    private static let formatsAbove: Set<BookShelf> = [.read, .loved]
 
     /// By genre, every page is loaded: a genre's heading must not grow, nor a
     /// new one appear above, as the grid scrolls.

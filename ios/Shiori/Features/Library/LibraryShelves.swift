@@ -102,8 +102,8 @@ struct ShelfQuery: Hashable, Sendable {
     var favorite: Bool { shelf == .loved }
 }
 
-/// How the books read and the favourites are cut under their headings: by the
-/// date they were shelved, or by genre.
+/// How the favourites are cut under their headings: by the date they were
+/// shelved, or by genre.
 enum ShelfGrouping: String, CaseIterable, Sendable {
     case date, genre
 

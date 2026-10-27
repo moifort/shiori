@@ -25,7 +25,7 @@ struct BookShelfPage: View {
     let sections: [ListSection<Book>]
     var lovedSeries: [FollowedSeries] = []
     /// The pills: the statuses over "Récemment", by date or by genre over the
-    /// books read and the favourites, else the formats held.
+    /// favourites, else the formats held.
     var statuses: [ReadingStatus] = []
     var selectedStatus: ReadingStatus?
     var groupings: [ShelfGrouping] = []
@@ -223,10 +223,10 @@ extension ReadingStatus {
     }
 }
 
-#Preview("Read by genre") {
+#Preview("Loved by genre") {
     NavigationStack {
         BookShelfPage(
-            shelf: .read,
+            shelf: .loved,
             sections: ListSection.byGenre(Showcase.shelved),
             groupings: ShelfGrouping.allCases,
             selectedGrouping: .genre,

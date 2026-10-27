@@ -223,7 +223,7 @@ struct BookShelfViewModelTests {
         #expect(viewModel.books.isEmpty)
     }
 
-    @Test func theBooksReadAreCutByGenreOrByDateWithoutFormatPills() async {
+    @Test func theFavouritesAreCutByGenreOrByDateWithoutFormatPills() async {
         var dune = book("dune", .read, shelved: 0)
         dune.genre = .scienceFiction
         dune.format = .manga
@@ -232,7 +232,7 @@ struct BookShelfViewModelTests {
         var hyperion = book("hyperion", .read, shelved: 2)
         hyperion.genre = .scienceFiction
         let untagged = book("untagged", .read, shelved: 3)
-        let viewModel = BookShelfViewModel(client: serving([dune, hobbit, hyperion, untagged]), shelf: .read, now: { now })
+        let viewModel = BookShelfViewModel(client: serving([dune, hobbit, hyperion, untagged]), shelf: .loved, now: { now })
         await viewModel.load()
 
         #expect(viewModel.shownFormats.isEmpty)
@@ -244,6 +244,18 @@ struct BookShelfViewModelTests {
             BookGenre.scienceFiction.label, BookGenre.fantasy.label, String(localized: "Sans genre"),
         ])
         #expect(viewModel.sections[0].rows.map(\.id) == ["dune", "hyperion"])
+    }
+
+    @Test func theBooksReadHaveNoPills() async {
+        var manga = book("m", .read, shelved: 1)
+        manga.format = .manga
+        let viewModel = BookShelfViewModel(client: serving([book("a", .read, shelved: 0), manga]), shelf: .read, now: { now })
+
+        await viewModel.load()
+
+        #expect(viewModel.groupingPills.isEmpty)
+        #expect(viewModel.shownFormats.isEmpty)
+        #expect(viewModel.statusPills.isEmpty)
     }
 
     @Test func formatPillsShowOnlyWithTwoFormats() async {
