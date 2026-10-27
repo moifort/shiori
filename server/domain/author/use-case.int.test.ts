@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, mock, test } from 'bun:test'
+import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test'
+import * as Sentry from '@sentry/node'
 import type { UserId } from '~/domain/shared/types'
 import { fakeDb, resetFakeFirestore, startFakeRequest } from '~/test/fake-firestore'
 
@@ -20,14 +21,14 @@ mock.module('~/domain/scan/gemini', () => ({
 /** Open Library's covers by original title; the titles it was asked for, in order. */
 const covers: Record<string, string> = {}
 const coverSearches: string[] = []
-/** Set, Open Library times out on every search. */
-let openLibraryDown = false
+/** Set, every Open Library search fails with it. */
+let openLibraryFailure: Error | undefined
 mock.module('~/domain/scan/open-library', () => ({
   openLibraryIsbnsOf: async () => [],
   openLibraryCoverOf: async () => undefined,
   openLibraryCoverByTitle: async (title: string) => {
     coverSearches.push(title)
-    if (openLibraryDown) throw new Error('The operation was aborted due to timeout')
+    if (openLibraryFailure) throw openLibraryFailure
     return covers[title]
   },
 }))
@@ -65,12 +66,19 @@ const reader = 'reader-1' as UserId
 
 let fake = resetFakeFirestore()
 
+/** What the platform throws when a fetch's `AbortSignal.timeout` runs out. */
+const timedOut = () => new DOMException('The operation was aborted due to timeout', 'TimeoutError')
+
+afterEach(() => {
+  ;(Sentry.captureException as unknown as { mockRestore?: () => void }).mockRestore?.()
+})
+
 beforeEach(() => {
   fake = resetFakeFirestore()
   answers = []
   calls.length = 0
   coverSearches.length = 0
-  openLibraryDown = false
+  openLibraryFailure = undefined
   faceless.clear()
   portraitSearches.length = 0
   for (const title of Object.keys(covers)) delete covers[title]
@@ -353,7 +361,7 @@ describe('an author’s page', () => {
   // one failed, the rest of the bibliography keeps the placeholder unasked.
   test('stops asking Open Library at its first failure, and builds the page anyway', async () => {
     await holdSanderson()
-    openLibraryDown = true
+    openLibraryFailure = timedOut()
     const books = Array.from({ length: 12 }, (_, index) => ({
       title: `Livre ${index}`,
       originalTitle: `Book ${index}`,
@@ -365,6 +373,34 @@ describe('an author’s page', () => {
     expect(coverSearches).toHaveLength(5)
     expect(page?.catalogue?.books).toHaveLength(12)
     expect(page?.catalogue?.books.every((work) => work.coverUrl === undefined)).toBe(true)
+  })
+
+  // The cutoff is three seconds, past which the bibliography keeps its
+  // placeholders: running out of time is the design working, nothing to fix.
+  test('reports Open Library running out of time to no one', async () => {
+    await holdSanderson()
+    openLibraryFailure = timedOut()
+    answers = [{ ...sanderson, series: [], books: [{ title: 'Livre', originalTitle: 'Book' }] }]
+    const reports = spyOn(Sentry, 'captureException')
+
+    await AuthorUseCase.page(reader, authorKeyOf('Brandon Sanderson'), 'fr')
+
+    expect(reports).not.toHaveBeenCalled()
+  })
+
+  test('reports Open Library failing for any other reason, once', async () => {
+    await holdSanderson()
+    openLibraryFailure = new Error('Open Library title search answered 503')
+    const books = Array.from({ length: 12 }, (_, index) => ({
+      title: `Livre ${index}`,
+      originalTitle: `Book ${index}`,
+    }))
+    answers = [{ ...sanderson, series: [], books }]
+    const reports = spyOn(Sentry, 'captureException')
+
+    await AuthorUseCase.page(reader, authorKeyOf('Brandon Sanderson'), 'fr')
+
+    expect(reports).toHaveBeenCalledTimes(1)
   })
 
   test('sets what the reader holds apart from what they could add', async () => {

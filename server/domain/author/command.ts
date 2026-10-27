@@ -24,6 +24,7 @@ import type { Language } from '~/domain/shared/language'
 import { AuthorName, BookTitle, Year } from '~/domain/shared/primitives'
 import type { AuthorName as AuthorNameValue, UserId } from '~/domain/shared/types'
 import { createLogger } from '~/system/logger'
+import { isTimeout } from '~/utils/fetch'
 import { isPresent, optionally } from '~/utils/input'
 
 const logger = createLogger('author')
@@ -222,10 +223,14 @@ export namespace AuthorCommand {
       const failure = found.find((result) => result.status === 'rejected')
       if (failure && !lookup.unreachable) {
         lookup.unreachable = true
-        logger.warn('Open Library title search failed', {
-          error: failure.reason,
-          author: lookup.author,
-        })
+        // Running out of time is the cutoff doing its job, not a failure to look into.
+        if (isTimeout(failure.reason))
+          logger.info('Open Library title search timed out', { author: lookup.author })
+        else
+          logger.warn('Open Library title search failed', {
+            error: failure.reason,
+            author: lookup.author,
+          })
       }
       covered.push(
         ...slice.map(({ entry }, index) => {
