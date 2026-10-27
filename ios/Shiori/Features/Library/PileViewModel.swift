@@ -9,13 +9,12 @@ import SwiftUI
 final class PileViewModel {
     /// - Parameters:
     ///   - view: the view it was opened in, a genre page's or the format the
-    ///     entry screen was narrowed to; a format chosen there offers no pills.
+    ///     entry screen was narrowed to, which its pill shows chosen.
     ///   - caching: off in tests, which must neither read nor leave a snapshot.
     init(client: LibraryClient, view: ShelvesView = ShelvesView(), caching: Bool = true) {
         self.client = client
         self.caching = caching
         self.view = view
-        formatPills = view.format == nil
         let pile = Self.cache(for: view, caching: caching)?.read() ?? Pile()
         self.pile = pile
         formats = pile.formats
@@ -23,7 +22,6 @@ final class PileViewModel {
 
     private let client: LibraryClient
     private let caching: Bool
-    private let formatPills: Bool
 
     private(set) var pile: Pile
     private(set) var view: ShelvesView
@@ -38,7 +36,7 @@ final class PileViewModel {
 
     /// The format pills, shown only when there are two to choose from.
     var shownFormats: [BookFormat] {
-        formatPills && formats.count > 1 ? formats : []
+        formats.count > 1 ? formats : []
     }
 
     private static func cache(for view: ShelvesView, caching: Bool) -> SnapshotCache<Pile>? {

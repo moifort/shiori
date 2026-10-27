@@ -13,12 +13,13 @@ final class BookShelfViewModel {
         shelf: BookShelf,
         view: ShelvesView = ShelvesView(),
         status: ReadingStatus? = nil,
+        formats: [BookFormat] = [],
         now: @escaping @Sendable () -> Date = { .now }
     ) {
         self.client = client
         self.now = now
         query = ShelfQuery(shelf: shelf, view: view, status: status)
-        formatPills = view.format == nil
+        self.formats = formats
     }
 
     private let client: LibraryClient
@@ -33,10 +34,10 @@ final class BookShelfViewModel {
     private(set) var hasMore = false
     private(set) var isLoadingMore = false
     private(set) var loadMoreFailed = false
-    /// The formats the shelf holds, kept from its first page: the pills.
+    /// The formats the shelf holds, kept from its first page: the pills. A
+    /// shelf opened under a format already chosen is handed the opener's,
+    /// since its pages hold that format alone.
     private(set) var formats: [BookFormat] = []
-    /// A shelf opened under a format already chosen offers no format pills.
-    private let formatPills: Bool
 
     private var loaded = false
     private var generation = 0
@@ -58,7 +59,7 @@ final class BookShelfViewModel {
     }
 
     var shownFormats: [BookFormat] {
-        formatPills && shelf != .recent && formats.count > 1 ? formats : []
+        shelf != .recent && formats.count > 1 ? formats : []
     }
 
     /// The books cut under the shelf's headings.

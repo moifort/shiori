@@ -206,4 +206,21 @@ struct BookShelfViewModelTests {
 
         #expect(viewModel.shownFormats == [.book, .manga])
     }
+
+    @Test func aFormatChosenBeforeOffersTheOpenersPills() async {
+        var manga = book("m", .toRead, shelved: 1)
+        manga.format = .manga
+        let viewModel = BookShelfViewModel(
+            client: serving([manga]),
+            shelf: .toRead,
+            view: ShelvesView(format: .manga),
+            formats: [.book, .manga],
+            now: { now }
+        )
+
+        await viewModel.load()
+
+        #expect(viewModel.shownFormats == [.book, .manga])
+        #expect(viewModel.query.view.format == .manga)
+    }
 }

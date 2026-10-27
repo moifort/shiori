@@ -64,7 +64,8 @@ struct LibraryShelvesScreen: View {
         ) { action in
             switch action {
             case let .openBook(book): destination = .book(book)
-            case let .openShelf(shelf): destination = .shelf(shelf, viewModel.view)
+            case let .openShelf(shelf):
+                destination = .shelf(shelf, viewModel.view, formats: viewModel.formats)
             case .openSeriesShelf: destination = .seriesShelf()
             case let .openSeries(series): destination = .series(series.seriesId)
             case .openAuthors: destination = .authors

@@ -4,7 +4,8 @@ import SwiftUI
 /// authors, the narrators, a genre page. Each pushed screen pushes the next one on its own.
 enum LibraryDestination: Identifiable, Hashable {
     case book(Book)
-    case shelf(BookShelf, ShelvesView = ShelvesView(), status: ReadingStatus? = nil)
+    /// The formats are the opener's pills, offered again over the shelf.
+    case shelf(BookShelf, ShelvesView = ShelvesView(), status: ReadingStatus? = nil, formats: [BookFormat] = [])
     /// "Toute la pile", opened from the bottom of the pile.
     case wholePile(ShelvesView)
     case seriesShelf(SeriesShelfFilter = .all)
@@ -19,7 +20,7 @@ enum LibraryDestination: Identifiable, Hashable {
     var id: String {
         switch self {
         case let .book(book): "book-\(book.id)"
-        case let .shelf(shelf, view, status): "shelf-\(shelf.rawValue)-\(view.cacheKey)-\(status?.rawValue ?? "")"
+        case let .shelf(shelf, view, status, _): "shelf-\(shelf.rawValue)-\(view.cacheKey)-\(status?.rawValue ?? "")"
         case let .wholePile(view): "whole-pile-\(view.cacheKey)"
         case let .seriesShelf(filter): "series-shelf-\(filter.rawValue)"
         case .setAsideSeries: "series-set-aside"
@@ -55,14 +56,14 @@ struct LibraryDestinationScreen: View {
         switch destination {
         case let .book(book):
             BookScreen(bookId: book.id)
-        case let .shelf(.all, view, _):
-            BookMosaicScreen(view: view, client: client)
-        case let .shelf(.toRead, view, _):
+        case let .shelf(.all, view, _, formats):
+            BookMosaicScreen(view: view, formats: formats, client: client)
+        case let .shelf(.toRead, view, _, _):
             PileScreen(view: view, client: client)
         case let .wholePile(view):
             WholePileScreen(view: view, client: client)
-        case let .shelf(shelf, view, status):
-            BookShelfScreen(shelf: shelf, view: view, status: status, client: client)
+        case let .shelf(shelf, view, status, formats):
+            BookShelfScreen(shelf: shelf, view: view, status: status, formats: formats, client: client)
         case let .seriesShelf(filter):
             SeriesShelfScreen(filter: filter)
         case .setAsideSeries:

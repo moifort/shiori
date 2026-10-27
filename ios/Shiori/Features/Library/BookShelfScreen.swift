@@ -13,10 +13,18 @@ struct BookShelfScreen: View {
     @State private var shareText: SharedText?
     @State private var isPreparingShare = false
 
-    init(shelf: BookShelf, view: ShelvesView = ShelvesView(), status: ReadingStatus? = nil, client: LibraryClient = .live) {
+    init(
+        shelf: BookShelf,
+        view: ShelvesView = ShelvesView(),
+        status: ReadingStatus? = nil,
+        formats: [BookFormat] = [],
+        client: LibraryClient = .live
+    ) {
         self.shelf = shelf
         self.client = client
-        _viewModel = State(initialValue: BookShelfViewModel(client: client, shelf: shelf, view: view, status: status))
+        _viewModel = State(initialValue: BookShelfViewModel(
+            client: client, shelf: shelf, view: view, status: status, formats: formats
+        ))
     }
 
     var body: some View {
@@ -93,10 +101,11 @@ private struct SharedText: Identifiable {
 /// "Tous les livres", connected.
 struct BookMosaicScreen: View {
     var view = ShelvesView()
+    var formats: [BookFormat] = []
     var client: LibraryClient = .live
 
     var body: some View {
-        BookShelfScreen(shelf: .all, view: view, client: client)
+        BookShelfScreen(shelf: .all, view: view, formats: formats, client: client)
     }
 }
 

@@ -154,12 +154,13 @@ struct PileViewModelTests {
         #expect(viewModel.pile.sections.map(\.kind) == [.toFinish])
     }
 
-    @Test func aFormatChosenBeforeOffersNoPills() async {
+    @Test func aFormatChosenBeforeKeepsItsPills() async {
         let client = LibraryClient(pile: { _ in Pile(formats: [.book, .manga]) })
         let viewModel = PileViewModel(client: client, view: ShelvesView(format: .manga), caching: false)
 
         await viewModel.load()
 
-        #expect(viewModel.shownFormats.isEmpty)
+        #expect(viewModel.shownFormats == [.book, .manga])
+        #expect(viewModel.view.format == .manga)
     }
 }
