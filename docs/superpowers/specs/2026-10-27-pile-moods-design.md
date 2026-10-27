@@ -62,7 +62,7 @@ A pile book belongs here when:
 3. no pile book of that saga has a lower volume — only the next one is kept, not every one left.
 
 Order: the saga whose last `finishedAt` (or `startedAt` for a book being read) is the most recent
-first. Row line: "Tome 2 fini il y a 3 semaines".
+first.
 
 The saga is matched on `saga`, not `id`: a reader who read volume 1 in French and holds volume 2
 in English is still in the saga.
@@ -75,7 +75,8 @@ in English is still in the saga.
   and say nothing.
 - A book with no length is never kept.
 
-Order: shortest first. Row line: "184 p." / "4 h 20".
+Order: shortest first, a page counted as two minutes of listening so novels and recordings
+interleave.
 
 The thresholds are a product choice, not a finding. They are constants, to be moved once readers
 use it.
@@ -93,7 +94,7 @@ many of the last three share the genre.
 ### `oldest` — Le plus ancien
 
 The whole pile, longest on the pile first: `statusChangedAt`, falling back to `addedAt`, oldest
-first. Under the label: the year of the oldest book. Row line: "Dans ta pile depuis 2 ans".
+first. Under the label: the year of the oldest book.
 
 This tile keeps everything; it is a sort. It earns its place because the oldest books are the
 ones a last-shelved-first list never shows.
@@ -135,10 +136,9 @@ A new optional argument on the existing query, beside `genre`. Only meaningful w
 `status: TO_READ`; with any other status it is a bad user input. Like `genre`, it is ordered in
 memory from the library scan, with the same cursor.
 
-Each book row of a mood page carries why it is there, for the row's third line: a
-`moodReason` field on the page entry, holding the previous volume's `finishedAt` (La suite), the
-length (court) or the date it joined the pile (ancien). Nothing for Changer de genre: the genre
-already shows.
+A mood page returns plain books: what a poster's line says under a tile is read off fields the
+app already fetches (`series.volume`, `pageCount`, `durationMinutes`, `genre`, the shelved date).
+No new field on the book.
 
 New optional argument and new type: no migration, no deprecation.
 
@@ -153,12 +153,30 @@ New optional argument and new type: no migration, no deprecation.
 
 ## iOS
 
-- `BookShelfPage` on the `toRead` shelf draws the tiles under the title, in a 2-column grid,
-  above the format pills' list. A pure view takes `[PileMood]` and the selection; the screen's
-  view model loads `pileMoods` with the shelf and reloads it when the format pill changes.
-- Selecting a tile sets `query.mood` and reloads, as `select(format:)` does. The heading over
-  the list reads the tile's count: "6 livres de moins de 250 pages".
-- Rows of a mood page draw `moodReason` as their third line, in place of genre and date.
+The mock-up is the "D · J'ai envie de… — dans l'app" row of the design canvas. It keeps the
+shelf as it is today — the scroll-away bar, the format `FilterPills`, the posters three by row —
+and adds one block between the pills and the posters.
+
+- **Heading.** "J'ai envie de…", drawn as `RowHeader(style: .inline)` without an action.
+- **Tiles.** A 2-column grid, 10 pt apart, 20 pt from the edges. Each tile: an SF Symbol and the
+  label in `.subheadline.weight(.semibold)`, the detail under it in `.footnote` secondary, on
+  `secondarySystemGroupedBackground`, continuous corners. The selected tile takes the selected
+  `FilterPills` look: `Color.primary` fill, `systemBackground` text. Symbols: `books.vertical`,
+  `bolt`, `shuffle`, `hourglass`. A pure organism `PileMoodTiles` takes `[PileMood]` and the
+  selection.
+- **Explanation.** With a tile selected, one `.subheadline` secondary sentence over the posters,
+  as "Abandonnés" explains itself (`BookShelfPage.explanation`): "Moins de 250 pages, ou moins
+  de 6 heures d'écoute. Du plus court au plus long."
+- **Posters.** Unchanged, `PosterCover` three by row; only the line in the foot follows the tile,
+  through a new `PosterLabel.Context` per mood:
+  | Tile | Line |
+  |---|---|
+  | none, Le plus ancien | how long on the pile, as today ("10 jours", "2 ans") |
+  | La suite | "Tome 3" |
+  | Un livre court | "184 p." / "1 h 40" |
+  | Changer de genre | the genre's short label ("SF", "Policier") |
+- **Loading.** Selecting a tile sets `query.mood` and reloads, as `select(format:)` does. The
+  view model loads `pileMoods` with the shelf and again when the format pill changes.
 - Strings in French in the Swift code, English in `Localizable.xcstrings`; run
   `bun scripts/check-strings.ts` after the build.
 - Snapshots: no tile selected, each tile selected, block hidden (pile of 4).
