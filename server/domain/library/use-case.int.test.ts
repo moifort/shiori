@@ -76,7 +76,7 @@ describe('the Library tab entry screen', () => {
       LibraryUseCase.hasDropped(reader, {}),
     ])
 
-    expect(titlesOf(recent)).toEqual(['Dune', 'Hypérion', 'Fondation', 'Vagabond'])
+    expect(titlesOf(recent)).toEqual(['Dune', 'Hypérion', 'Fondation'])
     expect(titlesOf(toRead)).toEqual(['Dune'])
     expect(titlesOf(read)).toEqual(['Fondation'])
     expect(dropped).toBe(true)

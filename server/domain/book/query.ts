@@ -8,6 +8,7 @@ import {
   isLovedBook,
   lovedRankOfBook,
   outsideHeartedSagas,
+  SHELF_STATUSES,
   sagaJudgementsOf,
   seriesRatingsOf,
   shelfKeysOf,
@@ -39,10 +40,9 @@ import { objectStore } from '~/system/object-store'
 const logger = createLogger('book')
 
 /** The statuses a view of the Library tab shows: the one it is narrowed to, or
- *  every one — the dropped books included, since the list by date is the
- *  whole shelf, and the favourites show whatever was hearted. */
-const shownStatusesOf = (view: { status?: ReadingStatus }): readonly ReadingStatus[] | undefined =>
-  view.status ? [view.status] : undefined
+ *  every one but dropped — a book given up on is listed in "Abandonnés" alone. */
+const shownStatusesOf = (view: { status?: ReadingStatus }): readonly ReadingStatus[] =>
+  view.status ? [view.status] : SHELF_STATUSES
 
 export namespace BookQuery {
   export const byId = async (userId: UserId, bookId: BookId): Promise<BookView | null> => {
@@ -108,7 +108,7 @@ export namespace BookQuery {
           isLovedBook(book, sagas) &&
           inLibraryView(book, view) &&
           (!view.excludeLovedSeries || outsideHeartedSagas(book, hearted)) &&
-          (!statuses || statuses.includes(book.status)),
+          statuses.includes(book.status),
       )
       const { books: shown, hasMore } = shelfPageOf(shelvedOf(kept), page.limit, page.after)
       return { books: await withCovers(shown), hasMore }
@@ -117,7 +117,7 @@ export namespace BookQuery {
     // of a library the request scans once, kept in memory for its next page.
     if ((view.genre || view.subgenre) && !view.loved) {
       const kept = (await repository.findAllByUser(userId)).filter(
-        (book) => inLibraryView(book, view) && (!statuses || statuses.includes(book.status)),
+        (book) => inLibraryView(book, view) && statuses.includes(book.status),
       )
       const { books, hasMore } = shelfPageOf(shelvedOf(kept), page.limit, page.after)
       return { books: await withCovers(books), hasMore }
@@ -129,9 +129,7 @@ export namespace BookQuery {
       ])
       const seriesRatings = seriesRatingsOf(opinions)
       const ranked = lovedFirst(
-        books.filter(
-          (book) => inLibraryView(book, view) && (!statuses || statuses.includes(book.status)),
-        ),
+        books.filter((book) => inLibraryView(book, view) && statuses.includes(book.status)),
         (book) => lovedRankOfBook(book, seriesRatings),
         shelfOrder,
       )
@@ -151,7 +149,7 @@ export namespace BookQuery {
       logger.warn('library page index missing, sorted in memory', { error, view })
     }
     const kept = (await repository.findAllByUser(userId)).filter(
-      (book) => inLibraryView(book, view) && (!statuses || statuses.includes(book.status)),
+      (book) => inLibraryView(book, view) && statuses.includes(book.status),
     )
     const { books, hasMore } = shelfPageOf(shelvedOf(kept), page.limit, page.after)
     return { books: await withCovers(books), hasMore }

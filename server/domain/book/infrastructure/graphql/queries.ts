@@ -34,7 +34,7 @@ builder.queryFields((t) => ({
       status: t.arg({
         type: ReadingStatusEnum,
         required: false,
-        description: 'Keep only books in this status. Omit for the whole library.',
+        description: 'Keep only books in this status. Omit for every status but dropped.',
       }),
     },
     resolve: (_root, args, context) => BookQuery.library(context.userId, args.status ?? undefined),
@@ -45,8 +45,8 @@ builder.queryFields((t) => ({
     description:
       'One page of the Library tab, for a list that draws as it scrolls.\n\n' +
       'A flat list, not sections: newest first on `shelvedAt` — the day each book ' +
-      'was finished, else started, else added. With no `status`, every book is ' +
-      'there, the dropped ones included. The app cuts ' +
+      'was finished, else started, else added. With no `status`, every book but ' +
+      'the dropped ones, which `status: DROPPED` alone lists. The app cuts ' +
       'it into month sections on that date. Read `hasMore`, then pass the id of the ' +
       'last book as `after` for the next page. A cursor naming a book no longer ' +
       'there restarts from the top.',

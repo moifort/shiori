@@ -1,4 +1,4 @@
-import { coverSourcesOf, inLibraryView, shelvedOf } from '~/domain/book/business-rules'
+import { coverSourcesOf, inLibraryView, isOnShelf, shelvedOf } from '~/domain/book/business-rules'
 import { BOOK_FORMATS, type Book, type BookFormat } from '~/domain/book/types'
 import type { GenreShelf, ShelvesView } from '~/domain/library/types'
 
@@ -6,9 +6,10 @@ import type { GenreShelf, ShelvesView } from '~/domain/library/types'
  *  rest a tap away on its own page. */
 export const RAIL_LIMIT = 20
 
-/** The books a view keeps, newest on the shelf first. */
+/** The books a view keeps, newest on the shelf first. A book given up on is
+ *  left out: "Abandonnés" alone lists it. */
 export const shelvedInView = <T extends Book>(books: readonly T[], view: ShelvesView): T[] =>
-  shelvedOf(books.filter((book) => inLibraryView(book, view)))
+  shelvedOf(books.filter((book) => isOnShelf(book) && inLibraryView(book, view)))
 
 /** The formats the library holds, in the order the pills list them: a pill
  *  that would empty every rail is never offered. */

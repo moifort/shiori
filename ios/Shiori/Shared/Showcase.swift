@@ -738,10 +738,10 @@ enum Showcase {
         let keptIds = Set(kept.map(\.id))
         return LibraryShelves(
             formats: BookFormat.allCases.filter { format in inGenre.contains { $0.format == format } },
-            recent: Array(kept.prefix(20)),
+            recent: Array(kept.filter { $0.status != .dropped }.prefix(20)),
             toRead: Array(kept.filter { $0.status == .toRead }.prefix(20)),
             readRecently: Array(kept.filter { $0.status == .read }.prefix(20)),
-            favorites: Array(kept.filter(isLoved).prefix(20)),
+            favorites: Array(kept.filter { $0.status != .dropped && isLoved($0) }.prefix(20)),
             hasDropped: kept.contains { $0.status == .dropped },
             genres: genres.values.sorted { ($0.count, $1.genre.label) > ($1.count, $0.genre.label) },
             subgenres: subgenres.sorted { ($0.value, $1.key) > ($1.value, $0.key) }.map(\.key),
@@ -794,7 +794,8 @@ enum Showcase {
         let matching = shelved.filter { book in
             (view.format == nil || book.format == view.format)
                 && (view.genre == nil || book.genre == view.genre)
-                && (query.serverStatus == nil || book.status == query.serverStatus)
+                // A book given up on is listed in "Abandonnés" alone.
+                && (query.serverStatus.map { book.status == $0 } ?? (book.status != .dropped))
                 && (!query.favorite || isLoved(book))
         }
         let start = after.flatMap { id in matching.firstIndex { $0.id == id }.map { $0 + 1 } } ?? 0

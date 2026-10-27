@@ -22,7 +22,7 @@ import type {
   Subgenre,
   TaggedSubgenre,
 } from '~/domain/book/types'
-import { BOOK_MEDIA } from '~/domain/book/types'
+import { BOOK_MEDIA, READING_STATUSES } from '~/domain/book/types'
 import { compareWithinSeries } from '~/domain/series/business-rules'
 import { isAudioSeries, sagaKeyFor, seriesIdOf, seriesKeyOf } from '~/domain/series/primitives'
 import type { SagaKey, SeriesName } from '~/domain/series/types'
@@ -558,6 +558,15 @@ export const membershipIn = (
  *  changes. */
 export const inItsEdition = <B extends Pick<Book, 'series' | 'format' | 'language'>>(book: B): B =>
   book.series ? { ...book, series: membershipIn(book.series, book.format, book.language) } : book
+
+/** The statuses every list of the Library tab shows. A book given up on
+ *  leaves them all: only "Abandonnés" lists it, where it can be taken up again. */
+export const SHELF_STATUSES = READING_STATUSES.filter(
+  (status): status is Exclude<ReadingStatus, 'dropped'> => status !== 'dropped',
+)
+
+/** Whether a book sits on the Library tab's lists rather than in "Abandonnés". */
+export const isOnShelf = (book: Pick<Book, 'status'>): boolean => book.status !== 'dropped'
 
 /** The Library tab's order: newest first on the date that last moved each
  *  book, a flat list the app cuts into month sections wherever the month of
