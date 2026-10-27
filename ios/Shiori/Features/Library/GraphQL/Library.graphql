@@ -58,6 +58,7 @@ fragment BookSummary on Book {
     name
     volume
     kind
+    annexNumber
   }
 }
 

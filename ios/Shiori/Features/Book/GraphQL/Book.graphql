@@ -147,6 +147,7 @@ fragment BookDetail on Book {
     name
     volume
     kind
+    annexNumber
   }
   forthcoming
 }

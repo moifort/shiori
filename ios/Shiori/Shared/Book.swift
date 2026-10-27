@@ -249,6 +249,13 @@ struct SeriesMembership: Identifiable, Hashable, Codable, Sendable {
     let name: String
     let volume: Int?
     let kind: VolumeKind
+    /// Where the reader files an annex among the saga's annexes, apart from
+    /// the volume numbering. Nil on a main volume.
+    var annexNumber: Int? = nil
+
+    /// An annex of the saga — prequel, side story, novella, guide — rather
+    /// than one of its volumes.
+    var isAnnex: Bool { kind != .main }
 
     /// How the volume announces itself in a section: "Tome 3", or just the kind
     /// when it sits outside the numbering.
@@ -534,13 +541,33 @@ struct Volume: Identifiable, Hashable, Sendable {
     }
 
     /// Whether the reader's book is this volume: the same kind at the same
-    /// number, or, for an unnumbered related work, the same title.
+    /// number, or by title — for an unnumbered related work, and for a book
+    /// the reader filed in the saga without a number, which would otherwise
+    /// sit apart from the volume it is while that volume shows as missing.
     func matches(_ book: Book) -> Bool {
         let kind = book.series?.kind ?? .main
         guard kind == self.kind else { return false }
-        if let number { return book.series?.volume == number }
-        return book.title.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: nil)
-            == title.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: nil)
+        if let number, let held = book.series?.volume { return held == number }
+        // A catalogue that titles its volumes after the saga — "One Piece" —
+        // tells none of them apart by title.
+        if number != nil, let saga = book.series?.name, Self.words(title) == Self.words(saga) { return false }
+        return ([title] + releases.map(\.title)).contains { Self.sameTitle(book.title, $0) }
+    }
+
+    private static func words(_ text: String) -> [String] {
+        text.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: nil)
+            .components(separatedBy: CharacterSet.alphanumerics.inverted)
+            .filter { !$0.isEmpty }
+    }
+
+    /// One title the other with its subtitle, or the same: "Homo deus" is
+    /// "Homo deus : Une brève histoire du futur". Cut at a word, so "Dune"
+    /// is not "Dunes".
+    private static func sameTitle(_ left: String, _ right: String) -> Bool {
+        let (a, b) = (words(left), words(right))
+        guard !a.isEmpty, !b.isEmpty else { return false }
+        let (short, long) = a.count <= b.count ? (a, b) : (b, a)
+        return Array(long.prefix(short.count)) == short
     }
 }
 

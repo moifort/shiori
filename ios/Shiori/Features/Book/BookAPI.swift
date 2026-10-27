@@ -319,10 +319,12 @@ struct BookDraft {
 }
 
 /// A saga named by hand in the edit form: a name, and a volume number when the
-/// volume has one.
+/// volume has one — or, for an annex, its own number among the annexes.
 struct SeriesPlacement: Equatable, Sendable {
     var name: String
     var volume: Int?
+    var annex = false
+    var annexNumber: Int?
 }
 
 /// What the reader changed on a book in the edit form. A nil property was not
@@ -390,8 +392,10 @@ struct BookCorrection: Equatable, Sendable {
         case nil: .none
         case let .set(placement):
             .some(ShioriGraphQL.SeriesPlacementInput(
+                annex: .some(placement.annex),
+                annexNumber: GraphQLHelpers.graphQLNullable(placement.annex ? placement.annexNumber : nil),
                 name: placement.name,
-                volume: GraphQLHelpers.graphQLNullable(placement.volume)
+                volume: GraphQLHelpers.graphQLNullable(placement.annex ? nil : placement.volume)
             ))
         case .clear: .null
         }

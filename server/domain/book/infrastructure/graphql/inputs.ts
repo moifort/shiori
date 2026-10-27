@@ -37,6 +37,20 @@ export const SeriesPlacementInput = builder.inputType('SeriesPlacementInput', {
       required: false,
       description: 'The volume number. Absent for a volume with no number.',
     }),
+    annex: t.boolean({
+      required: false,
+      description:
+        'The book is an annex of the saga — a side story, a guide — rather than one of ' +
+        'its volumes: it keeps its annex kind, else becomes a spin-off, and `volume` is ' +
+        'ignored. False makes it a main volume. Absent keeps the kind it has.',
+    }),
+    annexNumber: t.field({
+      type: 'VolumeNumber',
+      required: false,
+      description:
+        "The annex's place among the saga's annexes, apart from the volume numbering. " +
+        'Only with `annex`.',
+    }),
   }),
 })
 

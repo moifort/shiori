@@ -47,6 +47,9 @@ struct BookEditSheet: View {
     @State private var isbn: String
     @State private var seriesName: String
     @State private var seriesVolume: String
+    /// An annex — side story, guide — numbered apart from the volumes.
+    @State private var isAnnex: Bool
+    @State private var annexNumber: String
     @State private var addedAt: Date
     @State private var startedAt: Date
     @State private var finishedAt: Date
@@ -86,6 +89,8 @@ struct BookEditSheet: View {
         _isbn = State(initialValue: book.isbn13 ?? "")
         _seriesName = State(initialValue: book.series?.name ?? "")
         _seriesVolume = State(initialValue: book.series?.volume.map(String.init) ?? "")
+        _isAnnex = State(initialValue: book.series?.isAnnex ?? false)
+        _annexNumber = State(initialValue: book.series?.annexNumber.map(String.init) ?? "")
         _addedAt = State(initialValue: book.addedAt ?? .now)
         _startedAt = State(initialValue: book.startedAt ?? .now)
         _finishedAt = State(initialValue: book.finishedAt ?? .now)
@@ -221,10 +226,22 @@ struct BookEditSheet: View {
                     }
                     .padding(.vertical, 4)
                     if !trimmed(seriesName).isEmpty {
-                        LabeledField(title: "Tome", icon: "number") {
-                            TextField("Sans numéro", text: $seriesVolume)
-                                .keyboardType(.numberPad)
-                                .accessibilityIdentifier("edit-series-volume")
+                        Toggle(isOn: $isAnnex) {
+                            Label("Annexe", systemImage: "square.stack")
+                        }
+                        .accessibilityIdentifier("edit-series-annex")
+                        if isAnnex {
+                            LabeledField(title: "Numéro d'annexe", icon: "number") {
+                                TextField("Sans numéro", text: $annexNumber)
+                                    .keyboardType(.numberPad)
+                                    .accessibilityIdentifier("edit-series-annex-number")
+                            }
+                        } else {
+                            LabeledField(title: "Tome", icon: "number") {
+                                TextField("Sans numéro", text: $seriesVolume)
+                                    .keyboardType(.numberPad)
+                                    .accessibilityIdentifier("edit-series-volume")
+                            }
                         }
                     }
                 } header: {
@@ -233,7 +250,7 @@ struct BookEditSheet: View {
                     if let problem = seriesProblem {
                         Text(problem).foregroundStyle(.red)
                     } else {
-                        Text("Choisissez une série de votre bibliothèque pour y ranger ce livre avec les autres tomes. Videz le nom pour le sortir de sa série.")
+                        Text("Choisissez une série de votre bibliothèque pour y ranger ce livre avec les autres tomes. Une annexe — hors-série, préquelle, guide — se range à part, sous son propre numéro. Videz le nom pour le sortir de sa série.")
                     }
                 }
             }
@@ -336,8 +353,11 @@ struct BookEditSheet: View {
     /// holds can be joined without one.
     private var seriesProblem: String? {
         guard !trimmed(seriesName).isEmpty else { return nil }
-        if !trimmed(seriesVolume).isEmpty, !(1...200).contains(Int(trimmed(seriesVolume)) ?? 0) {
+        if !isAnnex, !trimmed(seriesVolume).isEmpty, !(1...200).contains(Int(trimmed(seriesVolume)) ?? 0) {
             return String(localized: "Le tome doit être un nombre entre 1 et 200.")
+        }
+        if isAnnex, !trimmed(annexNumber).isEmpty, !(1...200).contains(Int(trimmed(annexNumber)) ?? 0) {
+            return String(localized: "Le numéro d'annexe doit être un nombre entre 1 et 200.")
         }
         let held = seriesSuggestions.contains { $0.localizedCaseInsensitiveCompare(trimmed(seriesName)) == .orderedSame }
         if list(authors).isEmpty, !held, trimmed(seriesName) != book.series?.name {
@@ -402,8 +422,16 @@ struct BookEditSheet: View {
         correction.isbn13 = change(from: book.isbn13, to: isbnDigits.isEmpty ? nil : isbnDigits)
         correction.language = change(from: book.language, to: language)
         correction.series = change(
-            from: book.series.map { SeriesPlacement(name: $0.name, volume: $0.volume) },
-            to: optional(seriesName).map { SeriesPlacement(name: $0, volume: Int(trimmed(seriesVolume))) }
+            from: book.series.map { series in
+                series.isAnnex
+                    ? SeriesPlacement(name: series.name, annex: true, annexNumber: series.annexNumber)
+                    : SeriesPlacement(name: series.name, volume: series.volume)
+            },
+            to: optional(seriesName).map { name in
+                isAnnex
+                    ? SeriesPlacement(name: name, annex: true, annexNumber: Int(trimmed(annexNumber)))
+                    : SeriesPlacement(name: name, volume: Int(trimmed(seriesVolume)))
+            }
         )
         if let original = book.addedAt, addedAt != original { correction.addedAt = addedAt }
         if let original = book.startedAt, startedAt != original { correction.startedAt = startedAt }

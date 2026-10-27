@@ -316,6 +316,29 @@ describe('placing a book in a saga by hand', () => {
     expect(Object.hasOwn(fake.data('books', book.id) as object, 'series')).toBe(false)
   })
 
+  test('stores an annex with its annex number and no volume number', async () => {
+    const book = await add('Pandemia')
+
+    const placed = await BookCommand.edit(reader, book.id, {
+      authors: thilliez,
+      series: {
+        name: SeriesName('Sharko'),
+        volume: VolumeNumber(3),
+        annex: true,
+        annexNumber: VolumeNumber(1),
+      },
+    })
+
+    if (typeof placed === 'string') throw new Error('unreachable')
+    expect(fake.data('books', book.id)?.series).toEqual({
+      id: 'sharko--franck-thilliez~fr',
+      saga: 'sharko--franck-thilliez',
+      name: 'Sharko',
+      kind: 'spin-off',
+      annexNumber: 1,
+    })
+  })
+
   // The authors typed in the same correction are the ones the key is built from.
   test('keys a new saga on the authors corrected in the same edit', async () => {
     const book = await add('Pandemia')

@@ -160,6 +160,10 @@ export type SeriesMembership = {
   name: SeriesName
   volume?: VolumeNumber
   kind: VolumeKind
+  /** Where the reader files an annex — any kind but `main` — among the
+   *  saga's annexes, apart from the volume numbering: annex 1 is not
+   *  volume 1. Set by hand only, never on a main volume. */
+  annexNumber?: VolumeNumber
 }
 
 /** A saga as a book is filed under it before it is written: the saga and the
@@ -172,6 +176,11 @@ export type SeriesEntry = Omit<SeriesMembership, 'id'>
 export type SeriesPlacement = {
   name: SeriesName
   volume?: VolumeNumber
+  /** The book is an annex of the saga rather than one of its volumes. Absent
+   *  from a build that predates the switch, which keeps the book's kind. */
+  annex?: boolean
+  /** The annex's place among the saga's annexes. Only with `annex`. */
+  annexNumber?: VolumeNumber
 }
 
 /** Who recommended a book to the reader, and what they said of it — as in

@@ -161,6 +161,10 @@ builder.mutationFields((t) => ({
                 ? {
                     name: input.series.name,
                     ...(input.series.volume != null ? { volume: input.series.volume } : {}),
+                    ...(input.series.annex != null ? { annex: input.series.annex } : {}),
+                    ...(input.series.annexNumber != null
+                      ? { annexNumber: input.series.annexNumber }
+                      : {}),
                   }
                 : undefined,
             }

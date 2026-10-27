@@ -3398,7 +3398,7 @@ enum PileSectionKind {
   FAVORITE_AUTHORS
 
   """
-  "Narrateurs préférés": recordings read by a voice the reader rated a recording of four stars or more, or hearted.
+  "Narrateurs préférés": recordings read by a voice the reader hearted — not one whose recordings they rated: a narrator reads every kind of story.
   """
   FAVORITE_NARRATORS
 
@@ -4434,6 +4434,11 @@ The series name is denormalized here on purpose: grouping a 300-book library int
 """
 type SeriesMembership {
   """
+  Where the reader files an annex among the saga's annexes, apart from the volume numbering. Null on a main volume, and on an annex never numbered.
+  """
+  annexNumber: VolumeNumber
+
+  """
   The edition the book belongs to — its saga in its own language and format: what to open, and to pass back wherever a series id is asked. Two editions of one saga have two ids.
   """
   id: SeriesId!
@@ -4498,6 +4503,15 @@ type SeriesOpinion {
 The saga a reader puts a book in by hand. The saga is found from the name, never typed as a key: the one the reader holds under the key a scan would give it (name and first author), else one they hold under the same name folded — accents, punctuation and a leading article aside — else a new saga under that key.
 """
 input SeriesPlacementInput {
+  """
+  The book is an annex of the saga — a side story, a guide — rather than one of its volumes: it keeps its annex kind, else becomes a spin-off, and `volume` is ignored. False makes it a main volume. Absent keeps the kind it has.
+  """
+  annex: Boolean
+
+  """
+  The annex's place among the saga's annexes, apart from the volume numbering. Only with `annex`.
+  """
+  annexNumber: VolumeNumber
   name: SeriesName!
 
   """The volume number. Absent for a volume with no number."""

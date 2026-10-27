@@ -248,13 +248,13 @@ extension ShioriGraphQL.BookDetail {
 
 extension ShioriGraphQL.BookSummary.Series {
     var asMembership: SeriesMembership {
-        SeriesMembership(id: id, name: name, volume: volume, kind: kind.asDomain)
+        SeriesMembership(id: id, name: name, volume: volume, kind: kind.asDomain, annexNumber: annexNumber)
     }
 }
 
 extension ShioriGraphQL.BookDetail.Series {
     var asMembership: SeriesMembership {
-        SeriesMembership(id: id, name: name, volume: volume, kind: kind.asDomain)
+        SeriesMembership(id: id, name: name, volume: volume, kind: kind.asDomain, annexNumber: annexNumber)
     }
 }
 

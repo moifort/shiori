@@ -919,6 +919,56 @@ describe('placing a book in a saga by hand', () => {
     expect(placed).toMatchObject({ kind: 'main' })
   })
 
+  test('files an annex apart from the volumes, with its own number', () => {
+    const shelf = held('Dune', 'Frank Herbert')
+
+    const placed = membershipFor(
+      {
+        name: SeriesName('Dune'),
+        volume: VolumeNumber(3),
+        annex: true,
+        annexNumber: VolumeNumber(2),
+      },
+      [AuthorName('Frank Herbert')],
+      'book',
+      'fr',
+      shelf,
+      [shelf],
+    )
+
+    expect(placed).toEqual({
+      id: shelf.id,
+      saga: shelf.saga,
+      name: SeriesName('Dune'),
+      kind: 'spin-off',
+      annexNumber: VolumeNumber(2),
+    })
+  })
+
+  test('keeps the annex kind a book already had, and makes it a volume again', () => {
+    const prequel = { ...held('Dune', 'Frank Herbert', 'prequel'), annexNumber: VolumeNumber(1) }
+    const herbert = [AuthorName('Frank Herbert')]
+    const place = (annex: boolean) =>
+      membershipFor(
+        { name: SeriesName('Dune'), volume: VolumeNumber(4), annex },
+        herbert,
+        'book',
+        'fr',
+        prequel,
+        [prequel],
+      )
+
+    expect(place(true)).toMatchObject({ kind: 'prequel' })
+    expect(place(true)).not.toHaveProperty('volume')
+    expect(place(false)).toEqual({
+      id: prequel.id,
+      saga: prequel.saga,
+      name: SeriesName('Dune'),
+      volume: VolumeNumber(4),
+      kind: 'main',
+    })
+  })
+
   test('lets a book with no author join a saga the reader holds', () => {
     const shelf = held('Dune', 'Frank Herbert')
 

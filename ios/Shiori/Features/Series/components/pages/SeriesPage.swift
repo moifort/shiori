@@ -102,9 +102,10 @@ struct SeriesPage: View {
                     if let description = series.description {
                         BookSynopsisBlock(synopsis: description)
                     }
-                    rail("Tomes", volumes: series.spine, author: series.author, ringed: ringedId(series))
-                    if !series.relatedWorks.isEmpty {
-                        rail("Annexes", volumes: series.relatedWorks, author: series.author, ringed: nil)
+                    rail("Tomes", posters: posters(series.spine), author: series.author, ringed: ringedId(series))
+                    let annexes = annexPosters(series.relatedWorks)
+                    if !annexes.isEmpty {
+                        rail("Annexes", posters: annexes, author: series.author, ringed: nil)
                     }
                     facts(series)
                 }
@@ -240,8 +241,8 @@ struct SeriesPage: View {
 
     /// A row of posters, one per volume in catalogue order — a poster per
     /// part of a novel sold in two, and per format held.
-    private func rail(_ title: LocalizedStringKey, volumes: [Volume], author: String, ringed: String?) -> some View {
-        SeriesPosterRail(title: title, items: posters(volumes), ringedId: ringed) { poster in
+    private func rail(_ title: LocalizedStringKey, posters: [Poster], author: String, ringed: String?) -> some View {
+        SeriesPosterRail(title: title, items: posters, ringedId: ringed) { poster in
             switch poster.kind {
             case let .owned(book, volume): ownedPoster(book, volume: volume)
             case let .missing(volume): missingPoster(volume, author: author)
@@ -270,18 +271,49 @@ struct SeriesPage: View {
         }
     }
 
+    /// The annexes: the catalogue's related works, matched by title whatever
+    /// kind the reader filed theirs under, and the reader's own annexes the
+    /// catalogue does not list. The ones the reader numbered come first, in
+    /// the order of their annex numbers, then the rest in catalogue order.
+    private func annexPosters(_ volumes: [Volume]) -> [Poster] {
+        let annexes = owned.filter { $0.series?.isAnnex == true }
+        var placed = Set<String>()
+        var posters: [(number: Int?, poster: Poster)] = volumes.flatMap { volume in
+            let books = annexes.filter { volume.matches($0) || folded($0.title) == folded(volume.title) }
+            placed.formUnion(books.map(\.id))
+            if books.isEmpty { return [(number: Int?.none, poster: Poster(id: "missing-\(volume.id)", kind: .missing(volume)))] }
+            return books.map { (number: $0.series?.annexNumber, poster: Poster(id: $0.id, kind: .owned($0, volume))) }
+        }
+        for book in annexes where !placed.contains(book.id) {
+            let volume = Volume(number: nil, title: book.title, publishedIn: book.firstPublishedIn, kind: book.series?.kind ?? .spinOff)
+            posters.append((book.series?.annexNumber, Poster(id: book.id, kind: .owned(book, volume))))
+        }
+        let numbered = posters.filter { $0.number != nil }.sorted { ($0.number ?? 0) < ($1.number ?? 0) }
+        return (numbered + posters.filter { $0.number == nil }).map(\.poster)
+    }
+
+    private func folded(_ title: String) -> String {
+        title.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: nil)
+    }
+
     private func caption(_ volume: Volume) -> String {
         volume.number.map { String(localized: "Tome \($0)") } ?? volume.kind.label
     }
 
+    /// An annex the reader numbered says its number, apart from the volumes'.
+    private func caption(_ book: Book, volume: Volume) -> String {
+        guard volume.kind != .main, let number = book.series?.annexNumber else { return caption(volume) }
+        return String(localized: "Annexe \(number)")
+    }
+
     private func ownedPoster(_ book: Book, volume: Volume) -> some View {
         Button { Task { await onAction(.openBook(book)) } } label: {
-            PosterCover(book: book, caption: caption(volume), showsEditionTags: false)
+            PosterCover(book: book, caption: caption(book, volume: volume), showsEditionTags: false)
                 .contentShape(.rect)
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text(verbatim: "\(book.title), \(caption(volume)), \(book.status.label)"))
+        .accessibilityLabel(Text(verbatim: "\(book.title), \(caption(book, volume: volume)), \(book.status.label)"))
         .accessibilityAddTraits(.isButton)
         .accessibilityIdentifier("series-volume-owned")
     }

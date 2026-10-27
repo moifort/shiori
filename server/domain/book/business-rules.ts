@@ -504,7 +504,10 @@ export const retaggedAfterEdit = (
  *  reader is gathering; else under that key, new, exactly as a scan would have
  *  filed it, so the catalogue the series screen builds is the shared one.
  *
- *  A joined saga keeps its name as the reader's shelves already show it. The
+ *  A joined saga keeps its name as the reader's shelves already show it. An
+ *  annex keeps the kind it had in that saga, else becomes a spin-off, and
+ *  takes its annex number instead of a volume number; a book no longer an
+ *  annex is a main volume. Without the flag — a build that predates it — the
  *  volume kind survives when the book stays in its saga, and a book moved to
  *  another is a main volume. A saga of the other format is never joined, even
  *  under the same name: the saga heard and the saga read are two sagas.
@@ -527,12 +530,29 @@ export const membershipFor = (
     held.find((series) => isAudioSeries(series.saga) === heard && slugify(series.name) === folded)
   const saga = joined?.saga ?? derived
   if (!saga) return 'no-author'
+  const kept = current?.saga === saga ? current.kind : undefined
+  const name = joined?.name ?? placement.name
+  if (placement.annex) {
+    return membershipIn(
+      {
+        saga,
+        name,
+        kind: kept && kept !== 'main' ? kept : 'spin-off',
+        ...(placement.annexNumber ? { annexNumber: placement.annexNumber } : {}),
+      },
+      format,
+      language,
+    )
+  }
   return membershipIn(
     {
       saga,
-      name: joined?.name ?? placement.name,
+      name,
       ...(placement.volume ? { volume: placement.volume } : {}),
-      kind: current?.saga === saga ? current.kind : 'main',
+      kind: placement.annex === false ? 'main' : (kept ?? 'main'),
+      ...(placement.annex === undefined && kept && kept !== 'main' && current?.annexNumber
+        ? { annexNumber: current.annexNumber }
+        : {}),
     },
     format,
     language,

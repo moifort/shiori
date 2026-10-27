@@ -2297,6 +2297,38 @@
         }
       }
     },
+    "Annexe" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Annex"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Annexe"
+          }
+        }
+      }
+    },
+    "Annexe %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Annex %lld"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Annexe %lld"
+          }
+        }
+      }
+    },
     "Annexes" : {
       "localizations" : {
         "en" : {
@@ -3865,18 +3897,18 @@
         }
       }
     },
-    "Choisissez une série de votre bibliothèque pour y ranger ce livre avec les autres tomes. Videz le nom pour le sortir de sa série." : {
+    "Choisissez une série de votre bibliothèque pour y ranger ce livre avec les autres tomes. Une annexe — hors-série, préquelle, guide — se range à part, sous son propre numéro. Videz le nom pour le sortir de sa série." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Choose a series from your library to file this book with its other volumes. Clear the name to take it out of its series."
+            "value" : "Pick a series from your library to file this book with its other volumes. An annex — side story, prequel, guide — is filed apart, under its own number. Clear the name to take it out of its series."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Choisissez une série de votre bibliothèque pour y ranger ce livre avec les autres tomes. Videz le nom pour le sortir de sa série."
+            "value" : "Choisissez une série de votre bibliothèque pour y ranger ce livre avec les autres tomes. Une annexe — hors-série, préquelle, guide — se range à part, sous son propre numéro. Videz le nom pour le sortir de sa série."
           }
         }
       }
@@ -7161,6 +7193,22 @@
         }
       }
     },
+    "Le numéro d'annexe doit être un nombre entre 1 et 200." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The annex number must be between 1 and 200."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le numéro d'annexe doit être un nombre entre 1 et 200."
+          }
+        }
+      }
+    },
     "Le pavé" : {
       "localizations" : {
         "en" : {
@@ -9025,6 +9073,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Numérique"
+          }
+        }
+      }
+    },
+    "Numéro d'annexe" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Annex number"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Numéro d'annexe"
           }
         }
       }

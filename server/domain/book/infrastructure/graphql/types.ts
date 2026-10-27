@@ -76,6 +76,14 @@ export const SeriesMembershipType = builder
         resolve: (membership) => membership.volume ?? null,
       }),
       kind: t.field({ type: VolumeKindEnum, resolve: (membership) => membership.kind }),
+      annexNumber: t.field({
+        type: 'VolumeNumber',
+        nullable: true,
+        description:
+          "Where the reader files an annex among the saga's annexes, apart from the " +
+          'volume numbering. Null on a main volume, and on an annex never numbered.',
+        resolve: (membership) => membership.annexNumber ?? null,
+      }),
     }),
   })
 
