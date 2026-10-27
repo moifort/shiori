@@ -3352,6 +3352,76 @@ A person the reader knows, by name, 1 to 200 characters: the reader themselves, 
 scalar PersonName
 
 """
+The pile cut into the reasons to read its books, for choosing the next one. Every field reads the one library scan the request shares; the sections read the award winners Découvrir keeps too. Nothing calls a paid service.
+"""
+type Pile {
+  """
+  The formats of the pile and of the books in progress — under a genre, those of its books — in the order the pills list them. Never narrowed by `format` itself.
+  """
+  formats: [BookFormat!]!
+
+  """
+  The sections in the view, in the order of `PileSectionKind`, the empty ones left out. A book may sit in several. The whole pile is `libraryPage(status: TO_READ)`.
+  """
+  sections: [PileSection!]!
+}
+
+"""A book a section of the pile offers."""
+type PilePick {
+  """
+  In "Primés", the latest prize the book won. Null in every other section.
+  """
+  award: AwardMention
+  book: Book!
+}
+
+"""One section of the pile: never empty, fifteen books at most."""
+type PileSection {
+  kind: PileSectionKind!
+
+  """Its books, in the order the section gives them."""
+  picks: [PilePick!]!
+}
+
+"""
+Why the pile offers a book: one section each, in the order the screen draws them.
+"""
+enum PileSectionKind {
+  """
+  "Primés": books that won one of Découvrir's awards, matched on the title and the author. `award` says which.
+  """
+  AWARDED
+
+  """
+  "Auteurs préférés": books by an author the reader rated a book of four stars or more, or hearted.
+  """
+  FAVORITE_AUTHORS
+
+  """
+  "Narrateurs préférés": recordings read by a voice the reader rated a recording of four stars or more, or hearted.
+  """
+  FAVORITE_NARRATORS
+
+  """
+  "Nouveaux auteurs": books by authors the reader has read nothing of yet.
+  """
+  NEW_AUTHORS
+
+  """
+  "La suite": in each saga the reader read a volume of, the first main volume of the pile, the saga read last first.
+  """
+  NEXT_VOLUME
+
+  """"Recommandés": the books the reader recorded someone recommending."""
+  RECOMMENDED
+
+  """
+  "À finir": the books in progress, the one begun longest ago first. Before opening a new book, the ones waiting to be finished.
+  """
+  TO_FINISH
+}
+
+"""
 What an account is entitled to.
 
 Everyone starts on `FREE`, and `PREMIUM` is only ever the result of a purchase the App Store signed: an expired, refunded or cancelled-and-elapsed subscription reads back as `FREE`.
@@ -3931,6 +4001,20 @@ type Query {
 
   """The alerts the reader switched on, for the settings screen."""
   notificationSettings: NotificationSettings!
+
+  """
+  The pile in sections, narrowed to a format pill, or to a genre and one of its subgenres when opened from a genre page.
+  """
+  pile(
+    """The format pill"""
+    format: BookFormat
+
+    """A genre page"""
+    genre: Genre
+
+    """A subgenre pill of the genre page, matched whatever its case"""
+    subgenre: Subgenre
+  ): Pile!
 
   """
   This month’s scan allowance for the signed-in account. The scan screen reads it to show what is left, and the paywall to explain what a subscription lifts.

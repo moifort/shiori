@@ -31,7 +31,7 @@ export const AwardEnum = builder.enumType('Award', {
   } as const,
 })
 
-const AwardMentionType = builder.objectRef<AwardMention>('AwardMention').implement({
+export const AwardMentionType = builder.objectRef<AwardMention>('AwardMention').implement({
   description: 'One prize a novel won.',
   fields: (t) => ({
     award: t.field({ type: AwardEnum, resolve: (mention) => mention.award }),

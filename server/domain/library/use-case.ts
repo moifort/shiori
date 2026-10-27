@@ -1,4 +1,7 @@
 import { AuthorUseCase, type FollowedAuthor } from '~/domain/author/use-case'
+import { winnersOf, worksOf } from '~/domain/award/business-rules'
+import { AwardQuery } from '~/domain/award/query'
+import { AWARDS } from '~/domain/award/types'
 import {
   heartedSagasOf,
   inLibraryView,
@@ -12,11 +15,13 @@ import type { BookFormat, BookLanguage, BookView, Subgenre } from '~/domain/book
 import {
   formatsOf,
   genreShelvesOf,
+  pileFormatsOf,
+  pileSectionsOf,
   RAIL_LIMIT,
   railsOf,
   shelvedInView,
 } from '~/domain/library/business-rules'
-import type { GenreShelf, ShelvesView } from '~/domain/library/types'
+import type { GenreShelf, PileSection, ShelvesView } from '~/domain/library/types'
 import { type FollowedNarrator, NarratorUseCase } from '~/domain/narrator/use-case'
 import { type FollowedSeries, SeriesUseCase } from '~/domain/series/use-case'
 import { SeriesOpinionQuery } from '~/domain/series-opinion/query'
@@ -149,4 +154,37 @@ export namespace LibraryUseCase {
    *  no audiobook. */
   export const narrators = (userId: UserId, view: ShelvesView): Promise<FollowedNarrator[]> =>
     NarratorUseCase.recent(userId, (book) => inLibraryView(book, view), PEOPLE_LIMIT)
+
+  /** The pile's sections in a view: one scan of the library and the award
+   *  winners Découvrir keeps, the covers of the books offered signed once
+   *  however many sections hold them. */
+  export const pileSections = async (
+    userId: UserId,
+    view: ShelvesView,
+  ): Promise<PileSection<BookView>[]> => {
+    const [books, found] = await Promise.all([BookQuery.all(userId), AwardQuery.foundWinners()])
+    const sections = pileSectionsOf(
+      books,
+      worksOf(AWARDS, (award) => winnersOf(award, found)),
+      view,
+    )
+    const offered = [
+      ...new Map(sections.flatMap((s) => s.picks.map((p) => [p.book.id, p.book]))).values(),
+    ]
+    const signed = new Map(
+      (await BookQuery.withSignedCovers(offered)).map((book) => [book.id, book]),
+    )
+    return sections.map((section) => ({
+      kind: section.kind,
+      picks: section.picks.flatMap((pick) => {
+        const book = signed.get(pick.book.id)
+        return book ? [{ ...pick, book }] : []
+      }),
+    }))
+  }
+
+  /** The format pills over the pile: the formats of its books and of those in
+   *  progress, under a genre page those of the genre. */
+  export const pileFormats = async (userId: UserId, view: ShelvesView): Promise<BookFormat[]> =>
+    pileFormatsOf(await BookQuery.all(userId), view)
 }

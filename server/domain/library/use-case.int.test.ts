@@ -275,3 +275,30 @@ describe('"Coups de cœur" holds every book the reader loved', () => {
     expect(next.hasMore).toBe(false)
   })
 })
+
+describe('the pile in sections', () => {
+  test('reads the library once and the award winners once, whatever the sections', async () => {
+    await shelve({ title: 'Fondation', days: 9, status: 'read', author: 'Isaac Asimov' })
+    await shelve({ title: 'Hypérion', days: 5, status: 'reading', author: 'Dan Simmons' })
+    await shelve({ title: 'Dune', days: 1, author: 'Frank Herbert' })
+    await shelve({ title: 'Les Robots', days: 0, author: 'Isaac Asimov' })
+    startFakeRequest()
+    const before = { docs: fake.docReads, queries: fake.queryReads }
+
+    const [sections, formats] = await Promise.all([
+      LibraryUseCase.pileSections(reader, {}),
+      LibraryUseCase.pileFormats(reader, {}),
+    ])
+
+    expect(
+      sections.map((section) => [section.kind, titlesOf(section.picks.map((p) => p.book))]),
+    ).toEqual([
+      ['to-finish', ['Hypérion']],
+      ['awarded', ['Dune']],
+      ['new-authors', ['Dune']],
+    ])
+    expect(formats).toEqual(['book'])
+    expect(fake.queryReads - before.queries).toBe(2)
+    expect(fake.docReads - before.docs).toBe(0)
+  })
+})

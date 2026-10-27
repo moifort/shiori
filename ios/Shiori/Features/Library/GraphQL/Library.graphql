@@ -133,3 +133,30 @@ query LovedSeries($format: BookFormat, $genre: Genre, $subgenre: Subgenre) {
     }
   }
 }
+
+# The pile cut into the reasons to read its books, in one request and one scan
+# of the library: the format pills and the sections, each a rail. Narrowed to a
+# format pill, or to the genre page it was opened from.
+query Pile($format: BookFormat, $genre: Genre, $subgenre: Subgenre) {
+  pile(format: $format, genre: $genre, subgenre: $subgenre) {
+    formats
+    sections {
+      kind
+      picks {
+        award {
+          award
+          year
+        }
+        book {
+          ...BookSummary
+          # What a cover says in "Recommandés", "Narrateurs préférés" and "À finir".
+          narrators
+          startedAt
+          recommendation {
+            recommenderName
+          }
+        }
+      }
+    }
+  }
+}

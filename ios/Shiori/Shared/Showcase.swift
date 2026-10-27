@@ -757,6 +757,44 @@ enum Showcase {
         )
     }
 
+    /// The pile in sections, cut as the server cuts it: the history judges,
+    /// the view narrows what is offered. No award winner, the showcase keeping
+    /// no palmarès.
+    static func pile(view: ShelvesView) -> Pile {
+        let inGenre = shelved.filter { view.genre == nil || $0.genre == view.genre }
+        let offered = inGenre.filter { view.format == nil || $0.format == view.format }
+        let pile = offered.filter { $0.status == .toRead }
+        let read = shelved.filter { $0.status == .read }
+        let liked = shelved.filter { $0.favorite || ($0.rating ?? 0) >= 4 }
+        let readSagas = Set(read.compactMap { $0.series?.name })
+        var firstOfSaga: [String: Book] = [:]
+        for book in pile {
+            guard let series = book.series, readSagas.contains(series.name) else { continue }
+            if (series.volume ?? .max) < (firstOfSaga[series.name]?.series?.volume ?? .max) || firstOfSaga[series.name] == nil {
+                firstOfSaga[series.name] = book
+            }
+        }
+        let readAuthors = Set(read.flatMap(\.authors))
+        let likedAuthors = Set(liked.flatMap(\.authors))
+        let likedNarrators = Set(liked.flatMap(\.narrators))
+        let sections: [(PileSectionKind, [Book])] = [
+            (.toFinish, offered.filter { $0.status == .reading }.reversed()),
+            (.nextVolume, pile.filter { book in firstOfSaga.values.contains { $0.id == book.id } }),
+            (.recommended, pile.filter { $0.recommendation?.recommenderName != nil }),
+            (.favoriteAuthors, pile.filter { $0.authors.contains(where: likedAuthors.contains) }),
+            (.favoriteNarrators, pile.filter { $0.narrators.contains(where: likedNarrators.contains) }),
+            (.newAuthors, pile.filter { !$0.authors.isEmpty && !$0.authors.contains(where: readAuthors.contains) }),
+        ]
+        return Pile(
+            formats: BookFormat.allCases.filter { format in
+                inGenre.contains { $0.format == format && ($0.status == .toRead || $0.status == .reading) }
+            },
+            sections: sections.compactMap { kind, books in
+                books.isEmpty ? nil : PileSection(kind: kind, picks: books.prefix(15).map { PilePick(book: $0) })
+            }
+        )
+    }
+
     /// The series of "Coups de cœur": the hearted sagas holding a book of
     /// the view, the one shelved last first.
     static func lovedSeries(view: ShelvesView) -> [FollowedSeries] {

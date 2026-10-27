@@ -164,6 +164,17 @@ enum BookGenre: String, Codable, CaseIterable, Identifiable, Sendable {
         case .other: String(localized: "Autre")
         }
     }
+
+    /// The genre under a cover, where a third of the screen leaves about a
+    /// hundred points: the three labels wider than that are shortened.
+    var shortLabel: String {
+        switch self {
+        case .scienceFiction: String(localized: "SF")
+        case .historicalFiction: String(localized: "Historique")
+        case .selfHelp: String(localized: "Dév. perso")
+        default: label
+        }
+    }
 }
 
 /// Where a volume sits in a saga. Only `main` belongs to the numbered spine;

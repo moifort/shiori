@@ -1549,6 +1549,22 @@
         }
       }
     },
+    "1 à 2 ans" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 to 2 years"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 à 2 ans"
+          }
+        }
+      }
+    },
     "1 étoile" : {
       "localizations" : {
         "en" : {
@@ -3017,6 +3033,22 @@
         }
       }
     },
+    "Auteurs préférés" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Favorite authors"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Auteurs préférés"
+          }
+        }
+      }
+    },
     "Autoriser les photos" : {
       "localizations" : {
         "en" : {
@@ -3429,6 +3461,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ce livre n'est plus partagé."
+          }
+        }
+      }
+    },
+    "Ce mois-ci" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This month"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ce mois-ci"
           }
         }
       }
@@ -5209,6 +5257,22 @@
         }
       }
     },
+    "Dév. perso" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Self-help"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dév. perso"
+          }
+        }
+      }
+    },
     "Développement personnel" : {
       "localizations" : {
         "en" : {
@@ -6021,6 +6085,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Histoire"
+          }
+        }
+      }
+    },
+    "Historique" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Historical"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Historique"
           }
         }
       }
@@ -7017,6 +7097,22 @@
         }
       }
     },
+    "La suite" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Up next"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La suite"
+          }
+        }
+      }
+    },
     "Langue" : {
       "localizations" : {
         "en" : {
@@ -7361,6 +7457,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Les livres de « %@ » rejoindront la série choisie, à leur numéro de tome."
+          }
+        }
+      }
+    },
+    "Les livres à lire et ceux en cours s'afficheront ici." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Books to read and books in progress will show up here."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les livres à lire et ceux en cours s'afficheront ici."
+          }
+        }
+      }
+    },
+    "Les livres à lire s'afficheront ici." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Books to read will show up here."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les livres à lire s'afficheront ici."
           }
         }
       }
@@ -8133,6 +8261,22 @@
         }
       }
     },
+    "Moins d'un an" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Under a year"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Moins d'un an"
+          }
+        }
+      }
+    },
     "Mois" : {
       "localizations" : {
         "en" : {
@@ -8241,6 +8385,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Narrateurs indisponibles"
+          }
+        }
+      }
+    },
+    "Narrateurs préférés" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Favorite narrators"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Narrateurs préférés"
           }
         }
       }
@@ -8805,6 +8965,22 @@
         }
       }
     },
+    "Nouveaux auteurs" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New authors"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nouveaux auteurs"
+          }
+        }
+      }
+    },
     "Nouvelle" : {
       "localizations" : {
         "en" : {
@@ -9205,6 +9381,22 @@
         }
       }
     },
+    "Par %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "From %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Par %@"
+          }
+        }
+      }
+    },
     "Par date" : {
       "localizations" : {
         "en" : {
@@ -9249,6 +9441,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Par nom"
+          }
+        }
+      }
+    },
+    "Par type" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "By type"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Par type"
           }
         }
       }
@@ -9589,6 +9797,38 @@
         }
       }
     },
+    "Pile indisponible" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To-read pile unavailable"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pile indisponible"
+          }
+        }
+      }
+    },
+    "Pile vide" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To-read pile empty"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pile vide"
+          }
+        }
+      }
+    },
     "Pile à lire" : {
       "localizations" : {
         "en" : {
@@ -9633,6 +9873,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Plus d'actions"
+          }
+        }
+      }
+    },
+    "Plus de 2 ans" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Over 2 years"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Plus de 2 ans"
           }
         }
       }
@@ -9905,6 +10161,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Presque prêt…"
+          }
+        }
+      }
+    },
+    "Primés" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Award winners"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Primés"
           }
         }
       }
@@ -10469,6 +10741,38 @@
         }
       }
     },
+    "Recommandé" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recommended"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recommandé"
+          }
+        }
+      }
+    },
+    "Recommandés" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recommended"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recommandés"
+          }
+        }
+      }
+    },
     "Reconnecter mon compte Amazon" : {
       "localizations" : {
         "en" : {
@@ -11025,6 +11329,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Résumé"
+          }
+        }
+      }
+    },
+    "SF" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sci-fi"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SF"
           }
         }
       }
@@ -12789,6 +13109,22 @@
         }
       }
     },
+    "Toute la pile" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Whole Pile"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Toute la pile"
+          }
+        }
+      }
+    },
     "Toutes" : {
       "localizations" : {
         "en" : {
@@ -14465,6 +14801,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "À découvrir"
+          }
+        }
+      }
+    },
+    "À finir" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To finish"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "À finir"
           }
         }
       }
