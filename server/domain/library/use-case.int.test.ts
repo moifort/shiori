@@ -8,7 +8,7 @@ const { BookCommand } = await import('~/domain/book/command')
 const { BookQuery } = await import('~/domain/book/query')
 const { LibraryUseCase } = await import('~/domain/library/use-case')
 const { SeriesOpinionCommand } = await import('~/domain/series-opinion/command')
-const { StarRating, Subgenre } = await import('~/domain/book/primitives')
+const { NarratorName, StarRating, Subgenre } = await import('~/domain/book/primitives')
 const { AuthorName, BookTitle } = await import('~/domain/shared/primitives')
 const { SagaKey, SeriesName, VolumeNumber } = await import('~/domain/series/primitives')
 
@@ -31,10 +31,21 @@ type Shelved = {
   genre?: 'science-fiction' | 'fantasy'
   subgenre?: string
   author?: string
+  narrator?: string
   saga?: string
 }
 
-const shelve = async ({ title, days, status, format, genre, subgenre, author, saga }: Shelved) => {
+const shelve = async ({
+  title,
+  days,
+  status,
+  format,
+  genre,
+  subgenre,
+  author,
+  narrator,
+  saga,
+}: Shelved) => {
   const book = await BookCommand.add(
     reader,
     {
@@ -42,6 +53,7 @@ const shelve = async ({ title, days, status, format, genre, subgenre, author, sa
       format,
       genre,
       authors: author ? [AuthorName(author)] : undefined,
+      narrators: narrator ? [NarratorName(narrator)] : undefined,
       subgenres: subgenre ? [{ label: Subgenre(subgenre), language: 'fr' }] : undefined,
       series: saga
         ? {
@@ -134,6 +146,22 @@ describe('the Library tab entry screen', () => {
 
     expect(series.map((row) => String(row.name))).toEqual(['Frieren'])
     expect(authors.map((author) => String(author.name))).toEqual(['Yamada', 'Frank Herbert'])
+  })
+
+  test('brings nobody up for a book given up on', async () => {
+    await shelve({ title: 'Vagabond', days: 0, author: 'Inoue', status: 'dropped' })
+    await shelve({ title: 'Dune', days: 1, author: 'Frank Herbert' })
+    await shelve({ title: 'Fondation', days: 2, author: 'Asimov', status: 'read' })
+    await shelve({ title: 'Les Robots', days: 0, author: 'Asimov', status: 'dropped' })
+    const listen = { format: 'audiobook' as const }
+    await shelve({ ...listen, title: 'Ubik', days: 0, narrator: 'Luc Ferry', status: 'dropped' })
+    await shelve({ ...listen, title: 'Solaris', days: 1, narrator: 'Ana Lot' })
+
+    const authors = await LibraryUseCase.authors(reader, { format: 'book' })
+    const narrators = await LibraryUseCase.narrators(reader, {})
+
+    expect(authors.map((author) => String(author.name))).toEqual(['Frank Herbert', 'Asimov'])
+    expect(narrators.map((narrator) => String(narrator.name))).toEqual(['Ana Lot'])
   })
 })
 

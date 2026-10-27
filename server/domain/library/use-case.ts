@@ -11,7 +11,7 @@ import {
   subgenresOf,
 } from '~/domain/book/business-rules'
 import { BookQuery } from '~/domain/book/query'
-import type { BookFormat, BookLanguage, BookView, Subgenre } from '~/domain/book/types'
+import type { Book, BookFormat, BookLanguage, BookView, Subgenre } from '~/domain/book/types'
 import {
   formatsOf,
   genreShelvesOf,
@@ -145,15 +145,19 @@ export namespace LibraryUseCase {
     SeriesUseCase.followedRecent(userId, (book) => inLibraryView(book, view), PEOPLE_LIMIT)
 
   /** The authors rail: the authors of the view's books, the one shelved last
-   *  first, with their portraits. */
+   *  first, with their portraits. A book given up on brings nobody up, as it
+   *  stays out of "Récemment". */
   export const authors = (userId: UserId, view: ShelvesView): Promise<FollowedAuthor[]> =>
-    AuthorUseCase.recent(userId, (book) => inLibraryView(book, view), PEOPLE_LIMIT)
+    AuthorUseCase.recent(userId, (book) => inActiveView(book, view), PEOPLE_LIMIT)
 
   /** The narrators rail, under the authors: who reads the view's recordings,
-   *  the one shelved last first, with their faces. Empty when the view holds
-   *  no audiobook. */
+   *  the one shelved last first, with their faces, a recording given up on
+   *  left out. Empty when the view holds no audiobook. */
   export const narrators = (userId: UserId, view: ShelvesView): Promise<FollowedNarrator[]> =>
-    NarratorUseCase.recent(userId, (book) => inLibraryView(book, view), PEOPLE_LIMIT)
+    NarratorUseCase.recent(userId, (book) => inActiveView(book, view), PEOPLE_LIMIT)
+
+  const inActiveView = (book: Book, view: ShelvesView) =>
+    book.status !== 'dropped' && inLibraryView(book, view)
 
   /** The pile's sections in a view: one scan of the library and the award
    *  winners Découvrir keeps, the covers of the books offered signed once
