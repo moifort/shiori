@@ -4,7 +4,7 @@ import Foundation
 /// Library tab draws them: always in white. A paper book being read wears the
 /// bookmark ribbon and says since when, never a page or a percentage the app
 /// does not track; a recording adds a short bar and how far it got. A book read
-/// shows its stars — five for a favourite, never a heart — or the day it was
+/// shows its five stars — a white heart for a favourite — or the day it was
 /// finished. A one-letter unit sticks to its figure, "6j", "68%"; a longer
 /// one stands apart, "3 sem.".
 struct PosterLabel: Hashable, Sendable {

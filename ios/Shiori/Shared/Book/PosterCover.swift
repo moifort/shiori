@@ -152,36 +152,27 @@ struct PosterCover: View {
     }
 }
 
-/// A read book's stars in a poster's foot: whole ones filled, and a half one
-/// as the left half of a star alone, never the outline of the missing half.
+/// A read book's stars in a poster's foot: always five, the ones not given
+/// drawn as outlines, so every rated cover carries a row of the same length.
+/// A favourite, five out of five, wears a heart instead.
 private struct PosterStars: View {
     let rating: Double
 
     var body: some View {
-        HStack(spacing: 1) {
-            ForEach(0..<min(Int(rating.rounded(.down)), 5), id: \.self) { _ in
-                Image(systemName: "star.fill")
-            }
-            if rating - rating.rounded(.down) >= 0.5 {
-                LeadingHalf {
-                    Image(systemName: "star.fill")
+        Group {
+            if rating >= 5 {
+                Image(systemName: "heart.fill")
+            } else {
+                HStack(spacing: 1) {
+                    ForEach(1...5, id: \.self) { star in
+                        let symbol = StarSymbol(star: star, rating: rating)
+                        Image(systemName: symbol.name)
+                            .opacity(symbol == .empty ? 0.7 : 1)
+                    }
                 }
-                .clipped()
             }
         }
         .font(.footnote.weight(.semibold))
-    }
-}
-
-/// Lays its content out at its own size but takes only its left half.
-private struct LeadingHalf: Layout {
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        guard let size = subviews.first?.sizeThatFits(.unspecified) else { return .zero }
-        return CGSize(width: size.width / 2, height: size.height)
-    }
-
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        subviews.first?.place(at: bounds.origin, anchor: .topLeading, proposal: .unspecified)
     }
 }
 
