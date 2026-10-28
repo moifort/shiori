@@ -3,9 +3,8 @@ import SwiftUI
 
 /// Owns one shelf of the Library tab opened from its rail — "Récemment", the
 /// pile, the books read, the favourites, the books given up on, every book —
-/// loaded by pages, with its pills: the statuses over "Récemment", by date or
-/// by genre over the favourites, none over the books read, the formats
-/// elsewhere.
+/// loaded by pages, with its pills: the statuses over "Récemment", the genres
+/// over the favourites, none over the books read, the formats elsewhere.
 @MainActor
 @Observable
 final class BookShelfViewModel {
@@ -39,8 +38,9 @@ final class BookShelfViewModel {
     /// shelf opened under a format already chosen is handed the opener's,
     /// since its pages hold that format alone.
     private(set) var formats: [BookFormat] = []
-    /// How the favourites are cut: by date, or by genre.
-    private(set) var grouping: ShelfGrouping = .date
+    /// The genres the favourites hold, kept from their first page as the
+    /// formats are: the pills that narrow the sagas and the books to one.
+    private(set) var genres: [BookGenre] = []
 
     private var loaded = false
     private var generation = 0
@@ -58,16 +58,16 @@ final class BookShelfViewModel {
     private var pageSize: Int { shelf == .all ? 140 : 60 }
     private var prefetchThreshold: Int { shelf == .all ? 42 : 12 }
 
-    /// The pills over the grid: the statuses over "Récemment", the groupings
-    /// over the favourites, none over the books read — whose formats the
-    /// Library tab already chooses above them, as the favourites' — otherwise
-    /// the formats, shown only when there are two to choose from.
+    /// The pills over the grid: the statuses over "Récemment", the genres over
+    /// the favourites, none over the books read — whose formats the Library
+    /// tab already chooses above them, as the favourites' — otherwise the
+    /// formats, shown only when there are two to choose from.
     var statusPills: [ReadingStatus] {
         shelf == .recent ? [.toRead, .reading, .read] : []
     }
 
-    var groupingPills: [ShelfGrouping] {
-        shelf == .loved ? ShelfGrouping.allCases : []
+    var genrePills: [BookGenre] {
+        shelf == .loved && genres.count > 1 ? genres : []
     }
 
     var shownFormats: [BookFormat] {
@@ -77,14 +77,10 @@ final class BookShelfViewModel {
     /// The shelves whose formats the Library tab's own pills already choose.
     private static let formatsAbove: Set<BookShelf> = [.read, .loved]
 
-    /// By genre, every page is loaded: a genre's heading must not grow, nor a
-    /// new one appear above, as the grid scrolls.
-    private var loadsWholeShelf: Bool { grouping == .genre }
 
     /// The books cut under the shelf's headings.
     var sections: [ListSection<Book>] {
         let today = now()
-        if grouping == .genre { return ListSection.byGenre(books) }
         switch shelf {
         case .recent, .read:
             return ListSection.byPeriod(books, on: \.shelvedAt, now: today)
@@ -103,14 +99,10 @@ final class BookShelfViewModel {
         scheduleReload()
     }
 
-    /// The books already shown are only cut again; by genre, the pages not
-    /// yet loaded are fetched behind them rather than emptying the grid.
-    func select(grouping: ShelfGrouping) {
-        guard self.grouping != grouping else { return }
-        self.grouping = grouping
-        guard grouping == .genre, hasMore else { return }
-        reloadTask?.cancel()
-        reloadTask = Task { await load() }
+    func select(genre: BookGenre?) {
+        guard query.view.genre != genre else { return }
+        query.view.genre = genre
+        scheduleReload()
     }
 
     func select(format: BookFormat?) {
@@ -139,7 +131,7 @@ final class BookShelfViewModel {
     func load(keepingDepth: Bool = false) async {
         generation += 1
         let requested = generation
-        let wanted = loadsWholeShelf ? Int.max : keepingDepth ? max(books.count, pageSize) : pageSize
+        let wanted = keepingDepth ? max(books.count, pageSize) : pageSize
         isLoading = true
         errorMessage = nil
         loadMoreFailed = false
@@ -162,10 +154,13 @@ final class BookShelfViewModel {
                 lovedSeries = loved
                 hasMore = more && kept.count == fetched.count
             }
+            // The hearted sagas count too, whatever page is loaded.
+            let held = fetched + loved.flatMap(\.volumes)
             if formats.isEmpty, query.view.format == nil {
-                // The hearted sagas count too, whatever page is loaded.
-                let held = fetched + loved.flatMap(\.volumes)
                 formats = BookFormat.allCases.filter { format in held.contains { $0.format == format } }
+            }
+            if genres.isEmpty, query.view.genre == nil {
+                genres = BookGenre.alphabetical.filter { genre in held.contains { $0.genre == genre } }
             }
             loaded = true
             CoverImages.prefetch(kept.compactMap(\.coverURL))
@@ -211,6 +206,10 @@ final class BookShelfViewModel {
             hasMore = page.hasMore && kept.count == page.books.count
             for format in BookFormat.allCases where !formats.contains(format) && kept.contains(where: { $0.format == format }) && query.view.format == nil {
                 formats.append(format)
+            }
+            if query.view.genre == nil {
+                let added = Set(kept.compactMap(\.genre)).subtracting(genres)
+                if !added.isEmpty { genres = BookGenre.alphabetical.filter { genres.contains($0) || added.contains($0) } }
             }
             CoverImages.prefetch(kept.compactMap(\.coverURL))
         } catch is CancellationError {

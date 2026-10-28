@@ -11445,22 +11445,6 @@
         }
       }
     },
-    "Sans genre" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No genre"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sans genre"
-          }
-        }
-      }
-    },
     "Sans note" : {
       "localizations" : {
         "en" : {

@@ -47,8 +47,8 @@ struct BookShelfScreen: View {
                     lovedSeries: viewModel.lovedSeries,
                     statuses: viewModel.statusPills,
                     selectedStatus: viewModel.query.status,
-                    groupings: viewModel.groupingPills,
-                    selectedGrouping: viewModel.grouping,
+                    genres: viewModel.genrePills,
+                    selectedGenre: viewModel.query.view.genre,
                     formats: viewModel.shownFormats,
                     selectedFormat: viewModel.query.view.format,
                     isPreparingShare: isPreparingShare,
@@ -79,7 +79,7 @@ struct BookShelfScreen: View {
         case let .openBook(book): destination = .book(book)
         case let .openSeries(saga): destination = .series(saga.seriesId)
         case let .selectStatus(status): viewModel.select(status: status)
-        case let .selectGrouping(grouping): viewModel.select(grouping: grouping)
+        case let .selectGenre(genre): viewModel.select(genre: genre)
         case let .selectFormat(format): viewModel.select(format: format)
         case let .menu(book, action): quick = BookQuickRequest(book: book, action: action)
         case let .reached(id): viewModel.prefetchIfNeeded(for: id)

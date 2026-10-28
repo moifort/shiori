@@ -173,7 +173,10 @@ struct BookShelfViewModelTests {
         var client = LibraryClient()
         client.shelf = { query, limit, after in
             asked?.record(query.serverStatus?.rawValue ?? "all")
-            let kept = books.filter { query.serverStatus == nil || $0.status == query.serverStatus }
+            let kept = books.filter {
+                (query.serverStatus == nil || $0.status == query.serverStatus)
+                    && (query.view.genre == nil || $0.genre == query.view.genre)
+            }
             let start = after.flatMap { id in kept.firstIndex { $0.id == id }.map { $0 + 1 } } ?? 0
             let page = Array(kept.dropFirst(start).prefix(limit))
             return LibraryPageResult(books: page, hasMore: start + page.count < kept.count)
@@ -223,27 +226,25 @@ struct BookShelfViewModelTests {
         #expect(viewModel.books.isEmpty)
     }
 
-    @Test func theFavouritesAreCutByGenreOrByDateWithoutFormatPills() async {
+    @Test func theFavouritesAreNarrowedByTheirGenresWithoutFormatPills() async {
         var dune = book("dune", .read, shelved: 0)
         dune.genre = .scienceFiction
         dune.format = .manga
         var hobbit = book("hobbit", .read, shelved: 1)
         hobbit.genre = .fantasy
-        var hyperion = book("hyperion", .read, shelved: 2)
-        hyperion.genre = .scienceFiction
-        let untagged = book("untagged", .read, shelved: 3)
-        let viewModel = BookShelfViewModel(client: serving([dune, hobbit, hyperion, untagged]), shelf: .loved, now: { now })
+        let untagged = book("untagged", .read, shelved: 2)
+        let viewModel = BookShelfViewModel(client: serving([dune, hobbit, untagged]), shelf: .loved, now: { now })
         await viewModel.load()
 
         #expect(viewModel.shownFormats.isEmpty)
-        #expect(viewModel.groupingPills == [.date, .genre])
+        #expect(viewModel.genrePills == BookGenre.alphabetical.filter { [.scienceFiction, .fantasy].contains($0) })
 
-        viewModel.select(grouping: .genre)
+        viewModel.select(genre: .fantasy)
+        // The reload the pill starts runs on its own task.
+        for _ in 0..<1000 where viewModel.books.isEmpty { await Task.yield() }
 
-        #expect(viewModel.sections.map(\.title) == [
-            BookGenre.scienceFiction.label, BookGenre.fantasy.label, String(localized: "Sans genre"),
-        ])
-        #expect(viewModel.sections[0].rows.map(\.id) == ["dune", "hyperion"])
+        #expect(viewModel.books.map(\.id) == ["hobbit"])
+        #expect(viewModel.genrePills.count == 2)
     }
 
     @Test func theBooksReadHaveNoPills() async {
@@ -253,7 +254,7 @@ struct BookShelfViewModelTests {
 
         await viewModel.load()
 
-        #expect(viewModel.groupingPills.isEmpty)
+        #expect(viewModel.genrePills.isEmpty)
         #expect(viewModel.shownFormats.isEmpty)
         #expect(viewModel.statusPills.isEmpty)
     }
