@@ -1541,8 +1541,17 @@ enum Showcase {
     ]
 
     /// This month's selection, all four still to be seen.
+    /// On with `-showcase-unrated`: the shelf as if nothing on it were
+    /// rated, so the month's selection asks for a rating instead.
+    static let isUnrated = ProcessInfo.processInfo.arguments.contains("-showcase-unrated")
+
     static var monthlyDiscoveries: MonthlyDiscoveries {
-        MonthlyDiscoveries(
+        if isUnrated {
+            return MonthlyDiscoveries(
+                month: MonthlyDiscoveries.month(of: .now), status: .none, suggestions: [], needsRatings: true
+            )
+        }
+        return MonthlyDiscoveries(
             month: MonthlyDiscoveries.month(of: .now),
             suggestions: discoveryPicks.map { pick in
                 Suggestion(

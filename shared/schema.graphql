@@ -2779,6 +2779,11 @@ Découvrir’s discoveries of the month: books chosen for the reader by Claude f
 type MonthlyDiscoveries {
   """`YYYY-MM`: the month the line is titled after."""
   month: String!
+
+  """
+  Nothing in the library rated, loved, dropped or dismissed: no selection is made until the reader rates a book, so the app asks for one instead of waiting.
+  """
+  needsRatings: Boolean!
   status: DiscoveriesStatus!
 
   """

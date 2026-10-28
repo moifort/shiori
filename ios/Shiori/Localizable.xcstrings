@@ -9573,6 +9573,22 @@
         }
       }
     },
+    "Noter mes lectures" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rate my books"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noter mes lectures"
+          }
+        }
+      }
+    },
     "Noter un livre le marque comme lu." : {
       "localizations" : {
         "en" : {
@@ -9601,6 +9617,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Notes de version indisponibles"
+          }
+        }
+      }
+    },
+    "Notez vos lectures" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rate your books"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notez vos lectures"
           }
         }
       }
@@ -11361,6 +11393,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Qu'en avez-vous pensé ?"
+          }
+        }
+      }
+    },
+    "Quelques étoiles, et Shiori choisit vos livres du mois" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A few stars, and Shiori picks your books of the month"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quelques étoiles, et Shiori choisit vos livres du mois"
           }
         }
       }

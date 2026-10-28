@@ -325,11 +325,12 @@ describe('the month’s discoveries', () => {
 
     expect(prompts).toHaveLength(0)
     expect(discoveries.status).toBe('none')
+    expect(discoveries.needsRatings).toBe(true)
     expect(fake.data('suggestion-queues', reader)?.generatingSince).toBeUndefined()
 
     shelve('shibumi', 'Shibumi', 'Trevanian', { rating: 5 })
     startFakeRequest()
-    await look('2026-10-16T09:00:00Z')
+    expect((await look('2026-10-16T09:00:00Z')).needsRatings).toBe(false)
     expect(prompts).toHaveLength(1)
   })
 

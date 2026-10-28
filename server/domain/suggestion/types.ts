@@ -129,4 +129,7 @@ export type MonthlyDiscoveries = {
   month: string
   status: DiscoveriesStatus
   suggestions: SuggestionView[]
+  /** Nothing in the library rated, loved, dropped or dismissed: the model has
+   *  nothing to go on, so no selection is made until the reader rates a book. */
+  needsRatings: boolean
 }

@@ -46,6 +46,20 @@ struct HomeHeroItemTests {
         #expect(dates(items) == [])
     }
 
+    @Test func closesOnTheCallToRateWhenNothingIsRated() {
+        let unrated = MonthlyDiscoveries(month: "2026-10", status: .none, suggestions: [], needsRatings: true)
+        let items = HomeHeroItem.items(
+            releases: [release(1, "2026-10-26")],
+            discoveries: unrated.shownOnHome,
+            doneMonth: unrated.doneMonth(today: today),
+            needsRatingsMonth: unrated.needsRatingsMonth,
+            today: today
+        )
+        #expect(items.map(\.id).last == "needs-ratings-2026-10")
+        let rated = MonthlyDiscoveries(month: "2026-10", status: .none, suggestions: [])
+        #expect(rated.needsRatingsMonth == nil)
+    }
+
     @Test func keepsLastWeekAcrossTheTurnOfTheMonth() {
         let november = Calendar.current.date(from: DateComponents(year: 2026, month: 11, day: 2, hour: 12))!
         let items = HomeHeroItem.items(

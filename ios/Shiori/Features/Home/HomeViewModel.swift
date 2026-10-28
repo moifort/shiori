@@ -13,7 +13,7 @@ final class HomeViewModel {
         if caching {
             cache = SnapshotCache("dashboard", version: 5)
             releasesCache = SnapshotCache("dashboard-releases", version: 3)
-            discoveriesCache = SnapshotCache("dashboard-discoveries", version: 2)
+            discoveriesCache = SnapshotCache("dashboard-discoveries", version: 3)
         } else {
             (cache, releasesCache, discoveriesCache) = (nil, nil, nil)
         }

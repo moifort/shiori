@@ -3,18 +3,23 @@ import SwiftUI
 /// What the home screen's carousel puts forward, a page each: what came out
 /// lately, then what comes out within the week, then the month's discoveries —
 /// or, once the reader took or turned down every one, the page that says the
-/// month is done.
+/// month is done; or, when nothing on the shelf is rated, the page that asks
+/// for a rating, without which no selection is made.
 enum HomeHeroItem: Identifiable {
     case release(HomeRelease)
     case discovery(Suggestion)
     /// The month's discoveries all taken or turned down, `YYYY-MM`.
     case monthDone(String)
+    /// Nothing on the shelf rated, so no selection made for the month,
+    /// `YYYY-MM`.
+    case needsRatings(String)
 
     var id: String {
         switch self {
         case let .release(release): "release-\(release.id)"
         case let .discovery(suggestion): "discovery-\(suggestion.id)"
         case let .monthDone(month): "month-done-\(month)"
+        case let .needsRatings(month): "needs-ratings-\(month)"
         }
     }
 
@@ -28,11 +33,13 @@ enum HomeHeroItem: Identifiable {
     /// then what is announced for this month without a day. Then what comes
     /// out within the week, the soonest first, then the discoveries. A
     /// release the reader marked seen is left out. A month whose discoveries
-    /// ran out closes on its page.
+    /// ran out closes on its page, as does a month with no selection for want
+    /// of a rated book.
     static func items(
         releases: [HomeRelease],
         discoveries: [Suggestion],
         doneMonth: String? = nil,
+        needsRatingsMonth: String? = nil,
         seen: Set<HomeRelease.ID> = [],
         today: Date = .now
     ) -> [HomeHeroItem] {
@@ -59,7 +66,10 @@ enum HomeHeroItem: Identifiable {
         let lined = out.sorted { $0.1 != $1.1 ? $0.1 > $1.1 : byName($0.0, $1.0) }.map(\.0)
             + thisMonth.sorted(by: byName)
             + coming.sorted { $0.1 != $1.1 ? $0.1 < $1.1 : byName($0.0, $1.0) }.map(\.0)
-        let done = discoveries.isEmpty ? doneMonth.map { [HomeHeroItem.monthDone($0)] } ?? [] : []
+        let done = discoveries.isEmpty
+            ? doneMonth.map { [HomeHeroItem.monthDone($0)] }
+                ?? needsRatingsMonth.map { [HomeHeroItem.needsRatings($0)] } ?? []
+            : []
         return lined.map(HomeHeroItem.release) + discoveries.map(HomeHeroItem.discovery) + done
     }
 
@@ -133,6 +143,8 @@ struct HomeHeroCarousel: View {
     var onUnseeRelease: (HomeRelease) -> Void = { _ in }
     /// Découvrir, from the page that says the month is done.
     var onShowDiscover: () -> Void = {}
+    /// The books read, to rate them, from the page that asks for a rating.
+    var onRate: () -> Void = {}
     /// The cover whose colours the month's last page takes: the library's,
     /// as the wait on the selection does.
     var backdropCover: URL?
@@ -200,6 +212,7 @@ struct HomeHeroCarousel: View {
                         case let .release(release): releasePage(release, id: item.id)
                         case let .discovery(suggestion): discoveryPage(suggestion, id: item.id)
                         case let .monthDone(month): monthDonePage(month, id: item.id)
+                        case let .needsRatings(month): needsRatingsPage(month, id: item.id)
                         }
                     }
                     // As tall as the carousel, which follows the page shown.
@@ -429,6 +442,49 @@ struct HomeHeroCarousel: View {
         .accessibilityIdentifier("home-month-done")
     }
 
+    /// Nothing on the shelf rated, so the month's selection has nothing to go
+    /// on: where the cover would stand, a blank one carrying a star; beside
+    /// it the month, what the choice needs; under both, the way to the books
+    /// read, to rate them.
+    private func needsRatingsPage(_ month: String, id: HomeHeroItem.ID) -> some View {
+        layout(id: id) {
+            DoneStack(symbol: "star.fill")
+                .scaleEffect(0.84)
+                .frame(width: Self.coverWidth, height: Self.coverHeight)
+        } side: {
+            Text(MonthlyDiscoveries.title(month: month))
+                .font(.footnote.weight(.semibold))
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .glassEffect(.clear, in: .capsule)
+            Text("Notez vos lectures")
+                .font(.system(.title2, design: .serif, weight: .bold))
+                .padding(.top, 10)
+            Text("Quelques étoiles, et Shiori choisit vos livres du mois")
+                .font(.subheadline)
+                .foregroundStyle(.white.opacity(0.75))
+                .padding(.top, 8)
+        } buttons: {
+            Button(action: onRate) {
+                Label("Noter mes lectures", systemImage: "star.fill")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.glassProminent)
+            .tint(.white)
+            .foregroundStyle(.black)
+            .controlSize(.large)
+            .accessibilityIdentifier("home-needs-ratings-rate")
+        }
+        .background {
+            CoverBackdrop(url: backdropCover, fadeHeight: Self.fadeHeight)
+                .padding(.top, -Self.backdropRise)
+                .scaleEffect(1 + pull / (height + Self.backdropRise), anchor: .bottom)
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("home-needs-ratings")
+    }
+
     /// A page as the book page draws its head: the cover, and beside it the
     /// badge, the title, what it is and why, then the buttons under both,
     /// over the cover's colours.
@@ -535,15 +591,18 @@ struct HomeHeroCarousel: View {
 }
 
 /// The month's covers gone through, in the cover's room: three glass covers
-/// fanned out as the empty shelf draws its stack, a check on the front one.
+/// fanned out as the empty shelf draws its stack, a check on the front one —
+/// or a star, when the month waits on a rating.
 private struct DoneStack: View {
+    var symbol = "checkmark"
+
     var body: some View {
         ZStack {
             cover.rotationEffect(.degrees(-7)).offset(x: -14, y: 4)
             cover.rotationEffect(.degrees(6)).offset(x: 14, y: 6)
             cover
                 .overlay {
-                    Image(systemName: "checkmark")
+                    Image(systemName: symbol)
                         .font(.system(size: 40, weight: .semibold))
                         .foregroundStyle(.white.opacity(0.92))
                 }

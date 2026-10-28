@@ -59,7 +59,8 @@ export namespace SuggestionUseCase {
    *  app to ask again; a failure answers `none` and is tried the next day. The
    *  home page only reads what there is. A selection that ran out is `ready`
    *  and empty until next month. `none`, and nothing asked, without an
-   *  Anthropic key. */
+   *  Anthropic key. `needsRatings` when the library gives the model nothing to
+   *  go on: no selection is made until the reader rates a book. */
   export const monthly = async (
     userId: UserId,
     format: ReleaseFormat,
@@ -68,9 +69,9 @@ export namespace SuggestionUseCase {
     now = new Date(),
   ): Promise<MonthlyDiscoveries> => {
     const month = monthOf(now)
-    if (!isConfigured()) return { month, status: 'none', suggestions: [] }
+    if (!isConfigured()) return { month, status: 'none', suggestions: [], needsRatings: false }
     const [library, queue] = await Promise.all([libraryOf(userId), SuggestionQuery.queue(userId)])
-    const { books, opinions, awaited } = library
+    const { books, opinions, dismissals, awaited } = library
     const mayGenerate = (current: typeof queue) => shouldGenerate(current, now, appLanguage)
     let suggestions = queue?.month === month ? keptOf(queue.suggestions, library, appLanguage) : []
     let status = statusOf(queue, now, appLanguage)
@@ -99,6 +100,7 @@ export namespace SuggestionUseCase {
         opinions,
         awaited,
       }),
+      needsRatings: !tasteDigestOf(books, opinions, dismissals),
     }
   }
 

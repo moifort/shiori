@@ -212,5 +212,11 @@ export const MonthlyDiscoveriesType = builder
           'are left, or the server has no model key.',
         resolve: (discoveries) => discoveries.suggestions,
       }),
+      needsRatings: t.boolean({
+        description:
+          'Nothing in the library rated, loved, dropped or dismissed: no selection is made until ' +
+          'the reader rates a book, so the app asks for one instead of waiting.',
+        resolve: (discoveries) => discoveries.needsRatings,
+      }),
     }),
   })

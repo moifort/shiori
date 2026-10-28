@@ -480,7 +480,7 @@ struct DiscoverSnapshots: Sendable {
     static let disk = DiscoverSnapshots(
         feed: SnapshotCache("discovery", version: 9),
         awards: SnapshotCache("discover-awards", version: 1),
-        discoveries: SnapshotCache("discover-discoveries", version: 2)
+        discoveries: SnapshotCache("discover-discoveries", version: 3)
     )
 
     static let none = DiscoverSnapshots()

@@ -136,6 +136,9 @@ struct MonthlyDiscoveries: Hashable, Sendable, Codable {
     let month: String
     var status: Status = .ready
     let suggestions: [Suggestion]
+    /// Nothing in the library rated, loved, dropped or dismissed: no
+    /// selection is made until the reader rates a book.
+    var needsRatings = false
 
     /// "Les découvertes d'octobre", "Les découvertes de novembre" — "October's
     /// discoveries" in English.
@@ -229,7 +232,8 @@ enum SuggestionsAPI {
             status: status,
             suggestions: data.monthlyDiscoveries.suggestions.map {
                 Suggestion(fields: $0.fragments.suggestionFields)
-            }
+            },
+            needsRatings: data.monthlyDiscoveries.needsRatings
         )
     }
 

@@ -127,6 +127,7 @@ struct HomePage: View {
                         onSeeRelease: { onAction(.seeRelease($0)) },
                         onUnseeRelease: { onAction(.unseeRelease($0)) },
                         onShowDiscover: { onAction(.showDiscover) },
+                        onRate: { onAction(.showLibrary(LibraryRequest(filter: .status(.read)))) },
                         backdropCover: dashboard.leadCoverURL,
                         pull: pull
                     )
@@ -225,6 +226,7 @@ struct HomePage: View {
             releases: releases,
             discoveries: shownDiscoveries,
             doneMonth: discoveries?.doneMonth(today: today),
+            needsRatingsMonth: discoveries?.needsRatingsMonth,
             seen: seenReleases,
             today: today
         )
@@ -268,6 +270,7 @@ struct HomePage: View {
             releases: releases,
             discoveries: discoveries?.shownOnHome ?? [],
             doneMonth: discoveries?.doneMonth(today: today),
+            needsRatingsMonth: discoveries?.needsRatingsMonth,
             seen: seenReleases,
             today: today
         )
@@ -613,6 +616,12 @@ extension MonthlyDiscoveries {
     /// so. Nil while any is left, and for another month's line.
     func doneMonth(today: Date = .now) -> String? {
         status == .ready && suggestions.isEmpty && month == Self.month(of: today) ? month : nil
+    }
+
+    /// The month, when nothing on the shelf is rated and so no selection is
+    /// made: the carousel closes on the page that asks for a rating.
+    var needsRatingsMonth: String? {
+        needsRatings && status != .ready ? month : nil
     }
 }
 
