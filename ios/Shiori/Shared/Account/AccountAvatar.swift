@@ -1,3 +1,4 @@
+import CoreImage
 import SwiftUI
 import UIKit
 
@@ -82,6 +83,38 @@ enum AvatarHero: String, CaseIterable, Identifiable, Sendable {
         case .wallander: "Wallander"
         case .bosch: "Harry Bosch"
         }
+    }
+
+    /// The portrait's background, read once from its top corner: every hero
+    /// is drawn on one flat colour.
+    @MainActor var aura: Color? {
+        if let known = Self.auras[self] { return known }
+        let color = UIImage(named: imageName).flatMap(Self.cornerColor)
+        Self.auras[self] = color
+        return color
+    }
+
+    @MainActor private static var auras: [AvatarHero: Color?] = [:]
+
+    private static func cornerColor(of image: UIImage) -> Color? {
+        guard let cgImage = image.cgImage else { return nil }
+        let input = CIImage(cgImage: cgImage)
+        let side = input.extent.width * 0.12
+        let corner = CGRect(x: input.extent.minX, y: input.extent.maxY - side, width: side, height: side)
+        guard let average = CIFilter(
+            name: "CIAreaAverage",
+            parameters: [kCIInputImageKey: input, kCIInputExtentKey: CIVector(cgRect: corner)]
+        )?.outputImage else { return nil }
+        var pixel = [UInt8](repeating: 0, count: 4)
+        CIContext(options: [.workingColorSpace: NSNull()]).render(
+            average,
+            toBitmap: &pixel,
+            rowBytes: 4,
+            bounds: average.extent,
+            format: .RGBA8,
+            colorSpace: nil
+        )
+        return Color(red: Double(pixel[0]) / 255, green: Double(pixel[1]) / 255, blue: Double(pixel[2]) / 255)
     }
 
     /// The first twelve, from books in the public domain.
@@ -173,6 +206,17 @@ enum AccountAvatar: Equatable, Sendable {
     /// A 512-pixel square JPEG, chosen in the onboarding before the account
     /// exists to keep it.
     case pickedPhoto(Data)
+
+    /// The colour the avatar's ring is tinted with: a hero's background, the
+    /// initials' colour. None for slate and for a photo, whose glass stays
+    /// plain.
+    @MainActor var aura: Color? {
+        switch self {
+        case .initials, .photo, .pickedPhoto: nil
+        case let .tinted(color): color.gradient.first
+        case let .hero(hero): hero.aura
+        }
+    }
 
     /// The 512-pixel square JPEG the server keeps, cropped to the middle of
     /// whatever the reader picked: a face is rarely at the edge of a photo.

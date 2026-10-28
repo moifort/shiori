@@ -2,7 +2,8 @@ import SwiftUI
 
 /// The reader's avatar as a toolbar button, ringed as the TV app rings it: a
 /// rim of the same glass as the buttons beside it, at their size, so the face
-/// stands off the page in light and dark alike.
+/// stands off the page in light and dark alike. The glass is faintly tinted
+/// with the avatar's own colour, as an aura.
 struct AccountAvatarButton: View {
     let avatar: AccountAvatar
     let firstName: String?
@@ -12,7 +13,7 @@ struct AccountAvatarButton: View {
         Button(action: action) {
             AccountAvatarView(avatar: avatar, firstName: firstName, size: 38)
                 .padding(3)
-                .glassEffect(.regular.interactive(), in: .circle)
+                .glassEffect(.regular.tint(avatar.aura?.opacity(0.45)).interactive(), in: .circle)
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Réglages")
