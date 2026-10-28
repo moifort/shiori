@@ -467,6 +467,7 @@ describe('the nightly sync', () => {
       redated: 0,
       renumbered: 0,
       editionDated: 0,
+      genred: 0,
     })
     expect((await BookQuery.all(reader)).map((book) => String(book.title))).toEqual([
       'Le Nom du vent',
@@ -499,6 +500,7 @@ describe('the nightly sync', () => {
       redated: 0,
       renumbered: 0,
       editionDated: 0,
+      genred: 0,
     })
     const [book] = await BookQuery.all(reader)
     expect(book?.audibleAsin).toBe(asin('B002V1OF70'))
@@ -524,6 +526,7 @@ describe('the nightly sync', () => {
       redated: 0,
       renumbered: 0,
       editionDated: 0,
+      genred: 0,
     })
     const [book] = await BookQuery.all(reader)
     expect(book?.status).toBe('to-read')
@@ -555,6 +558,7 @@ describe('the nightly sync', () => {
       redated: 1,
       renumbered: 0,
       editionDated: 0,
+      genred: 0,
     })
     const [book] = await BookQuery.all(reader)
     expect(book?.addedAt).toEqual(dateAdded)
@@ -618,6 +622,35 @@ describe('the nightly sync', () => {
     expect(book?.firstPublishedIn).toBeUndefined()
 
     expect(await AudibleUseCase.syncLibrary(reader, LATER)).toMatchObject({ editionDated: 0 })
+  })
+
+  // A library bought on a store whose shelf ids were not yet known came in
+  // without a single genre. The pass files it once the shelves are known.
+  test('files an audiobook imported without a genre on its Audible shelf', async () => {
+    await connect()
+    await AudibleCommand.recordImport(reader, NOW)
+    await BookCommand.add(
+      reader,
+      {
+        title: BookTitle('Le Nom du vent'),
+        authors: [AuthorName('Patrick Rothfuss')],
+        format: 'audiobook',
+        audibleAsin: asin('B002V1OF70'),
+      },
+      NOW,
+    )
+    // Romance on audible.fr.
+    items = [
+      anItem({
+        categories: [{ root: 'Genres', categories: [{ id: '21228893031', name: 'Romance' }] }],
+      }),
+    ]
+
+    expect(await AudibleUseCase.syncLibrary(reader, LATER)).toMatchObject({ genred: 1 })
+    const [book] = await BookQuery.all(reader)
+    expect(book?.genre).toBe('romance')
+
+    expect(await AudibleUseCase.syncLibrary(reader, LATER)).toMatchObject({ genred: 0 })
   })
 
   // A book the old rule left on the pile, and one the reader started since:
@@ -725,6 +758,7 @@ describe('the nightly sync', () => {
       redated: 0,
       renumbered: 0,
       editionDated: 0,
+      genred: 0,
     })
     expect(await BookQuery.all(reader)).toHaveLength(1)
   })

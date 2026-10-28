@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { AudibleItem, LastPosition } from 'audible-api-ts'
+import type { AudibleGenre, AudibleItem, AudibleLocale, LastPosition } from 'audible-api-ts'
 import { resolveGenreId } from 'audible-api-ts'
 import {
   audibleLinksFor,
@@ -8,6 +8,7 @@ import {
   bookFrom,
   boughtSince,
   editionYearsFor,
+  genresFor,
   heardSagasOf,
   importableFrom,
   listenedMinutesFor,
@@ -845,6 +846,32 @@ describe('dating the edition of an import made before the year was kept', () => 
   test('leaves an unlinked book, and one Audible cannot date, alone', () => {
     expect(editionYearsFor([aBook()], [anItem({ releaseDate: released })])).toEqual([])
     expect(editionYearsFor([linked()], [anItem()])).toEqual([])
+  })
+})
+
+describe("filing an import made before its store's shelves were known", () => {
+  const linked = (overrides: Partial<Book> = {}) =>
+    aBook({ audibleAsin: asin('B002V1OF70'), ...overrides })
+  const onShelf = (genre: AudibleGenre, locale: AudibleLocale) =>
+    anItem({
+      categories: [
+        { root: 'Genres', categories: [{ id: resolveGenreId(genre, locale), name: genre }] },
+      ],
+    })
+
+  test('gives a linked audiobook imported without a genre the one of its shelf', () => {
+    expect(genresFor([linked()], [onShelf('romance/contemporary', 'fr')])).toEqual([
+      { bookId: bookId('book-1'), genre: 'romance' },
+    ])
+  })
+
+  test('leaves a book that already has a genre alone', () => {
+    expect(genresFor([linked({ genre: 'fantasy' })], [onShelf('romance', 'fr')])).toEqual([])
+  })
+
+  test('leaves an unlinked book, and one on no known shelf, alone', () => {
+    expect(genresFor([aBook()], [onShelf('romance', 'fr')])).toEqual([])
+    expect(genresFor([linked()], [anItem()])).toEqual([])
   })
 })
 

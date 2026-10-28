@@ -90,6 +90,9 @@ export type LibrarySync = {
   /** Audiobooks imported before the edition year was kept, given Audible's.
    *  Only ever non-zero on the first pass after that change. */
   editionDated: number
+  /** Audiobooks imported without a genre, given the one Audible's shelves name
+   *  once their store's shelves are known. */
+  genred: number
 }
 
 /** What one run of the nightly job did, across every reader it reached. */

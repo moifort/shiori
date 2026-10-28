@@ -5,6 +5,7 @@ import {
   bookFrom,
   boughtSince,
   editionYearsFor,
+  genresFor,
   heardByAsin,
   heardSagasOf,
   importableFrom,
@@ -151,6 +152,7 @@ export namespace AudibleUseCase {
     const redates = purchaseDatesFor(linked, items)
     const renumbers = seriesVolumesFor(linked, items)
     const editionYears = editionYearsFor(linked, items)
+    const genres = genresFor(linked, items)
     const bought = toImportable(
       { items: boughtSince(items, account.lastImportedAt), positions },
       linked,
@@ -163,6 +165,7 @@ export namespace AudibleUseCase {
       redates.length +
       renumbers.length +
       editionYears.length +
+      genres.length +
       bought.length
     const added: Book[] = []
     const write = async () => {
@@ -195,6 +198,11 @@ export namespace AudibleUseCase {
       await bulkSave(editionYears, async ({ bookId, editionYear }) =>
         BookCommand.edit(userId, bookId, { editionYear }, now),
       )
+      // Audiobooks imported from a store whose shelves were not yet known carry
+      // no genre; this is what files them once it is.
+      await bulkSave(genres, async ({ bookId, genre }) =>
+        BookCommand.edit(userId, bookId, { genre }, now),
+      )
       await bulkSave(
         await SeriesUseCase.filedAfterCatalogues(bought.map(bookFrom)),
         async (book) => {
@@ -216,6 +224,7 @@ export namespace AudibleUseCase {
       redated: redates.length,
       renumbered: renumbers.length,
       editionDated: editionYears.length,
+      genred: genres.length,
     }
   }
 

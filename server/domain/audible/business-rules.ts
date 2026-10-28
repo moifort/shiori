@@ -29,6 +29,7 @@ import type {
   Book,
   BookId,
   BookLanguage,
+  Genre,
   ListeningMinutes as ListeningMinutesValue,
   ReadingStatus,
   SeriesEntry,
@@ -514,6 +515,28 @@ export const editionYearsFor = (
     const item = byAsin.get(book.audibleAsin)
     const editionYear = item && editionYearOf(item)
     return editionYear ? [{ bookId: book.id, editionYear }] : []
+  })
+}
+
+/** The genre to give linked audiobooks that carry none, read off Audible's
+ *  shelves as an import reads it.
+ *
+ *  A library bought on a store whose shelf ids were not yet known — audible.co.uk
+ *  until they were mapped — came in without a single genre, and the import never
+ *  looks at a title twice. This is what files those books once the store is
+ *  known. A genre already on the book stays: the reader chose it, or the import
+ *  did with the same shelves. */
+export const genresFor = (
+  books: readonly Book[],
+  items: readonly AudibleItem[],
+): { bookId: BookId; genre: Genre }[] => {
+  const byAsin = new Map(items.map((item) => [item.asin, item]))
+
+  return books.flatMap((book) => {
+    if (!book.audibleAsin || book.genre !== undefined) return []
+    const item = byAsin.get(book.audibleAsin)
+    const genre = item && genreFrom(item)
+    return genre ? [{ bookId: book.id, genre }] : []
   })
 }
 
