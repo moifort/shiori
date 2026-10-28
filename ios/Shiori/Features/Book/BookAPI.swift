@@ -70,6 +70,14 @@ enum BookAPI {
     }
 
     static func recordPage(id: String, page: Int) async throws -> Book {
+        #if DEBUG
+        // The showcase keeps no server: the page moves on the book it shows.
+        if Showcase.isOn, var book = Showcase.book(id: id) {
+            book.currentPage = page
+            if book.status == .toRead { book.status = .reading }
+            return book
+        }
+        #endif
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
             concerning: .book(id: id),

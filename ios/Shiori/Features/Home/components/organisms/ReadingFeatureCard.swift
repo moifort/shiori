@@ -58,10 +58,8 @@ struct ReadingFeatureCard: View {
                             ListeningProgressLine(progress: progress, durationMinutes: book.durationMinutes)
                                 .padding(.top, 8)
                         }
-                        if let page = book.unfinishedReadingPage {
-                            ReadingPageLine(page: page, pageCount: book.pageCount)
-                                .padding(.top, 8)
-                        }
+                        ReadingPageLine(page: book.unfinishedReadingPage, pageCount: book.pageCount)
+                            .padding(.top, book.unfinishedReadingPage == nil ? 0 : 8)
                     }
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity, alignment: .leading)

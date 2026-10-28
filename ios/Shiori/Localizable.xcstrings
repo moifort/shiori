@@ -1015,16 +1015,16 @@
     },
     "%lld restantes" : {
       "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld restantes"
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld left"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld restantes"
           }
         }
       }
@@ -1439,13 +1439,13 @@
     },
     "+%lld pages" : {
       "localizations" : {
-        "fr" : {
+        "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "+%lld pages"
           }
         },
-        "en" : {
+        "fr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "+%lld pages"
@@ -8999,16 +8999,16 @@
     },
     "Modifie la page où vous en êtes" : {
       "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Modifie la page où vous en êtes"
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Changes the page you are on"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modifie la page où vous en êtes"
           }
         }
       }
@@ -10183,16 +10183,16 @@
     },
     "Où en êtes-vous ?" : {
       "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Où en êtes-vous ?"
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Where are you?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Où en êtes-vous ?"
           }
         }
       }
@@ -10215,13 +10215,13 @@
     },
     "Page %lld" : {
       "localizations" : {
-        "fr" : {
+        "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Page %lld"
           }
         },
-        "en" : {
+        "fr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Page %lld"
@@ -11319,16 +11319,16 @@
     },
     "Progression" : {
       "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Progression"
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Progress"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Progression"
           }
         }
       }
@@ -15905,13 +15905,13 @@
     },
     "page %lld" : {
       "localizations" : {
-        "fr" : {
+        "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "page %lld"
           }
         },
-        "en" : {
+        "fr" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "page %lld"
@@ -15921,16 +15921,16 @@
     },
     "page %lld · %lld%%" : {
       "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "page %1$lld · %2$lld%%"
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "page %lld · %lld%%"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "page %1$lld · %2$lld%%"
           }
         }
       }
@@ -15969,16 +15969,16 @@
     },
     "sur **%lld** pages" : {
       "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "sur **%lld** pages"
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "of **%lld** pages"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "sur **%lld** pages"
           }
         }
       }

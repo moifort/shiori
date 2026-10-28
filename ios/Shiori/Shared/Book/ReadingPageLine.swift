@@ -3,12 +3,22 @@ import SwiftUI
 /// Where the reader is in a printed or digital book, as the hero draws a
 /// recording's progress: a small white bar, then "page 214 · 32%". When the
 /// page moves on, the pages just read rise off the line — "+34 pages" — and
-/// the bar grows to its new length behind them.
+/// the bar and the figure move to the new page under them.
+///
+/// The line takes the page even before there is one, so the first page
+/// recorded rises off it too, and it waits for the sheet the page was typed
+/// in to slide away: the server answers while the sheet still covers the
+/// line, and the reader would never see it move.
 struct ReadingPageLine: View {
-    let page: Int
+    /// The page reached; nil draws nothing.
+    let page: Int?
     /// The book's length, for the bar and the share. Nil says the page alone.
     var pageCount: Int?
+    /// Opens the page sheet from the line. Nil draws the line alone.
+    var onOpen: (() -> Void)? = nil
 
+    /// The page drawn, which follows `page` once the sheet is gone.
+    @State private var shown: Int?
     /// The pages just read, risen off the line while they show.
     @State private var gain: Int?
     /// Where the pages just read are in their rise: low and hidden, shown,
@@ -16,9 +26,41 @@ struct ReadingPageLine: View {
     @State private var gainPhase = GainPhase.low
 
     private static let width: CGFloat = 56
+    /// How long a sheet takes to slide away, which the line waits out.
+    private static let sheetDismissal: Duration = .milliseconds(550)
+
+    init(page: Int?, pageCount: Int? = nil, onOpen: (() -> Void)? = nil) {
+        self.page = page
+        self.pageCount = pageCount
+        self.onOpen = onOpen
+        _shown = State(initialValue: page)
+    }
 
     var body: some View {
-        HStack(spacing: 8) {
+        Group {
+            if let shown {
+                if let onOpen {
+                    Button(action: onOpen) { line(shown).contentShape(.rect) }
+                        .buttonStyle(.plain)
+                        .accessibilityHint(Text("Modifie la page où vous en êtes"))
+                        .accessibilityIdentifier("book-reading-page")
+                } else {
+                    line(shown)
+                }
+            }
+        }
+        .onChange(of: page) { old, new in
+            Task {
+                try? await Task.sleep(for: Self.sheetDismissal)
+                withAnimation(.snappy) { shown = new }
+                if let new, new > (old ?? 0) { celebrate(new - (old ?? 0)) }
+            }
+        }
+    }
+
+    private func line(_ page: Int) -> some View {
+        let progress = progress(of: page)
+        return HStack(spacing: 8) {
             if let progress {
                 Capsule()
                     .fill(.white.opacity(0.3))
@@ -51,15 +93,10 @@ struct ReadingPageLine: View {
                     .accessibilityHidden(true)
             }
         }
-        .animation(.snappy, value: page)
         .accessibilityElement(children: .combine)
-        .onChange(of: page) { old, new in
-            guard new > old else { return }
-            celebrate(new - old)
-        }
     }
 
-    private var progress: Int? {
+    private func progress(of page: Int) -> Int? {
         guard let pageCount, pageCount > 0 else { return nil }
         return min(100, page * 100 / pageCount)
     }
@@ -91,11 +128,11 @@ struct ReadingPageLine: View {
 }
 
 #Preview {
-    @Previewable @State var page = 214
+    @Previewable @State var page: Int? = nil
     VStack(alignment: .leading, spacing: 24) {
         ReadingPageLine(page: page, pageCount: 662)
         ReadingPageLine(page: 46)
-        Button { page += 34 } label: { Text(verbatim: "+34") }
+        Button { page = (page ?? 180) + 34 } label: { Text(verbatim: "+34") }
     }
     .padding(40)
     .background(.black)

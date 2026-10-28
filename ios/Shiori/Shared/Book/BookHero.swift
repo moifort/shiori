@@ -261,19 +261,8 @@ struct BookHero<Actions: View>: View {
             if let progress = book.unfinishedListeningProgress {
                 ListeningProgressLine(progress: progress, durationMinutes: book.durationMinutes)
             }
-            if let page = book.unfinishedReadingPage {
-                if let onOpenProgress {
-                    Button(action: onOpenProgress) {
-                        ReadingPageLine(page: page, pageCount: book.pageCount)
-                            .contentShape(.rect)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityHint(Text("Modifie la page où vous en êtes"))
-                    .accessibilityIdentifier("book-reading-page")
-                } else {
-                    ReadingPageLine(page: page, pageCount: book.pageCount)
-                }
-            }
+            // Always there, so the first page recorded rises off it too.
+            ReadingPageLine(page: book.unfinishedReadingPage, pageCount: book.pageCount, onOpen: onOpenProgress)
         }
     }
 
