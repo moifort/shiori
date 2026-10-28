@@ -223,11 +223,9 @@ struct HomeScreen: View {
             // a setting, not an import, and lives there. The reader's
             // avatar opens them, as the TV app's does: the account is
             // what they are about.
-            Button { showSettings = true } label: {
-                AccountAvatarView(avatar: accountAvatar, firstName: accountFirstName, size: 44)
+            AccountAvatarButton(avatar: accountAvatar, firstName: accountFirstName) {
+                showSettings = true
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Réglages")
             .accessibilityIdentifier("home-settings")
         }
         .sharedBackgroundVisibility(.hidden)
