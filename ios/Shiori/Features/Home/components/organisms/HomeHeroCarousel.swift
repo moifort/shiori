@@ -433,11 +433,7 @@ struct HomeHeroCarousel: View {
             .controlSize(.large)
             .accessibilityIdentifier("home-month-done-discover")
         }
-        .background {
-            CoverBackdrop(url: backdropCover, fadeHeight: Self.fadeHeight)
-                .padding(.top, -Self.backdropRise)
-                .scaleEffect(1 + pull / (height + Self.backdropRise), anchor: .bottom)
-        }
+        .background { pageBackdrop(backdropCover) }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("home-month-done")
     }
@@ -478,11 +474,7 @@ struct HomeHeroCarousel: View {
             .controlSize(.large)
             .accessibilityIdentifier("home-needs-ratings-rate")
         }
-        .background {
-            CoverBackdrop(url: backdropCover, fadeHeight: Self.fadeHeight)
-                .padding(.top, -Self.backdropRise)
-                .scaleEffect(1 + pull / (height + Self.backdropRise), anchor: .bottom)
-        }
+        .background { pageBackdrop(backdropCover) }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("home-needs-ratings")
     }
@@ -550,16 +542,21 @@ struct HomeHeroCarousel: View {
         } buttons: {
             buttons()
         }
-        .background {
-            CoverBackdrop(url: cover.coverURL, fadeHeight: Self.fadeHeight)
-                // Up under the bars and the status bar.
-                .padding(.top, -Self.backdropRise)
-                // Pulled down, the backdrop grows from its foot as the TV
-                // app's artwork does: its top stays above the screen, where
-                // the blurred cover turns to other colours — a red band
-                // showed through the pull.
-                .scaleEffect(1 + pull / (height + Self.backdropRise), anchor: .bottom)
-        }
+        .background { pageBackdrop(cover.coverURL) }
+    }
+
+    /// A page's cover colours, up under the bars and the status bar.
+    private func pageBackdrop(_ url: URL?) -> some View {
+        CoverBackdrop(url: url, fadeHeight: Self.fadeHeight)
+            .padding(.top, -Self.backdropRise)
+            // Pulled down, the backdrop grows from its foot as the TV app's
+            // artwork does: its top stays above the screen, where the blurred
+            // cover turns to other colours — a red band showed through the
+            // pull.
+            .scaleEffect(1 + pull / (height + Self.backdropRise), anchor: .bottom)
+            // Grown, it stays within its page's width: the next page's spread
+            // over the one shown, a band of its colours down the right edge.
+            .clipShape(PageColumn())
     }
 
     /// Every page's frame: the cover and its side held at the top, both
@@ -589,6 +586,14 @@ struct HomeHeroCarousel: View {
         .padding(.bottom, Self.dotsGap + Self.dotsHeight + Self.bottomPadding)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .environment(\.colorScheme, .dark)
+    }
+}
+
+/// A page's width, open above and below: the backdrop it clips still runs
+/// up under the bars.
+private struct PageColumn: Shape {
+    func path(in rect: CGRect) -> Path {
+        Path(CGRect(x: rect.minX, y: rect.minY - 10_000, width: rect.width, height: rect.height + 20_000))
     }
 }
 
