@@ -19,9 +19,10 @@ struct OnboardingScreen: View {
     @Environment(AuthSession.self) private var session
     @State private var step: Step = .welcome
     @State private var firstName = ""
-    /// The initials until the reader picks a hero or a photo: iOS hands the
-    /// iCloud photo to no app, so there is nothing better to propose.
-    @State private var avatar: AccountAvatar = .initials
+    /// A hero drawn at random, which the reader keeps or changes: iOS hands
+    /// the iCloud photo to no app, and bare initials look like an account
+    /// nobody set up.
+    @State private var avatar: AccountAvatar = .hero(AvatarHero.allCases.randomElement() ?? .holmes)
     @State private var isSaving = false
     @State private var errorMessage: String?
     /// Which libraries the reader asked to connect.
