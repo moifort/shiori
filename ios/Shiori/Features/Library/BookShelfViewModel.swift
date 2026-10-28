@@ -111,11 +111,12 @@ final class BookShelfViewModel {
         scheduleReload()
     }
 
+    /// The books already shown stay until the new ones land, which then
+    /// take their place as the home's cards do: those that leave shrink
+    /// away, the others slide into their new places.
     private func scheduleReload() {
         reloadTask?.cancel()
         generation += 1
-        books = []
-        lovedSeries = []
         hasMore = false
         loaded = false
         reloadTask = Task { await load() }

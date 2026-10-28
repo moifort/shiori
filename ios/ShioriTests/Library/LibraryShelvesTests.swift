@@ -240,8 +240,10 @@ struct BookShelfViewModelTests {
         #expect(viewModel.genrePills == BookGenre.alphabetical.filter { [.scienceFiction, .fantasy].contains($0) })
 
         viewModel.select(genre: .fantasy)
+        // The books shown stay until the new ones land, to animate between.
+        #expect(viewModel.books.count == 3)
         // The reload the pill starts runs on its own task.
-        for _ in 0..<1000 where viewModel.books.isEmpty { await Task.yield() }
+        for _ in 0..<1000 where viewModel.books.count != 1 { await Task.yield() }
 
         #expect(viewModel.books.map(\.id) == ["hobbit"])
         #expect(viewModel.genrePills.count == 2)

@@ -63,7 +63,7 @@ final class LibraryShelvesViewModel {
     }
 
     private func switchView() async {
-        if let snapshot = cache(for: view)?.read() { shelves = snapshot }
+        if let snapshot = cache(for: view)?.read() { withAnimation(.smooth) { shelves = snapshot } }
         await load()
     }
 

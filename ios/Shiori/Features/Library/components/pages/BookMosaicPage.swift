@@ -38,6 +38,7 @@ struct BookMosaicPage: View {
                         .padding(.top, 14)
                         .padding(.bottom, 8)
                         .accessibilityAddTraits(.isHeader)
+                        .transition(.opacity)
                     LazyVGrid(columns: columns, spacing: 2) {
                         ForEach(section.rows) { book in
                             Button { onAction(.openBook(book)) } label: {
@@ -57,6 +58,7 @@ struct BookMosaicPage: View {
                             .accessibilityLabel(Text(book.title))
                             .bookContextMenu(book) { onAction(.menu(book, $0)) }
                             .onAppear { onAction(.reached(book.id)) }
+                            .transition(.homeCard)
                         }
                     }
                 }

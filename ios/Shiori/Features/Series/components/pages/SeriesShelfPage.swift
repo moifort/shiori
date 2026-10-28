@@ -149,6 +149,7 @@ struct SeriesShelfPage: View {
                             onAction(.openSeries(saga))
                         }
                         .frame(height: 128)
+                        .transition(.homeCard)
                     }
                 }
                 .padding(.horizontal, 20)

@@ -66,6 +66,7 @@ struct BookShelfPage: View {
                             .padding(.top, 22)
                             .padding(.bottom, 12)
                             .accessibilityAddTraits(.isHeader)
+                            .transition(.opacity)
                     }
                     LazyVGrid(columns: columns, spacing: 13) {
                         ForEach(section.rows) { book in
@@ -163,6 +164,7 @@ struct BookShelfPage: View {
         .accessibilityLabel(Text("\(book.title), \(PosterLabel.of(book, in: shelf.context).caption)"))
         .bookContextMenu(book) { onAction(.menu(book, $0)) }
         .onAppear { onAction(.reached(book.id)) }
+        .transition(.homeCard)
     }
 
     @ViewBuilder private var empty: some View {
