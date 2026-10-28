@@ -28,6 +28,7 @@ import { formatsNamedByTaggedSubgenres } from '~/system/migration/migrations/030
 import { facelessAuthorsSoughtAgain } from '~/system/migration/migrations/031-faceless-authors-sought-again'
 import { facelessAuthorsSoughtSlowly } from '~/system/migration/migrations/032-faceless-authors-sought-slowly'
 import { avatarsDrawnAtRandom } from '~/system/migration/migrations/033-avatars-drawn-at-random'
+import { volumesListedOnce } from '~/system/migration/migrations/034-volumes-listed-once'
 import type { Migration } from '~/system/migration/types'
 
 // Forward-only, sequential, no rollback. Adding a new optional field or a new
@@ -68,4 +69,5 @@ export const migrations: Migration[] = [
   facelessAuthorsSoughtAgain,
   facelessAuthorsSoughtSlowly,
   avatarsDrawnAtRandom,
+  volumesListedOnce,
 ]
