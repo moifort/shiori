@@ -151,8 +151,9 @@ struct HomeHeroCarousel: View {
     /// The releases just marked seen, whose eye fills to say so: they leave
     /// the line once the reader leaves the page.
     @State private var seen: Set<HomeRelease.ID> = []
-    /// How tall each page's cover and text stand: the tallest sets the
-    /// carousel's height, so a why is never cut and the buttons line up.
+    /// How tall each page's cover and text stand: the page shown sets the
+    /// carousel's height, so a why is never cut and the buttons always sit
+    /// as close under the cover as the dots under them.
     @State private var topHeights: [HomeHeroItem.ID: CGFloat] = [:]
 
     /// The cover's width: its height, half as much again, is the room a why
@@ -178,18 +179,20 @@ struct HomeHeroCarousel: View {
     /// The thumb's button once a discovery is turned down.
     private static let turnedDownRed = Color(red: 0.78, green: 0.2, blue: 0.2)
 
-    /// How tall the carousel stands: its tallest page's cover and text, the
-    /// buttons and the dots.
+    /// How tall the carousel stands: the page shown's cover and text, the
+    /// buttons and the dots. A short page no longer takes the tallest one's
+    /// room, which left a gap between its cover and its buttons.
     private var height: CGFloat {
-        let top = max(Self.coverHeight, topHeights.values.max() ?? 0)
+        let shown = current ?? items.first?.id
+        let top = max(Self.coverHeight, shown.flatMap { topHeights[$0] } ?? 0)
         return Self.topPadding + top + Self.buttonsGap + Self.buttonsHeight
             + Self.dotsGap + Self.dotsHeight + Self.bottomPadding
     }
 
     var body: some View {
         ScrollView(.horizontal) {
-            // Not lazy: every page is measured, so the tallest sets the
-            // height before the reader swipes to it.
+            // Not lazy: every page is measured, so its height is known
+            // before the reader swipes to it.
             HStack(spacing: 0) {
                 ForEach(items) { item in
                     Group {
@@ -199,7 +202,9 @@ struct HomeHeroCarousel: View {
                         case let .monthDone(month): monthDonePage(month, id: item.id)
                         }
                     }
+                    // As tall as the carousel, which follows the page shown.
                     .containerRelativeFrame(.horizontal)
+                    .frame(height: height)
                 }
             }
             .scrollTargetLayout()
@@ -210,6 +215,7 @@ struct HomeHeroCarousel: View {
         // The backdrops run up under the bars, past the pager's frame.
         .scrollClipDisabled()
         .frame(height: height)
+        .animation(.snappy, value: height)
         .overlay(alignment: .bottom) {
             if items.count > 1 {
                 PageDots(count: items.count, index: currentIndex)
