@@ -1789,6 +1789,22 @@
         }
       }
     },
+    "Adamsberg" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adamsberg"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adamsberg"
+          }
+        }
+      }
+    },
     "Admin" : {
       "localizations" : {
         "en" : {
@@ -2565,6 +2581,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Art"
+          }
+        }
+      }
+    },
+    "Arthur Dent" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arthur Dent"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arthur Dent"
+          }
+        }
+      }
+    },
+    "Arya" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arya"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arya"
           }
         }
       }
@@ -3401,6 +3449,22 @@
         }
       }
     },
+    "Bilbo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bilbo"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bilbo"
+          }
+        }
+      }
+    },
     "Biographie" : {
       "localizations" : {
         "en" : {
@@ -3461,6 +3525,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Boutique Audible"
+          }
+        }
+      }
+    },
+    "Breq" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Breq"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Breq"
           }
         }
       }
@@ -5593,6 +5673,22 @@
         }
       }
     },
+    "Ender" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ender"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ender"
+          }
+        }
+      }
+    },
     "Enregistrement impossible" : {
       "localizations" : {
         "en" : {
@@ -6281,6 +6377,54 @@
         }
       }
     },
+    "Harry Bosch" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Harry Bosch"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Harry Bosch"
+          }
+        }
+      }
+    },
+    "Harry Hole" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Harry Hole"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Harry Hole"
+          }
+        }
+      }
+    },
+    "Harry Potter" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Harry Potter"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Harry Potter"
+          }
+        }
+      }
+    },
     "Hercule Poirot" : {
       "localizations" : {
         "en" : {
@@ -6293,6 +6437,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hercule Poirot"
+          }
+        }
+      }
+    },
+    "Hermione" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hermione"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hermione"
           }
         }
       }
@@ -7157,6 +7317,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Jour"
+          }
+        }
+      }
+    },
+    "Kaladin" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kaladin"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kaladin"
+          }
+        }
+      }
+    },
+    "Katniss" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Katniss"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Katniss"
           }
         }
       }
@@ -8501,6 +8693,22 @@
         }
       }
     },
+    "Mark Watney" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mark Watney"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mark Watney"
+          }
+        }
+      }
+    },
     "Marquer comme vu" : {
       "localizations" : {
         "en" : {
@@ -8529,6 +8737,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Marquer lu"
+          }
+        }
+      }
+    },
+    "Marvin" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marvin"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marvin"
           }
         }
       }
@@ -13925,6 +14149,22 @@
         }
       }
     },
+    "Tyrion" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tyrion"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tyrion"
+          }
+        }
+      }
+    },
     "Ukrainien" : {
       "localizations" : {
         "en" : {
@@ -14769,6 +15009,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vérifier"
+          }
+        }
+      }
+    },
+    "Wallander" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wallander"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wallander"
           }
         }
       }

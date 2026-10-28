@@ -12,6 +12,9 @@ enum AvatarHero: String, CaseIterable, Identifiable, Sendable {
     case carl, donut, daneel, seldon, yeWenjie, luoJi, shrike, paulAtreides, murderbot, rocky
     case gandalf, kvothe, vin, lockeLamora, violet, geralt
     case lisbeth, poirot, maigret, reacher
+    case bilbo, tyrion, arya, harry, hermione, kaladin
+    case ender, watney, katniss, arthurDent, marvin, breq
+    case adamsberg, harryHole, wallander, bosch
 
     var id: String { rawValue }
 
@@ -62,6 +65,22 @@ enum AvatarHero: String, CaseIterable, Identifiable, Sendable {
         case .poirot: "Hercule Poirot"
         case .maigret: "Maigret"
         case .reacher: "Jack Reacher"
+        case .bilbo: "Bilbo"
+        case .tyrion: "Tyrion"
+        case .arya: "Arya"
+        case .harry: "Harry Potter"
+        case .hermione: "Hermione"
+        case .kaladin: "Kaladin"
+        case .ender: "Ender"
+        case .watney: "Mark Watney"
+        case .katniss: "Katniss"
+        case .arthurDent: "Arthur Dent"
+        case .marvin: "Marvin"
+        case .breq: "Breq"
+        case .adamsberg: "Adamsberg"
+        case .harryHole: "Harry Hole"
+        case .wallander: "Wallander"
+        case .bosch: "Harry Bosch"
         }
     }
 
@@ -77,10 +96,13 @@ enum AvatarHero: String, CaseIterable, Identifiable, Sendable {
     var shelf: Shelf {
         switch self {
         case .alice, .dorothy, .merlin, .dracula,
-             .gandalf, .kvothe, .vin, .lockeLamora, .violet, .geralt, .carl, .donut: .fantasy
+             .gandalf, .kvothe, .vin, .lockeLamora, .violet, .geralt, .carl, .donut,
+             .bilbo, .tyrion, .arya, .harry, .hermione, .kaladin: .fantasy
         case .nemo, .creature, .timeTraveller, .invisibleMan,
-             .daneel, .seldon, .yeWenjie, .luoJi, .shrike, .paulAtreides, .murderbot, .rocky: .scienceFiction
-        case .holmes, .lupin, .dupin, .rouletabille, .lisbeth, .poirot, .maigret, .reacher: .crime
+             .daneel, .seldon, .yeWenjie, .luoJi, .shrike, .paulAtreides, .murderbot, .rocky,
+             .ender, .watney, .katniss, .arthurDent, .marvin, .breq: .scienceFiction
+        case .holmes, .lupin, .dupin, .rouletabille, .lisbeth, .poirot, .maigret, .reacher,
+             .adamsberg, .harryHole, .wallander, .bosch: .crime
         }
     }
 

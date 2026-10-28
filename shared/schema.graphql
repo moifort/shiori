@@ -528,8 +528,26 @@ A hero of a classic novel a reader may wear as an avatar.
 The portraits are drawn for the app and bundled in it; the server keeps only the name. Classics of the public domain sit beside characters of recent books. A build that does not know a newer hero draws the initials instead.
 """
 enum AvatarHero {
+  """The portrait of `adamsberg`."""
+  ADAMSBERG
+
   """The portrait of `alice`."""
   ALICE
+
+  """The portrait of `arthurDent`."""
+  ARTHUR_DENT
+
+  """The portrait of `arya`."""
+  ARYA
+
+  """The portrait of `bilbo`."""
+  BILBO
+
+  """The portrait of `bosch`."""
+  BOSCH
+
+  """The portrait of `breq`."""
+  BREQ
 
   """The portrait of `carl`."""
   CARL
@@ -552,17 +570,35 @@ enum AvatarHero {
   """The portrait of `dupin`."""
   DUPIN
 
+  """The portrait of `ender`."""
+  ENDER
+
   """The portrait of `gandalf`."""
   GANDALF
 
   """The portrait of `geralt`."""
   GERALT
 
+  """The portrait of `harry`."""
+  HARRY
+
+  """The portrait of `harryHole`."""
+  HARRY_HOLE
+
+  """The portrait of `hermione`."""
+  HERMIONE
+
   """The portrait of `holmes`."""
   HOLMES
 
   """The portrait of `invisibleMan`."""
   INVISIBLE_MAN
+
+  """The portrait of `kaladin`."""
+  KALADIN
+
+  """The portrait of `katniss`."""
+  KATNISS
 
   """The portrait of `kvothe`."""
   KVOTHE
@@ -581,6 +617,9 @@ enum AvatarHero {
 
   """The portrait of `maigret`."""
   MAIGRET
+
+  """The portrait of `marvin`."""
+  MARVIN
 
   """The portrait of `merlin`."""
   MERLIN
@@ -615,11 +654,20 @@ enum AvatarHero {
   """The portrait of `timeTraveller`."""
   TIME_TRAVELLER
 
+  """The portrait of `tyrion`."""
+  TYRION
+
   """The portrait of `vin`."""
   VIN
 
   """The portrait of `violet`."""
   VIOLET
+
+  """The portrait of `wallander`."""
+  WALLANDER
+
+  """The portrait of `watney`."""
+  WATNEY
 
   """The portrait of `yeWenjie`."""
   YE_WENJIE

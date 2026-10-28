@@ -39,6 +39,22 @@ export const AVATAR_HEROES = [
   'poirot',
   'maigret',
   'reacher',
+  'bilbo',
+  'tyrion',
+  'arya',
+  'harry',
+  'hermione',
+  'kaladin',
+  'ender',
+  'watney',
+  'katniss',
+  'arthurDent',
+  'marvin',
+  'breq',
+  'adamsberg',
+  'harryHole',
+  'wallander',
+  'bosch',
 ] as const
 export type AvatarHero = (typeof AVATAR_HEROES)[number]
 

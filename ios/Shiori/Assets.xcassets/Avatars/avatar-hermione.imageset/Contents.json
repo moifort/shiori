@@ -1,0 +1,12 @@
+{
+  "images" : [
+    {
+      "filename" : "hermione.jpg",
+      "idiom" : "universal"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}
