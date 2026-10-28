@@ -1,13 +1,17 @@
 import SwiftUI
 import UIKit
 
-/// A hero of a classic novel a reader may wear as an avatar. The portraits are
-/// drawn for the app and bundled in it; the server keeps only the name. Every
-/// hero comes from a book in the public domain, so no estate owns the face.
+/// A hero of a novel a reader may wear as an avatar: classics of the public
+/// domain beside characters of recent books, each drawn from its book's own
+/// description rather than from any adaptation. The portraits are bundled in
+/// the app; the server keeps only the name.
 enum AvatarHero: String, CaseIterable, Identifiable, Sendable {
     case alice, dorothy, merlin, dracula
     case nemo, creature, timeTraveller, invisibleMan
     case holmes, lupin, dupin, rouletabille
+    case carl, donut, daneel, seldon, yeWenjie, luoJi, shrike, paulAtreides, murderbot, rocky
+    case gandalf, kvothe, vin, lockeLamora, violet, geralt
+    case lisbeth, poirot, maigret, reacher
 
     var id: String { rawValue }
 
@@ -38,14 +42,45 @@ enum AvatarHero: String, CaseIterable, Identifiable, Sendable {
         case .lupin: "Arsène Lupin"
         case .dupin: "Dupin"
         case .rouletabille: "Rouletabille"
+        case .carl: "Carl"
+        case .donut: "Donut"
+        case .daneel: "Daneel Olivaw"
+        case .seldon: "Hari Seldon"
+        case .yeWenjie: "Ye Wenjie"
+        case .luoJi: "Luo Ji"
+        case .shrike: "Le Gritche"
+        case .paulAtreides: "Paul Atréides"
+        case .murderbot: "AssaSynth"
+        case .rocky: "Rocky"
+        case .gandalf: "Gandalf"
+        case .kvothe: "Kvothe"
+        case .vin: "Vin"
+        case .lockeLamora: "Locke Lamora"
+        case .violet: "Violet"
+        case .geralt: "Geralt"
+        case .lisbeth: "Lisbeth Salander"
+        case .poirot: "Hercule Poirot"
+        case .maigret: "Maigret"
+        case .reacher: "Jack Reacher"
+        }
+    }
+
+    /// The first twelve, from books in the public domain.
+    var isClassic: Bool {
+        switch self {
+        case .alice, .dorothy, .merlin, .dracula, .nemo, .creature, .timeTraveller, .invisibleMan,
+             .holmes, .lupin, .dupin, .rouletabille: true
+        default: false
         }
     }
 
     var shelf: Shelf {
         switch self {
-        case .alice, .dorothy, .merlin, .dracula: .fantasy
-        case .nemo, .creature, .timeTraveller, .invisibleMan: .scienceFiction
-        case .holmes, .lupin, .dupin, .rouletabille: .crime
+        case .alice, .dorothy, .merlin, .dracula,
+             .gandalf, .kvothe, .vin, .lockeLamora, .violet, .geralt, .carl, .donut: .fantasy
+        case .nemo, .creature, .timeTraveller, .invisibleMan,
+             .daneel, .seldon, .yeWenjie, .luoJi, .shrike, .paulAtreides, .murderbot, .rocky: .scienceFiction
+        case .holmes, .lupin, .dupin, .rouletabille, .lisbeth, .poirot, .maigret, .reacher: .crime
         }
     }
 
@@ -63,7 +98,12 @@ enum AvatarHero: String, CaseIterable, Identifiable, Sendable {
             }
         }
 
-        var heroes: [AvatarHero] { AvatarHero.allCases.filter { $0.shelf == self } }
+        /// The heroes of recent books first, the ones a reader knows best; the
+        /// classics after.
+        var heroes: [AvatarHero] {
+            let shelved = AvatarHero.allCases.filter { $0.shelf == self }
+            return shelved.filter { !$0.isClassic } + shelved.filter(\.isClassic)
+        }
     }
 }
 

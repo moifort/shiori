@@ -2,8 +2,10 @@ import type { PersonName, UserId } from '~/domain/shared/types'
 import type { ObjectPath } from '~/system/object-store/types'
 
 // The heroes a reader may wear as an avatar, drawn for the app and bundled in
-// it: the server keeps only the name. Every one comes from a book in the public
-// domain, so no estate owns the face.
+// it: the server keeps only the name. Classics from the public domain sit beside
+// characters of recent books, each drawn from its book's own description rather
+// than from any adaptation. A new hero is appended, never renamed: installed
+// builds draw the names they know.
 export const AVATAR_HEROES = [
   'alice',
   'dorothy',
@@ -17,6 +19,26 @@ export const AVATAR_HEROES = [
   'lupin',
   'dupin',
   'rouletabille',
+  'carl',
+  'donut',
+  'daneel',
+  'seldon',
+  'yeWenjie',
+  'luoJi',
+  'shrike',
+  'paulAtreides',
+  'murderbot',
+  'rocky',
+  'gandalf',
+  'kvothe',
+  'vin',
+  'lockeLamora',
+  'violet',
+  'geralt',
+  'lisbeth',
+  'poirot',
+  'maigret',
+  'reacher',
 ] as const
 export type AvatarHero = (typeof AVATAR_HEROES)[number]
 

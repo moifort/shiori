@@ -1821,6 +1821,22 @@
         }
       }
     },
+    "Afficher l'identifiant" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show account ID"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Afficher l'identifiant"
+          }
+        }
+      }
+    },
     "Ajout de %lld livres" : {
       "localizations" : {
         "en" : {
@@ -2549,6 +2565,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Art"
+          }
+        }
+      }
+    },
+    "AssaSynth" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Murderbot"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AssaSynth"
           }
         }
       }
@@ -3461,6 +3493,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Cadrez la couverture entière, bien éclairée et sans reflet. Ce scan n'a pas été décompté."
+          }
+        }
+      }
+    },
+    "Carl" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Carl"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Carl"
           }
         }
       }
@@ -4793,6 +4841,22 @@
         }
       }
     },
+    "Daneel Olivaw" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Daneel Olivaw"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Daneel Olivaw"
+          }
+        }
+      }
+    },
     "Dans %@" : {
       "localizations" : {
         "en" : {
@@ -5029,6 +5093,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dites-nous ce qui manque ou ce qui gagnerait à changer."
+          }
+        }
+      }
+    },
+    "Donut" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Donut"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Donut"
           }
         }
       }
@@ -5461,22 +5541,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Effacer"
-          }
-        }
-      }
-    },
-    "Email" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Email"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Email"
           }
         }
       }
@@ -6009,6 +6073,22 @@
         }
       }
     },
+    "Gandalf" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gandalf"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gandalf"
+          }
+        }
+      }
+    },
     "Gemini" : {
       "localizations" : {
         "en" : {
@@ -6121,6 +6201,22 @@
         }
       }
     },
+    "Geralt" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geralt"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geralt"
+          }
+        }
+      }
+    },
     "Guetter en audio" : {
       "localizations" : {
         "en" : {
@@ -6165,6 +6261,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Habitudes"
+          }
+        }
+      }
+    },
+    "Hari Seldon" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hari Seldon"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hari Seldon"
+          }
+        }
+      }
+    },
+    "Hercule Poirot" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hercule Poirot"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hercule Poirot"
           }
         }
       }
@@ -6937,6 +7065,22 @@
         }
       }
     },
+    "Jack Reacher" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jack Reacher"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jack Reacher"
+          }
+        }
+      }
+    },
     "Japonais" : {
       "localizations" : {
         "en" : {
@@ -7029,6 +7173,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Kindle"
+          }
+        }
+      }
+    },
+    "Kvothe" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kvothe"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kvothe"
           }
         }
       }
@@ -7317,6 +7477,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Langue"
+          }
+        }
+      }
+    },
+    "Le Gritche" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The Shrike"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le Gritche"
           }
         }
       }
@@ -7797,6 +7973,22 @@
         }
       }
     },
+    "Lisbeth Salander" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lisbeth Salander"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lisbeth Salander"
+          }
+        }
+      }
+    },
     "Littérature" : {
       "localizations" : {
         "en" : {
@@ -7973,6 +8165,22 @@
         }
       }
     },
+    "Locke Lamora" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Locke Lamora"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Locke Lamora"
+          }
+        }
+      }
+    },
     "Lu" : {
       "localizations" : {
         "en" : {
@@ -8101,6 +8309,22 @@
         }
       }
     },
+    "Luo Ji" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Luo Ji"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Luo Ji"
+          }
+        }
+      }
+    },
     "Lus" : {
       "localizations" : {
         "en" : {
@@ -8225,6 +8449,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ma pile à lire"
+          }
+        }
+      }
+    },
+    "Maigret" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Maigret"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Maigret"
           }
         }
       }
@@ -9989,6 +10229,22 @@
         }
       }
     },
+    "Paul Atréides" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paul Atreides"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paul Atréides"
+          }
+        }
+      }
+    },
     "Photo" : {
       "localizations" : {
         "en" : {
@@ -11457,6 +11713,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Rien ici pour l'instant"
+          }
+        }
+      }
+    },
+    "Rocky" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rocky"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rocky"
           }
         }
       }
@@ -13845,6 +14117,38 @@
         }
       }
     },
+    "Vin" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vin"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vin"
+          }
+        }
+      }
+    },
+    "Violet" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Violet"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Violet"
+          }
+        }
+      }
+    },
     "Voir l'auteur" : {
       "localizations" : {
         "en" : {
@@ -14529,6 +14833,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "World Fantasy Award"
+          }
+        }
+      }
+    },
+    "Ye Wenjie" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ye Wenjie"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ye Wenjie"
           }
         }
       }

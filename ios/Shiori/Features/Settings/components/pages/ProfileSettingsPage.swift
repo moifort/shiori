@@ -7,14 +7,16 @@ enum ProfileSettingsAction {
     case deleteAccount
 }
 
-/// The account behind the library: its face, who it is, and the two ways out — signing
-/// out, which keeps everything, and deleting, which keeps nothing.
+/// The account behind the library: its face, its name, and the two ways out —
+/// signing out, which keeps everything, and deleting, which keeps nothing. The
+/// email is left out: Apple's sign-in often hands a relay address the reader
+/// never chose. The account id hides behind a button, there for a support
+/// message and nothing else.
 struct ProfileSettingsPage: View {
     let firstName: String?
     let avatar: AccountAvatar
     let isSavingAvatar: Bool
     let displayName: String?
-    let email: String?
     /// The first eight characters of the account id: enough to name it in a
     /// support message, short enough to read aloud.
     let shortUid: String
@@ -24,6 +26,12 @@ struct ProfileSettingsPage: View {
 
     @State private var showDeleteConfirmation = false
     @State private var pickingAvatar = false
+    @State private var showsUid = false
+
+    /// The full name Apple gave, else the first name the reader typed.
+    private var name: String? {
+        [displayName, firstName].compactMap { $0 }.first { !$0.isEmpty }
+    }
 
     var body: some View {
         Form {
@@ -47,16 +55,18 @@ struct ProfileSettingsPage: View {
             }
 
             Section {
-                if let firstName, !firstName.isEmpty {
-                    LabeledInfoRow(title: "Prénom", value: firstName, icon: "person.fill")
+                if let name {
+                    LabeledInfoRow(title: "Nom", value: name, icon: "person.fill")
                 }
-                if let displayName, !displayName.isEmpty {
-                    LabeledInfoRow(title: "Nom", value: displayName, icon: "person.text.rectangle.fill")
+                if showsUid {
+                    LabeledInfoRow(title: "Identifiant", value: shortUid, icon: "key.fill")
+                        .textSelection(.enabled)
+                } else {
+                    Button { withAnimation { showsUid = true } } label: {
+                        Label("Afficher l'identifiant", systemImage: "key.fill")
+                    }
+                    .accessibilityIdentifier("profile-show-uid")
                 }
-                if let email, !email.isEmpty {
-                    LabeledInfoRow(title: "Email", value: email, icon: "envelope.fill")
-                }
-                LabeledInfoRow(title: "Identifiant", value: shortUid, icon: "key.fill")
             } header: {
                 Text("Compte")
             }
@@ -103,7 +113,7 @@ struct ProfileSettingsPage: View {
     NavigationStack {
         ProfileSettingsPage(
             firstName: "Thibaut", avatar: .hero(.holmes), isSavingAvatar: false,
-            displayName: "Thibaut Mottet", email: "lecteur@example.com",
+            displayName: "Thibaut Mottet",
             shortUid: "a1b2c3d4", isDeletingAccount: false, errorMessage: nil
         ) { _ in }
     }
@@ -112,7 +122,7 @@ struct ProfileSettingsPage: View {
 #Preview("Deleting") {
     NavigationStack {
         ProfileSettingsPage(
-            firstName: "Thibaut", avatar: .initials, isSavingAvatar: false, displayName: nil, email: nil, shortUid: "a1b2c3d4",
+            firstName: "Thibaut", avatar: .initials, isSavingAvatar: false, displayName: nil, shortUid: "a1b2c3d4",
             isDeletingAccount: true, errorMessage: nil
         ) { _ in }
     }

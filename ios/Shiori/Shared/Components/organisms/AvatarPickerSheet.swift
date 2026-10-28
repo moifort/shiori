@@ -3,7 +3,7 @@ import SwiftUI
 
 /// Who the reader wants to be beside their name, chosen as Netflix has its
 /// profiles chosen: a row of their own — a photo, or their initials — then a
-/// row of heroes per shelf. Picking closes the sheet.
+/// row of heroes per shelf, scrolled sideways. Picking closes the sheet.
 ///
 /// The photo comes through the system picker, which runs outside the app and
 /// asks for no access to the library. The photo iCloud shows is out of reach:
@@ -18,8 +18,6 @@ struct AvatarPickerSheet: View {
     @State private var photoItem: PhotosPickerItem?
     @State private var isLoadingPhoto = false
 
-    private let columns = Array(repeating: GridItem(.flexible(), spacing: 12, alignment: .top), count: 4)
-
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -28,12 +26,12 @@ struct AvatarPickerSheet: View {
                         Button { choosingPhoto = true } label: {
                             choice(label: "Photo", isSelected: isPhoto) {
                                 if isPhoto {
-                                    AccountAvatarView(avatar: current, firstName: firstName, size: 72)
+                                    AccountAvatarView(avatar: current, firstName: firstName, size: 64)
                                 } else {
                                     Image(systemName: isLoadingPhoto ? "hourglass" : "photo.on.rectangle")
                                         .font(.title2)
                                         .foregroundStyle(.secondary)
-                                        .frame(width: 72, height: 72)
+                                        .frame(width: 64, height: 64)
                                         .background(Color(.tertiarySystemFill), in: .circle)
                                 }
                             }
@@ -42,7 +40,7 @@ struct AvatarPickerSheet: View {
                         .accessibilityIdentifier("avatar-photo")
                         Button { pick(.initials) } label: {
                             choice(label: "Initiales", isSelected: current == .initials) {
-                                AccountAvatarView(avatar: .initials, firstName: firstName, size: 72)
+                                AccountAvatarView(avatar: .initials, firstName: firstName, size: 64)
                             }
                         }
                         .buttonStyle(.plain)
@@ -53,7 +51,7 @@ struct AvatarPickerSheet: View {
                             ForEach(row.heroes) { hero in
                                 Button { pick(.hero(hero)) } label: {
                                     choice(label: hero.name, isSelected: current == .hero(hero)) {
-                                        AccountAvatarView(avatar: .hero(hero), firstName: nil, size: 72)
+                                        AccountAvatarView(avatar: .hero(hero), firstName: nil, size: 64)
                                     }
                                 }
                                 .buttonStyle(.plain)
@@ -62,7 +60,7 @@ struct AvatarPickerSheet: View {
                         }
                     }
                 }
-                .padding()
+                .padding(.vertical)
             }
             .navigationTitle("Avatar")
             .navigationBarTitleDisplayMode(.inline)
@@ -88,8 +86,12 @@ struct AvatarPickerSheet: View {
 
     private func shelf(_ title: LocalizedStringResource, @ViewBuilder content: () -> some View) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(title).font(.headline)
-            LazyVGrid(columns: columns, alignment: .leading, spacing: 16) { content() }
+            Text(title).font(.headline).padding(.horizontal)
+            ScrollView(.horizontal) {
+                LazyHStack(alignment: .top, spacing: 10) { content() }
+            }
+            .scrollIndicators(.hidden)
+            .contentMargins(.horizontal, 16, for: .scrollContent)
         }
     }
 
@@ -108,7 +110,7 @@ struct AvatarPickerSheet: View {
                 .lineLimit(2)
                 .multilineTextAlignment(.center)
         }
-        .frame(maxWidth: .infinity)
+        .frame(width: 74)
         .contentShape(.rect)
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)

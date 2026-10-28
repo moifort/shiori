@@ -20,7 +20,6 @@ struct ProfileSettingsScreen: View {
             avatar: viewModel.savingAvatar ?? avatar,
             isSavingAvatar: viewModel.savingAvatar != nil,
             displayName: authSession.user?.displayName,
-            email: authSession.user?.email,
             shortUid: String((authSession.user?.uid ?? "").prefix(8)),
             isDeletingAccount: viewModel.isDeletingAccount,
             errorMessage: viewModel.errorMessage

@@ -525,14 +525,23 @@ type AuthorWork {
 """
 A hero of a classic novel a reader may wear as an avatar.
 
-The portraits are drawn for the app and bundled in it; the server keeps only the name. Every hero comes from a book in the public domain.
+The portraits are drawn for the app and bundled in it; the server keeps only the name. Classics of the public domain sit beside characters of recent books. A build that does not know a newer hero draws the initials instead.
 """
 enum AvatarHero {
   """The portrait of `alice`."""
   ALICE
 
+  """The portrait of `carl`."""
+  CARL
+
   """The portrait of `creature`."""
   CREATURE
+
+  """The portrait of `daneel`."""
+  DANEEL
+
+  """The portrait of `donut`."""
+  DONUT
 
   """The portrait of `dorothy`."""
   DOROTHY
@@ -543,26 +552,77 @@ enum AvatarHero {
   """The portrait of `dupin`."""
   DUPIN
 
+  """The portrait of `gandalf`."""
+  GANDALF
+
+  """The portrait of `geralt`."""
+  GERALT
+
   """The portrait of `holmes`."""
   HOLMES
 
   """The portrait of `invisibleMan`."""
   INVISIBLE_MAN
 
+  """The portrait of `kvothe`."""
+  KVOTHE
+
+  """The portrait of `lisbeth`."""
+  LISBETH
+
+  """The portrait of `lockeLamora`."""
+  LOCKE_LAMORA
+
+  """The portrait of `luoJi`."""
+  LUO_JI
+
   """The portrait of `lupin`."""
   LUPIN
+
+  """The portrait of `maigret`."""
+  MAIGRET
 
   """The portrait of `merlin`."""
   MERLIN
 
+  """The portrait of `murderbot`."""
+  MURDERBOT
+
   """The portrait of `nemo`."""
   NEMO
+
+  """The portrait of `paulAtreides`."""
+  PAUL_ATREIDES
+
+  """The portrait of `poirot`."""
+  POIROT
+
+  """The portrait of `reacher`."""
+  REACHER
+
+  """The portrait of `rocky`."""
+  ROCKY
 
   """The portrait of `rouletabille`."""
   ROULETABILLE
 
+  """The portrait of `seldon`."""
+  SELDON
+
+  """The portrait of `shrike`."""
+  SHRIKE
+
   """The portrait of `timeTraveller`."""
   TIME_TRAVELLER
+
+  """The portrait of `vin`."""
+  VIN
+
+  """The portrait of `violet`."""
+  VIOLET
+
+  """The portrait of `yeWenjie`."""
+  YE_WENJIE
 }
 
 """
