@@ -401,6 +401,67 @@ describe('a saga heard and a saga read', () => {
   })
 })
 
+describe('recording the page reached', () => {
+  const LATER = new Date('2026-09-20T10:00:00.000Z')
+  const paged = (status?: 'to-read' | 'reading' | 'read') =>
+    BookCommand.add(
+      reader,
+      { title: BookTitle('Le Nom du vent'), pageCount: PageCount(662), status },
+      NOW,
+    )
+
+  test('opens a book on the pile, its start stamped', async () => {
+    const book = await paged()
+
+    const read = await BookCommand.recordPage(reader, book.id, PageCount(214), LATER)
+    if (typeof read === 'string') throw new Error('unreachable')
+
+    expect(read.currentPage as number).toBe(214)
+    expect(read.currentPageAt).toEqual(LATER)
+    expect(read.status).toBe('reading')
+    expect(read.startedAt).toEqual(LATER)
+    expect(fake.data('books', book.id)?.currentPage).toBe(214)
+  })
+
+  test('leaves a read book read', async () => {
+    const book = await paged('read')
+
+    const read = await BookCommand.recordPage(reader, book.id, PageCount(300), LATER)
+    if (typeof read === 'string') throw new Error('unreachable')
+
+    expect(read.status).toBe('read')
+    expect(read.finishedAt).toEqual(NOW)
+  })
+
+  test('refuses a page past the last one', async () => {
+    const book = await paged('reading')
+
+    expect(await BookCommand.recordPage(reader, book.id, PageCount(663), LATER)).toBe(
+      'past-the-end',
+    )
+  })
+
+  test("refuses an audiobook, whose progress is the player's", async () => {
+    const book = await BookCommand.add(
+      reader,
+      { title: BookTitle('Le Nom du vent'), format: 'audiobook' },
+      NOW,
+    )
+
+    expect(await BookCommand.recordPage(reader, book.id, PageCount(12), LATER)).toBe('audiobook')
+  })
+
+  test('forgets the page when the book goes back on the pile', async () => {
+    const book = await paged('reading')
+    await BookCommand.recordPage(reader, book.id, PageCount(214), LATER)
+
+    await BookCommand.setStatus(reader, book.id, 'to-read', LATER)
+
+    expect(fake.data('books', book.id)?.currentPage).toBeUndefined()
+    expect(fake.data('books', book.id)?.currentPageAt).toBeUndefined()
+  })
+})
+
 describe('rating a book', () => {
   // The reader is telling us they finished it. Leaving it on the pile would make
   // every status filter lie about the same book.

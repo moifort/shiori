@@ -241,6 +241,35 @@ describe('cataloguing through the API', () => {
     expect(refused.errors?.[0]?.extensions?.code).toBe('BAD_USER_INPUT')
   })
 
+  test('records the page reached and reads the progress off it', async () => {
+    const added = await execute(
+      'mutation { addBook(input: { title: "Le Nom du vent", pageCount: 662 }) { id } }',
+    )
+    const { id } = (added.data as { addBook: { id: string } }).addBook
+
+    const recorded = await execute(
+      `mutation { recordReadingPage(id: "${id}", page: 214) { status currentPage readingProgress } }`,
+    )
+
+    expect(recorded.errors).toBeUndefined()
+    expect(recorded.data?.recordReadingPage).toEqual({
+      status: 'READING',
+      currentPage: 214,
+      readingProgress: 32,
+    })
+  })
+
+  test('refuses a page past the last one', async () => {
+    const added = await execute(
+      'mutation { addBook(input: { title: "Le Nom du vent", pageCount: 662 }) { id } }',
+    )
+    const { id } = (added.data as { addBook: { id: string } }).addBook
+
+    const refused = await execute(`mutation { recordReadingPage(id: "${id}", page: 700) { id } }`)
+
+    expect(refused.errors?.[0]?.extensions?.code).toBe('BAD_USER_INPUT')
+  })
+
   test('marks a book dropped, and a rating leaves it dropped', async () => {
     const book = await addBook('Le Maître du Haut Château', 'READING')
 

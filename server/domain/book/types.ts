@@ -221,6 +221,14 @@ export type Book = {
    *  subgenre and takes the head of this list, so the order is data. */
   subgenres: TaggedSubgenre[]
   pageCount?: PageCount
+  /** The page the reader last said they reached, typed on the book page: what
+   *  the reading progress is read off, against `pageCount`. Never on an
+   *  audiobook, whose progress is Audible's. Absent until the reader first
+   *  says where they are, and cleared when the book goes back on the pile. */
+  currentPage?: PageCount
+  /** When the reader last said which page they reached. Kept beside
+   *  `currentPage`. */
+  currentPageAt?: Date
   /** An audiobook's running time. Absent on anything else, and absent on an
    *  audiobook catalogued by hand or by scan, which had no source for it. */
   durationMinutes?: ListeningMinutes

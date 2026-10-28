@@ -183,6 +183,16 @@ export const listeningProgressOf = (
   return Math.min(100, Math.floor((book.listenedMinutes / book.durationMinutes) * 100))
 }
 
+/** How far into a book the reader is, as a whole percentage of its page
+ *  count, rounded down so a book only reads 100 on its last page. Undefined
+ *  without a page count or a page reached. */
+export const readingProgressOf = (
+  book: Pick<Book, 'pageCount' | 'currentPage'>,
+): number | undefined => {
+  if (book.pageCount === undefined || book.currentPage === undefined) return undefined
+  return Math.min(100, Math.floor((book.currentPage / book.pageCount) * 100))
+}
+
 /** The Amazon Associates tag every store link carries. It belongs to amazon.fr
  *  alone — a tag is bound to one store and pays nothing on another — which is
  *  why every link points there, whatever store the reader's Kindle lives on. */

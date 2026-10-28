@@ -18,6 +18,7 @@ import {
   membershipIn,
   mendedNames,
   mergedCopies,
+  readingProgressOf,
   readVolumeNumbersOf,
   recordJoinedBy,
   refreshedFacts,
@@ -783,6 +784,22 @@ describe('how far into a recording the reader is', () => {
   test('is unknown without a running time or a position', () => {
     expect(listeningProgressOf({ listenedMinutes: minutes(10) })).toBeUndefined()
     expect(listeningProgressOf({ durationMinutes: minutes(600) })).toBeUndefined()
+  })
+})
+
+describe('how far into a book the reader is', () => {
+  test('reads the page reached against the page count, rounded down', () => {
+    expect(readingProgressOf({ pageCount: PageCount(662), currentPage: PageCount(214) })).toBe(32)
+  })
+
+  test('only reads a hundred on the last page', () => {
+    expect(readingProgressOf({ pageCount: PageCount(662), currentPage: PageCount(661) })).toBe(99)
+    expect(readingProgressOf({ pageCount: PageCount(662), currentPage: PageCount(662) })).toBe(100)
+  })
+
+  test('says nothing without a page count or a page reached', () => {
+    expect(readingProgressOf({ currentPage: PageCount(214) })).toBeUndefined()
+    expect(readingProgressOf({ pageCount: PageCount(662) })).toBeUndefined()
   })
 })
 

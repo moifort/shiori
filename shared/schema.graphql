@@ -942,6 +942,11 @@ type Book {
   coverUrl: CoverUrl
 
   """
+  The page the reader last said they reached, through `recordReadingPage`. Null on an audiobook, on a book whose reader never said, and on one back on the pile.
+  """
+  currentPage: PageCount
+
+  """
   An audiobook's running time in whole minutes. Null on anything else, and null on an audiobook no import ever timed — a scanned cover does not say how long the recording is.
   """
   durationMinutes: Int
@@ -1006,6 +1011,11 @@ type Book {
 
   """One to five whole stars. Null until the reader rates it."""
   rating: StarRating
+
+  """
+  How far into the book the reader is, as a whole percentage of `pageCount`, rounded down. Null without a page count or a `currentPage`.
+  """
+  readingProgress: Percentage
 
   """Who recommended the book to the reader. Null when nobody was recorded."""
   recommendation: Recommendation
@@ -3192,6 +3202,11 @@ type Mutation {
   A dismissal taken back: the suggestion may come again and the model is no longer told of it; turned down this month, it returns to the discoveries where it stood. `NOT_FOUND` when the reader turned down no such suggestion.
   """
   reconsiderSuggestion(id: String!): Boolean!
+
+  """
+  Say which page of a book the reader reached. A book on the pile is opened by it: it moves to READING, its start stamped. A read or dropped book keeps its status. BAD_USER_INPUT on an audiobook, whose progress is Audible's, and past the last page of a book with a page count.
+  """
+  recordReadingPage(id: BookId!, page: PageCount!): Book!
 
   """
   Ask the world about an author again: one fresh web-grounded model call, whose catalogue replaces the stored one for every reader. An author the model could not describe on their first opening is never asked about again otherwise.

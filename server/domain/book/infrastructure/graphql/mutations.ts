@@ -281,6 +281,27 @@ builder.mutationFields((t) => ({
     },
   }),
 
+  recordReadingPage: t.field({
+    type: BookType,
+    description:
+      'Say which page of a book the reader reached. A book on the pile is opened by it: ' +
+      'it moves to READING, its start stamped. A read or dropped book keeps its status. ' +
+      "BAD_USER_INPUT on an audiobook, whose progress is Audible's, and past the last " +
+      'page of a book with a page count.',
+    args: {
+      id: t.arg({ type: 'BookId', required: true }),
+      page: t.arg({ type: 'PageCount', required: true }),
+    },
+    resolve: async (_root, args, context) => {
+      const result = await BookUseCase.recordPage(context.userId, args.id, args.page)
+      return match(result)
+        .with('not-found', () => notFound('Book not found'))
+        .with('audiobook', () => badUserInput('An audiobook has no pages'))
+        .with('past-the-end', () => badUserInput('The book has fewer pages'))
+        .otherwise((book) => readBack(context.userId, book.id))
+    },
+  }),
+
   rateBook: t.field({
     type: BookType,
     description:

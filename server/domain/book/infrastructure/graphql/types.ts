@@ -3,6 +3,7 @@ import { authorKeyOf } from '~/domain/author/primitives'
 import {
   amazonUrlOf,
   listeningProgressOf,
+  readingProgressOf,
   shelfDateOf,
   statusChangedAtOf,
 } from '~/domain/book/business-rules'
@@ -225,6 +226,25 @@ export const BookType = builder.objectRef<BookView>('Book').implement({
       type: 'PageCount',
       nullable: true,
       resolve: (book) => book.pageCount ?? null,
+    }),
+    currentPage: t.field({
+      type: 'PageCount',
+      nullable: true,
+      description:
+        'The page the reader last said they reached, through `recordReadingPage`. ' +
+        'Null on an audiobook, on a book whose reader never said, and on one back on the pile.',
+      resolve: (book) => book.currentPage ?? null,
+    }),
+    readingProgress: t.field({
+      type: 'Percentage',
+      nullable: true,
+      description:
+        'How far into the book the reader is, as a whole percentage of `pageCount`, ' +
+        'rounded down. Null without a page count or a `currentPage`.',
+      resolve: (book) => {
+        const progress = readingProgressOf(book)
+        return progress === undefined ? null : Percentage(progress)
+      },
     }),
     isbn13: t.field({ type: 'Isbn13', nullable: true, resolve: (book) => book.isbn13 ?? null }),
     series: t.field({

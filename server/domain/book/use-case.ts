@@ -17,6 +17,7 @@ import type {
   BookMedium,
   ChosenCover,
   CoverChoice,
+  PageCount,
   Publisher,
   ReadingNote,
   ReadingStatus,
@@ -229,6 +230,9 @@ export namespace BookUseCase {
       BookCommand.setStatus(userId, bookId, status, undefined, batch),
     )
 
+  export const recordPage = (userId: UserId, bookId: BookId, page: PageCount) =>
+    withAnalytics(userId, (batch) => BookCommand.recordPage(userId, bookId, page, undefined, batch))
+
   export const rate = (userId: UserId, bookId: BookId, rating: StarRating) =>
     withAnalytics(userId, (batch) => BookCommand.rate(userId, bookId, rating, undefined, batch))
 
@@ -302,4 +306,8 @@ const withAnalytics = <Outcome>(userId: UserId, write: (batch: WriteBatch) => Pr
   AnalyticsUseCase.afterWrite(userId, write, wrote)
 
 const wrote = (outcome: unknown): boolean =>
-  outcome !== 'not-found' && outcome !== 'no-author' && outcome !== 'no-photo'
+  outcome !== 'not-found' &&
+  outcome !== 'no-author' &&
+  outcome !== 'no-photo' &&
+  outcome !== 'audiobook' &&
+  outcome !== 'past-the-end'

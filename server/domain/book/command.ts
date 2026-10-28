@@ -420,6 +420,41 @@ export namespace BookCommand {
     return repository.save({ ...book, ...position, updatedAt: now }, batch)
   }
 
+  /** Record the page the reader says they reached in a book, and so that they
+   *  are reading it: a book on the pile is opened by it, with its start stamped
+   *  as a move would. A read or dropped book keeps its status — the reader is
+   *  correcting where they stopped, not taking the book up again.
+   *
+   *  Refused on an audiobook, whose progress is the player's, and past the last
+   *  page when the book has a page count. */
+  export const recordPage = async (
+    userId: UserId,
+    bookId: BookId,
+    page: PageCount,
+    now = new Date(),
+    batch?: WriteBatch,
+  ): Promise<Book | 'not-found' | 'audiobook' | 'past-the-end'> => {
+    const book = await repository.findById(userId, bookId)
+    if (!book) return 'not-found'
+    if (book.format === 'audiobook') return 'audiobook'
+    if (book.pageCount !== undefined && page > book.pageCount) return 'past-the-end'
+    const status = book.status === 'to-read' ? 'reading' : book.status
+    return repository.save(
+      {
+        ...book,
+        currentPage: page,
+        currentPageAt: now,
+        status,
+        ...datesAfterStatusChange(book, status, now),
+        ...statusStampAfterChange(book, status, now),
+        updatedAt: now,
+      },
+      batch,
+    )
+  }
+
+  /** Going back to the pile clears the page reached with the reading dates:
+   *  the book was never opened, as far as the record says. */
   export const setStatus = async (
     userId: UserId,
     bookId: BookId,
@@ -433,6 +468,7 @@ export namespace BookCommand {
       {
         ...book,
         status,
+        ...(status === 'to-read' ? { currentPage: undefined, currentPageAt: undefined } : {}),
         ...datesAfterStatusChange(book, status, now),
         ...statusStampAfterChange(book, status, now),
         updatedAt: now,
