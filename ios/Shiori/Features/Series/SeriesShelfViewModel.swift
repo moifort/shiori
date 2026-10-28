@@ -36,13 +36,19 @@ final class SeriesShelfViewModel {
     }
 
     /// The volumes announced, as the saga screen announces each, the nearest
-    /// first; one announced for a date nobody found comes last.
+    /// first; one announced for a date nobody found comes last. Only the
+    /// nearest few: a reader following thirty sagas gets a rail, not a wall.
     var releases: [(series: FollowedSeries, volume: DiscoveredVolume)] {
-        followed
-            .compactMap { saga in saga.announced.map { (saga, $0) } }
-            .filter { $0.volume.date.map { ReleaseDateText.isUpcoming($0) } ?? true }
-            .sorted { lastDay(of: $0.volume) < lastDay(of: $1.volume) }
+        Array(
+            followed
+                .compactMap { saga in saga.announced.map { (saga, $0) } }
+                .filter { $0.volume.date.map { ReleaseDateText.isUpcoming($0) } ?? true }
+                .sorted { lastDay(of: $0.volume) < lastDay(of: $1.volume) }
+                .prefix(Self.releaseLimit)
+        )
     }
+
+    static let releaseLimit = 5
 
     private func lastDay(of volume: DiscoveredVolume) -> String {
         volume.date.map(ReleaseDateText.lastDay) ?? "\u{FFFF}"
