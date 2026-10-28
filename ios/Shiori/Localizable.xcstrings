@@ -8949,22 +8949,6 @@
         }
       }
     },
-    "Mises de côté" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Set Aside"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mises de côté"
-          }
-        }
-      }
-    },
     "Modifier" : {
       "localizations" : {
         "en" : {

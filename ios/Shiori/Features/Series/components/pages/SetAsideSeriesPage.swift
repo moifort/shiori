@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// "Mises de côté": the sagas the reader stopped following, as the cards of
+/// "Non suivies": the sagas the reader stopped following, as the cards of
 /// "Toutes les séries" greyed, under a sentence saying what that means. A tap
 /// opens the saga; a long press follows it again.
 struct SetAsideSeriesPage: View {
@@ -32,7 +32,7 @@ struct SetAsideSeriesPage: View {
             .padding(.vertical, 8)
         }
         .background(Color(.systemGroupedBackground))
-        .navigationTitle("Mises de côté")
+        .navigationTitle("Non suivies")
         .navigationBarTitleDisplayMode(.large)
         .overlay {
             if series.isEmpty, isLoading { ProgressView() }

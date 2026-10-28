@@ -74,11 +74,12 @@ struct PosterLabelTests {
         #expect(PosterLabel.of(book("r", .read, shelved: 1), in: .read, now: now, calendar: calendar).caption == String(localized: "Lu hier"))
     }
 
-    @Test func aBookGivenUpOnIsDimmed() {
+    @Test func aBookGivenUpOnIsDimmedAndGreyed() {
         let label = PosterLabel.of(book("d", .dropped, shelved: 30), in: .recent, now: now, calendar: calendar)
 
         #expect(label.caption == String(localized: "Abandonné"))
         #expect(label.dimming == PosterLabel.setAsideDimming)
+        #expect(label.isGreyed)
     }
 
     @Test func halfStarsAreKept() {

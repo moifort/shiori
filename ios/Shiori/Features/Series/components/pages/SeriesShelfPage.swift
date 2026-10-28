@@ -11,7 +11,7 @@ enum SeriesShelfAction {
 /// The series, as the TV app sets out the shows one follows: "À suivre", the
 /// next volume of each saga in progress; "Prochaines sorties", the volumes
 /// announced, each drawn as the saga screen's release card, in a rail; then every saga as the home's cards, two by
-/// row, under their filters — and, at the foot, the sagas set aside.
+/// row, under their filters — and, at the foot, the sagas no longer followed.
 struct SeriesShelfPage: View {
     let upNext: [(series: FollowedSeries, volume: FollowedSeries.NextVolume)]
     let releases: [(series: FollowedSeries, volume: DiscoveredVolume)]
@@ -169,10 +169,10 @@ struct SeriesShelfPage: View {
     private var setAsideRow: some View {
         Button { onAction(.openSetAside) } label: {
             HStack(spacing: 12) {
-                Image(systemName: "nosign")
+                Image(systemName: "bell.slash")
                     .foregroundStyle(.secondary)
                     .frame(width: 26)
-                Text("Mises de côté")
+                Text("Non suivies")
                     .foregroundStyle(.primary)
                 Spacer(minLength: 8)
                 Image(systemName: "chevron.right")

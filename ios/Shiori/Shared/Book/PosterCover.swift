@@ -25,6 +25,8 @@ struct PosterCover: View {
     var progress: Int?
     /// Stars drawn in place of the line, a half one cut down the middle.
     var rating: Double?
+    /// The cover in black and white: a book given up on.
+    var isGreyed = false
 
     static let cornerRadius: CGFloat = 8
 
@@ -87,6 +89,7 @@ struct PosterCover: View {
         marksReading = label.marksReading
         progress = label.progress
         rating = label.rating
+        isGreyed = label.isGreyed
     }
 
     init(
@@ -115,6 +118,7 @@ struct PosterCover: View {
             cornerRadius: Self.cornerRadius,
             showsPlaceholderAuthor: false
         )
+        .saturation(isGreyed ? 0 : 1)
     }
 
     /// The cover blurred into its foot, more the lower it goes, as the TV
@@ -182,7 +186,7 @@ private struct PosterStars: View {
         PosterCover(book: .preview, label: PosterLabel(caption: "★★★★★", rating: 5))
         PosterCover(book: .preview, label: PosterLabel(caption: "depuis 6j", marksReading: true))
         PosterCover(book: .previewFromShelf, label: PosterLabel(caption: "68%", marksReading: true, progress: 68))
-        PosterCover(book: .preview, label: PosterLabel(caption: "Abandonné", dimming: PosterLabel.setAsideDimming))
+        PosterCover(book: .preview, label: PosterLabel(caption: "Abandonné", dimming: PosterLabel.setAsideDimming, isGreyed: true))
     }
     .padding()
     .background(.black)

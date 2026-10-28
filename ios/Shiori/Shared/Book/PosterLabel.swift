@@ -18,6 +18,8 @@ struct PosterLabel: Hashable, Sendable {
     var rating: Double?
     /// How dark the cover is drawn: a book given up on is dimmed further.
     var dimming: Double = 0.12
+    /// Drawn in black and white, as a saga no longer followed: a book given up on.
+    var isGreyed = false
 
     /// The dimming of a book given up on, or of a saga set aside.
     static let setAsideDimming = 0.5
@@ -38,7 +40,7 @@ struct PosterLabel: Hashable, Sendable {
         case lovedByYear
         /// The favourites on their own page, filed by year: the author.
         case lovedByAuthor
-        /// The books given up on: how long ago, the cover dimmed.
+        /// The books given up on: how long ago, the cover dimmed and in black and white.
         case dropped
     }
 
@@ -59,7 +61,8 @@ struct PosterLabel: Hashable, Sendable {
             let date = book.statusChangedAt ?? book.shelvedAt
             return PosterLabel(
                 caption: date.map { waited($0, now: now, calendar: calendar) } ?? "",
-                dimming: setAsideDimming
+                dimming: setAsideDimming,
+                isGreyed: true
             )
         case .read:
             return readLabel(book, now: now, calendar: calendar)
@@ -84,7 +87,7 @@ struct PosterLabel: Hashable, Sendable {
         case .read:
             return readLabel(book, now: now, calendar: calendar)
         case .dropped:
-            return PosterLabel(caption: String(localized: "Abandonné"), dimming: setAsideDimming)
+            return PosterLabel(caption: String(localized: "Abandonné"), dimming: setAsideDimming, isGreyed: true)
         }
     }
 
