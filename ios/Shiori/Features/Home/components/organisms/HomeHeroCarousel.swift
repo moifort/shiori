@@ -679,3 +679,19 @@ private struct PageDots: View {
     }
     .background(Color(.systemGroupedBackground))
 }
+
+#Preview("Needs ratings") {
+    ScrollView {
+        HomeHeroCarousel(
+            items: [.needsRatings("2026-10")],
+            onOpenRelease: { _ in },
+            onOpen: { _ in },
+            onAdd: { _, _ in },
+            onAwait: { _, _ in },
+            onDismiss: { _ in },
+            backdropCover: Book.preview.coverURL
+        )
+        Color.clear.frame(height: 600)
+    }
+    .background(Color(.systemGroupedBackground))
+}

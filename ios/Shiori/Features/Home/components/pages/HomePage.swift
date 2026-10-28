@@ -754,6 +754,18 @@ extension Dashboard {
     }
 }
 
+#Preview("Needs ratings, phone") {
+    NavigationStack {
+        HomePage(
+            dashboard: .preview,
+            discoveries: MonthlyDiscoveries(
+                month: MonthlyDiscoveries.month(of: .now), status: .none, suggestions: [], needsRatings: true
+            ),
+            isCompact: true
+        ) { _ in }
+    }
+}
+
 #Preview("Unfolded", traits: .fixedLayout(width: 859, height: 669)) {
     NavigationStack {
         HomePage(dashboard: .preview, discoveries: .preview, isSideBySide: true) { _ in }
