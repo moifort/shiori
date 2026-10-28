@@ -166,8 +166,8 @@ struct HomeHeroCarousel: View {
     /// A large glass button's height.
     private static let buttonsHeight: CGFloat = 50
     /// Under the buttons: the dots, then the room before the rows.
-    private static let dotsGap: CGFloat = 16
-    private static let bottomPadding: CGFloat = 26
+    private static let dotsGap: CGFloat = 22
+    private static let bottomPadding: CGFloat = 14
     private static let dotsHeight: CGFloat = 7
     /// How far each backdrop runs up past its page, under the bars and the
     /// status bar.
