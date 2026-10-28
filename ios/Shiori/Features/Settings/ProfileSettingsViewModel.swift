@@ -1,12 +1,14 @@
 import Foundation
 
-/// The two ways out of the account: signing out, which keeps everything, and
-/// deleting, which keeps nothing. Ending the session is the caller's, handed
+/// The avatar, and the two ways out of the account: signing out, which keeps
+/// everything, and deleting, which keeps nothing. Ending the session is the caller's, handed
 /// in as `endSession`: the ViewModel never holds the auth session itself.
 @MainActor
 @Observable
 final class ProfileSettingsViewModel {
     private(set) var isDeletingAccount = false
+    /// The avatar on its way to the server, drawn meanwhile.
+    private(set) var savingAvatar: AccountAvatar?
     /// What went wrong, said under the buttons.
     private(set) var errorMessage: String?
 
@@ -14,6 +16,19 @@ final class ProfileSettingsViewModel {
 
     init(client: SettingsClient) {
         self.client = client
+    }
+
+    /// Keeps the avatar, then hands what the server kept to `show`, which
+    /// draws it everywhere. A refusal leaves the previous one in place.
+    func changeAvatar(_ avatar: AccountAvatar, show: (AccountAvatar) -> Void) async {
+        savingAvatar = avatar
+        errorMessage = nil
+        defer { savingAvatar = nil }
+        do {
+            show(try await client.changeAvatar(avatar))
+        } catch {
+            errorMessage = reportError(error)
+        }
     }
 
     func signOut(endSession: () throws -> Void) async {

@@ -2,10 +2,12 @@ import SwiftUI
 
 struct FirstNamePage: View {
     @Binding var firstName: String
+    @Binding var avatar: AccountAvatar
     var onNext: () -> Void
     var onBack: () -> Void
 
     @FocusState private var focused: Bool
+    @State private var pickingAvatar = false
     @State private var appeared = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -15,14 +17,22 @@ struct FirstNamePage: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
+            avatarButton
+                .frame(maxWidth: .infinity)
+                .entrance(appeared, delay: 0, sliding: !reduceMotion)
+
             VStack(alignment: .leading, spacing: 8) {
                 Text("Comment vous appelez-vous ?")
                     .font(.title.bold())
-                Text("Votre prénom sert à personnaliser l'application.")
+                    // Never cut short when the keyboard leaves little room
+                    // under the avatar: the field and the button give way.
+                    .fixedSize(horizontal: false, vertical: true)
+                Text("Votre prénom et votre avatar personnalisent l'application.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            .entrance(appeared, delay: 0, sliding: !reduceMotion)
+            .entrance(appeared, delay: 0.04, sliding: !reduceMotion)
 
             TextField("Prénom", text: $firstName)
                 .textContentType(.givenName)
@@ -56,10 +66,31 @@ struct FirstNamePage: View {
                 ToolbarIconButton(title: "Retour", systemImage: "chevron.left", action: onBack)
             }
         }
+        .sheet(isPresented: $pickingAvatar) {
+            AvatarPickerSheet(current: avatar, firstName: trimmed) { avatar = $0 }
+        }
         .onAppear {
             appeared = true
             focused = true
         }
+    }
+
+    /// The avatar, large, with a pencil badge saying it can be changed.
+    private var avatarButton: some View {
+        Button { pickingAvatar = true } label: {
+            AccountAvatarView(avatar: avatar, firstName: trimmed, size: 112)
+                .overlay(alignment: .bottomTrailing) {
+                    Image(systemName: "pencil")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(.primary)
+                        .frame(width: 34, height: 34)
+                        .glassEffect(.regular.interactive(), in: .circle)
+                }
+                .animation(.snappy, value: trimmed)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Modifier l'avatar")
+        .accessibilityIdentifier("onboarding-avatar")
     }
 }
 
@@ -75,6 +106,6 @@ private extension View {
 
 #Preview {
     NavigationStack {
-        FirstNamePage(firstName: .constant("Thibaut"), onNext: {}, onBack: {})
+        FirstNamePage(firstName: .constant("Thibaut"), avatar: .constant(.initials), onNext: {}, onBack: {})
     }
 }

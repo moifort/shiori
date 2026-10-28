@@ -13,6 +13,7 @@ export namespace UserQuery {
       firstName: profile?.firstName,
       onboardingCompletedAt: profile?.onboardingCompletedAt,
       admin: profile?.admin === true,
+      avatar: profile?.avatar,
     }
   }
 

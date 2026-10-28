@@ -5,6 +5,8 @@ import Foundation
 struct OnboardingClient: Sendable {
     /// Saves the first name and grants the welcome scans.
     var complete: @Sendable (_ firstName: String) async throws -> Void
+    /// Keeps the avatar the reader chose, and answers what the server keeps.
+    var changeAvatar: @Sendable (AccountAvatar) async throws -> AccountAvatar
     var startSignIn: @Sendable (ImportSource, AmazonMarketplace) async throws -> AmazonLogin
     /// Links the library with Amazon's code, and starts its pass in the background.
     var completeSignIn: @Sendable (ImportSource, _ code: String) async throws -> Void
@@ -15,6 +17,7 @@ struct OnboardingClient: Sendable {
 extension OnboardingClient {
     static let live = OnboardingClient(
         complete: { try await OnboardingAPI.completeOnboarding(firstName: $0) },
+        changeAvatar: { try await OnboardingAPI.changeAvatar($0) },
         startSignIn: { source, marketplace in
             switch source {
             case .audible: try await ImportAPI.startSignIn(on: marketplace)
@@ -37,6 +40,7 @@ extension OnboardingClient {
     /// Accepts everything and starts nothing.
     static let preview = OnboardingClient(
         complete: { _ in },
+        changeAvatar: { $0 },
         startSignIn: { _, _ in throw CancellationError() },
         completeSignIn: { _, _ in },
         beginPreparation: {}

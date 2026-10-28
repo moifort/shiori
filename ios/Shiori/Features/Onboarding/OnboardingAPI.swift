@@ -5,6 +5,7 @@ import Foundation
 /// starts from.
 struct LaunchState {
     let firstName: String?
+    let avatar: AccountAvatar
     let onboardingCompleted: Bool
     let isAdmin: Bool
     let entitlement: EntitlementState
@@ -16,7 +17,7 @@ enum OnboardingAPI {
         #if DEBUG
         if Showcase.isOn {
             return LaunchState(
-                firstName: Showcase.firstName, onboardingCompleted: true, isAdmin: false,
+                firstName: Showcase.firstName, avatar: .initials, onboardingCompleted: true, isAdmin: false,
                 entitlement: Showcase.entitlement, quota: Showcase.quota
             )
         }
@@ -27,6 +28,7 @@ enum OnboardingAPI {
         )
         return LaunchState(
             firstName: data.me.firstName,
+            avatar: accountAvatar(hero: data.me.avatarHero?.rawValue, url: data.me.avatarUrl),
             onboardingCompleted: data.me.onboardingCompleted,
             isAdmin: data.me.isAdmin,
             entitlement: data.entitlement.fragments.entitlementFields.asState,
@@ -44,5 +46,31 @@ enum OnboardingAPI {
             mutation: ShioriGraphQL.CompleteOnboardingMutation(input: input),
             changesLibrary: false
         )
+    }
+
+    /// Puts a hero or a photo on the account, or takes the avatar off for the
+    /// initials. Answers what the server now keeps: a photo comes back as the
+    /// URL it is served from.
+    static func changeAvatar(_ avatar: AccountAvatar) async throws -> AccountAvatar {
+        var input = ShioriGraphQL.ChangeAvatarInput()
+        switch avatar {
+        case .initials: break
+        case let .hero(hero): input.hero = .some(GraphQLEnum(rawValue: hero.graphQLName))
+        case let .pickedPhoto(data): input.photoBase64 = .some(data.base64EncodedString())
+        // Already the one the server keeps.
+        case .photo: return avatar
+        }
+        let data = try await GraphQLHelpers.perform(
+            GraphQLClient.shared.apollo,
+            mutation: ShioriGraphQL.ChangeAvatarMutation(input: input),
+            changesLibrary: false
+        )
+        return accountAvatar(hero: data.changeAvatar.avatarHero?.rawValue, url: data.changeAvatar.avatarUrl)
+    }
+
+    private static func accountAvatar(hero: String?, url: String?) -> AccountAvatar {
+        if let hero, let avatarHero = AvatarHero(graphQLName: hero) { return .hero(avatarHero) }
+        if let url, let photoURL = URL(string: url) { return .photo(photoURL) }
+        return .initials
     }
 }

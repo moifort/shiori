@@ -45,6 +45,8 @@ struct HomeScreen: View {
     /// account sees.
     @State private var showAdmin = false
     @Environment(\.isAdmin) private var isAdmin
+    @Environment(\.accountAvatar) private var accountAvatar
+    @Environment(\.accountFirstName) private var accountFirstName
     /// The Audible and Kindle passes started at onboarding, still bringing the
     /// library in.
     @State private var audibleSync = AudibleBackgroundSync.shared
@@ -218,13 +220,17 @@ struct HomeScreen: View {
         ToolbarItem(placement: .topBarTrailing) {
             // The settings hold the account, the subscription and the
             // connected sources: managing a linked Audible account is
-            // a setting, not an import, and lives there.
+            // a setting, not an import, and lives there. The reader's
+            // avatar opens them, as the TV app's does: the account is
+            // what they are about.
             Button { showSettings = true } label: {
-                Label("Réglages", systemImage: "gearshape")
+                AccountAvatarView(avatar: accountAvatar, firstName: accountFirstName, size: 44)
             }
-            .labelStyle(.iconOnly)
+            .buttonStyle(.plain)
+            .accessibilityLabel("Réglages")
             .accessibilityIdentifier("home-settings")
         }
+        .sharedBackgroundVisibility(.hidden)
     }
 
     /// Whether the page opens on a hero that runs up under the bar: on a

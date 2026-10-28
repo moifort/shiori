@@ -1,7 +1,9 @@
+import { match, P } from 'ts-pattern'
 import { builder } from '~/domain/shared/graphql/builder'
+import { badUserInput, notFound } from '~/domain/shared/graphql/errors'
 import { UserQuery } from '~/domain/user/query'
 import { UserUseCase } from '~/domain/user/use-case'
-import { CompleteOnboardingInput } from './inputs'
+import { ChangeAvatarInput, CompleteOnboardingInput } from './inputs'
 import { MeType } from './types'
 
 builder.mutationField('completeOnboarding', (t) =>
@@ -23,6 +25,34 @@ builder.mutationField('completeOnboarding', (t) =>
     resolve: async (_root, { input }, { userId }) => {
       await UserUseCase.completeOnboarding(userId, { firstName: input.firstName })
       return UserQuery.me(userId)
+    },
+  }),
+)
+
+builder.mutationField('changeAvatar', (t) =>
+  t.field({
+    type: MeType,
+    description:
+      'Change the avatar: a hero, a photo of the reader, or neither for their ' +
+      'initials.\n\n' +
+      'Returns the updated `Me`. Needs a finished onboarding (`NOT_FOUND` before ' +
+      'it); `BAD_USER_INPUT` when both a hero and a photo are given, or when the ' +
+      'photo is not a JPEG under 2 MB. A replaced photo is deleted from storage.',
+    args: {
+      input: t.arg({ type: ChangeAvatarInput, required: true, description: 'The new avatar.' }),
+    },
+    resolve: async (_root, { input }, { userId }) => {
+      const photo = input.photoBase64 ? Buffer.from(input.photoBase64, 'base64') : undefined
+      const outcome = await UserUseCase.changeAvatar(userId, {
+        hero: input.hero ?? undefined,
+        photo,
+      })
+      return match(outcome)
+        .with('no-profile', () => notFound('No profile: finish onboarding first'))
+        .with('ambiguous', () => badUserInput('Give a hero or a photo, not both'))
+        .with('invalid-photo', () => badUserInput('The photo must be a JPEG under 2 MB'))
+        .with(P.not(P.string), () => UserQuery.me(userId))
+        .exhaustive()
     },
   }),
 )

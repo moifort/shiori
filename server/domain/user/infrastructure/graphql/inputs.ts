@@ -1,4 +1,5 @@
 import { builder } from '~/domain/shared/graphql/builder'
+import { AvatarHeroEnum } from './enums'
 
 export const CompleteOnboardingInput = builder.inputType('CompleteOnboardingInput', {
   description:
@@ -10,6 +11,26 @@ export const CompleteOnboardingInput = builder.inputType('CompleteOnboardingInpu
       type: 'PersonName',
       required: true,
       description: "The reader's first name.",
+    }),
+  }),
+})
+
+export const ChangeAvatarInput = builder.inputType('ChangeAvatarInput', {
+  description:
+    'What stands for the reader beside their name.\n\n' +
+    'A hero, or a photo — never both. Neither takes the avatar off, and the app ' +
+    'draws the initials of the first name instead.',
+  fields: (t) => ({
+    hero: t.field({
+      type: AvatarHeroEnum,
+      required: false,
+      description: 'A hero of a classic novel, from the portraits the app bundles.',
+    }),
+    photoBase64: t.string({
+      required: false,
+      description:
+        'A photo of the reader, as a base64-encoded JPEG (no data URL prefix), up to ' +
+        '2 MB once decoded. The app sends a 512-point square.',
     }),
   }),
 })

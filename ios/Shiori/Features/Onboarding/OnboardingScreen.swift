@@ -2,7 +2,8 @@ import FirebaseCore
 import SwiftUI
 
 /// The wizard shown once, before the library exists. Three steps, not Vinarium's
-/// five: there is no cellar to size, so all it collects is a first name — and
+/// five: there is no cellar to size, so all it collects is a first name and an
+/// avatar — and
 /// then it offers to bring an Audible library, a Kindle library or both in,
 /// which a reader can skip.
 ///
@@ -10,14 +11,17 @@ import SwiftUI
 /// it does — it grants the welcome scans — and because the welcome step is the
 /// one place to say what the app is for before asking for anything.
 struct OnboardingScreen: View {
-    /// Handed the first name the reader gave, so the app knows it without
-    /// asking the server.
-    var onCompleted: (String) -> Void
+    /// Handed the first name and the avatar the reader gave, so the app knows
+    /// them without asking the server.
+    var onCompleted: (String, AccountAvatar) -> Void
     var client: OnboardingClient = .live
 
     @Environment(AuthSession.self) private var session
     @State private var step: Step = .welcome
     @State private var firstName = ""
+    /// The initials until the reader picks a hero or a photo: iOS hands the
+    /// iCloud photo to no app, so there is nothing better to propose.
+    @State private var avatar: AccountAvatar = .initials
     @State private var isSaving = false
     @State private var errorMessage: String?
     /// Which libraries the reader asked to connect.
@@ -54,6 +58,7 @@ struct OnboardingScreen: View {
             case .firstName:
                 FirstNamePage(
                     firstName: $firstName,
+                    avatar: $avatar,
                     onNext: { Task { await complete() } },
                     onBack: { withAnimation { step = .welcome } }
                 )
@@ -163,7 +168,20 @@ struct OnboardingScreen: View {
     /// draws until the library is ready to be shown.
     private func enterApp() {
         client.beginPreparation()
-        onCompleted(firstName.trimmingCharacters(in: .whitespacesAndNewlines))
+        onCompleted(firstName.trimmingCharacters(in: .whitespacesAndNewlines), avatar)
+    }
+
+    /// After the profile exists, which the avatar hangs off. A failure here
+    /// costs the reader nothing they cannot redo from the profile settings, so
+    /// it is reported and the wizard moves on with the initials.
+    private func keepAvatar() async {
+        guard avatar != .initials else { return }
+        do {
+            avatar = try await client.changeAvatar(avatar)
+        } catch {
+            _ = reportError(error)
+            avatar = .initials
+        }
     }
 
     private func complete() async {
@@ -174,6 +192,7 @@ struct OnboardingScreen: View {
         do {
             try await client.complete(name)
             track(.onboardingCompleted)
+            await keepAvatar()
             withAnimation { step = .libraries }
         } catch {
             // Stays on the step rather than dropping the reader into an empty
@@ -188,5 +207,5 @@ struct OnboardingScreen: View {
     // `AuthSession` reads `Auth.auth()` on init, which traps when Firebase was
     // never configured: the canvas does not run `ShioriApp.init`.
     if FirebaseApp.app() == nil { FirebaseApp.configure() }
-    return OnboardingScreen(onCompleted: { _ in }, client: .preview).environment(AuthSession())
+    return OnboardingScreen(onCompleted: { _, _ in }, client: .preview).environment(AuthSession())
 }

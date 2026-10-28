@@ -1,5 +1,6 @@
 # Everything a signed-in launch needs, in one request: the wizard or the app,
-# the admin surfaces, the first name the profile settings show, and the plan and
+# the admin surfaces, the first name and avatar the toolbar and the profile
+# settings show, and the plan and
 # allowance the subscription store starts from. The first name sits on the
 # account document the routing flags are read from, so it costs no extra read.
 query Launch {
@@ -7,6 +8,8 @@ query Launch {
     firstName
     onboardingCompleted
     isAdmin
+    avatarHero
+    avatarUrl
   }
   entitlement {
     ...EntitlementFields
@@ -21,5 +24,13 @@ mutation CompleteOnboarding($input: CompleteOnboardingInput!) {
     userId
     firstName
     onboardingCompleted
+  }
+}
+
+mutation ChangeAvatar($input: ChangeAvatarInput!) {
+  changeAvatar(input: $input) {
+    userId
+    avatarHero
+    avatarUrl
   }
 }

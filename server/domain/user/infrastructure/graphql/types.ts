@@ -1,5 +1,7 @@
 import { builder } from '~/domain/shared/graphql/builder'
 import type { MeView } from '~/domain/user/types'
+import { objectStore } from '~/system/object-store'
+import { AvatarHeroEnum } from './enums'
 
 export const MeType = builder.objectRef<MeView>('Me').implement({
   description:
@@ -32,6 +34,24 @@ export const MeType = builder.objectRef<MeView>('Me').implement({
     onboardingCompleted: t.boolean({
       description: 'Convenience flag the app routes on: true once onboarding is done.',
       resolve: (me) => me.onboardingCompletedAt != null,
+    }),
+    avatarHero: t.field({
+      type: AvatarHeroEnum,
+      nullable: true,
+      description:
+        'The hero the reader wears as an avatar, drawn by the app from its own ' +
+        'portraits. Null with a photo, and with no avatar at all, which the app ' +
+        'draws as the initials of `firstName`.',
+      resolve: (me) => (me.avatar?.kind === 'hero' ? me.avatar.hero : null),
+    }),
+    avatarUrl: t.string({
+      nullable: true,
+      description:
+        'The photo the reader chose as an avatar, as a URL signed for one hour. ' +
+        'Each new photo has its own URL, so a cached image is never stale. Null ' +
+        'with a hero or no avatar.',
+      resolve: async (me) =>
+        me.avatar?.kind === 'photo' ? objectStore().downloadUrl(me.avatar.path) : null,
     }),
     isAdmin: t.expose('admin', {
       type: 'Boolean',

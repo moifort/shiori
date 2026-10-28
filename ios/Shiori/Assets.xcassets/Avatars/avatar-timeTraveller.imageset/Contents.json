@@ -1,0 +1,12 @@
+{
+  "images" : [
+    {
+      "filename" : "timeTraveller.jpg",
+      "idiom" : "universal"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}

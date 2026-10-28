@@ -15,6 +15,8 @@ struct SettingsClient: Sendable {
     var requestNotificationPermission: @Sendable () async -> Void
     /// Stops the server pushing to this phone, before the session ends.
     var forgetDevice: @Sendable () async -> Void
+    /// Keeps the avatar the reader chose, and answers what the server keeps.
+    var changeAvatar: @Sendable (AccountAvatar) async throws -> AccountAvatar
 }
 
 extension SettingsClient {
@@ -26,7 +28,8 @@ extension SettingsClient {
         setAlert: { try await NotificationsAPI.setAlert($0, enabled: $1) },
         notificationAuthorization: { await PushRegistrar.shared.authorizationStatus() },
         requestNotificationPermission: { _ = await PushRegistrar.shared.requestPermission() },
-        forgetDevice: { await PushRegistrar.shared.forgetDevice() }
+        forgetDevice: { await PushRegistrar.shared.forgetDevice() },
+        changeAvatar: { try await OnboardingAPI.changeAvatar($0) }
     )
 
     static let preview = SettingsClient(
@@ -41,7 +44,8 @@ extension SettingsClient {
         },
         notificationAuthorization: { .authorized },
         requestNotificationPermission: {},
-        forgetDevice: {}
+        forgetDevice: {},
+        changeAvatar: { $0 }
     )
 }
 

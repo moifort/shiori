@@ -14,9 +14,17 @@ import { NotificationCommand } from '~/domain/notification/command'
 import { QuotaCommand } from '~/domain/quota/command'
 import { SeriesOpinionCommand } from '~/domain/series-opinion/command'
 import type { PersonName, UserId } from '~/domain/shared/types'
+import {
+  avatarPathOf,
+  avatarPrefixOf,
+  isJpeg,
+  MAX_AVATAR_BYTES,
+} from '~/domain/user/business-rules'
 import { UserCommand } from '~/domain/user/command'
 import { UserQuery } from '~/domain/user/query'
+import type { Avatar, AvatarHero } from '~/domain/user/types'
 import { objectStore } from '~/system/object-store'
+import { ContentType } from '~/system/object-store/primitives'
 import { atomically } from '~/utils/firestore'
 
 export namespace UserUseCase {
@@ -37,6 +45,35 @@ export namespace UserUseCase {
     })
   }
 
+  // Change what stands for the reader: a hero, a photo of their own, or
+  // nothing, which draws their initials. A new photo lands in the bucket before
+  // the profile points at it, and the one it replaces goes only once the
+  // profile no longer does: a failure in between leaves an orphan file, never
+  // a profile pointing at nothing.
+  export const changeAvatar = async (
+    userId: UserId,
+    choice: { hero?: AvatarHero; photo?: Buffer },
+  ) => {
+    if (choice.hero && choice.photo) return 'ambiguous' as const
+    if (choice.photo && (choice.photo.length > MAX_AVATAR_BYTES || !isJpeg(choice.photo)))
+      return 'invalid-photo' as const
+    // Memoized per request: the command's own read of the profile is free.
+    const me = await UserQuery.me(userId)
+    if (me.onboardingCompletedAt === undefined) return 'no-profile' as const
+    const before = me.avatar
+    let avatar: Avatar | undefined
+    if (choice.hero) avatar = { kind: 'hero', hero: choice.hero }
+    else if (choice.photo) {
+      const path = avatarPathOf(userId, new Date())
+      await objectStore().write(path, choice.photo, ContentType('image/jpeg'))
+      avatar = { kind: 'photo', path }
+    }
+    const saved = await UserCommand.changeAvatar(userId, avatar)
+    if (saved === 'no-profile') return saved
+    if (before?.kind === 'photo') await objectStore().remove(before.path)
+    return saved
+  }
+
   // Delete the account and every trace of it. Each step reaches a domain through
   // its public Command surface, never a repository — the domains own their
   // storage. The whole thing is idempotent, so a retry after a partial failure is
@@ -48,7 +85,7 @@ export namespace UserUseCase {
   //     Audible and Kindle connections go the same way: the sealed device
   //     credentials are dropped here, and the devices stay registered on the
   //     Amazon side until the reader removes them from their Amazon account.
-  //  2. Delete the cover images, which live in the bucket rather than Firestore
+  //  2. Delete the cover images and avatar photos, which live in the bucket rather than Firestore
   //     and would otherwise survive the account that paid to scan them.
   //  3. Drop the profile.
   //  4. Delete the Firebase Auth user LAST: if an earlier step fails the reader
@@ -76,7 +113,10 @@ export namespace UserUseCase {
       DiscoveryCommand.deleteForUser(userId),
       AwaitedEditionCommand.deleteAllForUser(userId),
     ])
-    await objectStore().removeByPrefix(coverPrefixOf(userId))
+    await Promise.all([
+      objectStore().removeByPrefix(coverPrefixOf(userId)),
+      objectStore().removeByPrefix(avatarPrefixOf(userId)),
+    ])
     await UserCommand.deleteProfile(userId)
     await UserCommand.deleteAuthAccount(userId)
   }

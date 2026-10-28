@@ -21,6 +21,8 @@ final class OnboardingGate {
     /// The reader's first name, riding the same launch request: the profile
     /// settings draw it from here rather than asking the server again.
     private(set) var firstName: String?
+    /// The reader's avatar, riding the same request: the home's toolbar draws it.
+    private(set) var avatar: AccountAvatar = .initials
 
     /// Reads where to route, and hands the plan and allowance that ride the same
     /// request to the subscription store: a launch costs one round trip.
@@ -30,6 +32,7 @@ final class OnboardingGate {
             let launch = try await OnboardingAPI.launch()
             isAdmin = launch.isAdmin
             firstName = launch.firstName
+            avatar = launch.avatar
             state = launch.onboardingCompleted ? .ready : .required
             await subscriptions.start(with: launch.entitlement, quota: launch.quota)
         } catch {
@@ -38,10 +41,16 @@ final class OnboardingGate {
     }
 
     /// Called by the wizard on success to enter the app without a re-fetch,
-    /// with the first name the reader just gave.
-    func markCompleted(firstName: String) {
+    /// with the first name and the avatar the reader just gave.
+    func markCompleted(firstName: String, avatar: AccountAvatar) {
         self.firstName = firstName
+        self.avatar = avatar
         state = .ready
+    }
+
+    /// An avatar changed from the profile settings, drawn at once everywhere.
+    func showAvatar(_ avatar: AccountAvatar) {
+        self.avatar = avatar
     }
 
     /// Clear the resolved state on sign-out so a different account signing in next
@@ -50,5 +59,6 @@ final class OnboardingGate {
         state = .loading
         isAdmin = false
         firstName = nil
+        avatar = .initials
     }
 }

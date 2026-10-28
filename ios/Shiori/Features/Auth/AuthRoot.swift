@@ -40,6 +40,8 @@ struct AuthRoot: View {
         .environment(subscriptions)
         .environment(\.isAdmin, gate.isAdmin)
         .environment(\.accountFirstName, gate.firstName)
+        .environment(\.accountAvatar, gate.avatar)
+        .environment(\.showAccountAvatar, ShowAccountAvatar { gate.showAvatar($0) })
         .task {
             guard !isShowcase else { return }
             await supportGate.check()
@@ -80,7 +82,7 @@ struct AuthRoot: View {
         case .loading:
             StartupLoadingView()
         case .required:
-            OnboardingScreen(onCompleted: { gate.markCompleted(firstName: $0) })
+            OnboardingScreen(onCompleted: { gate.markCompleted(firstName: $0, avatar: $1) })
         case .ready:
             ContentView(invitation: $invitationRequest)
         case .failed(let message):

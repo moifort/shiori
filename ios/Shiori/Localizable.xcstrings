@@ -2169,6 +2169,22 @@
         }
       }
     },
+    "Alice" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alice"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alice"
+          }
+        }
+      }
+    },
     "Allemand" : {
       "localizations" : {
         "en" : {
@@ -2501,6 +2517,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Arabe"
+          }
+        }
+      }
+    },
+    "Arsène Lupin" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arsène Lupin"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arsène Lupin"
           }
         }
       }
@@ -3141,6 +3173,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Autres"
+          }
+        }
+      }
+    },
+    "Avatar" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avatar"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avatar"
           }
         }
       }
@@ -4985,6 +5033,54 @@
         }
       }
     },
+    "Dorothy" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dorothy"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dorothy"
+          }
+        }
+      }
+    },
+    "Dracula" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dracula"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dracula"
+          }
+        }
+      }
+    },
+    "Dupin" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dupin"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dupin"
+          }
+        }
+      }
+    },
     "Durée" : {
       "localizations" : {
         "en" : {
@@ -5685,6 +5781,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Fantastique"
+          }
+        }
+      }
+    },
+    "Fantasy" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fantasy"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fantasy"
           }
         }
       }
@@ -6681,6 +6793,22 @@
         }
       }
     },
+    "Initiales" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Initials"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Initiales"
+          }
+        }
+      }
+    },
     "Invitation" : {
       "localizations" : {
         "en" : {
@@ -6905,6 +7033,22 @@
         }
       }
     },
+    "L'Homme invisible" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The Invisible Man"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'Homme invisible"
+          }
+        }
+      }
+    },
     "L'IA de Shiori est momentanément indisponible. Rien n'a été décompté ; réessayez dans un moment." : {
       "localizations" : {
         "en" : {
@@ -7049,6 +7193,22 @@
         }
       }
     },
+    "La Créature" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The Creature"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La Créature"
+          }
+        }
+      }
+    },
     "La course est ouverte : le premier livre terminé prend la tête." : {
       "localizations" : {
         "en" : {
@@ -7157,6 +7317,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Langue"
+          }
+        }
+      }
+    },
+    "Le Voyageur" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The Time Traveller"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le Voyageur"
           }
         }
       }
@@ -8149,6 +8325,22 @@
         }
       }
     },
+    "Merlin" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Merlin"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Merlin"
+          }
+        }
+      }
+    },
     "Mes amis" : {
       "localizations" : {
         "en" : {
@@ -8289,6 +8481,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Modifier"
+          }
+        }
+      }
+    },
+    "Modifier l'avatar" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit avatar"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modifier l'avatar"
           }
         }
       }
@@ -8609,6 +8817,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ne plus être prévenu"
+          }
+        }
+      }
+    },
+    "Nemo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nemo"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nemo"
           }
         }
       }
@@ -9761,6 +9985,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Pas pour moi"
+          }
+        }
+      }
+    },
+    "Photo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Photo"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Photo"
           }
         }
       }
@@ -11253,6 +11493,22 @@
         }
       }
     },
+    "Rouletabille" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rouletabille"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rouletabille"
+          }
+        }
+      }
+    },
     "Russe" : {
       "localizations" : {
         "en" : {
@@ -11809,6 +12065,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Seul en piste : invitez un ami à vous défier !"
+          }
+        }
+      }
+    },
+    "Sherlock Holmes" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sherlock Holmes"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sherlock Holmes"
           }
         }
       }
@@ -13909,18 +14181,18 @@
         }
       }
     },
-    "Votre prénom sert à personnaliser l'application." : {
+    "Votre prénom et votre avatar personnalisent l'application." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your first name is used to personalize the app."
+            "value" : "Your first name and avatar personalize the app."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Votre prénom sert à personnaliser l'application."
+            "value" : "Votre prénom et votre avatar personnalisent l'application."
           }
         }
       }

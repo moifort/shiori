@@ -523,6 +523,49 @@ type AuthorWork {
 }
 
 """
+A hero of a classic novel a reader may wear as an avatar.
+
+The portraits are drawn for the app and bundled in it; the server keeps only the name. Every hero comes from a book in the public domain.
+"""
+enum AvatarHero {
+  """The portrait of `alice`."""
+  ALICE
+
+  """The portrait of `creature`."""
+  CREATURE
+
+  """The portrait of `dorothy`."""
+  DOROTHY
+
+  """The portrait of `dracula`."""
+  DRACULA
+
+  """The portrait of `dupin`."""
+  DUPIN
+
+  """The portrait of `holmes`."""
+  HOLMES
+
+  """The portrait of `invisibleMan`."""
+  INVISIBLE_MAN
+
+  """The portrait of `lupin`."""
+  LUPIN
+
+  """The portrait of `merlin`."""
+  MERLIN
+
+  """The portrait of `nemo`."""
+  NEMO
+
+  """The portrait of `rouletabille`."""
+  ROULETABILLE
+
+  """The portrait of `timeTraveller`."""
+  TIME_TRAVELLER
+}
+
+"""
 A book the reader waits to see come out in the language of their app, in one format: translated into print, or recorded. The web is searched for it once a week, and an alert goes out the day it comes out. It stops being awaited on its own once the library holds it — the Audible sync bringing it in, or the reader adding it.
 """
 type AwaitedEdition {
@@ -1004,6 +1047,21 @@ The title of a book, 1 to 300 characters.
 Bounded because it often comes from a model reading a cover: a 500-character "title" is a misread blurb. Example: "The Name of the Wind".
 """
 scalar BookTitle
+
+"""
+What stands for the reader beside their name.
+
+A hero, or a photo — never both. Neither takes the avatar off, and the app draws the initials of the first name instead.
+"""
+input ChangeAvatarInput {
+  """A hero of a classic novel, from the portraits the app bundles."""
+  hero: AvatarHero
+
+  """
+  A photo of the reader, as a base64-encoded JPEG (no data URL prefix), up to 2 MB once decoded. The app sends a 512-point square.
+  """
+  photoBase64: String
+}
 
 """
 One version section of the application release notes.
@@ -2529,6 +2587,16 @@ query {
 ```
 """
 type Me {
+  """
+  The hero the reader wears as an avatar, drawn by the app from its own portraits. Null with a photo, and with no avatar at all, which the app draws as the initials of `firstName`.
+  """
+  avatarHero: AvatarHero
+
+  """
+  The photo the reader chose as an avatar, as a URL signed for one hour. Each new photo has its own URL, so a cached image is never stale. Null with a hero or no avatar.
+  """
+  avatarUrl: String
+
   """The user's first name, set during onboarding; null before it is done."""
   firstName: PersonName
 
@@ -2668,6 +2736,16 @@ type Mutation {
   Await a book a scan proposed, from its review, without adding it to the library: in the language of the app, translated into print or recorded. Look it up on the web at once when nobody did — one grounded call, about ten seconds — so the answer says whether it is announced or already out. Awaiting it twice answers the first. Fails with `BAD_USER_INPUT` for a format the book’s page does not offer, and `TOO_MANY_AWAITED` past a hundred editions.
   """
   awaitScannedEdition(book: ScannedBookInput!, format: ReleaseFormat!): AwaitedEdition!
+
+  """
+  Change the avatar: a hero, a photo of the reader, or neither for their initials.
+  
+  Returns the updated `Me`. Needs a finished onboarding (`NOT_FOUND` before it); `BAD_USER_INPUT` when both a hero and a photo are given, or when the photo is not a JPEG under 2 MB. A replaced photo is deleted from storage.
+  """
+  changeAvatar(
+    """The new avatar."""
+    input: ChangeAvatarInput!
+  ): Me!
 
   """
   Draw a book with the cover the reader picked, before any other source: the image at `url` — one `bookCoverChoices` offered, or an address the reader pasted — or, with no `url`, the photo taken when the book was scanned. A Kindle sync or a description that later brings another cover leaves it in place, and the other covers stay offered. Free. BAD_USER_INPUT when no `url` is given and the book has no photo; COVER_NOT_AN_IMAGE when `url` does not serve an image — the link to a shop’s page rather than to its picture of the cover.
