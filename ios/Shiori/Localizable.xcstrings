@@ -8085,6 +8085,22 @@
         }
       }
     },
+    "Marquer comme vu" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mark as seen"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marquer comme vu"
+          }
+        }
+      }
+    },
     "Marquer lu" : {
       "localizations" : {
         "en" : {
@@ -11957,6 +11973,38 @@
         }
       }
     },
+    "Sortie %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Out %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sortie %@"
+          }
+        }
+      }
+    },
+    "Sortie %@ prochain" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Out next %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sortie %@ prochain"
+          }
+        }
+      }
+    },
     "Sortie aujourd'hui" : {
       "localizations" : {
         "en" : {
@@ -11969,6 +12017,54 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sortie aujourd'hui"
+          }
+        }
+      }
+    },
+    "Sortie avant-hier" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Out two days ago"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sortie avant-hier"
+          }
+        }
+      }
+    },
+    "Sortie ce mois-ci" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Out this month"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sortie ce mois-ci"
+          }
+        }
+      }
+    },
+    "Sortie cette semaine" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Out this week"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sortie cette semaine"
           }
         }
       }
@@ -11989,18 +12085,18 @@
         }
       }
     },
-    "Sortie le %@" : {
+    "Sortie hier" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Out %@"
+            "value" : "Out yesterday"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sortie le %@"
+            "value" : "Sortie hier"
           }
         }
       }
@@ -14049,6 +14145,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Voyage"
+          }
+        }
+      }
+    },
+    "Vu" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seen"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vu"
           }
         }
       }

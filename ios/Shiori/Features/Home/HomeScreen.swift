@@ -236,6 +236,7 @@ struct HomeScreen: View {
         return HomePage.opensOnHero(
             dashboard: viewModel.dashboard,
             releases: viewModel.releases,
+            seenReleases: viewModel.hiddenReleases,
             discoveries: viewModel.discoveries,
             isSearchingDiscoveries: viewModel.isSearchingDiscoveries,
             isCompact: true
@@ -300,6 +301,7 @@ struct HomeScreen: View {
             HomePage(
                     dashboard: dashboard,
                     releases: viewModel.releases,
+                    seenReleases: viewModel.hiddenReleases,
                     discoveries: viewModel.discoveries,
                     isSearchingDiscoveries: viewModel.isSearchingDiscoveries,
                     isSideBySide: isSplit && detail == nil,
@@ -344,6 +346,8 @@ struct HomeScreen: View {
                         viewModel.turnDown(suggestion)
                     case let .reconsiderDiscovery(suggestion):
                         viewModel.takeBack(suggestion)
+                    case let .seeRelease(release): viewModel.see(release)
+                    case let .unseeRelease(release): viewModel.unsee(release)
                     }
                 }
                 .refreshable { await viewModel.load() }

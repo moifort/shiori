@@ -6,8 +6,10 @@ import SwiftUI
 final class HomeViewModel {
     /// - Parameter caching: off in tests, which must neither read nor leave
     ///   a snapshot on disk.
-    init(client: HomeClient, caching: Bool = true) {
+    init(client: HomeClient, caching: Bool = true, seenStore: SeenReleases = SeenReleases()) {
         self.client = client
+        self.seenStore = seenStore
+        seenReleases = seenStore.all
         if caching {
             cache = SnapshotCache("dashboard", version: 5)
             releasesCache = SnapshotCache("dashboard-releases", version: 3)
@@ -21,6 +23,18 @@ final class HomeViewModel {
     }
 
     private let client: HomeClient
+    private let seenStore: SeenReleases
+
+    /// The releases the reader marked seen from the carousel, kept on the
+    /// device.
+    private var seenReleases: Set<HomeRelease.ID>
+    /// The ones marked seen since the page opened: kept on screen, their eye
+    /// filled, until the reader leaves the page.
+    private var heldReleases: Set<HomeRelease.ID> = []
+
+    /// What the carousel leaves out: the releases seen, but those just marked
+    /// while the page is open.
+    var hiddenReleases: Set<HomeRelease.ID> { seenReleases.subtracting(heldReleases) }
 
     private(set) var dashboard: Dashboard?
     /// What is new in the sagas followed, read or heard: the volumes just out,
@@ -198,12 +212,27 @@ final class HomeViewModel {
         taken.append(suggestion)
     }
 
-    /// The reader left the page: the discoveries they took leave the line,
-    /// out of sight, before they come back.
+    /// The reader left the page: the discoveries they took and the releases
+    /// they saw leave the line, out of sight, before they come back.
     func releaseTaken() async {
+        heldReleases = []
         guard !taken.isEmpty else { return }
         taken = []
         await loadDiscoveries()
+    }
+
+    /// A release marked seen from the carousel's eye: kept on the device, and
+    /// on screen until the reader leaves the page.
+    func see(_ release: HomeRelease) {
+        heldReleases.insert(release.id)
+        seenReleases.insert(release.id)
+        seenStore.see(release.id)
+    }
+
+    /// The eye pressed again: the release is put forward again.
+    func unsee(_ release: HomeRelease) {
+        seenReleases.remove(release.id)
+        seenStore.unsee(release.id)
     }
 
     /// The line the server sent, with the discoveries taken since the page

@@ -15,6 +15,24 @@ struct HomeViewModelTests {
         #expect(viewModel.isLoading == false)
     }
 
+    @Test func seenReleaseStaysUntilThePageIsLeftThenStaysAway() async {
+        let suite = "home-seen-\(UUID().uuidString)"
+        let store = SeenReleases(defaults: { UserDefaults(suiteName: suite)! })
+        let viewModel = HomeViewModel(client: .preview, caching: false, seenStore: store)
+        let release = HomeRelease.volume(.preview)
+
+        viewModel.see(release)
+        #expect(viewModel.hiddenReleases.isEmpty)
+        #expect(store.all == [release.id])
+
+        await viewModel.releaseTaken()
+        #expect(viewModel.hiddenReleases == [release.id])
+
+        viewModel.unsee(release)
+        #expect(viewModel.hiddenReleases.isEmpty)
+        #expect(store.all.isEmpty)
+    }
+
     @Test func failureOverNothingIsSaid() async {
         var client = HomeClient.preview
         client.dashboard = { throw Boom() }

@@ -1,8 +1,9 @@
 import SwiftUI
 
-/// What the home screen's carousel puts forward, a page each: what comes out
-/// within the week first, then the month's discoveries — or, once the reader
-/// took or turned down every one, the page that says the month is done.
+/// What the home screen's carousel puts forward, a page each: what came out
+/// lately, then what comes out within the week, then the month's discoveries —
+/// or, once the reader took or turned down every one, the page that says the
+/// month is done.
 enum HomeHeroItem: Identifiable {
     case release(HomeRelease)
     case discovery(Suggestion)
@@ -19,36 +20,102 @@ enum HomeHeroItem: Identifiable {
 
     /// How far ahead a release leads the carousel.
     static let releaseWindow = 7
+    /// How far back a release out stays in the carousel past the month it
+    /// came out in: the week, so the turn of a month never drops yesterday's.
+    static let recentWindow = 6
 
-    /// The releases due within the week, the soonest first, then the
-    /// discoveries: a date announced to the month or the year is not one the
-    /// week can hold. A month whose discoveries ran out closes on its page.
+    /// What came out first, the newest first: a day this week or this month,
+    /// then what is announced for this month without a day. Then what comes
+    /// out within the week, the soonest first, then the discoveries. A
+    /// release the reader marked seen is left out. A month whose discoveries
+    /// ran out closes on its page.
     static func items(
         releases: [HomeRelease],
         discoveries: [Suggestion],
         doneMonth: String? = nil,
+        seen: Set<HomeRelease.ID> = [],
         today: Date = .now
     ) -> [HomeHeroItem] {
-        let start = today.formatted(.iso8601.year().month().day())
-        let end = Calendar.current.date(byAdding: .day, value: releaseWindow, to: today)?
-            .formatted(.iso8601.year().month().day()) ?? start
-        let soon = releases
-            .filter { release in
-                guard let date = release.date, date.count == 10 else { return false }
-                return date >= start && date <= end
+        let month = localMonth(today)
+        var out: [(HomeRelease, Int)] = []
+        var thisMonth: [HomeRelease] = []
+        var coming: [(HomeRelease, Int)] = []
+        for release in releases where !seen.contains(release.id) {
+            guard let date = release.date else { continue }
+            if date.count == 7 {
+                if date == month { thisMonth.append(release) }
+                continue
             }
-            .sorted { ($0.date ?? "", $0.name) < ($1.date ?? "", $1.name) }
+            guard let days = daysFromToday(date, today: today) else { continue }
+            if days > 0 {
+                if days <= releaseWindow { coming.append((release, days)) }
+            } else if -days <= recentWindow || date.hasPrefix(month) {
+                out.append((release, days))
+            }
+        }
+        let byName = { (a: HomeRelease, b: HomeRelease) in
+            a.name.localizedStandardCompare(b.name) == .orderedAscending
+        }
+        let lined = out.sorted { $0.1 != $1.1 ? $0.1 > $1.1 : byName($0.0, $1.0) }.map(\.0)
+            + thisMonth.sorted(by: byName)
+            + coming.sorted { $0.1 != $1.1 ? $0.1 < $1.1 : byName($0.0, $1.0) }.map(\.0)
         let done = discoveries.isEmpty ? doneMonth.map { [HomeHeroItem.monthDone($0)] } ?? [] : []
-        return soon.map(HomeHeroItem.release) + discoveries.map(HomeHeroItem.discovery) + done
+        return lined.map(HomeHeroItem.release) + discoveries.map(HomeHeroItem.discovery) + done
+    }
+
+    /// What a release's badge says, as near as the day allows: "Sortie
+    /// aujourd'hui", "Sortie hier", "Sortie avant-hier", "Sortie cette
+    /// semaine", "Sortie ce mois-ci", "Sortie demain", "Sortie mardi" —
+    /// "mardi prochain" a week ahead, the same day as today.
+    static func releaseBadge(_ date: String, today: Date = .now) -> String {
+        guard date.count == 10, let days = daysFromToday(date, today: today) else {
+            return date == localMonth(today)
+                ? String(localized: "Sortie ce mois-ci")
+                : String(localized: "Bientôt")
+        }
+        switch days {
+        case 0: return String(localized: "Sortie aujourd'hui")
+        case -1: return String(localized: "Sortie hier")
+        case -2: return String(localized: "Sortie avant-hier")
+        case -recentWindow ... -3: return String(localized: "Sortie cette semaine")
+        case ..<0: return String(localized: "Sortie ce mois-ci")
+        case 1: return String(localized: "Sortie demain")
+        default:
+            let weekday = (Calendar.current.date(byAdding: .day, value: days, to: today) ?? today)
+                .formatted(.dateTime.weekday(.wide))
+            return days < releaseWindow
+                ? String(localized: "Sortie \(weekday)")
+                : String(localized: "Sortie \(weekday) prochain")
+        }
+    }
+
+    /// Today's `YYYY-MM` on the phone's calendar, the one the days are told on.
+    private static func localMonth(_ today: Date) -> String {
+        let parts = Calendar.current.dateComponents([.year, .month], from: today)
+        return String(format: "%04d-%02d", parts.year ?? 2026, parts.month ?? 1)
+    }
+
+    /// How many days a `YYYY-MM-DD` lies from today on the phone's calendar:
+    /// negative once past.
+    static func daysFromToday(_ date: String, today: Date = .now) -> Int? {
+        let parts = date.split(separator: "-").compactMap { Int($0) }
+        guard parts.count == 3 else { return nil }
+        let calendar = Calendar.current
+        guard let day = calendar.date(from: DateComponents(year: parts[0], month: parts[1], day: parts[2]))
+        else { return nil }
+        return calendar.dateComponents([.day], from: calendar.startOfDay(for: today), to: day).day
     }
 }
 
-/// The top of the home screen on a phone, as the TV app opens: what comes out
-/// this week, then the month's discoveries, one page each, swiped sideways,
-/// every page over its own cover's colours — the cover, what it is, the way to
-/// it on Liquid Glass and, for a discovery, the "+" that adds or awaits it and
-/// the thumb that turns it down — with the dots that say where the reader stands. Its colours run up under
-/// the bars, and it stops short enough for the rows to show under it.
+/// The top of the home screen on a phone, as the TV app opens: what came
+/// out lately and what comes out this week, then the month's discoveries, one
+/// page each, swiped sideways, every page over its own cover's colours. A page
+/// sets the cover beside what it is — the badge, the title, who wrote it and
+/// why, always in full — as the book page does, the way to it on Liquid Glass
+/// under both and, for a discovery, the "+" that adds or awaits it and the
+/// thumb that turns it down; for a release, the eye that says it was seen.
+/// The dots under it say where the reader stands. Its colours run up under the
+/// bars, and it stops short enough for the books open now to show under it.
 struct HomeHeroCarousel: View {
     /// Never empty.
     let items: [HomeHeroItem]
@@ -60,6 +127,10 @@ struct HomeHeroCarousel: View {
     let onDismiss: (Suggestion) -> Void
     /// The red thumb pressed again: the reader changed their mind.
     var onReconsider: (Suggestion) -> Void = { _ in }
+    /// A release marked seen: the carousel no longer puts it forward.
+    var onSeeRelease: (HomeRelease) -> Void = { _ in }
+    /// The eye pressed again: the release comes back.
+    var onUnseeRelease: (HomeRelease) -> Void = { _ in }
     /// Découvrir, from the page that says the month is done.
     var onShowDiscover: () -> Void = {}
     /// The cover whose colours the month's last page takes: the library's,
@@ -77,10 +148,27 @@ struct HomeHeroCarousel: View {
     /// they leave the line with the ones taken, once the reader leaves the
     /// page. Pressed again, the thumb takes the dismissal back.
     @State private var dismissed: Set<Suggestion.ID> = []
+    /// The releases just marked seen, whose eye fills to say so: they leave
+    /// the line once the reader leaves the page.
+    @State private var seen: Set<HomeRelease.ID> = []
+    /// How tall each page's cover and text stand: the tallest sets the
+    /// carousel's height, so a why is never cut and the buttons line up.
+    @State private var topHeights: [HomeHeroItem.ID: CGFloat] = [:]
 
-    /// How tall the carousel stands: room for the cover drawn large, as Apple
-    /// Books stands one forward, a title on one line and three lines of why.
-    static let height: CGFloat = 526
+    /// The cover's width: its height, half as much again, is the room a why
+    /// of 25 words — the most the server writes — takes beside it.
+    private static let coverWidth: CGFloat = 124
+    private static let coverHeight: CGFloat = coverWidth * 1.5
+    /// Above the cover, clear of the figures.
+    private static let topPadding: CGFloat = 26
+    /// Between the cover and the buttons.
+    private static let buttonsGap: CGFloat = 22
+    /// A large glass button's height.
+    private static let buttonsHeight: CGFloat = 50
+    /// Under the buttons: the dots, then the room before the rows.
+    private static let dotsGap: CGFloat = 16
+    private static let bottomPadding: CGFloat = 26
+    private static let dotsHeight: CGFloat = 7
     /// How far each backdrop runs up past its page, under the bars and the
     /// status bar.
     private static let backdropRise: CGFloat = 400
@@ -90,15 +178,25 @@ struct HomeHeroCarousel: View {
     /// The thumb's button once a discovery is turned down.
     private static let turnedDownRed = Color(red: 0.78, green: 0.2, blue: 0.2)
 
+    /// How tall the carousel stands: its tallest page's cover and text, the
+    /// buttons and the dots.
+    private var height: CGFloat {
+        let top = max(Self.coverHeight, topHeights.values.max() ?? 0)
+        return Self.topPadding + top + Self.buttonsGap + Self.buttonsHeight
+            + Self.dotsGap + Self.dotsHeight + Self.bottomPadding
+    }
+
     var body: some View {
         ScrollView(.horizontal) {
-            LazyHStack(spacing: 0) {
+            // Not lazy: every page is measured, so the tallest sets the
+            // height before the reader swipes to it.
+            HStack(spacing: 0) {
                 ForEach(items) { item in
                     Group {
                         switch item {
-                        case let .release(release): releasePage(release)
-                        case let .discovery(suggestion): discoveryPage(suggestion)
-                        case let .monthDone(month): monthDonePage(month)
+                        case let .release(release): releasePage(release, id: item.id)
+                        case let .discovery(suggestion): discoveryPage(suggestion, id: item.id)
+                        case let .monthDone(month): monthDonePage(month, id: item.id)
                         }
                     }
                     .containerRelativeFrame(.horizontal)
@@ -111,11 +209,11 @@ struct HomeHeroCarousel: View {
         .scrollPosition(id: $current)
         // The backdrops run up under the bars, past the pager's frame.
         .scrollClipDisabled()
-        .frame(height: Self.height)
+        .frame(height: height)
         .overlay(alignment: .bottom) {
             if items.count > 1 {
                 PageDots(count: items.count, index: currentIndex)
-                    .padding(.bottom, 12)
+                    .padding(.bottom, Self.bottomPadding)
             }
         }
         .accessibilityIdentifier("home-discovery")
@@ -136,13 +234,16 @@ struct HomeHeroCarousel: View {
 
     // MARK: - Pages
 
-    /// A volume or an edition due this week, its day in the badge as the TV
-    /// app announces a new season.
-    private func releasePage(_ release: HomeRelease) -> some View {
+    /// A volume or an edition just out or due this week, how near in the
+    /// badge as the TV app announces a new season, and its saga in place of
+    /// a why.
+    private func releasePage(_ release: HomeRelease, id: HomeHeroItem.ID) -> some View {
         let tile = HomePage.releaseTile(release)
+        let isSeen = seen.contains(release.id)
         return page(
+            id: id,
             cover: tile,
-            badge: release.date.map(Self.releaseBadge) ?? String(localized: "Bientôt"),
+            badge: release.date.map { HomeHeroItem.releaseBadge($0) } ?? String(localized: "Bientôt"),
             title: tile.title,
             meta: [tile.authorLine, tile.series?.volume.map { String(localized: "Tome \($0)") }]
                 .compactMap { $0 }
@@ -151,38 +252,57 @@ struct HomeHeroCarousel: View {
             reason: tile.series?.name,
             onOpen: { onOpenRelease(release) }
         ) {
-            Button { onOpenRelease(release) } label: {
-                Label("Voir la sortie", systemImage: "calendar")
-                    .font(.headline)
-                    .frame(width: 200)
+            GlassEffectContainer(spacing: 12) {
+                HStack(spacing: 12) {
+                    Button { onOpenRelease(release) } label: {
+                        Label("Voir la sortie", systemImage: "calendar")
+                            .font(.headline)
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.glassProminent)
+                    .tint(.white)
+                    .foregroundStyle(.black)
+                    // Seen, the eye fills white; pressed again, the release
+                    // comes back. It leaves the line once the reader leaves
+                    // the page, as a discovery turned down does.
+                    Button {
+                        if isSeen {
+                            withAnimation(.snappy) { _ = seen.remove(release.id) }
+                            onUnseeRelease(release)
+                        } else {
+                            withAnimation(.snappy) { _ = seen.insert(release.id) }
+                            onSeeRelease(release)
+                        }
+                    } label: {
+                        Label(
+                            isSeen ? "Vu" : "Marquer comme vu",
+                            systemImage: isSeen ? "eye.slash.fill" : "eye.slash"
+                        )
+                        .labelStyle(.iconOnly)
+                        .font(.headline)
+                        .foregroundStyle(isSeen ? .black : .white)
+                        .contentTransition(.symbolEffect(.replace))
+                    }
+                    .buttonStyle(.glass(isSeen ? .regular.tint(.white) : .regular))
+                    .buttonBorderShape(.circle)
+                    .sensoryFeedback(trigger: isSeen) { _, marked in
+                        .impact(weight: marked ? .medium : .light)
+                    }
+                    .accessibilityIdentifier("home-release-seen")
+                }
+                .controlSize(.large)
             }
-            .buttonStyle(.glassProminent)
-            .tint(.white)
-            .foregroundStyle(.black)
-            .controlSize(.extraLarge)
         }
     }
 
-    /// "Sortie aujourd'hui", "Sortie demain", "Sortie le 28 octobre".
-    private static func releaseBadge(_ date: String) -> String {
-        let today = Date.now.formatted(.iso8601.year().month().day())
-        let tomorrow = Calendar.current.date(byAdding: .day, value: 1, to: .now)?
-            .formatted(.iso8601.year().month().day())
-        if date == today { return String(localized: "Sortie aujourd'hui") }
-        if date == tomorrow { return String(localized: "Sortie demain") }
-        guard let day = try? Date(date, strategy: .iso8601.year().month().day()) else {
-            return ReleaseDateText.coming(date)
-        }
-        return String(localized: "Sortie le \(day.formatted(.dateTime.day().month(.wide)))")
-    }
-
-    private func discoveryPage(_ suggestion: Suggestion) -> some View {
+    private func discoveryPage(_ suggestion: Suggestion, id: HomeHeroItem.ID) -> some View {
         let isDismissed = dismissed.contains(suggestion.id)
         return page(
+            id: id,
             cover: suggestion.tile,
             badge: String(localized: "Découverte du mois"),
             title: suggestion.title,
-            meta: meta(suggestion),
+            meta: suggestion.authors.joined(separator: ", "),
             reason: suggestion.reason,
             onOpen: { onOpen(suggestion) }
         ) {
@@ -191,7 +311,7 @@ struct HomeHeroCarousel: View {
                     Button { onOpen(suggestion) } label: {
                         Label("Découvrir", systemImage: "sparkles")
                             .font(.headline)
-                            .frame(width: 150)
+                            .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.glassProminent)
                     .tint(.white)
@@ -254,62 +374,60 @@ struct HomeHeroCarousel: View {
                     }
                     .accessibilityIdentifier("home-discovery-dismiss")
                 }
-                .controlSize(.extraLarge)
+                .controlSize(.large)
             }
         }
     }
 
     /// The month's discoveries all taken or turned down: where the cover
     /// would stand, the month's stack gone through, a check on its front
-    /// cover; what the month was, that it is done, when the next ones come,
-    /// and the way to Découvrir, which always has more.
-    private func monthDonePage(_ month: String) -> some View {
-        VStack(spacing: 0) {
-            Spacer(minLength: 0)
+    /// cover; beside it what the month was, that it is done and when the next
+    /// ones come; under both, the way to Découvrir, which always has more.
+    private func monthDonePage(_ month: String, id: HomeHeroItem.ID) -> some View {
+        layout(id: id) {
+            // Drawn for the old cover's room, set down to the new one's.
             DoneStack()
+                .scaleEffect(0.84)
+                .frame(width: Self.coverWidth, height: Self.coverHeight)
+        } side: {
             Text(MonthlyDiscoveries.title(month: month))
                 .font(.footnote.weight(.semibold))
                 .padding(.horizontal, 10)
                 .padding(.vertical, 4)
                 .glassEffect(.clear, in: .capsule)
-                .padding(.top, 18)
             Text("Vous avez fait le tour")
-                .font(.title.weight(.bold))
+                .font(.system(.title2, design: .serif, weight: .bold))
                 .padding(.top, 10)
             Text(MonthlyDiscoveries.nextArrivalLine(month: month))
                 .font(.subheadline)
-                .foregroundStyle(.white.opacity(0.85))
-                .padding(.top, 4)
+                .foregroundStyle(.white.opacity(0.75))
+                .padding(.top, 8)
+        } buttons: {
             Button(action: onShowDiscover) {
                 Label("Explorer Découvrir", systemImage: "sparkles")
                     .font(.headline)
-                    .frame(width: 220)
+                    .frame(maxWidth: .infinity)
             }
             .buttonStyle(.glassProminent)
             .tint(.white)
             .foregroundStyle(.black)
-            .controlSize(.extraLarge)
-            .padding(.top, 16)
+            .controlSize(.large)
             .accessibilityIdentifier("home-month-done-discover")
         }
-        .multilineTextAlignment(.center)
-        .foregroundStyle(.white)
-        .padding(.horizontal, 28)
-        .padding(.bottom, 40)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .environment(\.colorScheme, .dark)
         .background {
             CoverBackdrop(url: backdropCover, fadeHeight: Self.fadeHeight)
                 .padding(.top, -Self.backdropRise)
-                .scaleEffect(1 + pull / (Self.height + Self.backdropRise), anchor: .bottom)
+                .scaleEffect(1 + pull / (height + Self.backdropRise), anchor: .bottom)
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("home-month-done")
     }
 
-    /// A page as the TV app draws one: the cover, the badge, the title, what
-    /// it is and why, then the buttons, over the cover's colours.
+    /// A page as the book page draws its head: the cover, and beside it the
+    /// badge, the title, what it is and why, then the buttons under both,
+    /// over the cover's colours.
     private func page(
+        id: HomeHeroItem.ID,
         cover: Book,
         badge: String,
         title: String,
@@ -318,45 +436,56 @@ struct HomeHeroCarousel: View {
         onOpen: @escaping () -> Void,
         @ViewBuilder buttons: () -> some View
     ) -> some View {
-        // Held at the top, the cover high on the page whatever the text
-        // under it runs to: a one-line title left the room above the cover.
-        VStack(spacing: 0) {
+        layout(id: id) {
             Button(action: onOpen) {
-                VStack(spacing: 0) {
-                    BookCover(book: cover, width: 160, showsFormatBadge: false, isBound: true)
-                        // A recording and a foreign edition say so in the tags
-                        // the posters carry, rather than with headphones.
-                        .overlay(alignment: .topTrailing) {
-                            CoverTags(book: cover)
-                                .padding(7)
-                        }
-                        .shadow(color: .black.opacity(0.5), radius: 22, y: 14)
+                BookCover(book: cover, width: Self.coverWidth, showsFormatBadge: false, isBound: true)
+                    // A recording and a foreign edition say so in the tags
+                    // the posters carry, rather than with headphones.
+                    .overlay(alignment: .topTrailing) {
+                        CoverTags(book: cover)
+                            .padding(6)
+                    }
+                    .shadow(color: .black.opacity(0.5), radius: 18, y: 12)
+            }
+            .buttonStyle(.plain)
+        } side: {
+            Button(action: onOpen) {
+                VStack(alignment: .leading, spacing: 0) {
                     Text(badge)
                         .font(.footnote.weight(.semibold))
                         .padding(.horizontal, 10)
                         .padding(.vertical, 4)
                         .glassEffect(.clear, in: .capsule)
-                        .padding(.top, 18)
-                    PageText(title: title, meta: meta, reason: reason)
+                    // Set in serif, as Apple Books titles the book it opens.
+                    Text(title)
+                        .font(.system(.title2, design: .serif, weight: .bold))
+                        .lineLimit(3)
+                        .minimumScaleFactor(0.8)
+                        .padding(.top, 10)
+                    if !meta.isEmpty {
+                        Text(meta)
+                            .font(.subheadline)
+                            .foregroundStyle(.white.opacity(0.85))
+                            .lineLimit(2)
+                            .padding(.top, 5)
+                    }
+                    // Always in full: the carousel grows to the longest.
+                    if let reason, !reason.isEmpty {
+                        Text(reason)
+                            .font(.subheadline)
+                            .foregroundStyle(.white.opacity(0.7))
+                            .lineSpacing(2)
+                            .padding(.top, 8)
+                    }
                 }
-                .multilineTextAlignment(.center)
-                .foregroundStyle(.white)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .contentShape(.rect)
             }
             .buttonStyle(.plain)
+        } buttons: {
             buttons()
-                .padding(.top, 16)
         }
-        .padding(.horizontal, 28)
-        // Clear of the figures over it, the cover standing apart from them.
-        .padding(.top, 20)
-        // Room for the dots close under the buttons, whose glass already
-        // stands taller than it draws.
-        .padding(.bottom, 12)
-        // Not a spacer under the buttons: it took the room before the text
-        // did, and cut the why short over an empty band.
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .environment(\.colorScheme, .dark)
         .background {
             CoverBackdrop(url: cover.coverURL, fadeHeight: Self.fadeHeight)
                 // Up under the bars and the status bar.
@@ -365,94 +494,37 @@ struct HomeHeroCarousel: View {
                 // app's artwork does: its top stays above the screen, where
                 // the blurred cover turns to other colours — a red band
                 // showed through the pull.
-                .scaleEffect(1 + pull / (Self.height + Self.backdropRise), anchor: .bottom)
+                .scaleEffect(1 + pull / (height + Self.backdropRise), anchor: .bottom)
         }
     }
 
-    /// Who wrote it and what it is like, as the TV app says a film's genres.
-    private func meta(_ suggestion: Suggestion) -> String {
-        ([suggestion.authors.joined(separator: ", "), suggestion.short].filter { !$0.isEmpty })
-            .joined(separator: " · ")
-    }
-}
-
-/// A page's title, what it is and why. A title too long for one line is set
-/// a size smaller, and the why gives up a line only if it still takes two,
-/// so the buttons keep their place over the dots: the carousel's height is a
-/// page's for a title on one line and three lines of why.
-private struct PageText: View {
-    let title: String
-    let meta: String
-    let reason: String?
-
-    /// Whether the title takes two lines at each size: measured on hidden
-    /// copies, so setting it smaller never makes it fit again and flicker.
-    @State private var wraps: [Bool] = [false, false]
-
-    /// Set in serif, as Apple Books titles the book it opens.
-    private static let fonts: [Font] = [
-        .system(.title, design: .serif, weight: .bold),
-        .system(.title2, design: .serif, weight: .bold),
-    ]
-
-    var body: some View {
+    /// Every page's frame: the cover and its side held at the top, both
+    /// measured, the buttons at the foot over the dots.
+    private func layout(
+        id: HomeHeroItem.ID,
+        @ViewBuilder cover: () -> some View,
+        @ViewBuilder side: () -> some View,
+        @ViewBuilder buttons: () -> some View
+    ) -> some View {
         VStack(spacing: 0) {
-            Text(title)
-                .font(Self.fonts[wraps[0] ? 1 : 0])
-                .lineLimit(2)
-                .frame(maxWidth: .infinity)
-                .background {
-                    ZStack {
-                        ForEach(Self.fonts.indices, id: \.self) { index in
-                            WrapProbe(text: title, font: Self.fonts[index]) { wraps[index] = $0 }
-                        }
-                    }
-                    .hidden()
+            HStack(alignment: .top, spacing: 18) {
+                cover()
+                VStack(alignment: .leading, spacing: 0) {
+                    side()
                 }
-                .padding(.top, 10)
-            Text(meta)
-                .font(.subheadline)
-                .foregroundStyle(.white.opacity(0.85))
-                .lineLimit(1)
-                .padding(.top, 4)
-            if let reason {
-                Text(reason)
-                    .font(.footnote)
-                    .foregroundStyle(.white.opacity(0.65))
-                    .lineLimit(wraps[0] && wraps[1] ? 2 : 3)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.top, 6)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
+            .foregroundStyle(.white)
+            .onGeometryChange(for: CGFloat.self, of: \.size.height) { topHeights[id] = $0 }
+            Spacer(minLength: Self.buttonsGap)
+            buttons()
+                .frame(height: Self.buttonsHeight)
         }
-    }
-}
-
-/// Tells whether a text runs past one line in a font, at the width it is
-/// given: its own height against a line's.
-private struct WrapProbe: View {
-    let text: String
-    let font: Font
-    let onChange: (Bool) -> Void
-
-    @State private var height: CGFloat = 0
-    @State private var lineHeight: CGFloat = 0
-
-    var body: some View {
-        Text(text)
-            .font(font)
-            .lineLimit(2)
-            // Its own height, not the one the title shown leaves it.
-            .fixedSize(horizontal: false, vertical: true)
-            .onGeometryChange(for: CGFloat.self, of: \.size.height) { height = $0 }
-            .background {
-                Text(verbatim: "A")
-                    .font(font)
-                    .fixedSize()
-                    .onGeometryChange(for: CGFloat.self, of: \.size.height) { lineHeight = $0 }
-            }
-            .onChange(of: lineHeight > 0 && height > lineHeight * 1.5, initial: true) { _, wraps in
-                onChange(wraps)
-            }
+        .padding(.horizontal, 20)
+        .padding(.top, Self.topPadding)
+        .padding(.bottom, Self.dotsGap + Self.dotsHeight + Self.bottomPadding)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .environment(\.colorScheme, .dark)
     }
 }
 

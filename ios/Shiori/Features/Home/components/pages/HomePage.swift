@@ -39,6 +39,10 @@ enum HomeAction {
     case dismissDiscovery(Suggestion)
     /// The red thumb pressed again: the dismissal taken back.
     case reconsiderDiscovery(Suggestion)
+    /// A release marked seen from the carousel's eye: no longer put forward.
+    case seeRelease(HomeRelease)
+    /// The eye pressed again: the release put forward again.
+    case unseeRelease(HomeRelease)
 }
 
 /// The home screen in the TV app's grammar: a hero with the month's discovery
@@ -58,6 +62,8 @@ struct HomePage: View {
     /// The volumes just out, the newest first, then the next one announced of
     /// each saga followed and the recordings awaited, the soonest first.
     var releases: [HomeRelease] = []
+    /// The releases the reader marked seen: the carousel leaves them out.
+    var seenReleases: Set<HomeRelease.ID> = []
     /// The month's discoveries, chosen for the reader.
     var discoveries: MonthlyDiscoveries?
     /// The month's selection is being made: a phone's hero waits on it.
@@ -118,6 +124,8 @@ struct HomePage: View {
                         onAwait: { onAction(.awaitDiscovery($0, $1)) },
                         onDismiss: { onAction(.dismissDiscovery($0)) },
                         onReconsider: { onAction(.reconsiderDiscovery($0)) },
+                        onSeeRelease: { onAction(.seeRelease($0)) },
+                        onUnseeRelease: { onAction(.unseeRelease($0)) },
                         onShowDiscover: { onAction(.showDiscover) },
                         backdropCover: dashboard.leadCoverURL,
                         pull: pull
@@ -210,12 +218,14 @@ struct HomePage: View {
         discoveries?.shownOnHome ?? []
     }
 
-    /// What the carousel shows: the week's releases, then the discoveries.
+    /// What the carousel shows: the releases just out and due this week,
+    /// then the discoveries.
     private var heroItems: [HomeHeroItem] {
         HomeHeroItem.items(
             releases: releases,
             discoveries: shownDiscoveries,
             doneMonth: discoveries?.doneMonth(today: today),
+            seen: seenReleases,
             today: today
         )
     }
@@ -231,6 +241,7 @@ struct HomePage: View {
         Self.opensOnHero(
             dashboard: dashboard,
             releases: releases,
+            seenReleases: seenReleases,
             discoveries: discoveries,
             isSearchingDiscoveries: isSearchingDiscoveries,
             isCompact: isCompact,
@@ -245,6 +256,7 @@ struct HomePage: View {
     static func opensOnHero(
         dashboard: Dashboard?,
         releases: [HomeRelease],
+        seenReleases: Set<HomeRelease.ID> = [],
         discoveries: MonthlyDiscoveries?,
         isSearchingDiscoveries: Bool,
         isCompact: Bool,
@@ -256,6 +268,7 @@ struct HomePage: View {
             releases: releases,
             discoveries: discoveries?.shownOnHome ?? [],
             doneMonth: discoveries?.doneMonth(today: today),
+            seen: seenReleases,
             today: today
         )
         return !items.isEmpty || isSearchingDiscoveries
