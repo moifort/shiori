@@ -617,7 +617,7 @@ export const shelvedOf = <T extends Book>(books: readonly T[]): T[] => [...books
 
 type ShelvedBook = { title: string } & Pick<
   Book,
-  'addedAt' | 'startedAt' | 'finishedAt' | 'listenedAt'
+  'addedAt' | 'startedAt' | 'finishedAt' | 'listenedAt' | 'currentPageAt'
 >
 
 /** Which of two books the Library tab shelves first: the newest on its shelf
@@ -640,13 +640,21 @@ export const shelfTitleOrder = (left: string, right: string): number =>
  *  A started recording is last read the day the player last moved, which
  *  Audible dates: the one the reader is listening to leads the books under way,
  *  however late another was marked started. A status put right by hand is not a
- *  listening. Without a position, the day it was started. */
+ *  listening. Without a position, the day it was started.
+ *
+ *  A printed book under way is last read the day its page was last recorded,
+ *  or the day it was started when that is later: both are the reader's hand. */
 export const shelfDateOf = (
-  book: Pick<Book, 'addedAt' | 'startedAt' | 'finishedAt' | 'listenedAt'>,
+  book: Pick<Book, 'addedAt' | 'startedAt' | 'finishedAt' | 'listenedAt' | 'currentPageAt'>,
 ): Date =>
   book.finishedAt ??
-  (book.startedAt ? (book.listenedAt ?? book.startedAt) : undefined) ??
+  (book.startedAt
+    ? (book.listenedAt ?? lastPageOrStart(book.startedAt, book.currentPageAt))
+    : undefined) ??
   book.addedAt
+
+const lastPageOrStart = (startedAt: Date, currentPageAt?: Date): Date =>
+  currentPageAt && currentPageAt > startedAt ? currentPageAt : startedAt
 
 /** One page of the shelved list. The cursor is the last book of the previous
  *  page.

@@ -70,6 +70,7 @@ type BookSpec = {
   startedAt?: Date
   finishedAt?: Date
   listenedAt?: Date
+  currentPageAt?: Date
 }
 
 const book = (spec: BookSpec): BookView => ({
@@ -90,6 +91,7 @@ const book = (spec: BookSpec): BookView => ({
   startedAt: spec.startedAt,
   finishedAt: spec.finishedAt,
   listenedAt: spec.listenedAt,
+  currentPageAt: spec.currentPageAt,
   series: spec.series
     ? {
         id: seriesIdOf(SagaKey(spec.series.name.toLowerCase()), spec.language),
@@ -693,6 +695,17 @@ describe('shelvedOf', () => {
       book({ title: 'Listened to', status: 'reading', startedAt: EARLIER, listenedAt: NOW }),
     ])
     expect(titles(shelved)).toEqual(['Listened to', 'Marked started today'])
+  })
+
+  // Recording a page is reading the book that day: it leads the books started
+  // before, and a book started after it still leads it.
+  test('shelves a printed book under way on the day its page was last recorded', () => {
+    const shelved = shelvedOf([
+      book({ title: 'Started', status: 'reading', startedAt: NOW }),
+      book({ title: 'Page recorded', status: 'reading', startedAt: EARLIER, currentPageAt: LATER }),
+      book({ title: 'Old page', status: 'reading', startedAt: EARLIER, currentPageAt: EARLIER }),
+    ])
+    expect(titles(shelved)).toEqual(['Page recorded', 'Started', 'Old page'])
   })
 
   // A position kept from a book since put back on the pile dates nothing.
