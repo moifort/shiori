@@ -69,6 +69,15 @@ enum BookAPI {
         return data.setReadingStatus.fragments.bookDetail.asBook
     }
 
+    static func recordPage(id: String, page: Int) async throws -> Book {
+        let data = try await GraphQLHelpers.perform(
+            GraphQLClient.shared.apollo,
+            concerning: .book(id: id),
+            mutation: ShioriGraphQL.RecordReadingPageMutation(id: id, page: page)
+        )
+        return data.recordReadingPage.fragments.bookDetail.asBook
+    }
+
     /// Sends only what the reader changed: an untouched field is left out, and a
     /// field they emptied is sent as null, which the server clears.
     static func update(id: String, correction: BookCorrection) async throws -> Book {

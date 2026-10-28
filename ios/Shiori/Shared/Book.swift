@@ -294,6 +294,10 @@ struct Book: Identifiable, Hashable, Codable, Sendable {
     var genre: BookGenre?
     var subgenres: [String] = []
     var pageCount: Int?
+    /// The page the reader last said they reached, typed on the book page.
+    /// Nil on an audiobook, whose progress is the player's, and on a book
+    /// whose reader never said.
+    var currentPage: Int?
     /// An audiobook's running time, in whole minutes. Only Audible knows it: a
     /// scanned cover does not say how long the recording is.
     var durationMinutes: Int?
@@ -400,6 +404,26 @@ struct Book: Identifiable, Hashable, Codable, Sendable {
     var unfinishedListeningProgress: Int? {
         status == .reading || status == .dropped ? listeningProgress : nil
     }
+
+    /// How far into the book the reader is, in whole percent of its pages,
+    /// rounded down as the server rounds it. Nil without a page count or a
+    /// page reached.
+    var readingProgress: Int? {
+        guard let currentPage, let pageCount, pageCount > 0 else { return nil }
+        return min(100, currentPage * 100 / pageCount)
+    }
+
+    /// The page reached, where the book still has a way to go: one under way,
+    /// or one given up on. Nil on a book read, and on a recording.
+    var unfinishedReadingPage: Int? {
+        guard format != .audiobook, status == .reading || status == .dropped else { return nil }
+        return currentPage
+    }
+
+    /// Where the hero's first button opens the page sheet rather than
+    /// marking the book read: a book under way the reader turns pages of. A
+    /// recording keeps "Marquer lu" and its Audible progress.
+    var tracksPages: Bool { format != .audiobook && status == .reading }
 
     /// Authors as one line. Falls back to a placeholder rather than an empty
     /// string so a row never collapses to a bare title with a gap under it.

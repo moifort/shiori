@@ -31,6 +31,8 @@ struct HomeScreen: View {
     @State private var openSource: ImportSource?
     /// The book read now, rated from its card on the page.
     @State private var ratedBook: Book?
+    /// The book read now, whose page sheet its card opened.
+    @State private var progressBook: Book?
     /// The book read now, marked read from its card: the sheet asks for its
     /// rating, and the book is finished once it closes, rated or not.
     @State private var finishedBook: Book?
@@ -127,6 +129,11 @@ struct HomeScreen: View {
                 finishedBook = nil
             } onCancel: {
                 finishedBook = nil
+            }
+        }
+        .sheet(item: $progressBook) { book in
+            ReadingProgressSheet(current: book.currentPage, pageCount: book.pageCount) { page, status in
+                await viewModel.recordPage(book, page: page, then: status)
             }
         }
         .sheet(item: $ratedBook) { book in
@@ -331,6 +338,7 @@ struct HomeScreen: View {
                         pendingFinish = nil
                         finishedBook = book
                     case let .rateBook(book): ratedBook = book
+                    case let .recordProgress(book): progressBook = book
                     case .scan: onScan()
                     case let .connectSource(source): openSource = source
                     case .showShared: onShowShared()

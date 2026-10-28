@@ -68,6 +68,7 @@ fragment DashboardBookCard on DashboardBook {
     kind
   }
   pageCount
+  currentPage
   durationMinutes
 }
 

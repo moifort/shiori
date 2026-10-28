@@ -33,6 +33,9 @@ struct BookHero<Actions: View>: View {
     /// How long is left until then — "2 mois", "20 jours" — tagged on the
     /// detail line after the format, as the format is.
     var countdown: String? = nil
+    /// Opens the page sheet from the "page 214 · 32%" line. Nil draws the
+    /// line alone.
+    var onOpenProgress: (() -> Void)? = nil
     @ViewBuilder var actions: Actions
 
     /// The text's height and the cover's, to tell whether the text climbs
@@ -257,6 +260,19 @@ struct BookHero<Actions: View>: View {
             // finished one has nothing left.
             if let progress = book.unfinishedListeningProgress {
                 ListeningProgressLine(progress: progress, durationMinutes: book.durationMinutes)
+            }
+            if let page = book.unfinishedReadingPage {
+                if let onOpenProgress {
+                    Button(action: onOpenProgress) {
+                        ReadingPageLine(page: page, pageCount: book.pageCount)
+                            .contentShape(.rect)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityHint(Text("Modifie la page où vous en êtes"))
+                    .accessibilityIdentifier("book-reading-page")
+                } else {
+                    ReadingPageLine(page: page, pageCount: book.pageCount)
+                }
             }
         }
     }

@@ -23,6 +23,8 @@ struct BookPage: View {
     let onEditRecommendation: () -> Void
     let onEditNote: () -> Void
     let onEditField: (BookField) -> Void
+    /// The page sheet, from "Progression" and the hero's page line.
+    var onOpenProgress: () -> Void = {}
     /// The volumes of its saga the reader holds, this one among them. Empty
     /// while they are on their way: the row then holds this volume alone.
     var seriesVolumes: [SeriesStripItem] = []
@@ -138,7 +140,8 @@ struct BookPage: View {
             state: book.status == .dropped ? nil : .reading(of: book),
             isAwaited: !awaited.isEmpty,
             onOpenAuthor: onOpenAuthor,
-            onOpenNarrator: onOpenNarrator
+            onOpenNarrator: onOpenNarrator,
+            onOpenProgress: onOpenProgress
         ) {
             // Sideways past the width, from edge to edge, rather than a
             // label cut or an icon dropped.
@@ -162,7 +165,9 @@ struct BookPage: View {
     private var heroButtons: some View {
         GlassEffectContainer(spacing: 8) {
             HStack(spacing: 8) {
-                if let step = NextStep(status: book.status) {
+                if book.tracksPages {
+                    progressButton
+                } else if let step = NextStep(status: book.status) {
                     primaryButton(step)
                 } else {
                     statusButton
@@ -191,6 +196,23 @@ struct BookPage: View {
         .tint(.white)
         .foregroundStyle(.black)
         .accessibilityIdentifier("book-next-step")
+    }
+
+    /// A book under way on paper or a screen: the page sheet on a tap, where
+    /// it is also marked read or given up, and every state on a long press.
+    private var progressButton: some View {
+        Menu {
+            statusPicker
+        } label: {
+            HeroButtonLabel(title: "Progression", systemImage: "bookmark.fill")
+        } primaryAction: {
+            onOpenProgress()
+        }
+        .menuStyle(.button)
+        .buttonStyle(.glassProminent)
+        .tint(.white)
+        .foregroundStyle(.black)
+        .accessibilityIdentifier("book-progress")
     }
 
     /// Where a book read or given up stands, in the place of the next step:
@@ -521,6 +543,17 @@ extension Book {
 }
 
 extension Book {
+    /// A paperback a third read: the page sheet behind its first button.
+    static var previewPaper: Book {
+        var book = Book.preview
+        book.format = .book
+        book.media = [.print]
+        book.currentPage = 214
+        return book
+    }
+}
+
+extension Book {
     /// A manga volume just added from a shelf photo: what its spine printed,
     /// a cover found by title, nothing described yet.
     static let previewFromShelf = Book(
@@ -557,6 +590,12 @@ private extension BookPage {
 #Preview("Reading") {
     NavigationStack {
         BookPage(previewing: .preview)
+    }
+}
+
+#Preview("Reading on paper") {
+    NavigationStack {
+        BookPage(previewing: .previewPaper)
     }
 }
 

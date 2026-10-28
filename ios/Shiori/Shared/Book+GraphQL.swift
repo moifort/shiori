@@ -218,6 +218,7 @@ extension ShioriGraphQL.BookDetail {
             genre: genre?.asDomain,
             subgenres: subgenres,
             pageCount: pageCount,
+            currentPage: currentPage,
             durationMinutes: durationMinutes,
             narrators: narrators,
             narratorKeys: narratorKeys,

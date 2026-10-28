@@ -20,6 +20,9 @@ struct HomeClient: Sendable {
     var genreInsights: @Sendable () async throws -> GenreInsights
     /// The book read now, finished from its card.
     var finish: @Sendable (_ bookId: String) async throws -> Void = { _ in }
+    /// The book read now, its page recorded from its card, then moved on when
+    /// the reader marked it read or gave it up in the same sheet.
+    var recordPage: @Sendable (_ bookId: String, _ page: Int?, ReadingStatus?) async throws -> Void = { _, _, _ in }
     /// The book read now, rated from its card: which marks it read.
     var rate: @Sendable (_ bookId: String, _ stars: Double) async throws -> Void = { _, _ in }
 }
@@ -36,6 +39,10 @@ extension HomeClient {
         reconsiderSuggestion: { try await SuggestionsAPI.reconsider(id: $0) },
         genreInsights: { try await HomeAPI.genreInsights() },
         finish: { _ = try await BookAPI.setStatus(id: $0, status: .read) },
+        recordPage: { id, page, status in
+            if let page { _ = try await BookAPI.recordPage(id: id, page: page) }
+            if let status { _ = try await BookAPI.setStatus(id: id, status: status) }
+        },
         rate: { _ = try await BookAPI.rate(id: $0, stars: $1) }
     )
 }

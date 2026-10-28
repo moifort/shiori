@@ -88,6 +88,16 @@ final class BookViewModel {
         await mutate { [client, bookId] in try await client.setStatus(bookId, status) }
     }
 
+    /// Records the page reached, then moves the book on when the reader said
+    /// so in the same sheet: a book given up keeps where they stopped. False
+    /// when a call failed, so the sheet stays open.
+    func recordPage(_ page: Int?, then status: ReadingStatus? = nil) async -> Bool {
+        errorMessage = nil
+        if let page { await mutate { [client, bookId] in try await client.recordPage(bookId, page) } }
+        if errorMessage == nil, let status { await setStatus(status) }
+        return errorMessage == nil
+    }
+
     func rate(_ stars: Double) async {
         await mutate { [client, bookId] in try await client.rate(bookId, stars) }
     }

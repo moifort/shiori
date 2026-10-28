@@ -12,6 +12,9 @@ struct ReadingFeatureCard: View {
     let caption: String
     let onOpen: () -> Void
     let onFinish: () -> Void
+    /// The page sheet, in the place of "Marquer lu" on a book read on paper
+    /// or a screen.
+    var onProgress: () -> Void = {}
     /// Opens the book's saga. Nil for a standalone book, which draws no button.
     var onOpenSeries: (() -> Void)?
 
@@ -53,6 +56,10 @@ struct ReadingFeatureCard: View {
                             .padding(.top, 6)
                         if let progress = book.listeningProgress {
                             ListeningProgressLine(progress: progress, durationMinutes: book.durationMinutes)
+                                .padding(.top, 8)
+                        }
+                        if let page = book.unfinishedReadingPage {
+                            ReadingPageLine(page: page, pageCount: book.pageCount)
                                 .padding(.top, 8)
                         }
                     }
@@ -113,8 +120,11 @@ struct ReadingFeatureCard: View {
     private var actions: some View {
         GlassEffectContainer(spacing: 8) {
             HStack(spacing: 8) {
-                Button(action: onFinish) {
-                    Label("Marquer lu", systemImage: "checkmark")
+                Button(action: book.tracksPages ? onProgress : onFinish) {
+                    Label(
+                        book.tracksPages ? "Progression" : "Marquer lu",
+                        systemImage: book.tracksPages ? "bookmark.fill" : "checkmark"
+                    )
                         .labelStyle(.caption)
                         .font(.caption.weight(.semibold))
                         .lineLimit(1)

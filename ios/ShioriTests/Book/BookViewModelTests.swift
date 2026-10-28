@@ -13,6 +13,62 @@ struct BookViewModelTests {
         #expect(viewModel.isLoading == false)
     }
 
+    @Test func pageRecordedThenTheBookGivenUp() async {
+        let calls = Calls()
+        var client = BookClient.preview
+        client.recordPage = { _, page in
+            calls.record("page \(page)")
+            var book = Book.preview
+            book.currentPage = page
+            return book
+        }
+        client.setStatus = { _, status in
+            calls.record("status \(status.rawValue)")
+            var book = Book.preview
+            book.currentPage = 226
+            book.status = status
+            return book
+        }
+        let viewModel = BookViewModel(bookId: "preview", client: client)
+        await viewModel.load()
+
+        let saved = await viewModel.recordPage(226, then: .dropped)
+
+        #expect(saved)
+        #expect(calls.all == ["page 226", "status \(ReadingStatus.dropped.rawValue)"])
+        #expect(viewModel.book?.currentPage == 226)
+        #expect(viewModel.book?.status == .dropped)
+    }
+
+    @Test func failedPageLeavesTheStatusAlone() async {
+        let calls = Calls()
+        var client = BookClient.preview
+        client.recordPage = { _, _ in throw Boom() }
+        client.setStatus = { _, status in
+            calls.record("status")
+            return Book.preview
+        }
+        let viewModel = BookViewModel(bookId: "preview", client: client)
+        await viewModel.load()
+
+        let saved = await viewModel.recordPage(226, then: .read)
+
+        #expect(!saved)
+        #expect(calls.all.isEmpty)
+        #expect(viewModel.errorMessage != nil)
+    }
+
+    @Test func readingProgressIsReadOffThePages() {
+        var book = Book.preview
+        book.pageCount = 662
+        book.currentPage = 214
+        #expect(book.readingProgress == 32)
+        book.currentPage = 661
+        #expect(book.readingProgress == 99)
+        book.pageCount = nil
+        #expect(book.readingProgress == nil)
+    }
+
     @Test func missingBookSaysSo() async {
         var client = BookClient.preview
         client.book = { _ in throw Boom() }

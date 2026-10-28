@@ -336,6 +336,8 @@ enum Showcase {
             genre: genre,
             subgenres: subgenres,
             pageCount: pages,
+            // A book under way is a third in, as the reader last said.
+            currentPage: status == .reading ? pages / 3 : nil,
             language: language,
             series: series.map {
                 SeriesMembership(id: $0.name, name: $0.name, volume: $0.volume, kind: .main)

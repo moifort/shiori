@@ -69,6 +69,13 @@ mutation SetReadingStatus($id: BookId!, $status: ReadingStatus!) {
   }
 }
 
+# The page the reader says they reached. Opens a book still on the pile.
+mutation RecordReadingPage($id: BookId!, $page: PageCount!) {
+  recordReadingPage(id: $id, page: $page) {
+    ...BookDetail
+  }
+}
+
 mutation RateBook($id: BookId!, $rating: StarRating!) {
   rateBook(id: $id, rating: $rating) {
     ...BookDetail
@@ -119,6 +126,7 @@ fragment BookDetail on Book {
   genre
   subgenres
   pageCount
+  currentPage
   durationMinutes
   listeningProgress
   narrators

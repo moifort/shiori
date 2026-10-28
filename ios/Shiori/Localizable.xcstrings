@@ -1013,6 +1013,22 @@
         }
       }
     },
+    "%lld restantes" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld restantes"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld left"
+          }
+        }
+      }
+    },
     "%lld scans offerts en réserve" : {
       "localizations" : {
         "en" : {
@@ -1417,6 +1433,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "+%lld ce mois"
+          }
+        }
+      }
+    },
+    "+%lld pages" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "+%lld pages"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "+%lld pages"
           }
         }
       }
@@ -8965,6 +8997,22 @@
         }
       }
     },
+    "Modifie la page où vous en êtes" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modifie la page où vous en êtes"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Changes the page you are on"
+          }
+        }
+      }
+    },
     "Modifier" : {
       "localizations" : {
         "en" : {
@@ -10133,6 +10181,22 @@
         }
       }
     },
+    "Où en êtes-vous ?" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Où en êtes-vous ?"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Where are you?"
+          }
+        }
+      }
+    },
     "PLUS" : {
       "localizations" : {
         "en" : {
@@ -10145,6 +10209,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "PLUS"
+          }
+        }
+      }
+    },
+    "Page %lld" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Page %lld"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Page %lld"
           }
         }
       }
@@ -11237,6 +11317,22 @@
         }
       }
     },
+    "Progression" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Progression"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Progress"
+          }
+        }
+      }
+    },
     "Précommander" : {
       "localizations" : {
         "en" : {
@@ -11409,6 +11505,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Qu'en avez-vous pensé ?"
+          }
+        }
+      }
+    },
+    "Quelques étoiles, et Shiori choisit vos livres du mois" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quelques étoiles, et Shiori choisit vos livres du mois"
           }
         }
       }
@@ -15797,6 +15903,38 @@
         }
       }
     },
+    "page %lld" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "page %lld"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "page %lld"
+          }
+        }
+      }
+    },
+    "page %lld · %lld%%" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "page %1$lld · %2$lld%%"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "page %lld · %lld%%"
+          }
+        }
+      }
+    },
     "pages" : {
       "localizations" : {
         "en" : {
@@ -15825,6 +15963,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "pages en %@"
+          }
+        }
+      }
+    },
+    "sur **%lld** pages" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "sur **%lld** pages"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "of **%lld** pages"
           }
         }
       }

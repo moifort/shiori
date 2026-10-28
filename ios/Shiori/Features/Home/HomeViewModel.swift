@@ -361,6 +361,16 @@ final class HomeViewModel {
         do { try await client.finish(book.id) } catch { actionError = reportError(error) }
     }
 
+    /// Why the page sheet could not save, said in it; nil once saved.
+    func recordPage(_ book: Book, page: Int?, then status: ReadingStatus?) async -> String? {
+        do {
+            try await client.recordPage(book.id, page, status)
+            return nil
+        } catch {
+            return reportError(error)
+        }
+    }
+
     func rate(_ book: Book, stars: Double) async {
         do { try await client.rate(book.id, stars) } catch { actionError = reportError(error) }
     }

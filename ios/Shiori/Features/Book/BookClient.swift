@@ -7,6 +7,8 @@ struct BookClient: Sendable {
     var book: @Sendable (_ id: String) async throws -> Book?
     var add: @Sendable (BookDraft) async throws -> Book
     var setStatus: @Sendable (_ id: String, ReadingStatus) async throws -> Book
+    /// The page the reader says they reached: opens a book on the pile.
+    var recordPage: @Sendable (_ id: String, _ page: Int) async throws -> Book = { _, _ in .preview }
     var rate: @Sendable (_ id: String, _ stars: Double) async throws -> Book
     /// The corrected facts and, when it moved, the rating, in one request.
     var save: @Sendable (_ id: String, BookCorrection, _ rating: Double??) async throws -> Book?
@@ -38,6 +40,7 @@ extension BookClient {
         book: { try await BookAPI.book(id: $0) },
         add: { try await BookAPI.add($0) },
         setStatus: { try await BookAPI.setStatus(id: $0, status: $1) },
+        recordPage: { try await BookAPI.recordPage(id: $0, page: $1) },
         rate: { try await BookAPI.rate(id: $0, stars: $1) },
         save: { try await BookAPI.save(id: $0, correction: $1, rating: $2) },
         coverChoices: { try await BookAPI.coverChoices(id: $0) },
@@ -63,6 +66,11 @@ extension BookClient {
         setStatus: { _, status in
             var book = Book.preview
             book.status = status
+            return book
+        },
+        recordPage: { _, page in
+            var book = Book.preview
+            book.currentPage = page
             return book
         },
         rate: { _, stars in

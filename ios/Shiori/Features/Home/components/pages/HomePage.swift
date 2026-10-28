@@ -16,6 +16,8 @@ enum HomeAction {
     /// The book read now, finished from its card: the screen asks for a
     /// rating, which the reader may pass.
     case finishBook(Book)
+    /// The page sheet of the book read now, from its card.
+    case recordProgress(Book)
     /// The book read now, rated from its card.
     case rateBook(Book)
     /// The prompt that leads an empty library.
@@ -332,6 +334,7 @@ struct HomePage: View {
                         caption: Self.openedCaption(lead),
                         onOpen: { onAction(.openBook(lead)) },
                         onFinish: { onAction(.finishBook(lead)) },
+                        onProgress: { onAction(.recordProgress(lead)) },
                         onOpenSeries: lead.series.map { series in { onAction(.openSeries(series.id)) } }
                     )
                     // Another book started takes the lead in place of this one,

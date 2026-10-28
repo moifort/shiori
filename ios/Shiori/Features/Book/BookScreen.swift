@@ -23,6 +23,7 @@ struct BookScreen: View {
     @State private var showNote = false
     @State private var showCoverPicker = false
     @State private var showRatingPrompt = false
+    @State private var showProgress = false
     @State private var editedField: BookField?
     @State private var openSeries: SeriesDestination?
     @State private var openAwaited: AwaitedEdition?
@@ -70,6 +71,7 @@ struct BookScreen: View {
                     onEditRecommendation: { showRecommendation = true },
                     onEditNote: { showNote = true },
                     onEditField: { editedField = $0 },
+                    onOpenProgress: { showProgress = true },
                     // This volume as the page has it, its status just changed
                     // included.
                     seriesVolumes: viewModel.sagaVolumes.map { item in
@@ -188,6 +190,17 @@ struct BookScreen: View {
             if let book = viewModel.book {
                 FieldEditSheet(book: book, field: field) { correction in
                     let saved = await viewModel.save(correction, rating: book.rating)
+                    if let book = viewModel.book { onChanged(book) }
+                    guard !saved else { return nil }
+                    defer { viewModel.dismissError() }
+                    return viewModel.errorMessage ?? String(localized: "Une erreur est survenue")
+                }
+            }
+        }
+        .sheet(isPresented: $showProgress) {
+            if let book = viewModel.book {
+                ReadingProgressSheet(current: book.currentPage, pageCount: book.pageCount) { page, status in
+                    let saved = await viewModel.recordPage(page, then: status)
                     if let book = viewModel.book { onChanged(book) }
                     guard !saved else { return nil }
                     defer { viewModel.dismissError() }
