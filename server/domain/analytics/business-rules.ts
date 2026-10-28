@@ -132,6 +132,7 @@ export const analyticsViewOf = (input: {
     finishedAt: book.finishedAt,
     series: book.series,
     pageCount: book.pageCount,
+    currentPage: book.currentPage,
     durationMinutes: book.durationMinutes,
   })
 

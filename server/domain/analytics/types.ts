@@ -49,6 +49,8 @@ export type BookCard = {
    *  stored before the card showed them. */
   series?: SeriesMembership
   pageCount?: PageCount
+  /** The page the reader last said they reached. Never on an audiobook. */
+  currentPage?: PageCount
   durationMinutes?: ListeningMinutes
 }
 

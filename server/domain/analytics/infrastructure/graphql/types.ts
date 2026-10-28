@@ -79,6 +79,14 @@ const DashboardBookType = builder.objectRef<DashboardBook>('DashboardBook').impl
       nullable: true,
       resolve: (book) => book.pageCount ?? null,
     }),
+    currentPage: t.field({
+      type: 'PageCount',
+      nullable: true,
+      description:
+        'The page the reader last said they reached. Null on an audiobook and on a ' +
+        'book whose reader never said.',
+      resolve: (book) => book.currentPage ?? null,
+    }),
     durationMinutes: t.int({
       nullable: true,
       description: "A recording's length in minutes. Null on anything but an audiobook.",

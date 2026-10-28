@@ -1367,6 +1367,11 @@ type DashboardBook {
   """Null without a photo or a published cover; draw the placeholder."""
   coverUrl: CoverUrl
 
+  """
+  The page the reader last said they reached. Null on an audiobook and on a book whose reader never said.
+  """
+  currentPage: PageCount
+
   """A recording's length in minutes. Null on anything but an audiobook."""
   durationMinutes: Int
   finishedAt: DateTime

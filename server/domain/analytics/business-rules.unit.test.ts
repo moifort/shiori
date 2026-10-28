@@ -587,12 +587,13 @@ describe('building the view', () => {
           startedAt: new Date('2026-09-01'),
           series: membership,
           pageCount: PageCount(1000),
+          currentPage: PageCount(214),
         }),
         book('heard', { durationMinutes: ListeningMinutes(600) }),
       ],
     })
 
-    expect(view.reading[0]).toMatchObject({ series: membership, pageCount: 1000 })
+    expect(view.reading[0]).toMatchObject({ series: membership, pageCount: 1000, currentPage: 214 })
     expect(view.toRead[0]?.durationMinutes).toBe(ListeningMinutes(600))
   })
 
