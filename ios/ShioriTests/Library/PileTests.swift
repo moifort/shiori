@@ -139,6 +139,32 @@ struct PileViewModelTests {
         #expect(viewModel.view.format == .manga)
     }
 
+    @Test func keepsBothRowsWhenAGenreIsChosen() async {
+        let client = LibraryClient(pile: { view in
+            Pile(
+                formats: view.genre == nil ? [.book, .manga] : [.book],
+                genres: view.genre == nil ? [.fantasy, .scienceFiction] : [.fantasy]
+            )
+        })
+        let viewModel = PileViewModel(client: client, caching: false)
+
+        await viewModel.load()
+        await viewModel.select(genre: .fantasy)
+
+        #expect(viewModel.shownFormats == [.book, .manga])
+        #expect(viewModel.shownGenres == [.fantasy, .scienceFiction])
+        #expect(viewModel.view.genre == .fantasy)
+    }
+
+    @Test func aGenrePageOffersNoGenrePills() async {
+        let client = LibraryClient(pile: { _ in Pile(genres: [.fantasy, .scienceFiction]) })
+        let viewModel = PileViewModel(client: client, view: ShelvesView(genre: .fantasy), caching: false)
+
+        await viewModel.load()
+
+        #expect(viewModel.shownGenres.isEmpty)
+    }
+
     @Test func aFailureOverSectionsKeepsThem() async {
         let fails = Flag()
         let client = LibraryClient(pile: { _ in

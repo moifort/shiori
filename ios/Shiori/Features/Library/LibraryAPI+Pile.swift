@@ -17,6 +17,7 @@ extension LibraryAPI {
         )
         return Pile(
             formats: data.pile.formats.map(\.asDomain),
+            genres: BookGenre.alphabetical.filter(Set(data.pile.genres.compactMap { $0.value?.asDomain }).contains),
             sections: data.pile.sections.compactMap { section in
                 guard let kind = PileSectionKind(rawValue: section.kind.rawValue) else { return nil }
                 return PileSection(kind: kind, picks: section.picks.map { pick in

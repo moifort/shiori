@@ -41,11 +41,14 @@ struct PileSection: Identifiable, Hashable, Sendable, Codable {
     var id: String { kind.rawValue }
 }
 
-/// The pile as the server cut it: the format pills and the sections.
+/// The pile as the server cut it: the format and genre pills and the sections.
 struct Pile: Hashable, Sendable, Codable {
     /// The formats of the pile and of the books in progress, as the pills
     /// list them. One alone offers no pill.
     var formats: [BookFormat] = []
+    /// The genres of the pile and of the books in progress in the format
+    /// pill, in alphabetical order. One alone offers no pill.
+    var genres: [BookGenre] = []
     var sections: [PileSection] = []
 }
 

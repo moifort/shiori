@@ -789,6 +789,12 @@ enum Showcase {
             formats: BookFormat.allCases.filter { format in
                 inGenre.contains { $0.format == format && ($0.status == .toRead || $0.status == .reading) }
             },
+            genres: BookGenre.alphabetical.filter { genre in
+                shelved.contains {
+                    $0.genre == genre && (view.format == nil || $0.format == view.format)
+                        && ($0.status == .toRead || $0.status == .reading)
+                }
+            },
             sections: sections.compactMap { kind, books in
                 books.isEmpty ? nil : PileSection(kind: kind, picks: books.prefix(15).map { PilePick(book: $0) })
             }

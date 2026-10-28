@@ -11,11 +11,12 @@ import {
   subgenresOf,
 } from '~/domain/book/business-rules'
 import { BookQuery } from '~/domain/book/query'
-import type { Book, BookFormat, BookLanguage, BookView, Subgenre } from '~/domain/book/types'
+import type { Book, BookFormat, BookLanguage, BookView, Genre, Subgenre } from '~/domain/book/types'
 import {
   formatsOf,
   genreShelvesOf,
   pileFormatsOf,
+  pileGenresOf,
   pileSectionsOf,
   RAIL_LIMIT,
   railsOf,
@@ -197,4 +198,9 @@ export namespace LibraryUseCase {
    *  progress, under a genre page those of the genre. */
   export const pileFormats = async (userId: UserId, view: ShelvesView): Promise<BookFormat[]> =>
     pileFormatsOf(await BookQuery.all(userId), view)
+
+  /** The genre pills over the pile: the genres of its books and of those in
+   *  progress, in the format pill. */
+  export const pileGenres = async (userId: UserId, view: ShelvesView): Promise<Genre[]> =>
+    pileGenresOf(await BookQuery.all(userId), view)
 }

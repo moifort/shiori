@@ -225,6 +225,13 @@ const PileType = builder.objectRef<PileRequest>('Pile').implement({
         'its books — in the order the pills list them. Never narrowed by `format` itself.',
       resolve: (pile) => LibraryUseCase.pileFormats(pile.userId, pile.view),
     }),
+    genres: t.field({
+      type: [GenreEnum],
+      description:
+        'The genres of the pile and of the books in progress in the `format` pill, in the ' +
+        'order of `Genre`. Never narrowed by `genre` itself.',
+      resolve: (pile) => LibraryUseCase.pileGenres(pile.userId, pile.view),
+    }),
     sections: t.field({
       type: [PileSectionType],
       description:

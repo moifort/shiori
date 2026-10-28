@@ -1,8 +1,13 @@
 import { describe, expect, test } from 'bun:test'
 import type { AwardedWork } from '~/domain/award/types'
 import { BookId, NarratorName, StarRating } from '~/domain/book/primitives'
-import type { Book, BookFormat, ReadingStatus } from '~/domain/book/types'
-import { PILE_SECTION_LIMIT, pileFormatsOf, pileSectionsOf } from '~/domain/library/business-rules'
+import type { Book, BookFormat, Genre, ReadingStatus } from '~/domain/book/types'
+import {
+  PILE_SECTION_LIMIT,
+  pileFormatsOf,
+  pileGenresOf,
+  pileSectionsOf,
+} from '~/domain/library/business-rules'
 import type { PileSectionKind } from '~/domain/library/types'
 import { narratorKeyOf } from '~/domain/narrator/primitives'
 import { SagaKey, SeriesName, seriesIdOf, VolumeNumber } from '~/domain/series/primitives'
@@ -17,6 +22,7 @@ type Spec = {
   author?: string
   narrator?: string
   format?: BookFormat
+  genre?: Genre
   rating?: number
   favorite?: boolean
   saga?: string
@@ -31,6 +37,7 @@ const book = (spec: Spec): Book => ({
   title: BookTitle(spec.title),
   authors: spec.author ? [AuthorName(spec.author)] : [],
   format: spec.format ?? 'book',
+  genre: spec.genre,
   media: ['print'],
   subgenres: [],
   narrators: spec.narrator ? [NarratorName(spec.narrator)] : [],
@@ -196,5 +203,16 @@ describe('the pile sections', () => {
       book({ title: 'Leviathan', format: 'audiobook', status: 'read' }),
     ]
     expect(pileFormatsOf(books, { format: 'manga' })).toEqual(['book', 'manga'])
+  })
+
+  test('offers the genre pills of the pile and the books in progress in the format pill', () => {
+    const books = [
+      book({ title: 'Dune', genre: 'science-fiction' }),
+      book({ title: 'Frieren', format: 'manga', genre: 'fantasy', status: 'reading' }),
+      book({ title: 'Leviathan', genre: 'thriller', status: 'read' }),
+      book({ title: 'Caliban', genre: 'crime', format: 'audiobook' }),
+    ]
+    expect(pileGenresOf(books, { genre: 'crime' })).toEqual(['fantasy', 'science-fiction', 'crime'])
+    expect(pileGenresOf(books, { format: 'book' })).toEqual(['science-fiction'])
   })
 })

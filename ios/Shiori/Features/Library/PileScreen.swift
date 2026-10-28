@@ -19,6 +19,8 @@ struct PileScreen: View {
             pile: viewModel.pile,
             formats: viewModel.shownFormats,
             selectedFormat: viewModel.view.format,
+            genres: viewModel.shownGenres,
+            selectedGenre: viewModel.view.genre,
             isLoading: viewModel.isLoading,
             errorMessage: viewModel.errorMessage,
             onAction: handle
@@ -35,6 +37,7 @@ struct PileScreen: View {
         switch action {
         case let .openBook(book): destination = .book(book)
         case let .selectFormat(format): Task { await viewModel.select(format: format) }
+        case let .selectGenre(genre): Task { await viewModel.select(genre: genre) }
         case let .menu(book, action): quick = BookQuickRequest(book: book, action: action)
         case .openWholePile: destination = .wholePile(viewModel.view)
         case .refresh: Task { await viewModel.load() }

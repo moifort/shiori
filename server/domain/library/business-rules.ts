@@ -7,7 +7,7 @@ import {
   sameAuthor,
   shelvedOf,
 } from '~/domain/book/business-rules'
-import { BOOK_FORMATS, type Book, type BookFormat } from '~/domain/book/types'
+import { BOOK_FORMATS, type Book, type BookFormat, GENRES, type Genre } from '~/domain/book/types'
 import type { GenreShelf, PilePick, PileSection, ShelvesView } from '~/domain/library/types'
 import { narratorKeyOf } from '~/domain/narrator/primitives'
 import type { NarratorKey } from '~/domain/narrator/types'
@@ -204,3 +204,18 @@ export const pileFormatsOf = (books: readonly Book[], view: ShelvesView): BookFo
         inLibraryView(book, { genre: view.genre, subgenre: view.subgenre }),
     ),
   )
+
+/** The genres the pill row of the pile offers: those of its books and of the
+ *  books in progress in the format pill, never narrowed by the genre itself. */
+export const pileGenresOf = (books: readonly Book[], view: ShelvesView): Genre[] => {
+  const held = new Set(
+    books
+      .filter(
+        (book) =>
+          (book.status === 'to-read' || book.status === 'reading') &&
+          inLibraryView(book, { format: view.format }),
+      )
+      .flatMap((book) => (book.genre ? [book.genre] : [])),
+  )
+  return GENRES.filter((genre) => held.has(genre))
+}

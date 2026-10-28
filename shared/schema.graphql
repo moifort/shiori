@@ -3578,6 +3578,11 @@ type Pile {
   formats: [BookFormat!]!
 
   """
+  The genres of the pile and of the books in progress in the `format` pill, in the order of `Genre`. Never narrowed by `genre` itself.
+  """
+  genres: [Genre!]!
+
+  """
   The sections in the view, in the order of `PileSectionKind`, the empty ones left out. A book may sit in several. The whole pile is `libraryPage(status: TO_READ)`.
   """
   sections: [PileSection!]!
