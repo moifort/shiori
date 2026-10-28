@@ -460,9 +460,11 @@ struct HomeHeroCarousel: View {
             Text("Notez vos lectures")
                 .font(.system(.title2, design: .serif, weight: .bold))
                 .padding(.top, 10)
-            Text("Quelques étoiles, et Shiori choisit vos livres du mois")
+            Text("Donnez des étoiles ou un cœur à vos lectures pour recevoir vos livres du mois")
                 .font(.subheadline)
                 .foregroundStyle(.white.opacity(0.75))
+                // Always in full: the carousel grows to the page's height.
+                .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, 8)
         } buttons: {
             Button(action: onRate) {

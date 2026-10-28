@@ -5193,6 +5193,22 @@
         }
       }
     },
+    "Donnez des étoiles ou un cœur à vos lectures pour recevoir vos livres du mois" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Give your books stars or a heart to get your books of the month"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Donnez des étoiles ou un cœur à vos lectures pour recevoir vos livres du mois"
+          }
+        }
+      }
+    },
     "Donut" : {
       "localizations" : {
         "en" : {
@@ -11393,22 +11409,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Qu'en avez-vous pensé ?"
-          }
-        }
-      }
-    },
-    "Quelques étoiles, et Shiori choisit vos livres du mois" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "A few stars, and Shiori picks your books of the month"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Quelques étoiles, et Shiori choisit vos livres du mois"
           }
         }
       }
