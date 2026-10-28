@@ -358,3 +358,18 @@ export type LibraryView = {
   genre?: Genre
   subgenre?: Subgenre
 }
+
+/** Where a synced book came from: the two libraries a nightly pass reads. */
+export type SyncSource = 'kindle' | 'audible'
+
+/** A book the reader deleted that a Kindle or Audible title stands for.
+ *
+ *  Kept so the nightly pass does not hand it back: the reader removed it, and a
+ *  pass that sees the title still in their Amazon library must not overrule
+ *  them. Only news about the title itself — finished on the Kindle, heard on
+ *  Audible after the deletion — brings it back, and the record goes with it.
+ *  One per reader, source and ASIN, in a flat collection apart from the
+ *  connection, so a reader who disconnects and connects again keeps it. */
+export type SyncedBookRemoval =
+  | { userId: UserId; source: 'kindle'; asin: KindleAsin; removedAt: Date }
+  | { userId: UserId; source: 'audible'; asin: AudibleAsin; removedAt: Date }

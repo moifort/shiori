@@ -45,6 +45,12 @@ final class AudibleImportViewModel {
     /// but never counted, since importing them would do nothing.
     var importable: [ImportableBook] { books.filter { !$0.alreadyInLibrary } }
 
+    /// What starts ticked: everything importable but the titles whose book the
+    /// reader deleted, which they took out once.
+    private var preselected: Set<String> {
+        Set(importable.filter { !$0.removedByReader }.map(\.asin))
+    }
+
     var canImport: Bool { !selected.isEmpty && !isImporting }
 
     /// How many titles Audible holds, and how many are already on the shelf. Both
@@ -69,10 +75,10 @@ final class AudibleImportViewModel {
             account = connection?.account
             books = connection?.library ?? []
             hasReadLibrary = connection != nil
-            // Everything not already catalogued starts ticked: a reader who
+            // Everything not already catalogued nor deleted starts ticked: a reader who
             // opens this wants their library, and unticking a handful beats
             // ticking three hundred.
-            selected = Set(importable.map(\.asin))
+            selected = preselected
         } catch {
             // An expired or revoked device answers here. The connection is shown
             // as gone rather than as broken, because reconnecting is the fix.
@@ -177,7 +183,7 @@ final class AudibleImportViewModel {
             let (outcome, synced, library) = try await client.syncNow()
             account = synced
             books = library ?? []
-            selected = Set(importable.map(\.asin))
+            selected = preselected
             // Set last: `load()` clears it, and the library above rides the
             // sync's own answer, not a call through it.
             lastSyncOutcome = outcome

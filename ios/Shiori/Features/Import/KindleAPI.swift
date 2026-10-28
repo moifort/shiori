@@ -131,7 +131,8 @@ private extension ShioriGraphQL.ImportableKindleBookFields {
             seriesName: seriesName,
             volume: volume,
             status: status.asDomain,
-            alreadyInLibrary: alreadyInLibrary
+            alreadyInLibrary: alreadyInLibrary,
+            removedByReader: removedByReader
         )
     }
 }

@@ -474,7 +474,7 @@ describe('a nightly pass', () => {
     expect(await KindleUseCase.syncLibrary(reader, NIGHT, true)).toMatchObject({ imported: 1 })
   })
 
-  test('reads the shelf once and the connection once', async () => {
+  test('reads the shelf, its deletions and the connection once each', async () => {
     await connect()
     await KindleCommand.recordPass(reader, [], NOW)
     titles = [aTitle({ acquiredAt: new Date('2026-09-01') })]
@@ -483,7 +483,7 @@ describe('a nightly pass', () => {
 
     await KindleUseCase.syncLibrary(reader, NIGHT)
 
-    expect(fake.queryReads - before.queries).toBe(1)
+    expect(fake.queryReads - before.queries).toBe(2)
     expect(fake.docReads - before.docs).toBe(1)
   })
 })
@@ -511,5 +511,60 @@ describe('the nightly run', () => {
       failed: 0,
       deferred: 1,
     })
+  })
+})
+
+describe('a book the reader deleted', () => {
+  const importedThenDeleted = async () => {
+    await connect()
+    titles = [aTitle()]
+    await KindleUseCase.importBooks(reader, [KindleAsin('B0TESTAAA1')], NOW)
+    await KindleUseCase.syncLibrary(reader, NOW)
+    const [book] = await BookQuery.all(reader)
+    await BookCommand.remove(reader, book.id, undefined, NOW)
+    startFakeRequest()
+  }
+
+  test('is not catalogued again by the nightly pass', async () => {
+    await importedThenDeleted()
+
+    expect(await KindleUseCase.syncLibrary(reader, NIGHT)).toMatchObject({ imported: 0 })
+    expect(await BookQuery.all(reader)).toHaveLength(0)
+  })
+
+  // A reconnection starts over with no cutoff: every title is new to it.
+  test('stays out after the reader disconnects and connects again', async () => {
+    await importedThenDeleted()
+    await KindleCommand.disconnect(reader)
+    await connect()
+    startFakeRequest()
+
+    expect(await KindleUseCase.syncLibrary(reader, NIGHT)).toMatchObject({ imported: 0 })
+    expect(await BookQuery.all(reader)).toHaveLength(0)
+  })
+
+  test('comes back read once Amazon newly reports it read, and the deletion is forgotten', async () => {
+    await importedThenDeleted()
+    titles = [aTitle({ readStatus: 'READ' })]
+
+    expect(await KindleUseCase.syncLibrary(reader, NIGHT)).toMatchObject({ imported: 1 })
+    const [book] = await BookQuery.all(reader)
+    expect(book).toMatchObject({ kindleAsin: 'B0TESTAAA1', status: 'read' })
+    expect(await BookQuery.syncRemovals(reader, 'kindle')).toHaveLength(0)
+  })
+
+  test('is offered unticked, and importing it by hand takes the deletion back', async () => {
+    await importedThenDeleted()
+
+    const importable = await KindleUseCase.importableBooks(reader)
+    expect(Array.isArray(importable) && importable[0]).toMatchObject({
+      asin: 'B0TESTAAA1',
+      alreadyInLibrary: false,
+      removedByReader: true,
+    })
+
+    await KindleUseCase.importBooks(reader, [KindleAsin('B0TESTAAA1')], NIGHT)
+    expect(await BookQuery.all(reader)).toHaveLength(1)
+    expect(await BookQuery.syncRemovals(reader, 'kindle')).toHaveLength(0)
   })
 })

@@ -29,6 +29,8 @@ import type {
   ReadingStatus,
   ShelfVocabulary,
   Subgenre,
+  SyncedBookRemoval,
+  SyncSource,
 } from '~/domain/book/types'
 import type { SagaKey } from '~/domain/series/types'
 import { SeriesOpinionQuery } from '~/domain/series-opinion/query'
@@ -45,6 +47,11 @@ const shownStatusesOf = (view: { status?: ReadingStatus }): readonly ReadingStat
   view.status ? [view.status] : SHELF_STATUSES
 
 export namespace BookQuery {
+  /** The titles of one library the reader deleted from Shiori, which its sync
+   *  leaves out until it has news of them. */
+  export const syncRemovals = (userId: UserId, source: SyncSource): Promise<SyncedBookRemoval[]> =>
+    repository.findSyncRemovals(userId, source)
+
   export const byId = async (userId: UserId, bookId: BookId): Promise<BookView | null> => {
     const book = await repository.findById(userId, bookId)
     return book ? await withCover(book) : null

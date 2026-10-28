@@ -2382,6 +2382,11 @@ type ImportableBook {
   """
   narrators: [NarratorName!]!
 
+  """
+  True when the reader deleted this title's book from their library. Offer it, but leave it unticked: the nightly sync keeps it out until the title itself has news. Importing it by hand takes the deletion back.
+  """
+  removedByReader: Boolean!
+
   """Null for a standalone title."""
   seriesName: SeriesName
 
@@ -2410,6 +2415,11 @@ type ImportableKindleBook {
   asin: KindleAsin!
   authors: [AuthorName!]!
   coverUrl: CoverUrl
+
+  """
+  True when the reader deleted this title's book from their library. Offer it, but leave it unticked: the nightly sync keeps it out until the title itself has news. Importing it by hand takes the deletion back.
+  """
+  removedByReader: Boolean!
 
   """
   Read off the title, which is where Amazon puts the saga. Null for a standalone title and for one whose title names its saga in no shape the server recognizes — a guessed saga would be worse than none.

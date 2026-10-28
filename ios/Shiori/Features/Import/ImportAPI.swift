@@ -153,7 +153,8 @@ private extension ShioriGraphQL.ImportableAudibleBook {
             volume: volume,
             status: status.asDomain,
             finishedAt: finishedAt.flatMap(GraphQLHelpers.parseISO8601),
-            alreadyInLibrary: alreadyInLibrary
+            alreadyInLibrary: alreadyInLibrary,
+            removedByReader: removedByReader
         )
     }
 }

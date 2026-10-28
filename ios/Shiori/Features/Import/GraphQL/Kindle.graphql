@@ -50,6 +50,7 @@ fragment ImportableKindleBookFields on ImportableKindleBook {
   volume
   status
   alreadyInLibrary
+  removedByReader
 }
 
 mutation ImportKindleLibrary($asins: [KindleAsin!]!) {

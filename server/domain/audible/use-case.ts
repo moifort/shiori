@@ -3,12 +3,12 @@ import { AnalyticsUseCase } from '~/domain/analytics/use-case'
 import {
   audibleLinksFor,
   bookFrom,
-  boughtSince,
   editionYearsFor,
   genresFor,
   heardByAsin,
   heardSagasOf,
   importableFrom,
+  itemsToCatalogue,
   listenedMinutesFor,
   listeningChangesFor,
   purchaseDatesFor,
@@ -64,7 +64,7 @@ export namespace AudibleUseCase {
     const fetched = await fetchLibrary(userId)
     if (fetched === 'not-connected') return fetched
     const owned = await BookQuery.all(userId)
-    return toImportable(fetched, owned)
+    return toImportable(fetched, owned, await removedAsinsOf(userId))
   }
 
   /** Catalogue the titles the reader ticked.
@@ -87,7 +87,7 @@ export namespace AudibleUseCase {
 
     const wanted = new Set<string>(asins)
     const owned = await BookQuery.all(userId)
-    const chosen = toImportable(fetched, owned).filter(
+    const chosen = toImportable(fetched, owned, await removedAsinsOf(userId)).filter(
       (importable) => wanted.has(importable.asin) && !importable.alreadyInLibrary,
     )
 
@@ -101,6 +101,12 @@ export namespace AudibleUseCase {
         }),
       )
     }
+    // Ticked by hand: the reader takes their deletion back.
+    await BookCommand.forgetSyncRemovals(
+      userId,
+      'audible',
+      chosen.filter((importable) => importable.removedByReader).map(({ asin }) => asin),
+    )
     // The volumes of these sagas the reader does not hold, with their covers,
     // for the saga screen: from Audible now rather than the hourly pass.
     await DiscoveryUseCase.listOnAudible(heardSagasOf([...owned, ...imported]))
@@ -141,7 +147,10 @@ export namespace AudibleUseCase {
     if (fetched === 'not-connected') return fetched
     const { items, positions } = fetched
 
-    const owned = await BookQuery.all(userId)
+    const [owned, removals] = await Promise.all([
+      BookQuery.all(userId),
+      BookQuery.syncRemovals(userId, 'audible'),
+    ])
     const links = audibleLinksFor(owned, items)
     const linked = owned.map((book) => {
       const link = links.find((candidate) => candidate.bookId === book.id)
@@ -153,10 +162,14 @@ export namespace AudibleUseCase {
     const renumbers = seriesVolumesFor(linked, items)
     const editionYears = editionYearsFor(linked, items)
     const genres = genresFor(linked, items)
-    const bought = toImportable(
-      { items: boughtSince(items, account.lastImportedAt), positions },
-      linked,
-    ).filter((importable) => !importable.alreadyInLibrary)
+    // A title whose book the reader deleted stays out, unless they listened to
+    // it since: then it comes back, and the deletion is forgotten.
+    const wanted = itemsToCatalogue(items, account.lastImportedAt, removals, positions)
+    const removed = new Set<string>(removals.map(({ asin }) => asin))
+    const returning = wanted.filter((item) => removed.has(item.asin)).map(({ asin }) => asin)
+    const bought = toImportable({ items: wanted, positions }, linked).filter(
+      (importable) => !importable.alreadyInLibrary,
+    )
 
     const changed =
       links.length +
@@ -212,6 +225,7 @@ export namespace AudibleUseCase {
     }
     // A night with nothing new leaves the dashboard as it was.
     if (changed > 0) await AnalyticsUseCase.whileStale(userId, write)
+    await BookCommand.forgetSyncRemovals(userId, 'audible', returning)
     // Every night, not only on a new title: a library imported before the
     // sagas heard were listed from Audible is listed over the next nights.
     await DiscoveryUseCase.listOnAudible(heardSagasOf([...linked, ...added]), now)
@@ -378,13 +392,21 @@ const toImportable = (
     positions: Awaited<ReturnType<typeof api.lastPositions>>['positions']
   },
   owned: readonly Book[],
+  removed: ReadonlySet<string> = new Set(),
 ): ImportableBook[] => {
   const shelf = shelfOf(owned)
   const heard = heardByAsin(fetched.positions)
   return fetched.items
     .map((item) => importableFrom(item, shelf, heard.get(item.asin)))
     .filter(isPresent)
+    .map((importable) =>
+      removed.has(importable.asin) ? { ...importable, removedByReader: true } : importable,
+    )
 }
+
+/** The Audible titles whose book the reader deleted from Shiori. */
+const removedAsinsOf = async (userId: UserId): Promise<Set<string>> =>
+  new Set((await BookQuery.syncRemovals(userId, 'audible')).map(({ asin }) => asin))
 
 type Credentials = Parameters<typeof api.search>[0]
 

@@ -20,6 +20,7 @@ import type {
   ShelfVocabulary,
   StarRating,
   Subgenre,
+  SyncedBookRemoval,
   TaggedSubgenre,
 } from '~/domain/book/types'
 import { BOOK_MEDIA, READING_STATUSES } from '~/domain/book/types'
@@ -1167,3 +1168,15 @@ export const inLibraryView = (
   }
   return true
 }
+
+/** What deleting a book leaves for the nightly passes: one removal per library
+ *  title the record stood for, so neither sync catalogues it again. A book no
+ *  sync brought in leaves nothing. */
+export const syncRemovalsOf = (book: Book, now: Date): SyncedBookRemoval[] => [
+  ...(book.kindleAsin
+    ? [{ userId: book.userId, source: 'kindle' as const, asin: book.kindleAsin, removedAt: now }]
+    : []),
+  ...(book.audibleAsin
+    ? [{ userId: book.userId, source: 'audible' as const, asin: book.audibleAsin, removedAt: now }]
+    : []),
+]

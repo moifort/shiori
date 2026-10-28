@@ -101,6 +101,9 @@ export type ImportableKindleBook = {
   /** When the title entered the account, kept as the book's own addition date. */
   addedAt?: Date
   alreadyInLibrary: boolean
+  /** The reader deleted this title's book from Shiori. Still on offer, but not
+   *  ticked for them: they took it out once. */
+  removedByReader?: boolean
 }
 
 /** A Kindle title split by the model into the volume's own title, its saga and

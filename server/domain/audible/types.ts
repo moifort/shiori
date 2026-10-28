@@ -174,4 +174,7 @@ export type ImportableBook = {
    *  night. Absent for a title Amazon dates neither way. */
   addedAt?: Date
   alreadyInLibrary: boolean
+  /** The reader deleted this title's book from Shiori. Still on offer, but not
+   *  ticked for them: they took it out once. */
+  removedByReader?: boolean
 }

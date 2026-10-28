@@ -422,6 +422,27 @@ export const acquiredSince = (
     ? titles.filter((title) => title.acquiredAt && title.acquiredAt.getTime() > cutoff.getTime())
     : [...titles]
 
+/** The titles a pass catalogues: those acquired since the cutoff, less the ones
+ *  whose book the reader deleted from Shiori. A deleted title comes back only
+ *  when Amazon newly reports it read — news of the book itself, however long
+ *  ago it was bought. The first pass has no read set to tell news from, and
+ *  brings none back. */
+export const titlesToCatalogue = (
+  titles: readonly KindleTitle[],
+  cutoff: Date | undefined,
+  removed: readonly string[],
+  previouslyRead: readonly KindleAsinValue[] | undefined,
+): KindleTitle[] => {
+  const gone = new Set<string>(removed)
+  const known = new Set<string>(previouslyRead ?? [])
+  const fresh = new Set(acquiredSince(titles, cutoff).map((title) => title.asin))
+  return titles.filter((title) =>
+    gone.has(title.asin)
+      ? previouslyRead !== undefined && title.readStatus === 'READ' && !known.has(title.asin)
+      : fresh.has(title.asin),
+  )
+}
+
 /** Who the nightly job passes over, the reader least recently synced first.
  *  Readers who turned the sync off are left out. */
 export const readersDueForSync = (connections: readonly KindleConnection[]): UserId[] =>

@@ -35,6 +35,12 @@ final class KindleImportViewModel {
 
     var importable: [ImportableKindleBook] { books.filter { !$0.alreadyInLibrary } }
 
+    /// What starts ticked: everything importable but the titles whose book the
+    /// reader deleted, which they took out once.
+    private var preselected: Set<String> {
+        Set(importable.filter { !$0.removedByReader }.map(\.asin))
+    }
+
     var canImport: Bool { !selected.isEmpty && !isImporting }
 
     var totalCount: Int? { hasReadLibrary ? books.count : nil }
@@ -54,9 +60,9 @@ final class KindleImportViewModel {
             account = connection?.account
             books = connection?.library ?? []
             hasReadLibrary = connection != nil
-            // Everything not already catalogued starts ticked: unticking a
+            // Everything not already catalogued nor deleted starts ticked: unticking a
             // handful beats ticking three hundred.
-            selected = Set(importable.map(\.asin))
+            selected = preselected
         } catch {
             if (error as? APIError)?.domainCode == "KINDLE_NOT_CONNECTED" {
                 account = nil
@@ -147,7 +153,7 @@ final class KindleImportViewModel {
             account = synced
             books = library ?? []
             hasReadLibrary = true
-            selected = Set(importable.map(\.asin))
+            selected = preselected
             lastSyncOutcome = outcome
         } catch {
             errorMessage = reportError(error)

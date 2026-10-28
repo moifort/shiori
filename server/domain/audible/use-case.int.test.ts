@@ -739,8 +739,9 @@ describe('the nightly sync', () => {
 
     expect(await AudibleUseCase.syncLibrary(reader, LATER)).toMatchObject({ moved: 3 })
 
-    // One scan of the shelf; the one document is the Audible connection.
-    expect(fake.queryReads - before.queries).toBe(1)
+    // One scan of the shelf and one of its deletions; the one document is the
+    // Audible connection.
+    expect(fake.queryReads - before.queries).toBe(2)
     expect(fake.docReads - before.docs).toBe(1)
   })
 
@@ -1040,5 +1041,88 @@ describe('adding a volume of a saga heard from its screen', () => {
     await connect()
     expect(await AudibleUseCase.addSeriesVolume(reader, wanted)).toBe('not-found')
     expect(searchCalls).toEqual([])
+  })
+})
+
+describe('a book the reader deleted', () => {
+  const LATER = new Date('2026-09-26T04:00:00.000Z')
+  const DELETED = new Date('2026-09-20T10:00:00.000Z')
+
+  const importedThenDeleted = async () => {
+    await connect()
+    items = [anItem({ purchaseDate: new Date('2026-09-01T00:00:00.000Z') })]
+    await AudibleUseCase.importBooks(reader, [asin('B002V1OF70')])
+    const [book] = await BookQuery.all(reader)
+    await BookCommand.remove(reader, book.id, undefined, DELETED)
+    startFakeRequest()
+  }
+
+  test('is not catalogued again by the nightly pass', async () => {
+    await importedThenDeleted()
+
+    expect(await AudibleUseCase.syncLibrary(reader, LATER)).toMatchObject({ imported: 0 })
+    expect(await BookQuery.all(reader)).toHaveLength(0)
+  })
+
+  // A reconnection starts over with no cutoff: every title is new to it.
+  test('stays out after the reader disconnects and connects again', async () => {
+    await importedThenDeleted()
+    await AudibleCommand.disconnect(reader)
+    await connect()
+    startFakeRequest()
+
+    expect(await AudibleUseCase.syncLibrary(reader, LATER)).toMatchObject({ imported: 0 })
+    expect(await BookQuery.all(reader)).toHaveLength(0)
+  })
+
+  test('stays out when the player was last moved before the deletion', async () => {
+    await importedThenDeleted()
+    positions = [
+      { asin: 'B002V1OF70', positionMs: 3_600_000, lastUpdatedAt: new Date('2026-09-10') },
+    ]
+
+    expect(await AudibleUseCase.syncLibrary(reader, LATER)).toMatchObject({ imported: 0 })
+  })
+
+  test('comes back under way once it is heard after the deletion, which is forgotten', async () => {
+    await importedThenDeleted()
+    positions = [
+      {
+        asin: 'B002V1OF70',
+        positionMs: 3_600_000,
+        lastUpdatedAt: new Date('2026-09-24T20:00:00.000Z'),
+      },
+    ]
+
+    expect(await AudibleUseCase.syncLibrary(reader, LATER)).toMatchObject({ imported: 1 })
+    const [book] = await BookQuery.all(reader)
+    expect(book).toMatchObject({ audibleAsin: 'B002V1OF70', status: 'reading' })
+    expect(await BookQuery.syncRemovals(reader, 'audible')).toHaveLength(0)
+  })
+
+  test('is offered unticked, and importing it by hand takes the deletion back', async () => {
+    await importedThenDeleted()
+
+    const importable = await AudibleUseCase.importableBooks(reader)
+    expect(Array.isArray(importable) && importable[0]).toMatchObject({
+      asin: 'B002V1OF70',
+      alreadyInLibrary: false,
+      removedByReader: true,
+    })
+
+    await AudibleUseCase.importBooks(reader, [asin('B002V1OF70')])
+    expect(await BookQuery.all(reader)).toHaveLength(1)
+    expect(await BookQuery.syncRemovals(reader, 'audible')).toHaveLength(0)
+  })
+
+  test('leaves nothing behind for a book no library brought in', async () => {
+    const book = await BookCommand.add(reader, {
+      title: BookTitle('Le Nom du vent'),
+      authors: [AuthorName('Patrick Rothfuss')],
+    })
+    await BookCommand.remove(reader, book.id)
+
+    expect(await BookQuery.syncRemovals(reader, 'audible')).toHaveLength(0)
+    expect(await BookQuery.syncRemovals(reader, 'kindle')).toHaveLength(0)
   })
 })

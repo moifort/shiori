@@ -1,6 +1,14 @@
 import type { WriteBatch } from 'firebase-admin/firestore'
 import { inItsEdition, mediaFor, shelfDateOf } from '~/domain/book/business-rules'
-import type { Book, BookFormat, BookId, BookMedium, ReadingStatus } from '~/domain/book/types'
+import type {
+  Book,
+  BookFormat,
+  BookId,
+  BookMedium,
+  ReadingStatus,
+  SyncedBookRemoval,
+  SyncSource,
+} from '~/domain/book/types'
 import type { SagaKey, SeriesId } from '~/domain/series/types'
 import type { UserId } from '~/domain/shared/types'
 import { db } from '~/system/firebase'
@@ -193,4 +201,45 @@ export const removeAllByUser = async (userId: UserId): Promise<void> => {
   const snapshot = await ownedBy(userId).get()
   await deleteInBatches(snapshot.docs.map((doc) => doc.ref))
   evictFromRequestCache(allCacheKey(userId))
+}
+
+// Flat too, keyed by reader, source and ASIN: deleting the same title twice
+// writes one document, and the pass that brings it back deletes that one.
+const syncRemovals = () =>
+  db().collection('book-sync-removals').withConverter(genericDataConverter<SyncedBookRemoval>())
+
+const removalId = (userId: UserId, source: SyncSource, asin: string) =>
+  `${userId}~${source}~${asin}`
+
+export const saveSyncRemovals = async (
+  removals: readonly SyncedBookRemoval[],
+  batch?: WriteBatch,
+): Promise<void> => {
+  for (const removal of removals) {
+    const ref = syncRemovals().doc(removalId(removal.userId, removal.source, removal.asin))
+    if (batch) batch.set(ref, removal)
+    else await ref.set(removal)
+  }
+}
+
+// Two equality filters, which Firestore merges from the single-field indexes.
+export const findSyncRemovals = async (
+  userId: UserId,
+  source: SyncSource,
+): Promise<SyncedBookRemoval[]> =>
+  (await syncRemovals().where('userId', '==', userId).where('source', '==', source).get()).docs.map(
+    (doc) => doc.data(),
+  )
+
+export const forgetSyncRemovals = async (
+  userId: UserId,
+  source: SyncSource,
+  asins: readonly string[],
+): Promise<void> => {
+  await deleteInBatches(asins.map((asin) => syncRemovals().doc(removalId(userId, source, asin))))
+}
+
+export const removeAllSyncRemovalsByUser = async (userId: UserId): Promise<void> => {
+  const snapshot = await syncRemovals().where('userId', '==', userId).get()
+  await deleteInBatches(snapshot.docs.map((doc) => doc.ref))
 }

@@ -29,6 +29,9 @@ struct ImportableKindleBook: Identifiable, Sendable {
     /// A book with the same title and author is already catalogued, whatever
     /// its edition.
     let alreadyInLibrary: Bool
+    /// The reader deleted this title's book from Shiori: still on offer, but
+    /// not ticked for them.
+    var removedByReader = false
 
     var authorLine: String {
         authors.isEmpty ? String(localized: "Auteur inconnu") : authors.joined(separator: ", ")

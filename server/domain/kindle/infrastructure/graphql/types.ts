@@ -98,6 +98,13 @@ export const ImportableKindleBookType = builder
           'them anyway.',
         resolve: (importable) => importable.alreadyInLibrary,
       }),
+      removedByReader: t.boolean({
+        description:
+          "True when the reader deleted this title's book from their library. Offer it, but leave " +
+          'it unticked: the nightly sync keeps it out until the title itself has news. ' +
+          'Importing it by hand takes the deletion back.',
+        resolve: (importable) => importable.removedByReader ?? false,
+      }),
     }),
   })
 

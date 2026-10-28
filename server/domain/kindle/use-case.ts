@@ -6,7 +6,6 @@ import { BookCommand } from '~/domain/book/command'
 import { BookQuery } from '~/domain/book/query'
 import type { Book, BookLanguage } from '~/domain/book/types'
 import {
-  acquiredSince,
   bookFrom,
   importableFrom,
   isCataloguable,
@@ -16,6 +15,7 @@ import {
   readingChangesFor,
   readTitleFrom,
   storeLanguageOf,
+  titlesToCatalogue,
   titlesWorthMatching,
 } from '~/domain/kindle/business-rules'
 import { KindleCommand } from '~/domain/kindle/command'
@@ -57,7 +57,13 @@ export namespace KindleUseCase {
     const library = await fetchLibrary(userId)
     if (library === 'not-connected') return library
     const { titles, store } = library
-    return toImportable(titles, await BookQuery.all(userId), await readingsOf(titles), store)
+    return toImportable(
+      titles,
+      await BookQuery.all(userId),
+      await readingsOf(titles),
+      store,
+      await removedAsinsOf(userId),
+    )
   }
 
   /** Catalogue the titles the reader ticked.
@@ -81,7 +87,7 @@ export namespace KindleUseCase {
     // one the reader ticked, not a second answer of the model.
     const owned = await BookQuery.all(userId)
     const reads = await readingsOf(titles, now)
-    const chosen = toImportable(titles, owned, reads, store).filter(
+    const chosen = toImportable(titles, owned, reads, store, await removedAsinsOf(userId)).filter(
       (importable) => wanted.has(importable.asin) && !importable.alreadyInLibrary,
     )
     // A title the reader already holds on paper was shown "already there": it
@@ -90,6 +96,12 @@ export namespace KindleUseCase {
     if (links.length > 0)
       await AnalyticsUseCase.whileStale(userId, () => linkAll(userId, links, now))
     const imported = await catalogue(userId, chosen, now)
+    // Ticked by hand: the reader takes their deletion back.
+    await BookCommand.forgetSyncRemovals(
+      userId,
+      'kindle',
+      chosen.filter((importable) => importable.removedByReader).map(({ asin }) => asin),
+    )
     // The read set is the nightly pass's to keep. An import before any pass
     // leaves it absent, so the first pass still reads every title Amazon reports
     // read as news for the books already on the shelf.
@@ -124,8 +136,20 @@ export namespace KindleUseCase {
     if (library === 'not-connected') return library
     const { titles, store } = library
 
-    const owned = await BookQuery.all(userId)
-    const fresh = acquiredSince(titles, account.lastImportedAt)
+    const [owned, removals] = await Promise.all([
+      BookQuery.all(userId),
+      BookQuery.syncRemovals(userId, 'kindle'),
+    ])
+    // A title whose book the reader deleted stays out, unless Amazon newly
+    // reports it read: then it comes back, and the deletion is forgotten.
+    const fresh = titlesToCatalogue(
+      titles,
+      account.lastImportedAt,
+      removals.map(({ asin }) => asin),
+      account.readAsins,
+    )
+    const removed = new Set<string>(removals.map(({ asin }) => asin))
+    const returning = fresh.filter((title) => removed.has(title.asin)).map(({ asin }) => asin)
     const { links, linked, reads } = await linksOf(
       owned,
       titles,
@@ -151,6 +175,7 @@ export namespace KindleUseCase {
     if (links.length + moves.length + acquired.length > 0) {
       await AnalyticsUseCase.whileStale(userId, write)
     }
+    await BookCommand.forgetSyncRemovals(userId, 'kindle', returning)
 
     await KindleCommand.recordPass(userId, readAsinsOf(titles), now)
     return { linked: links.length, moved: moves.length, imported: acquired.length }
@@ -331,10 +356,20 @@ const toImportable = (
   owned: readonly Book[],
   reads: ReadonlyMap<string, ReadKindleTitle>,
   store: BookLanguage,
+  removed: ReadonlySet<string> = new Set(),
 ): ImportableKindleBook[] => {
   const shelf = shelfOf(owned)
-  return titles.map((title) => importableFrom(title, shelf, reads, store)).filter(isPresent)
+  return titles
+    .map((title) => importableFrom(title, shelf, reads, store))
+    .filter(isPresent)
+    .map((importable) =>
+      removed.has(importable.asin) ? { ...importable, removedByReader: true } : importable,
+    )
 }
+
+/** The Kindle titles whose book the reader deleted from Shiori. */
+const removedAsinsOf = async (userId: UserId): Promise<Set<string>> =>
+  new Set((await BookQuery.syncRemovals(userId, 'kindle')).map(({ asin }) => asin))
 
 /** The model's reading of each title, by ASIN: from the shared store when a
  *  reader already paid for it, from the model otherwise, a batch of titles per

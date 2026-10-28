@@ -594,6 +594,28 @@ export const boughtSince = (
   })
 }
 
+/** The titles a pass catalogues: those bought since the last pass, less the
+ *  ones whose book the reader deleted from Shiori. A deleted title comes back
+ *  only when Audible has news of it from after the deletion — the player moved
+ *  on, or the book was finished — however long ago it was bought. */
+export const itemsToCatalogue = (
+  items: readonly AudibleItem[],
+  since: Date | undefined,
+  removals: readonly { asin: string; removedAt: Date }[],
+  positions: readonly LastPosition[] = [],
+): AudibleItem[] => {
+  const removedAt = new Map(removals.map((removal) => [removal.asin, removal.removedAt]))
+  const heard = heardByAsin(positions)
+  const bought = new Set(boughtSince(items, since).map((item) => item.asin))
+  return items.filter((item) => {
+    const removed = removedAt.get(item.asin)
+    if (!removed) return bought.has(item.asin)
+    return [item.listeningStatus?.finishedAt, heard.get(item.asin)?.lastUpdatedAt].some(
+      (at) => at !== undefined && at.getTime() > removed.getTime(),
+    )
+  })
+}
+
 /** The readers a nightly run should pass over, staleest first.
  *
  *  A half-finished sign-in is not an account and has nothing to sync. The order

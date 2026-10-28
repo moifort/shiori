@@ -13,6 +13,7 @@ import {
   statusAfterRating,
   statusStampAfterChange,
   storedRecommendation,
+  syncRemovalsOf,
   titleWithoutAuthor,
 } from '~/domain/book/business-rules'
 import * as repository from '~/domain/book/infrastructure/repository'
@@ -38,6 +39,7 @@ import type {
   SeriesMembership,
   SeriesPlacement,
   StarRating,
+  SyncSource,
   Synopsis,
   TaggedSubgenre,
 } from '~/domain/book/types'
@@ -583,14 +585,19 @@ export namespace BookCommand {
     return repository.save({ ...book, chosenCover, updatedAt: now }, batch)
   }
 
+  /** Delete a book the reader no longer wants. One a Kindle or Audible title
+   *  stands for leaves a removal behind, so the nightly pass does not bring it
+   *  back. */
   export const remove = async (
     userId: UserId,
     bookId: BookId,
     batch?: WriteBatch,
+    now = new Date(),
   ): Promise<'removed' | 'not-found'> => {
     const book = await repository.findById(userId, bookId)
     if (!book) return 'not-found'
     await repository.remove(userId, bookId, batch)
+    await repository.saveSyncRemovals(syncRemovalsOf(book, now), batch)
     return 'removed'
   }
 
@@ -603,10 +610,14 @@ export namespace BookCommand {
     saga: SagaKey,
     edition: BookLanguage | undefined,
     batch?: WriteBatch,
+    now = new Date(),
   ): Promise<{ removed: number; remaining: number }> => {
     const volumes = await repository.findBySaga(userId, saga)
     const going = edition ? volumes.filter((volume) => volume.language === edition) : volumes
-    for (const volume of going) await repository.remove(userId, volume.id, batch)
+    for (const volume of going) {
+      await repository.remove(userId, volume.id, batch)
+      await repository.saveSyncRemovals(syncRemovalsOf(volume, now), batch)
+    }
     return { removed: going.length, remaining: volumes.length - going.length }
   }
 
@@ -680,6 +691,16 @@ export namespace BookCommand {
   }
 
   /** Erase the reader's whole library — an account deletion wipes it outright. */
-  export const deleteAllForUser = async (userId: UserId): Promise<void> =>
-    repository.removeAllByUser(userId)
+  /** The removals a sync has to honour are forgotten once it brings the title
+   *  back, or once the reader imports it themselves. */
+  export const forgetSyncRemovals = async (
+    userId: UserId,
+    source: SyncSource,
+    asins: readonly string[],
+  ): Promise<void> => repository.forgetSyncRemovals(userId, source, asins)
+
+  export const deleteAllForUser = async (userId: UserId): Promise<void> => {
+    await repository.removeAllByUser(userId)
+    await repository.removeAllSyncRemovalsByUser(userId)
+  }
 }
