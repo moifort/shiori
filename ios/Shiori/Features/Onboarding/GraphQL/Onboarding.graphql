@@ -9,6 +9,7 @@ query Launch {
     onboardingCompleted
     isAdmin
     avatarHero
+    avatarColor
     avatarUrl
   }
   entitlement {
@@ -31,6 +32,7 @@ mutation ChangeAvatar($input: ChangeAvatarInput!) {
   changeAvatar(input: $input) {
     userId
     avatarHero
+    avatarColor
     avatarUrl
   }
 }

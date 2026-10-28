@@ -28,7 +28,11 @@ enum OnboardingAPI {
         )
         return LaunchState(
             firstName: data.me.firstName,
-            avatar: accountAvatar(hero: data.me.avatarHero?.rawValue, url: data.me.avatarUrl),
+            avatar: accountAvatar(
+                hero: data.me.avatarHero?.rawValue,
+                color: data.me.avatarColor?.rawValue,
+                url: data.me.avatarUrl
+            ),
             onboardingCompleted: data.me.onboardingCompleted,
             isAdmin: data.me.isAdmin,
             entitlement: data.entitlement.fragments.entitlementFields.asState,
@@ -55,6 +59,7 @@ enum OnboardingAPI {
         var input = ShioriGraphQL.ChangeAvatarInput()
         switch avatar {
         case .initials: break
+        case let .tinted(color): input.color = .some(GraphQLEnum(rawValue: color.graphQLName))
         case let .hero(hero): input.hero = .some(GraphQLEnum(rawValue: hero.graphQLName))
         case let .pickedPhoto(data): input.photoBase64 = .some(data.base64EncodedString())
         // Already the one the server keeps.
@@ -65,11 +70,16 @@ enum OnboardingAPI {
             mutation: ShioriGraphQL.ChangeAvatarMutation(input: input),
             changesLibrary: false
         )
-        return accountAvatar(hero: data.changeAvatar.avatarHero?.rawValue, url: data.changeAvatar.avatarUrl)
+        return accountAvatar(
+            hero: data.changeAvatar.avatarHero?.rawValue,
+            color: data.changeAvatar.avatarColor?.rawValue,
+            url: data.changeAvatar.avatarUrl
+        )
     }
 
-    private static func accountAvatar(hero: String?, url: String?) -> AccountAvatar {
+    private static func accountAvatar(hero: String?, color: String?, url: String?) -> AccountAvatar {
         if let hero, let avatarHero = AvatarHero(graphQLName: hero) { return .hero(avatarHero) }
+        if let color, let avatarColor = AvatarColor(rawValue: color.lowercased()) { return .tinted(avatarColor) }
         if let url, let photoURL = URL(string: url) { return .photo(photoURL) }
         return .initials
     }

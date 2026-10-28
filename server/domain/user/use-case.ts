@@ -22,7 +22,7 @@ import {
 } from '~/domain/user/business-rules'
 import { UserCommand } from '~/domain/user/command'
 import { UserQuery } from '~/domain/user/query'
-import type { Avatar, AvatarHero } from '~/domain/user/types'
+import type { Avatar, AvatarColor, AvatarHero } from '~/domain/user/types'
 import { objectStore } from '~/system/object-store'
 import { ContentType } from '~/system/object-store/primitives'
 import { atomically } from '~/utils/firestore'
@@ -45,16 +45,17 @@ export namespace UserUseCase {
     })
   }
 
-  // Change what stands for the reader: a hero, a photo of their own, or
-  // nothing, which draws their initials. A new photo lands in the bucket before
+  // Change what stands for the reader: a hero, a photo of their own, their
+  // initials on a colour, or nothing, which draws their initials on slate. A new photo lands in the bucket before
   // the profile points at it, and the one it replaces goes only once the
   // profile no longer does: a failure in between leaves an orphan file, never
   // a profile pointing at nothing.
   export const changeAvatar = async (
     userId: UserId,
-    choice: { hero?: AvatarHero; photo?: Buffer },
+    choice: { hero?: AvatarHero; color?: AvatarColor; photo?: Buffer },
   ) => {
-    if (choice.hero && choice.photo) return 'ambiguous' as const
+    if ([choice.hero, choice.color, choice.photo].filter(Boolean).length > 1)
+      return 'ambiguous' as const
     if (choice.photo && (choice.photo.length > MAX_AVATAR_BYTES || !isJpeg(choice.photo)))
       return 'invalid-photo' as const
     // Memoized per request: the command's own read of the profile is free.
@@ -63,6 +64,7 @@ export namespace UserUseCase {
     const before = me.avatar
     let avatar: Avatar | undefined
     if (choice.hero) avatar = { kind: 'hero', hero: choice.hero }
+    else if (choice.color) avatar = { kind: 'initials', color: choice.color }
     else if (choice.photo) {
       const path = avatarPathOf(userId, new Date())
       await objectStore().write(path, choice.photo, ContentType('image/jpeg'))

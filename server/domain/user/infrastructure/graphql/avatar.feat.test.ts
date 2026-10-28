@@ -94,6 +94,23 @@ describe('changing the avatar', () => {
     expect(removed).toEqual([written[0] as string])
   })
 
+  test('draws the initials on the colour chosen', async () => {
+    onboard()
+
+    const result = await graphql({
+      schema,
+      source:
+        'mutation Change($input: ChangeAvatarInput!) { changeAvatar(input: $input) { avatarHero avatarColor avatarUrl } }',
+      contextValue: { event: {}, userId: reader },
+      variableValues: { input: { color: 'PINK' } },
+    })
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data).toEqual({
+      changeAvatar: { avatarHero: null, avatarColor: 'PINK', avatarUrl: null },
+    } as never)
+  })
+
   test('falls back to the initials when given neither', async () => {
     onboard()
     await change({ hero: 'ALICE' })
@@ -107,9 +124,11 @@ describe('changing the avatar', () => {
     onboard()
 
     const both = await change({ hero: 'NEMO', photoBase64: jpeg })
+    const heroAndColor = await change({ hero: 'NEMO', color: 'GREEN' })
     const notJpeg = await change({ photoBase64: png })
 
     expect(both.errors?.[0]?.extensions?.code).toBe('BAD_USER_INPUT')
+    expect(heroAndColor.errors?.[0]?.extensions?.code).toBe('BAD_USER_INPUT')
     expect(notJpeg.errors?.[0]?.extensions?.code).toBe('BAD_USER_INPUT')
     expect(written).toEqual([])
   })

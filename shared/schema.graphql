@@ -523,6 +523,29 @@ type AuthorWork {
 }
 
 """
+A background the reader’s initials may be drawn on. The default slate is not one: it is no avatar at all. A build that does not know a colour draws slate.
+"""
+enum AvatarColor {
+  """Initials on blue."""
+  BLUE
+
+  """Initials on green."""
+  GREEN
+
+  """Initials on orange."""
+  ORANGE
+
+  """Initials on pink."""
+  PINK
+
+  """Initials on purple."""
+  PURPLE
+
+  """Initials on red."""
+  RED
+}
+
+"""
 A hero of a classic novel a reader may wear as an avatar.
 
 The portraits are drawn for the app and bundled in it; the server keeps only the name. Classics of the public domain sit beside characters of recent books. A build that does not know a newer hero draws the initials instead.
@@ -1159,9 +1182,12 @@ scalar BookTitle
 """
 What stands for the reader beside their name.
 
-A hero, or a photo — never both. Neither takes the avatar off, and the app draws the initials of the first name instead.
+A hero, a photo, or a colour for the initials — never two of them. None takes the avatar off, and the app draws the initials on slate.
 """
 input ChangeAvatarInput {
+  """The colour the initials of the first name are drawn on."""
+  color: AvatarColor
+
   """A hero of a classic novel, from the portraits the app bundles."""
   hero: AvatarHero
 
@@ -2696,6 +2722,11 @@ query {
 """
 type Me {
   """
+  The colour the reader’s initials are drawn on. Null with a hero or a photo, and with no avatar at all, which the app draws on slate.
+  """
+  avatarColor: AvatarColor
+
+  """
   The hero the reader wears as an avatar, drawn by the app from its own portraits. Null with a photo, and with no avatar at all, which the app draws as the initials of `firstName`.
   """
   avatarHero: AvatarHero
@@ -2846,9 +2877,9 @@ type Mutation {
   awaitScannedEdition(book: ScannedBookInput!, format: ReleaseFormat!): AwaitedEdition!
 
   """
-  Change the avatar: a hero, a photo of the reader, or neither for their initials.
+  Change the avatar: a hero, a photo of the reader, a colour for their initials, or none of them for their initials on slate.
   
-  Returns the updated `Me`. Needs a finished onboarding (`NOT_FOUND` before it); `BAD_USER_INPUT` when both a hero and a photo are given, or when the photo is not a JPEG under 2 MB. A replaced photo is deleted from storage.
+  Returns the updated `Me`. Needs a finished onboarding (`NOT_FOUND` before it); `BAD_USER_INPUT` when more than one of hero, photo and colour is given, or when the photo is not a JPEG under 2 MB. A replaced photo is deleted from storage.
   """
   changeAvatar(
     """The new avatar."""

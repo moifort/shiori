@@ -1,7 +1,7 @@
 import { builder } from '~/domain/shared/graphql/builder'
 import type { MeView } from '~/domain/user/types'
 import { objectStore } from '~/system/object-store'
-import { AvatarHeroEnum } from './enums'
+import { AvatarColorEnum, AvatarHeroEnum } from './enums'
 
 export const MeType = builder.objectRef<MeView>('Me').implement({
   description:
@@ -43,6 +43,14 @@ export const MeType = builder.objectRef<MeView>('Me').implement({
         'portraits. Null with a photo, and with no avatar at all, which the app ' +
         'draws as the initials of `firstName`.',
       resolve: (me) => (me.avatar?.kind === 'hero' ? me.avatar.hero : null),
+    }),
+    avatarColor: t.field({
+      type: AvatarColorEnum,
+      nullable: true,
+      description:
+        'The colour the reader’s initials are drawn on. Null with a hero or a photo, ' +
+        'and with no avatar at all, which the app draws on slate.',
+      resolve: (me) => (me.avatar?.kind === 'initials' ? me.avatar.color : null),
     }),
     avatarUrl: t.string({
       nullable: true,

@@ -33,10 +33,10 @@ builder.mutationField('changeAvatar', (t) =>
   t.field({
     type: MeType,
     description:
-      'Change the avatar: a hero, a photo of the reader, or neither for their ' +
-      'initials.\n\n' +
+      'Change the avatar: a hero, a photo of the reader, a colour for their ' +
+      'initials, or none of them for their initials on slate.\n\n' +
       'Returns the updated `Me`. Needs a finished onboarding (`NOT_FOUND` before ' +
-      'it); `BAD_USER_INPUT` when both a hero and a photo are given, or when the ' +
+      'it); `BAD_USER_INPUT` when more than one of hero, photo and colour is given, or when the ' +
       'photo is not a JPEG under 2 MB. A replaced photo is deleted from storage.',
     args: {
       input: t.arg({ type: ChangeAvatarInput, required: true, description: 'The new avatar.' }),
@@ -45,11 +45,12 @@ builder.mutationField('changeAvatar', (t) =>
       const photo = input.photoBase64 ? Buffer.from(input.photoBase64, 'base64') : undefined
       const outcome = await UserUseCase.changeAvatar(userId, {
         hero: input.hero ?? undefined,
+        color: input.color ?? undefined,
         photo,
       })
       return match(outcome)
         .with('no-profile', () => notFound('No profile: finish onboarding first'))
-        .with('ambiguous', () => badUserInput('Give a hero or a photo, not both'))
+        .with('ambiguous', () => badUserInput('Give a hero, a photo or a colour, only one'))
         .with('invalid-photo', () => badUserInput('The photo must be a JPEG under 2 MB'))
         .with(P.not(P.string), () => UserQuery.me(userId))
         .exhaustive()

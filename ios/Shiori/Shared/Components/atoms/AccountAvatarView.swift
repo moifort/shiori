@@ -1,8 +1,8 @@
 import SwiftUI
 
 /// The reader's face, in a circle: a hero's portrait, their photo, or their
-/// initials on a slate disc as the TV app draws an account with no picture —
-/// and while the photo loads, so the circle never flashes empty.
+/// initials on a coloured disc — slate, as the TV app draws an account with no
+/// picture, and while the photo loads, so the circle never flashes empty.
 struct AccountAvatarView: View {
     let avatar: AccountAvatar
     let firstName: String?
@@ -13,6 +13,8 @@ struct AccountAvatarView: View {
             switch avatar {
             case .initials:
                 monogram
+            case let .tinted(color):
+                monogram(on: color.gradient)
             case let .hero(hero):
                 Image(hero.imageName).resizable().scaledToFill()
             case let .photo(url):
@@ -31,12 +33,12 @@ struct AccountAvatarView: View {
     }
 
     private var monogram: some View {
+        monogram(on: [Color(red: 0.62, green: 0.65, blue: 0.7), Color(red: 0.4, green: 0.43, blue: 0.48)])
+    }
+
+    private func monogram(on gradient: [Color]) -> some View {
         ZStack {
-            LinearGradient(
-                colors: [Color(red: 0.62, green: 0.65, blue: 0.7), Color(red: 0.4, green: 0.43, blue: 0.48)],
-                startPoint: .top,
-                endPoint: .bottom
-            )
+            LinearGradient(colors: gradient, startPoint: .top, endPoint: .bottom)
             let letters = initials(of: firstName)
             if letters.isEmpty {
                 Image(systemName: "person.fill")
@@ -56,6 +58,7 @@ struct AccountAvatarView: View {
     HStack(spacing: 16) {
         AccountAvatarView(avatar: .initials, firstName: "Thibaut")
         AccountAvatarView(avatar: .initials, firstName: nil)
+        AccountAvatarView(avatar: .tinted(.pink), firstName: "Thibaut")
         AccountAvatarView(avatar: .hero(.holmes), firstName: "Thibaut", size: 84)
         AccountAvatarView(avatar: .hero(.alice), firstName: "Thibaut", size: 120)
     }

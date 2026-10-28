@@ -2,7 +2,8 @@ import PhotosUI
 import SwiftUI
 
 /// Who the reader wants to be beside their name, chosen as Netflix has its
-/// profiles chosen: a row of their own — a photo, or their initials — then a
+/// profiles chosen: a block of their own — a photo, or their initials on slate
+/// or on a colour — then a
 /// block of heroes per shelf, four abreast. Picking closes the sheet.
 ///
 /// The photo comes through the system picker, which runs outside the app and
@@ -47,6 +48,15 @@ struct AvatarPickerSheet: View {
                         }
                         .buttonStyle(.plain)
                         .accessibilityIdentifier("avatar-initials")
+                        ForEach(AvatarColor.allCases) { color in
+                            Button { pick(.tinted(color)) } label: {
+                                choice(label: color.name, isSelected: current == .tinted(color)) {
+                                    AccountAvatarView(avatar: .tinted(color), firstName: firstName, size: 72)
+                                }
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityIdentifier("avatar-\(color.rawValue)")
+                        }
                     }
                     ForEach(AvatarHero.Shelf.allCases) { row in
                         shelf(row.title) {
@@ -82,7 +92,7 @@ struct AvatarPickerSheet: View {
     private var isPhoto: Bool {
         switch current {
         case .photo, .pickedPhoto: true
-        case .initials, .hero: false
+        case .initials, .tinted, .hero: false
         }
     }
 

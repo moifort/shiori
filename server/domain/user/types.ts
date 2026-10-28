@@ -58,9 +58,18 @@ export const AVATAR_HEROES = [
 ] as const
 export type AvatarHero = (typeof AVATAR_HEROES)[number]
 
-// What stands for the reader beside their name: a hero, or a photo of their
-// own kept in the private bucket. No avatar at all draws their initials.
-export type Avatar = { kind: 'hero'; hero: AvatarHero } | { kind: 'photo'; path: ObjectPath }
+// The backgrounds the reader's initials may be drawn on. The slate the app
+// draws by default is not among them: it is no avatar at all.
+export const AVATAR_COLORS = ['pink', 'green', 'blue', 'orange', 'purple', 'red'] as const
+export type AvatarColor = (typeof AVATAR_COLORS)[number]
+
+// What stands for the reader beside their name: a hero, a photo of their own
+// kept in the private bucket, or their initials on a colour. No avatar at all
+// draws their initials on slate.
+export type Avatar =
+  | { kind: 'hero'; hero: AvatarHero }
+  | { kind: 'photo'; path: ObjectPath }
+  | { kind: 'initials'; color: AvatarColor }
 
 // A user's profile, written once the onboarding wizard completes. The doc id IS
 // the userId, so a user has at most one profile. `admin` opens the in-app admin

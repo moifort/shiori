@@ -129,10 +129,45 @@ enum AvatarHero: String, CaseIterable, Identifiable, Sendable {
     }
 }
 
-/// What stands for the reader beside their name: their initials, a hero, or a
-/// photo of their own — kept on the server, or just picked and not sent yet.
+/// A colour the reader's initials may be drawn on, beside the default slate.
+enum AvatarColor: String, CaseIterable, Identifiable, Sendable {
+    case pink, green, blue, orange, purple, red
+
+    var id: String { rawValue }
+
+    /// The server's enum case.
+    var graphQLName: String { rawValue.uppercased() }
+
+    var name: LocalizedStringResource {
+        switch self {
+        case .pink: "Rose"
+        case .green: "Vert"
+        case .blue: "Bleu"
+        case .orange: "Orange"
+        case .purple: "Lilas"
+        case .red: "Rouge"
+        }
+    }
+
+    /// Top and bottom of the disc's gradient, bright as the heroes' backgrounds.
+    var gradient: [Color] {
+        switch self {
+        case .pink: [Color(red: 0.98, green: 0.45, blue: 0.68), Color(red: 0.85, green: 0.24, blue: 0.5)]
+        case .green: [Color(red: 0.36, green: 0.8, blue: 0.48), Color(red: 0.18, green: 0.6, blue: 0.33)]
+        case .blue: [Color(red: 0.36, green: 0.62, blue: 0.98), Color(red: 0.18, green: 0.4, blue: 0.85)]
+        case .orange: [Color(red: 1, green: 0.66, blue: 0.3), Color(red: 0.93, green: 0.45, blue: 0.13)]
+        case .purple: [Color(red: 0.7, green: 0.5, blue: 0.98), Color(red: 0.49, green: 0.3, blue: 0.85)]
+        case .red: [Color(red: 0.98, green: 0.4, blue: 0.38), Color(red: 0.8, green: 0.2, blue: 0.2)]
+        }
+    }
+}
+
+/// What stands for the reader beside their name: their initials on slate or
+/// on a colour, a hero, or a photo of their own — kept on the server, or just
+/// picked and not sent yet.
 enum AccountAvatar: Equatable, Sendable {
     case initials
+    case tinted(AvatarColor)
     case hero(AvatarHero)
     case photo(URL)
     /// A 512-pixel square JPEG, chosen in the onboarding before the account
