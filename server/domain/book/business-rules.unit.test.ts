@@ -746,17 +746,22 @@ describe('the stars a book shows', () => {
   const seriesRatings = new Map([[kingkiller, StarRating(4)]])
 
   test('are its own when the reader rated it', () => {
-    expect(shownRatingOf({ rating: StarRating(2), series: inSaga }, seriesRatings)).toBe(
-      StarRating(2),
-    )
+    expect(
+      shownRatingOf({ rating: StarRating(2), series: inSaga, status: 'read' }, seriesRatings),
+    ).toBe(StarRating(2))
   })
 
-  test("are the saga's when the reader rated the saga and not the book", () => {
-    expect(shownRatingOf({ series: inSaga }, seriesRatings)).toBe(StarRating(4))
+  test("are the saga's when the reader read the book and rated the saga, not the book", () => {
+    expect(shownRatingOf({ series: inSaga, status: 'read' }, seriesRatings)).toBe(StarRating(4))
+  })
+
+  test('are none for a volume not read yet, whatever its saga', () => {
+    expect(shownRatingOf({ series: inSaga, status: 'to-read' }, seriesRatings)).toBeUndefined()
+    expect(shownRatingOf({ series: inSaga, status: 'reading' }, seriesRatings)).toBeUndefined()
   })
 
   test('are none for an unrated standalone book', () => {
-    expect(shownRatingOf({}, seriesRatings)).toBeUndefined()
+    expect(shownRatingOf({ status: 'read' }, seriesRatings)).toBeUndefined()
   })
 })
 

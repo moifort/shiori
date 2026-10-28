@@ -22,9 +22,9 @@ const execute = (source: string) => graphql({ schema, source, contextValue: { ev
 const DUNE = 'dune--frank-herbert'
 
 describe('what a reader makes of a saga, through the API', () => {
-  // The stars drawn on a volume: its own, else the saga's, and the app knows
-  // which is which, so the edit screen still sees an unrated book.
-  test('lends the saga rating to a volume the reader left unrated', async () => {
+  // The stars drawn on a volume: its own, else — once read — the saga's, and
+  // the app knows which is which, so the edit screen still sees an unrated book.
+  test('lends the saga rating to a volume the reader read and left unrated', async () => {
     const added = await execute(
       `mutation { addBook(input: {
         title: "Dune"
@@ -35,6 +35,10 @@ describe('what a reader makes of a saga, through the API', () => {
     const { id } = (added.data as { addBook: { id: string } }).addBook
     await execute(`mutation { rateSeries(seriesId: "${DUNE}", rating: 4) { rating } }`)
 
+    const notRead = await execute(`{ book(id: "${id}") { seriesRating } }`)
+    expect(notRead.data?.book).toEqual({ seriesRating: null })
+
+    await execute(`mutation { setReadingStatus(id: "${id}", status: READ) { id } }`)
     const unrated = await execute(`{ book(id: "${id}") { rating seriesRating } }`)
     expect(unrated.errors).toBeUndefined()
     expect(unrated.data?.book).toEqual({ rating: null, seriesRating: 4 })

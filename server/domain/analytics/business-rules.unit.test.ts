@@ -835,7 +835,7 @@ describe('building the view', () => {
     expect(view.series).toEqual([])
   })
 
-  test('draws the saga rating on an unrated volume in progress', () => {
+  test('draws no saga rating on an unrated volume in progress, not judged yet', () => {
     const view = analyticsViewOf({
       userId: reader,
       timeZone: paris,
@@ -857,7 +857,7 @@ describe('building the view', () => {
       ],
     })
 
-    expect(view.reading[0]?.rating).toBe(StarRating(5))
+    expect(view.reading[0]?.rating).toBeUndefined()
   })
 
   test('tells a recording from a book on every card, so its cover carries the headphones', () => {

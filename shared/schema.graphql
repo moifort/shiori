@@ -840,7 +840,7 @@ type Book {
   series: SeriesMembership
 
   """
-  The rating the reader gave the book's saga, lent to every volume they left unrated: the stars a row draws are `rating`, else this. Kept apart from `rating` so a screen still knows whether the book itself was rated. Null for a standalone book, and for a saga the reader has not rated.
+  The rating the reader gave the book's saga, lent to every volume they read and left unrated: the stars a row draws are `rating`, else this. Kept apart from `rating` so a screen still knows whether the book itself was rated. Null for a standalone book, for a saga the reader has not rated, and for a volume not read yet: nobody has judged it.
   
   Read off the reader's saga opinions, scanned once per request whatever the number of rows.
   """

@@ -216,14 +216,21 @@ const isbn10Of = (isbn13: string): string | undefined => {
 }
 
 /** The stars a book shows: its own, else the rating of its saga. A saga rated
- *  as a whole rates each volume the reader left unrated, and a rating given to
- *  the book itself always wins. `seriesRatings` is the reader's saga ratings,
- *  keyed by saga. */
+ *  as a whole rates each volume the reader read and left unrated — never one
+ *  not read yet, which nobody has judged — and a rating given to the book
+ *  itself always wins. `seriesRatings` is the reader's saga ratings, keyed by
+ *  saga. */
 export const shownRatingOf = (
-  book: Pick<Book, 'rating' | 'series'>,
+  book: Pick<Book, 'rating' | 'series' | 'status'>,
+  seriesRatings: ReadonlyMap<SagaKey, StarRating>,
+): StarRating | undefined => book.rating ?? lentRatingOf(book, seriesRatings)
+
+/** The rating of its saga a book borrows: only once read. */
+export const lentRatingOf = (
+  book: Pick<Book, 'series' | 'status'>,
   seriesRatings: ReadonlyMap<SagaKey, StarRating>,
 ): StarRating | undefined =>
-  book.rating ?? (book.series ? seriesRatings.get(book.series.saga) : undefined)
+  book.status === 'read' && book.series ? seriesRatings.get(book.series.saga) : undefined
 
 /** Where a book sits in the favourites view: its own heart or stars, else
  *  those of its saga — lent only once the book is read, as a row draws them,
@@ -235,8 +242,7 @@ export const lovedRankOfBook = (
   lovedRankOf({
     favorite: book.favorite,
     rating: book.rating,
-    lentRating:
-      book.status === 'read' && book.series ? seriesRatings.get(book.series.saga) : undefined,
+    lentRating: lentRatingOf(book, seriesRatings),
   })
 
 /** The reader's saga ratings, keyed by saga, from their opinions. */

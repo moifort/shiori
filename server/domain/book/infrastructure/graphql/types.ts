@@ -272,13 +272,14 @@ export const BookType = builder.objectRef<BookView>('Book').implement({
       nullable: true,
       description:
         "The rating the reader gave the book's saga, lent to every volume they " +
-        'left unrated: the stars a row draws are `rating`, else this. Kept apart ' +
-        'from `rating` so a screen still knows whether the book itself was rated. ' +
-        'Null for a standalone book, and for a saga the reader has not rated.\n\n' +
+        'read and left unrated: the stars a row draws are `rating`, else this. Kept ' +
+        'apart from `rating` so a screen still knows whether the book itself was ' +
+        'rated. Null for a standalone book, for a saga the reader has not rated, and ' +
+        'for a volume not read yet: nobody has judged it.\n\n' +
         "Read off the reader's saga opinions, scanned once per request whatever " +
         'the number of rows.',
       resolve: async (book, _args, context) =>
-        book.series
+        book.series && book.status === 'read'
           ? ((await SeriesOpinionQuery.of(context.userId, book.series.saga))?.rating ?? null)
           : null,
     }),
