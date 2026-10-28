@@ -13,7 +13,7 @@ struct AccountAvatarButton: View {
         Button(action: action) {
             AccountAvatarView(avatar: avatar, firstName: firstName, size: 38)
                 .padding(3)
-                .glassEffect(.regular.tint(avatar.aura?.opacity(0.45)).interactive(), in: .circle)
+                .glassEffect(.regular.tint(avatar.aura?.opacity(0.2)).interactive(), in: .circle)
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Réglages")
