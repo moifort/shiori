@@ -54,6 +54,11 @@ Runtime: always `bun` / `bunx`, never `npm` / `npx`.
    `CHANGELOG.fr.md` in a feature or fix commit: they are written when an App Store release is
    cut, and only then.
 4. **Never push until the user explicitly says "push".**
+5. **Design canvas comments are resolved once handled.** On a comment thread of the Shiori
+   design canvas, make the change, then resolve the thread yourself in the same turn, without
+   replying in it, so it leaves the canvas. This standing rule is the user's
+   request to resolve; it overrides the default of leaving threads for people to close. Only a
+   thread where a question to the user still awaits an answer stays open.
 
 ## Paid API calls
 
