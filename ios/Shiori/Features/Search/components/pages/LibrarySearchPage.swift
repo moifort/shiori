@@ -238,7 +238,7 @@ struct LibrarySearchPage: View {
                             language: book.language,
                             isFavorite: book.favorite,
                             isHidden: book.hidden,
-                            listeningProgress: book.status == .reading ? book.listeningProgressLabel : nil
+                            listeningProgress: book.unfinishedListeningProgress.map { "\($0)%" }
                         )
                     }
                     .tint(.primary)

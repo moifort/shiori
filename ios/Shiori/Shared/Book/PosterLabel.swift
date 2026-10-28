@@ -61,6 +61,7 @@ struct PosterLabel: Hashable, Sendable {
             let date = book.statusChangedAt ?? book.shelvedAt
             return PosterLabel(
                 caption: date.map { waited($0, now: now, calendar: calendar) } ?? "",
+                progress: book.listeningProgress,
                 dimming: setAsideDimming,
                 isGreyed: true
             )
@@ -87,7 +88,12 @@ struct PosterLabel: Hashable, Sendable {
         case .read:
             return readLabel(book, now: now, calendar: calendar)
         case .dropped:
-            return PosterLabel(caption: String(localized: "Abandonné"), dimming: setAsideDimming, isGreyed: true)
+            return PosterLabel(
+                caption: String(localized: "Abandonné"),
+                progress: book.listeningProgress,
+                dimming: setAsideDimming,
+                isGreyed: true
+            )
         }
     }
 

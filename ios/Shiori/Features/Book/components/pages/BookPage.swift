@@ -510,6 +510,17 @@ extension Book {
 }
 
 extension Book {
+    /// A recording given up on two thirds in: it keeps where the player stopped.
+    static var previewDropped: Book {
+        var book = Book.preview
+        book.durationMinutes = 1662
+        book.listeningProgress = 64
+        book.status = .dropped
+        return book
+    }
+}
+
+extension Book {
     /// A manga volume just added from a shelf photo: what its spine printed,
     /// a cover found by title, nothing described yet.
     static let previewFromShelf = Book(
@@ -546,6 +557,12 @@ private extension BookPage {
 #Preview("Reading") {
     NavigationStack {
         BookPage(previewing: .preview)
+    }
+}
+
+#Preview("Given up") {
+    NavigationStack {
+        BookPage(previewing: .previewDropped)
     }
 }
 

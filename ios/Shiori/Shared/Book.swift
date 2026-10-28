@@ -394,6 +394,13 @@ struct Book: Identifiable, Hashable, Codable, Sendable {
         listeningProgress.map { "\($0)%" }
     }
 
+    /// How far the player got, where the book still has a way to go: one under
+    /// way, or one given up on, which keeps where the reader stopped. Nil on a
+    /// book read, which has nothing left, and on one never opened.
+    var unfinishedListeningProgress: Int? {
+        status == .reading || status == .dropped ? listeningProgress : nil
+    }
+
     /// Authors as one line. Falls back to a placeholder rather than an empty
     /// string so a row never collapses to a bare title with a gap under it.
     var authorLine: String {

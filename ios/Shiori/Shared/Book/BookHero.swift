@@ -253,8 +253,9 @@ struct BookHero<Actions: View>: View {
                         .accessibilityIdentifier("book-countdown")
                 }
             }
-            // Only while the book is under way: a finished one has nothing left.
-            if book.status == .reading, let progress = book.listeningProgress {
+            // Only while the book is under way, or where it was given up: a
+            // finished one has nothing left.
+            if let progress = book.unfinishedListeningProgress {
                 ListeningProgressLine(progress: progress, durationMinutes: book.durationMinutes)
             }
         }

@@ -219,8 +219,8 @@ struct BookHeaderSection<Extra: View>: View {
                 LanguageTag(language: language)
             }
             // How far the Audible player got, while the recording is under way
-            // only, in the colour of "En cours", which it measures.
-            if book.status == .reading, let progress = book.listeningProgressLabel {
+            // or where it was given up, in the colour of "En cours", which it measures.
+            if let progress = book.unfinishedListeningProgress.map({ "\($0)%" }) {
                 Pill(text: progress, tint: ReadingStatus.reading.tint)
                     .accessibilityLabel(Text("Écouté à \(progress)"))
                     .accessibilityIdentifier("book-listening-progress")
