@@ -24,11 +24,9 @@ struct FollowedNarrator: Identifiable, Codable, Sendable, ShelvedPerson {
     }
 }
 
-#if DEBUG
 extension FollowedNarrator {
     static let previews: [FollowedNarrator] = [
         FollowedNarrator(key: "bernard-gabay", name: "Bernard Gabay", shelvedAt: .now, books: [.preview]),
         FollowedNarrator(key: "frederic-kneip", name: "Frédéric Kneip", shelvedAt: .now, books: [.preview]),
     ]
 }
-#endif
