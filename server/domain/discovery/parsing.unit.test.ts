@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { amazonDateOf, amazonEditionFrom, worksFrom } from './parsing'
+import { amazonDateOf, amazonEditionFrom, volumesFrom, worksFrom } from './parsing'
 
 /** The book details carousel as an Amazon product page draws it. */
 const page = (date: string, language: string) =>
@@ -54,5 +54,16 @@ describe('an author’s works as the model lists them', () => {
       { title: 'Kaiju', date: '2026-11-03' },
       { title: 'Tower 1', seriesName: 'Tower', volume: 1 },
     ] as never)
+  })
+})
+
+describe('a saga’s volumes as the model lists them', () => {
+  test('are kept once per title and ISBN, the first number listed winning', () => {
+    expect(
+      volumesFrom([
+        { number: 12, title: 'La Pleureuse', date: '2026-10-07', isbn13: '9782330226251' },
+        { number: 13, title: 'La Pleureuse', date: '2026-10-07', isbn13: '9782330226251' },
+      ]).map(({ number }) => number),
+    ).toEqual([12] as never)
   })
 })

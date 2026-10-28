@@ -370,7 +370,29 @@ const candidatesOf = (
     if (candidates.has(Number(volume.number))) continue
     candidates.set(Number(volume.number), { volume, upcoming: isUpcoming(volume.date, today) })
   }
-  return [...candidates.values()]
+  const kept = withoutRepeatedEditions([...candidates.values()].map(({ volume }) => volume))
+  return [...candidates.values()].filter(({ volume }) => kept.includes(volume))
+}
+
+/** The volumes, each edition once: the web sometimes lists one book under two
+ *  numbers — the same title and ISBN as volumes 12 and 13 — and the lowest
+ *  number is the one kept. A volume with no ISBN repeats nothing, nor does one
+ *  sharing only its ISBN, which a hallucinated ISBN would. */
+export const withoutRepeatedEditions = <
+  Volume extends Pick<FoundVolume, 'number' | 'title' | 'isbn13'>,
+>(
+  volumes: readonly Volume[],
+): Volume[] => {
+  const seen = new Set<string>()
+  return [...volumes]
+    .sort((left, right) => left.number - right.number)
+    .filter((volume) => {
+      if (volume.isbn13 === undefined) return true
+      const edition = `${volume.isbn13}~${slugify(volume.title)}`
+      if (seen.has(edition)) return false
+      seen.add(edition)
+      return true
+    })
 }
 
 /** What a saga has for the reader: the soonest volume announced that they do
@@ -506,23 +528,24 @@ export const AUTHOR_RECENT_DAYS = 90
  *  announced, to the day, the month or the year, and the works out in the
  *  last three months, the newest first — dated to the day or to a month over,
  *  and a recording Audible never confirmed too, offered without its link. Left
- *  out, a work the reader holds in that format or awaits in it — matched
- *  on the folded title — and a volume of a saga they hold anything of, which
- *  the Séries shelf already watches or which they set aside. A new saga's
- *  first volume is the author's news. */
+ *  out, a work the reader holds in that format or that is drawn elsewhere —
+ *  an edition they await, a volume of a saga they hold, which the web may file
+ *  under another saga name — matched on the folded title, and a volume of a
+ *  saga they hold anything of, which the Séries shelf already watches or which
+ *  they set aside. A new saga's first volume is the author's news. */
 export const authorReleasesOf = (
   held: readonly Pick<Book, 'title' | 'format'>[],
   sagaNames: ReadonlySet<string>,
   watch: AuthorWatch | undefined,
   today: string,
-  awaitedTitles: ReadonlySet<string> = new Set(),
+  shownTitles: ReadonlySet<string> = new Set(),
 ): { next?: FoundWork; recent: FoundWork[] } => {
   if (!watch) return { recent: [] }
   const titles = new Set([
     ...held
       .filter((book) => releaseFormatOf(book.format) === watch.format)
       .map((book) => slugify(book.title)),
-    ...awaitedTitles,
+    ...shownTitles,
   ])
   const since = dayMinus(today, AUTHOR_RECENT_DAYS)
   const news = watch.works.filter(
@@ -706,7 +729,8 @@ export const digestOf = (
 /** What a fresh search found, laid over the last one: a volume found again
  *  takes what was found of it now, keeping the cover and the confirmed ASIN
  *  the new answer lacks; a volume missed this time stays — a search that misses
- *  a volume does not unmake it. */
+ *  a volume does not unmake it — and one edition listed under two numbers is
+ *  kept under the first. */
 export const mergedVolumes = (
   previous: readonly FoundVolume[],
   found: readonly FoundVolume[],
@@ -720,7 +744,7 @@ export const mergedVolumes = (
       ...(volume.asin || !known?.asin ? {} : { asin: known.asin }),
     })
   }
-  return [...merged.values()].sort((left, right) => left.number - right.number)
+  return withoutRepeatedEditions([...merged.values()])
 }
 
 /** How long a work out stays on an author's watch: past a year it is no

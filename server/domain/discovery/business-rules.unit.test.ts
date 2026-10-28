@@ -14,6 +14,7 @@ import { seriesIdOf, seriesKeyOf } from '~/domain/series/primitives'
 import type { ReleaseDate, SagaKey, Series, SeriesName, VolumeNumber } from '~/domain/series/types'
 import type { FollowedSeries } from '~/domain/series/use-case'
 import type { AuthorName, BookTitle, StarRating, UserId } from '~/domain/shared/types'
+import { slugify } from '~/utils/slug'
 import {
   alertOf,
   announcedPreviewOf,
@@ -401,6 +402,16 @@ describe('the volumes a saga has just brought out', () => {
   test('are none before the saga was ever looked up', () => {
     expect(recentReleasesOf([], undefined, undefined, today)).toEqual([])
   })
+
+  test('count once a volume the web listed under a second number', () => {
+    const watch = watchOf(carl, [
+      volume(5, '2026-09-24', { isbn13, title: 'Carl 5' as BookTitle }),
+      volume(6, '2026-09-24', { isbn13, title: 'Carl 5' as BookTitle }),
+    ])
+    expect(recentReleasesOf(held(), watch, undefined, today).map(({ number }) => number)).toEqual([
+      5,
+    ] as VolumeNumber[])
+  })
 })
 
 describe('a saga heard', () => {
@@ -466,6 +477,15 @@ describe('a fresh look', () => {
       volume(2, '2025-01-01'),
       volume(3, '2027'),
     ])
+  })
+
+  test('drops a volume repeating the title and ISBN of an earlier one', () => {
+    const edition = { isbn13: '9782330226251' as never, title: 'La Pleureuse' as BookTitle }
+    const merged = mergedVolumes(
+      [volume(12, '2026-10-07', edition), volume(13, '2026-10-07', edition)],
+      [volume(12, '2026-10-07', edition)],
+    )
+    expect(merged).toEqual([volume(12, '2026-10-07', edition)])
   })
 })
 
@@ -841,6 +861,16 @@ describe('what an author has for the reader', () => {
     ])
 
     expect(authorReleasesOf(heldBooks, sagas, watch, today)).toEqual({ recent: [] })
+  })
+
+  test('leaves out a volume of a saga the reader holds, listed under another name', () => {
+    const watch = authorWatch([
+      work('La Pleureuse', '2026-09-24', { seriesName: 'Fjällbacka' as SeriesName }),
+    ])
+
+    expect(
+      authorReleasesOf(heldBooks, sagas, watch, today, new Set([slugify('La Pleureuse')])),
+    ).toEqual({ recent: [] })
   })
 
   test('offers the first volume of a saga the reader holds nothing of', () => {

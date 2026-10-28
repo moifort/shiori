@@ -9,21 +9,26 @@ import { slugify } from '~/utils/slug'
 import type { VolumeOutput, WorkOutput } from './schemas'
 import type { FoundVolume, FoundWork } from './types'
 
-/** Every volume of the model's answer, one per number — the first listed wins —
- *  or nothing without a title or a number. Every other field is dropped on its
+/** Every volume of the model's answer, one per number and one per title and
+ *  ISBN — the first listed wins — or nothing without a title or a number. Every other field is dropped on its
  *  own when it does not validate: a hallucinated ISBN must not cost the reader
  *  a real volume. */
 export const volumesFrom = (raw: readonly VolumeOutput[]): FoundVolume[] => {
   const volumes = new Map<number, FoundVolume>()
+  const editions = new Set<string>()
   for (const entry of raw) {
     const number = optionally(entry.number, VolumeNumber)
     const title = optionally(entry.title, BookTitle)
+    const isbn13 = optionally(entry.isbn13, Isbn13)
     if (number === undefined || !title || volumes.has(number)) continue
+    const edition = isbn13 && `${isbn13}~${slugify(title)}`
+    if (edition && editions.has(edition)) continue
+    if (edition) editions.add(edition)
     volumes.set(number, {
       number,
       title,
       date: optionally(entry.date, ReleaseDate),
-      isbn13: optionally(entry.isbn13, Isbn13),
+      isbn13,
       asin: optionally(entry.asin, AudibleAsin),
     })
   }

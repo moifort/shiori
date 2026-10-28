@@ -647,7 +647,20 @@ const discoveryOf = async (
     return [{ ...releases, series, missing, recent }]
   })
   const sagas = inDiscoveryOrder(rows)
-  const authors = await authorRowsOf(library, authorWatches, awaited, sagas, format, today)
+  const sagaTitles = new Set(
+    [...watches.values()]
+      .filter((watch) => formatOf(watch.seriesId) === format)
+      .flatMap((watch) => watch.volumes.map((volume) => slugify(volume.title))),
+  )
+  const authors = await authorRowsOf(
+    library,
+    authorWatches,
+    awaited,
+    sagas,
+    sagaTitles,
+    format,
+    today,
+  )
   return {
     sagas,
     authors: authors.rows,
@@ -665,6 +678,7 @@ const authorRowsOf = async (
   watches: ReadonlyMap<string, AuthorWatch>,
   awaitedViews: readonly AwaitedEditionView[],
   sagaRows: readonly SagaDiscovery[],
+  sagaTitles: ReadonlySet<string>,
   format: ReleaseFormat,
   today: string,
 ): Promise<{ rows: AuthorDiscovery[]; unwatched: number; followed: number }> => {
@@ -690,7 +704,13 @@ const authorRowsOf = async (
     const sagas = sagasBy.get(watchedAuthor.authorKey) ?? []
     if (!watch) unwatched += 1
     if (!author) return []
-    const releases = authorReleasesOf(author.books, sagaNames, watch, today, titlesOf(awaited))
+    const releases = authorReleasesOf(
+      author.books,
+      sagaNames,
+      watch,
+      today,
+      new Set([...titlesOf(awaited), ...sagaTitles]),
+    )
     const quiet = !releases.next && releases.recent.length === 0
     if (quiet && awaited.length === 0 && sagas.length === 0) return []
     return [{ ...releases, awaited, sagas, author }]
