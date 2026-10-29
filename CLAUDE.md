@@ -65,7 +65,13 @@ Runtime: always `bun` / `bunx`, never `npm` / `npx`.
    brief carries the board URL, the thread id, the anchored artboard and the comment's words;
    the child makes the change (board, then iOS when the artboard is outside the prototyping
    zone), resolves the thread, and commits. This standing rule is the user's request to start
-   those sessions.
+   those sessions: never ask first. A comment sent from the board arrives as an automated
+   turn, where the app refuses `user_asked`; propose the session then (`own_initiative`) and
+   start it with its `proposal_id` at the user's next message.
+7. **Every child session ends with the user's validation.** When a child session finishes,
+   check what it left (commit, captures) and ask the user to validate it. On their yes, archive
+   that session; if they ask for changes, send them to that session and ask again once it is
+   done.
 
 ## Paid API calls
 
