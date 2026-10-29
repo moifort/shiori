@@ -260,6 +260,12 @@ struct BookScreen: View {
         .onReceive(NotificationCenter.default.publisher(for: .shioriAwaitedEditionsDidChange)) { _ in
             Task { await viewModel.loadOffer() }
         }
+        // A notice with no object may have moved anything, this book's
+        // progress included: the return to the front posts one.
+        .onReceive(NotificationCenter.default.publisher(for: .shioriDataDidChange)) { notice in
+            guard notice.object == nil else { return }
+            Task { await viewModel.refresh() }
+        }
     }
 
     // MARK: - Vocabulary

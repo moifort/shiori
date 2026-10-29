@@ -153,6 +153,7 @@ struct HomeHeroCarousel: View {
     var pull: CGFloat = 0
 
     @State private var current: HomeHeroItem.ID?
+    @Environment(\.scenePhase) private var scenePhase
     /// The discoveries just added or awaited from their "+", which turns into
     /// a check to say so before the line moves on.
     @State private var taken: Set<Suggestion.ID> = []
@@ -236,6 +237,24 @@ struct HomeHeroCarousel: View {
             }
         }
         .accessibilityIdentifier("home-discovery")
+        // Back on the dashboard, the line starts over from its first page: a
+        // release that came out meanwhile leads it, and a position kept from
+        // the last visit would leave it hidden to the left.
+        .onAppear { returnToFirst() }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { returnToFirst() }
+        }
+        // The reload that follows a return may put a new release in front of
+        // the page the position names.
+        .onChange(of: items.map(\.id)) { previous, ids in
+            guard let first = ids.first, !previous.contains(first) else { return }
+            returnToFirst()
+        }
+    }
+
+    private func returnToFirst() {
+        guard let first = items.first?.id, current != nil, current != first else { return }
+        withAnimation(.smooth) { current = first }
     }
 
     /// Turns the "+" into a check once the menu has closed: drawn while the

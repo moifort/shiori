@@ -189,15 +189,16 @@ struct ContentView: View {
             }
     }
 
-    /// A return to the front after a while: iOS kept the app alive, so no
-    /// screen loads again by itself, yet the release watch, a Kindle or
-    /// Audible sync or a friend may have written in the meantime. The change
-    /// notice with no object says anything may have moved, and every list
-    /// reloads where the reader left it. A quick trip to another app does
-    /// not count: what it would ask again has hardly had time to change.
+    /// A return to the front: iOS kept the app alive, so no screen loads
+    /// again by itself, yet the release watch, a Kindle or Audible sync or a
+    /// friend may have written in the meantime — a few minutes reading on the
+    /// Kindle are enough to move a progress. The change notice with no object
+    /// says anything may have moved, and every screen open reloads where the
+    /// reader left it. A glance at the notification centre never sends the
+    /// app to the background, so it does not count.
     private func refreshAfterAbsence() {
         defer { backgroundedAt = nil }
-        guard let backgroundedAt, Date.now.timeIntervalSince(backgroundedAt) >= 5 * 60 else { return }
+        guard backgroundedAt != nil else { return }
         NotificationCenter.default.post(name: .shioriDataDidChange, object: nil)
     }
 

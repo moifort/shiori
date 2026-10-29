@@ -53,6 +53,17 @@ final class BookViewModel {
         isLoading = false
     }
 
+    /// The book read again while its page is open, because a write elsewhere
+    /// — a Kindle or Audible sync, the release watch — may have moved it. The
+    /// page stays as it was if the read fails: nothing the reader did broke.
+    func refresh() async {
+        do {
+            book = try await client.book(bookId)
+        } catch {
+            _ = reportError(error)
+        }
+    }
+
     /// The volumes of the book's saga, after the book: the page draws without
     /// them, and a failure leaves the row out rather than the page. The ones
     /// the reader lacks come from a catalogue already built, never from a
