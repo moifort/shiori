@@ -36,7 +36,7 @@ struct HomeHeroItemTests {
 
     @Test func leavesOutWhatIsTooFarOrUndated() {
         let releases = [
-            release(1, "2026-11-05"),
+            release(1, "2026-11-04"),
             release(2, "2026-11"),
             release(3, "2027"),
             release(4, nil),
@@ -110,8 +110,5 @@ struct HomeHeroItemTests {
         let tuesday = HomeHeroItem.releaseBadge("2026-11-03", today: today)
         let weekday = Calendar.current.date(byAdding: .day, value: 6, to: today)!.formatted(.dateTime.weekday(.wide))
         #expect(tuesday == String(localized: "Sortie \(weekday)"))
-        let nextWednesday = HomeHeroItem.releaseBadge("2026-11-04", today: today)
-        let sameDay = today.formatted(.dateTime.weekday(.wide))
-        #expect(nextWednesday == String(localized: "Sortie \(sameDay) prochain"))
     }
 }

@@ -23,8 +23,9 @@ enum HomeHeroItem: Identifiable {
         }
     }
 
-    /// How far ahead a release leads the carousel.
-    static let releaseWindow = 7
+    /// How far ahead a release leads the carousel: six days, so the day it
+    /// names is never today's weekday, a week on.
+    static let releaseWindow = 6
     /// How far back a release out stays in the carousel past the month it
     /// came out in: the week, so the turn of a month never drops yesterday's.
     static let recentWindow = 6
@@ -75,8 +76,7 @@ enum HomeHeroItem: Identifiable {
 
     /// What a release's badge says, as near as the day allows: "Sortie
     /// aujourd'hui", "Sortie hier", "Sortie avant-hier", "Sortie cette
-    /// semaine", "Sortie ce mois-ci", "Sortie demain", "Sortie mardi" —
-    /// "mardi prochain" a week ahead, the same day as today.
+    /// semaine", "Sortie ce mois-ci", "Sortie demain", "Sortie mardi".
     static func releaseBadge(_ date: String, today: Date = .now) -> String {
         guard date.count == 10, let days = daysFromToday(date, today: today) else {
             return date == localMonth(today)
@@ -93,9 +93,7 @@ enum HomeHeroItem: Identifiable {
         default:
             let weekday = (Calendar.current.date(byAdding: .day, value: days, to: today) ?? today)
                 .formatted(.dateTime.weekday(.wide))
-            return days < releaseWindow
-                ? String(localized: "Sortie \(weekday)")
-                : String(localized: "Sortie \(weekday) prochain")
+            return String(localized: "Sortie \(weekday)")
         }
     }
 
