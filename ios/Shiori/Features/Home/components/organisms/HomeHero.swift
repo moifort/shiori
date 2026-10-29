@@ -66,7 +66,7 @@ struct HomeHero: View {
                     BookCover(book: suggestion.tile, width: isWide ? 120 : 100)
                         .shadow(color: .black.opacity(0.45), radius: 16, y: 10)
                     VStack(alignment: .leading, spacing: 5) {
-                        Label("Découverte du mois", systemImage: "sparkles")
+                        Label(MonthlyDiscoveries.badge(month: MonthlyDiscoveries.month(of: date)), systemImage: "sparkles")
                             .font(.caption.weight(.bold))
                             .textCase(.uppercase)
                             .tracking(0.5)

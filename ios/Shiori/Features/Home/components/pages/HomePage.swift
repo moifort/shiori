@@ -131,6 +131,7 @@ struct HomePage: View {
                         onShowDiscover: { onAction(.showDiscover) },
                         onRate: { onAction(.showLibrary(LibraryRequest(filter: .status(.read)))) },
                         backdropCover: dashboard.leadCoverURL,
+                        discoveryMonth: discoveries?.month ?? MonthlyDiscoveries.month(of: today),
                         pull: pull
                     )
                 } else if dashboard.libraryIsEmpty, opensOnHero {

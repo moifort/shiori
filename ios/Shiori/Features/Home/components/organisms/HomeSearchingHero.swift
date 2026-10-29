@@ -31,7 +31,7 @@ struct HomeSearchingHero: View {
                 .frame(width: Self.coverSize.width, height: Self.coverSize.height)
                 .padding(.top, 26)
                 .accessibilityLabel(Text("Recherche de vos découvertes…"))
-            Text("Découverte du mois")
+            Text(MonthlyDiscoveries.badge(month: month))
                 .font(.footnote.weight(.semibold))
                 .padding(.horizontal, 10)
                 .padding(.vertical, 4)

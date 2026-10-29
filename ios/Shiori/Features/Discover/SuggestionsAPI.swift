@@ -151,6 +151,15 @@ struct MonthlyDiscoveries: Hashable, Sendable, Codable {
             : String(localized: "Les découvertes de \(name)")
     }
 
+    /// The badge over a discovery: "Découverte d'octobre", "Découverte de
+    /// novembre" — "October's discovery" in English.
+    static func badge(month: String, locale: Locale = .current) -> String {
+        let name = monthName(month, locale: locale)
+        return elided(name)
+            ? String(localized: "Découverte d’\(name)")
+            : String(localized: "Découverte de \(name)")
+    }
+
     /// The home's hero while the month's selection is made: "Vos livres
     /// d'octobre arrivent", "Vos livres de novembre arrivent".
     static func arrivingTitle(month: String, locale: Locale = .current) -> String {

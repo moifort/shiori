@@ -148,6 +148,8 @@ struct HomeHeroCarousel: View {
     /// The cover whose colours the month's last page takes: the library's,
     /// as the wait on the selection does.
     var backdropCover: URL?
+    /// `YYYY-MM` the discoveries were chosen for, which their badge names.
+    var discoveryMonth = MonthlyDiscoveries.month(of: .now)
     /// How far the page is pulled down past its top: the backdrops grow by as
     /// much from their foot, so the pull never uncovers what lies above them.
     var pull: CGFloat = 0
@@ -319,7 +321,7 @@ struct HomeHeroCarousel: View {
         return page(
             id: id,
             cover: suggestion.tile,
-            badge: String(localized: "Découverte du mois"),
+            badge: MonthlyDiscoveries.badge(month: discoveryMonth),
             title: suggestion.title,
             meta: suggestion.authors.joined(separator: ", "),
             reason: suggestion.reason,
