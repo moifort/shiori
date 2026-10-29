@@ -54,6 +54,7 @@ struct AuthorScreen: View {
             await viewModel.load()
             await viewModel.buildCatalogueIfAwaiting()
         }
+        .reloadsOnWideChange { await viewModel.load() }
         .pushesDetail(item: $selectedBook) { book in
             BookScreen(
                 bookId: book.id,

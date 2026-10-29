@@ -49,6 +49,7 @@ struct AnnouncedVolumeScreen: View {
         }
         .task { await viewModel.describe() }
         .task { await viewModel.loadSaga() }
+        .reloadsOnWideChange { await viewModel.loadSaga() }
         .navigationDestination(item: $openedVolume) { book in
             BookScreen(bookId: book.id)
                 .closesAsPushed()

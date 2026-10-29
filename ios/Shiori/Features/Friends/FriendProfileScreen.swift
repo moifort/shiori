@@ -34,6 +34,7 @@ struct FriendProfileScreen: View {
             }
         }
         .task { await viewModel.load() }
+        .reloadsOnWideChange { await viewModel.load() }
         .navigationDestination(for: FriendProfileDestination.self) { _ in
             FriendShelfScreen(friendId: friend.userId, friendName: friend.displayName, isPreview: viewModel.isPreview)
                 .closesAsPushed()

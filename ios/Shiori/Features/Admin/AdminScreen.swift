@@ -21,5 +21,6 @@ struct AdminScreen: View {
             if viewModel.metrics == nil { await viewModel.load() }
         }
         .refreshable { await viewModel.load() }
+        .reloadsOnWideChange { await viewModel.load() }
     }
 }

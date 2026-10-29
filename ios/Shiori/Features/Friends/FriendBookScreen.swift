@@ -76,6 +76,10 @@ struct FriendBookScreen: View {
         .task { await viewModel.load() }
         .task { await viewModel.loadAudio() }
         .task { await viewModel.loadOffer() }
+        .reloadsOnWideChange {
+            await viewModel.load()
+            await viewModel.loadAudio()
+        }
         // Offered as Découvrir offers a friend's loved author: the reader may
         // hold nothing of theirs, and the page then lists it all to add.
         .pushesDetail(item: $openAuthor) { author in

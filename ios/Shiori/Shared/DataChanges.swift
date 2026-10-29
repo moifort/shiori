@@ -1,4 +1,4 @@
-import Foundation
+import SwiftUI
 
 extension Notification.Name {
     /// Something in the library changed on the server: a book added, corrected,
@@ -16,6 +16,20 @@ extension Notification.Name {
     /// has open can patch that one row instead of reloading. A notice with no
     /// object may have changed anything.
     static let shioriDataDidChange = Notification.Name("ShioriDataDidChange")
+}
+
+extension View {
+    /// Reads the screen again on a change notice with no object: the return
+    /// to the front posts one, as an import does, and either may have moved
+    /// what the screen shows. A page left open — a book, a saga, an author —
+    /// then shows what the Kindle sync or the release watch wrote meanwhile.
+    /// The reload keeps what is drawn until the answer comes.
+    func reloadsOnWideChange(_ reload: @escaping @MainActor () async -> Void) -> some View {
+        onReceive(NotificationCenter.default.publisher(for: .shioriDataDidChange)) { notice in
+            guard notice.object == nil else { return }
+            Task { await reload() }
+        }
+    }
 }
 
 /// What a single write changed, when it changed one thing.

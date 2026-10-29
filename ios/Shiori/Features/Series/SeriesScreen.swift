@@ -163,6 +163,10 @@ struct SeriesScreen: View {
             await viewModel.buildCatalogueIfAwaiting()
         }
         .task { await viewModel.loadReleases() }
+        .reloadsOnWideChange {
+            await viewModel.load()
+            await viewModel.loadReleases()
+        }
     }
 
     /// A volume of the saga: the reader's own, or a friend's as their shelf
