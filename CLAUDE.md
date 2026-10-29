@@ -68,10 +68,11 @@ Runtime: always `bun` / `bunx`, never `npm` / `npx`.
    those sessions: never ask first. A comment sent from the board arrives as an automated
    turn, where the app refuses `user_asked`; propose the session then (`own_initiative`) and
    start it with its `proposal_id` at the user's next message.
-7. **Every child session ends with the user's validation.** When a child session finishes,
-   check what it left (commit, captures) and ask the user to validate it. On their yes, archive
-   that session; if they ask for changes, send them to that session and ask again once it is
-   done.
+7. **Every child session ends with the user's validation, asked in the child.** A child session
+   that finishes its work asks the user to validate it in its own wrap-up (a question with a
+   "Valider" button), never leaving that to the parent. On the user's yes, it archives itself
+   (`archive_session` on its own id); if they ask for changes, it makes them and asks again.
+   Every child brief says so.
 
 ## Paid API calls
 
