@@ -59,6 +59,13 @@ Runtime: always `bun` / `bunx`, never `npm` / `npx`.
    replying in it, so it leaves the canvas. This standing rule is the user's
    request to resolve; it overrides the default of leaving threads for people to close. Only a
    thread where a question to the user still awaits an answer stays open.
+6. **Each board comment gets its own child session.** A comment the user sends to Claude from
+   the Shiori Board is not handled in the session that receives it: start a child session for
+   it right away (`start_session`, initiation `user_asked`, fresh context), one per thread. Its
+   brief carries the board URL, the thread id, the anchored artboard and the comment's words;
+   the child makes the change (board, then iOS when the artboard is outside the prototyping
+   zone), resolves the thread, and commits. This standing rule is the user's request to start
+   those sessions.
 
 ## Paid API calls
 
