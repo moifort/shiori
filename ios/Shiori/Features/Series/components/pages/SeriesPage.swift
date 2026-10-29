@@ -105,7 +105,7 @@ struct SeriesPage: View {
                     rail("Tomes", posters: posters(series.spine), author: series.author, ringed: ringedId(series))
                     let annexes = annexPosters(series.relatedWorks)
                     if !annexes.isEmpty {
-                        rail("Annexes", posters: annexes, author: series.author, ringed: nil)
+                        rail("Hors-série", posters: annexes, author: series.author, ringed: nil)
                     }
                     facts(series)
                 }
@@ -303,7 +303,7 @@ struct SeriesPage: View {
     /// An annex the reader numbered says its number, apart from the volumes'.
     private func caption(_ book: Book, volume: Volume) -> String {
         guard volume.kind != .main, let number = book.series?.annexNumber else { return caption(volume) }
-        return String(localized: "Annexe \(number)")
+        return String(localized: "Hors-série \(number)")
     }
 
     private func ownedPoster(_ book: Book, volume: Volume) -> some View {

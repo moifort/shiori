@@ -227,11 +227,11 @@ struct BookEditSheet: View {
                     .padding(.vertical, 4)
                     if !trimmed(seriesName).isEmpty {
                         Toggle(isOn: $isAnnex) {
-                            Label("Annexe", systemImage: "square.stack")
+                            Label("Hors-série", systemImage: "square.stack")
                         }
                         .accessibilityIdentifier("edit-series-annex")
                         if isAnnex {
-                            LabeledField(title: "Numéro d'annexe", icon: "number") {
+                            LabeledField(title: "Numéro", icon: "number") {
                                 TextField("Sans numéro", text: $annexNumber)
                                     .keyboardType(.numberPad)
                                     .accessibilityIdentifier("edit-series-annex-number")
@@ -250,7 +250,7 @@ struct BookEditSheet: View {
                     if let problem = seriesProblem {
                         Text(problem).foregroundStyle(.red)
                     } else {
-                        Text("Choisissez une série de votre bibliothèque pour y ranger ce livre avec les autres tomes. Une annexe — hors-série, préquelle, guide — se range à part, sous son propre numéro. Videz le nom pour le sortir de sa série.")
+                        Text("Choisissez une série de votre bibliothèque pour y ranger ce livre avec les autres tomes. Un hors-série — préquelle, nouvelle, guide — se range à part, sous son propre numéro. Videz le nom pour le sortir de sa série.")
                     }
                 }
             }
@@ -357,7 +357,7 @@ struct BookEditSheet: View {
             return String(localized: "Le tome doit être un nombre entre 1 et 200.")
         }
         if isAnnex, !trimmed(annexNumber).isEmpty, !(1...200).contains(Int(trimmed(annexNumber)) ?? 0) {
-            return String(localized: "Le numéro d'annexe doit être un nombre entre 1 et 200.")
+            return String(localized: "Le numéro de hors-série doit être un nombre entre 1 et 200.")
         }
         let held = seriesSuggestions.contains { $0.localizedCaseInsensitiveCompare(trimmed(seriesName)) == .orderedSame }
         if list(authors).isEmpty, !held, trimmed(seriesName) != book.series?.name {
