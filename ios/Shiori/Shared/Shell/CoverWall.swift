@@ -74,7 +74,7 @@ struct OpeningProgress: View {
     ZStack {
         CoverWall()
         CoverVeil(covering: true)
-        OpeningProgress(label: "Connexion en cours…")
+        OpeningProgress(label: "Préparation de votre bibliothèque…")
     }
     .environment(\.colorScheme, .dark)
 }

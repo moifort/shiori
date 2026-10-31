@@ -25,18 +25,24 @@ final class OnboardingGate {
     private(set) var avatar: AccountAvatar = .initials
 
     /// Reads where to route, and hands the plan and allowance that ride the same
-    /// request to the subscription store: a launch costs one round trip.
-    func refresh(subscriptions: SubscriptionStore) async {
-        state = .loading
+    /// request to the subscription store: a launch costs one round trip. A new
+    /// reader is in the wizard at once, this request going on behind it: a
+    /// failure leaves them there, and only a finished account takes them out.
+    func refresh(subscriptions: SubscriptionStore, expectsNewReader: Bool = false) async {
+        state = expectsNewReader ? .required : .loading
         do {
             let launch = try await OnboardingAPI.launch()
             isAdmin = launch.isAdmin
-            firstName = launch.firstName
-            avatar = launch.avatar
-            state = launch.onboardingCompleted ? .ready : .required
+            // Unless the wizard finished first: it knows better than this read.
+            if state != .ready {
+                firstName = launch.firstName
+                avatar = launch.avatar
+                state = launch.onboardingCompleted ? .ready : .required
+            }
             await subscriptions.start(with: launch.entitlement, quota: launch.quota)
         } catch {
-            state = .failed(reportError(error))
+            let message = reportError(error)
+            if !expectsNewReader { state = .failed(message) }
         }
     }
 

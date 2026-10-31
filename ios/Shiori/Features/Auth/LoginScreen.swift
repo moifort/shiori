@@ -13,7 +13,7 @@ struct LoginScreen: View {
         LoginPage(isSigningIn: isSigningIn, error: error) {
             SignInWithAppleButton(.signIn) { request in
                 // On the tap itself: Apple's sheet takes a moment to rise, and
-                // the wait goes on after it closes.
+                // Firebase has yet to answer once it closes.
                 error = nil
                 isSigningIn = true
                 let raw = AppleNonce.random()
@@ -57,7 +57,7 @@ struct LoginScreen: View {
 }
 
 /// What the sign-in shows over the cover wall. The button stays in the
-/// hierarchy while signing in, only hidden: it carries Apple's answer.
+/// hierarchy while signing in, only covered: it carries Apple's answer.
 struct LoginPage<SignInButton: View>: View {
     var isSigningIn: Bool
     var error: String?
@@ -65,11 +65,7 @@ struct LoginPage<SignInButton: View>: View {
 
     var body: some View {
         ZStack {
-            CoverVeil(covering: isSigningIn)
-            if isSigningIn {
-                OpeningProgress(label: "Connexion en cours…")
-                    .transition(.opacity)
-            }
+            CoverVeil()
             VStack(spacing: 0) {
                 Spacer()
                 Text("Tous vos livres,\nau même endroit")
@@ -81,7 +77,16 @@ struct LoginPage<SignInButton: View>: View {
                     .padding(.top, 10)
                 signInButton
                     .frame(height: 52)
+                    .overlay {
+                        if isSigningIn {
+                            ZStack {
+                                Color.white
+                                ProgressView().tint(.black)
+                            }
+                        }
+                    }
                     .clipShape(.capsule)
+                    .allowsHitTesting(!isSigningIn)
                     .padding(.top, 32)
                 if let error {
                     Text(error)
@@ -92,10 +97,7 @@ struct LoginPage<SignInButton: View>: View {
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 12)
-            .opacity(isSigningIn ? 0 : 1)
-            .allowsHitTesting(!isSigningIn)
         }
-        .animation(.easeInOut(duration: 0.35), value: isSigningIn)
         .environment(\.colorScheme, .dark)
     }
 }
@@ -115,6 +117,7 @@ struct LoginPage<SignInButton: View>: View {
         CoverWall()
         LoginPage(isSigningIn: true) {
             SignInWithAppleButton(.signIn) { _ in } onCompletion: { _ in }
+                .signInWithAppleButtonStyle(.white)
         }
     }
 }

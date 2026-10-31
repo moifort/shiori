@@ -14,6 +14,9 @@ final class AuthSession {
     /// The given name Apple handed over at sign-in. Apple sends the name only
     /// on the very first authorization, so it is kept the moment it arrives.
     private var appleGivenName: String?
+    /// Apple sends the name only to a first authorization: this reader is new,
+    /// so onboarding opens without waiting for the server to say so.
+    var isFirstAuthorization: Bool { appleGivenName != nil }
 
     /// The first name to propose in onboarding: Apple's given name when this
     /// sign-in carried one, else the one Firebase kept in the display name

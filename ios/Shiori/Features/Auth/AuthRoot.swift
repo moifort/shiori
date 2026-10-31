@@ -56,7 +56,7 @@ struct AuthRoot: View {
         // signed-in caller, and the plan is the server's answer.
         .task(id: session.user?.uid) {
             if session.user != nil || isShowcase {
-                await gate.refresh(subscriptions: subscriptions)
+                await gate.refresh(subscriptions: subscriptions, expectsNewReader: session.isFirstAuthorization)
             } else {
                 gate.reset()
             }
@@ -87,9 +87,15 @@ struct AuthRoot: View {
         return gate.state == .loading || gate.state == .required
     }
 
+    /// A new reader goes straight to the wizard, from the very first frame
+    /// after signing in: the gate only hears of them once its request starts.
+    private var route: OnboardingGate.State {
+        gate.state == .loading && session.isFirstAuthorization ? .required : gate.state
+    }
+
     @ViewBuilder
     private var signedIn: some View {
-        switch gate.state {
+        switch route {
         case .loading:
             ZStack {
                 CoverVeil(covering: true)
