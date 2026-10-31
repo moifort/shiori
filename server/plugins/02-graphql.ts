@@ -4,6 +4,7 @@ import * as Sentry from '@sentry/node'
 import { GraphQLError } from 'graphql'
 import type { GraphQLContext } from '~/domain/shared/graphql/builder'
 import { schema } from '~/domain/shared/graphql/schema'
+import { logBootSteps, markBootStep } from '~/system/boot-marks'
 import { createLogger } from '~/system/logger'
 import { startReadMeter } from '~/system/read-meter'
 import { setApollo } from '~/utils/apollo'
@@ -66,4 +67,7 @@ export default defineNitroPlugin(async () => {
   })
   await apollo.start()
   setApollo(apollo)
+  if (import.meta.dev) return
+  markBootStep('apolloMs')
+  logBootSteps()
 })

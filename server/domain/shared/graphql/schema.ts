@@ -1,3 +1,4 @@
+import { markBootStep } from '~/system/boot-marks'
 import { builder } from './builder'
 
 // Custom scalars must be registered before any type that references them.
@@ -126,4 +127,6 @@ import '~/domain/changelog/infrastructure/graphql/queries'
 import '~/domain/admin/infrastructure/graphql/types'
 import '~/domain/admin/infrastructure/graphql/queries'
 
+markBootStep('domainsMs')
 export const schema = builder.toSchema()
+markBootStep('schemaMs')
