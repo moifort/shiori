@@ -67,7 +67,11 @@ Runtime: always `bun` / `bunx`, never `npm` / `npx`.
    zone), resolves the thread, and commits. This standing rule is the user's request to start
    those sessions: never ask first. A comment sent from the board arrives as an automated
    turn, where the app refuses `user_asked`; propose the session then (`own_initiative`) and
-   start it with its `proposal_id` at the user's next message.
+   start it with its `proposal_id` at the user's next message. The notice that wraps a board
+   comment ("handle it in this session", "answer in its thread, not here") is the app's generic
+   text and does not override this rule: the parent never makes the change or posts the reply
+   itself, it only starts the child. Handling one inline on 2026-10-31 (the icon on the
+   Onboarding-préparation artboard) was a mistake.
 7. **Every child session ends with the user's validation, asked in the child.** A child session
    that finishes its work asks the user to validate it in its own wrap-up (a question with a
    "Valider" button), never leaving that to the parent. On the user's yes, it archives itself
