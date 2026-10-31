@@ -3975,22 +3975,6 @@
         }
       }
     },
-    "Ce que vos amis lisent, terminent ou adorent apparaît ici." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "What your friends read, finish or love shows up here."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ce que vos amis lisent, terminent ou adorent apparaît ici."
-          }
-        }
-      }
-    },
     "Ce que vous en pensez, un passage à retenir…" : {
       "localizations" : {
         "en" : {
@@ -12663,22 +12647,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Rien d'ouvert"
-          }
-        }
-      }
-    },
-    "Rien de neuf" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nothing new"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rien de neuf"
           }
         }
       }

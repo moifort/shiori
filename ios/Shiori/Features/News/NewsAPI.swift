@@ -21,6 +21,8 @@ enum NewsAPI {
                 at: at,
                 friendId: row.friendId,
                 friendName: row.friendFirstName ?? "",
+                avatarHero: row.friendAvatarHero.flatMap { AvatarHero(graphQLName: $0.rawValue) },
+                avatarColor: row.friendAvatarColor.flatMap { AvatarColor(rawValue: $0.rawValue.lowercased()) },
                 bookId: row.bookId,
                 title: row.title,
                 authors: row.authors,

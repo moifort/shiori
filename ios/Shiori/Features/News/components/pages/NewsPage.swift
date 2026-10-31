@@ -85,16 +85,10 @@ struct NewsPage: View {
         }
     }
 
+    /// Nothing happened lately: nothing is drawn, the calendar rises to the pills.
     @ViewBuilder
     private var feed: some View {
-        if isEmpty {
-            EmptyState(
-                systemImage: "newspaper",
-                title: "Rien de neuf",
-                message: "Ce que vos amis lisent, terminent ou adorent apparaît ici."
-            )
-            .frame(minHeight: 260)
-        } else {
+        if !isEmpty {
             ForEach(sections) { section in
                 if !section.items.isEmpty {
                     Text(section.title)

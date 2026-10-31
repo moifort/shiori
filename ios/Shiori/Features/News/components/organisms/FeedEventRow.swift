@@ -11,7 +11,7 @@ struct FeedEventRow: View {
         HStack(spacing: 14) {
             Button(action: onOpen) {
                 HStack(spacing: 14) {
-                    FriendMonogram(name: event.friendName, size: 44)
+                    AccountAvatarView(avatar: event.avatar, firstName: event.friendName, size: 44)
                     VStack(alignment: .leading, spacing: 3) {
                         sentence
                             .font(.subheadline)

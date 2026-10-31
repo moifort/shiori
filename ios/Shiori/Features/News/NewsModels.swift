@@ -6,12 +6,15 @@ enum FeedEventKind: String, Codable, Sendable {
 }
 
 /// One thing a friend did, as the feed draws a row.
-struct FeedEvent: Identifiable, Hashable, Codable, Sendable {
+struct FeedEvent: Identifiable, Hashable, Sendable {
     let id: String
     let kind: FeedEventKind
     let at: Date
     let friendId: String
     let friendName: String
+    /// The hero or colour the friend wears; their initials on slate without one.
+    var avatarHero: AvatarHero?
+    var avatarColor: AvatarColor?
     let bookId: String
     let title: String
     let authors: [String]
@@ -23,6 +26,12 @@ struct FeedEvent: Identifiable, Hashable, Codable, Sendable {
     let alsoStartedBy: Int
     /// Whether the reader already holds the story.
     var inLibrary: Bool
+
+    var avatar: AccountAvatar {
+        if let avatarHero { return .hero(avatarHero) }
+        if let avatarColor { return .tinted(avatarColor) }
+        return .initials
+    }
 
     /// Drawn as the Books tab draws a book, the headphones on a recording.
     var cover: Book {

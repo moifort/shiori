@@ -8,6 +8,8 @@ query NewsFeed($limit: Int!, $after: String) {
       at
       friendId
       friendFirstName
+      friendAvatarHero
+      friendAvatarColor
       bookId
       title
       authors

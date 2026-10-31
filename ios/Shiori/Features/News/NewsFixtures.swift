@@ -7,19 +7,19 @@ extension FeedEvent {
     static let previews: [FeedEvent] = [
         FeedEvent(
             id: "marc~loved~arabe", kind: .loved, at: .now.addingTimeInterval(-3 * 3600),
-            friendId: "marc", friendName: "Marc", bookId: "arabe", title: "L'Arabe du futur",
+            friendId: "marc", friendName: "Marc", avatarHero: .gandalf, bookId: "arabe", title: "L'Arabe du futur",
             authors: ["Riad Sattouf"], format: .bandeDessinee, coverURL: openLibraryCover("9782370730008"),
             rating: 5, alsoStartedBy: 0, inLibrary: true
         ),
         FeedEvent(
             id: "sophie~started~vagabond", kind: .started, at: .now.addingTimeInterval(-5 * 3600),
-            friendId: "sophie", friendName: "Sophie", bookId: "vagabond", title: "Vagabond",
+            friendId: "sophie", friendName: "Sophie", avatarHero: .katniss, bookId: "vagabond", title: "Vagabond",
             authors: ["Takehiko Inoue"], format: .manga, coverURL: openLibraryCover("9782845386143"),
             rating: nil, alsoStartedBy: 3, inLibrary: false
         ),
         FeedEvent(
             id: "lea~finished~dune", kind: .finished, at: .now.addingTimeInterval(-3 * 86400),
-            friendId: "lea", friendName: "Léa", bookId: "dune", title: "Dune",
+            friendId: "lea", friendName: "Léa", avatarHero: .hermione, bookId: "dune", title: "Dune",
             authors: ["Frank Herbert"], format: .book, coverURL: openLibraryCover("9780441013593"),
             rating: 4, alsoStartedBy: 0, inLibrary: false
         ),
