@@ -38,6 +38,7 @@ mock.module('~/domain/kindle/infrastructure/kindle-api', () => ({
   },
   library: async () => [],
   readingPosition: async () => undefined,
+  readingPosition: async () => undefined,
   landingUrlFor: (marketplace: string) => `https://www.amazon.${marketplace}/ap/maplanding`,
 }))
 

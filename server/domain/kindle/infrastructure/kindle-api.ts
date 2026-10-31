@@ -49,6 +49,8 @@ export const readingPosition = async (
     headers: signedHeaders(credentials, `${url.pathname}${url.search}`),
     signal: AbortSignal.timeout(SIDECAR_TIMEOUT_MS),
   })
+  // A title with no sidecar was never opened: there is no position to read.
+  if (response.status === 404) return undefined
   if (!response.ok) throw new Error(`Kindle sidecar answered ${response.status}`)
   return positionIn(Buffer.from(await response.arrayBuffer()))
 }
