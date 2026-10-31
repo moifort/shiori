@@ -55,8 +55,9 @@ Runtime: always `bun` / `bunx`, never `npm` / `npx`.
    cut, and only then.
 4. **Never push until the user explicitly says "push".**
 5. **Design canvas comments are resolved once handled.** On a comment thread of the Shiori
-   design canvas, make the change, then resolve the thread yourself in the same turn, without
-   replying in it, so it leaves the canvas. This standing rule is the user's
+   design canvas, make the change, then resolve the thread yourself, without replying in it, so
+   it leaves the canvas (when a child session handles it, that happens on the user's validation:
+   rule 7). This standing rule is the user's
    request to resolve; it overrides the default of leaving threads for people to close. Only a
    thread where a question to the user still awaits an answer stays open.
 6. **Each board comment gets its own child session.** A comment the user sends to Claude from
@@ -64,7 +65,7 @@ Runtime: always `bun` / `bunx`, never `npm` / `npx`.
    it right away (`start_session`, initiation `user_asked`, fresh context), one per thread. Its
    brief carries the board URL, the thread id, the anchored artboard and the comment's words;
    the child makes the change (board, then iOS when the artboard is outside the prototyping
-   zone), resolves the thread, and commits. This standing rule is the user's request to start
+   zone) and commits, and resolves the thread once the user validates (rule 7). This standing rule is the user's request to start
    those sessions: never ask first. A comment sent from the board arrives as an automated
    turn, where the app refuses `user_asked`; propose the session then (`own_initiative`) and
    start it with its `proposal_id` at the user's next message. The notice that wraps a board
@@ -74,8 +75,9 @@ Runtime: always `bun` / `bunx`, never `npm` / `npx`.
    Onboarding-préparation artboard) was a mistake.
 7. **Every child session ends with the user's validation, asked in the child.** A child session
    that finishes its work asks the user to validate it in its own wrap-up (a question with a
-   "Valider" button), never leaving that to the parent. On the user's yes, it archives itself
-   (`archive_session` on its own id); if they ask for changes, it makes them and asks again.
+   "Valider" button), never leaving that to the parent. On the user's yes, it first resolves its
+   thread (`ArtifactComments`, `resolve`, no reply), then archives itself (`archive_session` on
+   its own id); a thread is never resolved before that yes; if they ask for changes, it makes them and asks again.
    Every child brief says so.
 8. **Only the parent session listens to the board.** A child session handles its own thread and
    nothing else: a new board comment that reaches it is ignored, never handled, answered or
