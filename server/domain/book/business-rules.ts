@@ -193,6 +193,46 @@ export const readingProgressOf = (
   return Math.min(100, Math.floor((book.currentPage / book.pageCount) * 100))
 }
 
+/** Whispersync's positions to a printed page, the median over a reader's 24
+ *  finished books on 2026-10-31 (1,823 to 3,026 from p10 to p90). Amazon gives no
+ *  book's length here, so a page from a position is an estimate. */
+export const KINDLE_POSITIONS_PER_PAGE = 2402
+
+/** The page a Kindle position stands for. Short of the last one: the book is
+ *  finished when Amazon says so, not when an estimate runs past its end.
+ *  Undefined before the first page. */
+export const pageAtKindlePosition = (
+  position: number,
+  pageCount: number | undefined,
+): number | undefined => {
+  const page = Math.floor(position / KINDLE_POSITIONS_PER_PAGE)
+  const capped = pageCount === undefined ? page : Math.min(page, pageCount - 1)
+  return capped >= 1 ? capped : undefined
+}
+
+/** What a position read from the Kindle changes on a book.
+ *
+ *  The Kindle takes the progress over when it moves, and only then: a page
+ *  typed since the last sync stands until the reader reads on. A first position
+ *  says nothing moved, so it only fills a book under way that has no page yet,
+ *  and leaves a book on the pile there: anything opened years ago has one. Reading
+ *  further takes a book off the pile.
+ *
+ *  Undefined when nothing changes, so a quiet night writes nothing. */
+export const kindleMoveOf = (
+  book: Pick<Book, 'status' | 'kindlePosition' | 'currentPage' | 'pageCount'>,
+  position: number,
+): { status: ReadingStatus; page?: number } | undefined => {
+  const known = book.kindlePosition
+  const moved = known !== undefined && position !== known
+  const status =
+    book.status === 'to-read' && known !== undefined && position > known ? 'reading' : book.status
+  const fills = book.status === 'reading' && book.currentPage === undefined
+  if (position === known && !fills) return undefined
+  const page = moved || fills ? pageAtKindlePosition(position, book.pageCount) : undefined
+  return page === undefined ? { status } : { status, page }
+}
+
 /** The Amazon Associates tag every store link carries. It belongs to amazon.fr
  *  alone — a tag is bound to one store and pays nothing on another — which is
  *  why every link points there, whatever store the reader's Kindle lives on. */

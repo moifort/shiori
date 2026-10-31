@@ -25,6 +25,9 @@ export type Subgenre = Brand<string, 'Subgenre'>
 export type TaggedSubgenre = { label: Subgenre; language: BookLanguage }
 export type Synopsis = Brand<string, 'Synopsis'>
 export type PageCount = Brand<number, 'PageCount'>
+/** Where Whispersync last saw the reader, in the book's own units: an offset
+ *  into its text, which no page count converts exactly. */
+export type KindlePosition = Brand<number, 'KindlePosition'>
 /** How long an audiobook runs, in whole minutes. Kept on the record rather than
  *  derived: it is what the listening statistics count, the way pages are what the
  *  reading statistics count. Only Audible fills it — a scanned cover does not say
@@ -221,14 +224,18 @@ export type Book = {
    *  subgenre and takes the head of this list, so the order is data. */
   subgenres: TaggedSubgenre[]
   pageCount?: PageCount
-  /** The page the reader last said they reached, typed on the book page: what
-   *  the reading progress is read off, against `pageCount`. Never on an
-   *  audiobook, whose progress is Audible's. Absent until the reader first
-   *  says where they are, and cleared when the book goes back on the pile. */
+  /** The page the reader reached, typed on the book page or estimated by the
+   *  Kindle sync when Whispersync moves: what the reading progress is read
+   *  off, against `pageCount`. Never on an audiobook, whose progress is
+   *  Audible's. Absent until the first of the two says where the reader is,
+   *  and cleared when the book goes back on the pile. */
   currentPage?: PageCount
-  /** When the reader last said which page they reached. Kept beside
-   *  `currentPage`. */
+  /** When `currentPage` was last written. Kept beside it. */
   currentPageAt?: Date
+  /** Where the last Kindle sync found the reader: what tells a night the
+   *  Kindle moved from a night it did not, so a page typed since stands until
+   *  the reader actually reads on. */
+  kindlePosition?: KindlePosition
   /** An audiobook's running time. Absent on anything else, and absent on an
    *  audiobook catalogued by hand or by scan, which had no source for it. */
   durationMinutes?: ListeningMinutes

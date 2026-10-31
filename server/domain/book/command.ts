@@ -5,6 +5,7 @@ import {
   datesAfterCorrection,
   datesAfterStatusChange,
   kindleLinkUnder,
+  kindleMoveOf,
   mediaFor,
   membershipFor,
   membershipIn,
@@ -17,7 +18,7 @@ import {
   titleWithoutAuthor,
 } from '~/domain/book/business-rules'
 import * as repository from '~/domain/book/infrastructure/repository'
-import { BookId as BookIdOf } from '~/domain/book/primitives'
+import { BookId as BookIdOf, PageCount as PageCountOf } from '~/domain/book/primitives'
 import type {
   Book,
   BookFormat,
@@ -28,6 +29,7 @@ import type {
   CoverUrl,
   Genre,
   Isbn13,
+  KindlePosition,
   ListeningMinutes,
   NarratorName,
   PageCount,
@@ -451,6 +453,31 @@ export namespace BookCommand {
       },
       batch,
     )
+  }
+
+  /** Keep where the Kindle found the reader, and what that moves: see
+   *  `kindleMoveOf`. A position that changes nothing writes nothing. */
+  export const recordKindlePosition = async (
+    userId: UserId,
+    bookId: BookId,
+    position: KindlePosition,
+    now = new Date(),
+  ): Promise<Book | 'not-found'> => {
+    const book = await repository.findById(userId, bookId)
+    if (!book) return 'not-found'
+    const move = kindleMoveOf(book, position)
+    if (!move) return book
+    return repository.save({
+      ...book,
+      kindlePosition: position,
+      ...(move.page === undefined
+        ? {}
+        : { currentPage: PageCountOf(move.page), currentPageAt: now }),
+      status: move.status,
+      ...datesAfterStatusChange(book, move.status, now),
+      ...statusStampAfterChange(book, move.status, now),
+      updatedAt: now,
+    })
   }
 
   /** Going back to the pile clears the page reached with the reading dates:

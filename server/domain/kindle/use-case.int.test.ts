@@ -15,6 +15,8 @@ mock.module('~/system/config', () => ({ config: () => ({ kindleKey }) }))
 let titles: KindleTitle[] = []
 const libraryCalls: unknown[] = []
 const libraryRefusals: (Error | undefined)[] = []
+let positions: Record<string, number> = {}
+const positionRefusals = new Set<string>()
 
 mock.module('~/domain/kindle/infrastructure/kindle-api', () => ({
   login: async (marketplace: string) => ({
@@ -34,6 +36,10 @@ mock.module('~/domain/kindle/infrastructure/kindle-api', () => ({
     const refusal = libraryRefusals.shift()
     if (refusal) throw refusal
     return titles
+  },
+  readingPosition: async (_credentials: unknown, asin: string) => {
+    if (positionRefusals.has(asin)) throw new Error('Kindle sidecar answered 503')
+    return positions[asin]
   },
   landingUrlFor: (marketplace: string) => `https://www.amazon.${marketplace}/ap/maplanding`,
 }))
@@ -70,7 +76,7 @@ const { KindleAsin } = await import('~/domain/kindle/primitives')
 const { BookQuery } = await import('~/domain/book/query')
 const { BookCommand } = await import('~/domain/book/command')
 const { BookTitle, AuthorName } = await import('~/domain/shared/primitives')
-const { CoverUrl, ReadingNote } = await import('~/domain/book/primitives')
+const { CoverUrl, PageCount, ReadingNote } = await import('~/domain/book/primitives')
 
 const reader = 'reader-1' as UserId
 const NOW = new Date('2026-10-01T10:00:00.000Z')
@@ -95,6 +101,8 @@ beforeEach(() => {
   titles = []
   libraryCalls.length = 0
   libraryRefusals.length = 0
+  positions = {}
+  positionRefusals.clear()
   titleCalls.length = 0
   titleAnswers = {}
   titleFailures.length = 0
@@ -485,6 +493,83 @@ describe('a nightly pass', () => {
 
     expect(fake.queryReads - before.queries).toBe(2)
     expect(fake.docReads - before.docs).toBe(1)
+  })
+})
+
+describe('the Kindle position', () => {
+  const ASIN = 'B0TESTAAA1'
+  const positionAtPage = (page: number) => page * 2402
+  const importedBook = async () => {
+    titles = [aTitle({ asin: ASIN })]
+    positions = { [ASIN]: positionAtPage(50) }
+    await connect()
+    const imported = await KindleUseCase.importBooks(reader, [KindleAsin(ASIN)], NOW)
+    const book = imported === 'not-connected' ? undefined : imported[0]
+    if (!book) throw new Error('nothing imported')
+    await BookCommand.edit(reader, book.id, { pageCount: PageCount(500) }, NOW)
+    return book.id
+  }
+  const read = async (id: Parameters<typeof BookQuery.byId>[1]) => BookQuery.byId(reader, id)
+
+  test('a book on the pile stays there on a first position, and leaves it when the reader reads on', async () => {
+    const id = await importedBook()
+    await KindleUseCase.syncLibrary(reader, NIGHT)
+    expect(await read(id)).toMatchObject({ status: 'to-read' })
+
+    positions = { [ASIN]: positionAtPage(120) }
+    await KindleUseCase.syncLibrary(reader, new Date('2026-10-03T04:30:00.000Z'))
+    expect(await read(id)).toMatchObject({ status: 'reading', currentPage: 120 })
+  })
+
+  test('a book under way with no page takes the first position', async () => {
+    const id = await importedBook()
+    await BookCommand.setStatus(reader, id, 'reading', NOW)
+    await KindleUseCase.syncLibrary(reader, NIGHT)
+    expect(await read(id)).toMatchObject({ currentPage: 50 })
+  })
+
+  test('a typed page stands until the Kindle moves', async () => {
+    const id = await importedBook()
+    await BookCommand.setStatus(reader, id, 'reading', NOW)
+    await KindleUseCase.syncLibrary(reader, NIGHT)
+    await BookCommand.recordPage(reader, id, PageCount(80), NIGHT)
+
+    await KindleUseCase.syncLibrary(reader, new Date('2026-10-03T04:30:00.000Z'))
+    expect(await read(id)).toMatchObject({ currentPage: 80 })
+
+    positions = { [ASIN]: positionAtPage(90) }
+    await KindleUseCase.syncLibrary(reader, new Date('2026-10-04T04:30:00.000Z'))
+    expect(await read(id)).toMatchObject({ currentPage: 90 })
+  })
+
+  test('a book the app calls read is left alone, however far the Kindle moves', async () => {
+    const id = await importedBook()
+    await BookCommand.setStatus(reader, id, 'reading', NOW)
+    await KindleUseCase.syncLibrary(reader, NIGHT)
+    await BookCommand.setStatus(reader, id, 'read', NIGHT)
+
+    positions = { [ASIN]: positionAtPage(120) }
+    await KindleUseCase.syncLibrary(reader, new Date('2026-10-03T04:30:00.000Z'))
+    expect(await read(id)).toMatchObject({ status: 'read', currentPage: 50 })
+  })
+
+  test('a book the Kindle calls read moves to read', async () => {
+    const id = await importedBook()
+    await BookCommand.setStatus(reader, id, 'reading', NOW)
+    await KindleUseCase.syncLibrary(reader, NIGHT)
+
+    titles = [aTitle({ asin: ASIN, readStatus: 'READ' })]
+    expect(
+      await KindleUseCase.syncLibrary(reader, new Date('2026-10-03T04:30:00.000Z')),
+    ).toMatchObject({ moved: 1 })
+    expect(await read(id)).toMatchObject({ status: 'read' })
+  })
+
+  test('a title Amazon will not answer for costs the book its night, not the pass', async () => {
+    const id = await importedBook()
+    positionRefusals.add(ASIN)
+    expect(typeof (await KindleUseCase.syncLibrary(reader, NIGHT))).toBe('object')
+    expect((await read(id))?.status).toBe('to-read')
   })
 })
 

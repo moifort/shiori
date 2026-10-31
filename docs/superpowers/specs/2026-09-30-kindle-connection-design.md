@@ -43,7 +43,10 @@ on every pass. Nothing expires on the reader's side unless Amazon revokes the de
 
 The Amazon data export import is retired.
 
-Out of scope: reading positions and "reading" status, highlights and notes, Kindle collections,
+Reading positions came later: `startReading` stays behind an AWS WAF challenge, and the signed
+device sidecar answers one instead (`server/domain/kindle/infrastructure/sidecar.ts`).
+
+Out of scope: highlights and notes, Kindle collections,
 and reusing an Audible connection for Kindle.
 
 ## Gate: the exchange must work first

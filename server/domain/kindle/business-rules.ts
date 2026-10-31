@@ -411,6 +411,26 @@ export const readingChangesFor = (
     .map((book) => book.id)
 }
 
+/** The books whose Kindle position is worth asking for: those the reader has yet
+ *  to finish, on a title still on the account that Amazon does not report read.
+ *  A book read or dropped in the app is the app's word, whatever the Kindle does
+ *  next, and a position it would move is left unread. */
+export const positionsToWatch = (
+  books: readonly Book[],
+  titles: readonly KindleTitle[],
+): (Book & { kindleAsin: KindleAsinValue })[] => {
+  const unread = new Set(
+    titles.filter(({ readStatus }) => readStatus !== 'READ').map(({ asin }) => asin),
+  )
+  return books.flatMap((book) =>
+    book.kindleAsin &&
+    unread.has(book.kindleAsin) &&
+    (book.status === 'to-read' || book.status === 'reading')
+      ? [{ ...book, kindleAsin: book.kindleAsin }]
+      : [],
+  )
+}
+
 /** The titles acquired since the cutoff — all of them on a first pass, which has
  *  none. A title with no acquisition date is only new on that first pass: with
  *  no date there is no telling it came since. */

@@ -10,14 +10,17 @@ import {
   formatSettledBySubgenres,
   groupedBySeries,
   inSagaOrder,
+  KINDLE_POSITIONS_PER_PAGE,
   keepsStory,
   kindleLinkUnder,
+  kindleMoveOf,
   listeningProgressOf,
   mediaFor,
   membershipFor,
   membershipIn,
   mendedNames,
   mergedCopies,
+  pageAtKindlePosition,
   readingProgressOf,
   readVolumeNumbersOf,
   recordJoinedBy,
@@ -1602,5 +1605,34 @@ describe('formatSettledBySubgenres', () => {
       subgenres: ['Dark Fantasy'],
     })
     expect(formatSettledBySubgenres(undefined, ['Mangaka']).format).toBeUndefined()
+  })
+})
+
+describe('a Kindle position', () => {
+  const underWay = { status: 'reading', pageCount: 500 } as const
+  const atPage = (page: number) => page * KINDLE_POSITIONS_PER_PAGE
+
+  test('stands for a page, short of the last one', () => {
+    expect(pageAtKindlePosition(atPage(129), 960)).toBe(129)
+    expect(pageAtKindlePosition(atPage(700), 500)).toBe(499)
+    expect(pageAtKindlePosition(10, 500)).toBeUndefined()
+  })
+
+  test('changes nothing where the Kindle has not moved and a page is known', () => {
+    const book = { ...underWay, kindlePosition: atPage(50), currentPage: 80 } as never
+    expect(kindleMoveOf(book, atPage(50))).toBeUndefined()
+  })
+
+  test('takes the page over when it moves, either way', () => {
+    const book = { ...underWay, kindlePosition: atPage(50), currentPage: 80 } as never
+    expect(kindleMoveOf(book, atPage(60))).toEqual({ status: 'reading', page: 60 })
+    expect(kindleMoveOf(book, atPage(40))).toEqual({ status: 'reading', page: 40 })
+  })
+
+  test('takes a book off the pile only by reading on', () => {
+    const pile = { status: 'to-read', pageCount: 500 } as never
+    expect(kindleMoveOf(pile, atPage(50))).toEqual({ status: 'to-read' })
+    const known = { status: 'to-read', pageCount: 500, kindlePosition: atPage(50) } as never
+    expect(kindleMoveOf(known, atPage(60))).toEqual({ status: 'reading', page: 60 })
   })
 })

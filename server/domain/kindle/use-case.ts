@@ -1,16 +1,18 @@
-import type { KindleTitle } from 'kindle-api-ts'
+import type { KindleCredentials, KindleTitle } from 'kindle-api-ts'
 import { AdminCommand } from '~/domain/admin/command'
 import { AnalyticsUseCase } from '~/domain/analytics/use-case'
-import { mediaFor, shelfOf } from '~/domain/book/business-rules'
+import { kindleMoveOf, mediaFor, shelfOf } from '~/domain/book/business-rules'
 import { BookCommand } from '~/domain/book/command'
+import { KindlePosition } from '~/domain/book/primitives'
 import { BookQuery } from '~/domain/book/query'
-import type { Book, BookLanguage } from '~/domain/book/types'
+import type { Book, BookLanguage, KindlePosition as KindlePositionValue } from '~/domain/book/types'
 import {
   bookFrom,
   importableFrom,
   isCataloguable,
   type KindleLink,
   kindleLinksFor,
+  positionsToWatch,
   readAsinsOf,
   readingChangesFor,
   readTitleFrom,
@@ -117,7 +119,8 @@ export namespace KindleUseCase {
    *  newly reports read move to read, dated tonight — the sync hears of a
    *  finished book within a day. Then titles acquired since the last pass are
    *  catalogued, and only those: everything older was on offer when the reader
-   *  last chose.
+   *  last chose. Last, the books left to finish take their Kindle position: one
+   *  Amazon call each, no paid API, and it moves the page the reader sees.
    *
    *  `autoSync` governs the nightly pass, not a button: `onDemand` walks past
    *  it. */
@@ -134,7 +137,7 @@ export namespace KindleUseCase {
 
     const library = await fetchLibrary(userId)
     if (library === 'not-connected') return library
-    const { titles, store } = library
+    const { titles, store, credentials } = library
 
     const [owned, removals] = await Promise.all([
       BookQuery.all(userId),
@@ -163,6 +166,14 @@ export namespace KindleUseCase {
       (importable) => !importable.alreadyInLibrary,
     )
 
+    const positions = await positionMovesOf(
+      credentials,
+      positionsToWatch(
+        linked.filter((book) => !moves.includes(book.id)),
+        titles,
+      ),
+    )
+
     const write = async () => {
       await linkAll(userId, links, now)
       await bulkSave(moves, async (bookId) => BookCommand.setStatus(userId, bookId, 'read', now))
@@ -170,9 +181,12 @@ export namespace KindleUseCase {
         await SeriesUseCase.filedAfterCatalogues(acquired.map(bookFrom)),
         async (book) => BookCommand.add(userId, book, now),
       )
+      await bulkSave(positions, async ({ bookId, position }) =>
+        BookCommand.recordKindlePosition(userId, bookId, position, now),
+      )
     }
     // A night with nothing new leaves the dashboard as it was.
-    if (links.length + moves.length + acquired.length > 0) {
+    if (links.length + moves.length + acquired.length + positions.length > 0) {
       await AnalyticsUseCase.whileStale(userId, write)
     }
     await BookCommand.forgetSyncRemovals(userId, 'kindle', returning)
@@ -311,17 +325,39 @@ const catalogue = async (
   return imported
 }
 
+/** The positions that change something on their book, read from Amazon. A title
+ *  Amazon will not answer for costs that book its night, not the pass. */
+const positionMovesOf = async (
+  credentials: KindleCredentials,
+  books: ReadonlyArray<Book & { kindleAsin: KindleAsin }>,
+) => {
+  const found: { bookId: Book['id']; position: KindlePositionValue }[] = []
+  await bulkSave([...books], async (book) => {
+    try {
+      const position = await api.readingPosition(credentials, book.kindleAsin)
+      if (position === undefined || !kindleMoveOf(book, position)) return
+      found.push({ bookId: book.id, position: KindlePosition(position) })
+    } catch (error) {
+      logger.warn('Kindle position could not be read', { error, bookId: book.id })
+    }
+  })
+  return found
+}
+
 /** One trip to Amazon: fresh cookies minted from the device, then the list —
  *  and the language of the store it lives on, which every edition Amazon names
  *  no language of is in. */
 const fetchLibrary = async (
   userId: UserId,
-): Promise<{ titles: KindleTitle[]; store: BookLanguage } | 'not-connected'> => {
+): Promise<
+  { titles: KindleTitle[]; store: BookLanguage; credentials: KindleCredentials } | 'not-connected'
+> => {
   const connected = await connectedCredentials(userId)
   if (connected === 'not-connected') return connected
   return {
     titles: await api.library(connected.credentials),
     store: storeLanguageOf(connected.account.marketplace),
+    credentials: connected.credentials,
   }
 }
 

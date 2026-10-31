@@ -8,6 +8,7 @@ import type {
   CoverUrl as CoverUrlType,
   Genre,
   Isbn13 as Isbn13Type,
+  KindlePosition as KindlePositionType,
   ListeningMinutes as ListeningMinutesType,
   NarratorName as NarratorNameType,
   PageCount as PageCountType,
@@ -137,6 +138,11 @@ export const PageCount = (value: unknown) => {
 
 // A recording past a thousand hours is a parsing accident, not an audiobook.
 // Zero is refused rather than stored: an unknown running time is an absent field.
+export const KindlePosition = (value: unknown) => {
+  const v = z.number().int().min(0).parse(value)
+  return make<KindlePositionType>()(v)
+}
+
 export const ListeningMinutes = (value: unknown) => {
   const v = z
     .preprocess((v) => (typeof v === 'string' ? Number(v) : v), z.number().int().min(1).max(60000))
