@@ -1,6 +1,6 @@
 import { BookFormatEnum } from '~/domain/book/infrastructure/graphql/enums'
 import { FeedEventKindEnum, ReleaseSourceEnum } from '~/domain/news/infrastructure/graphql/enums'
-import type { FeedEvent, FeedPage, UpcomingRelease } from '~/domain/news/types'
+import type { FeedEvent, FeedPage, NarratorNews, UpcomingRelease } from '~/domain/news/types'
 import { builder } from '~/domain/shared/graphql/builder'
 import { objectStore } from '~/system/object-store'
 
@@ -139,6 +139,27 @@ export const UpcomingReleaseType = builder.objectRef<UpcomingRelease>('UpcomingR
     sagaFavorite: t.boolean({
       description: 'Whether the reader hearted the saga.',
       resolve: (release) => release.sagaFavorite,
+    }),
+  }),
+})
+
+export const NarratorNewsType = builder.objectRef<NarratorNews>('NarratorNews').implement({
+  description:
+    'A narrator the reader follows lending their voice to a recording out in the last month, ' +
+    'for the news feed.',
+  fields: (t) => ({
+    id: t.string({ resolve: (news) => news.id }),
+    narrator: t.string({ resolve: (news) => news.narrator }),
+    title: t.field({ type: 'BookTitle', resolve: (news) => news.title }),
+    authors: t.field({ type: ['AuthorName'], resolve: (news) => news.authors }),
+    date: t.string({
+      description: 'When it came out: `YYYY`, `YYYY-MM` or `YYYY-MM-DD`.',
+      resolve: (news) => news.date,
+    }),
+    coverUrl: t.field({
+      type: 'CoverUrl',
+      nullable: true,
+      resolve: (news) => news.coverUrl ?? null,
     }),
   }),
 })

@@ -2,6 +2,7 @@ import { mainLanguageOf } from '~/domain/author/business-rules'
 import { authorKeyOf } from '~/domain/author/primitives'
 import type { AuthorKey, ShelvedAuthor } from '~/domain/author/types'
 import type { Book, BookFormat, BookLanguage } from '~/domain/book/types'
+import type { ShelvedNarrator } from '~/domain/narrator/types'
 import type { ScanResult } from '~/domain/scan/types'
 import {
   type FoundVolume as CatalogueVolume,
@@ -23,6 +24,8 @@ import type {
   FoundVolume,
   FoundWork,
   KeptReleaseDescription,
+  NarratedWork,
+  NarratorWatch,
   ReleaseDate,
   ReleaseDescription,
   ReleaseFormat,
@@ -30,6 +33,7 @@ import type {
   SagaReleases,
   SagaWatch,
   WatchedAuthor,
+  WatchedNarrator,
   WatchedSaga,
 } from './types'
 
@@ -276,6 +280,79 @@ export const dueAuthorWatches = (
   return [...authors.values()]
     .filter((author) => authorWatchIsStale(watches.get(authorWatchKeyOf(author)), now))
     .sort((left, right) => checkedAt(left) - checkedAt(right))
+}
+
+// MARK: - The narrators
+
+/** How often a narrator is looked up on the web again: every three months, as
+ *  an author is. */
+export const NARRATOR_WATCH_EVERY_MS = 90 * 86_400_000
+
+export const narratorWatchKeyOf = ({
+  narratorKey,
+  language,
+}: Pick<WatchedNarrator, 'narratorKey' | 'language'>) => `${narratorKey}--${language}`
+
+/** Every narrator the reader follows — two recordings held, or one rated four
+ *  stars or more, or loved, as an author is — in the language most of those
+ *  recordings are in. A narrator whose recordings record no language cannot
+ *  be searched for, nor one whose every recording the reader gave up on. */
+export const watchedNarratorsOf = (
+  narrators: readonly Pick<
+    ShelvedNarrator<Pick<Book, 'status' | 'rating' | 'favorite' | 'language'>>,
+    'key' | 'name' | 'books'
+  >[],
+): WatchedNarrator[] =>
+  narrators.flatMap((narrator) => {
+    if (!isFollowedAuthor(narrator)) return []
+    const language = mainLanguageOf(narrator.books.filter((book) => book.status !== 'dropped'))
+    return language ? [{ narratorKey: narrator.key, name: narrator.name, language }] : []
+  })
+
+export const narratorWatchIsStale = (watch: NarratorWatch | undefined, now: Date): boolean =>
+  !watch || now.getTime() - watch.checkedAt.getTime() > NARRATOR_WATCH_EVERY_MS
+
+/** The narrators every reader follows, each once, the ones never looked up
+ *  first, then the longest unchecked. */
+export const dueNarratorWatches = (
+  readers: readonly DiscoveryReader[],
+  watches: ReadonlyMap<string, NarratorWatch>,
+  now: Date,
+): WatchedNarrator[] => {
+  const narrators = new Map<string, WatchedNarrator>()
+  for (const reader of readers)
+    for (const narrator of reader.narrators ?? [])
+      narrators.set(narratorWatchKeyOf(narrator), narrator)
+  const checkedAt = (narrator: WatchedNarrator) =>
+    watches.get(narratorWatchKeyOf(narrator))?.checkedAt.getTime() ?? 0
+  return [...narrators.values()]
+    .filter((narrator) => narratorWatchIsStale(watches.get(narratorWatchKeyOf(narrator)), now))
+    .sort((left, right) => checkedAt(left) - checkedAt(right))
+}
+
+/** The works of a narrator watch merged with the last look's, as an author's. */
+export const mergedNarratedWorks = (
+  previous: readonly NarratedWork[],
+  found: readonly NarratedWork[],
+  today: string,
+): NarratedWork[] => {
+  const since = dayMinus(today, KEPT_DAYS)
+  const merged = new Map(
+    previous
+      .filter((work) => work.date !== undefined && lastDayOf(work.date) > since)
+      .map((work) => [slugify(work.title), work]),
+  )
+  for (const work of found) {
+    const known = merged.get(slugify(work.title))
+    merged.set(slugify(work.title), {
+      ...work,
+      ...(work.coverUrl || !known?.coverUrl ? {} : { coverUrl: known.coverUrl }),
+      ...(work.asin || !known?.asin ? {} : { asin: known.asin }),
+    })
+  }
+  return [...merged.values()].sort((left, right) =>
+    (left.date ?? '').localeCompare(right.date ?? ''),
+  )
 }
 
 /** The language a reader is written to in, until they open the tab and their

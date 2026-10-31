@@ -2,6 +2,7 @@ import type {
   AuthorWatch,
   DiscoveryReader,
   KeptReleaseDescription,
+  NarratorWatch,
   SagaWatch,
 } from '~/domain/discovery/types'
 import type { UserId } from '~/domain/shared/types'
@@ -18,6 +19,11 @@ const watches = () =>
 // language, holding no reference to any reader.
 const authorWatches = () =>
   db().collection('author-watches').withConverter(genericDataConverter<AuthorWatch>())
+
+// Shared as the author watches are: keyed by the narrator and the language,
+// holding no reference to any reader.
+const narratorWatches = () =>
+  db().collection('narrator-watches').withConverter(genericDataConverter<NarratorWatch>())
 
 // Shared as the saga watches are: a book's description is a fact about the
 // book, keyed by it and the language it is written in, holding no reference to
@@ -59,6 +65,20 @@ export const findAuthorWatches = async (keys: readonly string[]): Promise<Author
 
 export const saveAuthorWatch = async (watch: AuthorWatch): Promise<void> => {
   await authorWatches().doc(watch.key).set(withoutAbsentFields(watch))
+}
+
+export const findNarratorWatches = async (keys: readonly string[]): Promise<NarratorWatch[]> => {
+  const unique = [...new Set(keys)]
+  if (unique.length === 0) return []
+  const snapshots = await db().getAll(...unique.map((key) => narratorWatches().doc(key)))
+  return snapshots.flatMap((snapshot) => {
+    const watch = snapshot.data() as NarratorWatch | undefined
+    return watch ? [watch] : []
+  })
+}
+
+export const saveNarratorWatch = async (watch: NarratorWatch): Promise<void> => {
+  await narratorWatches().doc(watch.key).set(withoutAbsentFields(watch))
 }
 
 export const findReader = async (userId: UserId): Promise<DiscoveryReader | undefined> =>

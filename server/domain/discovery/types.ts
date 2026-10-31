@@ -12,6 +12,7 @@ import type {
   Publisher,
   Synopsis,
 } from '~/domain/book/types'
+import type { NarratorKey } from '~/domain/narrator/types'
 import type { ScannedSeries, ScanResult } from '~/domain/scan/types'
 import type { ReleaseDate, SagaKey, SeriesName, VolumeNumber } from '~/domain/series/types'
 import type { FollowedSeries } from '~/domain/series/use-case'
@@ -96,6 +97,9 @@ export type DiscoveryReader = {
   /** The authors they hold, in each format they hold them in. Absent on a
    *  reader stored before authors were watched. */
   authors?: WatchedAuthor[]
+  /** The narrators they follow, in the language of the recordings they hold.
+   *  Absent on a reader stored before narrators were watched. */
+  narrators?: WatchedNarrator[]
 }
 
 /** What one saga has for the reader: the next volume announced they do not
@@ -125,6 +129,36 @@ export type WatchedAuthor = {
   name: AuthorName
   format: ReleaseFormat
   language: BookLanguage
+}
+
+/** A narrator in one language, as one reader holds them: what the web is
+ *  searched for, and the key the shared watch is stored under. Recordings
+ *  only: a narrator reads nothing else. */
+export type WatchedNarrator = {
+  narratorKey: NarratorKey
+  /** The spelling the reader's recordings use: what the web is searched with. */
+  name: NarratorName
+  language: BookLanguage
+}
+
+/** One recording a narrator lent their voice to, out lately or announced. */
+export type NarratedWork = FoundWork & {
+  /** Who wrote it: what tells the reader's own copy from another book. */
+  authors: AuthorName[]
+}
+
+/** What a narrator recorded lately or has announced in one language, as the
+ *  web says — shared by every reader who follows them, keyed on the narrator
+ *  rather than on anybody, so the grounded call behind it is paid once every
+ *  three months. */
+export type NarratorWatch = {
+  /** `{narratorKey}--{language}`. */
+  key: string
+  narratorKey: NarratorKey
+  name: NarratorName
+  language: BookLanguage
+  checkedAt: Date
+  works: NarratedWork[]
 }
 
 /** One work of an author as the web found it in one language and format, out

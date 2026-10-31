@@ -5,11 +5,12 @@ import type { Book, BookFormat } from '~/domain/book/types'
 import type {
   AuthorDiscovery,
   Discovery,
+  NarratorWatch,
   ReleaseFormat,
   SagaDiscovery,
 } from '~/domain/discovery/types'
 import type { Friend } from '~/domain/friendship/types'
-import type { FeedEvent, FeedEventKind, UpcomingRelease } from '~/domain/news/types'
+import type { FeedEvent, FeedEventKind, NarratorNews, UpcomingRelease } from '~/domain/news/types'
 import { slugify } from '~/utils/slug'
 
 const KINDS: Partial<Record<SharedActivityKind, FeedEventKind>> = {
@@ -174,11 +175,17 @@ const awaitedRelease = (view: AwaitedEditionView, format: ReleaseFormat): Upcomi
  *  winning over the author and the author over the wait. */
 export const upcomingOf = (
   discoveries: readonly { format: ReleaseFormat; discovery: Discovery }[],
+  narrated: readonly UpcomingRelease[] = [],
 ): UpcomingRelease[] => {
-  const all = discoveries.flatMap(({ format, discovery }) => [
-    ...discovery.sagas.flatMap((row) => sagaRelease(row, format) ?? []),
-    ...discovery.authors.flatMap((row) => authorRelease(row, format)),
-  ])
+  const all = [
+    ...discoveries.flatMap(({ format, discovery }) => [
+      ...discovery.sagas.flatMap((row) => sagaRelease(row, format) ?? []),
+      ...discovery.authors.flatMap((row) => authorRelease(row, format)),
+    ]),
+    // Last, so a recording the sagas, the authors or the reader's own waits
+    // already announce is listed as they have it.
+    ...narrated,
+  ]
   const seen = new Set<string>()
   return all
     .filter((release) => {
@@ -196,4 +203,57 @@ const soonestFirst = (left: UpcomingRelease, right: UpcomingRelease): number => 
   if (left.date === undefined || right.date === undefined)
     return left.date === right.date ? 0 : left.date === undefined ? 1 : -1
   return left.date < right.date ? -1 : left.date > right.date ? 1 : 0
+}
+
+// MARK: - Narrators
+
+/** How long a recording stays news after it came out. */
+const NARRATOR_NEWS_DAYS = 30
+
+const dayOf = (date: string): string =>
+  date.length === 10 ? date : date.length === 7 ? `${date}-01` : `${date}-01-01`
+
+const daysBefore = (today: string, days: number): string =>
+  new Date(Date.parse(`${today}T00:00:00Z`) - days * 86_400_000).toISOString().slice(0, 10)
+
+/** The recordings the narrators the reader follows lent their voice to, that
+ *  the reader does not hold: the ones out in the last month are the feed's
+ *  news, the ones still to come the calendar's. Dated works only — a
+ *  recording with no date is neither news nor a release. `held` holds the shelf
+ *  keys of the stories the reader already has. */
+export const narratedWorksOf = (
+  watches: readonly NarratorWatch[],
+  held: ReadonlySet<string>,
+  today: string,
+): { recent: NarratorNews[]; upcoming: UpcomingRelease[] } => {
+  const since = daysBefore(today, NARRATOR_NEWS_DAYS)
+  const recent: NarratorNews[] = []
+  const upcoming: UpcomingRelease[] = []
+  for (const watch of watches)
+    for (const work of watch.works) {
+      if (!work.date || held.has(shelfKeyOf(work.title, work.authors[0]))) continue
+      const day = dayOf(work.date)
+      if (day > today)
+        upcoming.push({
+          id: `narrator~${watch.narratorKey}~${slugify(work.title)}`,
+          source: 'narrator',
+          format: 'audiobook',
+          title: work.title,
+          authors: work.authors,
+          date: work.date,
+          ...(work.coverUrl ? { coverUrl: work.coverUrl } : {}),
+          narrator: watch.name,
+          sagaFavorite: false,
+        })
+      else if (day >= since)
+        recent.push({
+          id: `${watch.narratorKey}~${slugify(work.title)}`,
+          narrator: watch.name,
+          title: work.title,
+          authors: work.authors,
+          date: work.date,
+          ...(work.coverUrl ? { coverUrl: work.coverUrl } : {}),
+        })
+    }
+  return { recent: recent.sort((a, b) => (a.date < b.date ? 1 : -1)), upcoming }
 }

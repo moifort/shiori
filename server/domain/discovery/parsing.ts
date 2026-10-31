@@ -3,11 +3,11 @@ import { Isbn13 } from '~/domain/book/primitives'
 import type { BookLanguage } from '~/domain/book/types'
 import { ReleaseDate, SeriesName, VolumeNumber } from '~/domain/series/primitives'
 import type { ReleaseDate as ReleaseDateType } from '~/domain/series/types'
-import { BookTitle } from '~/domain/shared/primitives'
+import { AuthorName, BookTitle } from '~/domain/shared/primitives'
 import { optionally } from '~/utils/input'
 import { slugify } from '~/utils/slug'
-import type { VolumeOutput, WorkOutput } from './schemas'
-import type { FoundVolume, FoundWork } from './types'
+import type { NarratedWorkOutput, VolumeOutput, WorkOutput } from './schemas'
+import type { FoundVolume, FoundWork, NarratedWork } from './types'
 
 /** Every volume of the model's answer, one per number and one per title and
  *  ISBN — the first listed wins — or nothing without a title or a number. Every other field is dropped on its
@@ -200,4 +200,23 @@ export const amazonEditionFrom = (
   if (shown && names && !names.includes(shown)) return 'unknown'
   const releaseDate = date ? amazonDateOf(date) : undefined
   return releaseDate ? { releaseDate } : {}
+}
+
+/** Every recording of the model's answer, one per folded title — the first
+ *  listed wins — or nothing without a title or an author. Every other field is
+ *  dropped on its own when it does not validate, as `worksFrom` does. */
+export const narratedWorksFrom = (raw: readonly NarratedWorkOutput[]): NarratedWork[] => {
+  const works = new Map<string, NarratedWork>()
+  for (const entry of raw) {
+    const title = optionally(entry.title, BookTitle)
+    const authors = (entry.authors ?? []).flatMap((author) => optionally(author, AuthorName) ?? [])
+    if (!title || authors.length === 0 || works.has(slugify(title))) continue
+    works.set(slugify(title), {
+      title,
+      authors,
+      date: optionally(entry.date, ReleaseDate),
+      asin: optionally(entry.asin, AudibleAsin),
+    })
+  }
+  return [...works.values()]
 }

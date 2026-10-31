@@ -3556,6 +3556,20 @@ Who reads an audiobook aloud, 1 to 200 characters. Not an AuthorName: a narrator
 """
 scalar NarratorName
 
+"""
+A narrator the reader follows lending their voice to a recording out in the last month, for the news feed.
+"""
+type NarratorNews {
+  authors: [AuthorName!]!
+  coverUrl: CoverUrl
+
+  """When it came out: `YYYY`, `YYYY-MM` or `YYYY-MM-DD`."""
+  date: String!
+  id: String!
+  narrator: String!
+  title: BookTitle!
+}
+
 """Everything a narrator’s page draws, in one answer."""
 type NarratorPage {
   """
@@ -4300,6 +4314,11 @@ type Query {
   myShelf: FriendProfile!
 
   """
+  The recordings the narrators the reader follows lent their voice to in the last month, the newest first, the ones the reader holds left out. Read off the shared narrator watches a quarterly pass keeps: no web lookup.
+  """
+  narratorNews: [NarratorNews!]!
+
+  """
   One narrator’s page: the reader’s recordings in their voice, grouped by saga, and who they are. Built on first sight when nobody has opened it yet: one web-grounded model call for the facts and the biography, in the language of `Accept-Language`, and Wikipedia for the portrait. That first opening takes a few seconds; every later one, by anyone, reads the stored catalogue. Null when the reader holds no recording of theirs and no `offered` names them.
   """
   narratorPage(
@@ -4584,6 +4603,9 @@ enum ReleaseSource {
 
   """An edition they await."""
   AWAITED
+
+  """A recording of a narrator they follow."""
+  NARRATOR
 
   """The next volume of a saga they follow."""
   SAGA

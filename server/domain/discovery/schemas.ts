@@ -61,3 +61,32 @@ export type WorkOutput = {
 }
 
 export type AuthorReleasesOutput = { works?: WorkOutput[] }
+
+export const NARRATOR_RELEASES_SCHEMA = {
+  type: 'object',
+  properties: {
+    works: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          title: { type: 'string' },
+          authors: { type: 'array', items: { type: 'string' } },
+          date: { type: 'string', nullable: true },
+          asin: { type: 'string', nullable: true },
+        },
+        required: ['title', 'authors'],
+      },
+    },
+  },
+  required: ['works'],
+} as const
+
+export type NarratedWorkOutput = {
+  title?: string
+  authors?: string[]
+  date?: string | null
+  asin?: string | null
+}
+
+export type NarratorReleasesOutput = { works?: NarratedWorkOutput[] }

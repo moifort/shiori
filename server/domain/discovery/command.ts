@@ -3,6 +3,7 @@ import type {
   AuthorWatch,
   DiscoveryReader,
   KeptReleaseDescription,
+  NarratorWatch,
   SagaWatch,
 } from '~/domain/discovery/types'
 import type { UserId } from '~/domain/shared/types'
@@ -48,6 +49,9 @@ export namespace DiscoveryCommand {
 
   export const saveAuthorWatch = (watch: AuthorWatch): Promise<void> =>
     repository.saveAuthorWatch(watch)
+
+  export const saveNarratorWatch = (watch: NarratorWatch): Promise<void> =>
+    repository.saveNarratorWatch(watch)
 
   export const deleteForUser = (userId: UserId): Promise<void> => repository.removeReader(userId)
 }

@@ -1,6 +1,6 @@
 import type { SharedFavorite } from '~/domain/analytics/types'
 import type { AuthorKey, PortraitUrl } from '~/domain/author/types'
-import type { BookFormat, CoverUrl } from '~/domain/book/types'
+import type { BookFormat, CoverUrl, NarratorName } from '~/domain/book/types'
 import type { ReleaseDate, SeriesName, VolumeNumber } from '~/domain/series/types'
 import type { AuthorName, BookTitle, StarRating, UserId } from '~/domain/shared/types'
 
@@ -34,7 +34,7 @@ export type FeedPage = {
 }
 
 /** Where an upcoming release comes from among the things the reader follows. */
-export type ReleaseSource = 'saga' | 'author' | 'awaited'
+export type ReleaseSource = 'saga' | 'author' | 'awaited' | 'narrator'
 
 /** One book announced, as the calendar and the feed's author card draw it.
  *  Merged from what the existing release watches already hold: a saga's next
@@ -57,4 +57,18 @@ export type UpcomingRelease = {
   /** The reader's stars for the saga, when it is a saga's volume. */
   sagaRating?: StarRating
   sagaFavorite: boolean
+  /** The narrator who lends their voice, on a recording they were found for. */
+  narrator?: NarratorName
+}
+
+/** A narrator the reader follows lending their voice to a recording out
+ *  lately: the feed's "prête sa voix à". Derived per request from the shared
+ *  narrator watches, never stored. */
+export type NarratorNews = {
+  id: string
+  narrator: NarratorName
+  title: BookTitle
+  authors: AuthorName[]
+  date: ReleaseDate
+  coverUrl?: CoverUrl
 }

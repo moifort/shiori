@@ -2,7 +2,7 @@ import type { BookLanguage } from '~/domain/book/types'
 import { AMAZON_STORES } from '~/domain/shared/amazon-stores'
 import { AUDIBLE_STORES } from '~/domain/shared/audible-stores'
 import { formatOf } from './business-rules'
-import type { SagaWatch, WatchedAuthor } from './types'
+import type { SagaWatch, WatchedAuthor, WatchedNarrator } from './types'
 
 /** Written into the prompt so the volumes come back in the language asked. */
 export const LANGUAGE_NAMES: Record<BookLanguage, string> = {
@@ -94,4 +94,21 @@ Renseigne works : une entrée par livre, la première édition en ${language} se
 - volume : son numéro dans cette série, sinon null.
 
 Ne liste que des livres de ${author.name} confirmés par une source (éditeur, libraire, Audible, annonce de l'auteur ou du traducteur). Un auteur sans parution récente ni annonce dans cette langue revient avec works vide. N'invente rien.`
+}
+
+/** Every recording one narrator lent their voice to, out in the last months
+ *  or announced, in one language: the news the Actualités feed and the release
+ *  calendar tell. */
+export const narratorReleasesPrompt = (narrator: WatchedNarrator, today: string, since: string) => {
+  const language = LANGUAGE_NAMES[narrator.language]
+  const store = AUDIBLE_STORES[narrator.language] ?? 'Audible'
+  return `Nous sommes le ${today}. Un lecteur suit le narrateur ${narrator.name} en ${language}. Recherche sur le web CHAQUE livre audio en ${language} lu par ${narrator.name} paru depuis le ${since}, puis ceux annoncés, tels que le catalogue Audible de cette langue (${store}) les liste.
+
+Renseigne works : une entrée par livre audio, la première édition enregistrée en ${language} seulement. Pour chacun :
+- title : son titre en ${language}.
+- authors : les auteurs du livre.
+- date : la date de parution la plus précise connue, au format AAAA-MM-JJ, sinon AAAA-MM, sinon AAAA. Obligatoire.
+- asin : l'identifiant Audible de l'enregistrement (dix caractères, par exemple B0DM67WR2V), lu dans l'adresse de sa page sur ${store}, sinon null. N'invente jamais un ASIN.
+
+Ne liste que des enregistrements lus par ${narrator.name} confirmés par une source (Audible, éditeur, annonce du narrateur). Un narrateur sans parution récente ni annonce dans cette langue revient avec works vide. N'invente rien.`
 }

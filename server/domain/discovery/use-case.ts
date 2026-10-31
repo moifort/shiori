@@ -17,6 +17,7 @@ import {
   digestOf,
   dueAlertsOf,
   dueAuthorWatches,
+  dueNarratorWatches,
   dueWatches,
   formatOf,
   inDiscoveryOrder,
@@ -26,9 +27,11 @@ import {
   lastVolumeOutOf,
   likelyLanguageOf,
   looksLeftToday,
+  mergedNarratedWorks,
   mergedVolumes,
   mergedWorks,
   missingVolumesOf,
+  narratorWatchKeyOf,
   newAnnouncementsOf,
   onAudible,
   readerIsStale,
@@ -41,6 +44,7 @@ import {
   sagasToListOnAudible,
   todayOf,
   watchedAuthorsOf,
+  watchedNarratorsOf,
   watchedSagasOf,
   watchKeyOf,
 } from '~/domain/discovery/business-rules'
@@ -52,12 +56,18 @@ import {
   audibleRecordingOf,
   audibleSeriesOf,
 } from '~/domain/discovery/infrastructure/audible-catalogue'
-import { volumesFrom, worksFrom } from '~/domain/discovery/parsing'
-import { authorReleasesPrompt, releasesPrompt } from '~/domain/discovery/prompts'
+import { narratedWorksFrom, volumesFrom, worksFrom } from '~/domain/discovery/parsing'
+import {
+  authorReleasesPrompt,
+  narratorReleasesPrompt,
+  releasesPrompt,
+} from '~/domain/discovery/prompts'
 import { DiscoveryQuery } from '~/domain/discovery/query'
 import {
   AUTHOR_RELEASES_SCHEMA,
   type AuthorReleasesOutput,
+  NARRATOR_RELEASES_SCHEMA,
+  type NarratorReleasesOutput,
   RELEASES_SCHEMA,
   type ReleasesOutput,
 } from '~/domain/discovery/schemas'
@@ -71,6 +81,8 @@ import type {
   DiscoveryReader,
   FoundVolume,
   FoundWork,
+  NarratedWork,
+  NarratorWatch,
   ReleaseDescription,
   ReleaseFormat,
   ReleaseSeed,
@@ -78,8 +90,10 @@ import type {
   SagaReleases,
   SagaWatch,
   WatchedAuthor,
+  WatchedNarrator,
   WatchedSaga,
 } from '~/domain/discovery/types'
+import { shelvedNarratorsOf } from '~/domain/narrator/business-rules'
 import { NotificationUseCase } from '~/domain/notification/use-case'
 import { generate } from '~/domain/scan/gemini'
 import { publishedCoverOf } from '~/domain/scan/published-cover'
@@ -90,6 +104,7 @@ import { SeriesCommand } from '~/domain/series/command'
 import { SeriesQuery } from '~/domain/series/query'
 import type { SagaKey, VolumeNumber } from '~/domain/series/types'
 import { type FollowedSeries, SeriesUseCase } from '~/domain/series/use-case'
+import { SeriesOpinionQuery } from '~/domain/series-opinion/query'
 import type { Language } from '~/domain/shared/language'
 import type { AuthorName, BookTitle, UserId } from '~/domain/shared/types'
 import { UserQuery } from '~/domain/user/query'
@@ -465,15 +480,21 @@ export namespace DiscoveryUseCase {
       }
     }
     const everyone = [...readers.values()]
-    const [watches, authorWatches] = await Promise.all([
+    const [watches, authorWatches, narratorWatches] = await Promise.all([
       DiscoveryQuery.watches(everyone.flatMap((reader) => reader.sagas.map(watchKeyOf))),
       DiscoveryQuery.authorWatches(
         everyone.flatMap((reader) => (reader.authors ?? []).map(authorWatchKeyOf)),
       ),
+      DiscoveryQuery.narratorWatches(
+        everyone.flatMap((reader) => (reader.narrators ?? []).map(narratorWatchKeyOf)),
+      ),
     ])
-    // The day's looks are shared: sagas first, then authors, whatever is left
-    // waiting for the next day.
-    const left = looksLeftToday([...watches.values(), ...authorWatches.values()], now)
+    // The day's looks are shared: sagas first, then authors, then narrators,
+    // whatever is left waiting for the next day.
+    const left = looksLeftToday(
+      [...watches.values(), ...authorWatches.values(), ...narratorWatches.values()],
+      now,
+    )
     const dueSagas = dueWatches(everyone, watches, now)
     const sagas = await lookUpAll(dueSagas.slice(0, left), watches, now, overBudget)
     const dueAuthors = dueAuthorWatches(everyone, authorWatches, now)
@@ -486,13 +507,23 @@ export namespace DiscoveryUseCase {
       now,
       sagas.refused ? () => true : overBudget,
     )
+    const dueNarrators = dueNarratorWatches(everyone, narratorWatches, now)
+    const narratorsLeft = Math.max(0, authorsLeft - Math.min(authorsLeft, dueAuthors.length))
+    const narrators = await lookUpAllNarrators(
+      dueNarrators.slice(0, narratorsLeft),
+      narratorWatches,
+      now,
+      sagas.refused ? () => true : overBudget,
+    )
     const capped =
-      Math.max(0, dueSagas.length - left) + Math.max(0, dueAuthors.length - authorsLeft)
+      Math.max(0, dueSagas.length - left) +
+      Math.max(0, dueAuthors.length - authorsLeft) +
+      Math.max(0, dueNarrators.length - narratorsLeft)
     return {
       synced,
-      watched: sagas.watched + authors.watched,
-      failed: failed + sagas.failed + authors.failed,
-      deferred: sagas.deferred + authors.deferred + capped,
+      watched: sagas.watched + authors.watched + narrators.watched,
+      failed: failed + sagas.failed + authors.failed + narrators.failed,
+      deferred: sagas.deferred + authors.deferred + narrators.deferred + capped,
     }
   }
 
@@ -575,22 +606,26 @@ type Library = {
   shelved: ShelvedAuthor<Book>[]
   sagas: WatchedSaga[]
   authors: WatchedAuthor[]
+  narrators: WatchedNarrator[]
   known: DiscoveryReader | undefined
 }
 
 /** The reader's sagas and authors, and what the passes know of them. The
  *  library is read once, shared by the sagas and the authors. */
 const libraryOf = async (userId: UserId, known?: DiscoveryReader): Promise<Library> => {
-  const [followed, shelved, reader] = await Promise.all([
+  const [followed, shelved, reader, books, opinions] = await Promise.all([
     SeriesUseCase.followed(userId),
     AuthorUseCase.shelvedAuthors(userId),
     known ? Promise.resolve(known) : DiscoveryQuery.reader(userId),
+    BookQuery.all(userId),
+    SeriesOpinionQuery.all(userId),
   ])
   return {
     followed,
     shelved,
     sagas: watchedSagasOf(followed),
     authors: watchedAuthorsOf(shelved.filter(isFollowedAuthor)),
+    narrators: watchedNarratorsOf(shelvedNarratorsOf(books, opinions)),
     known: reader,
   }
 }
@@ -818,7 +853,7 @@ const withoutAccountsGone = async (
  *  opening the tab every few minutes must not cost a write each time. */
 const rememberReader = async (
   userId: UserId,
-  { sagas, authors, known }: Pick<Library, 'sagas' | 'authors' | 'known'>,
+  { sagas, authors, narrators, known }: Pick<Library, 'sagas' | 'authors' | 'narrators' | 'known'>,
   language: Language,
   now: Date,
   force = false,
@@ -828,6 +863,7 @@ const rememberReader = async (
     known.language === language &&
     JSON.stringify(known.sagas) === JSON.stringify(sagas) &&
     JSON.stringify(known.authors ?? []) === JSON.stringify(authors) &&
+    JSON.stringify(known.narrators ?? []) === JSON.stringify(narrators) &&
     !readerIsStale(known, now)
   if (unchanged && !force) return known
   return DiscoveryCommand.saveReader({
@@ -835,6 +871,7 @@ const rememberReader = async (
     language,
     sagas,
     authors,
+    narrators,
     syncedAt: now,
     notified: known?.notified ?? [],
     ...(known?.announced ? { announced: known.announced } : {}),
@@ -1121,5 +1158,91 @@ const lookUpAuthor = async (
     works: mergedWorks(previous?.works ?? [], found, today),
   }
   await DiscoveryCommand.saveAuthorWatch(watch)
+  return watch
+}
+
+// MARK: - The narrators
+
+/** Look these narrators up on the web, a few side by side, until the budget is
+ *  spent, keeping each watch in `watches`. Mirrors the authors' pass: a lookup
+ *  that fails leaves its narrator as they were, and a refusal for want of
+ *  Gemini credit ends the pass. */
+const lookUpAllNarrators = async (
+  narrators: readonly WatchedNarrator[],
+  watches: Map<string, NarratorWatch>,
+  now: Date,
+  overBudget: () => boolean,
+): Promise<{ watched: number; failed: number; deferred: number; refused: boolean }> => {
+  let watched = 0
+  let failed = 0
+  let refusal: unknown
+  for (let start = 0; start < narrators.length; start += CALLS_AT_ONCE) {
+    if (refusal || overBudget()) {
+      if (refusal) logger.warn('release watch stopped, AI credit spent', { error: refusal })
+      return { watched, failed, deferred: narrators.length - start, refused: refusal !== undefined }
+    }
+    const found = await Promise.all(
+      narrators.slice(start, start + CALLS_AT_ONCE).map(async (narrator) => {
+        try {
+          return await lookUpNarrator(narrator, watches.get(narratorWatchKeyOf(narrator)), now)
+        } catch (error) {
+          failed += 1
+          if (isSpendCapReached(error)) refusal = error
+          else
+            logger.warn('narrator release lookup failed', {
+              error,
+              narrator: narratorWatchKeyOf(narrator),
+            })
+          return undefined
+        }
+      }),
+    )
+    for (const watch of found) {
+      if (!watch) continue
+      watched += 1
+      watches.set(watch.key, watch)
+    }
+  }
+  if (refusal) logger.warn('release watch stopped, AI credit spent', { error: refusal })
+  return { watched, failed, deferred: 0, refused: refusal !== undefined }
+}
+
+/** Look one narrator up in one language and keep what was found: a recording
+ *  kept with its ASIN only once Audible's own catalogue confirms it, dated as
+ *  Audible dates it. One grounded call, shared by every reader who follows
+ *  them, every three months. */
+const lookUpNarrator = async (
+  narrator: WatchedNarrator,
+  previous: NarratorWatch | undefined,
+  now: Date,
+): Promise<NarratorWatch> => {
+  const today = todayOf(now)
+  const since = new Date(now.getTime() - AUTHOR_RECENT_DAYS * 86_400_000).toISOString().slice(0, 10)
+  const { value, usage } = await generate<NarratorReleasesOutput>({
+    step: 'discovery-narrator-releases',
+    parts: [{ text: narratorReleasesPrompt(narrator, today, since) }],
+    responseSchema: NARRATOR_RELEASES_SCHEMA,
+    grounded: true,
+  })
+  await recordUsage(usage)
+  const known = new Map((previous?.works ?? []).map((work) => [slugify(work.title), work]))
+  const found: NarratedWork[] = []
+  for (const work of narratedWorksFrom(value.works ?? [])) {
+    const confirmed = await confirmedOnAudible(
+      work,
+      known.get(slugify(work.title)),
+      narrator.language,
+    )
+    found.push({ ...confirmed, authors: work.authors })
+  }
+  const watch: NarratorWatch = {
+    key: narratorWatchKeyOf(narrator),
+    narratorKey: narrator.narratorKey,
+    name: narrator.name,
+    language: narrator.language,
+    checkedAt: now,
+    works: mergedNarratedWorks(previous?.works ?? [], found, today),
+  }
+  await DiscoveryCommand.saveNarratorWatch(watch)
   return watch
 }

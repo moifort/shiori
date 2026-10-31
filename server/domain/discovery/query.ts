@@ -3,6 +3,7 @@ import type {
   AuthorWatch,
   DiscoveryReader,
   KeptReleaseDescription,
+  NarratorWatch,
   SagaWatch,
 } from '~/domain/discovery/types'
 import type { UserId } from '~/domain/shared/types'
@@ -30,4 +31,10 @@ export namespace DiscoveryQuery {
   /** The author watches under these keys, in one getAll, keyed by theirs. */
   export const authorWatches = async (keys: readonly string[]): Promise<Map<string, AuthorWatch>> =>
     new Map((await repository.findAuthorWatches(keys)).map((watch) => [watch.key, watch]))
+
+  /** The narrator watches under these keys, in one getAll, keyed by theirs. */
+  export const narratorWatches = async (
+    keys: readonly string[],
+  ): Promise<Map<string, NarratorWatch>> =>
+    new Map((await repository.findNarratorWatches(keys)).map((watch) => [watch.key, watch]))
 }
