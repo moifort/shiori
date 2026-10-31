@@ -36,6 +36,7 @@ struct NewsScreen: View {
             NewsPage(
                 sections: NewsFeedLayout.sections(
                     events: viewModel.shownEvents,
+                    narrator: viewModel.shownNarratorNews,
                     spotlight: viewModel.spotlight,
                     award: viewModel.shownWinner
                 ),
@@ -86,6 +87,8 @@ struct NewsScreen: View {
             FriendBookScreen(friendId: event.friendId, bookId: event.bookId, friendName: event.friendName)
         case let .author(author):
             AuthorScreen(key: author.key, name: author.name, isOffered: false)
+        case let .narrator(narrator):
+            NarratorScreen(key: narrator.key, name: narrator.name)
         case let .winner(winner):
             AwardWinnerScreen(winner: winner)
         }
@@ -101,8 +104,8 @@ struct NewsScreen: View {
         case let .openWinner(winner): detail = .winner(winner)
         case let .addWinner(winner): await viewModel.add(winner)
         case .dismissWinner: viewModel.dismissWinner()
-        // Narrators' news has no source yet: the row is never drawn.
-        case .openNarrator, .addNarrator: break
+        case let .openNarrator(news): detail = .narrator(.init(key: news.narratorKey, name: news.narrator))
+        case let .addNarrator(news): await viewModel.add(news)
         case .openUpcoming: opensDiscover = true
         case .openAlerts: showsAlerts = true
         case let .prefetch(id): await viewModel.prefetchIfNeeded(for: id)
@@ -115,12 +118,14 @@ struct NewsScreen: View {
 private enum NewsDetail: Identifiable {
     case friendBook(FeedEvent)
     case author(AuthorDestination)
+    case narrator(NarratorDestination)
     case winner(AwardWinner)
 
     var id: String {
         switch self {
         case let .friendBook(event): "friend-book-\(event.id)"
         case let .author(author): "author-\(author.id)"
+        case let .narrator(narrator): "narrator-\(narrator.id)"
         case let .winner(winner): "winner-\(winner.id)"
         }
     }

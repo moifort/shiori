@@ -30,23 +30,24 @@ struct FeedEvent: Identifiable, Hashable, Codable, Sendable {
     }
 }
 
-/// A recording's narrator lending their voice to a book: the row exists for
-/// when the server tells it, and no source feeds it yet.
+/// A narrator the reader follows lending their voice to a recording out lately.
 struct NarratorNews: Identifiable, Hashable, Codable, Sendable {
     let id: String
+    let narratorKey: String
     let narrator: String
     let title: String
+    let authors: [String]
     let coverURL: URL?
     let format: BookFormat
 
     var cover: Book {
-        Book(id: "narrator-\(id)", title: title, authors: [], format: .audiobook, coverURL: coverURL, status: .toRead)
+        Book(id: "narrator-\(id)", title: title, authors: authors, format: .audiobook, coverURL: coverURL, status: .toRead)
     }
 }
 
 /// Which of the reader's follows an upcoming release comes from.
 enum ReleaseSource: String, Codable, Sendable {
-    case saga, author, awaited
+    case saga, author, awaited, narrator
 }
 
 /// A book announced, as the calendar and the author card draw it.
@@ -72,6 +73,8 @@ struct UpcomingRelease: Identifiable, Hashable, Codable, Sendable {
     let author: AuthorRef?
     let sagaRating: Double?
     let sagaFavorite: Bool
+    /// The narrator who lends their voice, on a recording found for one.
+    var narrator: String?
 
     var cover: Book {
         Book(
@@ -102,6 +105,8 @@ struct UpcomingRelease: Identifiable, Hashable, Codable, Sendable {
                 return String(localized: "Série notée \(Self.stars(sagaRating))")
             }
             return seriesName ?? ""
+        case .narrator:
+            return narrator.map { String(localized: "\($0) prête sa voix") } ?? ""
         case .awaited:
             return format == .audiobook
                 ? String(localized: "Dans votre liste d'envie · audio")

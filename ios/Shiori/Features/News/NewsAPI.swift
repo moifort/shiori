@@ -34,6 +34,28 @@ enum NewsAPI {
         return CursorPage(items: events, hasMore: page.nextCursor != nil, endCursor: page.nextCursor)
     }
 
+    /// The recordings the narrators the reader follows lent their voice to lately.
+    static func narratorNews() async throws -> [NarratorNews] {
+        #if DEBUG
+        if Showcase.isOn { return [] }
+        #endif
+        let data = try await GraphQLHelpers.fetch(
+            GraphQLClient.shared.apollo,
+            query: ShioriGraphQL.NarratorNewsQuery()
+        )
+        return data.narratorNews.map {
+            NarratorNews(
+                id: $0.id,
+                narratorKey: $0.narratorKey,
+                narrator: $0.narrator,
+                title: $0.title,
+                authors: $0.authors,
+                coverURL: $0.coverUrl.flatMap(URL.init(string:)),
+                format: .audiobook
+            )
+        }
+    }
+
     /// Everything announced across the reader's follows.
     static func upcoming() async throws -> [UpcomingRelease] {
         #if DEBUG
@@ -65,7 +87,8 @@ enum NewsAPI {
                     )
                 },
                 sagaRating: row.sagaRating,
-                sagaFavorite: row.sagaFavorite
+                sagaFavorite: row.sagaFavorite,
+                narrator: row.narrator
             )
         }
     }

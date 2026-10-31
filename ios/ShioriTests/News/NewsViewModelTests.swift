@@ -12,6 +12,7 @@ struct NewsViewModelTests {
         #expect(viewModel.shownEvents.map(\.id) == FeedEvent.previews.map(\.id))
         #expect(viewModel.releases.count == UpcomingRelease.previews.count)
         #expect(viewModel.winner != nil)
+        #expect(viewModel.narratorNews.count == 1)
         #expect(viewModel.isLoading == false)
         #expect(viewModel.errorMessage == nil)
     }
@@ -93,6 +94,28 @@ struct NewsViewModelTests {
         #expect(viewModel.shownWinner == nil)
         viewModel.format = .book
         #expect(viewModel.shownWinner != nil)
+    }
+
+    @Test func narratorNewsAreRecordingsSoOnlyTheAudiobookPillKeepsThem() async {
+        let viewModel = NewsViewModel(client: .preview)
+        await viewModel.load()
+        #expect(viewModel.shownNarratorNews.count == 1)
+
+        viewModel.format = .audiobook
+        #expect(viewModel.shownNarratorNews.count == 1)
+        viewModel.format = .book
+        #expect(viewModel.shownNarratorNews.isEmpty)
+    }
+
+    @Test func narratorNewsFailingLeavesTheRestOfThePage() async {
+        var client = NewsClient.preview
+        client.narratorNews = { throw Boom() }
+        let viewModel = NewsViewModel(client: client)
+
+        await viewModel.load()
+
+        #expect(viewModel.narratorNews.isEmpty)
+        #expect(viewModel.events.count == FeedEvent.previews.count)
     }
 
     @Test func takingABookGreysItOutAtOnce() async {

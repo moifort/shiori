@@ -353,6 +353,22 @@
         }
       }
     },
+    "%@ prête sa voix" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ lends their voice"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ prête sa voix"
+          }
+        }
+      }
+    },
     "%@ restantes" : {
       "localizations" : {
         "en" : {

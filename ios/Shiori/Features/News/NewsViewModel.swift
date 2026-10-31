@@ -16,6 +16,7 @@ final class NewsViewModel {
     private var cursor: String?
     private(set) var releases: [UpcomingRelease] = []
     private(set) var winner: AwardWinner?
+    private(set) var narratorNews: [NarratorNews] = []
     private(set) var isLoading = false
     private(set) var isLoadingMore = false
     private(set) var hasLoaded = false
@@ -56,6 +57,12 @@ final class NewsViewModel {
         shownReleases.first { $0.author?.favorite == true && $0.date != nil }
     }
 
+    /// The narrators' news the pills keep: recordings, so the audiobook pill
+    /// and "Tout".
+    var shownNarratorNews: [NarratorNews] {
+        format == nil || format == .audiobook ? narratorNews : []
+    }
+
     var shownWinner: AwardWinner? {
         guard let winner, !winnerDismissed else { return nil }
         guard let format else { return winner }
@@ -83,7 +90,8 @@ final class NewsViewModel {
         async let page = capture { try await client.feed(nil, Self.pageSize) }
         async let upcoming = capture { try await client.upcoming() }
         async let latest = capture { try await client.latestWinner() }
-        let (first, dated, award) = await (page, upcoming, latest)
+        async let narrated = capture { try await client.narratorNews() }
+        let (first, dated, award, voices) = await (page, upcoming, latest, narrated)
         guard token == generation else { return }
         if case let .success(first) = first {
             events = first.items
@@ -96,6 +104,7 @@ final class NewsViewModel {
         }
         if case let .success(dated) = dated { releases = dated }
         if case let .success(award) = award { winner = award }
+        if case let .success(voices) = voices { narratorNews = voices }
         if case let .failure(error) = dated, !isCancellation(error) { reportError(error) }
         hasLoaded = true
         selectedDay = nil
@@ -144,6 +153,15 @@ final class NewsViewModel {
         do {
             try await client.takeFriendBook(event.friendId, event.bookId, format)
             taken.insert(event.bookId)
+        } catch {
+            guard !isCancellation(error) else { return }
+            reportError(error)
+        }
+    }
+
+    func add(_ news: NarratorNews) async {
+        do {
+            try await client.addRecording(news)
         } catch {
             guard !isCancellation(error) else { return }
             reportError(error)

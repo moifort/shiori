@@ -42,5 +42,19 @@ query UpcomingReleases {
     }
     sagaRating
     sagaFavorite
+    narrator
+  }
+}
+
+# The recordings the narrators the reader follows lent their voice to lately.
+query NarratorNews {
+  narratorNews {
+    id
+    narratorKey
+    narrator
+    title
+    authors
+    date
+    coverUrl
   }
 }
