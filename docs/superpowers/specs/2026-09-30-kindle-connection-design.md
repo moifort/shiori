@@ -44,7 +44,7 @@ on every pass. Nothing expires on the reader's side unless Amazon revokes the de
 The Amazon data export import is retired.
 
 Reading positions came later: `startReading` stays behind an AWS WAF challenge, and the signed
-device sidecar answers one instead (`server/domain/kindle/infrastructure/sidecar.ts`).
+device sidecar answers one instead (`readingPosition` in `kindle-api-ts`).
 
 Out of scope: highlights and notes, Kindle collections,
 and reusing an Audible connection for Kindle.
