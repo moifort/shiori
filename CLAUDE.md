@@ -8,7 +8,8 @@ The design for the current scope is
 [docs/superpowers/specs/2026-09-14-shiori-design.md](docs/superpowers/specs/2026-09-14-shiori-design.md).
 What comes after it is in [docs/roadmap.md](docs/roadmap.md). The iOS app's rules — pure and
 connected views, atomic layout per domain, loading, snapshots, pagination, previews and tests —
-are in [docs/ios-guide.md](docs/ios-guide.md).
+are in [docs/ios-guide.md](docs/ios-guide.md). How the design board and the app stay in sync (board first, prototyping zone, variants,
+captures) is in [docs/board.md](docs/board.md); its comment workflow is Workflow rules 5–8 below.
 
 ## Language
 
