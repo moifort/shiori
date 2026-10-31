@@ -26,7 +26,7 @@ struct FirstNamePage: View {
                     // Never cut short when the keyboard leaves little room
                     // under the avatar: the field and the button give way.
                     .fixedSize(horizontal: false, vertical: true)
-                Text("Votre prénom et votre avatar personnalisent l'application.")
+                Text("C'est le prénom que vos amis verront lors d'un partage.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)

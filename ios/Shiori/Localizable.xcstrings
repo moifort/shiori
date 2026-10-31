@@ -3575,6 +3575,22 @@
         }
       }
     },
+    "C'est le prénom que vos amis verront lors d'un partage." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This is the name your friends see when you share."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "C'est le prénom que vos amis verront lors d'un partage."
+          }
+        }
+      }
+    },
     "Cadrez la couverture dans le viseur, bien éclairée." : {
       "localizations" : {
         "en" : {
@@ -15079,22 +15095,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Votre photo"
-          }
-        }
-      }
-    },
-    "Votre prénom et votre avatar personnalisent l'application." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your first name and avatar personalize the app."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Votre prénom et votre avatar personnalisent l'application."
           }
         }
       }
