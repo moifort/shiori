@@ -5,7 +5,14 @@ import type { Book, BookLanguage, Genre } from '~/domain/book/types'
 import { releaseFormatOf } from '~/domain/discovery/business-rules'
 import type { ReleaseFormat } from '~/domain/discovery/types'
 import { AuthorName, BookTitle } from '~/domain/shared/primitives'
-import { AWARDS, type Award, type AwardedWork, type AwardMention, type FoundWinners } from './types'
+import {
+  AWARDS,
+  type Award,
+  type AwardCategory,
+  type AwardedWork,
+  type AwardMention,
+  type FoundWinners,
+} from './types'
 import { WINNERS, type WinnerEntry } from './winners'
 
 /** The awards each genre is shown, the genre's own first. Hugo and Nebula crown
@@ -211,3 +218,12 @@ export const hasRead = (
   found: FoundEdition | undefined,
   books: readonly ShelfBook[],
 ): boolean => books.some((book) => book.status === 'read' && isWork(book, work, found))
+
+/** The category an award crowns: the Locus split by genre, every other award a
+ *  novel. */
+export const categoryOf = (award: Award): AwardCategory =>
+  award === 'locus-sf'
+    ? 'science-fiction-novel'
+    : award === 'locus-fantasy'
+      ? 'fantasy-novel'
+      : 'novel'

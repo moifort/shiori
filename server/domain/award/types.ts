@@ -15,6 +15,9 @@ export const AWARDS = [
 ] as const
 export type Award = (typeof AWARDS)[number]
 
+/** What an award crowns, for a card that names the prize and its category. */
+export type AwardCategory = 'novel' | 'science-fiction-novel' | 'fantasy-novel'
+
 /** One prize a work won, and the year it was presented. */
 export type AwardMention = { award: Award; year: number }
 

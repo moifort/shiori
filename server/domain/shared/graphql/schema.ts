@@ -90,6 +90,11 @@ import '~/domain/friendship/infrastructure/graphql/types'
 import '~/domain/friendship/infrastructure/graphql/queries'
 import '~/domain/friendship/infrastructure/graphql/mutations'
 
+// News (the Actualités feed and the release calendar). After friendship and discovery:
+// it reads their shelves and their watches.
+import '~/domain/news/infrastructure/graphql/types'
+import '~/domain/news/infrastructure/graphql/queries'
+
 // Notification (push alerts about books coming out)
 import '~/domain/notification/infrastructure/graphql/enums'
 import '~/domain/notification/infrastructure/graphql/types'

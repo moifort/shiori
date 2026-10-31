@@ -172,6 +172,9 @@ export type SharedActivity = {
   kind: SharedActivityKind
   at: Date
   book: SharedFavorite
+  /** Their stars for the book, when they gave any. Absent on a view stored
+   *  before the news feed drew them. */
+  rating?: StarRating
 }
 
 /** The shared shelf read against today: the challenge's figure is derived at

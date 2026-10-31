@@ -793,6 +793,18 @@ enum Award {
   WORLD_FANTASY
 }
 
+"""What an award crowns."""
+enum AwardCategory {
+  """Best fantasy novel."""
+  FANTASY_NOVEL
+
+  """Best novel."""
+  NOVEL
+
+  """Best science fiction novel."""
+  SCIENCE_FICTION_NOVEL
+}
+
 """One award’s winners, for the full list."""
 type AwardList {
   award: Award!
@@ -810,6 +822,9 @@ type AwardList {
 """One prize a novel won."""
 type AwardMention {
   award: Award!
+
+  """What the prize crowns."""
+  category: AwardCategory!
 
   """The year it was presented, not the year the novel came out."""
   year: Int!
@@ -1606,6 +1621,56 @@ The genre read fastest, in days from the first page to the last, a book read wit
 type FastestGenre {
   averageDays: Int!
   genre: Genre!
+}
+
+"""One thing a friend did to a book, for the Actualités feed."""
+type FeedEvent {
+  """
+  How many of the reader’s other friends picked up the same story lately.
+  """
+  alsoStartedBy: Int!
+  at: DateTime!
+  authors: [AuthorName!]!
+
+  """The friend’s record: open it with `friendBook`."""
+  bookId: BookId!
+
+  """Their photo of the cover, else the publisher’s."""
+  coverUrl: String
+  format: BookFormat!
+
+  """Null for an account that never finished its onboarding."""
+  friendFirstName: String
+  friendId: UserId!
+  id: String!
+
+  """Whether the reader already holds the story, on any shelf."""
+  inLibrary: Boolean!
+  kind: FeedEventKind!
+
+  """Their stars, when they gave any."""
+  rating: StarRating
+  title: BookTitle!
+}
+
+"""What a friend did to a book that the news feed tells."""
+enum FeedEventKind {
+  """Finished it; `rating` holds their stars."""
+  FINISHED
+
+  """Hearted it: five stars, always."""
+  LOVED
+
+  """Picked it up."""
+  STARTED
+}
+
+"""One page of the news feed, newest first."""
+type FeedPage {
+  events: [FeedEvent!]!
+
+  """Pass it as `after` for the next page. Null on the last one."""
+  nextCursor: String
 }
 
 """
@@ -4256,6 +4321,17 @@ type Query {
   """
   narratorPortraitChoices(key: NarratorKey!): [PortraitChoice!]
 
+  """
+  What the reader’s friends did lately — picked a book up, finished it, loved it — newest first, one page at a time. A book a friend keeps to themselves is never in it.
+  """
+  newsFeed(
+    """Cursor: `nextCursor` of the previous page"""
+    after: String
+
+    """Maximum events in the page"""
+    limit: Int = 20
+  ): FeedPage!
+
   """The alerts the reader switched on, for the settings screen."""
   notificationSettings: NotificationSettings!
 
@@ -4341,6 +4417,14 @@ type Query {
   Every subgenre the reader has used across their library in the language of `Accept-Language`, the most used first. What the edit form proposes as they type: a vocabulary drawn from their own shelf, in the language they type in. Costs the same scan as the library.
   """
   subgenres: [Subgenre!]!
+
+  """
+  Everything announced across the sagas the reader follows, the authors they hold and the editions they await, the soonest first and the undated last. Read off the release watches: no web lookup.
+  """
+  upcomingReleases(
+    """Keep only this format. Omit for all of them."""
+    format: BookFormat
+  ): [UpcomingRelease!]!
 
   """
   The reader subgenres and the sagas they hold, together: what the edit form proposes as they type, in one request and one scan of the library, where `subgenres` and `mySeries` asked apart would cost two scans and a catalogue read.
@@ -4491,6 +4575,18 @@ input ReleaseInput {
   seriesName: SeriesName
   title: BookTitle!
   volume: VolumeNumber
+}
+
+"""Which of the reader’s follows an upcoming release comes from."""
+enum ReleaseSource {
+  """A new work of an author they hold."""
+  AUTHOR
+
+  """An edition they await."""
+  AWAITED
+
+  """The next volume of a saga they follow."""
+  SAGA
 }
 
 """
@@ -5002,6 +5098,47 @@ type UnexploredGenre {
 
   """Books of the genre waiting on the pile."""
   pileCount: Int!
+}
+
+"""One book announced, merged from the reader’s follows."""
+type UpcomingRelease {
+  """Set on a work of an author the reader holds."""
+  author: UpcomingReleaseAuthor
+  authors: [AuthorName!]!
+  coverUrl: CoverUrl
+
+  """
+  As precisely as announced: `YYYY`, `YYYY-MM` or `YYYY-MM-DD`. Null when announced for a date nobody found.
+  """
+  date: String
+  format: BookFormat!
+  id: String!
+
+  """Whether the reader hearted the saga."""
+  sagaFavorite: Boolean!
+
+  """The reader’s stars for the saga, when it is a saga’s volume."""
+  sagaRating: StarRating
+  series: UpcomingReleaseSeries
+  source: ReleaseSource!
+
+  """Null on an announcement that names no title yet."""
+  title: BookTitle
+}
+
+"""The author of an upcoming release the reader holds."""
+type UpcomingReleaseAuthor {
+  """Whether the reader hearted the author."""
+  favorite: Boolean!
+  key: AuthorKey!
+  name: AuthorName!
+  portraitUrl: PortraitUrl
+}
+
+"""The saga an upcoming release belongs to."""
+type UpcomingReleaseSeries {
+  name: SeriesName!
+  volume: VolumeNumber
 }
 
 """

@@ -1,6 +1,7 @@
 import { AudibleQuery } from '~/domain/audible/query'
 import { storeUrlOf } from '~/domain/awaited-edition/business-rules'
 import { AwaitedStateEnum } from '~/domain/awaited-edition/infrastructure/graphql/types'
+import { categoryOf } from '~/domain/award/business-rules'
 import type {
   AwardedWorkView,
   AwardList,
@@ -31,10 +32,27 @@ export const AwardEnum = builder.enumType('Award', {
   } as const,
 })
 
+export const AwardCategoryEnum = builder.enumType('AwardCategory', {
+  description: 'What an award crowns.',
+  values: {
+    NOVEL: { value: 'novel', description: 'Best novel.' },
+    SCIENCE_FICTION_NOVEL: {
+      value: 'science-fiction-novel',
+      description: 'Best science fiction novel.',
+    },
+    FANTASY_NOVEL: { value: 'fantasy-novel', description: 'Best fantasy novel.' },
+  } as const,
+})
+
 export const AwardMentionType = builder.objectRef<AwardMention>('AwardMention').implement({
   description: 'One prize a novel won.',
   fields: (t) => ({
     award: t.field({ type: AwardEnum, resolve: (mention) => mention.award }),
+    category: t.field({
+      type: AwardCategoryEnum,
+      description: 'What the prize crowns.',
+      resolve: (mention) => categoryOf(mention.award),
+    }),
     year: t.int({
       description: 'The year it was presented, not the year the novel came out.',
       resolve: (mention) => mention.year,
