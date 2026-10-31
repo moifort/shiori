@@ -73,6 +73,11 @@ Runtime: always `bun` / `bunx`, never `npm` / `npx`.
    "Valider" button), never leaving that to the parent. On the user's yes, it archives itself
    (`archive_session` on its own id); if they ask for changes, it makes them and asks again.
    Every child brief says so.
+8. **Only the parent session listens to the board.** A child session handles its own thread and
+   nothing else: a new board comment that reaches it is ignored, never handled, answered or
+   proposed as a session. The parent session alone picks up new comments and starts their child
+   sessions. A child stops watching the board once it has published (`ArtifactComments`,
+   `watch` with `on: false`). Every child brief says so.
 
 ## Paid API calls
 
