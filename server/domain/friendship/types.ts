@@ -1,6 +1,7 @@
 import type { Brand } from 'ts-brand'
 import type { SharedShelfToday } from '~/domain/analytics/types'
 import type { UserId } from '~/domain/shared/types'
+import type { Avatar } from '~/domain/user/types'
 
 /** The code that turns an invitation into a friendship. Short enough to read
  *  aloud down a phone, random enough that nobody guesses their way into
@@ -36,6 +37,8 @@ export type Friendship = {
 export type Friend = {
   userId: UserId
   firstName?: string
+  /** The hero or colour they wear. A photo is never carried: it is theirs. */
+  avatar?: Avatar
   since: Date
   /** Their shelf in figures, without the books they keep to themselves. Read
    *  from their dashboard view, one document per friend, never their books. */

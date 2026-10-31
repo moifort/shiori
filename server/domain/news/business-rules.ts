@@ -49,7 +49,11 @@ export const feedEventsOf = (
             id: `${friend.userId}~${kind}~${activity.book.id}`,
             kind,
             at: activity.at,
-            friend: { userId: friend.userId, firstName: friend.firstName },
+            friend: {
+              userId: friend.userId,
+              firstName: friend.firstName,
+              ...(friend.avatar ? { avatar: friend.avatar } : {}),
+            },
             book: activity.book,
             ...(activity.rating ? { rating: activity.rating } : {}),
             alsoStartedBy:

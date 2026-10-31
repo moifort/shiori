@@ -2,6 +2,7 @@ import { BookFormatEnum } from '~/domain/book/infrastructure/graphql/enums'
 import { FeedEventKindEnum, ReleaseSourceEnum } from '~/domain/news/infrastructure/graphql/enums'
 import type { FeedEvent, FeedPage, NarratorNews, UpcomingRelease } from '~/domain/news/types'
 import { builder } from '~/domain/shared/graphql/builder'
+import { AvatarColorEnum, AvatarHeroEnum } from '~/domain/user/infrastructure/graphql/enums'
 import { objectStore } from '~/system/object-store'
 
 export const FeedEventType = builder.objectRef<FeedEvent>('FeedEvent').implement({
@@ -11,6 +12,19 @@ export const FeedEventType = builder.objectRef<FeedEvent>('FeedEvent').implement
     kind: t.field({ type: FeedEventKindEnum, resolve: (event) => event.kind }),
     at: t.field({ type: 'DateTime', resolve: (event) => event.at }),
     friendId: t.field({ type: 'UserId', resolve: (event) => event.friend.userId }),
+    friendAvatarHero: t.field({
+      type: AvatarHeroEnum,
+      nullable: true,
+      description: 'The hero the friend wears, drawn by the app. Null without one.',
+      resolve: (event) => (event.friend.avatar?.kind === 'hero' ? event.friend.avatar.hero : null),
+    }),
+    friendAvatarColor: t.field({
+      type: AvatarColorEnum,
+      nullable: true,
+      description: 'The colour the friend’s initials are drawn on. Null without one.',
+      resolve: (event) =>
+        event.friend.avatar?.kind === 'initials' ? event.friend.avatar.color : null,
+    }),
     friendFirstName: t.string({
       nullable: true,
       description: 'Null for an account that never finished its onboarding.',

@@ -26,7 +26,11 @@ beforeEach(() => {
     userIds: [marc, reader],
     since: when,
   })
-  fake.seed('users', marc, { userId: marc, firstName: 'Marc' })
+  fake.seed('users', marc, {
+    userId: marc,
+    firstName: 'Marc',
+    avatar: { kind: 'hero', hero: 'holmes' },
+  })
   const book = (id: string, extra: Record<string, unknown>) =>
     fake.seed('books', id, {
       id,
@@ -52,14 +56,20 @@ describe('newsFeed', () => {
     const { data, errors } = await ask(`{
       newsFeed(limit: 10) {
         nextCursor
-        events { kind friendFirstName title rating inLibrary alsoStartedBy coverUrl }
+        events { kind friendFirstName friendAvatarHero friendAvatarColor title rating inLibrary alsoStartedBy coverUrl }
       }
     }`)
     expect(errors).toBeUndefined()
     const events = (data as { newsFeed: { events: { kind: string; title: string }[] } }).newsFeed
       .events
     expect(events.map((event) => event.title)).toEqual(['Arabe'])
-    expect(events[0]).toMatchObject({ kind: 'LOVED', friendFirstName: 'Marc', rating: 5 })
+    expect(events[0]).toMatchObject({
+      kind: 'LOVED',
+      friendFirstName: 'Marc',
+      friendAvatarHero: 'HOLMES',
+      friendAvatarColor: null,
+      rating: 5,
+    })
   })
 })
 

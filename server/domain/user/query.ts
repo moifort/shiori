@@ -1,7 +1,7 @@
 import { Count } from '~/domain/shared/primitives'
 import type { Count as CountType, UserId } from '~/domain/shared/types'
 import * as repository from '~/domain/user/infrastructure/repository'
-import type { MeView } from '~/domain/user/types'
+import type { Avatar, MeView } from '~/domain/user/types'
 
 export namespace UserQuery {
   // The signed-in user's identity and onboarding state. Returns nulls when no
@@ -25,6 +25,21 @@ export namespace UserQuery {
       (await repository.findProfiles(userIds)).map((profile) => [
         profile.userId,
         String(profile.firstName),
+      ]),
+    )
+
+  /** The profiles of these accounts, in one getAll, by user: a name and the
+   *  avatar they chose. An account with no profile yet is absent. */
+  export const profilesOf = async (
+    userIds: readonly UserId[],
+  ): Promise<Map<UserId, { firstName: string; avatar?: Avatar }>> =>
+    new Map(
+      (await repository.findProfiles(userIds)).map((profile) => [
+        profile.userId,
+        {
+          firstName: String(profile.firstName),
+          ...(profile.avatar ? { avatar: profile.avatar } : {}),
+        },
       ]),
     )
 

@@ -197,8 +197,8 @@ export namespace FriendshipUseCase {
       userId: friendship.userIds.find((member) => member !== userId),
     }))
     const ids = others.flatMap((entry) => (entry.userId ? [entry.userId] : []))
-    const [names, shelves] = await Promise.all([
-      UserQuery.namesOf(ids),
+    const [profiles, shelves] = await Promise.all([
+      UserQuery.profilesOf(ids),
       AnalyticsUseCase.sharedShelves(ids),
     ])
     return others
@@ -207,7 +207,10 @@ export namespace FriendshipUseCase {
           ? [
               {
                 userId: entry.userId,
-                firstName: names.get(entry.userId),
+                firstName: profiles.get(entry.userId)?.firstName,
+                ...(profiles.get(entry.userId)?.avatar?.kind === 'photo'
+                  ? {}
+                  : { avatar: profiles.get(entry.userId)?.avatar }),
                 since: entry.friendship.since,
                 shelf: shelves.get(entry.userId),
               },

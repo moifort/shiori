@@ -4,6 +4,7 @@ import type { BookFormat, CoverUrl, NarratorName } from '~/domain/book/types'
 import type { NarratorKey } from '~/domain/narrator/types'
 import type { ReleaseDate, SeriesName, VolumeNumber } from '~/domain/series/types'
 import type { AuthorName, BookTitle, StarRating, UserId } from '~/domain/shared/types'
+import type { Avatar } from '~/domain/user/types'
 
 /** What a friend did to a book that is worth telling the others: picked it up,
  *  finished it, or loved it. Shelving and dropping are left out of the feed —
@@ -17,7 +18,7 @@ export type FeedEvent = {
   id: string
   kind: FeedEventKind
   at: Date
-  friend: { userId: UserId; firstName?: string }
+  friend: { userId: UserId; firstName?: string; avatar?: Avatar }
   book: SharedFavorite
   /** Their stars, on a finish or a heart that carries them. */
   rating?: StarRating

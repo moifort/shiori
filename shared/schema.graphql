@@ -1639,6 +1639,12 @@ type FeedEvent {
   coverUrl: String
   format: BookFormat!
 
+  """The colour the friend’s initials are drawn on. Null without one."""
+  friendAvatarColor: AvatarColor
+
+  """The hero the friend wears, drawn by the app. Null without one."""
+  friendAvatarHero: AvatarHero
+
   """Null for an account that never finished its onboarding."""
   friendFirstName: String
   friendId: UserId!
