@@ -154,6 +154,7 @@ export const NarratorNewsType = builder.objectRef<NarratorNews>('NarratorNews').
     'for the news feed.',
   fields: (t) => ({
     id: t.string({ resolve: (news) => news.id }),
+    narratorKey: t.field({ type: 'NarratorKey', resolve: (news) => news.narratorKey }),
     narrator: t.string({ resolve: (news) => news.narrator }),
     title: t.field({ type: 'BookTitle', resolve: (news) => news.title }),
     authors: t.field({ type: ['AuthorName'], resolve: (news) => news.authors }),

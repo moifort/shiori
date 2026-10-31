@@ -3567,6 +3567,7 @@ type NarratorNews {
   date: String!
   id: String!
   narrator: String!
+  narratorKey: NarratorKey!
   title: BookTitle!
 }
 

@@ -1,6 +1,7 @@
 import type { SharedFavorite } from '~/domain/analytics/types'
 import type { AuthorKey, PortraitUrl } from '~/domain/author/types'
 import type { BookFormat, CoverUrl, NarratorName } from '~/domain/book/types'
+import type { NarratorKey } from '~/domain/narrator/types'
 import type { ReleaseDate, SeriesName, VolumeNumber } from '~/domain/series/types'
 import type { AuthorName, BookTitle, StarRating, UserId } from '~/domain/shared/types'
 
@@ -66,6 +67,7 @@ export type UpcomingRelease = {
  *  narrator watches, never stored. */
 export type NarratorNews = {
   id: string
+  narratorKey: NarratorKey
   narrator: NarratorName
   title: BookTitle
   authors: AuthorName[]

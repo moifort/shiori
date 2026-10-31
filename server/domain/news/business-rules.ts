@@ -248,6 +248,7 @@ export const narratedWorksOf = (
       else if (day >= since)
         recent.push({
           id: `${watch.narratorKey}~${slugify(work.title)}`,
+          narratorKey: watch.narratorKey,
           narrator: watch.name,
           title: work.title,
           authors: work.authors,
