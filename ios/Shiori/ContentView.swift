@@ -2,14 +2,14 @@ import PhotosUI
 import SwiftUI
 
 enum TabSelection: Int, CaseIterable, Identifiable {
-    case home, library, discover, shared, scan
+    case home, library, news, shared, scan
     var id: Int { rawValue }
 
     var label: String {
         switch self {
         case .home: String(localized: "Accueil")
         case .library: String(localized: "Bibliothèque")
-        case .discover: String(localized: "Découvrir")
+        case .news: String(localized: "Actu")
         case .shared: String(localized: "Partagé")
         case .scan: String(localized: "Scanner")
         }
@@ -20,7 +20,7 @@ enum TabSelection: Int, CaseIterable, Identifiable {
         case .home: "house"
         // An open book, as the Books app wears on its icon.
         case .library: "book"
-        case .discover: "sparkles"
+        case .news: "newspaper"
         case .shared: "person.2"
         case .scan: "camera.viewfinder"
         }
@@ -47,6 +47,9 @@ struct ContentView: View {
     /// A book a scan's review asked to await, handed to Découvrir, which
     /// shows the reader its tile.
     @State private var awaitRequest: AwaitRequest?
+    /// Découvrir lives over the Actu tab now: a release alert or a book
+    /// awaited opens it there.
+    @State private var opensDiscover = false
     /// The add sheet, behind the tab bar's scan button: the camera, the last
     /// photos, a title and a record typed by hand, from every tab.
     @State private var showAddSheet = false
@@ -170,9 +173,9 @@ struct ContentView: View {
                     refreshAfterAbsence()
                 }
             }
-            // A release alert tapped: its book is on the Découvrir tab.
+            // A release alert tapped: its book is in Découvrir, over the Actu tab.
             .onReceive(NotificationCenter.default.publisher(for: .shioriOpenDiscover)) { _ in
-                selectedTab = .discover
+                showDiscover(.books)
             }
             .onChange(of: selectedTab) { _, tab in
                 // The scan tab is a button, not a destination: it opens the add
@@ -185,7 +188,6 @@ struct ContentView: View {
                 } else {
                     lastContentTab = tab
                 }
-                if tab == .discover { discoverShelf = .books }
             }
     }
 
@@ -231,7 +233,7 @@ struct ContentView: View {
                         selectedTab = .library
                     },
                     onScan: { showAddSheet = true },
-                    onShowDiscover: { selectedTab = .discover },
+                    onShowDiscover: { showDiscover(.books) },
                     onShowShared: { selectedTab = .shared }
                 )
             }
@@ -246,12 +248,12 @@ struct ContentView: View {
                     seriesRequest: $seriesMode
                 )
             }
-            Tab(
-                TabSelection.discover.label,
-                systemImage: TabSelection.discover.symbol,
-                value: .discover
-            ) {
-                DiscoverScreen(shelf: $discoverShelf, awaitRequest: $awaitRequest)
+            Tab(TabSelection.news.label, systemImage: TabSelection.news.symbol, value: .news) {
+                NewsScreen(
+                    discoverShelf: $discoverShelf,
+                    awaitRequest: $awaitRequest,
+                    opensDiscover: $opensDiscover
+                )
             }
             Tab(TabSelection.shared.label, systemImage: TabSelection.shared.symbol, value: .shared) {
                 SharedScreen()
@@ -269,11 +271,17 @@ struct ContentView: View {
         }
     }
 
+    /// Découvrir, whole, over the Actu tab, on the shelf asked for.
+    private func showDiscover(_ shelf: LibraryShelf) {
+        selectedTab = .news
+        discoverShelf = shelf
+        opensDiscover = true
+    }
+
     /// A book awaited from a scan's review: Découvrir's books, where its tile
     /// shows among the editions awaited, so the reader sees it was taken.
     private func showAwaited(_ draft: BookDraft, _ format: ReleaseFormat) {
-        selectedTab = .discover
-        discoverShelf = .books
+        showDiscover(.books)
         awaitRequest = AwaitRequest(draft: draft, format: format)
     }
 

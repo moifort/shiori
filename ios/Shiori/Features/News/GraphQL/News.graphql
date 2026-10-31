@@ -1,0 +1,46 @@
+# What the reader's friends did lately, newest first, one page at a time.
+query NewsFeed($limit: Int!, $after: String) {
+  newsFeed(limit: $limit, after: $after) {
+    nextCursor
+    events {
+      id
+      kind
+      at
+      friendId
+      friendFirstName
+      bookId
+      title
+      authors
+      format
+      coverUrl
+      rating
+      alsoStartedBy
+      inLibrary
+    }
+  }
+}
+
+# Everything announced across the sagas, authors and editions the reader follows.
+query UpcomingReleases {
+  upcomingReleases {
+    id
+    source
+    format
+    title
+    authors
+    date
+    coverUrl
+    series {
+      name
+      volume
+    }
+    author {
+      key
+      name
+      favorite
+      portraitUrl
+    }
+    sagaRating
+    sagaFavorite
+  }
+}

@@ -16,6 +16,7 @@
       "Shiori/Features/Friends/GraphQL/*.graphql",
       "Shiori/Features/Subscription/GraphQL/*.graphql",
       "Shiori/Features/Discover/GraphQL/*.graphql",
+      "Shiori/Features/News/GraphQL/*.graphql",
       "Shiori/Features/Admin/GraphQL/*.graphql",
       "Shiori/Features/Search/GraphQL/*.graphql"
     ]
