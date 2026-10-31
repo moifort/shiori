@@ -1,5 +1,5 @@
 /**
- * Bundles the covers that drift while the app opens: a reader's
+ * Bundles the covers that drift behind the icon while the app opens: a reader's
  * own books, named by title, and the great classics, from Open Library. The
  * reader's covers are recent editions, bright and drawn, and set the tone: an
  * old binding or a plain type cover sinks into the background.

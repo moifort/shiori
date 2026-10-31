@@ -1,15 +1,21 @@
 import SwiftUI
 
-/// The app opening: rows of covers drifting across the screen, alternately left
-/// and right, on a slant. It stays down while the app finds out where to open,
-/// then fades away on whatever is ready underneath.
+/// The app opening: the icon in the middle, and behind it rows of covers
+/// drifting across the screen, alternately left and right, on a slant. It stays
+/// down while the app finds out where to open, then fades away on whatever is
+/// ready underneath. This is the only place the app shows its icon.
 ///
 /// The covers are the ones shipped in `LaunchCovers/` (see
-/// `scripts/launch-covers.ts`); with none, the background stands on its own.
+/// `scripts/launch-covers.ts`); with none, the icon stands on its own.
 struct LaunchCurtain: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// Decoded off the main thread, then faded in: empty until they are ready.
     @State private var covers: [CGImage] = []
+    @State private var iconShown = false
+
+    private static let iconSide: CGFloat = 140
+    /// The corner of an iOS icon, as a fraction of its side.
+    private static let iconCorner: CGFloat = iconSide * 0.2237
 
     var body: some View {
         ZStack {
@@ -21,9 +27,28 @@ struct LaunchCurtain: View {
                 // in over it rather than popping.
                 .opacity(covers.isEmpty ? 0 : 1)
                 .animation(.easeOut(duration: 0.8), value: covers.isEmpty)
+            if !covers.isEmpty {
+                // A light pool of the background behind the icon, so it does
+                // not fight the covers for the eye. Veiled, not blanked: the
+                // covers still show through.
+                RadialGradient(
+                    colors: [.launchBackground.opacity(0.7), .launchBackground.opacity(0.4), .clear],
+                    center: .center,
+                    startRadius: 0,
+                    endRadius: 200
+                )
+            }
+            Image("launch-icon")
+                .resizable()
+                .frame(width: Self.iconSide, height: Self.iconSide)
+                .clipShape(.rect(cornerRadius: Self.iconCorner, style: .continuous))
+                .shadow(color: .black.opacity(0.3), radius: 16, y: 8)
+                .scaleEffect(iconShown || reduceMotion ? 1 : 0.8)
+                .opacity(iconShown ? 1 : 0)
         }
         .ignoresSafeArea()
         .task {
+            withAnimation(.spring(duration: 0.6, bounce: 0.3)) { iconShown = true }
             covers = await Task.detached(priority: .userInitiated) { Self.loadCovers() }.value
         }
         .accessibilityElement()
@@ -167,8 +192,8 @@ final class CoverDriftView: UIView {
 
 extension View {
     /// Covers the view with the launch curtain until `ready`, then fades it out.
-    /// It stays down for a moment at least, so a fast launch still shows the
-    /// covers rather than flashing them.
+    /// It stays down for at least the icon's entrance, so a fast launch still
+    /// shows it land rather than flashing it.
     func launchCurtain(until ready: Bool) -> some View {
         modifier(LaunchCurtainModifier(ready: ready))
     }
@@ -181,7 +206,7 @@ private struct LaunchCurtainModifier: ViewModifier {
     @State private var faded = false
     @State private var gone = false
 
-    /// Long enough for the covers to fade in and be seen.
+    /// Long enough for the icon to land and be seen.
     private static let minimumShown: Duration = .seconds(2)
 
     func body(content: Content) -> some View {
