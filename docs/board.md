@@ -30,6 +30,17 @@ SwiftUI and the board are always in sync.
 - A prod component is drawn from its SwiftUI source and a real capture, never copied from an
   older artboard, which may lag.
 
+## Validated prototype = production screen
+
+Once the user validates a prototype and it is built on iOS, it leaves the prototyping zone in the
+same task:
+
+- the retained design becomes a production artboard on the page "App", next to its sibling
+  screens (as a full screen, not cropped), drawn from the SwiftUI source and a real capture;
+- every other variant of that prototype moves to the Variants page, marked as in the
+  "Variants" section below, and is never touched again;
+- the prototyping zone keeps only what is still being explored.
+
 ## Variants
 
 - New variants and explorations go in the prototyping zone. The "Variants" page only archives
