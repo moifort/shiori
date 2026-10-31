@@ -50,22 +50,19 @@ struct CoverVeil: View {
     }
 }
 
-/// The wait while getting in: the ribbon, and a capsule saying what is going on.
+/// The wait while getting in: a capsule saying what is going on.
 struct OpeningProgress: View {
     var label: LocalizedStringKey
 
     var body: some View {
-        VStack(spacing: 30) {
-            RibbonMark(motion: .loop, size: 84)
-            HStack(spacing: 10) {
-                ProgressView()
-                Text(label)
-                    .font(.body.weight(.semibold))
-            }
-            .frame(maxWidth: .infinity)
-            .frame(height: 52)
-            .glassEffect(.regular, in: .capsule)
+        HStack(spacing: 10) {
+            ProgressView()
+            Text(label)
+                .font(.body.weight(.semibold))
         }
+        .frame(maxWidth: .infinity)
+        .frame(height: 52)
+        .glassEffect(.regular, in: .capsule)
         .padding(.horizontal, 20)
     }
 }

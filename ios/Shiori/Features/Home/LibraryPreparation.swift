@@ -29,7 +29,7 @@ final class LibraryPreparation {
     }
 }
 
-/// The ribbon over a checklist of what is really being done. Each line ticks
+/// A checklist of what is really being done. Each line ticks
 /// off once its work is over: the profile and the welcome scans exist before
 /// this screen opens, a library when its pass has landed, the home when the
 /// dashboard has loaded.
@@ -59,11 +59,9 @@ struct LibraryPreparationView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            RibbonMark(motion: .loop, size: 84)
             Text("Préparation de votre bibliothèque")
                 .font(.headline)
                 .multilineTextAlignment(.center)
-                .padding(.top, 24)
                 .padding(.bottom, 20)
             PreparationChecklist(lines: lines)
         }

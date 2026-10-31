@@ -1,12 +1,11 @@
 import SwiftUI
 
-/// The app opening: the icon in the middle, and behind it rows of covers
-/// drifting across the screen, alternately left and right, on a slant. It stays
-/// down while the app finds out where to open, then fades away on whatever is
-/// ready underneath.
+/// The app opening: rows of covers drifting across the screen, alternately left
+/// and right, on a slant. It stays down while the app finds out where to open,
+/// then fades away on whatever is ready underneath.
 ///
 /// The covers are the ones shipped in `LaunchCovers/` (see
-/// `scripts/launch-covers.ts`); with none, the icon stands on its own.
+/// `scripts/launch-covers.ts`); with none, the background stands on its own.
 struct LaunchCurtain: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// Decoded off the main thread, then faded in: empty until they are ready.
@@ -14,26 +13,14 @@ struct LaunchCurtain: View {
 
     var body: some View {
         ZStack {
-            // The asset the system launch screen is painted with too: the
-            // icon's cream by day, a warm ink at night.
+            // The asset the system launch screen is painted with too: a cream
+            // by day, a warm ink at night.
             Color.launchBackground
             CoverDrift(covers: covers, moving: !reduceMotion)
                 // The system launch screen is the bare colour: the covers fade
                 // in over it rather than popping.
                 .opacity(covers.isEmpty ? 0 : 1)
                 .animation(.easeOut(duration: 0.8), value: covers.isEmpty)
-            if !covers.isEmpty {
-                // A light pool of the background behind the icon, so it does
-                // not fight the covers for the eye. Veiled, not blanked: the
-                // covers still show through.
-                RadialGradient(
-                    colors: [.launchBackground.opacity(0.7), .launchBackground.opacity(0.4), .clear],
-                    center: .center,
-                    startRadius: 0,
-                    endRadius: 200
-                )
-            }
-            RibbonMark(motion: .once, size: 140)
         }
         .ignoresSafeArea()
         .task {
@@ -44,8 +31,8 @@ struct LaunchCurtain: View {
     }
 
     /// Everything named `launch-cover-*.jpg` in the bundle, decoded now rather
-    /// than on first draw — which would land in the middle of the ribbon's
-    /// drop — and shuffled, so every launch deals the rows different covers.
+    /// than on first draw, and shuffled, so every launch deals the rows
+    /// different covers.
     nonisolated static func loadCovers() -> [CGImage] {
         Bundle.main.paths(forResourcesOfType: "jpg", inDirectory: nil)
             .filter { ($0 as NSString).lastPathComponent.hasPrefix("launch-cover-") }
@@ -56,7 +43,7 @@ struct LaunchCurtain: View {
 
 /// The rows of covers, as Core Animation layers. Laid out once, then moved by
 /// the render server: the drift costs the main thread nothing per frame, so it
-/// keeps its pace while the app is busy starting, and the ribbon keeps its own.
+/// keeps its pace while the app is busy starting.
 struct CoverDrift: UIViewRepresentable {
     let covers: [CGImage]
     let moving: Bool
@@ -180,8 +167,8 @@ final class CoverDriftView: UIView {
 
 extension View {
     /// Covers the view with the launch curtain until `ready`, then fades it out.
-    /// It stays down for at least the icon's entrance, so a fast launch still
-    /// shows the ribbon land rather than flashing it.
+    /// It stays down for a moment at least, so a fast launch still shows the
+    /// covers rather than flashing them.
     func launchCurtain(until ready: Bool) -> some View {
         modifier(LaunchCurtainModifier(ready: ready))
     }
@@ -194,7 +181,7 @@ private struct LaunchCurtainModifier: ViewModifier {
     @State private var faded = false
     @State private var gone = false
 
-    /// Long enough for the ribbon to drop and swing.
+    /// Long enough for the covers to fade in and be seen.
     private static let minimumShown: Duration = .seconds(2)
 
     func body(content: Content) -> some View {
