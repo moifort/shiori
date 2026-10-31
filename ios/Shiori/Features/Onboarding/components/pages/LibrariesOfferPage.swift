@@ -90,6 +90,8 @@ struct LibrariesOfferPage: View {
                 .disabled(isWorking || !hasChoice)
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
+                .tint(.white)
+                .foregroundStyle(.black)
                 .accessibilityIdentifier("onboarding-libraries-connect")
 
                 Button(action: onSkip) {

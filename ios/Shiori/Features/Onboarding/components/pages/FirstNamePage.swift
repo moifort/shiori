@@ -4,7 +4,6 @@ struct FirstNamePage: View {
     @Binding var firstName: String
     @Binding var avatar: AccountAvatar
     var onNext: () -> Void
-    var onBack: () -> Void
 
     @FocusState private var focused: Bool
     @State private var pickingAvatar = false
@@ -41,8 +40,7 @@ struct FirstNamePage: View {
                 .focused($focused)
                 .onSubmit { if !trimmed.isEmpty { onNext() } }
                 .padding()
-                .background(Color(.systemGray6))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .background(.white.opacity(0.14), in: .rect(cornerRadius: 14))
                 .accessibilityIdentifier("onboarding-firstname-field")
                 .entrance(appeared, delay: 0.08, sliding: !reduceMotion)
 
@@ -54,18 +52,13 @@ struct FirstNamePage: View {
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
+            .tint(.white)
+            .foregroundStyle(.black)
             .disabled(trimmed.isEmpty)
             .accessibilityIdentifier("onboarding-firstname-next")
             .entrance(appeared, delay: 0.16, sliding: !reduceMotion)
         }
         .padding()
-        .navigationTitle("Prénom")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                ToolbarIconButton(title: "Retour", systemImage: "chevron.left", action: onBack)
-            }
-        }
         .sheet(isPresented: $pickingAvatar) {
             AvatarPickerSheet(current: avatar, firstName: trimmed) { avatar = $0 }
         }
@@ -105,7 +98,10 @@ private extension View {
 }
 
 #Preview {
-    NavigationStack {
-        FirstNamePage(firstName: .constant("Thibaut"), avatar: .constant(.initials), onNext: {}, onBack: {})
+    ZStack {
+        CoverWall()
+        CoverVeil(covering: true)
+        FirstNamePage(firstName: .constant("Thibaut"), avatar: .constant(.initials), onNext: {})
     }
+    .environment(\.colorScheme, .dark)
 }

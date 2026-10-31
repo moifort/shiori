@@ -33,6 +33,9 @@ struct AuthRoot: View {
                 signedIn
             }
         }
+        // One wall from the sign-in to the end of onboarding, so the covers keep
+        // drifting while the screens change in front of them.
+        .background { if showsCoverWall { CoverWall() } }
         // Down until the app knows where to open: the sign-in, or the account's
         // own route once the launch request has answered, whatever it said.
         .launchCurtain(until: session.user == nil || gate.state != .loading)
@@ -76,11 +79,23 @@ struct AuthRoot: View {
         #endif
     }
 
+    /// Everywhere a reader is still getting in, and nowhere once they are.
+    private var showsCoverWall: Bool {
+        if case .updateRequired = supportGate.state { return false }
+        guard !isShowcase else { return false }
+        if session.user == nil { return true }
+        return gate.state == .loading || gate.state == .required
+    }
+
     @ViewBuilder
     private var signedIn: some View {
         switch gate.state {
         case .loading:
-            StartupLoadingView()
+            ZStack {
+                CoverVeil(covering: true)
+                OpeningProgress(label: "Préparation de votre bibliothèque…")
+            }
+            .environment(\.colorScheme, .dark)
         case .required:
             OnboardingScreen(onCompleted: { gate.markCompleted(firstName: $0, avatar: $1) })
         case .ready:

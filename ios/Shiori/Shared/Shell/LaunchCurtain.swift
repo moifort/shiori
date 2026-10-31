@@ -46,7 +46,7 @@ struct LaunchCurtain: View {
     /// Everything named `launch-cover-*.jpg` in the bundle, decoded now rather
     /// than on first draw — which would land in the middle of the ribbon's
     /// drop — and shuffled, so every launch deals the rows different covers.
-    nonisolated private static func loadCovers() -> [CGImage] {
+    nonisolated static func loadCovers() -> [CGImage] {
         Bundle.main.paths(forResourcesOfType: "jpg", inDirectory: nil)
             .filter { ($0 as NSString).lastPathComponent.hasPrefix("launch-cover-") }
             .compactMap { UIImage(contentsOfFile: $0)?.preparingForDisplay()?.cgImage }
@@ -57,7 +57,7 @@ struct LaunchCurtain: View {
 /// The rows of covers, as Core Animation layers. Laid out once, then moved by
 /// the render server: the drift costs the main thread nothing per frame, so it
 /// keeps its pace while the app is busy starting, and the ribbon keeps its own.
-private struct CoverDrift: UIViewRepresentable {
+struct CoverDrift: UIViewRepresentable {
     let covers: [CGImage]
     let moving: Bool
 
@@ -70,7 +70,7 @@ private struct CoverDrift: UIViewRepresentable {
     }
 }
 
-private final class CoverDriftView: UIView {
+final class CoverDriftView: UIView {
     /// A cover's size on screen, in points: a paperback's proportions.
     private static let coverSize = CGSize(width: 96, height: 146)
     private static let spacing: CGFloat = 14

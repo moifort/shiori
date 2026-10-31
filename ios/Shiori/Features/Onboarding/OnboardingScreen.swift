@@ -1,15 +1,15 @@
 import FirebaseCore
 import SwiftUI
 
-/// The wizard shown once, before the library exists. Three steps, not Vinarium's
+/// The wizard shown once, before the library exists. Two steps, not Vinarium's
 /// five: there is no cellar to size, so all it collects is a first name and an
 /// avatar — and
 /// then it offers to bring an Audible library, a Kindle library or both in,
-/// which a reader can skip.
+/// which a reader can skip. Saying what the app is for is the sign-in screen's
+/// job, just before.
 ///
 /// It is kept as a wizard rather than a single field because of what completing
-/// it does — it grants the welcome scans — and because the welcome step is the
-/// one place to say what the app is for before asking for anything.
+/// it does: it grants the welcome scans.
 struct OnboardingScreen: View {
     /// Handed the first name and the avatar the reader gave, so the app knows
     /// them without asking the server.
@@ -17,7 +17,7 @@ struct OnboardingScreen: View {
     var client: OnboardingClient = .live
 
     @Environment(AuthSession.self) private var session
-    @State private var step: Step = .welcome
+    @State private var step: Step = .firstName
     @State private var firstName = ""
     /// A hero drawn at random, which the reader keeps or changes: iOS hands
     /// the iCloud photo to no app, and bare initials look like an account
@@ -44,7 +44,6 @@ struct OnboardingScreen: View {
     @State private var connectionError: String?
 
     private enum Step {
-        case welcome
         case firstName
         /// After `completeOnboarding`, so the welcome scans are granted even
         /// when the reader abandons the Amazon sign-in halfway.
@@ -54,14 +53,11 @@ struct OnboardingScreen: View {
     var body: some View {
         Group {
             switch step {
-            case .welcome:
-                WelcomePage(onNext: { withAnimation { step = .firstName } })
             case .firstName:
                 FirstNamePage(
                     firstName: $firstName,
                     avatar: $avatar,
-                    onNext: { Task { await complete() } },
-                    onBack: { withAnimation { step = .welcome } }
+                    onNext: { Task { await complete() } }
                 )
             case .libraries:
                 LibrariesOfferPage(
@@ -74,6 +70,8 @@ struct OnboardingScreen: View {
                 )
             }
         }
+        .background { CoverVeil(covering: true) }
+        .environment(\.colorScheme, .dark)
         // Straight to Amazon's page for each source, and from the last one
         // straight into the app: every library is imported in the background,
         // the dashboard waiting on the passes behind its preparation screen,

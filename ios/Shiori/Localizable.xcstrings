@@ -2377,6 +2377,36 @@
         }
       }
     },
+    "Annexe" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Annexe"
+          }
+        }
+      }
+    },
+    "Annexe %lld" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Annexe %lld"
+          }
+        }
+      }
+    },
+    "Annexes" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Annexes"
+          }
+        }
+      }
+    },
     "Annoncé" : {
       "localizations" : {
         "en" : {
@@ -4089,6 +4119,16 @@
         }
       }
     },
+    "Choisissez une série de votre bibliothèque pour y ranger ce livre avec les autres tomes. Une annexe — hors-série, préquelle, guide — se range à part, sous son propre numéro. Videz le nom pour le sortir de sa série." : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choisissez une série de votre bibliothèque pour y ranger ce livre avec les autres tomes. Une annexe — hors-série, préquelle, guide — se range à part, sous son propre numéro. Videz le nom pour le sortir de sa série."
+          }
+        }
+      }
+    },
     "Cocher" : {
       "localizations" : {
         "en" : {
@@ -4517,6 +4557,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Connexion Amazon"
+          }
+        }
+      }
+    },
+    "Connexion en cours…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Signing in…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connexion en cours…"
           }
         }
       }
@@ -7801,6 +7857,16 @@
         }
       }
     },
+    "Le numéro d'annexe doit être un nombre entre 1 et 200." : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le numéro d'annexe doit être un nombre entre 1 et 200."
+          }
+        }
+      }
+    },
     "Le numéro de hors-série doit être un nombre entre 1 et 200." : {
       "localizations" : {
         "en" : {
@@ -9909,6 +9975,16 @@
         }
       }
     },
+    "Numéro d'annexe" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Numéro d'annexe"
+          }
+        }
+      }
+    },
     "Néerlandais" : {
       "localizations" : {
         "en" : {
@@ -11441,6 +11517,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Préparation de votre bibliothèque"
+          }
+        }
+      }
+    },
+    "Préparation de votre bibliothèque…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preparing your library…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Préparation de votre bibliothèque…"
           }
         }
       }
@@ -14143,6 +14235,22 @@
         }
       }
     },
+    "Tous vos livres,\nau même endroit" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All your books,\nin one place"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tous vos livres,\nau même endroit"
+          }
+        }
+      }
+    },
     "Tous vos scans ont été utilisés. Passez en Premium pour scanner sans limite." : {
       "localizations" : {
         "en" : {
@@ -14491,6 +14599,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Une photo de la couverture suffit"
+          }
+        }
+      }
+    },
+    "Une photo de la couverture suffit." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A photo of the cover is all it takes."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Une photo de la couverture suffit."
           }
         }
       }
