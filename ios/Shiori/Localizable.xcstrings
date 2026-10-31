@@ -4577,22 +4577,6 @@
         }
       }
     },
-    "Connexion en cours…" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Signing in…"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Connexion en cours…"
-          }
-        }
-      }
-    },
     "Connexion impossible" : {
       "localizations" : {
         "en" : {
@@ -12139,22 +12123,6 @@
         }
       }
     },
-    "Retour" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Back"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Retour"
-          }
-        }
-      }
-    },
     "Revenus Premium" : {
       "localizations" : {
         "en" : {
@@ -12791,6 +12759,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Se déconnecter"
+          }
+        }
+      }
+    },
+    "Se poursuit en arrière-plan" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continuing in the background"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se poursuit en arrière-plan"
           }
         }
       }
@@ -14987,6 +14971,22 @@
         }
       }
     },
+    "Vos scans de bienvenue" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your welcome scans"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vos scans de bienvenue"
+          }
+        }
+      }
+    },
     "Vos tomes prendront leur place dans la série, et ceux qui vous manquent seront listés par leur numéro. Le catalogue complet remplacera ce décompte dès que Shiori pourra le constituer." : {
       "localizations" : {
         "en" : {
@@ -14999,6 +14999,54 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vos tomes prendront leur place dans la série, et ceux qui vous manquent seront listés par leur numéro. Le catalogue complet remplacera ce décompte dès que Shiori pourra le constituer."
+          }
+        }
+      }
+    },
+    "Votre accueil" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your home"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Votre accueil"
+          }
+        }
+      }
+    },
+    "Votre bibliothèque Audible" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your Audible library"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Votre bibliothèque Audible"
+          }
+        }
+      }
+    },
+    "Votre bibliothèque Kindle" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your Kindle library"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Votre bibliothèque Kindle"
           }
         }
       }
@@ -15095,6 +15143,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Votre photo"
+          }
+        }
+      }
+    },
+    "Votre profil" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your profile"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Votre profil"
           }
         }
       }
@@ -15255,6 +15319,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vous partagez vos bibliothèques"
+          }
+        }
+      }
+    },
+    "Vous pourrez réessayer depuis les réglages" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You can try again from the settings"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vous pourrez réessayer depuis les réglages"
           }
         }
       }
@@ -16375,6 +16455,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Écarté"
+          }
+        }
+      }
+    },
+    "Échec" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Failed"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Échec"
           }
         }
       }

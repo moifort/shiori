@@ -14,6 +14,7 @@ struct AuthRoot: View {
     @State private var session = AuthSession()
     @State private var gate = OnboardingGate()
     @State private var supportGate = AppSupportGate()
+    @State private var preparation = LibraryPreparation.shared
     /// App-scoped: it listens to `Transaction.updates` for the whole lifetime of
     /// the app, so a renewal landing mid-session is picked up wherever the user is.
     @State private var subscriptions = SubscriptionStore()
@@ -79,12 +80,13 @@ struct AuthRoot: View {
         #endif
     }
 
-    /// Everywhere a reader is still getting in, and nowhere once they are.
+    /// Everywhere a reader is still getting in, up to the end of the library's
+    /// preparation, and nowhere once they are.
     private var showsCoverWall: Bool {
         if case .updateRequired = supportGate.state { return false }
         guard !isShowcase else { return false }
         if session.user == nil { return true }
-        return gate.state == .loading || gate.state == .required
+        return gate.state == .loading || gate.state == .required || preparation.isActive
     }
 
     /// A new reader goes straight to the wizard, from the very first frame
@@ -105,7 +107,20 @@ struct AuthRoot: View {
         case .required:
             OnboardingScreen(onCompleted: { gate.markCompleted(firstName: $0, avatar: $1) })
         case .ready:
-            ContentView(invitation: $invitationRequest)
+            ZStack {
+                // Kept running out of sight: the checklist's last line is its
+                // dashboard loading.
+                ContentView(invitation: $invitationRequest)
+                    .opacity(preparation.isActive ? 0 : 1)
+                if preparation.isActive {
+                    ZStack {
+                        CoverVeil(covering: true)
+                        LibraryPreparationView()
+                    }
+                    .environment(\.colorScheme, .dark)
+                    .transition(.opacity)
+                }
+            }
         case .failed(let message):
             ContentUnavailableView {
                 Label("Connexion impossible", systemImage: "wifi.exclamationmark")

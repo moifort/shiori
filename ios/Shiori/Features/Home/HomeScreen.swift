@@ -53,7 +53,7 @@ struct HomeScreen: View {
     /// library in.
     @State private var audibleSync = AudibleBackgroundSync.shared
     @State private var kindleSync = KindleBackgroundSync.shared
-    /// The wait onboarding hands over to, drawn in place of the dashboard.
+    /// The wait onboarding hands over to, which asks this tab for the dashboard.
     @State private var preparation = LibraryPreparation.shared
     /// Whether the bar shows its title and buttons over a page that opens on
     /// the carousel: empty as the page opens, scrolled by the bar's height,
@@ -200,7 +200,15 @@ struct HomeScreen: View {
             .scrollEdgeEffectHidden(opensOnHero && !leftTop, for: .top)
             // The first time only: after that, writes made anywhere
             // arrive through the change notice below.
-            .task { await viewModel.loadOnAppear() }
+            .task {
+                if preparation.isActive {
+                    preparation.loadHome = {
+                        await viewModel.load()
+                        return viewModel.errorMessage == nil
+                    }
+                }
+                await viewModel.loadOnAppear()
+            }
             // Left for another tab or a page pushed over it: the discoveries
             // taken from the carousel leave the line while out of sight.
             .onDisappear { Task { await viewModel.releaseTaken() } }
@@ -243,7 +251,7 @@ struct HomeScreen: View {
     /// or the month's choice is ready, or the empty shelf's prompt before the
     /// first book.
     private var opensOnHero: Bool {
-        guard !isSplit, !preparation.isActive else { return false }
+        guard !isSplit else { return false }
         return HomePage.opensOnHero(
             dashboard: viewModel.dashboard,
             releases: viewModel.releases,
@@ -303,10 +311,7 @@ struct HomeScreen: View {
 
     @ViewBuilder
     private var content: some View {
-        if preparation.isActive {
-            LibraryPreparationView { await viewModel.load() }
-                .transition(.opacity)
-        } else if let dashboard = viewModel.dashboard {
+        if let dashboard = viewModel.dashboard {
             // Drawn even for an empty library: every card sketches what it will
             // hold, and the scan prompt leads the page until the first book.
             HomePage(

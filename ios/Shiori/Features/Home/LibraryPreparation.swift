@@ -1,19 +1,26 @@
 import SwiftUI
 
 /// The moment between the wizard and the first dashboard. Onboarding opens it
-/// on its way out; the Home tab draws `LibraryPreparationView` instead of the
-/// dashboard until it closes, so a reader who linked Audible meets a library
-/// with books in it rather than empty cards filling in behind their back.
+/// on its way out; `AuthRoot` keeps the app out of sight and draws
+/// `LibraryPreparationView` over the cover wall until it closes, so a reader
+/// who linked Audible meets a library with books in it rather than empty cards
+/// filling in behind their back.
 @MainActor
 @Observable
 final class LibraryPreparation {
     static let shared = LibraryPreparation()
 
     private(set) var isActive = false
+    /// The libraries onboarding linked, whose passes the checklist waits on.
+    private(set) var sources: [ImportSource] = []
+    /// Brings the dashboard up to date, and says whether it could: set by the
+    /// home tab, already there behind the screen.
+    var loadHome: (() async -> Bool)?
 
     private init() {}
 
-    func begin() {
+    func begin(linking sources: [ImportSource]) {
+        self.sources = sources
         isActive = true
     }
 
@@ -22,65 +29,121 @@ final class LibraryPreparation {
     }
 }
 
-/// The ribbon over a caption that says what is being done: the library being
-/// prepared, and Audible or Kindle being read while their passes run.
+/// The ribbon over a checklist of what is really being done. Each line ticks
+/// off once its work is over: the profile and the welcome scans exist before
+/// this screen opens, a library when its pass has landed, the home when the
+/// dashboard has loaded.
 ///
-/// Held long enough to read even with nothing to wait for, and never longer
-/// than `longestWait`: a library of several hundred titles can keep the pass
-/// running for minutes, and past that point the dashboard's leading spinner
-/// says the rest is on its way.
+/// Never waits on the passes past `longestWait`: a library of several hundred
+/// titles can keep one running for minutes, so its line says it goes on in the
+/// background, unticked, and the dashboard's leading spinner takes over.
 struct LibraryPreparationView: View {
-    /// Loads the dashboard the view gives way to, once the pass has landed.
-    let onReady: () async -> Void
-
+    @State private var preparation = LibraryPreparation.shared
     @State private var audibleSync = AudibleBackgroundSync.shared
     @State private var kindleSync = KindleBackgroundSync.shared
+    /// The step at work: the ones after it are still waiting.
+    @State private var current = 0
+    /// How the steps over so far ended.
+    @State private var outcomes: [Step: PreparationLine.State] = [:]
 
-    private static let shortestWait: Duration = .seconds(2)
+    private enum Step: Hashable {
+        case profile
+        case welcomeScans
+        case library(ImportSource)
+        case home
+    }
+
+    /// Long enough to read each tick, even with nothing to wait for.
+    private static let pace: Duration = .milliseconds(700)
     private static let longestWait: Duration = .seconds(25)
 
     var body: some View {
-        VStack(spacing: 20) {
-            RibbonMark(motion: .loop, size: 140)
-            VStack(spacing: 6) {
-                Text("Préparation de votre bibliothèque")
-                    .font(.headline)
-                Group {
-                    if audibleSync.isSyncing {
-                        Text("Synchronisation avec Audible…")
-                    } else if kindleSync.isSyncing {
-                        Text("Synchronisation avec Kindle…")
-                    } else {
-                        Text("Presque prêt…")
-                    }
-                }
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .contentTransition(.opacity)
-                .animation(.easeInOut, value: audibleSync.isSyncing || kindleSync.isSyncing)
-            }
-            .multilineTextAlignment(.center)
+        VStack(spacing: 0) {
+            RibbonMark(motion: .loop, size: 84)
+            Text("Préparation de votre bibliothèque")
+                .font(.headline)
+                .multilineTextAlignment(.center)
+                .padding(.top, 24)
+                .padding(.bottom, 20)
+            PreparationChecklist(lines: lines)
         }
-        .padding()
+        .padding(.horizontal, 20)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .accessibilityElement(children: .combine)
         .accessibilityIdentifier("library-preparation")
         .task { await prepare() }
+    }
+
+    private var steps: [Step] {
+        [.profile, .welcomeScans] + preparation.sources.map(Step.library) + [.home]
+    }
+
+    private var lines: [PreparationLine] {
+        steps.enumerated().map { index, step in
+            PreparationLine(
+                id: String(describing: step),
+                label: label(of: step),
+                state: outcomes[step] ?? (index == current ? .working : .waiting)
+            )
+        }
+    }
+
+    private func label(of step: Step) -> LocalizedStringKey {
+        switch step {
+        case .profile: "Votre profil"
+        case .welcomeScans: "Vos scans de bienvenue"
+        case .library(.audible): "Votre bibliothèque Audible"
+        case .library(.kindle): "Votre bibliothèque Kindle"
+        case .home: "Votre accueil"
+        }
     }
 
     private func prepare() async {
         let clock = ContinuousClock()
         let deadline = clock.now + Self.longestWait
-        try? await Task.sleep(for: Self.shortestWait)
-        while audibleSync.isSyncing || kindleSync.isSyncing, clock.now < deadline {
-            try? await Task.sleep(for: .milliseconds(300))
+        for (index, step) in steps.enumerated() {
+            current = index
+            let outcome = await outcome(of: step, deadline: deadline)
+            withAnimation(.snappy) { outcomes[step] = outcome }
+            try? await Task.sleep(for: Self.pace)
         }
         guard !Task.isCancelled else { return }
-        await onReady()
-        LibraryPreparation.shared.finish()
+        preparation.finish()
+    }
+
+    /// Waits for the step's work and answers how it ended.
+    private func outcome(of step: Step, deadline: ContinuousClock.Instant) async -> PreparationLine.State {
+        switch step {
+        // `completeOnboarding` did both before the wizard moved on.
+        case .profile, .welcomeScans:
+            return .done
+        case .library(.audible):
+            return await passOutcome(deadline: deadline, isSyncing: { audibleSync.isSyncing }, error: { audibleSync.errorMessage })
+        case .library(.kindle):
+            return await passOutcome(deadline: deadline, isSyncing: { kindleSync.isSyncing }, error: { kindleSync.errorMessage })
+        case .home:
+            return await preparation.loadHome?() == true ? .done : .failed
+        }
+    }
+
+    private func passOutcome(
+        deadline: ContinuousClock.Instant,
+        isSyncing: () -> Bool,
+        error: () -> String?
+    ) async -> PreparationLine.State {
+        let clock = ContinuousClock()
+        while isSyncing(), clock.now < deadline {
+            try? await Task.sleep(for: .milliseconds(300))
+        }
+        if isSyncing() { return .continuing }
+        return error() == nil ? .done : .failed
     }
 }
 
 #Preview {
-    LibraryPreparationView(onReady: {})
+    ZStack {
+        CoverWall()
+        CoverVeil(covering: true)
+        LibraryPreparationView()
+    }
+    .environment(\.colorScheme, .dark)
 }

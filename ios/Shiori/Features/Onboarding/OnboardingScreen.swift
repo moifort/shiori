@@ -35,6 +35,8 @@ struct OnboardingScreen: View {
     /// open for.
     @State private var pendingSources: [ImportSource] = []
     @State private var signingIn: ImportSource?
+    /// The sources linked, which the preparation screen goes on to wait for.
+    @State private var linkedSources: [ImportSource] = []
     /// Amazon's sign-in page, while it is on screen.
     @State private var signIn: AmazonLogin?
     /// Between tapping "Connecter" and Amazon's page, and between the page
@@ -74,7 +76,7 @@ struct OnboardingScreen: View {
         .environment(\.colorScheme, .dark)
         // Straight to Amazon's page for each source, and from the last one
         // straight into the app: every library is imported in the background,
-        // the dashboard waiting on the passes behind its preparation screen,
+        // the app waiting on the passes behind the preparation screen,
         // with no picker in between.
         .sheet(item: $signIn) { login in
             AmazonSignInSheet(login: login, onCode: { code in
@@ -154,6 +156,7 @@ struct OnboardingScreen: View {
         isConnecting = true
         do {
             try await client.completeSignIn(source, code)
+            linkedSources.append(source)
         } catch {
             isConnecting = false
             connectionError = reportError(error)
@@ -163,10 +166,10 @@ struct OnboardingScreen: View {
         await connectNextSource()
     }
 
-    /// Into the app by way of the preparation screen, which the dashboard
-    /// draws until the library is ready to be shown.
+    /// Into the app by way of the preparation screen, drawn until the library
+    /// is ready to be shown.
     private func enterApp() {
-        client.beginPreparation()
+        client.beginPreparation(linkedSources)
         onCompleted(firstName.trimmingCharacters(in: .whitespacesAndNewlines), avatar)
     }
 

@@ -10,8 +10,9 @@ struct OnboardingClient: Sendable {
     var startSignIn: @Sendable (ImportSource, AmazonMarketplace) async throws -> AmazonLogin
     /// Links the library with Amazon's code, and starts its pass in the background.
     var completeSignIn: @Sendable (ImportSource, _ code: String) async throws -> Void
-    /// The preparation screen the dashboard draws until the library is ready.
-    var beginPreparation: @Sendable @MainActor () -> Void
+    /// The preparation screen drawn until the library is ready, told which
+    /// libraries were linked.
+    var beginPreparation: @Sendable @MainActor ([ImportSource]) -> Void
 }
 
 extension OnboardingClient {
@@ -34,7 +35,7 @@ extension OnboardingClient {
                 await KindleBackgroundSync.shared.start()
             }
         },
-        beginPreparation: { LibraryPreparation.shared.begin() }
+        beginPreparation: { LibraryPreparation.shared.begin(linking: $0) }
     )
 
     /// Accepts everything and starts nothing.
@@ -43,6 +44,6 @@ extension OnboardingClient {
         changeAvatar: { $0 },
         startSignIn: { _, _ in throw CancellationError() },
         completeSignIn: { _, _ in },
-        beginPreparation: {}
+        beginPreparation: { _ in }
     )
 }
