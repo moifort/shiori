@@ -140,6 +140,11 @@ export const UpcomingReleaseType = builder.objectRef<UpcomingRelease>('UpcomingR
       description: 'Whether the reader hearted the saga.',
       resolve: (release) => release.sagaFavorite,
     }),
+    narrator: t.string({
+      nullable: true,
+      description: 'The narrator who lends their voice, on a recording found for one.',
+      resolve: (release) => release.narrator ?? null,
+    }),
   }),
 })
 

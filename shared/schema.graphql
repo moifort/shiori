@@ -5136,6 +5136,9 @@ type UpcomingRelease {
   format: BookFormat!
   id: String!
 
+  """The narrator who lends their voice, on a recording found for one."""
+  narrator: String
+
   """Whether the reader hearted the saga."""
   sagaFavorite: Boolean!
 
