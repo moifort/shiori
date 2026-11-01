@@ -20,6 +20,9 @@ struct CoverTags: View {
         self.init(language: book.language, isAudio: book.format == .audiobook, isFrosted: isFrosted)
     }
 
+    /// Paper in the phone's language: no tag to draw.
+    var isEmpty: Bool { !isAudio && language?.isForeign != true }
+
     var body: some View {
         HStack(spacing: 4) {
             if let language, language.isForeign {

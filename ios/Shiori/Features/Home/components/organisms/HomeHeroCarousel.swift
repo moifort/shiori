@@ -562,12 +562,6 @@ struct HomeHeroCarousel: View {
         layout(id: id, leafDate: leafDate) {
             Button(action: onOpen) {
                 BookCover(book: cover, width: Self.coverWidth, showsFormatBadge: false, isBound: true)
-                    // A recording and a foreign edition say so in the tags
-                    // the posters carry, rather than with headphones.
-                    .overlay(alignment: .topTrailing) {
-                        CoverTags(book: cover)
-                            .padding(6)
-                    }
                     .shadow(color: .black.opacity(0.5), radius: 18, y: 12)
             }
             .buttonStyle(.plain)
@@ -600,11 +594,18 @@ struct HomeHeroCarousel: View {
                             .lineSpacing(2)
                             .padding(.top, 8)
                     }
-                    // The days left, outlined as "Audio" is, at the foot of
-                    // the text as the book page sets it.
-                    if let countdown {
-                        OutlinedTag(text: countdown, isFrosted: false)
-                            .padding(.top, 10)
+                    // A recording, a foreign edition and the days left, in
+                    // outlined tags at the foot of the text, as the book page
+                    // sets them. Clear over the hero's colours.
+                    let tags = CoverTags(book: cover, isFrosted: false)
+                    if !tags.isEmpty || countdown != nil {
+                        HStack(spacing: 4) {
+                            tags
+                            if let countdown {
+                                OutlinedTag(text: countdown, isFrosted: false)
+                            }
+                        }
+                        .padding(.top, 10)
                     }
                 }
                 // Room for the calendar leaf in the corner.
