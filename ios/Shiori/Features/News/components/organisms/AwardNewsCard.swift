@@ -74,11 +74,7 @@ struct AwardNewsCard: View {
             ZStack {
                 Color(white: 0.16)
                 if let url = winner.coverURL {
-                    AsyncImage(url: url) { image in
-                        image.resizable().scaledToFill().blur(radius: 30).saturation(1.4)
-                    } placeholder: {
-                        Color.clear
-                    }
+                    CoverEffectImage(url: url, effect: .backdrop) { Color.clear }
                     Color.black.opacity(0.4)
                 }
             }

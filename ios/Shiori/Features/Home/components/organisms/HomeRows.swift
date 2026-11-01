@@ -420,26 +420,23 @@ struct SeriesShowCard: View {
 
     /// The cover blurred under the name and the progress, more the lower it
     /// goes, as PosterCover melts a cover under its line: the print never
-    /// fights the text. Scaled up before the blur so the edges blur on the
-    /// cover rather than on the card's transparent border.
+    /// fights the text.
     private func footBlur(_ url: URL) -> some View {
         Color.clear
             .overlay {
-                CoverImage(url: url) { Color.clear } fallback: { Color.clear }
-                    .scaleEffect(1.15)
-                    .blur(radius: isCompact ? 8 : 10, opaque: true)
+                CoverEffectImage(
+                    url: url,
+                    effect: .melt(
+                        width: isCompact ? 200 : 180,
+                        height: isCompact ? 128 : 176,
+                        blur: isCompact ? 16 : 20,
+                        fadeStart: 0.3,
+                        fadeEnd: 0.8,
+                        dimming: 0
+                    )
+                ) { Color.clear }
             }
             .clipped()
-            .mask {
-                LinearGradient(
-                    stops: (0...10).map { step in
-                        let t = Double(step) / 10
-                        return .init(color: .black.opacity(t * t * (3 - 2 * t)), location: 0.3 + 0.5 * t)
-                    },
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-            }
             .allowsHitTesting(false)
     }
 

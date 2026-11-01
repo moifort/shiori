@@ -22,15 +22,9 @@ struct CoverBackdrop: View {
         Color(white: 0.12)
             .overlay {
                 if let url {
-                    CoverImage(url: url) {
-                        Color.clear
-                    } fallback: {
-                        Color.clear
-                    }
-                    .scaleEffect(1.6)
-                    .blur(radius: 36, opaque: true)
-                    .saturation(1.5)
-                    .opacity(0.85)
+                    CoverEffectImage(url: url, effect: .backdrop) { Color.clear }
+                        .scaleEffect(1.6)
+                        .opacity(0.85)
                 }
             }
             .overlay {
@@ -50,8 +44,6 @@ struct CoverBackdrop: View {
             // Scaled up for the blur, the image's hit area runs far past the
             // clip: it took the taps of whatever lay under the hero.
             .allowsHitTesting(false)
-            // Small and blurred: no need to decode the cover at full size.
-            .environment(\.coverMaxPixelSize, 120)
             .accessibilityHidden(true)
     }
 

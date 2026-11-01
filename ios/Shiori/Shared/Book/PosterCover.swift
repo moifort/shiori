@@ -126,7 +126,33 @@ struct PosterCover: View {
     /// the line, and nothing darkens it. The cover as drawn, photo or the
     /// typeset stand-in alike: blurring only a photo left the stand-in's
     /// print sharp under "Tome 2".
-    private var footBlur: some View {
+    @ViewBuilder private var footBlur: some View {
+        if let url = book.coverURL {
+            CoverEffectImage(
+                url: url,
+                effect: .melt(
+                    width: Int(width),
+                    height: Int(width * 1.5),
+                    blur: 20,
+                    fadeStart: 0.4,
+                    fadeEnd: 0.92,
+                    dimming: dimming
+                )
+            ) {
+                standInBlur
+            }
+            .frame(width: width, height: width * 1.5)
+            .saturation(isGreyed ? 0 : 1)
+            .clipShape(.rect(cornerRadius: Self.cornerRadius, style: .continuous))
+            .allowsHitTesting(false)
+        } else {
+            standInBlur
+        }
+    }
+
+    /// The typeset stand-in has no image to compute a blur from: drawn once
+    /// into one texture, it is not blurred again on each frame.
+    private var standInBlur: some View {
         // Scaled up before the blur, as CoverBackdrop does, so the edges
         // blur on the cover itself rather than on the transparent corners.
         Color.clear
@@ -152,6 +178,7 @@ struct PosterCover: View {
                     endPoint: .bottom
                 )
             }
+            .drawingGroup()
             .allowsHitTesting(false)
     }
 }

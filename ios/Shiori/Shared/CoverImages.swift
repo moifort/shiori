@@ -1,3 +1,5 @@
+import CoreImage
+import CoreImage.CIFilterBuiltins
 import ImageIO
 import SwiftUI
 import UIKit
@@ -73,6 +75,23 @@ enum CoverImages {
         return image
     }
 
+    /// The cover as `effect` draws it, already in memory.
+    static func cached(_ url: URL, effect: CoverEffect) -> UIImage? {
+        memory.object(forKey: memoryKey(key(for: url), effect))
+    }
+
+    /// The cover with `effect` computed once, off the main thread: drawn as a
+    /// plain image, nothing is blurred again on each frame of a scroll.
+    static func load(_ url: URL, effect: CoverEffect) async throws -> UIImage {
+        let memoryKey = memoryKey(key(for: url), effect)
+        if let image = memory.object(forKey: memoryKey) { return image }
+        let source = try await load(url, maxPixelSize: effect.sourcePixelSize)
+        guard let image = await Task.detached(operation: { effect.applied(to: source) }).value
+        else { throw URLError(.cannotDecodeContentData) }
+        memory.setObject(image, forKey: memoryKey, cost: image.decodedBytes)
+        return image
+    }
+
     /// Fetches to disk, a few at a time, the covers of rows not drawn yet, so
     /// they show at once when scrolled to. Skips the ones already stored.
     static func prefetch(_ urls: [URL]) {
@@ -98,6 +117,10 @@ enum CoverImages {
 
     private static func memoryKey(_ key: String, _ maxPixelSize: Int?) -> NSString {
         "\(key)@\(maxPixelSize ?? 0)" as NSString
+    }
+
+    private static func memoryKey(_ key: String, _ effect: CoverEffect) -> NSString {
+        "\(key)@\(effect)" as NSString
     }
 
     private static func file(for key: String) -> URL {
@@ -126,6 +149,95 @@ enum CoverImages {
             hash = (hash ^ UInt64(byte)) &* 0x100_0000_01b3
         }
         return String(hash, radix: 16)
+    }
+}
+
+/// A blur a cover carries wherever it is drawn. A live `.blur` is computed by
+/// the GPU on every frame of a scroll, and with a mask over it, once per cover
+/// on screen: on the home, that alone made one frame in five late on an
+/// iPhone 15 Pro. Computed once, the result is a small image like any other.
+enum CoverEffect: Hashable, Sendable {
+    /// A hero's colours: small, blurred and saturated.
+    case backdrop
+    /// The foot of a cover melting into a blur, transparent above it. Sizes
+    /// are in points, at one pixel each: a blur holds no detail to lose. The
+    /// fade runs from `fadeStart` to `fadeEnd` of the height, along a smoothstep.
+    case melt(width: Int, height: Int, blur: Int, fadeStart: Double, fadeEnd: Double, dimming: Double)
+
+    private static let context = CIContext(options: [.cacheIntermediates: false])
+
+    /// The largest side the cover is decoded at: enough to fill the canvas
+    /// whichever way the photo's proportions crop it.
+    fileprivate var sourcePixelSize: Int {
+        switch self {
+        case .backdrop: 120
+        case let .melt(width, height, _, _, _, _): max(width, height) * 3 / 2
+        }
+    }
+
+    fileprivate func applied(to source: UIImage) -> UIImage? {
+        guard let cover = source.cgImage.map({ CIImage(cgImage: $0) }) else { return nil }
+        let output: CIImage? = switch self {
+        case .backdrop:
+            cover
+                .clampedToExtent()
+                .applyingGaussianBlur(sigma: 8)
+                .applyingFilter("CIColorControls", parameters: [kCIInputSaturationKey: 1.5])
+                .cropped(to: cover.extent)
+        case let .melt(width, height, blur, fadeStart, fadeEnd, dimming):
+            Self.melted(
+                cover,
+                canvas: CGRect(x: 0, y: 0, width: width, height: height),
+                blur: Double(blur),
+                fadeStart: fadeStart,
+                fadeEnd: fadeEnd,
+                dimming: dimming
+            )
+        }
+        return output
+            .flatMap { Self.context.createCGImage($0, from: $0.extent) }
+            .map(UIImage.init(cgImage:))
+    }
+
+    private static func melted(
+        _ cover: CIImage,
+        canvas: CGRect,
+        blur: Double,
+        fadeStart: Double,
+        fadeEnd: Double,
+        dimming: Double
+    ) -> CIImage? {
+        // Filled and centred, as `scaledToFill` draws the cover under it.
+        // Extended before it is scaled: the edge of a scaled image is half
+        // transparent, and the blur would carry that into the foot.
+        let scale = max(canvas.width / cover.extent.width, canvas.height / cover.extent.height)
+        let keep = CGFloat(1 - dimming)
+        let dimmed = cover
+            .clampedToExtent()
+            .transformed(by: CGAffineTransform(scaleX: scale, y: scale))
+            .transformed(by: CGAffineTransform(
+                translationX: (canvas.width - cover.extent.width * scale) / 2,
+                y: (canvas.height - cover.extent.height * scale) / 2
+            ))
+            .applyingGaussianBlur(sigma: blur)
+            .applyingFilter("CIColorMatrix", parameters: [
+                "inputRVector": CIVector(x: keep, y: 0, z: 0, w: 0),
+                "inputGVector": CIVector(x: 0, y: keep, z: 0, w: 0),
+                "inputBVector": CIVector(x: 0, y: 0, z: keep, w: 0),
+            ])
+            .cropped(to: canvas)
+        // Core Image counts from the foot.
+        let fade = CIFilter.smoothLinearGradient()
+        fade.point0 = CGPoint(x: 0, y: canvas.height * (1 - fadeStart))
+        fade.point1 = CGPoint(x: 0, y: canvas.height * (1 - fadeEnd))
+        fade.color0 = CIColor.clear
+        fade.color1 = CIColor.white
+        return fade.outputImage.map { mask in
+            dimmed.applyingFilter("CIBlendWithAlphaMask", parameters: [
+                kCIInputBackgroundImageKey: CIImage.empty(),
+                kCIInputMaskImageKey: mask.cropped(to: canvas),
+            ])
+        }
     }
 }
 
@@ -207,6 +319,42 @@ struct CoverImage<Loading: View, Fallback: View>: View {
             phase = nil
             do {
                 phase = .loaded(try await CoverImages.load(url, maxPixelSize: maxPixelSize))
+            } catch {
+                guard !Task.isCancelled else { return }
+                phase = .failed
+            }
+        }
+    }
+}
+
+/// A remote cover with a `CoverEffect` computed once: `fallback` when it cannot
+/// be had, nothing while it is on its way.
+struct CoverEffectImage<Fallback: View>: View {
+    let url: URL
+    let effect: CoverEffect
+    @ViewBuilder let fallback: () -> Fallback
+
+    private enum Phase {
+        case loaded(UIImage)
+        case failed
+    }
+
+    @State private var phase: Phase?
+
+    var body: some View {
+        Group {
+            switch phase ?? CoverImages.cached(url, effect: effect).map(Phase.loaded) {
+            case let .loaded(image):
+                Image(uiImage: image).resizable().scaledToFill()
+            case .failed:
+                fallback()
+            case nil:
+                Color.clear
+            }
+        }
+        .task(id: "\(CoverImages.key(for: url))@\(effect)") {
+            do {
+                phase = .loaded(try await CoverImages.load(url, effect: effect))
             } catch {
                 guard !Task.isCancelled else { return }
                 phase = .failed

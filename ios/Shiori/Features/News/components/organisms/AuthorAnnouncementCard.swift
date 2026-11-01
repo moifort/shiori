@@ -98,13 +98,9 @@ struct AuthorAnnouncementCard: View {
         ZStack {
             Color(white: 0.16)
             if let url = release.coverURL {
-                AsyncImage(url: url) { image in
-                    image.resizable().scaledToFill().blur(radius: 26).saturation(1.3)
-                } placeholder: {
-                    Color.clear
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .clipped()
+                CoverEffectImage(url: url, effect: .backdrop) { Color.clear }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .clipped()
                 Color.black.opacity(0.35)
             }
         }
