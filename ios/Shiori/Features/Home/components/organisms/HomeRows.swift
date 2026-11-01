@@ -130,7 +130,7 @@ struct ReadingLeadCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .environment(\.colorScheme, .dark)
         .background {
-            CoverBackdrop(url: book.coverURL, ground: .clear)
+            CoverBackdrop(url: book.coverURL, ground: .clear, tint: book.coverTint)
         }
         .clipShape(.rect(cornerRadius: 18))
     }
@@ -319,7 +319,7 @@ struct NewsTile: View {
             .padding(6)
             .padding(.trailing, 4)
             .environment(\.colorScheme, .dark)
-            .background { CoverBackdrop(url: book.coverURL, ground: .clear) }
+            .background { CoverBackdrop(url: book.coverURL, ground: .clear, tint: book.coverTint) }
             .clipShape(.rect(cornerRadius: 12))
             .contentShape(.rect(cornerRadius: 12))
         }

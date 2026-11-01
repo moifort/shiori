@@ -82,7 +82,7 @@ struct BookCover: View {
     private var placeholder: some View {
         ZStack {
             LinearGradient(
-                colors: [placeholderTint, placeholderTint.opacity(0.65)],
+                colors: [book.coverTint, book.coverTint.opacity(0.65)],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
@@ -139,11 +139,13 @@ struct BookCover: View {
         let byWord = width * 0.84 / (CGFloat(longestWord) * 0.62)
         return min(width * byLength, max(byWord, width * longWordFloor))
     }
+}
 
+extension Book {
     /// A hue derived from the title, so the same book always draws the same
     /// colour and two neighbours on a shelf rarely collide.
-    private var placeholderTint: Color {
-        let hash = book.title.unicodeScalars.reduce(into: UInt64(5381)) { total, scalar in
+    var coverTint: Color {
+        let hash = title.unicodeScalars.reduce(into: UInt64(5381)) { total, scalar in
             total = total &* 33 &+ UInt64(scalar.value)
         }
         return Color(hue: Double(hash % 360) / 360, saturation: 0.45, brightness: 0.55)
