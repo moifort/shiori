@@ -34,6 +34,8 @@ private struct ScrollAwayBar: ViewModifier {
                 }
             }
             .navigationBarTitleDisplayMode(.inline)
+            // The bar stays clear over the page, as the TV app's does.
+            .scrollEdgeEffectHidden(true, for: .top)
             .toolbar {
                 ToolbarItem(placement: .principal) { Text(verbatim: "").accessibilityHidden(true) }
                 ToolbarItem(placement: .topBarLeading) {
@@ -56,15 +58,13 @@ private struct ScrollAwayBar: ViewModifier {
     }
 }
 
-/// Whether a bar that scrolls away is called, and whether its page has left
-/// the top. Held in a class, and read only by the items that fade: on the
+/// Whether a bar that scrolls away is called. Held in a class, and read only by the items that fade: on the
 /// page's own state, each call rebuilt the page and every item of the bar,
 /// a burst of late frames on each change of direction.
 @MainActor
 @Observable
 final class ScrollBarState {
     private(set) var isCalled: Bool
-    private(set) var hasLeftTop = false
 
     init(isCalled: Bool = true) {
         self.isCalled = isCalled
@@ -73,11 +73,6 @@ final class ScrollBarState {
     func call(_ called: Bool) {
         guard called != isCalled else { return }
         withAnimation(.smooth(duration: 0.25)) { isCalled = called }
-    }
-
-    func leaveTop(_ left: Bool) {
-        guard left != hasLeftTop else { return }
-        hasLeftTop = left
     }
 }
 

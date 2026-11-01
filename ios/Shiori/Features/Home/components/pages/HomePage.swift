@@ -81,9 +81,6 @@ struct HomePage: View {
     /// its room above the page, and by scrolling up below the hero, as Safari
     /// brings its bar back.
     var onBarCalled: (Bool) -> Void = { _ in }
-    /// Whether the page has left the top: the bar's blur comes in then, so the
-    /// rows never run under the status bar bare.
-    var onLeftTop: (Bool) -> Void = { _ in }
     let onAction: (HomeAction) -> Void
 
     /// How far the page is pulled down past its top.
@@ -192,8 +189,6 @@ struct HomePage: View {
         .onScrollGeometryChange(for: CGFloat.self) { geometry in
             geometry.contentOffset.y + geometry.contentInsets.top
         } action: { old, offset in
-            // Past the hero, the blur keeps the rows off the status bar.
-            onLeftTop(offset > Self.openingOffset + 80)
             // At the very top, or bouncing above it, the bar has its room
             // over the page: it shows. Scrolling down sends it away; scrolling
             // up calls it back once below the figures, where it covers none.

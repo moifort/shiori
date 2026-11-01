@@ -58,8 +58,7 @@ struct HomeScreen: View {
     /// Whether the bar shows its title and buttons over a page that opens on
     /// the carousel: empty as the page opens, scrolled by the bar's height,
     /// and while scrolling down; called back at the very top and by scrolling
-    /// up below the hero. Whether that page has left the top, where the bar's
-    /// blur stays away, too.
+    /// up below the hero.
     @State private var bar = ScrollBarState(isCalled: false)
 
     init(
@@ -216,7 +215,9 @@ struct HomeScreen: View {
                     trailingButtons
                 }
             }
-            .modifier(HeroScrollEdge(bar: bar, opensOnHero: opensOnHero))
+            // The bar stays clear over the page, as the TV app's does, the
+            // buttons on their own glass.
+            .scrollEdgeEffectHidden(opensOnHero, for: .top)
             // The first time only: after that, writes made anywhere
             // arrive through the change notice below.
             .task {
@@ -342,8 +343,7 @@ struct HomeScreen: View {
                     isSearchingDiscoveries: viewModel.isSearchingDiscoveries,
                     isSideBySide: isSplit && detail == nil,
                     isCompact: !isSplit,
-                    onBarCalled: { bar.call($0) },
-                    onLeftTop: { bar.leaveTop($0) }
+                    onBarCalled: { bar.call($0) }
                 ) { action in
                     switch action {
                     case let .showLibrary(request): onShowLibrary(request)
@@ -487,17 +487,5 @@ private struct HomeStatisticsScreen: View {
 
     private struct GenresDestination: Identifiable {
         var id: String { "genres" }
-    }
-}
-
-/// No blur over the carousel; past it, the blur keeps the rows off the status
-/// bar, whether the bar's buttons are called or not. On its own, so that
-/// leaving the top does not rebuild the page.
-private struct HeroScrollEdge: ViewModifier {
-    let bar: ScrollBarState
-    let opensOnHero: Bool
-
-    func body(content: Content) -> some View {
-        content.scrollEdgeEffectHidden(opensOnHero && !bar.hasLeftTop, for: .top)
     }
 }
