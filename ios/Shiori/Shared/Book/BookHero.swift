@@ -84,7 +84,7 @@ struct BookHero<Actions: View>: View {
         .padding(.bottom, 28)
         .environment(\.colorScheme, .dark)
         .background {
-            CoverBackdrop(url: book.coverURL, fadeHeight: Self.fadeHeight, tint: book.coverTint)
+            CoverBackdrop(url: book.coverURL, fadeHeight: Self.fadeHeight, tint: book.coverGround)
                 // Up under the bars, the toolbar's glass floating over it,
                 // and on under the first block, which draws over it.
                 .padding(.top, -400)

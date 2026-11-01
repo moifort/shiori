@@ -145,10 +145,26 @@ extension Book {
     /// A hue derived from the title, so the same book always draws the same
     /// colour and two neighbours on a shelf rarely collide.
     var coverTint: Color {
+        Color(hue: coverHue, saturation: 0.45, brightness: 0.55)
+    }
+
+    /// The ground beside the stand-in: a neighbouring hue, deeper, so it stands
+    /// apart from the cover and still goes with it. White text reads on it in
+    /// both modes; a light page takes it a little lighter.
+    var coverGround: Color {
+        let hue = (coverHue + 30.0 / 360).truncatingRemainder(dividingBy: 1)
+        return Color(uiColor: UIColor { traits in
+            traits.userInterfaceStyle == .dark
+                ? UIColor(hue: hue, saturation: 0.5, brightness: 0.3, alpha: 1)
+                : UIColor(hue: hue, saturation: 0.42, brightness: 0.42, alpha: 1)
+        })
+    }
+
+    private var coverHue: Double {
         let hash = title.unicodeScalars.reduce(into: UInt64(5381)) { total, scalar in
             total = total &* 33 &+ UInt64(scalar.value)
         }
-        return Color(hue: Double(hash % 360) / 360, saturation: 0.45, brightness: 0.55)
+        return Double(hash % 360) / 360
     }
 }
 

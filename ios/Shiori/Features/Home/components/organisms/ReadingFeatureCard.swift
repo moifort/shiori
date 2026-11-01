@@ -79,7 +79,7 @@ struct ReadingFeatureCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .environment(\.colorScheme, .dark)
         .background {
-            CoverBackdrop(url: book.coverURL, ground: .clear, tint: book.coverTint)
+            CoverBackdrop(url: book.coverURL, ground: .clear, tint: book.coverGround)
         }
         .clipShape(.rect(cornerRadius: 18))
     }

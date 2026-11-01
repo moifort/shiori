@@ -3,16 +3,15 @@ import SwiftUI
 /// A cover's own colours, blurred into the ground of a hero — a book's page, the
 /// month's discovery — as the TV app sets a film over its poster. Darkened at
 /// the top, where the toolbar's glass sits, and faded into the page at the foot,
-/// so the text over it reads in white whatever the cover. Without a cover, the
-/// stand-in's colour, else a dark neutral ground.
+/// so the text over it reads in white whatever the cover. Without a cover, a
+/// flat colour that goes with the stand-in, else a dark neutral ground.
 struct CoverBackdrop: View {
     let url: URL?
     /// How tall the fade into the page is.
     var fadeHeight: CGFloat = Self.fadeHeight
     /// What the foot fades into: the page the hero opens.
     var ground: Color = Color(.systemGroupedBackground)
-    /// The colour of the stand-in drawn in the cover's place, for a book with
-    /// no photo or one that will not load.
+    /// The flat colour for a book with no photo or one that will not load.
     var tint: Color?
 
     /// How tall the fade into the page is by default: a hero leaves this much
@@ -33,11 +32,13 @@ struct CoverBackdrop: View {
                 }
             }
             .overlay {
-                LinearGradient(
-                    colors: [.black.opacity(0.45), .black.opacity(0.25), .black.opacity(0.4)],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
+                if url != nil || tint == nil {
+                    LinearGradient(
+                        colors: [.black.opacity(0.45), .black.opacity(0.25), .black.opacity(0.4)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                }
             }
             // Into the page at the foot, eased at both ends so the colours melt
             // into it rather than stop at a line.
