@@ -36,6 +36,7 @@ import {
   onAudible,
   readerIsStale,
   recentReleasesOf,
+  yearVolumesOf,
   releaseDescriptionKeyOf,
   releaseDescriptionOf,
   releaseEditionOf,
@@ -185,6 +186,26 @@ export namespace DiscoveryUseCase {
     await rememberReader(userId, library, language, now)
     const { watches, authorWatches } = await watchesOf(library, format)
     return discoveryOf(library, watches, authorWatches, awaited, format, now)
+  }
+
+  /** What came out since the start of the year for the reader: the volumes of
+   *  the sagas they follow, and the editions they await that are out. Read off
+   *  the shared watches: no web lookup. */
+  export const yearReleases = async (userId: UserId, now = new Date()) => {
+    const [library, awaited] = await Promise.all([libraryOf(userId), awaitedOf(userId, now)])
+    const watches = await DiscoveryQuery.watches(library.sagas.map(watchKeyOf))
+    const today = todayOf(now)
+    const volumes = library.followed.filter(isDiscoverable).flatMap((series) => {
+      const watch = watches.get(watchKeyOf({ seriesId: series.saga, language: series.language }))
+      if (!watch) return []
+      const format = formatOf(series.saga)
+      return yearVolumesOf(watch, series.catalogue, today).map((volume) => ({
+        series,
+        volume,
+        format,
+      }))
+    })
+    return { volumes, awaited, today }
   }
 
   /** The first look at the tab: every saga, then every author, the reader

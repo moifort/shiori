@@ -1,8 +1,10 @@
 import { describe, expect, test } from 'bun:test'
 import type { SharedActivity, SharedShelfToday } from '~/domain/analytics/types'
-import type { Discovery } from '~/domain/discovery/types'
+import type { AwaitedEditionView } from '~/domain/awaited-edition/types'
+import type { Discovery, FoundVolume } from '~/domain/discovery/types'
 import type { Friend } from '~/domain/friendship/types'
-import { feedEventsOf, feedPageOf, upcomingOf } from '~/domain/news/business-rules'
+import { feedEventsOf, feedPageOf, upcomingOf, yearReleasesOf } from '~/domain/news/business-rules'
+import type { FollowedSeries } from '~/domain/series/use-case'
 import type { UserId } from '~/domain/shared/types'
 
 const activity = (
@@ -171,5 +173,50 @@ describe('upcomingOf', () => {
     ])
     expect(releases.filter((release) => String(release.title) === 'Light Bringer')).toHaveLength(2)
     expect(releases.map((release) => release.format)).toContain('audiobook')
+  })
+})
+
+describe('yearReleasesOf', () => {
+  const today = '2026-11-01'
+  const awaited = (title: string, state: AwaitedEditionView['state'], date?: string) =>
+    ({
+      id: title,
+      format: 'book',
+      state,
+      source: { title, authors: ['Auteur'] },
+      found: { title, ...(date ? { date } : {}) },
+    }) as unknown as AwaitedEditionView
+  const series = { saga: 'dune', name: 'Dune', books: [] } as unknown as FollowedSeries
+
+  test('keeps the awaited editions out this year, month-dated ones included', () => {
+    const releases = yearReleasesOf(
+      [],
+      [
+        awaited('Out', 'available', '2026-03-12'),
+        awaited('Out in a month', 'available', '2026-06'),
+        awaited('Last year', 'available', '2025-11-02'),
+        awaited('Coming', 'announced', '2026-12-01'),
+      ],
+      today,
+    )
+    expect(releases.map((release) => String(release.title))).toEqual(['Out in a month', 'Out'])
+  })
+
+  test('lists a saga volume as a saga release, the newest first', () => {
+    const releases = yearReleasesOf(
+      [
+        {
+          series,
+          volume: { number: 2, title: 'Two', date: '2026-02-01' } as unknown as FoundVolume,
+          format: 'book',
+        },
+      ],
+      [awaited('Out', 'available', '2026-03-12')],
+      today,
+    )
+    expect(releases.map((release) => [release.source, String(release.title)])).toEqual([
+      ['awaited', 'Out'],
+      ['saga', 'Two'],
+    ])
   })
 })

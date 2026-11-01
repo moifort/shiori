@@ -41,6 +41,7 @@ import {
   watchedAuthorsOf,
   watchedSagasOf,
   watchIsStale,
+  yearVolumesOf,
 } from './business-rules'
 import { releasesPrompt } from './prompts'
 import type {
@@ -410,6 +411,21 @@ describe('the volumes a saga has just brought out', () => {
     ])
     expect(recentReleasesOf(held(), watch, undefined, today).map(({ number }) => number)).toEqual([
       5,
+    ] as VolumeNumber[])
+  })
+})
+
+describe('the volumes a saga brought out this year', () => {
+  test('are the ones out on a day or in a month that is over, held or not', () => {
+    const watch = watchOf(carl, [
+      volume(1, '2025-12-30'),
+      volume(2, '2026-02-03'),
+      volume(3, '2026-01'),
+      volume(4, '2026'),
+      volume(5, '2027-02-01'),
+    ])
+    expect(yearVolumesOf(watch, undefined, today).map(({ number }) => number)).toEqual([
+      2, 3,
     ] as VolumeNumber[])
   })
 })

@@ -553,6 +553,23 @@ export const recentReleasesOf = (
     )
 }
 
+/** The volumes of a saga out since the start of the year, held or not: out on
+ *  a known day, or in a month that is over. A year alone does not say it. */
+export const yearVolumesOf = (
+  watch: SagaWatch,
+  catalogue: Series | null | undefined,
+  today: string,
+): FoundVolume[] =>
+  candidatesOf(watch, catalogue, today)
+    .map(({ volume }) => volume)
+    .filter(
+      ({ date }) =>
+        date !== undefined &&
+        date.length >= 7 &&
+        date.startsWith(today.slice(0, 4)) &&
+        !isUpcoming(date, today),
+    )
+
 /** The tab: every row — a saga, or an author — with something announced for
  *  a known date, the soonest first, then every row with nothing announced but
  *  something just out, the newest first. */

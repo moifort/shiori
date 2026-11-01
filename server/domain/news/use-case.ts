@@ -7,7 +7,13 @@ import { RELEASE_FORMATS } from '~/domain/discovery/types'
 import { DiscoveryUseCase } from '~/domain/discovery/use-case'
 import { FriendshipUseCase } from '~/domain/friendship/use-case'
 import { NarratorQuery } from '~/domain/narrator/query'
-import { feedEventsOf, feedPageOf, narratedWorksOf, upcomingOf } from '~/domain/news/business-rules'
+import {
+  feedEventsOf,
+  feedPageOf,
+  narratedWorksOf,
+  upcomingOf,
+  yearReleasesOf,
+} from '~/domain/news/business-rules'
 import type { FeedPage, NarratorNews, UpcomingRelease } from '~/domain/news/types'
 import type { Language } from '~/domain/shared/language'
 import type { UserId } from '~/domain/shared/types'
@@ -42,6 +48,15 @@ export namespace NewsUseCase {
     const { upcoming: narrated } = await narratedOf(userId, now)
     const releases = upcomingOf(discoveries, narrated)
     return format ? releases.filter((release) => release.format === format) : releases
+  }
+
+  /** What came out since the start of the year, for the year's counts. */
+  export const yearReleases = async (
+    userId: UserId,
+    now = new Date(),
+  ): Promise<UpcomingRelease[]> => {
+    const { volumes, awaited, today } = await DiscoveryUseCase.yearReleases(userId, now)
+    return yearReleasesOf(volumes, awaited, today)
   }
 
   /** The recordings the narrators the reader hearted lent their voice to

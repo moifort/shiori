@@ -38,6 +38,15 @@ builder.queryFields((t) => ({
     resolve: (_root, _args, context) => NewsUseCase.narratorNews(context.userId),
   }),
 
+  yearReleases: t.field({
+    type: [UpcomingReleaseType],
+    description:
+      'What came out since the start of the year: the volumes of the sagas the reader ' +
+      'follows, held or not, and the editions they await. The newest first. Read off the ' +
+      'release watches: no web lookup.',
+    resolve: (_root, _args, context) => NewsUseCase.yearReleases(context.userId),
+  }),
+
   upcomingReleases: t.field({
     type: [UpcomingReleaseType],
     description:

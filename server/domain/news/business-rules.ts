@@ -5,12 +5,13 @@ import type { Book, BookFormat } from '~/domain/book/types'
 import type {
   AuthorDiscovery,
   Discovery,
+  FoundVolume,
   NarratorWatch,
   ReleaseFormat,
-  SagaDiscovery,
 } from '~/domain/discovery/types'
 import type { Friend } from '~/domain/friendship/types'
 import type { FeedEvent, FeedEventKind, NarratorNews, UpcomingRelease } from '~/domain/news/types'
+import type { FollowedSeries } from '~/domain/series/use-case'
 import { slugify } from '~/utils/slug'
 
 const KINDS: Partial<Record<SharedActivityKind, FeedEventKind>> = {
@@ -109,22 +110,22 @@ export const feedPageOf = (
 
 // MARK: - Upcoming releases
 
-const sagaRelease = (row: SagaDiscovery, format: ReleaseFormat): UpcomingRelease | undefined => {
-  const next = row.next
-  if (!next) return undefined
-  return {
-    id: `saga~${row.series.saga}~${next.number}~${format}`,
-    source: 'saga',
-    format: formatOf(format, row.series.books[0]),
-    title: next.title,
-    authors: row.series.author ? [row.series.author] : [],
-    ...(next.date ? { date: next.date } : {}),
-    ...(next.coverUrl ? { coverUrl: next.coverUrl } : {}),
-    series: { name: row.series.name, volume: next.number },
-    ...(row.series.opinion?.rating ? { sagaRating: row.series.opinion.rating } : {}),
-    sagaFavorite: row.series.opinion?.favorite === true,
-  }
-}
+const sagaRelease = (
+  series: FollowedSeries,
+  volume: FoundVolume,
+  format: ReleaseFormat,
+): UpcomingRelease => ({
+  id: `saga~${series.saga}~${volume.number}~${format}`,
+  source: 'saga',
+  format: formatOf(format, series.books[0]),
+  title: volume.title,
+  authors: series.author ? [series.author] : [],
+  ...(volume.date ? { date: volume.date } : {}),
+  ...(volume.coverUrl ? { coverUrl: volume.coverUrl } : {}),
+  series: { name: series.name, volume: volume.number },
+  ...(series.opinion?.rating ? { sagaRating: series.opinion.rating } : {}),
+  sagaFavorite: series.opinion?.favorite === true,
+})
 
 const formatOf = (format: ReleaseFormat, held?: Pick<Book, 'format'>): BookFormat =>
   format === 'audiobook' ? 'audiobook' : (held?.format ?? 'book')
@@ -184,7 +185,9 @@ export const upcomingOf = (
 ): UpcomingRelease[] => {
   const all = [
     ...discoveries.flatMap(({ format, discovery }) => [
-      ...discovery.sagas.flatMap((row) => sagaRelease(row, format) ?? []),
+      ...discovery.sagas.flatMap((row) =>
+        row.next ? [sagaRelease(row.series, row.next, format)] : [],
+      ),
       ...discovery.authors.flatMap((row) => authorRelease(row, format)),
     ]),
     // Last, so a recording the sagas, the authors or the reader's own waits
@@ -209,6 +212,26 @@ const soonestFirst = (left: UpcomingRelease, right: UpcomingRelease): number => 
     return left.date === right.date ? 0 : left.date === undefined ? 1 : -1
   return left.date < right.date ? -1 : left.date > right.date ? 1 : 0
 }
+
+/** What came out since the start of the year, the newest first: the volumes of
+ *  the sagas followed, and the awaited editions out in that year. */
+export const yearReleasesOf = (
+  volumes: readonly { series: FollowedSeries; volume: FoundVolume; format: ReleaseFormat }[],
+  awaited: readonly AwaitedEditionView[],
+  today: string,
+): UpcomingRelease[] =>
+  [
+    ...volumes.map(({ series, volume, format }) => sagaRelease(series, volume, format)),
+    ...awaited
+      .filter(
+        (view) =>
+          view.state === 'available' &&
+          view.found?.date !== undefined &&
+          view.found.date.length >= 7 &&
+          view.found.date.startsWith(today.slice(0, 4)),
+      )
+      .map((view) => awaitedRelease(view, view.format)),
+  ].sort((left, right) => soonestFirst(right, left))
 
 // MARK: - Narrators
 
