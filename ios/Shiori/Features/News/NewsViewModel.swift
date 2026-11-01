@@ -29,8 +29,7 @@ final class NewsViewModel {
 
     /// The pill chosen; nil is "Tout".
     var format: BookFormat?
-    var horizon: ReleaseHorizon = .month
-    var selectedDay: Int?
+    var horizon: ReleaseHorizon = .thirtyDays
 
     init(client: NewsClient) {
         self.client = client
@@ -107,7 +106,6 @@ final class NewsViewModel {
         if case let .success(voices) = voices { narratorNews = voices }
         if case let .failure(error) = dated, !isCancellation(error) { reportError(error) }
         hasLoaded = true
-        selectedDay = nil
         await loadAlerts()
     }
 

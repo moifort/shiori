@@ -24,46 +24,46 @@ struct ReleaseCalendarTests {
         ReleaseCalendar(releases: releases, now: now, calendar: calendar)
     }
 
-    @Test func aDayLandsOnItsCellAndAMonthWithoutADayStaysApart() {
-        let month = laid([release("a", "2026-10-31"), release("b", "2026-10"), release("c", "2026-11-04")]).thisMonth
+    @Test func thirtyDaysRollFromTodayAndKeepTheDaysInOrder() {
+        let sheet = laid([
+            release("late", "2026-11-30"), release("today", "2026-10-31"), release("out", "2026-10-30"),
+            release("far", "2026-12-02"), release("noDay", "2026-11"),
+        ])
 
-        #expect(month.byDay[31]?.map(\.id) == ["a"])
-        #expect(month.monthOnly.map(\.id) == ["b"])
-        #expect(month.dayCount == 31)
-        // 1 October 2026 is a Thursday: three blank cells, the week starting on Monday.
-        #expect(month.leadingBlanks == 3)
+        let sections = sheet.sections(for: .thirtyDays)
+
+        #expect(sections.map(\.id) == ["2026-10", "2026-11"])
+        #expect(sections[0].days.flatMap(\.releases).map(\.id) == ["today"])
+        #expect(sections[1].days.map(\.releases).flatMap { $0 }.map(\.id) == ["late", "noDay"])
     }
 
-    @Test func sixMonthsStartThisMonthAndTheSeventhIsLater() {
+    @Test func sixMonthsStopWhereTheSeventhBegins() {
         let sheet = laid([release("near", "2027-03-02"), release("far", "2027-05-10"), release("year", "2028")])
 
-        #expect(sheet.sixMonths.count == 6)
-        #expect(sheet.sixMonths.last?.all.map(\.id) == ["near"])
-        #expect(sheet.later.map(\.year) == [2027, 2028])
-        #expect(sheet.later.first?.rows.map(\.release.id) == ["far"])
-        #expect(sheet.later.first?.rows.first?.month != nil)
+        #expect(sheet.sections(for: .sixMonths).flatMap(\.days).flatMap(\.releases).map(\.id) == ["near"])
     }
 
-    @Test func aReleaseAlreadyOutIsNotOnTheCalendar() {
+    @Test func everythingClosesWithTheYearsAndWhatIsUndated() {
+        let sheet = laid([release("far", "2027-05-10"), release("year", "2028"), release("none", nil)])
+
+        let sections = sheet.sections(for: .all)
+
+        #expect(sections.map(\.id) == ["2027-05", "beyond"])
+        #expect(sections[1].days.map(\.id) == ["year-2028", "undated"])
+    }
+
+    @Test func aReleaseAlreadyOutIsNotInTheList() {
         let sheet = laid([release("past", "2026-09-12"), release("old", "2025")])
 
-        #expect(sheet.thisMonth.all.isEmpty)
-        #expect(sheet.later.isEmpty)
-        #expect(sheet.undated.isEmpty)
+        #expect(sheet.sections(for: .all).isEmpty)
     }
 
-    @Test func undatedReleasesHaveTheirOwnGroup() {
-        let sheet = laid([release("a", nil), release("b", "2026-11-04")])
+    @Test func aHorizonWithNothingInItIsEmpty() {
+        let sheet = laid([release("far", "2027-05-10")])
 
-        #expect(sheet.undated.map(\.id) == ["a"])
-    }
-
-    @Test func theCalendarOpensOnTodayThenOnTheNextDayThatHasARelease() {
-        let sheet = laid([release("a", "2026-10-31"), release("b", "2026-10-10")])
-        #expect(sheet.initialDay(in: sheet.thisMonth) == 31)
-
-        let november = laid([release("c", "2026-10-02")])
-        #expect(november.initialDay(in: november.thisMonth) == 2)
+        #expect(sheet.sections(for: .thirtyDays).isEmpty)
+        #expect(sheet.sections(for: .sixMonths).isEmpty)
+        #expect(!sheet.sections(for: .all).isEmpty)
     }
 
     @Test func starsAreFiveGlyphs() {

@@ -1773,6 +1773,22 @@
         }
       }
     },
+    "30 jours" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "30 days"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "30 jours"
+          }
+        }
+      }
+    },
     "6 mois" : {
       "localizations" : {
         "en" : {
@@ -2835,6 +2851,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "AssaSynth"
+          }
+        }
+      }
+    },
+    "Au-delà" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beyond"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Au-delà"
           }
         }
       }
@@ -6013,22 +6045,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Effacer"
-          }
-        }
-      }
-    },
-    "En %@, sans jour précis" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "In %@, no exact day"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "En %@, sans jour précis"
           }
         }
       }
@@ -11345,22 +11361,6 @@
         }
       }
     },
-    "Plus tard" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Later"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Plus tard"
-          }
-        }
-      }
-    },
     "Plus tôt" : {
       "localizations" : {
         "en" : {
@@ -12603,34 +12603,18 @@
         }
       }
     },
-    "Rien d'annoncé ce mois-ci" : {
+    "Rien d'annoncé" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nothing announced this month"
+            "value" : "Nothing announced"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rien d'annoncé ce mois-ci"
-          }
-        }
-      }
-    },
-    "Rien d'annoncé plus loin" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nothing announced further out"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rien d'annoncé plus loin"
+            "value" : "Rien d'annoncé"
           }
         }
       }
@@ -12999,6 +12983,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sans date"
+          }
+        }
+      }
+    },
+    "Sans jour" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No day"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sans jour"
           }
         }
       }

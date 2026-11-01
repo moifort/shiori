@@ -43,7 +43,6 @@ struct NewsScreen: View {
                 calendar: viewModel.calendar(),
                 format: viewModel.format,
                 horizon: $viewModel.horizon,
-                selectedDay: $viewModel.selectedDay,
                 hasMore: viewModel.hasMore,
                 pageFailed: viewModel.pageFailed,
                 isLoading: viewModel.isLoading,
