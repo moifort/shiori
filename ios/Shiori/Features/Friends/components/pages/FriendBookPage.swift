@@ -21,7 +21,7 @@ enum FriendBookAction {
 /// named on the detail line with where they stand, their monogram in the
 /// corner as an account's, the way onto the
 /// reader's shelf where their own book has its next step, and the friend's
-/// stars and heart on glass beside it — then the same blocks: the summary,
+/// heart, or else their stars, on glass beside it — then the same blocks: the summary,
 /// the facts as tiles, the editions awaited, the saga. Nothing can be corrected here, so no tile answers a
 /// tap; the friend's own remarks stay private and never reach this page.
 struct FriendBookPage: View {
@@ -138,15 +138,8 @@ struct FriendBookPage: View {
                     onAdd: { status, format in await onAction(.add(status, format)) },
                     onAwait: { format in Task { await onAction(.awaitEdition(format)) } }
                 )
-                if let rating = book.rating {
-                    glassChip {
-                        RatingStars(rating: rating, font: .footnote, monochrome: true)
-                    }
-                    .accessibilityLabel(Text("Noté \(Int(rating)) sur 5 par \(friendName)"))
-                    .accessibilityIdentifier("friend-book-rating")
-                }
-                // The heart alone: with its words the row ran past the
-                // width, and a red heart says it.
+                // One or the other: a heart is the top mark, so it stands
+                // in for the stars rather than sitting beside them.
                 if book.favorite {
                     glassChip {
                         // A full red: the hero's dark appearance lightens
@@ -156,6 +149,12 @@ struct FriendBookPage: View {
                     }
                     .accessibilityLabel(Text("Coup de cœur de \(friendName)"))
                     .accessibilityIdentifier("friend-book-favorite")
+                } else if let rating = book.rating {
+                    glassChip {
+                        RatingStars(rating: rating, font: .footnote, monochrome: true)
+                    }
+                    .accessibilityLabel(Text("Noté \(Int(rating)) sur 5 par \(friendName)"))
+                    .accessibilityIdentifier("friend-book-rating")
                 }
             }
             .font(.subheadline.weight(.semibold))
