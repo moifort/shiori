@@ -106,6 +106,12 @@ struct HomeHeroItemTests {
         #expect(HomeHeroItem.releaseBadge(date, today: today) == String(localized: String.LocalizationValue(badge)))
     }
 
+    @Test func fourDaysAheadNamesTheDay() {
+        let monday = HomeHeroItem.releaseBadge("2026-11-01", today: today)
+        let weekday = Calendar.current.date(byAdding: .day, value: 4, to: today)!.formatted(.dateTime.weekday(.wide))
+        #expect(monday == String(localized: "Sortie \(weekday)"))
+    }
+
     @Test func namesTheDayWithinTheWeek() {
         let tuesday = HomeHeroItem.releaseBadge("2026-11-03", today: today)
         let weekday = Calendar.current.date(byAdding: .day, value: 6, to: today)!.formatted(.dateTime.weekday(.wide))
