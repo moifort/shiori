@@ -6,6 +6,8 @@
 	     Declares the shiori:// scheme the invitation web page's "Ouvrir dans Shiori"
 	     button uses: a universal link cannot re-trigger from the page it already
 	     landed on, so that page needs a scheme to reopen the app with. -->
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
