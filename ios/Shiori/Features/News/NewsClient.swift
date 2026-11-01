@@ -6,6 +6,8 @@ import Foundation
 struct NewsClient: Sendable {
     var feed: @Sendable (_ after: String?, _ limit: Int) async throws -> CursorPage<FeedEvent>
     var upcoming: @Sendable () async throws -> [UpcomingRelease]
+    /// What came out since the start of the year, for the year's counts.
+    var yearReleases: @Sendable () async throws -> [UpcomingRelease]
     var narratorNews: @Sendable () async throws -> [NarratorNews]
     /// The latest novel an award crowned, for the feed's award card.
     var latestWinner: @Sendable () async throws -> AwardWinner?
@@ -25,6 +27,7 @@ extension NewsClient {
     static let live = NewsClient(
         feed: { try await NewsAPI.feed(after: $0, limit: $1) },
         upcoming: { try await NewsAPI.upcoming() },
+        yearReleases: { try await NewsAPI.yearReleases() },
         narratorNews: { try await NewsAPI.narratorNews() },
         latestWinner: {
             try await AwardsAPI.sections(format: .book).first?.winners.first
@@ -51,6 +54,7 @@ extension NewsClient {
             CursorPage(FeedEvent.previews, limit: limit, after: after, cursor: \.id)
         },
         upcoming: { UpcomingRelease.previews },
+        yearReleases: { UpcomingRelease.previews },
         narratorNews: { [.preview] },
         latestWinner: { .preview },
         yearAwards: { [.preview] },

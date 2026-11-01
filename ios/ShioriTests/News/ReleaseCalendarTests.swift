@@ -24,15 +24,15 @@ struct ReleaseCalendarTests {
         ReleaseCalendar(releases: releases, now: now, calendar: calendar)
     }
 
-    @Test func thirtyDaysRollFromTodayAndKeepTheDaysInOrder() {
+    @Test func threeMonthsRollFromTodayAndKeepTheDaysInOrder() {
         let sheet = laid([
-            release("late", "2026-11-30"), release("today", "2026-10-31"), release("out", "2026-10-30"),
-            release("far", "2026-12-02"), release("noDay", "2026-11"),
+            release("late", "2027-01-30"), release("today", "2026-10-31"), release("out", "2026-10-30"),
+            release("far", "2027-02-02"), release("noDay", "2027-01"),
         ])
 
-        let sections = sheet.sections(for: .thirtyDays)
+        let sections = sheet.sections(for: .threeMonths)
 
-        #expect(sections.map(\.id) == ["2026-10", "2026-11"])
+        #expect(sections.map(\.id) == ["2026-10", "2027-01"])
         #expect(sections[0].days.flatMap(\.releases).map(\.id) == ["today"])
         #expect(sections[1].days.map(\.releases).flatMap { $0 }.map(\.id) == ["late", "noDay"])
     }
@@ -61,7 +61,7 @@ struct ReleaseCalendarTests {
     @Test func aHorizonWithNothingInItIsEmpty() {
         let sheet = laid([release("far", "2027-05-10")])
 
-        #expect(sheet.sections(for: .thirtyDays).isEmpty)
+        #expect(sheet.sections(for: .threeMonths).isEmpty)
         #expect(sheet.sections(for: .sixMonths).isEmpty)
         #expect(!sheet.sections(for: .all).isEmpty)
     }
@@ -93,7 +93,7 @@ struct NewsFeedLayoutTests {
 
     @Test func eventsGroupByHowLongAgoAndCardsSlotIn() {
         let sections = NewsFeedLayout.sections(
-            events: [event("a", hoursAgo: 1), event("b", hoursAgo: 2), event("c", hoursAgo: 3), event("d", hoursAgo: 30), event("e", hoursAgo: 24 * 4)],
+            events: [event("a", hoursAgo: 1), event("b", hoursAgo: 2), event("c", hoursAgo: 3), event("d", hoursAgo: 30), event("e", hoursAgo: 24 * 4), event("old", hoursAgo: 24 * 8)],
             spotlight: .authorPreview,
             award: .newsPreview,
             now: now,

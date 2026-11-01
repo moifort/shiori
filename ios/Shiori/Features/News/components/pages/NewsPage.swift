@@ -18,7 +18,7 @@ enum NewsAction {
     case refresh
 }
 
-/// The Actualités page, pure: the format pills, the year's four counts, the friends' feed by day with
+/// The Actualités page, pure: the format pills, the year's four counts, the week's friends' feed with
 /// the author's and the award's cards among it, and "Prochainement" with its
 /// calendar. The pages a tap opens are the screen's.
 struct NewsPage: View {
@@ -141,7 +141,7 @@ private struct NewsPagePreview: View {
     var yearRecap: YearRecap = .preview
     var isLoading = false
     var errorMessage: String?
-    @State private var horizon = ReleaseHorizon.thirtyDays
+    @State private var horizon = ReleaseHorizon.all
 
     var body: some View {
         NavigationStack {

@@ -6,7 +6,7 @@ enum FeedEventKind: String, Codable, Sendable {
 }
 
 /// One thing a friend did, as the feed draws a row.
-struct FeedEvent: Identifiable, Hashable, Sendable {
+struct FeedEvent: Identifiable, Hashable, Codable, Sendable {
     let id: String
     let kind: FeedEventKind
     let at: Date

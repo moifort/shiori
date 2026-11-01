@@ -5,7 +5,7 @@ import Testing
 @MainActor
 struct NewsViewModelTests {
     @Test func loadFillsTheFeedTheReleasesAndTheAward() async {
-        let viewModel = NewsViewModel(client: .preview)
+        let viewModel = NewsViewModel(client: .preview, caching: false)
 
         await viewModel.loadOnAppear()
 
@@ -20,7 +20,7 @@ struct NewsViewModelTests {
     @Test func failureOverNothingIsShown() async {
         var client = NewsClient.preview
         client.feed = { _, _ in throw Boom() }
-        let viewModel = NewsViewModel(client: client)
+        let viewModel = NewsViewModel(client: client, caching: false)
 
         await viewModel.loadOnAppear()
 
@@ -36,7 +36,7 @@ struct NewsViewModelTests {
             if fails.isOn { throw Boom() }
             return CursorPage(FeedEvent.previews, limit: limit, after: after, cursor: \.id)
         }
-        let viewModel = NewsViewModel(client: client)
+        let viewModel = NewsViewModel(client: client, caching: false)
         await viewModel.load()
         fails.isOn = true
 
@@ -51,7 +51,7 @@ struct NewsViewModelTests {
         client.feed = { after, _ in
             CursorPage(FeedEvent.previews, limit: 2, after: after, cursor: \.id)
         }
-        let viewModel = NewsViewModel(client: client)
+        let viewModel = NewsViewModel(client: client, caching: false)
         await viewModel.load()
         #expect(viewModel.events.count == 2)
         #expect(viewModel.hasMore)
@@ -69,7 +69,7 @@ struct NewsViewModelTests {
             if after != nil, fails.isOn { throw Boom() }
             return CursorPage(FeedEvent.previews, limit: 2, after: after, cursor: \.id)
         }
-        let viewModel = NewsViewModel(client: client)
+        let viewModel = NewsViewModel(client: client, caching: false)
         await viewModel.load()
         fails.isOn = true
 
@@ -84,7 +84,7 @@ struct NewsViewModelTests {
     }
 
     @Test func aFormatPillNarrowsTheFeedTheCalendarAndTheAward() async {
-        let viewModel = NewsViewModel(client: .preview)
+        let viewModel = NewsViewModel(client: .preview, caching: false)
         await viewModel.load()
 
         viewModel.format = .manga
@@ -97,7 +97,7 @@ struct NewsViewModelTests {
     }
 
     @Test func narratorNewsAreRecordingsSoOnlyTheAudiobookPillKeepsThem() async {
-        let viewModel = NewsViewModel(client: .preview)
+        let viewModel = NewsViewModel(client: .preview, caching: false)
         await viewModel.load()
         #expect(viewModel.shownNarratorNews.count == 1)
 
@@ -110,7 +110,7 @@ struct NewsViewModelTests {
     @Test func narratorNewsFailingLeavesTheRestOfThePage() async {
         var client = NewsClient.preview
         client.narratorNews = { throw Boom() }
-        let viewModel = NewsViewModel(client: client)
+        let viewModel = NewsViewModel(client: client, caching: false)
 
         await viewModel.load()
 
@@ -119,7 +119,7 @@ struct NewsViewModelTests {
     }
 
     @Test func takingABookGreysItOutAtOnce() async {
-        let viewModel = NewsViewModel(client: .preview)
+        let viewModel = NewsViewModel(client: .preview, caching: false)
         await viewModel.load()
         let event = viewModel.shownEvents.first { !$0.inLibrary }
         #expect(event != nil)
@@ -130,7 +130,7 @@ struct NewsViewModelTests {
     }
 
     @Test func dismissingTheAwardLeavesItOutForTheSession() async {
-        let viewModel = NewsViewModel(client: .preview)
+        let viewModel = NewsViewModel(client: .preview, caching: false)
         await viewModel.load()
 
         viewModel.dismissWinner()

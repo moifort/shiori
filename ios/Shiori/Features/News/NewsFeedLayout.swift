@@ -26,11 +26,11 @@ struct FeedSection: Identifiable, Hashable, Sendable {
 }
 
 enum NewsFeedLayout {
-    /// The feed grouped by how long ago, newest first: "Cette semaine" (today
-    /// and yesterday included), "Plus tôt". A narrator's recording falls among the moves
-    /// on the day it came out. The author's announcement slots in after the
-    /// first two entries, the award's after the next two, so neither opens nor
-    /// closes the page.
+    /// The feed's one section, "Cette semaine", newest first: what is older
+    /// than a week is not shown. A narrator's recording falls among the moves on
+    /// the day it came out. The author's announcement slots in after the first
+    /// two entries, the award's after the next two, so neither opens nor closes
+    /// the page.
     static func sections(
         events: [FeedEvent],
         narrator: [NarratorNews] = [],
@@ -44,31 +44,18 @@ enum NewsFeedLayout {
             let index = dated.firstIndex { $0.date < day } ?? dated.count
             dated.insert((day, .narrator(first)), at: index)
         }
-        var buckets: [(title: String, items: [FeedItem])] = []
-        for (date, item) in dated {
-            let title = bucketTitle(of: date, now: now, calendar: calendar)
-            if buckets.last?.title == title {
-                buckets[buckets.count - 1].items.append(item)
-            } else {
-                buckets.append((title, [item]))
-            }
-        }
-        if buckets.isEmpty { buckets = [(String(localized: "Cette semaine"), [])] }
+        var items = dated.filter { isThisWeek($0.date, now: now, calendar: calendar) }.map(\.item)
         if let spotlight {
-            buckets[0].items.insert(.author(spotlight), at: min(2, buckets[0].items.count))
+            items.insert(.author(spotlight), at: min(2, items.count))
         }
         if let award {
-            let target = buckets.count > 1 ? 1 : 0
-            buckets[target].items.insert(.award(award), at: min(target == 0 ? 4 : 0, buckets[target].items.count))
+            items.insert(.award(award), at: min(4, items.count))
         }
-        return buckets.map { FeedSection(title: $0.title, items: $0.items) }
+        return [FeedSection(title: String(localized: "Cette semaine"), items: items)]
     }
 
-    static func bucketTitle(of date: Date, now: Date, calendar: Calendar) -> String {
-        if let week = calendar.date(byAdding: .day, value: -7, to: now), date > week {
-            return String(localized: "Cette semaine")
-        }
-        return String(localized: "Plus tôt")
+    static func isThisWeek(_ date: Date, now: Date, calendar: Calendar) -> Bool {
+        calendar.date(byAdding: .day, value: -7, to: now).map { date > $0 } ?? true
     }
 
     /// The formats the pills offer, in the board's order.

@@ -22,30 +22,21 @@ struct YearRecap: Hashable, Sendable {
     /// How many covers a tile shows.
     static let coversShown = 2
 
-    /// Counts what the loaded news holds for the year of `now`: the winners an
-    /// award crowned this year, the moves a friend loved, the saga releases and
-    /// awaited editions that are already out.
+    /// Counts the news for the year of `now`: the winners an award crowned this
+    /// year, the moves a friend loved, and `released`, what the server says came
+    /// out this year.
     static func make(
         awards: [AwardWinner],
         events: [FeedEvent],
-        releases: [UpcomingRelease],
+        released: [UpcomingRelease],
         now: Date = .now,
         calendar: Calendar = .current
     ) -> YearRecap {
         let year = calendar.component(.year, from: now)
-        let today = calendar.startOfDay(for: now)
-
-        func isOut(_ release: UpcomingRelease) -> Bool {
-            guard let date = release.date, date.count == 10, let day = release.day(calendar: calendar) else {
-                return false
-            }
-            return calendar.component(.year, from: day) == year && day <= today
-        }
-
         let crowned = awards.filter { $0.mentions.contains { $0.year == year } }
         let loved = events.filter { $0.kind == .loved && calendar.component(.year, from: $0.at) == year }
-        let sagas = releases.filter { $0.source == .saga && isOut($0) }
-        let awaited = releases.filter { $0.source == .awaited && isOut($0) }
+        let sagas = released.filter { $0.source == .saga }
+        let awaited = released.filter { $0.source == .awaited }
 
         return YearRecap(tiles: [
             Tile(kind: .awards, count: crowned.count, covers: crowned.prefix(coversShown).map(\.cover)),
@@ -55,15 +46,5 @@ struct YearRecap: Hashable, Sendable {
         ])
     }
 
-    static let empty = make(awards: [], events: [], releases: [])
-}
-
-extension UpcomingRelease {
-    /// The day a full `YYYY-MM-DD` date names; nil on a month or a year alone.
-    func day(calendar: Calendar) -> Date? {
-        guard let date else { return nil }
-        let parts = date.split(separator: "-").compactMap { Int($0) }
-        guard parts.count == 3 else { return nil }
-        return calendar.date(from: DateComponents(year: parts[0], month: parts[1], day: parts[2]))
-    }
+    static let empty = make(awards: [], events: [], released: [])
 }

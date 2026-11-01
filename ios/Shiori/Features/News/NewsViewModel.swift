@@ -1,8 +1,11 @@
 import Foundation
 import Observation
+import SwiftUI
 
 /// The Actualités tab's state: the friends' feed page by page, the releases
 /// the calendar is laid from, the award card, and the pills that narrow them.
+/// The tab opens on what it last showed: a `SnapshotCache` hands it back from
+/// disk before a byte is asked of the network, and the answer slides in over it.
 @MainActor @Observable
 final class NewsViewModel {
     /// The page size of the feed: a few screens of rows.
@@ -17,6 +20,7 @@ final class NewsViewModel {
     private(set) var releases: [UpcomingRelease] = []
     private(set) var winner: AwardWinner?
     private(set) var yearAwards: [AwardWinner] = []
+    private(set) var yearReleases: [UpcomingRelease] = []
     private(set) var narratorNews: [NarratorNews] = []
     private(set) var isLoading = false
     private(set) var isLoadingMore = false
@@ -30,10 +34,35 @@ final class NewsViewModel {
 
     /// The pill chosen; nil is "Tout".
     var format: BookFormat?
-    var horizon: ReleaseHorizon = .thirtyDays
+    var horizon: ReleaseHorizon = .all
 
-    init(client: NewsClient) {
+    /// What the tab opens on: the feed's first page and everything around it.
+    private struct Snapshot: Codable {
+        let events: [FeedEvent]
+        let releases: [UpcomingRelease]
+        let winner: AwardWinner?
+        let yearAwards: [AwardWinner]
+        let yearReleases: [UpcomingRelease]
+        let narratorNews: [NarratorNews]
+    }
+
+    /// The last news on disk. Bump the version whenever one of these types
+    /// changes shape.
+    private let cache: SnapshotCache<Snapshot>?
+
+    /// - Parameter caching: off in tests, which must neither read nor leave
+    ///   a snapshot on disk.
+    init(client: NewsClient, caching: Bool = true) {
         self.client = client
+        cache = caching ? SnapshotCache<Snapshot>("news", version: 1) : nil
+        if let snapshot = cache?.read() {
+            events = snapshot.events
+            releases = snapshot.releases
+            winner = snapshot.winner
+            yearAwards = snapshot.yearAwards
+            yearReleases = snapshot.yearReleases
+            narratorNews = snapshot.narratorNews
+        }
     }
 
     // MARK: - Reading
@@ -72,7 +101,7 @@ final class NewsViewModel {
     /// The year's four counts, over every format: the pills narrow the feed,
     /// not the year.
     func yearRecap(now: Date = .now) -> YearRecap {
-        YearRecap.make(awards: yearAwards, events: events, releases: releases, now: now)
+        YearRecap.make(awards: yearAwards, events: events, released: yearReleases, now: now)
     }
 
     func calendar(now: Date = .now) -> ReleaseCalendar {
@@ -98,23 +127,33 @@ final class NewsViewModel {
         async let latest = capture { try await client.latestWinner() }
         async let narrated = capture { try await client.narratorNews() }
         async let crowned = capture { try await client.yearAwards() }
-        let (first, dated, award, voices, winners) = await (page, upcoming, latest, narrated, crowned)
+        async let released = capture { try await client.yearReleases() }
+        let (first, dated, award, voices, winners, year) = await (page, upcoming, latest, narrated, crowned, released)
         guard token == generation else { return }
-        if case let .success(first) = first {
-            events = first.items
-            cursor = first.endCursor
-            hasMore = first.hasMore
-            errorMessage = nil
-        } else if case let .failure(error) = first, !isCancellation(error) {
+        // Over news already on screen, what changed slides into place rather
+        // than the whole page redrawing at once.
+        let isFilled = !events.isEmpty || !releases.isEmpty || !yearReleases.isEmpty
+        withAnimation(isFilled ? .smooth : nil) {
+            if case let .success(first) = first {
+                events = first.items
+                cursor = first.endCursor
+                hasMore = first.hasMore && reachesThisWeek(first.items)
+                errorMessage = nil
+            }
+            if case let .success(dated) = dated { releases = dated }
+            if case let .success(award) = award { winner = award }
+            if case let .success(voices) = voices { narratorNews = voices }
+            if case let .success(winners) = winners { yearAwards = winners }
+            if case let .success(year) = year { yearReleases = year }
+        }
+        if case let .failure(error) = first, !isCancellation(error) {
             if events.isEmpty { errorMessage = error.localizedDescription }
             reportError(error)
         }
-        if case let .success(dated) = dated { releases = dated }
-        if case let .success(award) = award { winner = award }
-        if case let .success(voices) = voices { narratorNews = voices }
-        if case let .success(winners) = winners { yearAwards = winners }
         if case let .failure(error) = dated, !isCancellation(error) { reportError(error) }
+        if case let .failure(error) = year, !isCancellation(error) { reportError(error) }
         hasLoaded = true
+        if case .success = first { saveSnapshot() }
         await loadAlerts()
     }
 
@@ -130,7 +169,7 @@ final class NewsViewModel {
             let known = Set(events.map(\.id))
             events += page.items.filter { !known.contains($0.id) }
             self.cursor = page.endCursor
-            hasMore = page.hasMore
+            hasMore = page.hasMore && reachesThisWeek(page.items)
         } catch {
             guard !isCancellation(error) else { return }
             pageFailed = true
@@ -182,6 +221,26 @@ final class NewsViewModel {
             guard !isCancellation(error) else { return }
             reportError(error)
         }
+    }
+
+    /// Written off the main actor, the feed's first page at most.
+    private func saveSnapshot() {
+        guard let cache else { return }
+        let snapshot = Snapshot(
+            events: Array(events.prefix(Self.pageSize)),
+            releases: releases,
+            winner: winner,
+            yearAwards: yearAwards,
+            yearReleases: yearReleases,
+            narratorNews: narratorNews
+        )
+        Task.detached { cache.write(snapshot) }
+    }
+
+    /// The feed runs newest first and stops at the week: a page ending earlier
+    /// has nothing further to show.
+    private func reachesThisWeek(_ page: [FeedEvent]) -> Bool {
+        page.last.map { NewsFeedLayout.isThisWeek($0.at, now: .now, calendar: .current) } ?? false
     }
 
     private func capture<T: Sendable>(_ work: @Sendable () async throws -> T) async -> Result<T, Error> {

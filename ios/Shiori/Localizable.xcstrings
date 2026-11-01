@@ -1773,18 +1773,18 @@
         }
       }
     },
-    "30 jours" : {
+    "3 mois" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "30 days"
+            "value" : "3 months"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "30 jours"
+            "value" : "3 mois"
           }
         }
       }

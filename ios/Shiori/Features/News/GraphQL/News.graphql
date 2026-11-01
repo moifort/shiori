@@ -25,27 +25,38 @@ query NewsFeed($limit: Int!, $after: String) {
 # Everything announced across the sagas, authors and editions the reader follows.
 query UpcomingReleases {
   upcomingReleases {
-    id
-    source
-    format
-    title
-    authors
-    date
-    coverUrl
-    series {
-      name
-      volume
-    }
-    author {
-      key
-      name
-      favorite
-      portraitUrl
-    }
-    sagaRating
-    sagaFavorite
-    narrator
+    ...UpcomingReleaseFields
   }
+}
+
+# What came out since the start of the year, for the year's counts.
+query YearReleases {
+  yearReleases {
+    ...UpcomingReleaseFields
+  }
+}
+
+fragment UpcomingReleaseFields on UpcomingRelease {
+  id
+  source
+  format
+  title
+  authors
+  date
+  coverUrl
+  series {
+    name
+    volume
+  }
+  author {
+    key
+    name
+    favorite
+    portraitUrl
+  }
+  sagaRating
+  sagaFavorite
+  narrator
 }
 
 # The recordings the narrators the reader follows lent their voice to lately.

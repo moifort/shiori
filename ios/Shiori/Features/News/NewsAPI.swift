@@ -68,31 +68,45 @@ enum NewsAPI {
             GraphQLClient.shared.apollo,
             query: ShioriGraphQL.UpcomingReleasesQuery()
         )
-        return data.upcomingReleases.compactMap { row -> UpcomingRelease? in
-            guard let source = row.source.value.flatMap({ ReleaseSource(rawValue: $0.rawValue.lowercased()) })
-            else { return nil }
-            return UpcomingRelease(
-                id: row.id,
-                source: source,
-                format: row.format.asDomain,
-                title: row.title,
-                authors: row.authors,
-                date: row.date,
-                coverURL: row.coverUrl.flatMap(URL.init(string:)),
-                seriesName: row.series?.name,
-                volume: row.series?.volume,
-                author: row.author.map {
-                    .init(
-                        key: $0.key,
-                        name: $0.name,
-                        favorite: $0.favorite,
-                        portraitURL: $0.portraitUrl.flatMap(URL.init(string:))
-                    )
-                },
-                sagaRating: row.sagaRating,
-                sagaFavorite: row.sagaFavorite,
-                narrator: row.narrator
-            )
-        }
+        return data.upcomingReleases.compactMap { release(from: $0.fragments.upcomingReleaseFields) }
+    }
+
+    /// What came out since the start of the year, for the year's counts.
+    static func yearReleases() async throws -> [UpcomingRelease] {
+        #if DEBUG
+        if Showcase.isOn { return [] }
+        #endif
+        let data = try await GraphQLHelpers.fetch(
+            GraphQLClient.shared.apollo,
+            query: ShioriGraphQL.YearReleasesQuery()
+        )
+        return data.yearReleases.compactMap { release(from: $0.fragments.upcomingReleaseFields) }
+    }
+
+    private static func release(from row: ShioriGraphQL.UpcomingReleaseFields) -> UpcomingRelease? {
+        guard let source = row.source.value.flatMap({ ReleaseSource(rawValue: $0.rawValue.lowercased()) })
+        else { return nil }
+        return UpcomingRelease(
+            id: row.id,
+            source: source,
+            format: row.format.asDomain,
+            title: row.title,
+            authors: row.authors,
+            date: row.date,
+            coverURL: row.coverUrl.flatMap(URL.init(string:)),
+            seriesName: row.series?.name,
+            volume: row.series?.volume,
+            author: row.author.map {
+                .init(
+                    key: $0.key,
+                    name: $0.name,
+                    favorite: $0.favorite,
+                    portraitURL: $0.portraitUrl.flatMap(URL.init(string:))
+                )
+            },
+            sagaRating: row.sagaRating,
+            sagaFavorite: row.sagaFavorite,
+            narrator: row.narrator
+        )
     }
 }

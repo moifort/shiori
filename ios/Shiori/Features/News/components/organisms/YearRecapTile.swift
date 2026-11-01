@@ -21,6 +21,7 @@ struct YearRecapTile: View {
                 Text(verbatim: String(tile.count))
                     .font(.system(size: 30, weight: .heavy))
                     .monospacedDigit()
+                    .contentTransition(.numericText())
                 Spacer(minLength: 0)
                 Label(tile.kind.title, systemImage: tile.kind.systemImage)
                     .font(.system(size: 11, weight: .bold))

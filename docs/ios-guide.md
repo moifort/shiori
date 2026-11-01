@@ -253,7 +253,10 @@ final class DiscoverViewModel {
 
 ## Snapshots: screens that reopen on what they showed
 
-A screen that changes slowly and that the reader recognises keeps what it showed last on disk,
+**Every screen that loads from the server opens on its content, never on a loader.** It draws what
+it showed last at once, refreshes in the background, and whatever changed animates into place: a
+new screen is built this way from its first commit. A loader only ever shows on a first open, with
+nothing on disk yet. It keeps what it showed last on disk,
 through `SnapshotCache<Value>` (`Shared/SnapshotCache.swift`), in the one `snapshots/` folder
 of the caches directory.
 
@@ -266,14 +269,14 @@ of the caches directory.
 - **Versioned.** Bump `version` whenever the cached type changes shape; an older file is
   ignored, never decoded into something that no longer means the same thing.
 - **The refresh that follows draws nothing**: the answer is assigned inside
-  `withAnimation(rows.isEmpty ? nil : .smooth)`, so rows slide in place. A first fill over an
-  empty screen is not animated.
+  `withAnimation(rows.isEmpty ? nil : .smooth)`, so rows slide in place, and a figure that moves
+  rolls (`.contentTransition(.numericText())`). A first fill over an empty screen is not animated.
 - **Cleared** by `SnapshotCaches.clear()` at sign-out and account deletion: the next account
   never reads the previous one's library.
 - **Not for data worthless when stale**: a quota, a subscription state, an invitation code.
 
 Screens on snapshots today: Home (dashboard, releases, friends' favourites, discoveries),
-the Library's entry screen and its series screen, the Authors list, Discover (feed, awards, discoveries), Shared, a friend's
+Actualités (feed, releases, the year's counts), the Library's entry screen and its series screen, the Authors list, Discover (feed, awards, discoveries), Shared, a friend's
 profile.
 
 ## Covers

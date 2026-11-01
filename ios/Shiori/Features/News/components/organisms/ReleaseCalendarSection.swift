@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// "Prochainement": the horizon pills and the list under them — the next 30
-/// days, the next six months, or everything announced. A horizon with nothing
+/// "Prochainement": the horizon pills and the list under them — everything
+/// announced, the next three months, or the next six. A horizon with nothing
 /// in it has no pill; with nothing announced at all, an icon and a sentence say
 /// what will come. Draws what it is given.
 struct ReleaseCalendarSection: View {
@@ -23,7 +23,7 @@ struct ReleaseCalendarSection: View {
                     selected: current.id,
                     allLabel: nil
                 ) { id in
-                    horizon = ReleaseHorizon(rawValue: id ?? "") ?? .thirtyDays
+                    horizon = ReleaseHorizon(rawValue: id ?? "") ?? .all
                 }
                 ReleaseList(sections: calendar.sections(for: current), onOpen: onOpen)
             } else {
@@ -49,15 +49,15 @@ struct ReleaseCalendarSection: View {
 private extension ReleaseHorizon {
     var label: String {
         switch self {
-        case .thirtyDays: String(localized: "30 jours")
-        case .sixMonths: String(localized: "6 mois")
         case .all: String(localized: "Tout")
+        case .threeMonths: String(localized: "3 mois")
+        case .sixMonths: String(localized: "6 mois")
         }
     }
 }
 
 #Preview("Calendar section") {
-    @Previewable @State var horizon = ReleaseHorizon.thirtyDays
+    @Previewable @State var horizon = ReleaseHorizon.all
     ScrollView {
         ReleaseCalendarSection(
             calendar: ReleaseCalendar(releases: UpcomingRelease.previews, now: .now),
@@ -69,7 +69,7 @@ private extension ReleaseHorizon {
 }
 
 #Preview("Nothing announced") {
-    @Previewable @State var horizon = ReleaseHorizon.thirtyDays
+    @Previewable @State var horizon = ReleaseHorizon.all
     ReleaseCalendarSection(
         calendar: ReleaseCalendar(releases: [], now: .now),
         horizon: $horizon,

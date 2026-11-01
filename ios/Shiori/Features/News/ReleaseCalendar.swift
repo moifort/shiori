@@ -1,9 +1,9 @@
 import Foundation
 
-/// How far ahead the list looks, from today: the next 30 days, the next six
-/// months, or everything announced.
+/// How far ahead the list looks, from today: everything announced, the next
+/// three months, or the next six.
 enum ReleaseHorizon: String, CaseIterable, Identifiable, Sendable {
-    case thirtyDays, sixMonths, all
+    case all, threeMonths, sixMonths
     var id: String { rawValue }
 }
 
@@ -53,7 +53,7 @@ struct ReleaseCalendar: Sendable {
     func sections(for horizon: ReleaseHorizon) -> [ReleaseMonthSection] {
         let today = calendar.startOfDay(for: now)
         let end: Date? = switch horizon {
-        case .thirtyDays: calendar.date(byAdding: .day, value: 30, to: today)
+        case .threeMonths: calendar.date(byAdding: .month, value: 3, to: today)
         case .sixMonths: calendar.date(byAdding: .month, value: 6, to: today)
         case .all: nil
         }

@@ -6,7 +6,7 @@ import UIKit
 /// domain beside characters of recent books, each drawn from its book's own
 /// description rather than from any adaptation. The portraits are bundled in
 /// the app; the server keeps only the name.
-enum AvatarHero: String, CaseIterable, Identifiable, Sendable {
+enum AvatarHero: String, Codable, CaseIterable, Identifiable, Sendable {
     case alice, dorothy, merlin, dracula
     case nemo, creature, timeTraveller, invisibleMan
     case holmes, lupin, dupin, rouletabille
@@ -163,7 +163,7 @@ enum AvatarHero: String, CaseIterable, Identifiable, Sendable {
 }
 
 /// A colour the reader's initials may be drawn on, beside the default slate.
-enum AvatarColor: String, CaseIterable, Identifiable, Sendable {
+enum AvatarColor: String, Codable, CaseIterable, Identifiable, Sendable {
     case pink, green, blue, orange, purple, red
 
     var id: String { rawValue }
