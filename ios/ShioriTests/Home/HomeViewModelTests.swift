@@ -193,6 +193,33 @@ struct HomeViewModelTests {
 
         #expect(viewModel.discoveries?.suggestions.contains { $0.id == taken.id } == false)
     }
+
+    @Test func alreadyReadTakenBackLeavesTheShelf() async {
+        let calls = Calls()
+        var client = HomeClient.preview
+        client.addBook = { draft in
+            calls.record("add \(draft.status)")
+            return "book-1"
+        }
+        client.deleteBook = { calls.record("delete \($0)") }
+        let viewModel = HomeViewModel(client: client, caching: false)
+        let suggestion = Suggestion.preview
+
+        #expect(await viewModel.choose(suggestion, .alreadyRead))
+        #expect(await viewModel.choose(suggestion, .undoAlreadyRead))
+
+        #expect(calls.all == ["add \(ReadingStatus.read)", "delete book-1"])
+    }
+
+    @Test func refusedChoiceIsSaidAndAnsweredFalse() async {
+        struct Refused: Error {}
+        var client = HomeClient.preview
+        client.addBook = { _ in throw Refused() }
+        let viewModel = HomeViewModel(client: client, caching: false)
+
+        #expect(await viewModel.choose(.preview, .alreadyRead) == false)
+        #expect(viewModel.actionError != nil)
+    }
 }
 
 @MainActor

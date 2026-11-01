@@ -343,7 +343,8 @@ struct HomeScreen: View {
                     isSearchingDiscoveries: viewModel.isSearchingDiscoveries,
                     isSideBySide: isSplit && detail == nil,
                     isCompact: !isSplit,
-                    onBarCalled: { bar.call($0) }
+                    onBarCalled: { bar.call($0) },
+                    onDiscoveryChoice: viewModel.choose
                 ) { action in
                     switch action {
                     case let .showLibrary(request): onShowLibrary(request)
@@ -365,18 +366,6 @@ struct HomeScreen: View {
                     case let .openRelease(.volume(volume)): detail = .release(volume)
                     case let .openRelease(.awaited(edition)): detail = .awaited(edition)
                     case let .openDiscovery(suggestion): detail = .discovery(suggestion)
-                    // The page keeps the discovery, its check showing, until the
-                    // reader leaves it: only then does the line move on.
-                    case let .addDiscovery(suggestion, status):
-                        viewModel.hold(suggestion)
-                        Task { await SuggestionViewModel(suggestion: suggestion, client: .live).add(status: status) }
-                    case let .awaitDiscovery(suggestion, format):
-                        viewModel.hold(suggestion)
-                        Task { await SuggestionViewModel(suggestion: suggestion, client: .live).awaitEdition(format) }
-                    case let .dismissDiscovery(suggestion):
-                        viewModel.turnDown(suggestion)
-                    case let .reconsiderDiscovery(suggestion):
-                        viewModel.takeBack(suggestion)
                     case let .seeRelease(release): viewModel.see(release)
                     case let .unseeRelease(release): viewModel.unsee(release)
                     }

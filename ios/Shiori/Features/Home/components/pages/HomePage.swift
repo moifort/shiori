@@ -32,15 +32,6 @@ enum HomeAction {
     /// A volume just out or announced, or a recording awaited.
     case openRelease(HomeRelease)
     case openDiscovery(Suggestion)
-    /// A discovery put on the shelf from the carousel's "+": on the pile, or
-    /// read already.
-    case addDiscovery(Suggestion, ReadingStatus)
-    /// A discovery's edition awaited from the carousel's "+".
-    case awaitDiscovery(Suggestion, ReleaseFormat)
-    /// A discovery turned down from the carousel's thumb: "Pas intéressé".
-    case dismissDiscovery(Suggestion)
-    /// The red thumb pressed again: the dismissal taken back.
-    case reconsiderDiscovery(Suggestion)
     /// A release marked seen from the carousel's eye: no longer put forward.
     case seeRelease(HomeRelease)
     /// The eye pressed again: the release put forward again.
@@ -81,6 +72,9 @@ struct HomePage: View {
     /// its room above the page, and by scrolling up below the hero, as Safari
     /// brings its bar back.
     var onBarCalled: (Bool) -> Void = { _ in }
+    /// A choice on a discovery of the carousel, waited on: its buttons follow
+    /// the answer.
+    var onDiscoveryChoice: (Suggestion, DiscoveryChoice) async -> Bool = { _, _ in true }
     let onAction: (HomeAction) -> Void
 
     /// How far the page is pulled down past its top.
@@ -120,10 +114,7 @@ struct HomePage: View {
                         items: heroItems,
                         onOpenRelease: { onAction(.openRelease($0)) },
                         onOpen: { onAction(.openDiscovery($0)) },
-                        onAdd: { onAction(.addDiscovery($0, $1)) },
-                        onAwait: { onAction(.awaitDiscovery($0, $1)) },
-                        onDismiss: { onAction(.dismissDiscovery($0)) },
-                        onReconsider: { onAction(.reconsiderDiscovery($0)) },
+                        onChoice: onDiscoveryChoice,
                         onSeeRelease: { onAction(.seeRelease($0)) },
                         onUnseeRelease: { onAction(.unseeRelease($0)) },
                         onShowDiscover: { onAction(.showDiscover) },

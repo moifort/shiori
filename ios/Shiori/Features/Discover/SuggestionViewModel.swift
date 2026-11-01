@@ -42,12 +42,17 @@ final class SuggestionViewModel {
     }
 
     /// The book as it goes onto the shelf.
-    func draft(status: ReadingStatus) -> BookDraft {
-        var draft = suggestion.draft
-        draft.title = suggestion.title
+    func draft(status: ReadingStatus) -> BookDraft { suggestion.shelfDraft(status: status) }
+}
+
+extension Suggestion {
+    /// The book as it goes onto the shelf.
+    func shelfDraft(status: ReadingStatus) -> BookDraft {
+        var draft = self.draft
+        draft.title = title
         draft.language = nil
-        draft.coverURL = suggestion.coverURL
-        draft.format = suggestion.format == .audiobook ? .audiobook : .book
+        draft.coverURL = coverURL
+        draft.format = format == .audiobook ? .audiobook : .book
         if draft.format == .audiobook { draft.media = [] }
         draft.status = status
         return draft

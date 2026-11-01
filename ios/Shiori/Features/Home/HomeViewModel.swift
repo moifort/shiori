@@ -320,34 +320,37 @@ final class HomeViewModel {
         await loadDiscoveries()
     }
 
-    /// The carousel's thumb, pressed and pressed again: each write waits on
-    /// the one before for the same discovery, so a dismissal taken back at
-    /// once never reaches the server before the dismissal itself.
-    private var thumbWrites: [Suggestion.ID: Task<Void, Never>] = [:]
+    /// The books said read from the carousel, by the discovery they came
+    /// from: the thumb pressed again takes them off the shelf.
+    private var booksRead: [Suggestion.ID: String] = [:]
 
-    /// "Pas intéressé" from the carousel: held on screen, its thumb red,
-    /// until the reader leaves the page.
-    func turnDown(_ suggestion: Suggestion) {
+    /// A choice from the carousel's "+" or thumb. The discovery stays on
+    /// screen until the reader leaves the page. Says whether the server took
+    /// it, and a failure in an alert: the buttons stay as they were.
+    func choose(_ suggestion: Suggestion, _ choice: DiscoveryChoice) async -> Bool {
         hold(suggestion)
-        queueThumbWrite(for: suggestion) { [client] in
-            try await client.dismissSuggestion(suggestion.id, .notInterested)
-        }
-    }
-
-    /// The red thumb pressed again: the dismissal is taken back, and the
-    /// discovery stays in the line.
-    func takeBack(_ suggestion: Suggestion) {
-        queueThumbWrite(for: suggestion) { [client] in
-            try await client.reconsiderSuggestion(suggestion.id)
-        }
-    }
-
-    private func queueThumbWrite(for suggestion: Suggestion, _ write: @escaping @Sendable () async throws -> Void) {
-        let previous = thumbWrites[suggestion.id]
-        thumbWrites[suggestion.id] = Task {
-            await previous?.value
-            do { try await write() } catch { _ = reportError(error) }
-            await loadDiscoveries()
+        do {
+            switch choice {
+            case .add:
+                _ = try await client.addBook(suggestion.shelfDraft(status: .toRead))
+            case let .await(format):
+                try await client.awaitEdition(suggestion.draft, format)
+            case .alreadyRead:
+                booksRead[suggestion.id] = try await client.addBook(suggestion.shelfDraft(status: .read))
+            case .undoAlreadyRead:
+                if let book = booksRead[suggestion.id] { try await client.deleteBook(book) }
+                booksRead[suggestion.id] = nil
+            case .notInterested:
+                try await client.dismissSuggestion(suggestion.id, .notInterested)
+                await loadDiscoveries()
+            case .reconsider:
+                try await client.reconsiderSuggestion(suggestion.id)
+                await loadDiscoveries()
+            }
+            return true
+        } catch {
+            actionError = reportError(error)
+            return false
         }
     }
 

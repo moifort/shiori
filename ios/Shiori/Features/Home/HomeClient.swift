@@ -18,6 +18,12 @@ struct HomeClient: Sendable {
     /// A dismissal taken back from the carousel's red thumb.
     var reconsiderSuggestion: @Sendable (_ id: String) async throws -> Void = { _ in }
     var genreInsights: @Sendable () async throws -> GenreInsights
+    /// A discovery put on the shelf from the carousel: the book's id.
+    var addBook: @Sendable (BookDraft) async throws -> String = { _ in "" }
+    /// A book said read by mistake from the carousel, off the shelf again.
+    var deleteBook: @Sendable (_ id: String) async throws -> Void = { _ in }
+    /// A discovery's edition awaited from the carousel.
+    var awaitEdition: @Sendable (BookDraft, ReleaseFormat) async throws -> Void = { _, _ in }
     /// The book read now, finished from its card.
     var finish: @Sendable (_ bookId: String) async throws -> Void = { _ in }
     /// The book read now, its page recorded from its card, then moved on when
@@ -38,6 +44,9 @@ extension HomeClient {
         stopAwaiting: { try await AwaitedAPI.stop(id: $0) },
         reconsiderSuggestion: { try await SuggestionsAPI.reconsider(id: $0) },
         genreInsights: { try await HomeAPI.genreInsights() },
+        addBook: { try await BookAddition.add($0, source: .discover).id },
+        deleteBook: { try await BookAPI.delete(id: $0) },
+        awaitEdition: { _ = try await AwaitedAPI.awaitScanned($0, format: $1) },
         finish: { _ = try await BookAPI.setStatus(id: $0, status: .read) },
         recordPage: { id, page, status in
             if let page { _ = try await BookAPI.recordPage(id: id, page: page) }

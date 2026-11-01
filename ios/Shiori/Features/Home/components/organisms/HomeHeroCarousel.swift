@@ -115,6 +115,18 @@ enum HomeHeroItem: Identifiable {
     }
 }
 
+/// What the reader decides about a discovery from the carousel's "+" and thumb.
+enum DiscoveryChoice {
+    case add
+    case await(ReleaseFormat)
+    case alreadyRead
+    /// The thumb pressed again on a book said read: it leaves the shelf.
+    case undoAlreadyRead
+    case notInterested
+    /// The red thumb pressed again: the reader changed their mind.
+    case reconsider
+}
+
 /// The top of the home screen on a phone, as the TV app opens: what came
 /// out lately and what comes out this week, then the month's discoveries, one
 /// page each, swiped sideways, every page over its own cover's colours. A page
@@ -129,12 +141,9 @@ struct HomeHeroCarousel: View {
     let items: [HomeHeroItem]
     let onOpenRelease: (HomeRelease) -> Void
     let onOpen: (Suggestion) -> Void
-    let onAdd: (Suggestion, ReadingStatus) -> Void
-    let onAwait: (Suggestion, ReleaseFormat) -> Void
-    /// "Pas intéressé": the model leaves it out, and the next look skips it.
-    let onDismiss: (Suggestion) -> Void
-    /// The red thumb pressed again: the reader changed their mind.
-    var onReconsider: (Suggestion) -> Void = { _ in }
+    /// Asks the server, and says whether it took the choice: the buttons
+    /// change only then.
+    let onChoice: (Suggestion, DiscoveryChoice) async -> Bool
     /// A release marked seen: the carousel no longer puts it forward.
     var onSeeRelease: (HomeRelease) -> Void = { _ in }
     /// The eye pressed again: the release comes back.
@@ -153,13 +162,11 @@ struct HomeHeroCarousel: View {
     var pull = HeroPull()
 
     @State private var current: HomeHeroItem.ID?
-    /// The discoveries just added or awaited from their "+", which turns into
-    /// a check to say so before the line moves on.
-    @State private var taken: Set<Suggestion.ID> = []
-    /// The discoveries just turned down, whose thumb turns red to say so:
-    /// they leave the line with the ones taken, once the reader leaves the
-    /// page. Pressed again, the thumb takes the dismissal back.
-    @State private var dismissed: Set<Suggestion.ID> = []
+    /// What the reader decided about each discovery, which its button says
+    /// until they leave the page and the line moves on.
+    @State private var marks: [Suggestion.ID: DiscoveryMark] = [:]
+    /// The button whose choice the server is answering, with its spinner.
+    @State private var working: [Suggestion.ID: DiscoveryButton] = [:]
     /// The releases just marked seen, whose eye fills to say so: they leave
     /// the line once the reader leaves the page.
     @State private var seen: Set<HomeRelease.ID> = []
@@ -239,12 +246,25 @@ struct HomeHeroCarousel: View {
         .accessibilityIdentifier("home-discovery")
     }
 
-    /// Turns the "+" into a check once the menu has closed: drawn while the
-    /// menu folds back into the button, the check went unseen.
-    private func take(_ suggestion: Suggestion) {
+    /// Sends a choice and sets the mark it leaves once the server took it, and
+    /// not before the menu has closed: drawn while it folds back into the
+    /// button, the mark went unseen.
+    private func choose(
+        _ choice: DiscoveryChoice,
+        for suggestion: Suggestion,
+        from button: DiscoveryButton,
+        leaving mark: DiscoveryMark?
+    ) {
+        guard working[suggestion.id] == nil else { return }
+        working[suggestion.id] = button
         Task {
-            try? await Task.sleep(for: .milliseconds(450))
-            withAnimation(.snappy) { _ = taken.insert(suggestion.id) }
+            async let folded: Void? = try? await Task.sleep(for: .milliseconds(450))
+            let accepted = await onChoice(suggestion, choice)
+            _ = await folded
+            withAnimation(.snappy) {
+                working[suggestion.id] = nil
+                if accepted { marks[suggestion.id] = mark }
+            }
         }
     }
 
@@ -327,7 +347,8 @@ struct HomeHeroCarousel: View {
     }
 
     private func discoveryPage(_ suggestion: Suggestion, id: HomeHeroItem.ID) -> some View {
-        let isDismissed = dismissed.contains(suggestion.id)
+        let mark = marks[suggestion.id]
+        let isWorking = working[suggestion.id] != nil
         return page(
             id: id,
             cover: suggestion.tile,
@@ -345,66 +366,84 @@ struct HomeHeroCarousel: View {
                         .font(.headline)
                         .frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.glassProminent)
-                .tint(.white)
-                .foregroundStyle(.black)
+                // Not .glassProminent: its interactive glass swells under the
+                // finger pressing a row of a menu lying over it, whatever
+                // takes the touch.
+                .buttonStyle(.heroProminent)
                 Menu {
                     SuggestionAddActions(
                         suggestion: suggestion,
-                        onAdd: { status in
-                            take(suggestion)
-                            onAdd(suggestion, status)
-                        },
-                        onAwait: { format in
-                            take(suggestion)
-                            onAwait(suggestion, format)
-                        },
+                        onAdd: { _ in choose(.add, for: suggestion, from: .add, leaving: .added) },
+                        onAwait: { choose(.await($0), for: suggestion, from: .add, leaving: .added) },
                         offersAlreadyRead: false
                     )
                 } label: {
                     Label(
-                        taken.contains(suggestion.id) ? "Ajouté" : "Ajouter",
-                        systemImage: taken.contains(suggestion.id) ? "checkmark" : "plus"
+                        mark == .added ? "Ajouté" : "Ajouter",
+                        systemImage: mark == .added ? "checkmark" : "plus"
                     )
                     .labelStyle(.iconOnly)
                     .font(.headline)
                     .contentTransition(.symbolEffect(.replace.magic(fallback: .downUp)))
+                    .modifier(WorkingLabel(isWorking: working[suggestion.id] == .add))
                 }
                 .buttonStyle(.glass)
                 .buttonBorderShape(.circle)
-                .disabled(dismissed.contains(suggestion.id))
-                .sensoryFeedback(.success, trigger: taken.contains(suggestion.id))
+                .disabled(isWorking || mark == .read || mark == .notInterested)
+                .sensoryFeedback(.success, trigger: mark == .added)
                 .accessibilityIdentifier("home-discovery-menu")
-                // The thumb opens a choice: turned down, it fills and
-                // presses down as the button turns red; pressed again,
-                // it comes back up as it was. Never disabled once done:
-                // dimmed, the red went unseen.
-                if isDismissed {
+                // The thumb opens a choice, and says the one made: turned
+                // down, it fills and presses down as the button turns red;
+                // read, it gives way to a check on white. Pressed again, it
+                // takes the choice back. Never disabled once done: dimmed, the
+                // colour went unseen.
+                switch mark {
+                case .notInterested:
                     Button {
-                        withAnimation(.snappy) { _ = dismissed.remove(suggestion.id) }
-                        onReconsider(suggestion)
-                    } label: { thumbLabel(turnedDown: true) }
-                        .buttonStyle(.glass(.regular.tint(Self.turnedDownRed)))
-                        .buttonBorderShape(.circle)
-                        .sensoryFeedback(.impact(weight: .medium), trigger: isDismissed)
-                        .accessibilityIdentifier("home-discovery-dismiss")
-                } else {
+                        choose(.reconsider, for: suggestion, from: .thumb, leaving: nil)
+                    } label: {
+                        thumbLabel(turnedDown: true)
+                            .modifier(WorkingLabel(isWorking: working[suggestion.id] == .thumb))
+                    }
+                    .buttonStyle(.glass(.regular.tint(Self.turnedDownRed)))
+                    .buttonBorderShape(.circle)
+                    .disabled(isWorking)
+                    .sensoryFeedback(.impact(weight: .medium), trigger: mark == .notInterested)
+                    .accessibilityIdentifier("home-discovery-dismiss")
+                case .read:
+                    Button {
+                        choose(.undoAlreadyRead, for: suggestion, from: .thumb, leaving: nil)
+                    } label: {
+                        Label("Déjà lu", systemImage: "checkmark")
+                            .labelStyle(.iconOnly)
+                            .font(.headline)
+                            .foregroundStyle(.black)
+                            .contentTransition(.symbolEffect(.replace))
+                            .modifier(WorkingLabel(isWorking: working[suggestion.id] == .thumb))
+                    }
+                    .buttonStyle(.glass(.regular.tint(.white)))
+                    .buttonBorderShape(.circle)
+                    .disabled(isWorking)
+                    .sensoryFeedback(.success, trigger: mark == .read)
+                    .accessibilityIdentifier("home-discovery-dismiss")
+                case .added, nil:
                     Menu {
                         Button("Pas intéressé", systemImage: "hand.thumbsdown", role: .destructive) {
-                            withAnimation(.snappy) { _ = dismissed.insert(suggestion.id) }
-                            onDismiss(suggestion)
+                            choose(.notInterested, for: suggestion, from: .thumb, leaving: .notInterested)
                         }
                         .accessibilityIdentifier("home-discovery-not-interested")
                         Button("Déjà lu", systemImage: "checkmark.circle") {
-                            take(suggestion)
-                            onAdd(suggestion, .read)
+                            choose(.alreadyRead, for: suggestion, from: .thumb, leaving: .read)
                         }
                         .accessibilityIdentifier("home-discovery-already-read")
-                    } label: { thumbLabel(turnedDown: false) }
-                        .buttonStyle(.glass)
-                        .buttonBorderShape(.circle)
-                        .disabled(taken.contains(suggestion.id))
-                        .accessibilityIdentifier("home-discovery-dismiss")
+                    } label: {
+                        thumbLabel(turnedDown: false)
+                            .modifier(WorkingLabel(isWorking: working[suggestion.id] == .thumb))
+                    }
+                    .buttonStyle(.glass)
+                    .buttonBorderShape(.circle)
+                    .disabled(isWorking || mark == .added)
+                    .accessibilityIdentifier("home-discovery-dismiss")
                 }
             }
             .controlSize(.large)
@@ -634,6 +673,33 @@ struct HomeHeroCarousel: View {
     }
 }
 
+/// What a discovery's buttons say of the reader's choice.
+private enum DiscoveryMark {
+    /// Added or awaited from the "+".
+    case added
+    /// Read already, from the thumb.
+    case read
+    /// Turned down from the thumb.
+    case notInterested
+}
+
+/// The two buttons of a discovery that open a menu and ask the server.
+private enum DiscoveryButton {
+    case add
+    case thumb
+}
+
+/// A round button's spinner, in its label's room, while the server answers.
+private struct WorkingLabel: ViewModifier {
+    let isWorking: Bool
+
+    func body(content: Content) -> some View {
+        content
+            .opacity(isWorking ? 0 : 1)
+            .overlay { if isWorking { ProgressView().controlSize(.regular) } }
+    }
+}
+
 /// How far the page is pulled past its top. Held in a class, and read only by
 /// the backdrops that grow with it: on the page's own state, every frame of a
 /// bounce rebuilt the whole home, some 45 ms each on an iPhone 15 Pro.
@@ -738,9 +804,7 @@ private struct PageDots: View {
             items: MonthlyDiscoveries.preview.suggestions.map(HomeHeroItem.discovery),
             onOpenRelease: { _ in },
             onOpen: { _ in },
-            onAdd: { _, _ in },
-            onAwait: { _, _ in },
-            onDismiss: { _ in }
+            onChoice: { _, _ in true }
         )
         Color.clear.frame(height: 600)
     }
@@ -753,9 +817,7 @@ private struct PageDots: View {
             items: [.monthDone("2026-10")],
             onOpenRelease: { _ in },
             onOpen: { _ in },
-            onAdd: { _, _ in },
-            onAwait: { _, _ in },
-            onDismiss: { _ in },
+            onChoice: { _, _ in true },
             backdropCover: Book.preview.coverURL
         )
         Color.clear.frame(height: 600)
@@ -769,9 +831,7 @@ private struct PageDots: View {
             items: [.needsRatings("2026-10")],
             onOpenRelease: { _ in },
             onOpen: { _ in },
-            onAdd: { _, _ in },
-            onAwait: { _, _ in },
-            onDismiss: { _ in },
+            onChoice: { _, _ in true },
             backdropCover: Book.preview.coverURL
         )
         Color.clear.frame(height: 600)
