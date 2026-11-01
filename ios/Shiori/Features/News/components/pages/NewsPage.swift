@@ -150,7 +150,7 @@ private struct NewsPagePreview: View {
                     events: events,
                     narrator: events.isEmpty ? [] : [.preview],
                     spotlight: releases.first,
-                    award: events.isEmpty ? nil : .newsPreview
+                    award: nil
                 ),
                 calendar: ReleaseCalendar(releases: releases, now: .now),
                 format: nil,

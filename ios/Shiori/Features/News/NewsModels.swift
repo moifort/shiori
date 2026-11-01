@@ -46,8 +46,21 @@ struct NarratorNews: Identifiable, Hashable, Codable, Sendable {
     let narrator: String
     let title: String
     let authors: [String]
+    /// `YYYY`, `YYYY-MM` or `YYYY-MM-DD`: the day it came out.
+    let date: String
     let coverURL: URL?
     let format: BookFormat
+
+    /// Where the feed files it: the first day the date can mean.
+    func day(calendar: Calendar) -> Date? {
+        let parts = date.split(separator: "-").compactMap { Int($0) }
+        guard let year = parts.first else { return nil }
+        return calendar.date(from: DateComponents(
+            year: year,
+            month: parts.count > 1 ? parts[1] : 1,
+            day: parts.count > 2 ? parts[2] : 1
+        ))
+    }
 
     var cover: Book {
         Book(id: "narrator-\(id)", title: title, authors: authors, format: .audiobook, coverURL: coverURL, status: .toRead)

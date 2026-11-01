@@ -105,6 +105,26 @@ struct NewsFeedLayoutTests {
         #expect(sections[1].items.first?.id == "award-klara--kazuo-ishiguro")
     }
 
+    @Test func aNarratorsRecordingFallsOnTheDayItCameOut() {
+        let day = now.addingTimeInterval(-3 * 86_400).formatted(.iso8601.year().month().day())
+        let news = NarratorNews(
+            id: "n", narratorKey: "k", narrator: "N", title: "T", authors: [], date: day,
+            coverURL: nil, format: .audiobook
+        )
+
+        let sections = NewsFeedLayout.sections(
+            events: [event("a", hoursAgo: 1), event("b", hoursAgo: 24 * 6)],
+            narrator: [news],
+            spotlight: nil,
+            award: nil,
+            now: now,
+            calendar: calendar
+        )
+
+        #expect(sections.map(\.title) == ["Aujourd'hui", "Cette semaine"])
+        #expect(sections[1].items.map(\.id) == ["narrator-n", "friend-b"])
+    }
+
     @Test func aFeedWithNoEventStillShowsItsCards() {
         let sections = NewsFeedLayout.sections(events: [], spotlight: .authorPreview, award: nil, now: now, calendar: calendar)
 

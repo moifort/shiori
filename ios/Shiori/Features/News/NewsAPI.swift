@@ -52,6 +52,7 @@ enum NewsAPI {
                 narrator: $0.narrator,
                 title: $0.title,
                 authors: $0.authors,
+                date: $0.date,
                 coverURL: $0.coverUrl.flatMap(URL.init(string:)),
                 format: .audiobook
             )

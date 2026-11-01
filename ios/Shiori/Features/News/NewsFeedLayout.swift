@@ -27,9 +27,10 @@ struct FeedSection: Identifiable, Hashable, Sendable {
 
 enum NewsFeedLayout {
     /// The feed grouped by how long ago, newest first: "Aujourd'hui", "Hier",
-    /// "Cette semaine", "Plus tôt". The author's announcement slots in after
-    /// the first two moves, the award's after the next two, so neither opens
-    /// nor closes the page.
+    /// "Cette semaine", "Plus tôt". A narrator's recording falls among the moves
+    /// on the day it came out. The author's announcement slots in after the
+    /// first two entries, the award's after the next two, so neither opens nor
+    /// closes the page.
     static func sections(
         events: [FeedEvent],
         narrator: [NarratorNews] = [],
@@ -38,21 +39,23 @@ enum NewsFeedLayout {
         now: Date = .now,
         calendar: Calendar = .current
     ) -> [FeedSection] {
+        var dated: [(date: Date, item: FeedItem)] = events.map { ($0.at, .friend($0)) }
+        if let first = narrator.first, let day = first.day(calendar: calendar) {
+            let index = dated.firstIndex { $0.date < day } ?? dated.count
+            dated.insert((day, .narrator(first)), at: index)
+        }
         var buckets: [(title: String, items: [FeedItem])] = []
-        for event in events {
-            let title = bucketTitle(of: event.at, now: now, calendar: calendar)
+        for (date, item) in dated {
+            let title = bucketTitle(of: date, now: now, calendar: calendar)
             if buckets.last?.title == title {
-                buckets[buckets.count - 1].items.append(.friend(event))
+                buckets[buckets.count - 1].items.append(item)
             } else {
-                buckets.append((title, [.friend(event)]))
+                buckets.append((title, [item]))
             }
         }
         if buckets.isEmpty { buckets = [(String(localized: "Cette semaine"), [])] }
         if let spotlight {
             buckets[0].items.insert(.author(spotlight), at: min(2, buckets[0].items.count))
-        }
-        if let first = narrator.first {
-            buckets[0].items.insert(.narrator(first), at: min(1, buckets[0].items.count))
         }
         if let award {
             let target = buckets.count > 1 ? 1 : 0

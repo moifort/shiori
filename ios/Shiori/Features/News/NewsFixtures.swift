@@ -29,7 +29,7 @@ extension FeedEvent {
 extension NarratorNews {
     static let preview = NarratorNews(
         id: "gabay~fondation", narratorKey: "bernard-gabay", narrator: "Bernard Gabay", title: "Fondation",
-        authors: ["Isaac Asimov"],
+        authors: ["Isaac Asimov"], date: Date.now.formatted(.iso8601.year().month().day()),
         coverURL: openLibraryCover("9782072911538"), format: .audiobook
     )
 }

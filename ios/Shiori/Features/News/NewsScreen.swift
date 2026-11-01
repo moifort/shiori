@@ -38,7 +38,7 @@ struct NewsScreen: View {
                     events: viewModel.shownEvents,
                     narrator: viewModel.shownNarratorNews,
                     spotlight: viewModel.spotlight,
-                    award: viewModel.shownWinner
+                    award: nil
                 ),
                 calendar: viewModel.calendar(),
                 format: viewModel.format,
