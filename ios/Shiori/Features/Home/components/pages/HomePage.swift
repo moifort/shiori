@@ -84,7 +84,7 @@ struct HomePage: View {
     let onAction: (HomeAction) -> Void
 
     /// How far the page is pulled down past its top.
-    @State private var pull: CGFloat = 0
+    @State private var pull = HeroPull()
     /// Where the page stands, set once to open it under the bar.
     @State private var position = ScrollPosition()
     @State private var openedUnderBar = false
@@ -112,6 +112,7 @@ struct HomePage: View {
                         .padding(.horizontal, 24)
                         .padding(.top, 6)
                         .padding(.bottom, 12)
+                        .modifier(PinnedWhilePulled(pull: pull, isOn: showsCarousel))
                         .zIndex(1)
                 }
                 if showsCarousel {
@@ -204,7 +205,7 @@ struct HomePage: View {
         .onScrollGeometryChange(for: CGFloat.self) { geometry in
             max(-(geometry.contentOffset.y + geometry.contentInsets.top), 0)
         } action: { _, pulled in
-            pull = pulled
+            pull.distance = pulled
         }
         .background(Color(.systemGroupedBackground))
         // A refresh is assigned inside an animation: every figure and caption

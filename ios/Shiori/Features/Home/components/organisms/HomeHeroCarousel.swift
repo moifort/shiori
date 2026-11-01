@@ -150,7 +150,7 @@ struct HomeHeroCarousel: View {
     var discoveryMonth = MonthlyDiscoveries.month(of: .now)
     /// How far the page is pulled down past its top: the backdrops grow by as
     /// much from their foot, so the pull never uncovers what lies above them.
-    var pull: CGFloat = 0
+    var pull = HeroPull()
 
     @State private var current: HomeHeroItem.ID?
     /// The discoveries just added or awaited from their "+", which turns into
@@ -233,6 +233,7 @@ struct HomeHeroCarousel: View {
             if items.count > 1 {
                 PageDots(count: items.count, index: currentIndex)
                     .padding(.bottom, Self.bottomPadding)
+                    .modifier(PinnedWhilePulled(pull: pull))
             }
         }
         .accessibilityIdentifier("home-discovery")
@@ -588,7 +589,7 @@ struct HomeHeroCarousel: View {
             // artwork does: its top stays above the screen, where the blurred
             // cover turns to other colours — a red band showed through the
             // pull.
-            .scaleEffect(1 + pull / (height + Self.backdropRise), anchor: .bottom)
+            .modifier(PullGrowth(pull: pull, height: height + Self.backdropRise))
             // Grown, it stays within its page's width: the next page's spread
             // over the one shown, a band of its colours down the right edge.
             .clipShape(PageColumn())
@@ -628,7 +629,39 @@ struct HomeHeroCarousel: View {
         .padding(.top, Self.topPadding)
         .padding(.bottom, Self.dotsGap + Self.dotsHeight + Self.bottomPadding)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .modifier(PinnedWhilePulled(pull: pull))
         .environment(\.colorScheme, .dark)
+    }
+}
+
+/// How far the page is pulled past its top. Held in a class, and read only by
+/// the backdrops that grow with it: on the page's own state, every frame of a
+/// bounce rebuilt the whole home, some 45 ms each on an iPhone 15 Pro.
+@MainActor
+@Observable
+final class HeroPull {
+    var distance: CGFloat = 0
+}
+
+/// Grows a backdrop of `height` from its foot by as much as the page is pulled.
+private struct PullGrowth: ViewModifier {
+    let pull: HeroPull
+    let height: CGFloat
+
+    func body(content: Content) -> some View {
+        content.scaleEffect(1 + pull.distance / height, anchor: .bottom)
+    }
+}
+
+/// Holds what heads the page where it stands while the page is pulled: the
+/// rows part from the hero, whose backdrop stretches into the gap, as the TV
+/// app's does.
+struct PinnedWhilePulled: ViewModifier {
+    let pull: HeroPull
+    var isOn = true
+
+    func body(content: Content) -> some View {
+        content.offset(y: isOn ? -pull.distance : 0)
     }
 }
 
