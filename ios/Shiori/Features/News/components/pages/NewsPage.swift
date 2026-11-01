@@ -26,7 +26,6 @@ struct NewsPage: View {
     let yearRecap: YearRecap
     let calendar: ReleaseCalendar
     let format: BookFormat?
-    @Binding var horizon: ReleaseHorizon
     let hasMore: Bool
     let pageFailed: Bool
     let isLoading: Bool
@@ -74,7 +73,6 @@ struct NewsPage: View {
                     feed
                     ReleaseCalendarSection(
                         calendar: calendar,
-                        horizon: $horizon,
                         onOpen: { act(.openAuthor($0)) }
                     )
                     .padding(.top, 30)
@@ -141,7 +139,6 @@ private struct NewsPagePreview: View {
     var yearRecap: YearRecap = .preview
     var isLoading = false
     var errorMessage: String?
-    @State private var horizon = ReleaseHorizon.all
 
     var body: some View {
         NavigationStack {
@@ -155,7 +152,6 @@ private struct NewsPagePreview: View {
                 yearRecap: yearRecap,
                 calendar: ReleaseCalendar(releases: releases, now: .now),
                 format: nil,
-                horizon: $horizon,
                 hasMore: false,
                 pageFailed: false,
                 isLoading: isLoading,

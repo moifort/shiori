@@ -24,29 +24,23 @@ struct ReleaseCalendarTests {
         ReleaseCalendar(releases: releases, now: now, calendar: calendar)
     }
 
-    @Test func threeMonthsRollFromTodayAndKeepTheDaysInOrder() {
+    @Test func theListStartsTodayAndKeepsTheDaysInOrder() {
         let sheet = laid([
             release("late", "2027-01-30"), release("today", "2026-10-31"), release("out", "2026-10-30"),
-            release("far", "2027-02-02"), release("noDay", "2027-01"),
+            release("far", "2027-05-10"), release("noDay", "2027-01"),
         ])
 
-        let sections = sheet.sections(for: .threeMonths)
+        let sections = sheet.sections
 
-        #expect(sections.map(\.id) == ["2026-10", "2027-01"])
+        #expect(sections.map(\.id) == ["2026-10", "2027-01", "2027-05"])
         #expect(sections[0].days.flatMap(\.releases).map(\.id) == ["today"])
         #expect(sections[1].days.map(\.releases).flatMap { $0 }.map(\.id) == ["late", "noDay"])
-    }
-
-    @Test func sixMonthsStopWhereTheSeventhBegins() {
-        let sheet = laid([release("near", "2027-03-02"), release("far", "2027-05-10"), release("year", "2028")])
-
-        #expect(sheet.sections(for: .sixMonths).flatMap(\.days).flatMap(\.releases).map(\.id) == ["near"])
     }
 
     @Test func everythingClosesWithTheYearsAndWhatIsUndated() {
         let sheet = laid([release("far", "2027-05-10"), release("year", "2028"), release("none", nil)])
 
-        let sections = sheet.sections(for: .all)
+        let sections = sheet.sections
 
         #expect(sections.map(\.id) == ["2027-05", "beyond"])
         #expect(sections[1].days.map(\.id) == ["year-2028", "undated"])
@@ -55,15 +49,7 @@ struct ReleaseCalendarTests {
     @Test func aReleaseAlreadyOutIsNotInTheList() {
         let sheet = laid([release("past", "2026-09-12"), release("old", "2025")])
 
-        #expect(sheet.sections(for: .all).isEmpty)
-    }
-
-    @Test func aHorizonWithNothingInItIsEmpty() {
-        let sheet = laid([release("far", "2027-05-10")])
-
-        #expect(sheet.sections(for: .threeMonths).isEmpty)
-        #expect(sheet.sections(for: .sixMonths).isEmpty)
-        #expect(!sheet.sections(for: .all).isEmpty)
+        #expect(sheet.sections.isEmpty)
     }
 
     @Test func starsAreFiveGlyphs() {

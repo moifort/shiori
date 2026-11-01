@@ -51,7 +51,7 @@ struct ReleaseList: View {
 #Preview("Release list") {
     ScrollView {
         ReleaseList(
-            sections: ReleaseCalendar(releases: UpcomingRelease.previews, now: .now).sections(for: .all)
+            sections: ReleaseCalendar(releases: UpcomingRelease.previews, now: .now).sections
         ) { _ in }
     }
     .preferredColorScheme(.dark)

@@ -1773,38 +1773,6 @@
         }
       }
     },
-    "3 mois" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "3 months"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "3 mois"
-          }
-        }
-      }
-    },
-    "6 mois" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "6 months"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "6 mois"
-          }
-        }
-      }
-    },
     "978…" : {
       "localizations" : {
         "en" : {

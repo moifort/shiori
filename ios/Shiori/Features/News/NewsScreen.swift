@@ -43,7 +43,6 @@ struct NewsScreen: View {
                 yearRecap: viewModel.yearRecap(),
                 calendar: viewModel.calendar(),
                 format: viewModel.format,
-                horizon: $viewModel.horizon,
                 hasMore: viewModel.hasMore,
                 pageFailed: viewModel.pageFailed,
                 isLoading: viewModel.isLoading,

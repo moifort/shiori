@@ -1,12 +1,5 @@
 import Foundation
 
-/// How far ahead the list looks, from today: everything announced, the next
-/// three months, or the next six.
-enum ReleaseHorizon: String, CaseIterable, Identifiable, Sendable {
-    case all, threeMonths, sixMonths
-    var id: String { rawValue }
-}
-
 /// One line of the list: a day with what is out on it, or a label standing
 /// where a day cannot ("2027", "Sans date").
 struct ReleaseDay: Identifiable, Hashable, Sendable {
@@ -48,25 +41,20 @@ struct ReleaseCalendar: Sendable {
         (calendar.component(.year, from: now), calendar.component(.month, from: now))
     }
 
-    /// The list for a horizon, a month at a time. A release already out is not
-    /// in it; what is dated to a year alone, or not at all, closes "Tout".
-    func sections(for horizon: ReleaseHorizon) -> [ReleaseMonthSection] {
+    /// The list, a month at a time. A release already out is not in it; what is
+    /// dated to a year alone, or not at all, closes it.
+    var sections: [ReleaseMonthSection] {
         let today = calendar.startOfDay(for: now)
-        let end: Date? = switch horizon {
-        case .threeMonths: calendar.date(byAdding: .month, value: 3, to: today)
-        case .sixMonths: calendar.date(byAdding: .month, value: 6, to: today)
-        case .all: nil
-        }
         var months: [String: (start: Date, days: [Int: [UpcomingRelease]], monthOnly: [UpcomingRelease])] = [:]
         var years: [Int: [UpcomingRelease]] = [:]
         var undated: [UpcomingRelease] = []
         for release in releases {
             guard let date = parsed(release.date) else {
-                if horizon == .all { undated.append(release) }
+                undated.append(release)
                 continue
             }
             guard let month = date.month else {
-                if horizon == .all, date.year >= current.year { years[date.year, default: []].append(release) }
+                if date.year >= current.year { years[date.year, default: []].append(release) }
                 continue
             }
             guard let start = calendar.date(from: DateComponents(year: date.year, month: month, day: 1)),
@@ -74,12 +62,12 @@ struct ReleaseCalendar: Sendable {
             else { continue }
             if let day = date.day {
                 guard let when = calendar.date(from: DateComponents(year: date.year, month: month, day: day)),
-                    when >= today, end.map({ when <= $0 }) ?? true
+                    when >= today
                 else { continue }
                 let key = String(format: "%04d-%02d", date.year, month)
                 months[key, default: (start, [:], [])].days[day, default: []].append(release)
             } else {
-                guard next > today, end.map({ start <= $0 }) ?? true else { continue }
+                guard next > today else { continue }
                 let key = String(format: "%04d-%02d", date.year, month)
                 months[key, default: (start, [:], [])].monthOnly.append(release)
             }

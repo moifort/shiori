@@ -34,7 +34,6 @@ final class NewsViewModel {
 
     /// The pill chosen; nil is "Tout".
     var format: BookFormat?
-    var horizon: ReleaseHorizon = .all
 
     /// What the tab opens on: the feed's first page and everything around it.
     private struct Snapshot: Codable {
