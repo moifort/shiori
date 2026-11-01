@@ -163,21 +163,21 @@ struct BookPage: View {
     /// word on it, not for a next state: reading it again clears the day it
     /// was finished, a choice made in the menu, not here.
     private var heroButtons: some View {
-        GlassEffectContainer(spacing: 8) {
-            HStack(spacing: 8) {
-                if book.tracksPages {
-                    progressButton
-                } else if let step = NextStep(status: book.status) {
-                    primaryButton(step)
-                } else {
-                    statusButton
-                }
-                ratingButton(prominent: false)
-                noteButton
+        // No GlassEffectContainer: a menu opened from inside one loses a moving
+        // tap on a row over a neighbouring button.
+        HStack(spacing: 8) {
+            if book.tracksPages {
+                progressButton
+            } else if let step = NextStep(status: book.status) {
+                primaryButton(step)
+            } else {
+                statusButton
             }
-            .font(.subheadline.weight(.semibold))
-            .controlSize(.regular)
+            ratingButton(prominent: false)
+            noteButton
         }
+        .font(.subheadline.weight(.semibold))
+        .controlSize(.regular)
         .fixedSize()
     }
 

@@ -337,9 +337,8 @@ struct HomeHeroCarousel: View {
             reason: suggestion.reason,
             onOpen: { onOpen(suggestion) }
         ) {
-            // No GlassEffectContainer here: a menu opened from inside one lets
-            // go of a row over the container's frame the moment the finger
-            // moves, and the tap is lost.
+            // No GlassEffectContainer: a menu opened from inside one loses a
+            // moving tap on a row over a neighbouring button.
             HStack(spacing: 12) {
                 Button { onOpen(suggestion) } label: {
                     Label("Découvrir", systemImage: "sparkles")

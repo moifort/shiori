@@ -96,14 +96,14 @@ struct SuggestionPage: View {
 
     /// The "+" white, as a book's next step, and the thumb on glass beside it.
     private var heroButtons: some View {
-        GlassEffectContainer(spacing: 8) {
-            HStack(spacing: 8) {
-                addMenu
-                notForMeMenu
-            }
-            .font(.subheadline.weight(.semibold))
-            .controlSize(.regular)
+        // No GlassEffectContainer: a menu opened from inside one loses a moving
+        // tap on a row over a neighbouring button.
+        HStack(spacing: 8) {
+            addMenu
+            notForMeMenu
         }
+        .font(.subheadline.weight(.semibold))
+        .controlSize(.regular)
         .fixedSize()
     }
 

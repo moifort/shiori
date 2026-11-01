@@ -129,37 +129,37 @@ struct FriendBookPage: View {
     /// the book on glass — their stars, their heart — set as the reader's own
     /// hero sets its rating: same font, same height, nothing to tap.
     private var heroButtons: some View {
-        GlassEffectContainer(spacing: 8) {
-            HStack(spacing: 8) {
-                FriendBookAddMenu(
-                    formats: formats,
-                    owned: owned,
-                    awaitable: awaitable,
-                    onAdd: { status, format in await onAction(.add(status, format)) },
-                    onAwait: { format in Task { await onAction(.awaitEdition(format)) } }
-                )
-                // One or the other: a heart is the top mark, so it stands
-                // in for the stars rather than sitting beside them.
-                if book.favorite {
-                    glassChip {
-                        // A full red: the hero's dark appearance lightens
-                        // the system red to a pink on glass.
-                        Image(systemName: "heart.fill")
-                            .foregroundStyle(Color(red: 0.93, green: 0.1, blue: 0.15))
-                    }
-                    .accessibilityLabel(Text("Coup de cœur de \(friendName)"))
-                    .accessibilityIdentifier("friend-book-favorite")
-                } else if let rating = book.rating {
-                    glassChip {
-                        RatingStars(rating: rating, font: .footnote, monochrome: true)
-                    }
-                    .accessibilityLabel(Text("Noté \(Int(rating)) sur 5 par \(friendName)"))
-                    .accessibilityIdentifier("friend-book-rating")
+        // No GlassEffectContainer: a menu opened from inside one loses a moving
+        // tap on a row over a neighbouring button.
+        HStack(spacing: 8) {
+            FriendBookAddMenu(
+                formats: formats,
+                owned: owned,
+                awaitable: awaitable,
+                onAdd: { status, format in await onAction(.add(status, format)) },
+                onAwait: { format in Task { await onAction(.awaitEdition(format)) } }
+            )
+            // One or the other: a heart is the top mark, so it stands
+            // in for the stars rather than sitting beside them.
+            if book.favorite {
+                glassChip {
+                    // A full red: the hero's dark appearance lightens
+                    // the system red to a pink on glass.
+                    Image(systemName: "heart.fill")
+                        .foregroundStyle(Color(red: 0.93, green: 0.1, blue: 0.15))
                 }
+                .accessibilityLabel(Text("Coup de cœur de \(friendName)"))
+                .accessibilityIdentifier("friend-book-favorite")
+            } else if let rating = book.rating {
+                glassChip {
+                    RatingStars(rating: rating, font: .footnote, monochrome: true)
+                }
+                .accessibilityLabel(Text("Noté \(Int(rating)) sur 5 par \(friendName)"))
+                .accessibilityIdentifier("friend-book-rating")
             }
-            .font(.subheadline.weight(.semibold))
-            .controlSize(.regular)
         }
+        .font(.subheadline.weight(.semibold))
+        .controlSize(.regular)
         .fixedSize()
     }
 
