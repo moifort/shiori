@@ -46,8 +46,18 @@ export const claimGeneration = async (
       generatedAt: now,
       generatingSince: now,
       suggestions: queue?.suggestions ?? [],
+      ...(queue?.toldMonth ? { toldMonth: queue.toldMonth } : {}),
     })
     return true
+  })
+
+/** The reader was told the month's discoveries were made. */
+export const markTold = async (userId: UserId, month: string): Promise<void> =>
+  transactionally(async (tx) => {
+    const ref = queues().doc(userId)
+    const queue = (await tx.get(ref)).data()
+    if (!queue) return
+    tx.set(ref, { ...queue, toldMonth: month })
   })
 
 /** The search failed: its mark is taken off, the selection left as it was. */

@@ -46,6 +46,10 @@ export type SuggestionQueue = {
    *  is given a selection in the new one. */
   language: Language
   generatedAt: Date
+  /** `YYYY-MM` of the month the reader was last told their discoveries were
+   *  made, so the first-of-the-month alert reaches a reader whose selection
+   *  Découvrir had already made, and never twice. */
+  toldMonth?: string
   /** Set while the model is being asked, so a second look — Découvrir's view
    *  asks again as it settles — knows a selection is on its way rather than
    *  taking the month for one with none. */

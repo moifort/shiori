@@ -14,6 +14,8 @@ export namespace SuggestionCommand {
     language: Language,
   ) => repository.claimGeneration(userId, mayGenerate, now, language)
 
+  export const markTold = (userId: UserId, month: string) => repository.markTold(userId, month)
+
   export const endGeneration = (userId: UserId) => repository.endGeneration(userId)
 
   /** "Pas intéressé" or "Je n'aime pas": the suggestion leaves the queue for

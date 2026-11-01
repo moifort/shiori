@@ -110,12 +110,14 @@ export namespace SuggestionUseCase {
   export const reconsider = (userId: UserId, key: string) =>
     SuggestionCommand.reconsider(userId, key)
 
-  /** The first of the month's pass, called by Cloud Scheduler: the month's
-   *  discoveries made, in the language of their last ones, for the readers
-   *  who had a selection before, have none for this month, and left the alert
-   *  on with a device to hear it — then they are told. The others are given
-   *  theirs when they open Découvrir, as before: nobody is asked for whom the
-   *  model would be paid with nothing to say.
+  /** The first of the month's pass, called by Cloud Scheduler: every reader
+   *  who left the alert on with a device to hear it is told the month's
+   *  discoveries are made, once. A reader who had a selection before and has
+   *  none for this month is given it first, in the language of their last
+   *  ones; one whose selection Découvrir already made — opened after midnight,
+   *  before the pass — is told without the model being asked. The others are
+   *  given theirs when they open Découvrir, as before: nobody is asked for
+   *  whom the model would be paid with nothing to say.
    *
    *  A generation takes a minute or two, so a run makes a few at once and
    *  leaves the rest to the next run; a reader whose generation failed is
@@ -127,19 +129,35 @@ export namespace SuggestionUseCase {
     const month = monthOf(now)
     const mayGenerate = (queue: SuggestionQueue | undefined, language: Language) =>
       queue !== undefined && queue.month !== month && shouldGenerate(queue, now, language)
-    const stale = (await SuggestionQuery.all()).filter((queue) =>
-      mayGenerate(queue, queue.language),
-    )
-    const due = (
-      await Promise.all(
-        stale.map(async (queue) =>
-          wantsAlert(await NotificationQuery.settings(queue.userId, now), 'discoveries')
-            ? queue
-            : undefined,
-        ),
-      )
-    ).filter((queue) => queue !== undefined)
-    const told = await Promise.all(
+    const mayTell = (queue: SuggestionQueue) =>
+      queue.month === month &&
+      queue.toldMonth !== month &&
+      queue.generatingSince === undefined &&
+      queue.suggestions.length > 0
+    const hearing = async (queues: SuggestionQueue[]) =>
+      (
+        await Promise.all(
+          queues.map(async (queue) =>
+            wantsAlert(await NotificationQuery.settings(queue.userId, now), 'discoveries')
+              ? queue
+              : undefined,
+          ),
+        )
+      ).filter((queue) => queue !== undefined)
+    const tell = async (userId: UserId, language: Language) => {
+      const delivery = await NotificationUseCase.notify(userId, {
+        kind: 'discoveries',
+        ...discoveriesAlertOf(language),
+        link: 'shiori://discover',
+      })
+      if (delivery !== 'delivered') return false
+      await SuggestionCommand.markTold(userId, month)
+      return true
+    }
+    const queues = await SuggestionQuery.all()
+    const due = await hearing(queues.filter((queue) => mayGenerate(queue, queue.language)))
+    const made = await hearing(queues.filter(mayTell))
+    const generated = await Promise.all(
       due.slice(0, READERS_PER_PASS).map(async ({ userId, language }) => {
         try {
           const claimed = await SuggestionCommand.claimGeneration(
@@ -151,19 +169,27 @@ export namespace SuggestionUseCase {
           if (!claimed) return false
           const selection = await newSelection(userId, await libraryOf(userId), language, now)
           if (!selection || selection.length === 0) return false
-          await NotificationUseCase.notify(userId, {
-            kind: 'discoveries',
-            ...discoveriesAlertOf(language),
-            link: 'shiori://discover',
-          })
-          return true
+          return await tell(userId, language)
         } catch (error) {
           logger.warn('monthly discoveries pass failed', { error, userId })
           return false
         }
       }),
     )
-    return { due: due.length, told: told.filter(Boolean).length }
+    const reminded = await Promise.all(
+      made.map(async ({ userId, language }) => {
+        try {
+          return await tell(userId, language)
+        } catch (error) {
+          logger.warn('monthly discoveries alert failed', { error, userId })
+          return false
+        }
+      }),
+    )
+    return {
+      due: due.length + made.length,
+      told: [...generated, ...reminded].filter(Boolean).length,
+    }
   }
 }
 

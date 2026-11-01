@@ -374,6 +374,20 @@ describe('the first of the month’s pass', () => {
     expect(pushed).toHaveLength(1)
   })
 
+  test('tells a reader whose selection Découvrir already made this month, without asking the model', async () => {
+    answering(suggested('Neuromancien', 'William Gibson'))
+    await look('2026-11-01T00:40:00Z')
+    hears(['discoveries'])
+
+    expect(await SuggestionUseCase.generateForEveryReader(november)).toEqual({ due: 1, told: 1 })
+    expect(prompts).toHaveLength(1)
+    expect(pushed).toHaveLength(1)
+    expect(fake.data('suggestion-queues', reader)?.toldMonth).toBe('2026-11')
+
+    expect(await SuggestionUseCase.generateForEveryReader(november)).toEqual({ due: 0, told: 0 })
+    expect(pushed).toHaveLength(1)
+  })
+
   test('writes in the language of the reader’s last selection', async () => {
     await look(october, 'en')
     hears(['discoveries'])
