@@ -253,6 +253,15 @@ struct HomeHeroCarousel: View {
 
     // MARK: - Pages
 
+    /// The days left before a release not out yet: "3 jours". Nil once it is
+    /// out, or when its day is not known.
+    private static func countdown(_ release: HomeRelease) -> String? {
+        guard let date = release.date, date.count == 10,
+              let days = HomeHeroItem.daysFromToday(date), days > 0
+        else { return nil }
+        return ReleaseDateText.countdown(date)
+    }
+
     /// A volume or an edition just out or due this week, how near in the
     /// badge as the TV app announces a new season, and its saga in place of
     /// a why.
@@ -269,6 +278,8 @@ struct HomeHeroCarousel: View {
                 .filter { !$0.isEmpty }
                 .joined(separator: " · "),
             reason: tile.series?.name,
+            countdown: Self.countdown(release),
+            leafDate: release.date.flatMap { $0.count == 10 && ReleaseDateText.isUpcoming($0) ? $0 : nil },
             onOpen: { onOpenRelease(release) }
         ) {
             GlassEffectContainer(spacing: 12) {
@@ -417,7 +428,7 @@ struct HomeHeroCarousel: View {
     /// cover; beside it what the month was, that it is done and when the next
     /// ones come; under both, the way to Découvrir, which always has more.
     private func monthDonePage(_ month: String, id: HomeHeroItem.ID) -> some View {
-        layout(id: id) {
+        layout(id: id, leafDate: leafDate) {
             // Drawn for the old cover's room, set down to the new one's.
             DoneStack()
                 .scaleEffect(0.84)
@@ -503,6 +514,8 @@ struct HomeHeroCarousel: View {
         title: String,
         meta: String,
         reason: String?,
+        countdown: String? = nil,
+        leafDate: String? = nil,
         onOpen: @escaping () -> Void,
         @ViewBuilder buttons: () -> some View
     ) -> some View {
@@ -547,7 +560,15 @@ struct HomeHeroCarousel: View {
                             .lineSpacing(2)
                             .padding(.top, 8)
                     }
+                    // The days left, outlined as "Audio" is, at the foot of
+                    // the text as the book page sets it.
+                    if let countdown {
+                        OutlinedTag(text: countdown, isFrosted: false)
+                            .padding(.top, 10)
+                    }
                 }
+                // Room for the calendar leaf in the corner.
+                .padding(.trailing, leafDate == nil ? 0 : 58)
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .contentShape(.rect)
@@ -577,6 +598,7 @@ struct HomeHeroCarousel: View {
     /// measured, the buttons at the foot over the dots.
     private func layout(
         id: HomeHeroItem.ID,
+        leafDate: String? = nil,
         @ViewBuilder cover: () -> some View,
         @ViewBuilder side: () -> some View,
         @ViewBuilder buttons: () -> some View
@@ -588,6 +610,13 @@ struct HomeHeroCarousel: View {
                     side()
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            // The day a release is out, in the corner level with the cover's
+            // top, as the book page pins it.
+            .overlay(alignment: .topTrailing) {
+                if let leafDate {
+                    ReleaseDateBadge(date: leafDate, onGlass: true)
+                }
             }
             .foregroundStyle(.white)
             .onGeometryChange(for: CGFloat.self, of: \.size.height) { topHeights[id] = $0 }
