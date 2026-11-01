@@ -2585,36 +2585,6 @@
         }
       }
     },
-    "Annexe" : {
-      "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Annexe"
-          }
-        }
-      }
-    },
-    "Annexe %lld" : {
-      "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Annexe %lld"
-          }
-        }
-      }
-    },
-    "Annexes" : {
-      "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Annexes"
-          }
-        }
-      }
-    },
     "Annoncé" : {
       "localizations" : {
         "en" : {
@@ -2903,6 +2873,22 @@
         }
       }
     },
+    "Aucun favori d'amis" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No friends' favourites"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun favori d'amis"
+          }
+        }
+      }
+    },
     "Aucun jour facturé" : {
       "localizations" : {
         "en" : {
@@ -3031,6 +3017,22 @@
         }
       }
     },
+    "Aucun livre guetté" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No awaited book"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun livre guetté"
+          }
+        }
+      }
+    },
     "Aucun livre n'a été ajouté à cette bibliothèque." : {
       "localizations" : {
         "en" : {
@@ -3127,6 +3129,22 @@
         }
       }
     },
+    "Aucun prix" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No award"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun prix"
+          }
+        }
+      }
+    },
     "Aucun résultat" : {
       "localizations" : {
         "en" : {
@@ -3219,6 +3237,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Aucune session"
+          }
+        }
+      }
+    },
+    "Aucune sortie" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No release"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucune sortie"
           }
         }
       }
@@ -3703,22 +3737,6 @@
         }
       }
     },
-    "Bienvenue dans Shiori" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Welcome to Shiori"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bienvenue dans Shiori"
-          }
-        }
-      }
-    },
     "Bilbo" : {
       "localizations" : {
         "en" : {
@@ -4119,6 +4137,22 @@
         }
       }
     },
+    "Cette année" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This year"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cette année"
+          }
+        }
+      }
+    },
     "Cette semaine" : {
       "localizations" : {
         "en" : {
@@ -4195,22 +4229,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Chargement de plus de vins"
-          }
-        }
-      }
-    },
-    "Chargement..." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Loading…"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Chargement..."
           }
         }
       }
@@ -4403,16 +4421,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Choisissez une série de votre bibliothèque pour y ranger ce livre avec les autres tomes. Un hors-série — préquelle, nouvelle, guide — se range à part, sous son propre numéro. Videz le nom pour le sortir de sa série."
-          }
-        }
-      }
-    },
-    "Choisissez une série de votre bibliothèque pour y ranger ce livre avec les autres tomes. Une annexe — hors-série, préquelle, guide — se range à part, sous son propre numéro. Videz le nom pour le sortir de sa série." : {
-      "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Choisissez une série de votre bibliothèque pour y ranger ce livre avec les autres tomes. Une annexe — hors-série, préquelle, guide — se range à part, sous son propre numéro. Videz le nom pour le sortir de sa série."
           }
         }
       }
@@ -4813,22 +4821,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Connectez votre compte Amazon une fois, puis choisissez les livres à ajouter. Ils rejoignent votre bibliothèque avec leur couverture et leur série, et ceux que vous avez finis sur Kindle sont marqués comme lus."
-          }
-        }
-      }
-    },
-    "Connectez-vous pour retrouver votre bibliothèque." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sign in to get your library back."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Connectez-vous pour retrouver votre bibliothèque."
           }
         }
       }
@@ -5729,22 +5721,6 @@
         }
       }
     },
-    "Découverte du mois" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Discovery of the month"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Découverte du mois"
-          }
-        }
-      }
-    },
     "Découverte d’%@" : {
       "localizations" : {
         "en" : {
@@ -6045,6 +6021,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Effacer"
+          }
+        }
+      }
+    },
+    "En %@, sans jour précis" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In %@, no exact day"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En %@, sans jour précis"
           }
         }
       }
@@ -6433,6 +6425,22 @@
         }
       }
     },
+    "Favoris d'amis" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Friends' favourites"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Favoris d'amis"
+          }
+        }
+      }
+    },
     "Fermer" : {
       "localizations" : {
         "en" : {
@@ -6765,6 +6773,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Guetter en français"
+          }
+        }
+      }
+    },
+    "Guettés" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Awaited"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guettés"
           }
         }
       }
@@ -8177,16 +8201,6 @@
         }
       }
     },
-    "Le numéro d'annexe doit être un nombre entre 1 et 200." : {
-      "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Le numéro d'annexe doit être un nombre entre 1 et 200."
-          }
-        }
-      }
-    },
     "Le numéro de hors-série doit être un nombre entre 1 et 200." : {
       "localizations" : {
         "en" : {
@@ -8595,6 +8609,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Les prochaines arrivent en %@"
+          }
+        }
+      }
+    },
+    "Les prochaines sorties de vos séries, de vos auteurs et de vos livres guettés s'afficheront ici." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Upcoming releases from your series, authors and awaited books will show up here."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les prochaines sorties de vos séries, de vos auteurs et de vos livres guettés s'afficheront ici."
           }
         }
       }
@@ -10407,16 +10437,6 @@
         }
       }
     },
-    "Numéro d'annexe" : {
-      "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Numéro d'annexe"
-          }
-        }
-      }
-    },
     "Néerlandais" : {
       "localizations" : {
         "en" : {
@@ -11185,22 +11205,6 @@
         }
       }
     },
-    "Photographiez la couverture d'un livre, et il rejoint votre bibliothèque avec son résumé, sa série et tout le reste." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Take a photo of a book cover, and it joins your library with its summary, its series and everything else."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Photographiez la couverture d'un livre, et il rejoint votre bibliothèque avec son résumé, sa série et tout le reste."
-          }
-        }
-      }
-    },
     "Photographiez les tranches de face, bien éclairées, ou posez les couvertures à plat sans qu'elles se chevauchent. Rien n'a été décompté." : {
       "localizations" : {
         "en" : {
@@ -11357,6 +11361,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Plus de découvertes ce mois-ci : prochaines en %@."
+          }
+        }
+      }
+    },
+    "Plus tard" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Later"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Plus tard"
           }
         }
       }
@@ -11601,22 +11621,6 @@
         }
       }
     },
-    "Presque prêt…" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Almost ready…"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Presque prêt…"
-          }
-        }
-      }
-    },
     "Primés" : {
       "localizations" : {
         "en" : {
@@ -11629,6 +11633,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Primés"
+          }
+        }
+      }
+    },
+    "Prix" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Awards"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prix"
           }
         }
       }
@@ -12045,16 +12065,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Qu'en avez-vous pensé ?"
-          }
-        }
-      }
-    },
-    "Quelques étoiles, et Shiori choisit vos livres du mois" : {
-      "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Quelques étoiles, et Shiori choisit vos livres du mois"
           }
         }
       }
@@ -12603,18 +12613,50 @@
         }
       }
     },
-    "Rien d'annoncé" : {
+    "Rien d'annoncé ce mois-ci" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nothing announced"
+            "value" : "Nothing announced this month"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rien d'annoncé"
+            "value" : "Rien d'annoncé ce mois-ci"
+          }
+        }
+      }
+    },
+    "Rien d'annoncé plus loin" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing announced further out"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rien d'annoncé plus loin"
+          }
+        }
+      }
+    },
+    "Rien d'annoncé pour l'instant" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing announced yet"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rien d'annoncé pour l'instant"
           }
         }
       }
@@ -13403,22 +13445,6 @@
         }
       }
     },
-    "Shiori" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Shiori"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Shiori"
-          }
-        }
-      }
-    },
     "Shiori Premium" : {
       "localizations" : {
         "en" : {
@@ -13575,22 +13601,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sortie %@"
-          }
-        }
-      }
-    },
-    "Sortie %@ prochain" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Out next %@"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sortie %@ prochain"
           }
         }
       }
@@ -14023,38 +14033,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Synchronisation"
-          }
-        }
-      }
-    },
-    "Synchronisation avec Audible…" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Syncing with Audible…"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Synchronisation avec Audible…"
-          }
-        }
-      }
-    },
-    "Synchronisation avec Kindle…" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Syncing with Kindle…"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Synchronisation avec Kindle…"
           }
         }
       }

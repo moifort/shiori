@@ -116,3 +116,12 @@ extension AwardWinner {
         awaitableFormats: [], awaitedEditionId: nil
     )
 }
+
+extension YearRecap {
+    static let preview = YearRecap(tiles: [
+        Tile(kind: .awards, count: 3, covers: [AwardWinner.preview.cover]),
+        Tile(kind: .friendsFavourites, count: 5, covers: FeedEvent.previews.prefix(2).map(\.cover)),
+        Tile(kind: .seriesReleases, count: 4, covers: UpcomingRelease.previews.prefix(2).map(\.cover)),
+        Tile(kind: .awaitedAvailable, count: 2, covers: UpcomingRelease.previews.suffix(2).map(\.cover)),
+    ])
+}

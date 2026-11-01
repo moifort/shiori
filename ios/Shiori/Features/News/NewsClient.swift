@@ -9,6 +9,8 @@ struct NewsClient: Sendable {
     var narratorNews: @Sendable () async throws -> [NarratorNews]
     /// The latest novel an award crowned, for the feed's award card.
     var latestWinner: @Sendable () async throws -> AwardWinner?
+    /// Every winner the awards list, for the year's count of prizes.
+    var yearAwards: @Sendable () async throws -> [AwardWinner]
     /// A friend's book onto the reader's pile, in the format they take it in.
     var takeFriendBook: @Sendable (_ friendId: String, _ bookId: String, BookFormat) async throws -> Void
     /// An award winner onto the pile.
@@ -26,6 +28,9 @@ extension NewsClient {
         narratorNews: { try await NewsAPI.narratorNews() },
         latestWinner: {
             try await AwardsAPI.sections(format: .book).first?.winners.first
+        },
+        yearAwards: {
+            try await AwardsAPI.sections(format: .book).flatMap(\.winners)
         },
         takeFriendBook: { friendId, bookId, format in
             _ = try await FriendsAPI.addBook(friendId: friendId, bookId: bookId, status: .toRead, format: format)
@@ -48,6 +53,7 @@ extension NewsClient {
         upcoming: { UpcomingRelease.previews },
         narratorNews: { [.preview] },
         latestWinner: { .preview },
+        yearAwards: { [.preview] },
         takeFriendBook: { _, _, _ in },
         addWinner: { _ in },
         addRecording: { _ in },

@@ -2,7 +2,8 @@ import SwiftUI
 
 /// "Prochainement": the horizon pills and the list under them — the next 30
 /// days, the next six months, or everything announced. A horizon with nothing
-/// in it has no pill. Draws what it is given.
+/// in it has no pill; with nothing announced at all, an icon and a sentence say
+/// what will come. Draws what it is given.
 struct ReleaseCalendarSection: View {
     let calendar: ReleaseCalendar
     @Binding var horizon: ReleaseHorizon
@@ -26,10 +27,20 @@ struct ReleaseCalendarSection: View {
                 }
                 ReleaseList(sections: calendar.sections(for: current), onOpen: onOpen)
             } else {
-                Text("Rien d'annoncé")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, 20)
+                VStack(spacing: 8) {
+                    Image(systemName: "calendar")
+                        .font(.title2)
+                        .foregroundStyle(.secondary)
+                    Text("Rien d'annoncé pour l'instant")
+                        .font(.subheadline.weight(.semibold))
+                    Text("Les prochaines sorties de vos séries, de vos auteurs et de vos livres guettés s'afficheront ici.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 20)
+                .padding(.top, 8)
             }
         }
     }
@@ -54,5 +65,15 @@ private extension ReleaseHorizon {
             onOpen: { _ in }
         )
     }
+    .preferredColorScheme(.dark)
+}
+
+#Preview("Nothing announced") {
+    @Previewable @State var horizon = ReleaseHorizon.thirtyDays
+    ReleaseCalendarSection(
+        calendar: ReleaseCalendar(releases: [], now: .now),
+        horizon: $horizon,
+        onOpen: { _ in }
+    )
     .preferredColorScheme(.dark)
 }

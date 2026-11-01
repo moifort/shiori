@@ -18,11 +18,12 @@ enum NewsAction {
     case refresh
 }
 
-/// The Actualités page, pure: the format pills, the friends' feed by day with
+/// The Actualités page, pure: the format pills, the year's four counts, the friends' feed by day with
 /// the author's and the award's cards among it, and "Prochainement" with its
 /// calendar. The pages a tap opens are the screen's.
 struct NewsPage: View {
     let sections: [FeedSection]
+    let yearRecap: YearRecap
     let calendar: ReleaseCalendar
     let format: BookFormat?
     @Binding var horizon: ReleaseHorizon
@@ -68,6 +69,8 @@ struct NewsPage: View {
                         act(.selectFormat(id.flatMap(BookFormat.init(rawValue:))))
                     }
                     .padding(.bottom, 4)
+                    YearRecapSection(recap: yearRecap)
+                        .padding(.top, 22)
                     feed
                     ReleaseCalendarSection(
                         calendar: calendar,
@@ -135,6 +138,7 @@ struct NewsPage: View {
 private struct NewsPagePreview: View {
     var events: [FeedEvent] = FeedEvent.previews
     var releases: [UpcomingRelease] = UpcomingRelease.previews
+    var yearRecap: YearRecap = .preview
     var isLoading = false
     var errorMessage: String?
     @State private var horizon = ReleaseHorizon.thirtyDays
@@ -148,6 +152,7 @@ private struct NewsPagePreview: View {
                     spotlight: releases.first,
                     award: nil
                 ),
+                yearRecap: yearRecap,
                 calendar: ReleaseCalendar(releases: releases, now: .now),
                 format: nil,
                 horizon: $horizon,
@@ -164,6 +169,6 @@ private struct NewsPagePreview: View {
 }
 
 #Preview("Filled") { NewsPagePreview() }
-#Preview("Nothing yet") { NewsPagePreview(events: [], releases: []) }
+#Preview("Nothing yet") { NewsPagePreview(events: [], releases: [], yearRecap: .empty) }
 #Preview("Loading") { NewsPagePreview(events: [], releases: [], isLoading: true) }
 #Preview("Failed") { NewsPagePreview(events: [], releases: [], errorMessage: "Le réseau est indisponible.") }

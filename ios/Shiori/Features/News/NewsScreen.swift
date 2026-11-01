@@ -40,6 +40,7 @@ struct NewsScreen: View {
                     spotlight: viewModel.spotlight,
                     award: nil
                 ),
+                yearRecap: viewModel.yearRecap(),
                 calendar: viewModel.calendar(),
                 format: viewModel.format,
                 horizon: $viewModel.horizon,

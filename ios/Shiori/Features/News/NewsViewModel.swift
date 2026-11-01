@@ -16,6 +16,7 @@ final class NewsViewModel {
     private var cursor: String?
     private(set) var releases: [UpcomingRelease] = []
     private(set) var winner: AwardWinner?
+    private(set) var yearAwards: [AwardWinner] = []
     private(set) var narratorNews: [NarratorNews] = []
     private(set) var isLoading = false
     private(set) var isLoadingMore = false
@@ -68,6 +69,12 @@ final class NewsViewModel {
         return winner.cover.format == format ? winner : nil
     }
 
+    /// The year's four counts, over every format: the pills narrow the feed,
+    /// not the year.
+    func yearRecap(now: Date = .now) -> YearRecap {
+        YearRecap.make(awards: yearAwards, events: events, releases: releases, now: now)
+    }
+
     func calendar(now: Date = .now) -> ReleaseCalendar {
         ReleaseCalendar(releases: shownReleases, now: now)
     }
@@ -90,7 +97,8 @@ final class NewsViewModel {
         async let upcoming = capture { try await client.upcoming() }
         async let latest = capture { try await client.latestWinner() }
         async let narrated = capture { try await client.narratorNews() }
-        let (first, dated, award, voices) = await (page, upcoming, latest, narrated)
+        async let crowned = capture { try await client.yearAwards() }
+        let (first, dated, award, voices, winners) = await (page, upcoming, latest, narrated, crowned)
         guard token == generation else { return }
         if case let .success(first) = first {
             events = first.items
@@ -104,6 +112,7 @@ final class NewsViewModel {
         if case let .success(dated) = dated { releases = dated }
         if case let .success(award) = award { winner = award }
         if case let .success(voices) = voices { narratorNews = voices }
+        if case let .success(winners) = winners { yearAwards = winners }
         if case let .failure(error) = dated, !isCancellation(error) { reportError(error) }
         hasLoaded = true
         await loadAlerts()
