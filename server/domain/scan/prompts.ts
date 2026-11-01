@@ -129,6 +129,8 @@ Renseigne :
 - regularEditionIsbn13 : seulement si CETTE édition est une édition spéciale (collector, limitée, de luxe, reliée à tranche décorée ou jaspage, coffret) : l'ISBN-13 de l'édition courante du même livre, chez le même éditeur et dans la même langue. Il sert uniquement à afficher une couverture à plat, car celle d'une édition spéciale est souvent une photo de l'objet en perspective. Mets null pour une édition courante, ou si tu ne trouves pas cet ISBN avec certitude.
 - seriesName, volumeNumber, volumeKind : la série à laquelle ce livre appartient. C'est l'information la plus importante de cette fiche. Cherche-la activement : beaucoup de romans appartiennent à un cycle sans que la couverture le dise. volumeNumber est le numéro du tome dans toute la série, même quand la couverture imprime celui de son cycle : si le premier cycle compte trois tomes, « cycle 2, tome 2 » est le tome 5. volumeKind vaut 'main' pour un tome numéroté de l'histoire principale, 'prequel' pour une préquelle, 'spin-off' pour un récit dérivé, 'novella' pour un texte court rattaché, 'companion' pour un guide ou un artbook. Si le livre est indépendant, mets les trois à null.
 
+Si la recherche ne trouve aucun livre qui corresponde, réponds quand même par l'objet JSON, jamais par une explication : title et authors tels qu'ils sont donnés ci-dessus, subgenres vide, et tous les autres champs à null.
+
 Toutes les valeurs textuelles doivent être en ${LANGUAGE_NAMES[language]}.`
 
 /** One edition as the model is shown it, by its index in the list. */
