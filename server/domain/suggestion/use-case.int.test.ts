@@ -195,7 +195,7 @@ describe('the month’s discoveries', () => {
   test('a dismissal lets the next one in and is told to the model next month', async () => {
     await look()
     expect(
-      await SuggestionUseCase.dismiss(reader, 'silo--hugh-howey', 'not-interested'),
+      await SuggestionUseCase.dismiss(reader, 'silo--hugh-howey', 'not-interested', october),
     ).toMatchObject({
       key: 'silo--hugh-howey',
     })
@@ -212,7 +212,7 @@ describe('the month’s discoveries', () => {
 
   test('a dismissal taken back puts the book back where it stood and tells the model nothing', async () => {
     await look()
-    await SuggestionUseCase.dismiss(reader, 'silo--hugh-howey', 'not-interested')
+    await SuggestionUseCase.dismiss(reader, 'silo--hugh-howey', 'not-interested', october)
 
     expect(await SuggestionUseCase.reconsider(reader, 'silo--hugh-howey')).toBe('reconsidered')
 
@@ -231,7 +231,7 @@ describe('the month’s discoveries', () => {
 
   test('a dismissal from an older month taken back leaves the new line as it is', async () => {
     await look()
-    await SuggestionUseCase.dismiss(reader, 'silo--hugh-howey', 'not-interested')
+    await SuggestionUseCase.dismiss(reader, 'silo--hugh-howey', 'not-interested', october)
     answering(suggested('Neuromancien', 'William Gibson'))
     await look('2026-11-02T09:00:00Z')
 
@@ -268,7 +268,7 @@ describe('the month’s discoveries', () => {
       'seveneves--neal-stephenson',
       'expiration--ted-chiang',
     ])
-      await SuggestionUseCase.dismiss(reader, key, 'not-interested')
+      await SuggestionUseCase.dismiss(reader, key, 'not-interested', october)
 
     const ranOut = await look('2026-10-28T09:00:00Z')
     expect(ranOut.status).toBe('ready')

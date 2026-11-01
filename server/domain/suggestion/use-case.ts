@@ -104,8 +104,8 @@ export namespace SuggestionUseCase {
     }
   }
 
-  export const dismiss = (userId: UserId, key: string, reason: DismissalReason) =>
-    SuggestionCommand.dismiss(userId, key, reason)
+  export const dismiss = (userId: UserId, key: string, reason: DismissalReason, now = new Date()) =>
+    SuggestionCommand.dismiss(userId, key, reason, now)
 
   export const reconsider = (userId: UserId, key: string) =>
     SuggestionCommand.reconsider(userId, key)
