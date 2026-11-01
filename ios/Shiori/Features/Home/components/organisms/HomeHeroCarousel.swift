@@ -361,41 +361,54 @@ struct HomeHeroCarousel: View {
                     .disabled(dismissed.contains(suggestion.id))
                     .sensoryFeedback(.success, trigger: taken.contains(suggestion.id))
                     .accessibilityIdentifier("home-discovery-menu")
-                    // Turned down, the thumb fills and presses down as the
-                    // button turns red; pressed again, it comes back up as
-                    // it was. Never disabled once done: dimmed, the red went
-                    // unseen.
-                    Button {
-                        if isDismissed {
+                    // The thumb opens a choice: turned down, it fills and
+                    // presses down as the button turns red; pressed again,
+                    // it comes back up as it was. Never disabled once done:
+                    // dimmed, the red went unseen.
+                    if isDismissed {
+                        Button {
                             withAnimation(.snappy) { _ = dismissed.remove(suggestion.id) }
                             onReconsider(suggestion)
-                        } else {
-                            withAnimation(.snappy) { _ = dismissed.insert(suggestion.id) }
-                            onDismiss(suggestion)
-                        }
-                    } label: {
-                        Label(
-                            isDismissed ? "Écarté" : "Pas intéressé",
-                            systemImage: isDismissed ? "hand.thumbsdown.fill" : "hand.thumbsdown"
-                        )
-                        .labelStyle(.iconOnly)
-                        .font(.headline)
-                        .foregroundStyle(.white)
-                        .contentTransition(.symbolEffect(.replace))
-                        // Down when turned down, back up when taken back.
-                        .symbolEffect(isDismissed ? .bounce.down.byLayer : .bounce.up.byLayer, value: isDismissed)
+                        } label: { thumbLabel(turnedDown: true) }
+                            .buttonStyle(.glass(.regular.tint(Self.turnedDownRed)))
+                            .buttonBorderShape(.circle)
+                            .sensoryFeedback(.impact(weight: .medium), trigger: isDismissed)
+                            .accessibilityIdentifier("home-discovery-dismiss")
+                    } else {
+                        Menu {
+                            Button("Pas intéressé", systemImage: "hand.thumbsdown", role: .destructive) {
+                                withAnimation(.snappy) { _ = dismissed.insert(suggestion.id) }
+                                onDismiss(suggestion)
+                            }
+                            .accessibilityIdentifier("home-discovery-not-interested")
+                            Button("Déjà lu", systemImage: "checkmark.circle") {
+                                take(suggestion)
+                                onAdd(suggestion, .read)
+                            }
+                            .accessibilityIdentifier("home-discovery-already-read")
+                        } label: { thumbLabel(turnedDown: false) }
+                            .buttonStyle(.glass)
+                            .buttonBorderShape(.circle)
+                            .disabled(taken.contains(suggestion.id))
+                            .accessibilityIdentifier("home-discovery-dismiss")
                     }
-                    .buttonStyle(.glass(isDismissed ? .regular.tint(Self.turnedDownRed) : .regular))
-                    .buttonBorderShape(.circle)
-                    .disabled(taken.contains(suggestion.id))
-                    .sensoryFeedback(trigger: isDismissed) { _, turnedDown in
-                        .impact(weight: turnedDown ? .medium : .light)
-                    }
-                    .accessibilityIdentifier("home-discovery-dismiss")
                 }
                 .controlSize(.large)
             }
         }
+    }
+
+    private func thumbLabel(turnedDown: Bool) -> some View {
+        Label(
+            turnedDown ? "Écarté" : "Pas intéressé",
+            systemImage: turnedDown ? "hand.thumbsdown.fill" : "hand.thumbsdown"
+        )
+        .labelStyle(.iconOnly)
+        .font(.headline)
+        .foregroundStyle(.white)
+        .contentTransition(.symbolEffect(.replace))
+        // Down when turned down, back up when taken back.
+        .symbolEffect(turnedDown ? .bounce.down.byLayer : .bounce.up.byLayer, value: turnedDown)
     }
 
     /// The month's discoveries all taken or turned down: where the cover
