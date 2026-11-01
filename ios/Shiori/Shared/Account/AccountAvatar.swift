@@ -182,15 +182,16 @@ enum AvatarColor: String, Codable, CaseIterable, Identifiable, Sendable {
         }
     }
 
-    /// Top and bottom of the disc's gradient, bright as the heroes' backgrounds.
-    var gradient: [Color] {
+    /// The system colour under the initials, which the disc draws with its
+    /// standard gradient and which follows the phone's light or dark mode.
+    var tint: Color {
         switch self {
-        case .pink: [Color(red: 0.98, green: 0.45, blue: 0.68), Color(red: 0.85, green: 0.24, blue: 0.5)]
-        case .green: [Color(red: 0.36, green: 0.8, blue: 0.48), Color(red: 0.18, green: 0.6, blue: 0.33)]
-        case .blue: [Color(red: 0.36, green: 0.62, blue: 0.98), Color(red: 0.18, green: 0.4, blue: 0.85)]
-        case .orange: [Color(red: 1, green: 0.66, blue: 0.3), Color(red: 0.93, green: 0.45, blue: 0.13)]
-        case .purple: [Color(red: 0.7, green: 0.5, blue: 0.98), Color(red: 0.49, green: 0.3, blue: 0.85)]
-        case .red: [Color(red: 0.98, green: 0.4, blue: 0.38), Color(red: 0.8, green: 0.2, blue: 0.2)]
+        case .pink: .pink
+        case .green: .green
+        case .blue: .blue
+        case .orange: .orange
+        case .purple: .purple
+        case .red: .red
         }
     }
 }
@@ -213,7 +214,7 @@ enum AccountAvatar: Equatable, Sendable {
     @MainActor var aura: Color? {
         switch self {
         case .initials, .photo, .pickedPhoto: nil
-        case let .tinted(color): color.gradient.first
+        case let .tinted(color): color.tint
         case let .hero(hero): hero.aura
         }
     }

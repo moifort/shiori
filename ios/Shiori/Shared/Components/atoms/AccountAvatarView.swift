@@ -14,7 +14,7 @@ struct AccountAvatarView: View {
             case .initials:
                 monogram
             case let .tinted(color):
-                monogram(on: color.gradient)
+                monogram(on: color.tint.gradient)
             case let .hero(hero):
                 Image(hero.imageName).resizable().scaledToFill()
             case let .photo(url):
@@ -33,12 +33,16 @@ struct AccountAvatarView: View {
     }
 
     private var monogram: some View {
-        monogram(on: [Color(red: 0.62, green: 0.65, blue: 0.7), Color(red: 0.4, green: 0.43, blue: 0.48)])
+        monogram(on: LinearGradient(
+            colors: [Color(red: 0.62, green: 0.65, blue: 0.7), Color(red: 0.4, green: 0.43, blue: 0.48)],
+            startPoint: .top,
+            endPoint: .bottom
+        ))
     }
 
-    private func monogram(on gradient: [Color]) -> some View {
+    private func monogram(on background: some ShapeStyle) -> some View {
         ZStack {
-            LinearGradient(colors: gradient, startPoint: .top, endPoint: .bottom)
+            Rectangle().fill(background)
             let letters = initials(of: firstName)
             if letters.isEmpty {
                 Image(systemName: "person.fill")
