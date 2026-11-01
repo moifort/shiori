@@ -51,15 +51,11 @@ struct ReadingFeatureCard: View {
                             .lineLimit(1)
                         Text(book.title)
                             .font(.title3.weight(.bold))
-                            .lineLimit(2)
+                            .lineLimit(1)
                         detailLine
                             .padding(.top, 6)
-                        if let progress = book.listeningProgress {
-                            ListeningProgressLine(progress: progress, durationMinutes: book.durationMinutes)
-                                .padding(.top, 8)
-                        }
-                        ReadingPageLine(page: book.unfinishedReadingPage, pageCount: book.pageCount)
-                            .padding(.top, book.unfinishedReadingPage == nil ? 0 : 8)
+                        progressLine
+                            .padding(.top, 8)
                     }
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -100,12 +96,29 @@ struct ReadingFeatureCard: View {
     /// a foreign edition and a recording: a printed book in the phone's
     /// language needs none.
     private var detailLine: some View {
-        HStack(spacing: 6) {
-            Text([caption, length].compactMap { $0 }.joined(separator: " · "))
-                .font(.caption)
-                .foregroundStyle(.white.opacity(0.75))
-                .lineLimit(1)
-            CoverTags(book: book)
+        // A tag stands a point taller than the text: the room is kept for a
+        // book without one, so every card of the row stands as tall.
+        ZStack(alignment: .leading) {
+            CoverTags(language: nil, isAudio: true).hidden()
+            HStack(spacing: 6) {
+                Text([caption, length].compactMap { $0 }.joined(separator: " · "))
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.75))
+                    .lineLimit(1)
+                CoverTags(book: book)
+            }
+        }
+    }
+
+    /// How far it got. A book with no progress yet keeps the line's room, so
+    /// every card of the row stands as tall.
+    @ViewBuilder private var progressLine: some View {
+        if let progress = book.listeningProgress {
+            ListeningProgressLine(progress: progress, durationMinutes: book.durationMinutes)
+        } else if let page = book.unfinishedReadingPage {
+            ReadingPageLine(page: page, pageCount: book.pageCount)
+        } else {
+            ListeningProgressLine(progress: 0).hidden()
         }
     }
 
