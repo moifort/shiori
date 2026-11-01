@@ -188,6 +188,21 @@ describe('reading a friend shelf', () => {
     expect(without.data?.friendBook).toEqual({ note: null })
   })
 
+  test('shows the avatar its owner wears beside the book', async () => {
+    const id = (
+      (await addBook(alice, 'title: "Dune", status: READING')).data as { addBook: { id: string } }
+    ).addBook.id
+    await as(alice)('mutation { completeOnboarding(input: { firstName: "Alice" }) { firstName } }')
+    await as(alice)('mutation { changeAvatar(input: { hero: HOLMES }) { avatarHero } }')
+    await befriend()
+
+    const result = await as(bob)(
+      `{ friendBook(userId: "alice", bookId: "${id}") { ownerAvatarHero ownerAvatarColor } }`,
+    )
+
+    expect(result.data?.friendBook).toEqual({ ownerAvatarHero: 'HOLMES', ownerAvatarColor: null })
+  })
+
   // Who recommended a book to its owner stays theirs: the type has no field for it.
   test('has no field through which a recommendation could be read', async () => {
     await befriend()

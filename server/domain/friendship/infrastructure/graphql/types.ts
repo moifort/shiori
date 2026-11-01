@@ -29,6 +29,8 @@ import { SeriesStateEnum } from '~/domain/series/infrastructure/graphql/enums'
 import { isAudioSeries } from '~/domain/series/primitives'
 import { builder } from '~/domain/shared/graphql/builder'
 import { Count, Percentage } from '~/domain/shared/primitives'
+import { AvatarColorEnum, AvatarHeroEnum } from '~/domain/user/infrastructure/graphql/enums'
+import { UserQuery } from '~/domain/user/query'
 import { objectStore } from '~/system/object-store'
 
 /** A book on somebody else's shelf.
@@ -146,6 +148,27 @@ export const FriendBookType = builder.objectRef<FriendBook>('FriendBook').implem
         'The key of each narrator, in the order of `narrators`: what opens their ' +
         'page from the book.',
       resolve: (book) => (book.narrators ?? []).map(narratorKeyOf),
+    }),
+    ownerAvatarHero: t.field({
+      type: AvatarHeroEnum,
+      nullable: true,
+      description:
+        'The hero the shelf’s owner wears as an avatar, for the corner of the page. ' +
+        'Null with a colour, a photo — never carried, it is theirs — or no avatar.',
+      resolve: async (book) => {
+        const avatar = (await UserQuery.profilesOf([book.userId])).get(book.userId)?.avatar
+        return avatar?.kind === 'hero' ? avatar.hero : null
+      },
+    }),
+    ownerAvatarColor: t.field({
+      type: AvatarColorEnum,
+      nullable: true,
+      description:
+        'The colour the owner’s initials are drawn on. Null with a hero, a photo or no avatar.',
+      resolve: async (book) => {
+        const avatar = (await UserQuery.profilesOf([book.userId])).get(book.userId)?.avatar
+        return avatar?.kind === 'initials' ? avatar.color : null
+      },
     }),
     isbn13: t.field({ type: 'Isbn13', nullable: true, resolve: (book) => book.isbn13 ?? null }),
     amazonUrl: t.string({

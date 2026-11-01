@@ -2045,6 +2045,16 @@ type FriendBook {
   What its owner wrote of it, shown to their friends as a message from them. Null when they wrote nothing.
   """
   note: ReadingNote
+
+  """
+  The colour the owner’s initials are drawn on. Null with a hero, a photo or no avatar.
+  """
+  ownerAvatarColor: AvatarColor
+
+  """
+  The hero the shelf’s owner wears as an avatar, for the corner of the page. Null with a colour, a photo — never carried, it is theirs — or no avatar.
+  """
+  ownerAvatarHero: AvatarHero
   pageCount: PageCount
   publisher: Publisher
   rating: StarRating

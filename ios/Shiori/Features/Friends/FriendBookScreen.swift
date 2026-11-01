@@ -112,7 +112,11 @@ struct FriendBookScreen: View {
             // sets the account's — filling the place, without the toolbar's
             // glass around it. Their name is on the hero's detail line.
             ToolbarItem(placement: .primaryAction) {
-                FriendMonogram(name: friendName)
+                AccountAvatarView(
+                    avatar: viewModel.entry?.ownerAvatar ?? .initials,
+                    firstName: friendName,
+                    size: 44
+                )
                     .accessibilityLabel(Text("Chez \(friendName)"))
                     .accessibilityIdentifier("friend-book-owner")
             }

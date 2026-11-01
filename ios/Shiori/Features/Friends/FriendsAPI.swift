@@ -62,6 +62,17 @@ struct FriendBook: Identifiable, Hashable, Codable, Sendable {
     /// When its owner last did anything with it: picked it up, moved its
     /// status, or had a listening sync move its position.
     var lastActivityAt: Date?
+    /// The hero or colour its owner wears, as the page's corner draws it:
+    /// kept as the server names them, since the page is the only one to ask.
+    var ownerAvatarHero: String?
+    var ownerAvatarColor: String?
+
+    /// What the owner wears; their initials on slate without one.
+    var ownerAvatar: AccountAvatar {
+        if let hero = ownerAvatarHero.flatMap(AvatarHero.init(graphQLName:)) { return .hero(hero) }
+        if let color = ownerAvatarColor.flatMap({ AvatarColor(rawValue: $0.lowercased()) }) { return .tinted(color) }
+        return .initials
+    }
 }
 
 /// Whether a friend's book can be taken as an audiobook: a recording is, a
@@ -451,6 +462,8 @@ enum FriendsAPI {
         friendBook.book.amazonURL = URL(string: row.amazonUrl)
         friendBook.book.addedAt = GraphQLHelpers.parseISO8601(row.addedAt)
         friendBook.book.startedAt = row.startedAt.flatMap(GraphQLHelpers.parseISO8601)
+        friendBook.ownerAvatarHero = row.ownerAvatarHero?.rawValue
+        friendBook.ownerAvatarColor = row.ownerAvatarColor?.rawValue
         return friendBook
     }
 

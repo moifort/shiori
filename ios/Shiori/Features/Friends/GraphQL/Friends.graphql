@@ -191,6 +191,8 @@ query FriendBook($userId: UserId!, $bookId: BookId!) {
     startedAt
     note
     authorKeys
+    ownerAvatarHero
+    ownerAvatarColor
   }
 }
 
