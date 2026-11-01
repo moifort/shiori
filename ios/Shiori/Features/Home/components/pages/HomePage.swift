@@ -323,21 +323,31 @@ struct HomePage: View {
                 RowHeader(title: "En cours", detail: String(localized: "tout voir"), style: headerStyle) {
                     onAction(.showLibrary(LibraryRequest(filter: .status(.reading))))
                 }
-                // A phone heads the row with the TV app's card; the open Duo
-                // keeps the compact one, the others lined up under it.
+                // A phone scrolls the TV app's cards, one per book open; the open
+                // Duo keeps the compact lead card, the others lined up under it.
                 if isCompact {
-                    ReadingFeatureCard(
-                        book: lead,
-                        caption: Self.openedCaption(lead),
-                        onOpen: { onAction(.openBook(lead)) },
-                        onFinish: { onAction(.finishBook(lead)) },
-                        onProgress: { onAction(.recordProgress(lead)) },
-                        onOpenSeries: lead.series.map { series in { onAction(.openSeries(series.id)) } }
-                    )
-                    // Another book started takes the lead in place of this one,
-                    // rather than the card rewriting its title.
-                    .id(lead.id)
-                    .transition(.homeCard)
+                    ScrollView(.horizontal) {
+                        LazyHStack(alignment: .top, spacing: 12) {
+                            ForEach(dashboard.reading) { book in
+                                ReadingFeatureCard(
+                                    book: book,
+                                    caption: Self.openedCaption(book),
+                                    onOpen: { onAction(.openBook(book)) },
+                                    onFinish: { onAction(.finishBook(book)) },
+                                    onProgress: { onAction(.recordProgress(book)) },
+                                    onOpenSeries: book.series.map { series in { onAction(.openSeries(series.id)) } }
+                                )
+                                // The next card shows past the edge, so the row
+                                // reads as scrolling.
+                                .containerRelativeFrame(.horizontal) { width, _ in width - 32 }
+                                .transition(.homeCard)
+                            }
+                        }
+                        .scrollTargetLayout()
+                    }
+                    .scrollIndicators(.hidden)
+                    .scrollTargetBehavior(.viewAligned)
+                    .scrollClipDisabled()
                 } else {
                     ReadingLeadCard(
                         book: lead,
