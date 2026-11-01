@@ -85,6 +85,12 @@ Runtime: always `bun` / `bunx`, never `npm` / `npx`.
    proposed as a session. The parent session alone picks up new comments and starts their child
    sessions. A child stops watching the board once it has published (`ArtifactComments`,
    `watch` with `on: false`). Every child brief says so.
+9. **A UI change is validated twice, board then iOS.** Whenever the user asks for a UI
+   modification, the board comes first: report back with the updated board and wait for the
+   user's validation. Only then implement it in the app, send an iOS simulator screenshot of
+   the changed screen (`SendUserFile`), and wait for a second validation. Two separate asks,
+   in that order; a change in the prototyping zone stops after the board step. Board-comment
+   child sessions follow this too, and their wrap-up question (rule 7) is asked once per step.
 
 ## Paid API calls
 
