@@ -100,9 +100,11 @@ struct NewsFeedLayoutTests {
             calendar: calendar
         )
 
-        #expect(sections.map(\.title) == ["Aujourd'hui", "Hier", "Cette semaine"])
-        #expect(sections[0].items.map(\.id) == ["friend-a", "friend-b", "author-saga~red-rising~6", "friend-c"])
-        #expect(sections[1].items.first?.id == "award-klara--kazuo-ishiguro")
+        #expect(sections.map(\.title) == ["Cette semaine"])
+        #expect(sections[0].items.map(\.id) == [
+            "friend-a", "friend-b", "author-saga~red-rising~6", "friend-c",
+            "award-klara--kazuo-ishiguro", "friend-d", "friend-e",
+        ])
     }
 
     @Test func aNarratorsRecordingFallsOnTheDayItCameOut() {
@@ -121,8 +123,8 @@ struct NewsFeedLayoutTests {
             calendar: calendar
         )
 
-        #expect(sections.map(\.title) == ["Aujourd'hui", "Cette semaine"])
-        #expect(sections[1].items.map(\.id) == ["narrator-n", "friend-b"])
+        #expect(sections.map(\.title) == ["Cette semaine"])
+        #expect(sections[0].items.map(\.id) == ["friend-a", "narrator-n", "friend-b"])
     }
 
     @Test func aFeedWithNoEventStillShowsItsCards() {

@@ -26,8 +26,8 @@ struct FeedSection: Identifiable, Hashable, Sendable {
 }
 
 enum NewsFeedLayout {
-    /// The feed grouped by how long ago, newest first: "Aujourd'hui", "Hier",
-    /// "Cette semaine", "Plus tôt". A narrator's recording falls among the moves
+    /// The feed grouped by how long ago, newest first: "Cette semaine" (today
+    /// and yesterday included), "Plus tôt". A narrator's recording falls among the moves
     /// on the day it came out. The author's announcement slots in after the
     /// first two entries, the award's after the next two, so neither opens nor
     /// closes the page.
@@ -65,12 +65,6 @@ enum NewsFeedLayout {
     }
 
     static func bucketTitle(of date: Date, now: Date, calendar: Calendar) -> String {
-        if calendar.isDate(date, inSameDayAs: now) { return String(localized: "Aujourd'hui") }
-        if let yesterday = calendar.date(byAdding: .day, value: -1, to: now),
-            calendar.isDate(date, inSameDayAs: yesterday)
-        {
-            return String(localized: "Hier")
-        }
         if let week = calendar.date(byAdding: .day, value: -7, to: now), date > week {
             return String(localized: "Cette semaine")
         }
