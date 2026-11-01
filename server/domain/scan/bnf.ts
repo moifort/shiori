@@ -59,17 +59,24 @@ export const bnfEditionsOf = async (book: CataloguedBook): Promise<LibraryEditio
   }
 }
 
+/** How long the second name lookup waits for the resolver. Asked again at
+ *  once, a resolver that just said "try again" said it again on every retry
+ *  seen between October 26th and November 1st 2026; half a second is nothing
+ *  beside the paid search a failed lookup falls back on. */
+export const RETRY_PAUSE_MS = 500
+
 /** The catalogue's answer, asked a second time when the first attempt never
  *  reached it. catalogue.bnf.fr publishes its address with a lifetime of a
  *  hundred seconds, so nearly every scan resolves the name afresh, and in
  *  October 2026 the resolver answered "try again" (EAI_AGAIN) to a third of
- *  them, turning free lookups into paid web searches. Once, not a loop: a
- *  second failure is the caller's to report. */
+ *  them, turning free lookups into paid web searches. Once, after a pause,
+ *  not a loop: a second failure is the caller's to report. */
 const answered = async (url: string): Promise<Response> => {
   try {
     return await fetch(url, { signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS) })
   } catch (error) {
     if (!isTemporaryDnsFailure(error)) throw error
+    await new Promise((resolve) => setTimeout(resolve, RETRY_PAUSE_MS))
     return fetch(url, { signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS) })
   }
 }

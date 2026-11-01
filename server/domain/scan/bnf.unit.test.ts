@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, spyOn, test } from 'bun:test'
 import * as Sentry from '@sentry/node'
-import { bnfEditionsOf, editionsIn, isbn13Of, pagesIn } from '~/domain/scan/bnf'
+import { bnfEditionsOf, editionsIn, isbn13Of, pagesIn, RETRY_PAUSE_MS } from '~/domain/scan/bnf'
 
 const field = (tag: string, subfields: Record<string, string>) =>
   `<mxc:datafield tag="${tag}" ind1=" " ind2=" ">${Object.entries(subfields)
@@ -176,6 +176,24 @@ describe('bnfEditionsOf', () => {
     expect(await bnfEditionsOf(book)).toEqual([{ isbn13: '9782072822049' }] as never)
     expect(lookups).toHaveBeenCalledTimes(2)
     expect(reports).not.toHaveBeenCalled()
+  })
+
+  // Asked again at once, the resolver that just said "try again" says it
+  // again: on 2026-10-26, 10-28 and 11-01 the second attempt failed like the
+  // first. A short pause lets it recover before the catalogue is given up on.
+  test('pauses before asking the name lookup again', async () => {
+    const askedAt: number[] = []
+    spyOn(globalThis, 'fetch').mockImplementation((async () => {
+      askedAt.push(Date.now())
+      throw nameLookupAsksAgain()
+    }) as unknown as typeof fetch)
+    reported()
+
+    await bnfEditionsOf(book)
+
+    expect(askedAt).toHaveLength(2)
+    const [first = 0, second = 0] = askedAt
+    expect(second - first).toBeGreaterThanOrEqual(RETRY_PAUSE_MS - 5)
   })
 
   test('reports a name lookup that failed twice, and asks no third time', async () => {
