@@ -58,10 +58,9 @@ struct HomeScreen: View {
     /// Whether the bar shows its title and buttons over a page that opens on
     /// the carousel: empty as the page opens, scrolled by the bar's height,
     /// and while scrolling down; called back at the very top and by scrolling
-    /// up below the hero.
-    @State private var barCalled = false
-    /// Whether that page has left the top, where the bar's blur stays away.
-    @State private var leftTop = false
+    /// up below the hero. Whether that page has left the top, where the bar's
+    /// blur stays away, too.
+    @State private var bar = ScrollBarState(isCalled: false)
 
     init(
         onShowSeries: @escaping (SeriesRequest) -> Void,
@@ -178,26 +177,46 @@ struct HomeScreen: View {
                     // Over the hero the bar is empty; scrolling back up
                     // calls it, the page's name on the left and the buttons
                     // on the right.
-                    if barCalled {
-                        ToolbarItem(placement: .topBarLeading) {
+                    ToolbarItem(placement: .topBarLeading) {
+                        ScrollBarItem(bar: bar) {
                             Text("Accueil")
                                 .font(.title2.weight(.bold))
                                 .fixedSize()
                                 .accessibilityHidden(true)
                         }
-                        .sharedBackgroundVisibility(.hidden)
-                        ToolbarItem(placement: .topBarTrailing) { searchButton }
-                        ToolbarSpacer(.fixed, placement: .topBarTrailing)
-                        trailingButtons
                     }
+                    .sharedBackgroundVisibility(.hidden)
+                    ToolbarItem(placement: .topBarTrailing) {
+                        ScrollBarItem(bar: bar) {
+                            ScrollBarButton(title: "Rechercher", systemImage: "magnifyingglass") {
+                                showSearch = true
+                            }
+                            .accessibilityIdentifier("home-search")
+                        }
+                    }
+                    .sharedBackgroundVisibility(.hidden)
+                    ToolbarSpacer(.fixed, placement: .topBarTrailing)
+                    if isAdmin {
+                        ToolbarItem(placement: .topBarTrailing) {
+                            ScrollBarItem(bar: bar) {
+                                ScrollBarButton(title: "Admin", systemImage: "shield") {
+                                    showAdmin = true
+                                }
+                                .accessibilityIdentifier("home-admin")
+                            }
+                        }
+                        .sharedBackgroundVisibility(.hidden)
+                    }
+                    ToolbarItem(placement: .topBarTrailing) {
+                        ScrollBarItem(bar: bar) { avatarButton }
+                    }
+                    .sharedBackgroundVisibility(.hidden)
                 } else {
                     ToolbarItem(placement: .topBarLeading) { searchButton }
                     trailingButtons
                 }
             }
-            // No blur over the carousel; past it, the blur keeps the rows off
-            // the status bar, whether the bar's buttons are called or not.
-            .scrollEdgeEffectHidden(opensOnHero && !leftTop, for: .top)
+            .modifier(HeroScrollEdge(bar: bar, opensOnHero: opensOnHero))
             // The first time only: after that, writes made anywhere
             // arrive through the change notice below.
             .task {
@@ -232,18 +251,19 @@ struct HomeScreen: View {
                 .accessibilityIdentifier("home-admin")
             }
         }
-        ToolbarItem(placement: .topBarTrailing) {
-            // The settings hold the account, the subscription and the
-            // connected sources: managing a linked Audible account is
-            // a setting, not an import, and lives there. The reader's
-            // avatar opens them, as the TV app's does: the account is
-            // what they are about.
-            AccountAvatarButton(avatar: accountAvatar, firstName: accountFirstName) {
-                showSettings = true
-            }
-            .accessibilityIdentifier("home-settings")
+        ToolbarItem(placement: .topBarTrailing) { avatarButton }
+            .sharedBackgroundVisibility(.hidden)
+    }
+
+    /// The settings hold the account, the subscription and the connected
+    /// sources: managing a linked Audible account is a setting, not an import,
+    /// and lives there. The reader's avatar opens them, as the TV app's does:
+    /// the account is what they are about.
+    private var avatarButton: some View {
+        AccountAvatarButton(avatar: accountAvatar, firstName: accountFirstName) {
+            showSettings = true
         }
-        .sharedBackgroundVisibility(.hidden)
+        .accessibilityIdentifier("home-settings")
     }
 
     /// Whether the page opens on a hero that runs up under the bar: on a
@@ -322,14 +342,8 @@ struct HomeScreen: View {
                     isSearchingDiscoveries: viewModel.isSearchingDiscoveries,
                     isSideBySide: isSplit && detail == nil,
                     isCompact: !isSplit,
-                    onBarCalled: { called in
-                        guard called != barCalled else { return }
-                        withAnimation(.smooth(duration: 0.25)) { barCalled = called }
-                    },
-                    onLeftTop: { left in
-                        guard left != leftTop else { return }
-                        leftTop = left
-                    }
+                    onBarCalled: { bar.call($0) },
+                    onLeftTop: { bar.leaveTop($0) }
                 ) { action in
                     switch action {
                     case let .showLibrary(request): onShowLibrary(request)
@@ -473,5 +487,17 @@ private struct HomeStatisticsScreen: View {
 
     private struct GenresDestination: Identifiable {
         var id: String { "genres" }
+    }
+}
+
+/// No blur over the carousel; past it, the blur keeps the rows off the status
+/// bar, whether the bar's buttons are called or not. On its own, so that
+/// leaving the top does not rebuild the page.
+private struct HeroScrollEdge: ViewModifier {
+    let bar: ScrollBarState
+    let opensOnHero: Bool
+
+    func body(content: Content) -> some View {
+        content.scrollEdgeEffectHidden(opensOnHero && !bar.hasLeftTop, for: .top)
     }
 }
