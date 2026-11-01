@@ -428,7 +428,7 @@ struct HomeHeroCarousel: View {
     /// cover; beside it what the month was, that it is done and when the next
     /// ones come; under both, the way to Découvrir, which always has more.
     private func monthDonePage(_ month: String, id: HomeHeroItem.ID) -> some View {
-        layout(id: id, leafDate: leafDate) {
+        layout(id: id) {
             // Drawn for the old cover's room, set down to the new one's.
             DoneStack()
                 .scaleEffect(0.84)
@@ -519,7 +519,7 @@ struct HomeHeroCarousel: View {
         onOpen: @escaping () -> Void,
         @ViewBuilder buttons: () -> some View
     ) -> some View {
-        layout(id: id) {
+        layout(id: id, leafDate: leafDate) {
             Button(action: onOpen) {
                 BookCover(book: cover, width: Self.coverWidth, showsFormatBadge: false, isBound: true)
                     // A recording and a foreign edition say so in the tags
