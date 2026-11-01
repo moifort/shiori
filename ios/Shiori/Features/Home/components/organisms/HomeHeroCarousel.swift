@@ -345,7 +345,8 @@ struct HomeHeroCarousel: View {
                             onAwait: { format in
                                 take(suggestion)
                                 onAwait(suggestion, format)
-                            }
+                            },
+                            offersAlreadyRead: false
                         )
                     } label: {
                         Label(

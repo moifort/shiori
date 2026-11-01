@@ -217,12 +217,16 @@ struct SuggestionAddActions: View {
     let suggestion: Suggestion
     let onAdd: (ReadingStatus) -> Void
     let onAwait: (ReleaseFormat) -> Void
+    /// The home carousel's thumb carries "Déjà lu" itself.
+    var offersAlreadyRead = true
 
     var body: some View {
         Button("Ajouter", systemImage: "books.vertical") { onAdd(.toRead) }
             .accessibilityIdentifier("suggestion-add")
-        Button("Déjà lu", systemImage: "checkmark.circle") { onAdd(.read) }
-            .accessibilityIdentifier("suggestion-already-read")
+        if offersAlreadyRead {
+            Button("Déjà lu", systemImage: "checkmark.circle") { onAdd(.read) }
+                .accessibilityIdentifier("suggestion-already-read")
+        }
         ForEach(suggestion.awaitableFormats) { format in
             Button(
                 format.awaitLabel,
