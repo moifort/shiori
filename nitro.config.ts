@@ -1,5 +1,9 @@
 import { generateDomainInstrumentation } from './server/system/sentry/generate-domain-instrumentation'
 
+/** The packages a production build keeps as files rather than bundling in. */
+const BUNDLED_AS_FILES =
+  /firebase-functions|firebase-admin|@google-cloud\/|google-auth-library|google-gax|gaxios|gcp-metadata|gtoken|@grpc\/|protobufjs|proto3-json-serializer|@sentry\//
+
 export default defineNitroConfig({
   compatibilityDate: '2026-09-14',
   experimental: { asyncContext: true },
@@ -29,6 +33,25 @@ export default defineNitroConfig({
   // points at a column of index.mjs. The maps are uploaded to Sentry at deploy
   // time and stay out of the deployed bundle.
   sourceMap: true,
+  // A cold start spent 3.6 s of its 4.3 s loading dependencies before the first
+  // line of our bundle (the `[boot]` probes, 89 instances, 2026-10-30/11-01): the
+  // firebase preset leaves them as 3,199 files in node_modules, and Cloud Run
+  // pays every one of them. Bundling them in cut the load by 41 % on a Mac
+  // (710 → 418 ms, Node 22), which is what Nitro 3 does by default. The
+  // Firebase and gRPC stack stays on disk: google-gax reads its .proto files
+  // through `__dirname`, which has no meaning inside an ES module, and
+  // firebase-admin requires @google-cloud/firestore by deep path. Sentry stays
+  // whole: its injection package registers a module hook it locates by its own
+  // package name (bundled in, it resolves from `/_entry.js`, fails, and the
+  // outgoing HTTP spans silently stop being recorded), and keeping only that
+  // package out would load a second copy of @sentry/core beside the bundled one.
+  externals: {
+    external: [BUNDLED_AS_FILES],
+    inline: [(id) => !BUNDLED_AS_FILES.test(id)],
+  },
+  // jws does `require('stream')` and expects the Stream constructor, not the
+  // module namespace rollup hands a bare require of a builtin.
+  commonJS: { requireReturnsDefault: 'preferred' },
   rollupConfig: {
     treeshake: {
       moduleSideEffects: (id) => id.includes('/graphql/') || id.includes('node_modules'),
