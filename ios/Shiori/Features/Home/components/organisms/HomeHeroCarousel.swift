@@ -337,77 +337,78 @@ struct HomeHeroCarousel: View {
             reason: suggestion.reason,
             onOpen: { onOpen(suggestion) }
         ) {
-            GlassEffectContainer(spacing: 12) {
-                HStack(spacing: 12) {
-                    Button { onOpen(suggestion) } label: {
-                        Label("Découvrir", systemImage: "sparkles")
-                            .font(.headline)
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.glassProminent)
-                    .tint(.white)
-                    .foregroundStyle(.black)
-                    Menu {
-                        SuggestionAddActions(
-                            suggestion: suggestion,
-                            onAdd: { status in
-                                take(suggestion)
-                                onAdd(suggestion, status)
-                            },
-                            onAwait: { format in
-                                take(suggestion)
-                                onAwait(suggestion, format)
-                            },
-                            offersAlreadyRead: false
-                        )
-                    } label: {
-                        Label(
-                            taken.contains(suggestion.id) ? "Ajouté" : "Ajouter",
-                            systemImage: taken.contains(suggestion.id) ? "checkmark" : "plus"
-                        )
-                        .labelStyle(.iconOnly)
+            // No GlassEffectContainer here: a menu opened from inside one lets
+            // go of a row over the container's frame the moment the finger
+            // moves, and the tap is lost.
+            HStack(spacing: 12) {
+                Button { onOpen(suggestion) } label: {
+                    Label("Découvrir", systemImage: "sparkles")
                         .font(.headline)
-                        .contentTransition(.symbolEffect(.replace.magic(fallback: .downUp)))
-                    }
-                    .buttonStyle(.glass)
-                    .buttonBorderShape(.circle)
-                    .disabled(dismissed.contains(suggestion.id))
-                    .sensoryFeedback(.success, trigger: taken.contains(suggestion.id))
-                    .accessibilityIdentifier("home-discovery-menu")
-                    // The thumb opens a choice: turned down, it fills and
-                    // presses down as the button turns red; pressed again,
-                    // it comes back up as it was. Never disabled once done:
-                    // dimmed, the red went unseen.
-                    if isDismissed {
-                        Button {
-                            withAnimation(.snappy) { _ = dismissed.remove(suggestion.id) }
-                            onReconsider(suggestion)
-                        } label: { thumbLabel(turnedDown: true) }
-                            .buttonStyle(.glass(.regular.tint(Self.turnedDownRed)))
-                            .buttonBorderShape(.circle)
-                            .sensoryFeedback(.impact(weight: .medium), trigger: isDismissed)
-                            .accessibilityIdentifier("home-discovery-dismiss")
-                    } else {
-                        Menu {
-                            Button("Pas intéressé", systemImage: "hand.thumbsdown", role: .destructive) {
-                                withAnimation(.snappy) { _ = dismissed.insert(suggestion.id) }
-                                onDismiss(suggestion)
-                            }
-                            .accessibilityIdentifier("home-discovery-not-interested")
-                            Button("Déjà lu", systemImage: "checkmark.circle") {
-                                take(suggestion)
-                                onAdd(suggestion, .read)
-                            }
-                            .accessibilityIdentifier("home-discovery-already-read")
-                        } label: { thumbLabel(turnedDown: false) }
-                            .buttonStyle(.glass)
-                            .buttonBorderShape(.circle)
-                            .disabled(taken.contains(suggestion.id))
-                            .accessibilityIdentifier("home-discovery-dismiss")
-                    }
+                        .frame(maxWidth: .infinity)
                 }
-                .controlSize(.large)
+                .buttonStyle(.glassProminent)
+                .tint(.white)
+                .foregroundStyle(.black)
+                Menu {
+                    SuggestionAddActions(
+                        suggestion: suggestion,
+                        onAdd: { status in
+                            take(suggestion)
+                            onAdd(suggestion, status)
+                        },
+                        onAwait: { format in
+                            take(suggestion)
+                            onAwait(suggestion, format)
+                        },
+                        offersAlreadyRead: false
+                    )
+                } label: {
+                    Label(
+                        taken.contains(suggestion.id) ? "Ajouté" : "Ajouter",
+                        systemImage: taken.contains(suggestion.id) ? "checkmark" : "plus"
+                    )
+                    .labelStyle(.iconOnly)
+                    .font(.headline)
+                    .contentTransition(.symbolEffect(.replace.magic(fallback: .downUp)))
+                }
+                .buttonStyle(.glass)
+                .buttonBorderShape(.circle)
+                .disabled(dismissed.contains(suggestion.id))
+                .sensoryFeedback(.success, trigger: taken.contains(suggestion.id))
+                .accessibilityIdentifier("home-discovery-menu")
+                // The thumb opens a choice: turned down, it fills and
+                // presses down as the button turns red; pressed again,
+                // it comes back up as it was. Never disabled once done:
+                // dimmed, the red went unseen.
+                if isDismissed {
+                    Button {
+                        withAnimation(.snappy) { _ = dismissed.remove(suggestion.id) }
+                        onReconsider(suggestion)
+                    } label: { thumbLabel(turnedDown: true) }
+                        .buttonStyle(.glass(.regular.tint(Self.turnedDownRed)))
+                        .buttonBorderShape(.circle)
+                        .sensoryFeedback(.impact(weight: .medium), trigger: isDismissed)
+                        .accessibilityIdentifier("home-discovery-dismiss")
+                } else {
+                    Menu {
+                        Button("Pas intéressé", systemImage: "hand.thumbsdown", role: .destructive) {
+                            withAnimation(.snappy) { _ = dismissed.insert(suggestion.id) }
+                            onDismiss(suggestion)
+                        }
+                        .accessibilityIdentifier("home-discovery-not-interested")
+                        Button("Déjà lu", systemImage: "checkmark.circle") {
+                            take(suggestion)
+                            onAdd(suggestion, .read)
+                        }
+                        .accessibilityIdentifier("home-discovery-already-read")
+                    } label: { thumbLabel(turnedDown: false) }
+                        .buttonStyle(.glass)
+                        .buttonBorderShape(.circle)
+                        .disabled(taken.contains(suggestion.id))
+                        .accessibilityIdentifier("home-discovery-dismiss")
+                }
             }
+            .controlSize(.large)
         }
     }
 
