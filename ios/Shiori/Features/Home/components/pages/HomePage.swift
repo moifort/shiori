@@ -338,8 +338,10 @@ struct HomePage: View {
                                     onOpenSeries: book.series.map { series in { onAction(.openSeries(series.id)) } }
                                 )
                                 // The next card shows past the edge, so the row
-                                // reads as scrolling.
-                                .containerRelativeFrame(.horizontal) { width, _ in width - 32 }
+                                // reads as scrolling; a lone one takes the width.
+                                .containerRelativeFrame(.horizontal) { width, _ in
+                                    dashboard.reading.count > 1 ? width - 32 : width
+                                }
                                 .transition(.homeCard)
                             }
                         }
