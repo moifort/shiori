@@ -696,7 +696,7 @@ describe('the Découvrir tab', () => {
     // The library, the saga opinions and the editions awaited; the reader's
     // record, the saga's catalogue, its watch, the author's watch and their
     // catalogue for the portrait.
-    expect(fake.queryReads - before.queries).toBe(3)
+    expect(fake.queryReads - before.queries).toBe(4)
     expect(fake.docReads - before.docs).toBe(5)
   })
 })

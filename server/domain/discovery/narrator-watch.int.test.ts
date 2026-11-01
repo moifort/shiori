@@ -68,15 +68,21 @@ beforeEach(() => {
   fake = resetFakeFirestore()
   narratorCalls.length = 0
   fake.seed('users', reader, { userId: reader, firstName: 'Bob' })
-  // Two recordings of Bernard Gabay: followed. One of Kelly Marot, unrated: not.
+  // Bernard Gabay is hearted. Kelly Marot, however many recordings, is not.
+  fake.seed('narrator-favorites', `${reader}--bernard-gabay`, {
+    userId: reader,
+    narratorKey: 'bernard-gabay',
+    favoritedAt: new Date('2026-01-02T00:00:00Z'),
+  })
   recording('a', 'Les Cavernes d’acier', ['Bernard Gabay'])
   recording('b', 'Face aux feux du soleil', ['Bernard Gabay'])
   recording('c', 'Déjà chez vous', ['Bernard Gabay'])
   recording('d', 'Circé', ['Kelly Marot'])
+  recording('e', 'Ariane', ['Kelly Marot'], { rating: 5 })
 })
 
 describe('the narrators’ watch', () => {
-  test('looks a followed narrator up once, never one the reader barely heard', async () => {
+  test('looks a hearted narrator up once, never one merely heard often', async () => {
     await DiscoveryUseCase.watchDueSagas(now)
 
     expect(narratorCalls).toEqual(['Bernard Gabay'])
@@ -110,6 +116,13 @@ describe('the narrators’ news', () => {
 
     expect(news.map((item) => String(item.title))).toEqual(['Fondation'])
     expect(news[0]?.narrator).toBe('Bernard Gabay' as never)
+  })
+
+  test('falls silent on a narrator whose heart was taken back', async () => {
+    await DiscoveryUseCase.watchDueSagas(now)
+    await fakeDb().collection('narrator-favorites').doc(`${reader}--bernard-gabay`).delete()
+
+    expect(await NewsUseCase.narratorNews(reader, now)).toEqual([])
   })
 
   test('puts the ones still to come on the calendar, as recordings', async () => {

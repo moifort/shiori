@@ -2,7 +2,7 @@ import { mainLanguageOf } from '~/domain/author/business-rules'
 import { authorKeyOf } from '~/domain/author/primitives'
 import type { AuthorKey, ShelvedAuthor } from '~/domain/author/types'
 import type { Book, BookFormat, BookLanguage } from '~/domain/book/types'
-import type { ShelvedNarrator } from '~/domain/narrator/types'
+import type { NarratorKey, ShelvedNarrator } from '~/domain/narrator/types'
 import type { ScanResult } from '~/domain/scan/types'
 import {
   type FoundVolume as CatalogueVolume,
@@ -293,18 +293,18 @@ export const narratorWatchKeyOf = ({
   language,
 }: Pick<WatchedNarrator, 'narratorKey' | 'language'>) => `${narratorKey}--${language}`
 
-/** Every narrator the reader follows — two recordings held, or one rated four
- *  stars or more, or loved, as an author is — in the language most of those
- *  recordings are in. A narrator whose recordings record no language cannot
- *  be searched for, nor one whose every recording the reader gave up on. */
+/** Every narrator the reader hearted, in the language most of their recordings
+ *  are in. A narrator whose recordings record no language cannot be searched
+ *  for, nor one whose every recording the reader gave up on. */
 export const watchedNarratorsOf = (
   narrators: readonly Pick<
     ShelvedNarrator<Pick<Book, 'status' | 'rating' | 'favorite' | 'language'>>,
     'key' | 'name' | 'books'
   >[],
+  hearted: ReadonlySet<NarratorKey>,
 ): WatchedNarrator[] =>
   narrators.flatMap((narrator) => {
-    if (!isFollowedAuthor(narrator)) return []
+    if (!hearted.has(narrator.key)) return []
     const language = mainLanguageOf(narrator.books.filter((book) => book.status !== 'dropped'))
     return language ? [{ narratorKey: narrator.key, name: narrator.name, language }] : []
   })

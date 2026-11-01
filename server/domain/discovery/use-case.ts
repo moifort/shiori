@@ -94,6 +94,7 @@ import type {
   WatchedSaga,
 } from '~/domain/discovery/types'
 import { shelvedNarratorsOf } from '~/domain/narrator/business-rules'
+import { NarratorQuery } from '~/domain/narrator/query'
 import { NotificationUseCase } from '~/domain/notification/use-case'
 import { generate } from '~/domain/scan/gemini'
 import { publishedCoverOf } from '~/domain/scan/published-cover'
@@ -613,19 +614,20 @@ type Library = {
 /** The reader's sagas and authors, and what the passes know of them. The
  *  library is read once, shared by the sagas and the authors. */
 const libraryOf = async (userId: UserId, known?: DiscoveryReader): Promise<Library> => {
-  const [followed, shelved, reader, books, opinions] = await Promise.all([
+  const [followed, shelved, reader, books, opinions, heartedNarrators] = await Promise.all([
     SeriesUseCase.followed(userId),
     AuthorUseCase.shelvedAuthors(userId),
     known ? Promise.resolve(known) : DiscoveryQuery.reader(userId),
     BookQuery.all(userId),
     SeriesOpinionQuery.all(userId),
+    NarratorQuery.favoriteKeys(userId),
   ])
   return {
     followed,
     shelved,
     sagas: watchedSagasOf(followed),
     authors: watchedAuthorsOf(shelved.filter(isFollowedAuthor)),
-    narrators: watchedNarratorsOf(shelvedNarratorsOf(books, opinions)),
+    narrators: watchedNarratorsOf(shelvedNarratorsOf(books, opinions), heartedNarrators),
     known: reader,
   }
 }

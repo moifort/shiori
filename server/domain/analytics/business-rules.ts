@@ -226,6 +226,7 @@ export const sharedShelfOf = (books: readonly Book[], timeZone: TimeZone): Share
     recentActivity: recentActivityOf(shown).map(({ kind, at, book }) => ({
       kind,
       at,
+      ...(kind === 'reading' && book.startedAt ? { startedAt: book.startedAt } : {}),
       book: sharedBookOf(book),
       ...(book.rating ? { rating: book.rating } : {}),
     })),

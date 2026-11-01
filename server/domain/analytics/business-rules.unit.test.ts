@@ -911,6 +911,24 @@ describe('the reading challenge', () => {
     ])
   })
 
+  test('tells the day a book in progress was started beside the last day it moved', () => {
+    const startedAt = new Date('2026-10-26T08:49:00.000Z')
+    const shelf = sharedShelfOf(
+      [
+        book('kindle', {
+          status: 'reading',
+          finishedAt: undefined,
+          startedAt,
+          currentPageAt: new Date('2026-11-01T03:30:00.000Z'),
+        }),
+      ],
+      paris,
+    )
+
+    expect(shelf.recentActivity?.[0]?.at).toEqual(new Date('2026-11-01T03:30:00.000Z'))
+    expect(shelf.recentActivity?.[0]?.startedAt).toEqual(startedAt)
+  })
+
   test('leaves the books kept to oneself out', () => {
     const shelf = sharedShelfOf(
       [

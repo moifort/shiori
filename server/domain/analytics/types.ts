@@ -171,6 +171,10 @@ export type SharedActivityKind = 'reading' | 'read' | 'hearted' | 'added' | 'dro
 export type SharedActivity = {
   kind: SharedActivityKind
   at: Date
+  /** The day a book in progress was started, as `at` moves on with each page
+   *  or listening. Absent on any other move, and on a view stored before the
+   *  news feed told it. */
+  startedAt?: Date
   book: SharedFavorite
   /** Their stars for the book, when they gave any. Absent on a view stored
    *  before the news feed drew them. */

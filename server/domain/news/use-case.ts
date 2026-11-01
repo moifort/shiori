@@ -6,6 +6,7 @@ import { DiscoveryQuery } from '~/domain/discovery/query'
 import { RELEASE_FORMATS } from '~/domain/discovery/types'
 import { DiscoveryUseCase } from '~/domain/discovery/use-case'
 import { FriendshipUseCase } from '~/domain/friendship/use-case'
+import { NarratorQuery } from '~/domain/narrator/query'
 import { feedEventsOf, feedPageOf, narratedWorksOf, upcomingOf } from '~/domain/news/business-rules'
 import type { FeedPage, NarratorNews, UpcomingRelease } from '~/domain/news/types'
 import type { Language } from '~/domain/shared/language'
@@ -43,7 +44,7 @@ export namespace NewsUseCase {
     return format ? releases.filter((release) => release.format === format) : releases
   }
 
-  /** The recordings the narrators the reader follows lent their voice to
+  /** The recordings the narrators the reader hearted lent their voice to
    *  lately, the newest first. Read off the shared narrator watches the
    *  quarterly pass keeps: no web lookup happens here. */
   export const narratorNews = async (userId: UserId, now = new Date()): Promise<NarratorNews[]> =>
@@ -51,12 +52,15 @@ export namespace NewsUseCase {
 }
 
 const narratedOf = async (userId: UserId, now: Date) => {
-  const [reader, library] = await Promise.all([
+  const [reader, library, hearted] = await Promise.all([
     DiscoveryQuery.reader(userId),
     BookQuery.all(userId),
+    NarratorQuery.favoriteKeys(userId),
   ])
   const watches = await DiscoveryQuery.narratorWatches(
-    (reader?.narrators ?? []).map(narratorWatchKeyOf),
+    (reader?.narrators ?? [])
+      .filter((narrator) => hearted.has(narrator.narratorKey))
+      .map(narratorWatchKeyOf),
   )
   return narratedWorksOf(
     [...watches.values()],

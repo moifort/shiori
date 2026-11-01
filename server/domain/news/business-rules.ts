@@ -22,7 +22,8 @@ const KINDS: Partial<Record<SharedActivityKind, FeedEventKind>> = {
 const storyOf = (activity: SharedActivity): string =>
   shelfKeyOf(activity.book.title, activity.book.authors[0])
 
-/** Every friend's recent moves worth telling, newest first. The books a friend
+/** Every friend's recent moves worth telling, newest first, a book in progress
+ *  on the day it was started, not the last day it was read. The books a friend
  *  keeps to themselves never reached their shared shelf, so none is here.
  *
  *  `held` holds the shelf keys of the stories the reader already has. */
@@ -48,7 +49,7 @@ export const feedEventsOf = (
           {
             id: `${friend.userId}~${kind}~${activity.book.id}`,
             kind,
-            at: activity.at,
+            at: activity.startedAt ?? activity.at,
             friend: {
               userId: friend.userId,
               firstName: friend.firstName,

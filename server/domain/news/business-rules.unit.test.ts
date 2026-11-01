@@ -46,6 +46,21 @@ describe('feedEventsOf', () => {
     ])
   })
 
+  test('dates a book in progress on the day it was started, not the last page read', () => {
+    const events = feedEventsOf(
+      [
+        friend('lamia', [
+          {
+            ...activity('reading', 'Maison', '2026-11-01T03:30:00Z'),
+            startedAt: new Date('2026-10-26T08:49:00Z'),
+          },
+        ]),
+      ],
+      new Set(),
+    )
+    expect(events[0]?.at).toEqual(new Date('2026-10-26T08:49:00Z'))
+  })
+
   test('carries the stars and counts the other friends who started the same story', () => {
     const events = feedEventsOf(friends, new Set())
     expect(events[0]?.rating).toBe(5 as never)
