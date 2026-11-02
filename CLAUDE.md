@@ -79,7 +79,9 @@ Runtime: always `bun` / `bunx`, never `npm` / `npx`.
    "Valider" button), never leaving that to the parent. On the user's yes, it first resolves its
    thread (`ArtifactComments`, `resolve`, no reply), then archives itself (`archive_session` on
    its own id); a thread is never resolved before that yes; if they ask for changes, it makes them and asks again.
-   Every child brief says so.
+   Every child brief says so. When the user archives or deletes a child themself, that closes
+   the ticket: the parent resolves its thread (`resolve`, no reply), unasked, if that is not
+   already done.
 8. **Only the parent session listens to the board.** A child session handles its own thread and
    nothing else: a new board comment that reaches it is ignored, never handled, answered or
    proposed as a session. The parent session alone picks up new comments and starts their child

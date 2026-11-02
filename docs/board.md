@@ -57,7 +57,8 @@ same task:
 
 Rules 5–8 of CLAUDE.md: one child session per comment, started without asking (a card when the
 app refuses the start from an automated turn), the child resolves its thread and archives
-itself on the user's validation, only the parent listens to the board.
+itself on the user's validation, the parent resolves the thread of a child the user closed
+themself, only the parent listens to the board.
 
 ## Capturing artboards
 
