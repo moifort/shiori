@@ -24,6 +24,14 @@ export default defineNitroPlugin((nitroApp) => {
     // each one carries its trace id, so an app error and the resolver that threw
     // still line up in the same trace at a tenth of the transaction volume.
     tracesSampleRate: 0.1,
+    // The SDK otherwise registers a module loader hook (`module.register`, on
+    // its own thread) to instrument third-party packages: Express, GraphQL,
+    // Firebase and forty others. That was 0.4 s of every cold start, and a week
+    // of production traces holds no span it produced — ours come from
+    // instrumentDomains and the http.server span below, and the outgoing
+    // http.client spans come from Node's own diagnostics channels, which this
+    // does not touch.
+    enableRuntimeChannelInjection: false,
   })
   markBootStep('sentryMs')
 
