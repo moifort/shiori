@@ -1,26 +1,26 @@
 import SwiftUI
 
-/// A prize between its laurels: its name, its year, what it crowns. On an
-/// image, so always in white.
+/// A prize between its laurels, taller than its lines so they frame it: its
+/// name, its year, what it crowns. On an image, so always in white.
 struct AwardLaurels: View {
     let mention: AwardMention
 
     var body: some View {
         HStack(spacing: 4) {
-            Image(systemName: "laurel.leading").font(.title2)
+            Image(systemName: "laurel.leading").font(.system(size: 56))
             VStack(spacing: 1) {
                 Text(mention.award.shortName)
-                    .font(.system(size: 9, weight: .bold))
+                    .font(.system(size: 12, weight: .bold))
                     .textCase(.uppercase)
                     .tracking(1)
                 Text(verbatim: String(mention.year))
-                    .font(.headline.weight(.heavy))
+                    .font(.system(size: 23, weight: .heavy))
                     .monospacedDigit()
                 Text(mention.award.categoryName)
-                    .font(.system(size: 10))
+                    .font(.system(size: 12))
                     .foregroundStyle(.white.opacity(0.85))
             }
-            Image(systemName: "laurel.trailing").font(.title2)
+            Image(systemName: "laurel.trailing").font(.system(size: 56))
         }
         .foregroundStyle(.white)
         .accessibilityElement(children: .combine)
