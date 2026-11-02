@@ -392,11 +392,11 @@ struct HomeHeroCarousel: View {
                 .disabled(isWorking || mark == .read || mark == .notInterested)
                 .sensoryFeedback(.success, trigger: mark == .added)
                 .accessibilityIdentifier("home-discovery-menu")
-                // The thumb opens a choice, and says the one made: turned
-                // down, it fills and presses down as the button turns red;
-                // read, it gives way to a check on white. Pressed again, it
-                // takes the choice back. Never disabled once done: dimmed, the
-                // colour went unseen.
+                // The closed eye opens a choice, and gives way to the one
+                // made: turned down, a filled thumb pressing down as the button
+                // turns red; read, a check on white. Pressed again, it takes
+                // the choice back. Never disabled once done: dimmed, the colour
+                // went unseen.
                 switch mark {
                 case .notInterested:
                     Button {
@@ -453,7 +453,7 @@ struct HomeHeroCarousel: View {
     private func thumbLabel(turnedDown: Bool) -> some View {
         Label(
             turnedDown ? "Écarté" : "Pas intéressé",
-            systemImage: turnedDown ? "hand.thumbsdown.fill" : "hand.thumbsdown"
+            systemImage: turnedDown ? "hand.thumbsdown.fill" : "eye.slash"
         )
         .labelStyle(.iconOnly)
         .font(.headline)
