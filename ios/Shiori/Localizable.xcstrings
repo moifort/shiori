@@ -593,22 +593,6 @@
         }
       }
     },
-    "%lld %@" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$lld %2$@"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$lld %2$@"
-          }
-        }
-      }
-    },
     "%lld / %lld" : {
       "localizations" : {
         "en" : {
@@ -1161,22 +1145,6 @@
         }
       }
     },
-    "%lld sorties" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld releases"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld sorties"
-          }
-        }
-      }
-    },
     "%lld sur %lld" : {
       "localizations" : {
         "en" : {
@@ -1673,22 +1641,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "1 semaine offerte"
-          }
-        }
-      }
-    },
-    "1 sortie" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "1 release"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "1 sortie"
           }
         }
       }
@@ -5993,22 +5945,6 @@
         }
       }
     },
-    "En %@, sans jour précis" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "In %@, no exact day"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "En %@, sans jour précis"
-          }
-        }
-      }
-    },
     "En cours" : {
       "localizations" : {
         "en" : {
@@ -7685,22 +7621,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Japonais"
-          }
-        }
-      }
-    },
-    "Je n'aime pas" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "I don’t like it"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Je n'aime pas"
           }
         }
       }
@@ -11093,22 +11013,6 @@
         }
       }
     },
-    "Pas pour moi" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Not for me"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pas pour moi"
-          }
-        }
-      }
-    },
     "Paul Atréides" : {
       "localizations" : {
         "en" : {
@@ -11345,22 +11249,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Plus tard"
-          }
-        }
-      }
-    },
-    "Plus tôt" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Earlier"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Plus tôt"
           }
         }
       }
@@ -12565,54 +12453,6 @@
         }
       }
     },
-    "Rien" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nothing"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rien"
-          }
-        }
-      }
-    },
-    "Rien d'annoncé ce mois-ci" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nothing announced this month"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rien d'annoncé ce mois-ci"
-          }
-        }
-      }
-    },
-    "Rien d'annoncé plus loin" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nothing announced further out"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rien d'annoncé plus loin"
-          }
-        }
-      }
-    },
     "Rien d'annoncé pour l'instant" : {
       "localizations" : {
         "en" : {
@@ -13477,6 +13317,54 @@
         }
       }
     },
+    "Sort %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Out %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sort %@"
+          }
+        }
+      }
+    },
+    "Sort %@ prochain" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Out next %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sort %@ prochain"
+          }
+        }
+      }
+    },
+    "Sort demain" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Out tomorrow"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sort demain"
+          }
+        }
+      }
+    },
     "Sort en %@" : {
       "localizations" : {
         "en" : {
@@ -13557,22 +13445,6 @@
         }
       }
     },
-    "Sortie %@" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Out %@"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sortie %@"
-          }
-        }
-      }
-    },
     "Sortie aujourd'hui" : {
       "localizations" : {
         "en" : {
@@ -13633,22 +13505,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sortie cette semaine"
-          }
-        }
-      }
-    },
-    "Sortie demain" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Out tomorrow"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sortie demain"
           }
         }
       }

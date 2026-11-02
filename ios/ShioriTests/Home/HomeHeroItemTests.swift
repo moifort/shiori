@@ -100,21 +100,21 @@ struct HomeHeroItemTests {
         ("2026-10-23", "Sortie cette semaine"),
         ("2026-10-12", "Sortie ce mois-ci"),
         ("2026-10", "Sortie ce mois-ci"),
-        ("2026-10-29", "Sortie demain"),
+        ("2026-10-29", "Sort demain"),
     ])
     func saysHowNear(date: String, badge: String) {
         #expect(HomeHeroItem.releaseBadge(date, today: today) == String(localized: String.LocalizationValue(badge)))
     }
 
-    @Test func fourDaysAheadNamesTheDay() {
-        let monday = HomeHeroItem.releaseBadge("2026-11-01", today: today)
-        let weekday = Calendar.current.date(byAdding: .day, value: 4, to: today)!.formatted(.dateTime.weekday(.wide))
-        #expect(monday == String(localized: "Sortie \(weekday)"))
+    @Test func namesTheDayWithinTheWeek() {
+        let friday = HomeHeroItem.releaseBadge("2026-10-30", today: today)
+        let weekday = Calendar.current.date(byAdding: .day, value: 2, to: today)!.formatted(.dateTime.weekday(.wide))
+        #expect(friday == String(localized: "Sort \(weekday)"))
     }
 
-    @Test func namesTheDayWithinTheWeek() {
+    @Test func saysNextPastTheEndOfTheWeek() {
         let tuesday = HomeHeroItem.releaseBadge("2026-11-03", today: today)
         let weekday = Calendar.current.date(byAdding: .day, value: 6, to: today)!.formatted(.dateTime.weekday(.wide))
-        #expect(tuesday == String(localized: "Sortie \(weekday)"))
+        #expect(tuesday == String(localized: "Sort \(weekday) prochain"))
     }
 }

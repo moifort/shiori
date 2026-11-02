@@ -76,7 +76,8 @@ enum HomeHeroItem: Identifiable {
 
     /// What a release's badge says, as near as the day allows: "Sortie
     /// aujourd'hui", "Sortie hier", "Sortie avant-hier", "Sortie cette
-    /// semaine", "Sortie ce mois-ci", "Sortie demain", "Sortie mardi".
+    /// semaine", "Sortie ce mois-ci", "Sort demain", "Sort mardi", and "Sort
+    /// lundi prochain" once the day lies past the end of this calendar week.
     static func releaseBadge(_ date: String, today: Date = .now) -> String {
         guard date.count == 10, let days = daysFromToday(date, today: today) else {
             return date == localMonth(today)
@@ -89,11 +90,13 @@ enum HomeHeroItem: Identifiable {
         case -2: return String(localized: "Sortie avant-hier")
         case -recentWindow ... -3: return String(localized: "Sortie cette semaine")
         case ..<0: return String(localized: "Sortie ce mois-ci")
-        case 1: return String(localized: "Sortie demain")
+        case 1: return String(localized: "Sort demain")
         default:
-            let weekday = (Calendar.current.date(byAdding: .day, value: days, to: today) ?? today)
-                .formatted(.dateTime.weekday(.wide))
-            return String(localized: "Sortie \(weekday)")
+            let day = Calendar.current.date(byAdding: .day, value: days, to: today) ?? today
+            let weekday = day.formatted(.dateTime.weekday(.wide))
+            return Calendar.current.isDate(day, equalTo: today, toGranularity: .weekOfYear)
+                ? String(localized: "Sort \(weekday)")
+                : String(localized: "Sort \(weekday) prochain")
         }
     }
 
