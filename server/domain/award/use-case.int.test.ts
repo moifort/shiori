@@ -44,6 +44,7 @@ mock.module('~/domain/scan/published-cover', () => ({
   shelfCoverOf: async () => undefined,
   publishedCoverOf: async () => 'https://covers.example/hyperion.jpg',
   isCoverGone: async () => false,
+  isImageAt: async () => true,
 }))
 
 const { AwardUseCase } = await import('~/domain/award/use-case')
@@ -257,7 +258,7 @@ describe('the award shelf', () => {
 
     const shelf = await AwardUseCase.shelf(reader, 'book', 'fr', undefined, now)
 
-    expect(fake.queryReads - queryReads).toBe(3)
+    expect(fake.queryReads - queryReads).toBe(4)
     // Two documents per winner, one watch per format, and one description per
     // winner with no cover found.
     expect(fake.docReads - docReads).toBeLessThanOrEqual(3 * (shelf?.recent.length ?? 0))
@@ -327,6 +328,25 @@ describe('the award sections', () => {
     expect(english?.winners[0]?.state).toBe('unannounced')
     expect(english?.winners[0]?.awaitableFormats).toEqual(['book', 'audiobook'])
     expect(asked).toEqual([])
+  })
+
+  test('leaves out a winner turned down, in every format, until it is taken back', async () => {
+    fantasyReader()
+    const [book] = await AwardUseCase.sections(reader, 'book', 'fr', now)
+    const key = book?.winners[0]?.work.key as string
+
+    await AwardUseCase.dismiss(reader, key)
+
+    const keysIn = async (format: 'book' | 'audiobook') =>
+      (await AwardUseCase.sections(reader, format, 'fr', now)).flatMap((section) =>
+        section.winners.map((view) => view.work.key),
+      )
+    expect(await keysIn('book')).not.toContain(key)
+    expect(await keysIn('audiobook')).not.toContain(key)
+
+    await AwardUseCase.reconsider(reader, key)
+
+    expect(await keysIn('book')).toContain(key)
   })
 
   test('leaves out the Goncourt a reader holds', async () => {
@@ -415,8 +435,9 @@ describe('Découvrir opening', () => {
 
     for (const section of opening) await inConcurrentFakeRequests<unknown>([section])
 
-    // The library, the awaited editions and the award winners, three times.
-    expect(fake.queryReads - before.queries).toBe(8)
+    // The library, the awaited editions and the award winners, three times,
+    // and the winners turned down, twice.
+    expect(fake.queryReads - before.queries).toBe(10)
     expect(fake.queriedDocs - before.docs).toBe(3 * library + 3 * awaitedEditions)
   })
 
@@ -429,8 +450,9 @@ describe('Découvrir opening', () => {
     await inConcurrentFakeRequests<unknown>(opening)
 
     // The awaited editions answer fast, so the sections reaching them after the
-    // first read answered read them again; the library, never.
-    expect(fake.queryReads - before.queries).toBe(5)
+    // first read answered read them again; the library, never. The winners
+    // turned down are read by each award section.
+    expect(fake.queryReads - before.queries).toBe(7)
     expect(fake.queriedDocs - before.docs).toBe(library + 2 * awaitedEditions)
   })
 })

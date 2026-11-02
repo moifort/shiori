@@ -1,7 +1,7 @@
 import type { AwaitedEditionId, AwaitedState, EditionWatch } from '~/domain/awaited-edition/types'
 import type { BookLanguage, CoverUrl, Genre } from '~/domain/book/types'
 import type { ReleaseFormat } from '~/domain/discovery/types'
-import type { AuthorName, BookTitle } from '~/domain/shared/types'
+import type { AuthorName, BookTitle, UserId } from '~/domain/shared/types'
 
 /** The awards Découvrir lists the winners of: novel categories only. */
 export const AWARDS = [
@@ -33,6 +33,15 @@ export type AwardedWork = {
   language: BookLanguage
   /** Newest first. */
   mentions: AwardMention[]
+}
+
+/** A winner the reader turned down: left out of their lists, in every format,
+ *  until they take it back. */
+export type AwardDismissal = {
+  userId: UserId
+  /** `AwardedWork.key`: the novel, whatever its format. */
+  key: string
+  dismissedAt: Date
 }
 
 /** A genre's winners as one reader sees them in one format and the app's

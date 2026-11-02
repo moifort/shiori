@@ -18,22 +18,7 @@ struct AwardNewsCard: View {
             .buttonStyle(.plain)
             VStack(alignment: .leading, spacing: 2) {
                 if let mention = winner.mentions.first {
-                    HStack(spacing: 4) {
-                        Image(systemName: "laurel.leading").font(.title2)
-                        VStack(spacing: 1) {
-                            Text(mention.award.shortName)
-                                .font(.system(size: 9, weight: .bold))
-                                .textCase(.uppercase)
-                                .tracking(1)
-                            Text(verbatim: String(mention.year))
-                                .font(.headline.weight(.heavy))
-                                .monospacedDigit()
-                            Text(mention.award.categoryName)
-                                .font(.system(size: 10))
-                                .foregroundStyle(.white.opacity(0.85))
-                        }
-                        Image(systemName: "laurel.trailing").font(.title2)
-                    }
+                    AwardLaurels(mention: mention)
                     .padding(.bottom, 6)
                 }
                 Text(winner.title)

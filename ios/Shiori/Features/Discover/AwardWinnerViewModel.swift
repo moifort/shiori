@@ -1,8 +1,7 @@
 import Foundation
 
-/// An award winner's page: its description, asked for when it opens, and
-/// what the "+" sends. The page is closed by the time the server answers, so
-/// a failure is reported rather than shown.
+/// An award winner's page: its description, asked for when it opens, and what
+/// the reader decides about it.
 @MainActor
 @Observable
 final class AwardWinnerViewModel {
@@ -22,21 +21,37 @@ final class AwardWinnerViewModel {
 
     func describe() async { await describer.describe(winner.seed) }
 
-    /// Puts it on the pile.
-    func add() async {
-        do {
-            try await client.addBook(winner.pileDraft)
-        } catch {
-            _ = reportError(error)
-        }
-    }
+    /// The book said read here, which the check pressed again takes off the
+    /// shelf.
+    private var bookRead: String?
+    /// Why a choice could not be made, said in an alert.
+    var actionError: String?
 
-    /// Awaits its edition in the app's language, in this format.
-    func awaitEdition(_ format: ReleaseFormat) async {
+    /// A choice from the page's "+" or eye, the page staying open on it. Says
+    /// whether the server took it: the buttons stay as they were otherwise.
+    func choose(_ winner: AwardWinner, _ choice: DiscoveryChoice) async -> Bool {
         do {
-            _ = try await client.awaitEdition(winner.draft, format)
+            switch choice {
+            case .add:
+                try await client.addBook(winner.pileDraft)
+            case let .await(format):
+                _ = try await client.awaitEdition(winner.draft, format)
+            case .alreadyRead:
+                var draft = winner.pileDraft
+                draft.status = .read
+                bookRead = try await client.addSuggestion(draft)
+            case .undoAlreadyRead:
+                if let bookRead { try await client.deleteBook(bookRead) }
+                bookRead = nil
+            case .notInterested:
+                if let key = winner.key { try await client.dismissWinner(key) }
+            case .reconsider:
+                if let key = winner.key { try await client.reconsiderWinner(key) }
+            }
+            return true
         } catch {
-            _ = reportError(error)
+            actionError = reportError(error)
+            return false
         }
     }
 }

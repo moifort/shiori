@@ -1,6 +1,15 @@
 import * as repository from '~/domain/award/infrastructure/repository'
 import type { FoundWinners } from '~/domain/award/types'
+import type { UserId } from '~/domain/shared/types'
 
 export namespace AwardCommand {
   export const saveWinners = (found: FoundWinners): Promise<void> => repository.saveWinners(found)
+
+  /** "Pas intéressé": the novel leaves the reader's lists, in every format. */
+  export const dismiss = (userId: UserId, key: string, now = new Date()): Promise<void> =>
+    repository.saveDismissal({ userId, key, dismissedAt: now })
+
+  /** A dismissal taken back: the novel is listed again. */
+  export const reconsider = (userId: UserId, key: string): Promise<void> =>
+    repository.deleteDismissal(userId, key)
 }

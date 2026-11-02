@@ -108,7 +108,11 @@ struct DiscoverScreen: View {
         case let .suggestion(suggestion):
             SuggestionScreen(suggestion: suggestion, client: client)
         case let .winner(winner):
-            AwardWinnerScreen(winner: winner, client: client)
+            AwardWinnerScreen(
+                winner: winner,
+                others: viewModel.shownAwards.flatMap(\.winners).latestFirst,
+                client: client
+            )
         case let .author(opened):
             // The Library's own author page; a saga pushes after it.
             AuthorScreen(key: opened.key, name: opened.name, isOffered: opened.isOffered)

@@ -48,7 +48,10 @@ export namespace AwardUseCase {
     asked: Genre | undefined,
     now = new Date(),
   ): Promise<AwardShelf | null> => {
-    const books = await BookQuery.all(userId)
+    const [books, dismissed] = await Promise.all([
+      BookQuery.all(userId),
+      AwardQuery.dismissedKeys(userId),
+    ])
     const genres = genresOf(books)
     const genre = asked && genres.includes(asked) ? asked : genres[0]
     if (!genre) return null
@@ -59,7 +62,8 @@ export namespace AwardUseCase {
     const views = new Map(
       works.map((work) => [work.key, viewOf(work, format, appLanguage, editions, today)] as const),
     )
-    const shown = (view: AwardedWorkView) => !isHeld(view.work, format, view.watch?.found, books)
+    const shown = (view: AwardedWorkView) =>
+      !dismissed.has(view.work.key) && !isHeld(view.work, format, view.watch?.found, books)
     const recent = await withDescribedCovers(
       [...views.values()].filter(shown).slice(0, RECENT_COUNT),
       appLanguage,
@@ -102,7 +106,10 @@ export namespace AwardUseCase {
     appLanguage: Language,
     now = new Date(),
   ): Promise<AwardSection[]> => {
-    const books = await BookQuery.all(userId)
+    const [books, dismissed] = await Promise.all([
+      BookQuery.all(userId),
+      AwardQuery.dismissedKeys(userId),
+    ])
     const genres = genresOf(books).slice(0, MAX_AWARD_SECTIONS)
     if (genres.length === 0) return []
     const works = await latestWorksOf([
@@ -112,7 +119,7 @@ export namespace AwardUseCase {
     const today = todayOf(now)
     const shown = works.flatMap((work) => {
       const view = viewOf(work, format, appLanguage, editions, today)
-      return isHeld(work, format, view.watch?.found, books) ? [] : [view]
+      return dismissed.has(work.key) || isHeld(work, format, view.watch?.found, books) ? [] : [view]
     })
     const picked = genres.map((genre) => ({
       genre,
@@ -135,6 +142,12 @@ export namespace AwardUseCase {
       }))
       .filter((section) => section.winners.length > 0)
   }
+
+  /** "Pas intéressé" on a winner: gone from the lists, in every format. */
+  export const dismiss = (userId: UserId, key: string) => AwardCommand.dismiss(userId, key)
+
+  /** The red thumb pressed again: the winner is listed again. */
+  export const reconsider = (userId: UserId, key: string) => AwardCommand.reconsider(userId, key)
 
   /** The daily pass: asks Wikidata, for every award, the winners of the
    *  ceremonies after the latest one known, and keeps each new year. It runs

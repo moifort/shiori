@@ -3481,6 +3481,22 @@
         }
       }
     },
+    "Autres lauréats" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Other winners"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Autres lauréats"
+          }
+        }
+      }
+    },
     "Avatar" : {
       "localizations" : {
         "en" : {
@@ -3877,6 +3893,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Catalogue provisoire, dessiné d'après le nombre de tomes que vous avez indiqué."
+          }
+        }
+      }
+    },
+    "Catégorie" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Category"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Catégorie"
           }
         }
       }

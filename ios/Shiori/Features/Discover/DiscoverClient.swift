@@ -26,6 +26,10 @@ struct DiscoverClient: Sendable {
     var deleteBook: @Sendable (_ id: String) async throws -> Void = { _ in }
     /// A dismissal taken back from the red thumb.
     var reconsiderSuggestion: @Sendable (_ id: String) async throws -> Void = { _ in }
+    /// An award winner turned down, the novel in every format.
+    var dismissWinner: @Sendable (_ key: String) async throws -> Void = { _ in }
+    /// The same taken back from the red thumb.
+    var reconsiderWinner: @Sendable (_ key: String) async throws -> Void = { _ in }
     /// A saga's recording through the reader's Audible account.
     var addAudibleVolume: @Sendable (_ seriesId: String, _ volume: Int) async throws -> Void
     /// Whether nothing can reach the reader: the system said no, or every
@@ -58,6 +62,8 @@ extension DiscoverClient {
         addSuggestion: { try await BookAddition.add($0, source: .discover).id },
         deleteBook: { try await BookAPI.delete(id: $0) },
         reconsiderSuggestion: { try await SuggestionsAPI.reconsider(id: $0) },
+        dismissWinner: { try await AwardsAPI.dismiss(key: $0) },
+        reconsiderWinner: { try await AwardsAPI.reconsider(key: $0) },
         addAudibleVolume: { seriesId, volume in
             _ = try await SeriesAPI.addAudibleVolume(seriesId: seriesId, volume: volume)
             track(.bookAdded(source: .discover))

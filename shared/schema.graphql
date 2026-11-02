@@ -898,6 +898,9 @@ type AwardWinner {
 
   """The edition’s shared watch: stable for a novel, format and language."""
   id: String!
+
+  """The novel, whatever its format: what `dismissAwardWinner` turns down."""
+  key: String!
   originalLanguage: BookLanguage!
 
   """The title it won under, in the language the award crowns."""
@@ -3161,6 +3164,14 @@ type Mutation {
   disconnectKindle: Boolean!
 
   """
+  "Pas intéressé" on an award winner: it leaves the reader’s lists, in every format, until `reconsiderAwardWinner`.
+  """
+  dismissAwardWinner(
+    """`AwardWinner.key`."""
+    key: String!
+  ): Boolean!
+
+  """
   "Pas intéressé" or "Je n’aime pas": the suggestion leaves the discoveries for good, and the model is told why next month. `NOT_FOUND` when the reader has no such suggestion.
   """
   dismissSuggestion(
@@ -3283,6 +3294,12 @@ type Mutation {
     """The export file, as text"""
     csv: String!
   ): [KindleBook!]! @deprecated(reason: "Connect the Kindle library instead: `startKindleLogin`, then `kindleLibrary`.")
+
+  """A dismissal taken back: the winner is listed again."""
+  reconsiderAwardWinner(
+    """`AwardWinner.key`."""
+    key: String!
+  ): Boolean!
 
   """
   A dismissal taken back: the suggestion may come again and the model is no longer told of it; turned down this month, it returns to the discoveries where it stood. `NOT_FOUND` when the reader turned down no such suggestion.

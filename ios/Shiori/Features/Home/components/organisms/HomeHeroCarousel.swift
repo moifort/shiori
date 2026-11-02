@@ -333,7 +333,7 @@ struct HomeHeroCarousel: View {
                 // finger pressing a row of a menu lying over it, whatever
                 // takes the touch.
                 .buttonStyle(.heroProminent)
-                DiscoveryButtons(suggestion: suggestion, choices: choices, onChoice: onChoice)
+                DiscoveryButtons(item: suggestion, choices: choices, onChoice: onChoice)
             }
             .controlSize(.large)
         }

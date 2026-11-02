@@ -10,8 +10,17 @@ query AwardSections($format: ReleaseFormat!) {
   }
 }
 
+mutation DismissAwardWinner($key: String!) {
+  dismissAwardWinner(key: $key)
+}
+
+mutation ReconsiderAwardWinner($key: String!) {
+  reconsiderAwardWinner(key: $key)
+}
+
 fragment AwardWinnerFields on AwardWinner {
   id
+  key
   format
   title
   originalTitle

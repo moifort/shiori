@@ -56,8 +56,8 @@ struct SuggestionPage: View {
             // The hero's "+" again, within reach once it has scrolled away.
             ToolbarItem(placement: .primaryAction) {
                 Menu {
-                    SuggestionAddActions(
-                        suggestion: suggestion,
+                    DiscoveryAddActions(
+                        item: suggestion,
                         onAdd: { choose(.add) },
                         onAwait: { choose(.await($0)) }
                     )
@@ -89,7 +89,7 @@ struct SuggestionPage: View {
             showsLength: false
         ) {
             HStack(spacing: 12) {
-                DiscoveryButtons(suggestion: suggestion, choices: choices, onChoice: onChoice, addsInFull: true)
+                DiscoveryButtons(item: suggestion, choices: choices, onChoice: onChoice, addsInFull: true)
             }
             .controlSize(.large)
         }
@@ -139,18 +139,18 @@ struct SuggestionPage: View {
     }
 }
 
-/// What a suggestion's "+" offers, on its page and on the home screen's
+/// What a discovery's "+" offers, on its page and on the home screen's
 /// carousel: on the pile, or awaited in each format its edition is not out and
 /// not awaited yet in. "Déjà lu" is the eye's.
-struct SuggestionAddActions: View {
-    let suggestion: Suggestion
+struct DiscoveryAddActions<Item: Discovery>: View {
+    let item: Item
     let onAdd: () -> Void
     let onAwait: (ReleaseFormat) -> Void
 
     var body: some View {
         Button("Ajouter", systemImage: "books.vertical") { onAdd() }
             .accessibilityIdentifier("suggestion-add")
-        ForEach(suggestion.awaitableFormats) { format in
+        ForEach(item.awaitableFormats) { format in
             Button(
                 format.awaitLabel,
                 systemImage: format == .audiobook ? "headphones" : "character.book.closed"

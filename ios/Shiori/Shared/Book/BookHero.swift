@@ -36,6 +36,8 @@ struct BookHero<Actions: View>: View {
     /// Opens the page sheet from the "page 214 · 32%" line. Nil draws the
     /// line alone.
     var onOpenProgress: (() -> Void)? = nil
+    /// Set over the title, above the saga: a prize between its laurels.
+    var overTitle: AnyView? = nil
     @ViewBuilder var actions: Actions
 
     /// The text's height and the cover's, to tell whether the text climbs
@@ -94,6 +96,9 @@ struct BookHero<Actions: View>: View {
 
     private var identity: some View {
         VStack(alignment: .leading, spacing: 3) {
+            if let overTitle {
+                overTitle.padding(.bottom, 6)
+            }
             if let series = book.series {
                 // The saga's name gives way before the volume's number does.
                 HStack(spacing: 4) {

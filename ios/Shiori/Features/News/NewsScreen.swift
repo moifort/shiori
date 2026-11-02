@@ -89,7 +89,7 @@ struct NewsScreen: View {
         case let .narrator(narrator):
             NarratorScreen(key: narrator.key, name: narrator.name)
         case let .winner(winner):
-            AwardWinnerScreen(winner: winner)
+            AwardWinnerScreen(winner: winner, others: viewModel.yearAwards.latestFirst)
         }
     }
 

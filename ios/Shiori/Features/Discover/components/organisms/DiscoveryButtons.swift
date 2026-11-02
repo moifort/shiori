@@ -1,5 +1,13 @@
 import SwiftUI
 
+/// What a discovery's buttons decide on: a suggestion, an award winner.
+protocol Discovery: Identifiable, Sendable where ID == String {
+    /// The formats "Guetter" is offered in.
+    var awaitableFormats: [ReleaseFormat] { get }
+}
+
+extension Suggestion: Discovery {}
+
 /// What the reader decides about a discovery from its "+" and closed eye.
 enum DiscoveryChoice {
     case add
@@ -33,53 +41,53 @@ enum DiscoveryButton {
 @MainActor
 @Observable
 final class DiscoveryChoices {
-    private(set) var marks: [Suggestion.ID: DiscoveryMark] = [:]
+    private(set) var marks: [String: DiscoveryMark] = [:]
     /// The button whose choice the server is answering, with its spinner.
-    private(set) var working: [Suggestion.ID: DiscoveryButton] = [:]
+    private(set) var working: [String: DiscoveryButton] = [:]
 
     /// Sends a choice and sets the mark it leaves once the server took it, and
     /// not before the menu has closed: drawn while it folds back into the
     /// button, the mark went unseen.
-    func choose(
+    func choose<Item: Discovery>(
         _ choice: DiscoveryChoice,
-        for suggestion: Suggestion,
+        for item: Item,
         from button: DiscoveryButton,
         leaving mark: DiscoveryMark?,
-        ask: @escaping (Suggestion, DiscoveryChoice) async -> Bool
+        ask: @escaping (Item, DiscoveryChoice) async -> Bool
     ) {
-        guard working[suggestion.id] == nil else { return }
-        working[suggestion.id] = button
+        guard working[item.id] == nil else { return }
+        working[item.id] = button
         Task {
             async let folded: Void? = try? await Task.sleep(for: .milliseconds(450))
-            let accepted = await ask(suggestion, choice)
+            let accepted = await ask(item, choice)
             _ = await folded
             withAnimation(.snappy) {
-                working[suggestion.id] = nil
-                if accepted { marks[suggestion.id] = mark }
+                working[item.id] = nil
+                if accepted { marks[item.id] = mark }
             }
         }
     }
 }
 
 /// A discovery's "+" and closed eye, side by side in whatever row holds them,
-/// on the home's hero and on the suggestion's page alike. No
+/// on the home's hero and on a suggestion's or a winner's page alike. No
 /// GlassEffectContainer around them: a menu opened from inside one loses a
 /// moving tap on a row over a neighbouring button.
-struct DiscoveryButtons: View {
-    let suggestion: Suggestion
+struct DiscoveryButtons<Item: Discovery>: View {
+    let item: Item
     let choices: DiscoveryChoices
     /// Asks the server, and says whether it took the choice: the buttons
     /// change only then.
-    let onChoice: (Suggestion, DiscoveryChoice) async -> Bool
+    let onChoice: (Item, DiscoveryChoice) async -> Bool
     /// "+ Ajouter" white, as the hero's call to action, rather than a round
     /// "+": on the page, where nothing else leads.
     var addsInFull = false
 
     /// The eye's button once a discovery is turned down.
-    private static let turnedDownRed = Color(red: 0.78, green: 0.2, blue: 0.2)
+    private var turnedDownRed: Color { Color(red: 0.78, green: 0.2, blue: 0.2) }
 
-    private var mark: DiscoveryMark? { choices.marks[suggestion.id] }
-    private var working: DiscoveryButton? { choices.working[suggestion.id] }
+    private var mark: DiscoveryMark? { choices.marks[item.id] }
+    private var working: DiscoveryButton? { choices.working[item.id] }
     private var isWorking: Bool { working != nil }
 
     var body: some View {
@@ -99,7 +107,7 @@ struct DiscoveryButtons: View {
                 eyeLabel(turnedDown: true)
                     .modifier(WorkingLabel(isWorking: working == .eye))
             }
-            .buttonStyle(.glass(.regular.tint(Self.turnedDownRed)))
+            .buttonStyle(.glass(.regular.tint(turnedDownRed)))
             .buttonBorderShape(.circle)
             .disabled(isWorking)
             .sensoryFeedback(.impact(weight: .medium), trigger: mark == .notInterested)
@@ -170,8 +178,8 @@ struct DiscoveryButtons: View {
     }
 
     private var addActions: some View {
-        SuggestionAddActions(
-            suggestion: suggestion,
+        DiscoveryAddActions(
+            item: item,
             onAdd: { choose(.add, from: .add, leaving: .added) },
             onAwait: { choose(.await($0), from: .add, leaving: .added) }
         )
@@ -187,7 +195,7 @@ struct DiscoveryButtons: View {
     }
 
     private func choose(_ choice: DiscoveryChoice, from button: DiscoveryButton, leaving mark: DiscoveryMark?) {
-        choices.choose(choice, for: suggestion, from: button, leaving: mark, ask: onChoice)
+        choices.choose(choice, for: item, from: button, leaving: mark, ask: onChoice)
     }
 
     private func eyeLabel(turnedDown: Bool) -> some View {

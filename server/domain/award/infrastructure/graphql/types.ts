@@ -70,6 +70,10 @@ export const AwardWinnerType = builder.objectRef<AwardedWorkView>('AwardWinner')
       description: 'The edition’s shared watch: stable for a novel, format and language.',
       resolve: (view) => view.watchKey,
     }),
+    key: t.string({
+      description: 'The novel, whatever its format: what `dismissAwardWinner` turns down.',
+      resolve: (view) => view.work.key,
+    }),
     format: t.field({ type: ReleaseFormatEnum, resolve: (view) => view.format }),
     title: t.field({
       type: 'BookTitle',

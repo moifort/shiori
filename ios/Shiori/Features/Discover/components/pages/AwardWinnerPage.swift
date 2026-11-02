@@ -3,55 +3,48 @@ import SwiftUI
 /// Everything an award winner's page can ask for.
 enum AwardWinnerAction {
     case close
-    /// On the pile.
-    case add
-    /// Its edition awaited in the app's language, in this format.
-    case awaitEdition(ReleaseFormat)
+    /// Another winner, from the row at the foot of the page.
+    case openWinner(AwardWinner)
 }
 
-/// One winner, opened from the strip, drawn as a volume announced is: where
-/// its edition stands under the author, the store's tag once one sells it,
-/// the prizes it won and the title it won under. The "+" opens a menu: put it
-/// on the pile, or await its edition in the app's language, as a book seen in
-/// a shop is awaited from its scan.
+/// One winner, in the suggestion's page's grammar: the hero over the cover's
+/// colours, the prize between its laurels over the title and the white
+/// "Ajouter" and closed eye under it, then the summary once written, the facts
+/// as tiles and the other winners as posters. The "+", in the hero and in the
+/// bar, adds or awaits it; the eye turns it down or says it read. The page
+/// stays open on the choice, which the same button takes back.
 struct AwardWinnerPage: View {
     let winner: AwardWinner
     /// The winner once described, as a book's page draws it.
     let shown: Book
+    /// The winners listed beside it.
+    var others: [AwardWinner] = []
     let isDescribing: Bool
     /// False when the page is pushed: Back closes it, not a Close button.
     var showsClose = true
+    let choices: DiscoveryChoices
+    /// Asks the server, and says whether it took the choice.
+    let onChoice: (AwardWinner, DiscoveryChoice) async -> Bool
     let onAction: (AwardWinnerAction) async -> Void
 
     var body: some View {
-        List {
-            BookHeaderSection(
-                book: shown,
-                state: state,
-                releaseDate: winner.state == .announced ? winner.date : nil,
-                isAwaited: winner.awaitedEditionId != nil,
-                storeLink: winner.storeURL.map {
-                    .init(name: winner.format.storeName, url: $0, tint: winner.format.storeTint)
-                },
-                tag: Label {
-                    Text(verbatim: winner.awardsLine)
-                } icon: {
-                    Image(systemName: "trophy")
+        ScrollView {
+            VStack(spacing: 0) {
+                hero
+                VStack(alignment: .leading, spacing: 28) {
+                    synopsis
+                    facts
+                    otherWinners
                 }
-            )
-            ReleaseDescriptionSections(isDescribing: isDescribing, synopsis: shown.synopsis)
-            if winner.title != winner.originalTitle {
-                Section {
-                    LabeledContent("Titre original") {
-                        Text(winner.originalTitle)
-                    }
-                }
+                .padding(.horizontal, 20)
+                .padding(.top, 4)
+                .padding(.bottom, 32)
             }
         }
-        .listStyle(.insetGrouped)
+        // The bar's buttons float over the page as it scrolls, as on a book's.
+        .scrollEdgeEffectHidden(true, for: .top)
+        .background(Color(.systemGroupedBackground))
         .generatingPill(isDescribing)
-        .labelStyle(.row)
-        .navigationTitle(Text(verbatim: winner.mentions.first?.award.shortName ?? ""))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             if showsClose {
@@ -59,52 +52,134 @@ struct AwardWinnerPage: View {
                     ToolbarIconButton(title: "Fermer", systemImage: "xmark", role: .cancel) { act(.close) }
                 }
             }
+            // The hero's "+" again, within reach once it has scrolled away.
             ToolbarItem(placement: .primaryAction) {
-                addMenu
+                Menu {
+                    DiscoveryAddActions(
+                        item: winner,
+                        onAdd: { choose(.add) },
+                        onAwait: { choose(.await($0)) }
+                    )
+                } label: {
+                    Label("Ajouter", systemImage: "plus")
+                        .labelStyle(.iconOnly)
+                }
+                .disabled(choices.marks[winner.id] != nil || choices.working[winner.id] != nil)
+                .accessibilityIdentifier("award-winner-menu")
             }
         }
     }
 
-    /// The page closes at once on any of these: nothing to wait for here.
     private func act(_ action: AwardWinnerAction) {
         Task { await onAction(action) }
     }
 
-    /// "+": on the pile, or awaited in each format its edition is not out
-    /// and not awaited yet in, as a book's page offers it.
-    private var addMenu: some View {
-        Menu {
-            Button("Ajouter", systemImage: "books.vertical") { act(.add) }
-                .accessibilityIdentifier("award-winner-add")
-            ForEach(winner.awaitableFormats) { format in
-                Button(
-                    format.awaitLabel,
-                    systemImage: format == .audiobook ? "headphones" : "character.book.closed"
-                ) {
-                    act(.awaitEdition(format))
-                }
-                .accessibilityIdentifier("award-winner-await-\(format.rawValue)")
-            }
-        } label: {
-            Label("Ajouter", systemImage: "plus")
-                .labelStyle(.iconOnly)
-        }
-        .accessibilityIdentifier("award-winner-menu")
+    private func choose(_ choice: DiscoveryChoice) {
+        choices.choose(choice, for: winner, from: .add, leaving: .added, ask: onChoice)
     }
 
-    /// Said under the author: where the edition stands, once a reader awaited
-    /// it and it was looked up; a day still to come is the calendar leaf's to
-    /// say. Nothing is looked up for a winner nobody awaits.
+    // MARK: - Hero
+
+    private var hero: some View {
+        BookHero(
+            book: shown,
+            state: state,
+            isAwaited: winner.awaitedEditionId != nil,
+            overTitle: winner.mentions.first.map { AnyView(AwardLaurels(mention: $0)) }
+        ) {
+            HStack(spacing: 12) {
+                DiscoveryButtons(item: winner, choices: choices, onChoice: onChoice, addsInFull: true)
+            }
+            .controlSize(.large)
+        }
+    }
+
+    /// Said on the detail line: when an edition announced comes out, where it
+    /// stands once a reader awaited it and it was looked up, else the year it
+    /// came out.
     private var state: BookState? {
-        if !winner.watched { return nil }
-        if winner.state == .announced, let date = winner.date, ReleaseDateText.isUpcoming(date) { return nil }
-        return BookState(text: winner.stateLine, tint: winner.stateTint)
+        if winner.state == .announced, let date = winner.date, ReleaseDateText.isUpcoming(date) {
+            return .release(date)
+        }
+        if winner.watched { return BookState(text: winner.stateLine, tint: winner.stateTint) }
+        return shown.firstPublishedIn.map { BookState(text: String($0), tint: .secondary) }
+    }
+
+    // MARK: - Blocks
+
+    /// The summary once the model wrote it; nothing while it writes, the bar
+    /// saying so.
+    @ViewBuilder private var synopsis: some View {
+        if !isDescribing, let synopsis = shown.synopsis, !synopsis.isEmpty {
+            BookSynopsisBlock(synopsis: synopsis)
+        }
+    }
+
+    /// What it won and what it is, its title in its own language heading them
+    /// when the edition translates it, and the store that sells it closing them.
+    private var facts: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            RowHeader(title: "Informations")
+            FactGrid(groups: [FactGroup(tiles: originalTitleTile + prizeTiles + bookTiles)], links: storeLinks)
+        }
+    }
+
+    private var originalTitleTile: [FactTile] {
+        guard winner.title != winner.originalTitle else { return [] }
+        return [FactTile(id: "originalTitle", title: "Titre original", value: winner.originalTitle, isWide: true)]
+    }
+
+    /// The prizes it won, then what the first crowns. Several take the width.
+    private var prizeTiles: [FactTile] {
+        guard let first = winner.mentions.first else { return [] }
+        return [
+            FactTile(id: "prize", title: "Prix", value: winner.mentionsLine, isWide: winner.mentions.count > 1),
+            FactTile(id: "category", title: "Catégorie", value: first.award.categoryName),
+        ]
+    }
+
+    /// The book's own facts, the ones the page's description fills in, and
+    /// only once they are known.
+    private var bookTiles: [FactTile] {
+        let shownFacts = ["publisher", "pageCount", "duration", "genre"]
+        return shown.readOnlyFactTiles
+            .filter { shownFacts.contains($0.id) && $0.value != nil }
+            .sorted { shownFacts.firstIndex(of: $0.id) ?? 0 < shownFacts.firstIndex(of: $1.id) ?? 0 }
+    }
+
+    private var storeLinks: [FactLink] {
+        guard let url = winner.storeURL else { return [] }
+        return switch winner.format {
+        case .audiobook: [FactLink(id: "audible", title: "Écouter sur Audible", logo: "audible-logo", url: url)]
+        case .book: [FactLink(id: "amazon", title: "Voir sur Amazon", logo: "amazon-logo", url: url)]
+        }
+    }
+
+    @ViewBuilder private var otherWinners: some View {
+        if !others.isEmpty {
+            SeriesPosterRail(title: "Autres lauréats", items: others) { other in
+                Button {
+                    act(.openWinner(other))
+                } label: {
+                    PosterCover(book: other.cover, caption: other.caption)
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("award-winner-other")
+            }
+        }
     }
 }
 
 #Preview("Award winner") {
     NavigationStack {
-        AwardWinnerPage(winner: .preview, shown: AwardWinner.preview.cover, isDescribing: false) { _ in }
+        AwardWinnerPage(
+            winner: .preview,
+            shown: AwardWinner.preview.cover.described(by: .preview),
+            others: [.goncourtPreview],
+            isDescribing: false,
+            choices: DiscoveryChoices(),
+            onChoice: { _, _ in true }
+        ) { _ in }
     }
 }
 
@@ -113,13 +188,21 @@ struct AwardWinnerPage: View {
         AwardWinnerPage(
             winner: .goncourtPreview,
             shown: AwardWinner.goncourtPreview.cover,
-            isDescribing: false
+            isDescribing: false,
+            choices: DiscoveryChoices(),
+            onChoice: { _, _ in true }
         ) { _ in }
     }
 }
 
 #Preview("Describing") {
     NavigationStack {
-        AwardWinnerPage(winner: .preview, shown: AwardWinner.preview.cover, isDescribing: true) { _ in }
+        AwardWinnerPage(
+            winner: .preview,
+            shown: AwardWinner.preview.cover,
+            isDescribing: true,
+            choices: DiscoveryChoices(),
+            onChoice: { _, _ in true }
+        ) { _ in }
     }
 }

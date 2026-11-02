@@ -60,7 +60,7 @@ struct AwardMention: Hashable, Sendable, Codable {
 /// A novel an award crowned, as its edition stands in one format and the
 /// language of the app: out, announced, or not found — not found also while
 /// nobody awaited it, so it was never looked up, which `watched` tells apart.
-struct AwardWinner: Identifiable, Hashable, Sendable, Codable {
+struct AwardWinner: Discovery, Hashable, Sendable, Codable {
     let id: String
     let format: ReleaseFormat
     /// Its title in the app's language once found, else the one it won under.
@@ -81,6 +81,9 @@ struct AwardWinner: Identifiable, Hashable, Sendable, Codable {
     /// that format.
     let awaitableFormats: [ReleaseFormat]
     let awaitedEditionId: String?
+    /// The novel whatever its format, which "Pas intéressé" turns down. Nil
+    /// on a winner read back from a snapshot saved before it was sent.
+    var key: String?
 
     /// Under its cover in the strip: the latest prize and its year.
     var caption: String {
@@ -191,6 +194,24 @@ struct AwardSection: Identifiable, Hashable, Sendable, Codable {
 }
 
 enum AwardsAPI {
+    /// "Pas intéressé": the novel leaves the reader's lists, in every format.
+    static func dismiss(key: String) async throws {
+        _ = try await GraphQLHelpers.perform(
+            GraphQLClient.shared.apollo,
+            mutation: ShioriGraphQL.DismissAwardWinnerMutation(key: key),
+            changesLibrary: false
+        )
+    }
+
+    /// A dismissal taken back from the red thumb.
+    static func reconsider(key: String) async throws {
+        _ = try await GraphQLHelpers.perform(
+            GraphQLClient.shared.apollo,
+            mutation: ShioriGraphQL.ReconsiderAwardWinnerMutation(key: key),
+            changesLibrary: false
+        )
+    }
+
     /// One section per genre the reader reads most, the most read first.
     /// Empty when the reader reads no genre with awards enough.
     static func sections(format: ReleaseFormat) async throws -> [AwardSection] {
@@ -243,7 +264,8 @@ extension AwardWinner {
                 case nil: return nil
                 }
             },
-            awaitedEditionId: fields.awaitedEditionId
+            awaitedEditionId: fields.awaitedEditionId,
+            key: fields.key
         )
     }
 }
