@@ -1,22 +1,14 @@
 import SwiftUI
 
-/// What took a suggestion off the line.
-enum SuggestionOutcome {
-    case added
-    case awaited
-    /// "Pas intéressé" or "Je n'aime pas".
-    case dismissed(DismissalReason)
-}
-
 /// A suggestion, connected: opened from Découvrir's discoveries line or the
-/// home page. Describes it as it opens; an addition or a wait closes the page
-/// at once and is sent behind it, a dismissal is the opener's, which holds the
-/// line.
+/// home page. Describes it as it opens; what the reader decides stays on the
+/// page, which the opener's line catches up with once it closes.
 struct SuggestionScreen: View {
-    /// The suggestion left the line: added, awaited or dismissed.
-    private let onDone: (SuggestionOutcome) -> Void
+    /// The opener's own way of asking the server, the home's; nil, the page's.
+    private let onChoice: ((Suggestion, DiscoveryChoice) async -> Bool)?
 
     @State private var viewModel: SuggestionViewModel
+    @State private var choices: DiscoveryChoices
     @State private var openReference: SuggestionReference?
     @Environment(\.dismiss) private var dismissPresentation
     @Environment(\.detailClosing) private var closing
@@ -26,8 +18,14 @@ struct SuggestionScreen: View {
     private func dismiss() { closing.close(dismissPresentation) }
 
 
-    init(suggestion: Suggestion, client: DiscoverClient = .live, onDone: @escaping (SuggestionOutcome) -> Void = { _ in }) {
-        self.onDone = onDone
+    init(
+        suggestion: Suggestion,
+        client: DiscoverClient = .live,
+        choices: DiscoveryChoices = DiscoveryChoices(),
+        onChoice: ((Suggestion, DiscoveryChoice) async -> Bool)? = nil
+    ) {
+        self.onChoice = onChoice
+        _choices = State(initialValue: choices)
         _viewModel = State(initialValue: SuggestionViewModel(suggestion: suggestion, client: client))
     }
 
@@ -36,24 +34,24 @@ struct SuggestionScreen: View {
             suggestion: viewModel.suggestion,
             shown: viewModel.shown,
             isDescribing: viewModel.isDescribing,
-            showsClose: closing.showsCloseButton
+            showsClose: closing.showsCloseButton,
+            choices: choices,
+            onChoice: onChoice ?? viewModel.choose
         ) { action in
-            // Held apart: the page is gone by the time the call returns.
-            let model = viewModel
             switch action {
             case .close:
                 dismiss()
-            case let .add(status):
-                close(.added)
-                await model.add(status: status)
-            case let .awaitEdition(format):
-                close(.awaited)
-                await model.awaitEdition(format)
-            case let .dismiss(reason):
-                close(.dismissed(reason))
             case let .openReference(reference):
                 openReference = reference
             }
+        }
+        .alert(
+            "Une erreur est survenue",
+            isPresented: Binding(get: { viewModel.actionError != nil }, set: { if !$0 { viewModel.actionError = nil } })
+        ) {
+            Button("OK", role: .cancel) { viewModel.actionError = nil }
+        } message: {
+            Text(viewModel.actionError ?? "")
         }
         .task { await viewModel.describe() }
         // A saga cited by name opens the saga's page; a book, its own.
@@ -64,11 +62,6 @@ struct SuggestionScreen: View {
                 BookScreen(bookId: reference.bookId)
             }
         }
-    }
-
-    private func close(_ outcome: SuggestionOutcome) {
-        onDone(outcome)
-        dismiss()
     }
 }
 

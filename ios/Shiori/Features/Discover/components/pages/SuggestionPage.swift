@@ -3,25 +3,17 @@ import SwiftUI
 /// Everything a suggestion's page can ask for.
 enum SuggestionAction {
     case close
-    /// On the shelf, on the pile or read already: the page closes behind it.
-    case add(ReadingStatus)
-    /// Its edition awaited in this format: the page closes behind it.
-    case awaitEdition(ReleaseFormat)
-    /// "Pas intéressé" or "Je n'aime pas": the page closes and the line lets
-    /// the next one in.
-    case dismiss(DismissalReason)
     /// One of the reader's own books it was drawn from.
     case openReference(SuggestionReference)
 }
 
 /// A suggestion's page, in the reader's own book page's grammar: the hero over
 /// the cover's colours — where its edition stands on the detail line, the
-/// "+" white where a book has its next step, the thumb that turns it down on
-/// glass beside it — then why it was chosen, as a card over the colours of the
+/// home hero's "+" and closed eye under it — then why it was chosen, as a card over the colours of the
 /// reader's books it draws on, the summary once written, and the facts as
-/// tiles. The "+", in the hero and in the bar, adds it — on the pile or read
-/// already — or awaits it; the thumb turns it down. Each closes the page and
-/// lets the next suggestion in.
+/// tiles. The "+", in the hero and in the bar, adds or awaits it; the eye turns
+/// it down or says it read. The page stays open on the choice, which the same
+/// button takes back.
 struct SuggestionPage: View {
     let suggestion: Suggestion
     /// The suggestion once described, as a book's page draws it.
@@ -29,6 +21,9 @@ struct SuggestionPage: View {
     let isDescribing: Bool
     /// False when the page is pushed: Back closes it, not a Close button.
     var showsClose = true
+    let choices: DiscoveryChoices
+    /// Asks the server, and says whether it took the choice.
+    let onChoice: (Suggestion, DiscoveryChoice) async -> Bool
     let onAction: (SuggestionAction) async -> Void
 
     var body: some View {
@@ -61,11 +56,16 @@ struct SuggestionPage: View {
             // The hero's "+" again, within reach once it has scrolled away.
             ToolbarItem(placement: .primaryAction) {
                 Menu {
-                    addActions
+                    SuggestionAddActions(
+                        suggestion: suggestion,
+                        onAdd: { choose(.add) },
+                        onAwait: { choose(.await($0)) }
+                    )
                 } label: {
                     Label("Ajouter", systemImage: "plus")
                         .labelStyle(.iconOnly)
                 }
+                .disabled(choices.marks[suggestion.id] != nil || choices.working[suggestion.id] != nil)
                 .accessibilityIdentifier("suggestion-toolbar-add")
             }
         }
@@ -73,6 +73,10 @@ struct SuggestionPage: View {
 
     private func act(_ action: SuggestionAction) {
         Task { await onAction(action) }
+    }
+
+    private func choose(_ choice: DiscoveryChoice) {
+        choices.choose(choice, for: suggestion, from: .add, leaving: .added, ask: onChoice)
     }
 
     // MARK: - Hero
@@ -84,86 +88,11 @@ struct SuggestionPage: View {
             isAwaited: suggestion.awaitedEditionId != nil,
             showsLength: false
         ) {
-            ScrollView(.horizontal) {
-                heroButtons
-                    .padding(.horizontal, 20)
+            HStack(spacing: 12) {
+                DiscoveryButtons(suggestion: suggestion, choices: choices, onChoice: onChoice)
             }
-            .scrollIndicators(.hidden)
-            .scrollClipDisabled()
-            .padding(.horizontal, -20)
+            .controlSize(.large)
         }
-    }
-
-    /// The "+" white, as a book's next step, and the thumb on glass beside it.
-    private var heroButtons: some View {
-        // No GlassEffectContainer: a menu opened from inside one loses a moving
-        // tap on a row over a neighbouring button.
-        HStack(spacing: 8) {
-            addMenu
-            notForMeMenu
-        }
-        .font(.subheadline.weight(.semibold))
-        .controlSize(.regular)
-        .fixedSize()
-    }
-
-    /// On the pile, on the shelf as read, or awaited in each format its
-    /// edition is not out and not awaited yet in, as a book's page offers it.
-    private var addMenu: some View {
-        Menu {
-            addActions
-        } label: {
-            heroLabel("Ajouter", systemImage: "plus")
-        }
-        .menuStyle(.button)
-        .buttonStyle(.glassProminent)
-        .tint(.white)
-        .foregroundStyle(.black)
-        .accessibilityIdentifier("suggestion-menu")
-    }
-
-    /// What the "+" offers, in the hero and in the bar alike.
-    private var addActions: some View {
-        SuggestionAddActions(
-            suggestion: suggestion,
-            onAdd: { act(.add($0)) },
-            onAwait: { act(.awaitEdition($0)) }
-        )
-    }
-
-    /// The two ways of saying no, each told to the model — not their kind of
-    /// book, which steers it clear of its like, or merely not for now.
-    private var notForMeMenu: some View {
-        Menu {
-            Button("Je n'aime pas", systemImage: "hand.thumbsdown", role: .destructive) {
-                act(.dismiss(.disliked))
-            }
-            .accessibilityIdentifier("suggestion-dislike")
-            Button("Pas intéressé", systemImage: "eye.slash", role: .destructive) {
-                act(.dismiss(.notInterested))
-            }
-            .accessibilityIdentifier("suggestion-dismiss")
-        } label: {
-            heroLabel("Pas pour moi", systemImage: "hand.thumbsdown")
-        }
-        .menuStyle(.button)
-        .buttonStyle(.glass)
-        .accessibilityIdentifier("suggestion-not-for-me")
-    }
-
-    /// Set as the reader's own hero sets its buttons: the symbol in the
-    /// text's font, six points from it, one height.
-    private func heroLabel(_ title: LocalizedStringKey, systemImage: String) -> some View {
-        HStack(spacing: 6) {
-            Image(systemName: systemImage)
-                .imageScale(.medium)
-                .accessibilityHidden(true)
-            Text(title)
-        }
-        .lineLimit(1)
-        .fixedSize()
-        .padding(.horizontal, 2)
-        .frame(height: 24)
     }
 
     /// Said on the detail line: when an edition announced comes out, or where
@@ -211,22 +140,16 @@ struct SuggestionPage: View {
 }
 
 /// What a suggestion's "+" offers, on its page and on the home screen's
-/// carousel: on the pile, on the shelf as read, or awaited in each format its
-/// edition is not out and not awaited yet in.
+/// carousel: on the pile, or awaited in each format its edition is not out and
+/// not awaited yet in. "Déjà lu" is the eye's.
 struct SuggestionAddActions: View {
     let suggestion: Suggestion
-    let onAdd: (ReadingStatus) -> Void
+    let onAdd: () -> Void
     let onAwait: (ReleaseFormat) -> Void
-    /// The home carousel's thumb carries "Déjà lu" itself.
-    var offersAlreadyRead = true
 
     var body: some View {
-        Button("Ajouter", systemImage: "books.vertical") { onAdd(.toRead) }
+        Button("Ajouter", systemImage: "books.vertical") { onAdd() }
             .accessibilityIdentifier("suggestion-add")
-        if offersAlreadyRead {
-            Button("Déjà lu", systemImage: "checkmark.circle") { onAdd(.read) }
-                .accessibilityIdentifier("suggestion-already-read")
-        }
         ForEach(suggestion.awaitableFormats) { format in
             Button(
                 format.awaitLabel,
@@ -241,7 +164,13 @@ struct SuggestionAddActions: View {
 
 #Preview("Describing") {
     NavigationStack {
-        SuggestionPage(suggestion: .preview, shown: Suggestion.preview.cover, isDescribing: true) { _ in }
+        SuggestionPage(
+            suggestion: .preview,
+            shown: Suggestion.preview.cover,
+            isDescribing: true,
+            choices: DiscoveryChoices(),
+            onChoice: { _, _ in true }
+        ) { _ in }
     }
 }
 
@@ -250,7 +179,9 @@ struct SuggestionAddActions: View {
         SuggestionPage(
             suggestion: .preview,
             shown: Suggestion.preview.cover.described(by: .preview),
-            isDescribing: false
+            isDescribing: false,
+            choices: DiscoveryChoices(),
+            onChoice: { _, _ in true }
         ) { _ in }
     }
 }

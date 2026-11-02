@@ -100,21 +100,6 @@ struct HomeViewModelTests {
         #expect(viewModel.dashboard != nil)
     }
 
-    @Test func dismissedDiscoveryIsToldThenTheStripAskedAgain() async {
-        let calls = Calls()
-        var client = HomeClient.preview
-        client.dismissSuggestion = { id, reason in calls.record("dismiss \(id) \(reason)") }
-        client.discoveries = {
-            calls.record("discoveries")
-            throw Boom()
-        }
-        let viewModel = HomeViewModel(client: client, caching: false)
-
-        await viewModel.dismiss(.preview, reason: .disliked)
-
-        #expect(calls.all == ["dismiss \(Suggestion.preview.id) disliked", "discoveries"])
-    }
-
     @Test func monthWithoutItsSelectionGetsOneMadeOnceTheShelfIsKnown() async {
         let calls = Calls()
         let month = MonthlyDiscoveries.month(of: .now)

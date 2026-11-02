@@ -7,14 +7,54 @@ struct SuggestionViewModelTests {
     @Test func anAdditionGoesOnTheShelfInTheAppsLanguage() async {
         let calls = Calls()
         var client = DiscoverClient.preview
-        client.addBook = { draft in
+        client.addSuggestion = { draft in
             calls.record("add \(draft.title) \(draft.status) \(draft.language.map(\.rawValue) ?? "none")")
+            return "book"
         }
         let viewModel = SuggestionViewModel(suggestion: .preview, client: client)
 
-        await viewModel.add(status: .read)
+        let accepted = await viewModel.choose(.preview, .alreadyRead)
 
+        #expect(accepted)
         #expect(calls.all == ["add Les Salauds Gentilshommes read none"])
+    }
+
+    @Test func theCheckPressedAgainTakesTheBookOffTheShelf() async {
+        let calls = Calls()
+        var client = DiscoverClient.preview
+        client.addSuggestion = { _ in "book" }
+        client.deleteBook = { calls.record("delete \($0)") }
+        let viewModel = SuggestionViewModel(suggestion: .preview, client: client)
+
+        _ = await viewModel.choose(.preview, .alreadyRead)
+        _ = await viewModel.choose(.preview, .undoAlreadyRead)
+
+        #expect(calls.all == ["delete book"])
+    }
+
+    @Test func turnedDownThenTakenBackIsToldToTheServer() async {
+        let calls = Calls()
+        var client = DiscoverClient.preview
+        client.dismissSuggestion = { id, reason in calls.record("dismiss \(id) \(reason)") }
+        client.reconsiderSuggestion = { calls.record("reconsider \($0)") }
+        let viewModel = SuggestionViewModel(suggestion: .preview, client: client)
+
+        _ = await viewModel.choose(.preview, .notInterested)
+        _ = await viewModel.choose(.preview, .reconsider)
+
+        let id = Suggestion.preview.id
+        #expect(calls.all == ["dismiss \(id) notInterested", "reconsider \(id)"])
+    }
+
+    @Test func aRefusedChoiceIsSaidAndLeavesTheButtonsAsTheyWere() async {
+        var client = DiscoverClient.preview
+        client.dismissSuggestion = { _, _ in throw Boom() }
+        let viewModel = SuggestionViewModel(suggestion: .preview, client: client)
+
+        let accepted = await viewModel.choose(.preview, .notInterested)
+
+        #expect(!accepted)
+        #expect(viewModel.actionError != nil)
     }
 
     @Test func aRecordingIsHeldOnNoMedium() {
@@ -44,7 +84,7 @@ struct SuggestionViewModelTests {
         }
         let viewModel = SuggestionViewModel(suggestion: .preview, client: client)
 
-        await viewModel.awaitEdition(.audiobook)
+        _ = await viewModel.choose(.preview, .await(.audiobook))
 
         #expect(calls.all == ["await \(Suggestion.preview.draft.title) audiobook"])
     }

@@ -75,6 +75,7 @@ struct HomePage: View {
     /// A choice on a discovery of the carousel, waited on: its buttons follow
     /// the answer.
     var onDiscoveryChoice: (Suggestion, DiscoveryChoice) async -> Bool = { _, _ in true }
+    var discoveryChoices = DiscoveryChoices()
     let onAction: (HomeAction) -> Void
 
     /// How far the page is pulled down past its top.
@@ -115,6 +116,7 @@ struct HomePage: View {
                         onOpenRelease: { onAction(.openRelease($0)) },
                         onOpen: { onAction(.openDiscovery($0)) },
                         onChoice: onDiscoveryChoice,
+                        choices: discoveryChoices,
                         onSeeRelease: { onAction(.seeRelease($0)) },
                         onUnseeRelease: { onAction(.unseeRelease($0)) },
                         onShowDiscover: { onAction(.showDiscover) },

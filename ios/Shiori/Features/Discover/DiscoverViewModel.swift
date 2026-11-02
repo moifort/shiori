@@ -234,28 +234,6 @@ final class DiscoverViewModel {
         }
     }
 
-    /// "Pas intéressé" or "Je n'aime pas": the row leaves at once, and the line is asked again
-    /// for the next suggestion once the server took note. Put back if it
-    /// refused.
-    func dismiss(_ suggestion: Suggestion, reason: DismissalReason, format: ReleaseFormat) async {
-        let before = discoveries
-        withAnimation(.smooth) {
-            discoveries = discoveries.map { current in
-                MonthlyDiscoveries(
-                    month: current.month,
-                    suggestions: current.suggestions.filter { $0.id != suggestion.id }
-                )
-            }
-        }
-        do {
-            try await client.dismissSuggestion(suggestion.id, reason)
-            await loadDiscoveries(format)
-        } catch {
-            withAnimation(.smooth) { discoveries = before }
-            errorMessage = reportError(error)
-        }
-    }
-
     /// Every format already shown is asked again.
     func reloadAwaited() async {
         for format in ReleaseFormat.allCases where feed.awaited[format] != nil { await loadAwaited(format) }

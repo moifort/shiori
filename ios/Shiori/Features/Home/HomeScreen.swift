@@ -302,10 +302,11 @@ struct HomeScreen: View {
                 Task { await viewModel.stopAwaiting(edition) }
             }
         case let .discovery(suggestion):
-            SuggestionScreen(suggestion: suggestion) { outcome in
-                guard case let .dismissed(reason) = outcome else { return }
-                Task { await viewModel.dismiss(suggestion, reason: reason) }
-            }
+            SuggestionScreen(
+                suggestion: suggestion,
+                choices: viewModel.discoveryChoices,
+                onChoice: viewModel.choose
+            )
         case .genres:
             GenreInsightsScreen(load: viewModel.genreInsights)
         case .statistics:
@@ -319,9 +320,8 @@ struct HomeScreen: View {
 
     /// What a closed detail leaves to refresh. A saga's first opening may have
     /// built the catalogue its bar is measured on, and reading a catalogue is
-    /// no write, so no notice says so. A discovery closed is asked again: an
-    /// addition, a wait or a dismissal takes the book off, and the next one
-    /// comes in.
+    /// no write, so no notice says so. A discovery closed is asked again: what
+    /// its page decided takes the book off, and the next one comes in.
     private func afterClosing(_ detail: HomeDetail) {
         switch detail {
         case .series: Task { await viewModel.load() }
@@ -344,7 +344,8 @@ struct HomeScreen: View {
                     isSideBySide: isSplit && detail == nil,
                     isCompact: !isSplit,
                     onBarCalled: { bar.call($0) },
-                    onDiscoveryChoice: viewModel.choose
+                    onDiscoveryChoice: viewModel.choose,
+                    discoveryChoices: viewModel.discoveryChoices
                 ) { action in
                     switch action {
                     case let .showLibrary(request): onShowLibrary(request)

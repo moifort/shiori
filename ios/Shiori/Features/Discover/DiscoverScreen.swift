@@ -106,12 +106,7 @@ struct DiscoverScreen: View {
                 Task { await viewModel.stopAwaiting(edition) }
             }
         case let .suggestion(suggestion):
-            SuggestionScreen(suggestion: suggestion, client: client) { outcome in
-                guard case let .dismissed(reason) = outcome else { return }
-                Task {
-                    await viewModel.dismiss(suggestion, reason: reason, format: viewModel.awardsFormat)
-                }
-            }
+            SuggestionScreen(suggestion: suggestion, client: client)
         case let .winner(winner):
             AwardWinnerScreen(winner: winner, client: client)
         case let .author(opened):
@@ -120,8 +115,8 @@ struct DiscoverScreen: View {
         }
     }
 
-    /// What a closed page leaves to ask again. A suggestion closed: an
-    /// addition or a wait takes it off, and the next one comes in. A winner
+    /// What a closed page leaves to ask again. A suggestion closed: what
+    /// its page decided takes it off, and the next one comes in. A winner
     /// closed: the cover its page found is drawn on the tile.
     private func afterClosing(_ detail: DiscoverDetail) {
         switch detail {

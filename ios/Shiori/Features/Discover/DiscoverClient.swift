@@ -20,6 +20,12 @@ struct DiscoverClient: Sendable {
     var describe: @Sendable (ReleaseSeed) async throws -> ReleaseDescription
     /// Onto the pile, through the one "look up, then add" use case.
     var addBook: @Sendable (BookDraft) async throws -> Void
+    /// A suggestion put on the shelf from its page: the book's id.
+    var addSuggestion: @Sendable (BookDraft) async throws -> String = { _ in "" }
+    /// A book said read by mistake from its suggestion, off the shelf again.
+    var deleteBook: @Sendable (_ id: String) async throws -> Void = { _ in }
+    /// A dismissal taken back from the red thumb.
+    var reconsiderSuggestion: @Sendable (_ id: String) async throws -> Void = { _ in }
     /// A saga's recording through the reader's Audible account.
     var addAudibleVolume: @Sendable (_ seriesId: String, _ volume: Int) async throws -> Void
     /// Whether nothing can reach the reader: the system said no, or every
@@ -49,6 +55,9 @@ extension DiscoverClient {
         dismissSuggestion: { try await SuggestionsAPI.dismiss(id: $0, reason: $1) },
         describe: { try await ReleaseAPI.describe($0) },
         addBook: { _ = try await BookAddition.add($0, source: .discover) },
+        addSuggestion: { try await BookAddition.add($0, source: .discover).id },
+        deleteBook: { try await BookAPI.delete(id: $0) },
+        reconsiderSuggestion: { try await SuggestionsAPI.reconsider(id: $0) },
         addAudibleVolume: { seriesId, volume in
             _ = try await SeriesAPI.addAudibleVolume(seriesId: seriesId, volume: volume)
             track(.bookAdded(source: .discover))

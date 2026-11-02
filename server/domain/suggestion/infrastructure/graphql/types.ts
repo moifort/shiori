@@ -31,6 +31,7 @@ export const DismissalReasonEnum = builder.enumType('DismissalReason', {
       value: 'disliked',
       description:
         'Said “Je n’aime pas”: not their kind of book — the model steers clear of its like.',
+      deprecationReason: 'The app only offers NOT_INTERESTED now.',
     },
   } as const,
 })

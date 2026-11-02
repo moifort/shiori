@@ -313,18 +313,15 @@ final class HomeViewModel {
         await load()
     }
 
-    /// A discovery turned down from its page: off the strip, and the next
-    /// one comes in.
-    func dismiss(_ suggestion: Suggestion, reason: DismissalReason) async {
-        do { try await client.dismissSuggestion(suggestion.id, reason) } catch { _ = reportError(error) }
-        await loadDiscoveries()
-    }
+    /// What the reader decided about each discovery, shared by the hero and
+    /// the page it opens.
+    let discoveryChoices = DiscoveryChoices()
 
-    /// The books said read from the carousel, by the discovery they came
-    /// from: the thumb pressed again takes them off the shelf.
+    /// The books said read from a discovery's buttons, by the discovery they
+    /// came from: the check pressed again takes them off the shelf.
     private var booksRead: [Suggestion.ID: String] = [:]
 
-    /// A choice from the carousel's "+" or thumb. The discovery stays on
+    /// A choice from a discovery's "+" or eye. The discovery stays on
     /// screen until the reader leaves the page. Says whether the server took
     /// it, and a failure in an alert: the buttons stay as they were.
     func choose(_ suggestion: Suggestion, _ choice: DiscoveryChoice) async -> Bool {
