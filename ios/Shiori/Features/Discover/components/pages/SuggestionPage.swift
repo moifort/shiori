@@ -9,7 +9,7 @@ enum SuggestionAction {
 
 /// A suggestion's page, in the reader's own book page's grammar: the hero over
 /// the cover's colours — where its edition stands on the detail line, the
-/// home hero's "+" and closed eye under it — then why it was chosen, as a card over the colours of the
+/// white "Ajouter" and the home hero's closed eye under it — then why it was chosen, as a card over the colours of the
 /// reader's books it draws on, the summary once written, and the facts as
 /// tiles. The "+", in the hero and in the bar, adds or awaits it; the eye turns
 /// it down or says it read. The page stays open on the choice, which the same
@@ -89,7 +89,7 @@ struct SuggestionPage: View {
             showsLength: false
         ) {
             HStack(spacing: 12) {
-                DiscoveryButtons(suggestion: suggestion, choices: choices, onChoice: onChoice)
+                DiscoveryButtons(suggestion: suggestion, choices: choices, onChoice: onChoice, addsInFull: true)
             }
             .controlSize(.large)
         }

@@ -71,6 +71,9 @@ struct DiscoveryButtons: View {
     /// Asks the server, and says whether it took the choice: the buttons
     /// change only then.
     let onChoice: (Suggestion, DiscoveryChoice) async -> Bool
+    /// "+ Ajouter" white, as the hero's call to action, rather than a round
+    /// "+": on the page, where nothing else leads.
+    var addsInFull = false
 
     /// The eye's button once a discovery is turned down.
     private static let turnedDownRed = Color(red: 0.78, green: 0.2, blue: 0.2)
@@ -80,27 +83,10 @@ struct DiscoveryButtons: View {
     private var isWorking: Bool { working != nil }
 
     var body: some View {
-        Menu {
-            SuggestionAddActions(
-                suggestion: suggestion,
-                onAdd: { choose(.add, from: .add, leaving: .added) },
-                onAwait: { choose(.await($0), from: .add, leaving: .added) }
-            )
-        } label: {
-            Label(
-                mark == .added ? "Ajouté" : "Ajouter",
-                systemImage: mark == .added ? "checkmark" : "plus"
-            )
-            .labelStyle(.iconOnly)
-            .font(.headline)
-            .contentTransition(.symbolEffect(.replace.magic(fallback: .downUp)))
-            .modifier(WorkingLabel(isWorking: working == .add))
-        }
-        .buttonStyle(.glass)
-        .buttonBorderShape(.circle)
-        .disabled(isWorking || mark == .read || mark == .notInterested)
-        .sensoryFeedback(.success, trigger: mark == .added)
-        .accessibilityIdentifier("discovery-menu")
+        addMenu
+            .disabled(addIsOff)
+            .sensoryFeedback(.success, trigger: mark == .added)
+            .accessibilityIdentifier("discovery-menu")
         // The closed eye opens a choice, and gives way to the one made: turned
         // down, a filled thumb pressing down as the button turns red; read, a
         // check on white. Pressed again, it takes the choice back. Never
@@ -153,6 +139,51 @@ struct DiscoveryButtons: View {
             .disabled(isWorking || mark == .added)
             .accessibilityIdentifier("discovery-dismiss")
         }
+    }
+
+    private var addIsOff: Bool { isWorking || mark == .read || mark == .notInterested }
+
+    @ViewBuilder private var addMenu: some View {
+        if addsInFull {
+            Menu {
+                addActions
+            } label: {
+                addLabel
+                    .labelStyle(.titleAndIcon)
+                    .modifier(WorkingLabel(isWorking: working == .add))
+            }
+            .menuStyle(.button)
+            // Not .glassProminent: see HeroProminentButtonStyle.
+            .buttonStyle(.heroProminent)
+            .opacity(addIsOff ? 0.45 : 1)
+        } else {
+            Menu {
+                addActions
+            } label: {
+                addLabel
+                    .labelStyle(.iconOnly)
+                    .modifier(WorkingLabel(isWorking: working == .add))
+            }
+            .buttonStyle(.glass)
+            .buttonBorderShape(.circle)
+        }
+    }
+
+    private var addActions: some View {
+        SuggestionAddActions(
+            suggestion: suggestion,
+            onAdd: { choose(.add, from: .add, leaving: .added) },
+            onAwait: { choose(.await($0), from: .add, leaving: .added) }
+        )
+    }
+
+    private var addLabel: some View {
+        Label(
+            mark == .added ? "Ajouté" : "Ajouter",
+            systemImage: mark == .added ? "checkmark" : "plus"
+        )
+        .font(.headline)
+        .contentTransition(.symbolEffect(.replace.magic(fallback: .downUp)))
     }
 
     private func choose(_ choice: DiscoveryChoice, from button: DiscoveryButton, leaving mark: DiscoveryMark?) {

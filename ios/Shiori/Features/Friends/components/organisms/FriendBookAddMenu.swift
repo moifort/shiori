@@ -53,23 +53,17 @@ struct FriendBookAddMenu: View {
                 }
             }
         } label: {
-            // Set as the reader's own hero sets its next step: the symbol
-            // in the text's font, six points from it, one height.
-            HStack(spacing: 6) {
-                Image(systemName: owned ? "checkmark" : "plus")
-                    .imageScale(.medium)
-                    .accessibilityHidden(true)
-                Text(owned ? "Chez vous" : "Ajouter")
-            }
+            Label(
+                owned ? "Chez vous" : "Ajouter",
+                systemImage: owned ? "checkmark" : "plus"
+            )
+            .font(.headline)
             .lineLimit(1)
             .fixedSize()
-            .padding(.horizontal, 2)
-            .frame(height: 24)
         }
         .menuStyle(.button)
-        .buttonStyle(.glassProminent)
-        .tint(.white)
-        .foregroundStyle(.black)
+        .buttonStyle(.heroProminent)
+        .opacity(owned && awaitable.isEmpty ? 0.45 : 1)
         .disabled(owned && awaitable.isEmpty)
         .accessibilityLabel(owned ? Text("Chez vous") : Text("Ajouter à ma bibliothèque"))
         .accessibilityIdentifier("friend-book-add-menu")
@@ -84,7 +78,6 @@ struct FriendBookAddMenu: View {
         )
         FriendBookAddMenu(formats: [.book], owned: true, awaitable: [], onAdd: { _, _ in }, onAwait: { _ in })
     }
-    .font(.subheadline.weight(.semibold))
     .padding()
     .background(.black)
 }

@@ -126,12 +126,12 @@ struct FriendBookPage: View {
     }
 
     /// The way onto the reader's shelf white, then what the friend made of
-    /// the book on glass — their stars, their heart — set as the reader's own
-    /// hero sets its rating: same font, same height, nothing to tap.
+    /// the book on glass — their stars, their heart — at the height of a book
+    /// to come's buttons, nothing to tap.
     private var heroButtons: some View {
         // No GlassEffectContainer: a menu opened from inside one loses a moving
         // tap on a row over a neighbouring button.
-        HStack(spacing: 8) {
+        HStack(spacing: 12) {
             FriendBookAddMenu(
                 formats: formats,
                 owned: owned,
@@ -158,19 +158,20 @@ struct FriendBookPage: View {
                 .accessibilityIdentifier("friend-book-rating")
             }
         }
-        .font(.subheadline.weight(.semibold))
-        .controlSize(.regular)
+        .font(.headline)
         .fixedSize()
     }
+
+    /// A large glass button's height.
+    private static let buttonHeight: CGFloat = 52
 
     /// A fact on glass beside the hero's button, at the button's own size.
     private func glassChip(@ViewBuilder _ content: () -> some View) -> some View {
         content()
             .lineLimit(1)
             .fixedSize()
-            .frame(height: 24)
             .padding(.horizontal, 14)
-            .padding(.vertical, 6)
+            .frame(minWidth: Self.buttonHeight, minHeight: Self.buttonHeight)
             .glassEffect(.regular, in: .capsule)
     }
 
