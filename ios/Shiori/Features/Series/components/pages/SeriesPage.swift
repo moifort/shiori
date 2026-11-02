@@ -5,7 +5,7 @@ enum SeriesAction {
     case openBook(Book)
     case rate
     case editGenre
-    /// The bell: the saga followed again, or set aside.
+    /// The eye: the saga followed again, or set aside.
     case setFollowed(Bool)
     case openAuthor(AuthorDestination)
     /// A volume announced in the edition opened, on its own page.
@@ -20,7 +20,7 @@ enum SeriesAction {
 /// One saga in the TV app's grammar, as the book page is drawn: a hero of
 /// three covers fanned over the colours of the first volume, the
 /// saga's name and its author; where the reader stands in the white capsule
-/// of the home's saga card, the saga's own stars and the bell that follows it
+/// of the home's saga card, the saga's own stars and the eye that follows it
 /// on Liquid Glass. Then, without cards around them: the next volume announced
 /// as the home's lead card, the saga in figures, its summary, its volumes and
 /// its annexes as rows of posters, and its facts as the book page's table.
@@ -50,8 +50,8 @@ struct SeriesPage: View {
     let announcedVolume: (Volume) -> DiscoveredVolume?
     let onAction: (SeriesAction) async -> Void
 
-    /// Bumped on each tap of the bell, which swings as a bell rings.
-    @State private var rings = 0
+    /// Bumped on each tap of the eye, which swings as it changes.
+    @State private var taps = 0
 
     private var currentYear: Int { Calendar.current.component(.year, from: .now) }
 
@@ -134,7 +134,7 @@ struct SeriesPage: View {
                     ratingButton
                     // Following is the reader's: not on a friend's shelf, nor
                     // over a saga they hold nothing of.
-                    if friend == nil, !owned.isEmpty { bell }
+                    if friend == nil, !owned.isEmpty { followButton }
                 }
             }
         }
@@ -178,24 +178,24 @@ struct SeriesPage: View {
         }
     }
 
-    /// The only way to follow the saga or set it aside: a tap swings it as a
-    /// bell rings, then strikes it through or clears it.
-    private var bell: some View {
+    /// The only way to follow the saga or set it aside: a tap swings the
+    /// crossed-out eye, then fills it in or clears it.
+    private var followButton: some View {
         Button {
-            rings += 1
+            taps += 1
             Task { await onAction(.setFollowed(!isFollowed)) }
         } label: {
-            Image(systemName: isFollowed ? "bell" : "bell.slash")
+            Image(systemName: isFollowed ? "eye.slash" : "eye.slash.fill")
                 .font(.title3.weight(.medium))
                 .foregroundStyle(.white)
-                .symbolEffect(.wiggle, value: rings)
+                .symbolEffect(.wiggle, value: taps)
                 .contentTransition(.symbolEffect(.replace))
                 .frame(width: ProgressCapsule.height, height: ProgressCapsule.height)
                 .contentShape(.circle)
         }
         .buttonStyle(.plain)
         .glassEffect(.regular.interactive(), in: .circle)
-        .sensoryFeedback(.selection, trigger: rings)
+        .sensoryFeedback(.selection, trigger: taps)
         .accessibilityLabel(Text(isFollowed ? "Ne plus suivre" : "Suivre"))
         .accessibilityIdentifier(isFollowed ? "series-unfollow" : "series-follow")
     }

@@ -237,7 +237,7 @@ enum SeriesState: String, Codable, CaseIterable, Identifiable, Sendable {
         case .notStarted: ReadingStatus.toRead.symbol
         case .inProgress: ReadingStatus.reading.symbol
         case .complete: ReadingStatus.read.symbol
-        case .unfollowed: "bell.slash"
+        case .unfollowed: "eye.slash"
         }
     }
 }

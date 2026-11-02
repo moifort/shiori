@@ -169,7 +169,7 @@ struct SeriesShelfPage: View {
     private var setAsideRow: some View {
         Button { onAction(.openSetAside) } label: {
             HStack(spacing: 12) {
-                Image(systemName: "bell.slash")
+                Image(systemName: "eye.slash")
                     .foregroundStyle(.secondary)
                     .frame(width: 26)
                 Text("Non suivies")
