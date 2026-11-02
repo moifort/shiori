@@ -7,6 +7,7 @@ import {
   datesAfterCorrection,
   datesAfterStatusChange,
   datesOnArrival,
+  formatNamedByLookup,
   formatSettledBySubgenres,
   groupedBySeries,
   inSagaOrder,
@@ -1574,6 +1575,22 @@ describe('mendedNames', () => {
     ).toEqual({})
     expect(mendedNames(held, { title: BookTitle('DUNE') })).toEqual({})
     expect(mendedNames(held, { title: '' })).toEqual({})
+  })
+})
+
+describe('formatNamedByLookup', () => {
+  test('lets a lookup file as drawn a book the cover left printed or unsettled', () => {
+    expect(formatNamedByLookup('book', 'manga')).toBe('manga')
+    expect(formatNamedByLookup(undefined, 'bande-dessinee')).toBe('bande-dessinee')
+  })
+  test('keeps what the cover told apart', () => {
+    expect(formatNamedByLookup('audiobook', 'manga')).toBe('audiobook')
+    expect(formatNamedByLookup('comic', 'manga')).toBe('comic')
+  })
+  test('takes nothing but a drawn format', () => {
+    expect(formatNamedByLookup('book', 'book')).toBe('book')
+    expect(formatNamedByLookup(undefined, null)).toBeUndefined()
+    expect(formatNamedByLookup(undefined, 'novel')).toBeUndefined()
   })
 })
 

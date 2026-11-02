@@ -1,6 +1,13 @@
 import type { Brand } from 'ts-brand'
 import type { AudibleAsin } from '~/domain/audible/types'
-import type { BookFormat, BookId, BookLanguage, CoverUrl, Isbn13 } from '~/domain/book/types'
+import type {
+  BookFormat,
+  BookId,
+  BookLanguage,
+  CoverUrl,
+  DrawnFormat,
+  Isbn13,
+} from '~/domain/book/types'
 import type { ReleaseFormat } from '~/domain/discovery/types'
 import type { ReleaseDate, SeriesName, VolumeNumber } from '~/domain/series/types'
 import type { AuthorName, BookTitle, UserId } from '~/domain/shared/types'
@@ -21,6 +28,8 @@ export type AwaitedSource = {
   authors: AuthorName[]
   language: BookLanguage
   series?: { name: SeriesName; volume?: VolumeNumber }
+  /** Set for a drawn story, which an edition awaited in print stays. */
+  drawnFormat?: DrawnFormat
   /** The publisher's cover, drawn until the edition awaited has its own. */
   coverUrl?: CoverUrl
   /** The reader's own photo of their copy, signed when drawn. Never a friend's:

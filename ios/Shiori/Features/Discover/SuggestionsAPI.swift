@@ -56,6 +56,8 @@ struct Suggestion: Identifiable, Hashable, Sendable, Codable {
     let storeURL: URL?
     let awaitableFormats: [ReleaseFormat]
     let awaitedEditionId: String?
+    /// What the model named it, for a drawn story; a book otherwise.
+    var drawnFormat: BookFormat? = nil
 
     /// The reference the row's mark is drawn from: the first the reason cites.
     var leadReference: SuggestionReference? { references.first }
@@ -67,7 +69,7 @@ struct Suggestion: Identifiable, Hashable, Sendable, Codable {
             id: "suggestion-\(id)",
             title: title,
             authors: authors,
-            format: format == .audiobook ? .audiobook : .book,
+            format: format == .audiobook ? .audiobook : drawnFormat ?? .book,
             coverURL: coverURL,
             status: .toRead
         )
@@ -78,7 +80,7 @@ struct Suggestion: Identifiable, Hashable, Sendable, Codable {
     /// off.
     var draft: BookDraft {
         var draft = BookDraft(title: originalTitle, authors: authors)
-        draft.format = .book
+        draft.format = drawnFormat ?? .book
         draft.language = originalLanguage
         return draft
     }
@@ -111,7 +113,7 @@ struct Suggestion: Identifiable, Hashable, Sendable, Codable {
         ReleaseSeed(
             title: title,
             authors: authors,
-            format: format == .audiobook ? .audiobook : .book,
+            format: format == .audiobook ? .audiobook : drawnFormat ?? .book,
             language: state == .unannounced ? originalLanguage : nil,
             releasedOn: date,
             coverURL: coverURL
@@ -276,6 +278,12 @@ extension Suggestion {
         case .announced: .announced
         case .unannounced, nil: .unannounced
         }
+        let drawnFormat: BookFormat? = switch fields.kind.value {
+        case .bandeDessinee: .bandeDessinee
+        case .comic: .comic
+        case .manga: .manga
+        case .novel, .essay, nil: nil
+        }
         self.init(
             id: fields.id,
             format: fields.format.value == .audiobook ? .audiobook : .book,
@@ -309,7 +317,8 @@ extension Suggestion {
                 case nil: return nil
                 }
             },
-            awaitedEditionId: fields.awaitedEditionId
+            awaitedEditionId: fields.awaitedEditionId,
+            drawnFormat: drawnFormat
         )
     }
 }

@@ -176,6 +176,74 @@ describe('upcomingOf', () => {
   })
 })
 
+describe('the format of an upcoming release', () => {
+  const sagaRow = (books: object[]) => ({
+    series: { saga: 'nausicaa', name: 'Nausicaä', books },
+    next: { number: 8, title: 'Tome 8', date: '2026-12-18' },
+    missing: [],
+    recent: [],
+    watched: true,
+  })
+  const authorRow = (next: object, books: object[]) => ({
+    author: { key: 'miyazaki', name: 'Miyazaki', favorite: false, books },
+    next,
+    recent: [],
+    sagas: [],
+    awaited: [],
+  })
+  const formatsOf = (sagas: object[], authors: object[]) =>
+    upcomingOf([
+      {
+        format: 'book',
+        discovery: { sagas, authors, unwatched: 0, followed: 1 } as unknown as Discovery,
+      },
+    ]).map((release) => release.format)
+
+  test('takes a saga as drawn from any volume known as drawn', () => {
+    const shelf = [{ format: 'book' }, { format: 'manga' }]
+    expect(formatsOf([sagaRow(shelf)], [])).toEqual(['manga'])
+  })
+
+  test('prefers what the web says of an author’s work to what they mostly write', () => {
+    const novelist = [{ format: 'book' }, { format: 'book' }]
+    expect(
+      formatsOf([], [authorRow({ title: 'Album', format: 'bande-dessinee' }, novelist)]),
+    ).toEqual(['bande-dessinee'])
+  })
+
+  test('falls back on what an author mostly writes, not on their first book', () => {
+    const shelf = [{ format: 'audiobook' }, { format: 'manga' }, { format: 'manga' }]
+    expect(formatsOf([], [authorRow({ title: 'Inédit' }, shelf)])).toEqual(['manga'])
+    const novelist = [{ format: 'comic' }, { format: 'book' }, { format: 'book' }]
+    expect(formatsOf([], [authorRow({ title: 'Inédit' }, novelist)])).toEqual(['book'])
+  })
+
+  test('keeps the drawn format of an edition awaited', () => {
+    const awaited = {
+      id: 'a1',
+      state: 'announced',
+      source: { title: 'Blacksad', authors: ['Díaz Canales'], drawnFormat: 'bande-dessinee' },
+    }
+    const row = { ...authorRow({}, []), next: undefined, awaited: [awaited] }
+    expect(formatsOf([], [row])).toEqual(['bande-dessinee'])
+  })
+
+  test('draws a recording as one whatever the saga is', () => {
+    const releases = upcomingOf([
+      {
+        format: 'audiobook',
+        discovery: {
+          sagas: [sagaRow([{ format: 'manga' }])],
+          authors: [],
+          unwatched: 0,
+          followed: 1,
+        } as unknown as Discovery,
+      },
+    ])
+    expect(releases.map((release) => release.format)).toEqual(['audiobook'])
+  })
+})
+
 describe('yearReleasesOf', () => {
   const today = '2026-11-01'
   const awaited = (title: string, state: AwaitedEditionView['state'], date?: string) =>

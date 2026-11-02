@@ -1,4 +1,5 @@
 import { AudibleAsin } from '~/domain/audible/primitives'
+import { drawnFormatOf } from '~/domain/book/business-rules'
 import { Isbn13 } from '~/domain/book/primitives'
 import type { BookLanguage } from '~/domain/book/types'
 import { ReleaseDate, SeriesName, VolumeNumber } from '~/domain/series/primitives'
@@ -45,6 +46,7 @@ export const worksFrom = (raw: readonly WorkOutput[]): FoundWork[] => {
     if (!title || works.has(slugify(title))) continue
     const seriesName = optionally(entry.series, SeriesName)
     const volume = optionally(entry.volume, VolumeNumber)
+    const format = drawnFormatOf(entry.format)
     works.set(slugify(title), {
       title,
       date: optionally(entry.date, ReleaseDate),
@@ -52,6 +54,7 @@ export const worksFrom = (raw: readonly WorkOutput[]): FoundWork[] => {
       asin: optionally(entry.asin, AudibleAsin),
       ...(seriesName ? { seriesName } : {}),
       ...(volume !== undefined ? { volume } : {}),
+      ...(format ? { format } : {}),
     })
   }
   return [...works.values()]

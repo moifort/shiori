@@ -1,4 +1,5 @@
 import {
+  formatNamedByLookup,
   formatSettledBySubgenres,
   mendedSpelling,
   titleWithoutAuthor,
@@ -115,6 +116,7 @@ type ShelfOutput = {
 type EnrichmentOutput = {
   title: string
   authors: string[]
+  format?: string | null
   seriesName?: string | null
   volumeNumber?: number | null
   volumeKind?: string | null
@@ -130,6 +132,7 @@ type EnrichmentOutput = {
 
 type EditionsOutput = {
   edition?: number | null
+  format?: string | null
   regularEdition?: number | null
   firstPublishedIn?: number | null
   genre?: string | null
@@ -308,7 +311,7 @@ export namespace ScanCommand {
       const regular = value.regularEdition != null ? editions[value.regularEdition] : undefined
       // The catalogue files an album under "Bande dessinée" as the web does.
       const { format, subgenres } = formatSettledBySubgenres(
-        seen.format,
+        formatNamedByLookup(seen.format, value.format),
         (value.subgenres ?? []).map((subgenre) => optional(subgenre, Subgenre)).filter(isPresent),
       )
       return {
@@ -558,10 +561,10 @@ export namespace ScanCommand {
 
     const parsed = parsedAuthors(value.authors)
     const authors = parsed.length > 0 ? parsed : seen.authors
-    // The search files a comic album under "Bande dessinée" where the cover
-    // left it a book: the subgenre settles the format, and leaves the list.
+    // The search knows a comic album where the cover left it a book: it names
+    // the format, or a subgenre does, and leaves the list.
     const { format, subgenres } = formatSettledBySubgenres(
-      seen.format,
+      formatNamedByLookup(seen.format, value.format),
       (value.subgenres ?? []).map((subgenre) => optional(subgenre, Subgenre)).filter(isPresent),
     )
     const series = parsedSeries(value, authors, format)

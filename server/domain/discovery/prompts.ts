@@ -91,7 +91,12 @@ Renseigne works : une entrée par livre, la première édition en ${language} se
       : ''
   }
 - series : le nom de la série dont il est un tome, tel que l'éditeur l'écrit en ${language}, sinon null.
-- volume : son numéro dans cette série, sinon null.
+- volume : son numéro dans cette série, sinon null.${
+    audio
+      ? ''
+      : `
+- format : 'manga', 'bande-dessinee' ou 'comic' pour un récit dessiné, 'book' pour un livre de texte.`
+  }
 
 Ne liste que des livres de ${author.name} confirmés par une source (éditeur, libraire, Audible, annonce de l'auteur ou du traducteur). Un auteur sans parution récente ni annonce dans cette langue revient avec works vide. N'invente rien.`
 }

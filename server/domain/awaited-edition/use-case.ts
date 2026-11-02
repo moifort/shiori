@@ -25,9 +25,9 @@ import type {
   EditionWatch,
   ScannedBook,
 } from '~/domain/awaited-edition/types'
-import { coverSourcesOf } from '~/domain/book/business-rules'
+import { coverSourcesOf, drawnFormatOf } from '~/domain/book/business-rules'
 import { BookQuery } from '~/domain/book/query'
-import type { BookId, BookView } from '~/domain/book/types'
+import type { BookFormat, BookId, BookView } from '~/domain/book/types'
 import { todayOf } from '~/domain/discovery/business-rules'
 import type { ReleaseFormat } from '~/domain/discovery/types'
 import { DiscoveryUseCase } from '~/domain/discovery/use-case'
@@ -150,6 +150,7 @@ export namespace AwaitedEditionUseCase {
       title: scanned.title,
       authors: scanned.authors,
       language: scanned.language ?? appLanguage,
+      ...drawnSourceOf(scanned.format),
       ...(scanned.series ? { series: scanned.series } : {}),
       ...(scanned.coverUrl ? { coverUrl: scanned.coverUrl } : {}),
     }
@@ -304,6 +305,11 @@ const awaitedOf = async (userId: UserId, now: Date): Promise<AwaitedEditionView[
 
 /** The book as the awaited edition remembers it. The reader's own photo is
  *  kept by its path, to be signed when drawn; a friend's never is. */
+const drawnSourceOf = (format: BookFormat) => {
+  const drawnFormat = drawnFormatOf(format)
+  return drawnFormat ? { drawnFormat } : {}
+}
+
 const sourceOf = (
   book: BookView,
   ownerId: UserId,
@@ -317,6 +323,7 @@ const sourceOf = (
     title: book.title,
     authors: book.authors,
     language: book.language ?? appLanguage,
+    ...drawnSourceOf(book.format),
     ...(book.series
       ? {
           series: {

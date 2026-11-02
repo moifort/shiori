@@ -48,7 +48,10 @@ mock.module('~/domain/kindle/infrastructure/kindle-api', () => ({
  *  what it answers — nothing by default, so the patterns read the titles. A
  *  queued failure is thrown by the next call. */
 const titleCalls: { asin: string; title: string }[][] = []
-let titleAnswers: Record<string, { title: string; seriesName?: string; volumeNumber?: number }> = {}
+let titleAnswers: Record<
+  string,
+  { title: string; seriesName?: string; volumeNumber?: number; format?: string }
+> = {}
 const titleFailures: Error[] = []
 mock.module('~/domain/kindle/infrastructure/title-reader', () => ({
   TITLES_PER_CALL: 40,
@@ -252,6 +255,30 @@ describe('importing the ticked titles', () => {
     const account = await KindleQuery.accountOf(reader)
     expect(account?.lastImportedAt).toEqual(NOW)
     expect(account?.readAsins).toBeUndefined()
+  })
+})
+
+describe('the format of the titles', () => {
+  const NIGHT_BEFORE = new Date('2026-09-20T02:00:00.000Z')
+  const NIGHT = new Date('2026-09-21T02:00:00.000Z')
+
+  test('reads a book filed before the question once, and leaves the reader’s word after', async () => {
+    await connect()
+    titles = [aTitle({ asin: 'B0MANGA001', title: 'Berserk T01', authors: ['Kentaro Miura'] })]
+    await KindleUseCase.syncLibrary(reader, NIGHT_BEFORE)
+    const [imported] = await BookQuery.all(reader)
+    expect(imported?.format).toBe('book')
+
+    titleCalls.length = 0
+    titleAnswers = { B0MANGA001: { title: 'Berserk', format: 'manga' } }
+    await KindleUseCase.syncLibrary(reader, NIGHT)
+    expect((await BookQuery.all(reader))[0]?.format).toBe('manga')
+    expect(titleCalls).toHaveLength(1)
+
+    await BookCommand.edit(reader, imported?.id as never, { format: 'book' } as never)
+    await KindleUseCase.syncLibrary(reader, NIGHT)
+    expect((await BookQuery.all(reader))[0]?.format).toBe('book')
+    expect(titleCalls).toHaveLength(1)
   })
 })
 

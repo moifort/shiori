@@ -7,6 +7,7 @@ import {
   acquiredSince,
   bookFrom,
   carriesVolume,
+  drawnBooksOf,
   editionLanguageOf,
   importableFrom,
   isCataloguable,
@@ -188,6 +189,7 @@ describe('readTitleFrom', () => {
       title: BookTitle('Iron Flame'),
       seriesName: 'The Empyrean',
       volume: 2,
+      format: 'book',
       readAt: READ_AT,
     })
   })
@@ -207,6 +209,35 @@ describe('readTitleFrom', () => {
 
   test('reads nothing from an answer with no title', () => {
     expect(readTitleFrom(aTitle(), { title: '  ', seriesName: null }, READ_AT)).toBeUndefined()
+  })
+})
+
+describe('the format of a Kindle title', () => {
+  const READ_AT = new Date('2026-09-14T10:00:00.000Z')
+  const read = (format: 'book' | 'manga' | undefined, amazonTitle = aTitle().title) =>
+    new Map([
+      [aTitle().asin, { asin: aTitle().asin, amazonTitle, title: 'Dune', format, readAt: READ_AT }],
+    ]) as never
+
+  test('is kept as the model read it, a book when it names no drawn one', () => {
+    expect(readTitleFrom(aTitle(), { title: 'A', format: 'manga' }, READ_AT)?.format).toBe('manga')
+    expect(readTitleFrom(aTitle(), { title: 'A', format: 'poem' }, READ_AT)?.format).toBe('book')
+    expect(readTitleFrom(aTitle(), { title: 'A' }, READ_AT)?.format).toBe('book')
+  })
+
+  test('files a new import as drawn, unless the reading is of another title', () => {
+    const importable = importableFrom(aTitle(), new Map(), read('manga'))
+    expect(importable && bookFrom(importable).format).toBe('manga')
+    const stale = importableFrom(aTitle(), new Map(), read('manga', 'Un autre titre'))
+    expect(stale && bookFrom(stale).format).toBe('book')
+  })
+
+  test('moves a book filed as prose, and nothing else', () => {
+    const asin = aTitle().asin as never
+    const prose = aBook({ kindleAsin: asin, format: 'book' })
+    expect(drawnBooksOf([prose], read('manga'))).toEqual([{ bookId: prose.id, format: 'manga' }])
+    expect(drawnBooksOf([prose], read('book'))).toEqual([])
+    expect(drawnBooksOf([aBook({ kindleAsin: asin, format: 'comic' })], read('manga'))).toEqual([])
   })
 })
 

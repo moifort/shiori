@@ -1,3 +1,4 @@
+import { DRAWN_FORMATS } from '~/domain/book/types'
 export const RELEASES_SCHEMA = {
   type: 'object',
   properties: {
@@ -43,6 +44,7 @@ export const AUTHOR_RELEASES_SCHEMA = {
           asin: { type: 'string', nullable: true },
           series: { type: 'string', nullable: true },
           volume: { type: 'integer', nullable: true },
+          format: { type: 'string', enum: ['book', ...DRAWN_FORMATS], nullable: true },
         },
         required: ['title'],
       },
@@ -58,6 +60,7 @@ export type WorkOutput = {
   asin?: string | null
   series?: string | null
   volume?: number | null
+  format?: string | null
 }
 
 export type AuthorReleasesOutput = { works?: WorkOutput[] }

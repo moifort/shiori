@@ -5063,7 +5063,10 @@ type Suggestion {
 
 """What a suggested book is, as the model named it."""
 enum SuggestionKind {
-  """A bande dessinée or a comic."""
+  """A Franco-Belgian bande dessinée."""
+  BANDE_DESSINEE
+
+  """A comic."""
   COMIC
 
   """Non-fiction: an essay, history, a biography."""

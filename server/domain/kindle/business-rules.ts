@@ -1,5 +1,5 @@
 import type { KindleTitle } from 'kindle-api-ts'
-import { keepsCopyOf, type Shelf, shelfKeyOf } from '~/domain/book/business-rules'
+import { drawnFormatOf, keepsCopyOf, type Shelf, shelfKeyOf } from '~/domain/book/business-rules'
 import type { NewBook } from '~/domain/book/command'
 import { CoverUrl } from '~/domain/book/primitives'
 import type {
@@ -7,6 +7,7 @@ import type {
   BookId,
   BookLanguage,
   CoverUrl as CoverUrlValue,
+  DrawnFormat,
   ReadingStatus,
   SeriesEntry,
 } from '~/domain/book/types'
@@ -196,7 +197,8 @@ export const readTitleFrom = (
     seriesName && answer.volumeNumber && carriesVolume(item.title, answer.volumeNumber)
       ? answer.volumeNumber
       : undefined
-  return { asin, amazonTitle: item.title, title, seriesName, volume, readAt }
+  const format = drawnFormatOf(answer.format) ?? 'book'
+  return { asin, amazonTitle: item.title, title, seriesName, volume, format, readAt }
 }
 
 /** A title split into the volume's own title and its saga: the model's reading
@@ -240,12 +242,15 @@ export const importableFrom = (
   const status: ReadingStatus = item.readStatus === 'READ' ? 'read' : 'to-read'
   const series = membershipOf(saga.series, authors[0])
   const language = editionLanguageOf(item.title, item.sortableTitle, store)
+  const read = reads.get(item.asin)
+  const drawnFormat = read?.amazonTitle === item.title ? drawnFormatOf(read.format) : undefined
   return {
     asin,
     title,
     authors,
     coverUrl: optionally(item.coverUrl, CoverUrl),
     series,
+    ...(drawnFormat ? { drawnFormat } : {}),
     language,
     status,
     // Amazon says a book was read, never when: the day it was acquired is the
@@ -262,13 +267,12 @@ export const importableFrom = (
 }
 
 /** The record an import writes: a book held on a screen, under the cover Amazon
- *  shows for it. Nothing is guessed beyond what the list carries — no summary,
- *  no page count, no genre, and no drawn format: a manga on a Kindle is filed a
- *  book until the reader says otherwise, or scans its paper copy. */
+ *  shows for it. Nothing is guessed beyond what the list carries and the title
+ *  tells — no summary, no page count, no genre. */
 export const bookFrom = (importable: ImportableKindleBook): NewBook => ({
   title: importable.title,
   authors: importable.authors,
-  format: 'book',
+  format: importable.drawnFormat ?? 'book',
   media: ['digital'],
   kindleCoverUrl: importable.coverUrl,
   series: importable.series,
@@ -278,6 +282,18 @@ export const bookFrom = (importable: ImportableKindleBook): NewBook => ({
   addedAt: importable.addedAt,
   kindleAsin: importable.asin,
 })
+
+/** The Kindle books filed as prose that a reading newly names as drawn. Asked
+ *  once per title, on the reading that first answers: a reader who files one
+ *  back as a book is not overruled the next night. */
+export const drawnBooksOf = (
+  books: readonly Book[],
+  reads: ReadonlyMap<string, ReadKindleTitle>,
+): { bookId: BookId; format: DrawnFormat }[] =>
+  books.flatMap((book) => {
+    const format = drawnFormatOf(book.kindleAsin && reads.get(book.kindleAsin)?.format)
+    return book.format === 'book' && format ? [{ bookId: book.id, format }] : []
+  })
 
 /** A book the sync found on the reader's Kindle, and the Kindle title it is. */
 export type KindleLink = { bookId: BookId; kindleAsin: KindleAsinValue; coverUrl?: CoverUrlValue }

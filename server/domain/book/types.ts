@@ -145,6 +145,10 @@ export const DEFAULT_BOOK_LANGUAGE: BookLanguage = 'fr'
 export const BOOK_FORMATS = ['book', 'audiobook', 'bande-dessinee', 'comic', 'manga'] as const
 export type BookFormat = (typeof BOOK_FORMATS)[number]
 
+/** The formats of a drawn story, which no store or title says outright. */
+export const DRAWN_FORMATS = ['bande-dessinee', 'comic', 'manga'] as const
+export type DrawnFormat = (typeof DRAWN_FORMATS)[number]
+
 /** Where a read book is held: on paper, on a screen. A record held both ways is
  *  one record carrying both. A recording has neither — it is heard. */
 export const BOOK_MEDIA = ['print', 'digital'] as const

@@ -1,5 +1,11 @@
 import type { Brand } from 'ts-brand'
-import type { BookLanguage, CoverUrl, ReadingStatus, SeriesEntry } from '~/domain/book/types'
+import type {
+  BookLanguage,
+  CoverUrl,
+  DrawnFormat,
+  ReadingStatus,
+  SeriesEntry,
+} from '~/domain/book/types'
 import type { AuthorName, BookTitle, UserId } from '~/domain/shared/types'
 
 /** Amazon's product identifier for a Kindle edition. Ten alphanumeric
@@ -90,6 +96,8 @@ export type ImportableKindleBook = {
   /** Read off the title, which is where Amazon puts the saga, by the model or,
    *  failing it, by pattern. Absent when neither finds one. */
   series?: SeriesEntry
+  /** Set for a drawn story, as the model read the title. */
+  drawnFormat?: DrawnFormat
   /** The language of the edition, which Amazon names in the title or its sort
    *  key. Absent when neither does. */
   language?: BookLanguage
@@ -123,6 +131,9 @@ export type ReadKindleTitle = {
   /** Only a number the Amazon title itself carries: the model's own knowledge
    *  of a saga's order was wrong on the first library tried. */
   volume?: number
+  /** What the title names: absent on a reading older than the question, which
+   *  is read again. */
+  format?: 'book' | DrawnFormat
   readAt: Date
 }
 

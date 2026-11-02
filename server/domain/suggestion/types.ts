@@ -6,7 +6,7 @@ import type { Language } from '~/domain/shared/language'
 import type { AuthorName, BookTitle, UserId } from '~/domain/shared/types'
 
 /** What a suggested book is, as the model names it. */
-export const SUGGESTION_KINDS = ['novel', 'essay', 'comic', 'manga'] as const
+export const SUGGESTION_KINDS = ['novel', 'essay', 'bande-dessinee', 'comic', 'manga'] as const
 export type SuggestionKind = (typeof SUGGESTION_KINDS)[number]
 
 /** A book the model thinks the reader would love, with why: the reason it

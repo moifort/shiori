@@ -120,6 +120,7 @@ ${sagaLineOf(series)}${formatLineOf(format)}${hintLinesOf(hints)}${editionOf(pub
 
 Renseigne :
 - title et authors : corrige-les si la recherche montre que la lecture de la couverture était fautive, sinon reprends-les tels quels. Le titre est celui du livre SEUL, sans le nom de la série ni le numéro du tome, qui ont leurs propres champs ; un tome sans titre propre porte le nom de la série.
+- format : 'manga' pour un manga ou un manhwa, 'bande-dessinee' pour une bande dessinée franco-belge, 'comic' pour un comic américain ou un roman graphique de cette tradition, 'book' pour un livre de texte. Une adaptation dessinée d'un roman est un récit dessiné, pas le roman.
 - synopsis : un résumé de 3 à 5 phrases, SANS révéler le dénouement.
 - firstPublishedIn : l'année de première publication de l'ŒUVRE, pas de cette édition.
 - genre : UN SEUL genre, choisi dans la liste imposée par le schéma : le plus précis qui convienne au contenu. Le format de l'objet (manga, BD) et le public visé (jeunesse, young adult) ne sont pas des genres. Mets other si aucun ne convient.
@@ -175,10 +176,11 @@ ${blurbs.length > 0 ? blurbs.join('\n') : '(aucun)'}
 Renseigne :
 - edition : l'indice, entre crochets, de l'édition qui est CELLE-CI — même éditeur, même tome, même format. Une édition d'un autre tome ou d'un autre format est fausse, même si son titre ressemble. Si plusieurs conviennent, prends l'édition courante la plus récente. Mets null si aucune ne convient avec certitude : aucune édition vaut mieux qu'une fausse.
 - regularEdition : seulement si l'édition choisie est une édition spéciale (collector, limitée, de luxe, coffret) : l'indice de l'édition courante du même livre, chez le même éditeur. Sinon null.
+- format : 'manga' pour un manga ou un manhwa, 'bande-dessinee' pour une bande dessinée franco-belge, 'comic' pour un comic américain ou un roman graphique de cette tradition, 'book' pour un livre de texte. Une adaptation dessinée d'un roman est un récit dessiné, pas le roman.
 - synopsis : un résumé de 3 à 5 phrases, SANS révéler le dénouement, écrit UNIQUEMENT à partir des résumés trouvés ci-dessus. S'il n'y en a aucun, ou s'ils ne décrivent pas ce livre, mets null : n'écris jamais un résumé de mémoire.
 - firstPublishedIn : l'année où l'ŒUVRE a paru pour la première fois, dans sa langue d'origine. Ce n'est ni l'année de cette édition ni celle d'une traduction : les années des éditions ci-dessus ne la donnent que pour une œuvre écrite en français. Mets null si tu ne la connais pas avec certitude.
 - genre : UN SEUL genre, choisi dans la liste imposée par le schéma : le plus précis qui convienne au contenu. Le format de l'objet (manga, BD) et le public visé (jeunesse, young adult) ne sont pas des genres. Mets other si aucun ne convient.
-- subgenres : de 0 à 3 sous-genres libres qui précisent le genre (« dark fantasy », « space opera », « shōnen », « jeunesse »), écrits en ${languageNames.of(editionLanguage ?? language)}, la langue de cette édition — ce champ fait exception à la règle de langue ci-dessous. Classe-les du plus représentatif au moins représentatif. Ne répète pas le genre, et n'y mets ni le format (manga, bande dessinée, roman) ni la nationalité.
+- subgenres : de 0 à 3 sous-genres libres qui précisent le genre (« dark fantasy », « space opera », « shōnen », « jeunesse »), écrits en ${languageNames.of(editionLanguage ?? language)}, la langue de cette édition — ce champ fait exception à la règle de langue ci-dessous. Classe-les du plus représentatif au moins représentatif. Ne répète pas le genre, et n'y mets pas la nationalité.
 
 Toutes les valeurs textuelles doivent être en ${LANGUAGE_NAMES[language]}.`
 }

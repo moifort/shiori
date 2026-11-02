@@ -14,6 +14,11 @@ const item = (extra: Record<string, unknown> = {}) => ({
 })
 
 describe('suggestionsOf', () => {
+  test('tells a bande dessinée from a comic', () => {
+    const [album] = suggestionsOf(JSON.stringify([item({ kind: 'bande-dessinee' })]))
+    expect(album?.kind).toBe('bande-dessinee')
+  })
+
   test('reads the array out of the text around it', () => {
     const [suggestion] = suggestionsOf(`Voici :\n${JSON.stringify([item()])}\nBonne lecture`)
     expect(suggestion).toEqual({

@@ -9,6 +9,7 @@ import type {
   CoverCandidate,
   CoverSource,
   CoverUrl,
+  DrawnFormat,
   LibrarySection,
   LibraryView,
   Publisher,
@@ -23,7 +24,7 @@ import type {
   SyncedBookRemoval,
   TaggedSubgenre,
 } from '~/domain/book/types'
-import { BOOK_MEDIA, READING_STATUSES } from '~/domain/book/types'
+import { BOOK_MEDIA, DRAWN_FORMATS, READING_STATUSES } from '~/domain/book/types'
 import { compareWithinSeries } from '~/domain/series/business-rules'
 import { isAudioSeries, sagaKeyFor, seriesIdOf, seriesKeyOf } from '~/domain/series/primitives'
 import type { SagaKey, SeriesName } from '~/domain/series/types'
@@ -1191,6 +1192,18 @@ const formatNamedBy = (subgenre: string): BookFormat | undefined =>
       .replace(/[^a-z]+/g, ' ')
       .trim()
   ]
+
+/** The drawn format a model named, anything else being no format at all. */
+export const drawnFormatOf = (named: unknown): DrawnFormat | undefined =>
+  DRAWN_FORMATS.find((format) => format === named)
+
+/** A book's format once a lookup named one: a drawn format corrects a printed
+ *  book or a format left unsettled, never what the cover already told apart. */
+export const formatNamedByLookup = (
+  seen: BookFormat | undefined,
+  named: unknown,
+): BookFormat | undefined =>
+  seen !== undefined && seen !== 'book' ? seen : (drawnFormatOf(named) ?? seen)
 
 /** A book's format settled by its subgenres: a web search that files a book
  *  under "Bande dessinée" says what the object is, where a cover read as a

@@ -10,6 +10,22 @@ const page = (date: string, language: string) =>
    <div class="a-section"> <span class="rpi-icon language"></span> </div>
    <div class="a-section a-spacing-none a-text-center rpi-attribute-value"> <span>${language}</span> </div>`
 
+describe('a work’s format', () => {
+  test('is kept for a drawn story alone', () => {
+    expect(
+      worksFrom([
+        { title: 'Album', format: 'bande-dessinee' },
+        { title: 'Roman', format: 'book' },
+        { title: 'Inconnu', format: 'poem' },
+      ]),
+    ).toEqual([
+      { title: 'Album', format: 'bande-dessinee' },
+      { title: 'Roman' },
+      { title: 'Inconnu' },
+    ] as never)
+  })
+})
+
 describe('an Amazon date', () => {
   test('is read in every store’s way of writing it', () => {
     expect(amazonDateOf('26 août 2021') as string).toBe('2021-08-26')

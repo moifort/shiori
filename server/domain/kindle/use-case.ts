@@ -8,6 +8,7 @@ import { BookQuery } from '~/domain/book/query'
 import type { Book, BookLanguage, KindlePosition as KindlePositionValue } from '~/domain/book/types'
 import {
   bookFrom,
+  drawnBooksOf,
   importableFrom,
   isCataloguable,
   type KindleLink,
@@ -153,7 +154,7 @@ export namespace KindleUseCase {
     )
     const removed = new Set<string>(removals.map(({ asin }) => asin))
     const returning = fresh.filter((title) => removed.has(title.asin)).map(({ asin }) => asin)
-    const { links, linked, reads } = await linksOf(
+    const { links, linked, reads, asked } = await linksOf(
       owned,
       titles,
       fresh,
@@ -162,6 +163,7 @@ export namespace KindleUseCase {
       store,
     )
     const moves = readingChangesFor(linked, titles, account.readAsins)
+    const drawn = await drawnKindleBooksOf(linked, titles, asked, now)
     const acquired = toImportable(fresh, linked, reads, store).filter(
       (importable) => !importable.alreadyInLibrary,
     )
@@ -184,9 +186,12 @@ export namespace KindleUseCase {
       await bulkSave(positions, async ({ bookId, position }) =>
         BookCommand.recordKindlePosition(userId, bookId, position, now),
       )
+      await bulkSave(drawn, async ({ bookId, format }) =>
+        BookCommand.fileAsDrawn(userId, bookId, format, now),
+      )
     }
     // A night with nothing new leaves the dashboard as it was.
-    if (links.length + moves.length + acquired.length + positions.length > 0) {
+    if (links.length + moves.length + acquired.length + positions.length + drawn.length > 0) {
       await AnalyticsUseCase.whileStale(userId, write)
     }
     await BookCommand.forgetSyncRemovals(userId, 'kindle', returning)
@@ -283,7 +288,8 @@ const linksOf = async (
   store: BookLanguage,
 ) => {
   const worth = titlesWorthMatching(owned, titles, fresh, lastPass)
-  const reads = await readingsOf([...new Set([...fresh, ...worth])], now)
+  const asked = [...new Set([...fresh, ...worth])]
+  const reads = await readingsOf(asked, now)
   const links = kindleLinksFor(owned, worth, reads, store)
   const linked = owned.map((book) => {
     const link = links.find((candidate) => candidate.bookId === book.id)
@@ -295,7 +301,7 @@ const linksOf = async (
         }
       : book
   })
-  return { links, linked, reads }
+  return { links, linked, reads, asked }
 }
 
 const linkAll = (userId: UserId, links: KindleLink[], now: Date) =>
@@ -407,6 +413,24 @@ const toImportable = (
 const removedAsinsOf = async (userId: UserId): Promise<Set<string>> =>
   new Set((await BookQuery.syncRemovals(userId, 'kindle')).map(({ asin }) => asin))
 
+/** The Kindle books filed as prose whose title was read before the format was
+ *  asked: read again, once, and the drawn ones among them. */
+const drawnKindleBooksOf = async (
+  owned: readonly Book[],
+  titles: readonly KindleTitle[],
+  askedTonight: readonly KindleTitle[],
+  now: Date,
+) => {
+  const prose = owned.filter((book) => book.format === 'book' && book.kindleAsin)
+  const asins = new Set<string>(prose.flatMap((book) => book.kindleAsin ?? []))
+  const tonight = new Set(askedTonight.map((title) => title.asin))
+  const held = titles.filter((title) => asins.has(title.asin) && !tonight.has(title.asin))
+  const known = await KindleQuery.readTitles(held.map((title) => title.asin))
+  const asked = new Set<string>(known.flatMap((read) => (read.format ? [read.asin] : [])))
+  const unasked = held.filter((title) => !asked.has(title.asin))
+  return unasked.length > 0 ? drawnBooksOf(prose, await readingsOf(unasked, now)) : []
+}
+
 /** The model's reading of each title, by ASIN: from the shared store when a
  *  reader already paid for it, from the model otherwise, a batch of titles per
  *  call and the calls side by side.
@@ -425,7 +449,10 @@ const readingsOf = async (
       read,
     ]),
   )
-  const unread = wanted.filter((title) => known.get(title.asin)?.amazonTitle !== title.title)
+  const unread = wanted.filter((title) => {
+    const read = known.get(title.asin)
+    return read?.amazonTitle !== title.title || read.format === undefined
+  })
   if (unread.length === 0 || (import.meta.dev && config().scanStub)) return known
 
   const batches = Array.from({ length: Math.ceil(unread.length / TITLES_PER_CALL) }, (_, index) =>

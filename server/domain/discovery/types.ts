@@ -6,6 +6,7 @@ import type {
   BookFormat,
   BookLanguage,
   CoverUrl,
+  DrawnFormat,
   Isbn13,
   ListeningMinutes,
   NarratorName,
@@ -176,6 +177,8 @@ export type FoundWork = {
    *  from the next volume of a saga the reader already follows. */
   seriesName?: SeriesName
   volume?: VolumeNumber
+  /** Set for a drawn story: an author can write both. */
+  format?: DrawnFormat
 }
 
 /** What an author brought out lately or has announced in one language and

@@ -27,6 +27,7 @@ import type {
   BookMedium,
   ChosenCover,
   CoverUrl,
+  DrawnFormat,
   Genre,
   Isbn13,
   KindlePosition,
@@ -736,6 +737,17 @@ export namespace BookCommand {
         batch,
       )
     return changing.length
+  }
+
+  /** File a book as a drawn story: same saga, same media. */
+  export const fileAsDrawn = async (
+    userId: UserId,
+    bookId: BookId,
+    format: DrawnFormat,
+    now = new Date(),
+  ): Promise<void> => {
+    const book = await repository.findById(userId, bookId)
+    if (book) await repository.save({ ...book, format, updatedAt: now })
   }
 
   /** Give every reader's volumes of a saga in one edition the name that

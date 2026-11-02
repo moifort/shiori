@@ -15,7 +15,8 @@ export const SuggestionKindEnum = builder.enumType('SuggestionKind', {
   values: {
     NOVEL: { value: 'novel', description: 'A novel, or any prose fiction.' },
     ESSAY: { value: 'essay', description: 'Non-fiction: an essay, history, a biography.' },
-    COMIC: { value: 'comic', description: 'A bande dessinée or a comic.' },
+    BANDE_DESSINEE: { value: 'bande-dessinee', description: 'A Franco-Belgian bande dessinée.' },
+    COMIC: { value: 'comic', description: 'A comic.' },
     MANGA: { value: 'manga', description: 'A manga.' },
   } as const,
 })

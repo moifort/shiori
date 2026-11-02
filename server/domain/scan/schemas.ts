@@ -1,4 +1,4 @@
-import { BOOK_LANGUAGES, GENRES } from '~/domain/book/types'
+import { BOOK_LANGUAGES, DRAWN_FORMATS, GENRES } from '~/domain/book/types'
 import { SEEN_FORMATS } from '~/domain/scan/business-rules'
 import { VOLUME_KINDS } from '~/domain/series/types'
 
@@ -11,6 +11,15 @@ import { VOLUME_KINDS } from '~/domain/series/types'
  *  cheap classifications come first and the expensive prose last — the model has
  *  already committed to what the book IS before it writes about it.
  */
+
+/** What a lookup says the book is: what a search or a catalogue knows and a
+ *  cover or a spine often does not show. */
+const LOOKED_UP_FORMAT = {
+  type: 'string',
+  enum: ['book', ...DRAWN_FORMATS],
+  nullable: true,
+  description: 'Nature de l’œuvre : roman ou texte (book), ou récit dessiné',
+} as const
 
 export const VISION_SCHEMA = {
   type: 'object',
@@ -66,6 +75,7 @@ export const ENRICHMENT_SCHEMA = {
     seriesName: { type: 'string', nullable: true },
     volumeNumber: { type: 'integer', nullable: true },
     volumeKind: { type: 'string', enum: [...VOLUME_KINDS], nullable: true },
+    format: LOOKED_UP_FORMAT,
     firstPublishedIn: {
       type: 'integer',
       nullable: true,
@@ -109,6 +119,7 @@ export const ENRICHMENT_SCHEMA = {
     'seriesName',
     'volumeNumber',
     'volumeKind',
+    'format',
     'firstPublishedIn',
     'genre',
     'subgenres',
@@ -131,6 +142,7 @@ export const EDITIONS_SCHEMA = {
       nullable: true,
       description: "Si l'édition retenue est spéciale, indice de l'édition courante ; null sinon",
     },
+    format: LOOKED_UP_FORMAT,
     firstPublishedIn: {
       type: 'integer',
       nullable: true,
@@ -158,6 +170,7 @@ export const EDITIONS_SCHEMA = {
   propertyOrdering: [
     'edition',
     'regularEdition',
+    'format',
     'firstPublishedIn',
     'genre',
     'subgenres',

@@ -1,3 +1,4 @@
+import { DRAWN_FORMATS } from '~/domain/book/types'
 import { generate } from '~/domain/scan/gemini'
 
 /** One title as the model is asked to split it. */
@@ -9,6 +10,7 @@ export type TitleRead = {
   title?: string
   seriesName?: string | null
   volumeNumber?: number | null
+  format?: string | null
 }
 
 /** How many titles one call reads. Forty fit the answer comfortably and a
@@ -27,9 +29,10 @@ const SCHEMA = {
           title: { type: 'string' },
           seriesName: { type: 'string', nullable: true },
           volumeNumber: { type: 'number', nullable: true },
+          format: { type: 'string', enum: ['book', ...DRAWN_FORMATS] },
         },
-        required: ['asin', 'title', 'seriesName', 'volumeNumber'],
-        propertyOrdering: ['asin', 'title', 'seriesName', 'volumeNumber'],
+        required: ['asin', 'title', 'seriesName', 'volumeNumber', 'format'],
+        propertyOrdering: ['asin', 'title', 'seriesName', 'volumeNumber', 'format'],
       },
     },
   },
@@ -48,6 +51,7 @@ Pour chaque livre, renvoie :
 - title : le titre du livre SEUL, tel qu'on l'imprime sur sa couverture, dans la langue du titre fourni. Sans nom de série, sans numéro de tome, sans mention d'édition (« French Edition », « Version française », « Nouvelle traduction »), sans collection d'éditeur, sans nom d'auteur. Garde ce qui distingue deux livres d'un même tome (« première partie », « Partie 2 »). Quand le tome n'a pas de titre propre, le titre est le nom de la série. Ne traduis pas.
 - seriesName : le nom de la série ou du cycle romanesque auquel ce livre appartient, dans la langue du titre fourni, sans numéro. Une collection d'éditeur (« Masque Christie », « Folio Junior », « Pocket ») n'est PAS une série. Un titre peut appartenir à une série sans la mentionner. null si le livre est indépendant.
 - volumeNumber : le numéro du tome TEL QU'IL FIGURE dans le titre fourni, ou null s'il n'y figure pas. Ne le déduis jamais.
+- format : 'manga' pour un manga ou un manhwa, 'bande-dessinee' pour une bande dessinée franco-belge, 'comic' pour un comic américain, 'book' pour un livre de texte ou si tu ne reconnais pas l'œuvre.
 
 Renvoie exactement un objet par livre, avec son asin.
 

@@ -1,6 +1,6 @@
 import type { SharedActivity, SharedActivityKind } from '~/domain/analytics/types'
 import type { AwaitedEditionView } from '~/domain/awaited-edition/types'
-import { shelfKeyOf } from '~/domain/book/business-rules'
+import { drawnFormatOf, shelfKeyOf } from '~/domain/book/business-rules'
 import type { Book, BookFormat } from '~/domain/book/types'
 import type {
   AuthorDiscovery,
@@ -117,7 +117,7 @@ const sagaRelease = (
 ): UpcomingRelease => ({
   id: `saga~${series.saga}~${volume.number}~${format}`,
   source: 'saga',
-  format: formatOf(format, series.books[0]),
+  format: format === 'audiobook' ? 'audiobook' : sagaFormatOf(series.books),
   title: volume.title,
   authors: series.author ? [series.author] : [],
   ...(volume.date ? { date: volume.date } : {}),
@@ -127,8 +127,19 @@ const sagaRelease = (
   sagaFavorite: series.opinion?.favorite === true,
 })
 
-const formatOf = (format: ReleaseFormat, held?: Pick<Book, 'format'>): BookFormat =>
-  format === 'audiobook' ? 'audiobook' : (held?.format ?? 'book')
+/** A saga is one kind of object: one volume known as drawn tells for all, the
+ *  others most often being a Kindle import that could not tell. */
+const sagaFormatOf = (books: readonly Pick<Book, 'format'>[]): BookFormat =>
+  books.map(({ format }) => drawnFormatOf(format)).find((format) => format !== undefined) ?? 'book'
+
+/** What an author mostly writes, for a work the web did not say the format of:
+ *  a novelist's one comic does not make their next book a comic. */
+const authorFormatOf = (books: readonly Pick<Book, 'format'>[]): BookFormat => {
+  const counts = new Map<BookFormat, number>()
+  for (const { format } of books)
+    if (format !== 'audiobook') counts.set(format, (counts.get(format) ?? 0) + 1)
+  return [...counts].sort(([, left], [, right]) => right - left)[0]?.[0] ?? 'book'
+}
 
 const authorRelease = (row: AuthorDiscovery, format: ReleaseFormat): UpcomingRelease[] => {
   const author = {
@@ -142,7 +153,10 @@ const authorRelease = (row: AuthorDiscovery, format: ReleaseFormat): UpcomingRel
         {
           id: `author~${row.author.key}~${slugify(row.next.title)}~${format}`,
           source: 'author' as const,
-          format: formatOf(format, row.author.books[0]),
+          format:
+            format === 'audiobook'
+              ? ('audiobook' as const)
+              : (row.next.format ?? authorFormatOf(row.author.books)),
           title: row.next.title,
           authors: [row.author.name],
           ...(row.next.date ? { date: row.next.date } : {}),
@@ -164,7 +178,7 @@ const authorRelease = (row: AuthorDiscovery, format: ReleaseFormat): UpcomingRel
 const awaitedRelease = (view: AwaitedEditionView, format: ReleaseFormat): UpcomingRelease => ({
   id: `awaited~${view.id}`,
   source: 'awaited',
-  format: format === 'audiobook' ? 'audiobook' : 'book',
+  format: format === 'audiobook' ? 'audiobook' : (view.source.drawnFormat ?? 'book'),
   title: view.found?.title ?? view.source.title,
   authors: view.source.authors,
   ...(view.found?.date ? { date: view.found.date } : {}),
