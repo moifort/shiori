@@ -82,11 +82,12 @@ Runtime: always `bun` / `bunx`, never `npm` / `npx`.
    Every child brief says so. When the user archives or deletes a child themself, that closes
    the ticket: the parent resolves its thread (`resolve`, no reply), unasked, if that is not
    already done.
-8. **Only the parent session listens to the board.** A child session handles its own thread and
-   nothing else: a new board comment that reaches it is ignored, never handled, answered or
-   proposed as a session. The parent session alone picks up new comments and starts their child
-   sessions. A child stops watching the board once it has published (`ArtifactComments`,
-   `watch` with `on: false`). Every child brief says so.
+8. **Each board comment goes to the session working on its theme.** A child session handles,
+   besides its own thread, every new board comment on its theme (the artboards and screens it
+   is working on), and nothing else: a comment on another theme is left to the parent, never
+   answered or proposed as a session. The parent session picks up only the new comments on a
+   theme no child session is working on, and starts their child sessions. Every child brief
+   says so.
 9. **A UI change is validated twice, board then iOS.** Whenever the user asks for a UI
    modification, the board comes first: report back with the updated board and wait for the
    user's validation. Only then implement it in the app, send an iOS simulator screenshot of
