@@ -1,0 +1,75 @@
+import SwiftUI
+
+/// The rows that open the library's lists, as Music and TV draw their
+/// library rows: a plain symbol, the title, a chevron, and a hairline under
+/// the title. They sit between the bar's title and the format pills, which
+/// narrow them too. A list with nothing in it offers no row.
+struct LibraryLinkRows: View {
+    var showsSeries = true
+    var showsAuthors = true
+    var showsNarrators = true
+    let onAction: (LibraryShelvesAction) -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            LibraryLinkRow(symbol: "books.vertical", title: String(localized: "Livres")) {
+                onAction(.openShelf(.all))
+            }
+            .accessibilityIdentifier("library-all-books")
+            if showsSeries {
+                LibraryLinkRow(symbol: "square.stack", title: String(localized: "Séries")) {
+                    onAction(.openSeriesShelf)
+                }
+            }
+            if showsAuthors {
+                LibraryLinkRow(symbol: "pencil", title: String(localized: "Auteurs")) {
+                    onAction(.openAuthors)
+                }
+            }
+            if showsNarrators {
+                LibraryLinkRow(symbol: "headphones", title: String(localized: "Narrateurs")) {
+                    onAction(.openNarrators)
+                }
+            }
+        }
+        .padding(.horizontal, 20)
+    }
+}
+
+/// One of the library's rows: the symbol, the title, the chevron, the hairline.
+private struct LibraryLinkRow: View {
+    let symbol: String
+    let title: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 16) {
+                Image(systemName: symbol)
+                    .font(.title3)
+                    .foregroundStyle(.primary)
+                    .frame(width: 28)
+                Text(title)
+                    .font(.title3)
+                    .foregroundStyle(.primary)
+                Spacer(minLength: 8)
+                Image(systemName: "chevron.right")
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+            }
+            .frame(height: 52)
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .overlay(alignment: .bottom) {
+            Divider().padding(.leading, 44)
+        }
+    }
+}
+
+#Preview {
+    LibraryLinkRows { _ in }
+        .padding(.vertical)
+        .background(.black)
+        .environment(\.colorScheme, .dark)
+}
