@@ -27,7 +27,7 @@ struct LibraryLinkRows: View {
                 }
             }
             if showsNarrators {
-                LibraryLinkRow(symbol: "headphones", title: String(localized: "Narrateurs")) {
+                LibraryLinkRow(symbol: "mic", title: String(localized: "Narrateurs")) {
                     onAction(.openNarrators)
                 }
             }
