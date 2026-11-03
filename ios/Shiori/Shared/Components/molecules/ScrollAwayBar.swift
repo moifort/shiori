@@ -2,20 +2,19 @@ import SwiftUI
 
 extension View {
     /// The bar the home draws, on a page that scrolls: the page's name on the
-    /// left and the search on the right, both sent away while the reader
-    /// scrolls down and called back by scrolling up, as Safari brings its bar
-    /// back. Applied over the page's scroll view, which it watches.
+    /// left, sent away while the reader scrolls down and called back by
+    /// scrolling up, as Safari brings its bar back. The search lives in its
+    /// own tab. Applied over the page's scroll view, which it watches.
     ///
     /// The page keeps its own `navigationTitle`, for VoiceOver and the Back
     /// button; the bar draws the name itself and none in its middle.
-    func scrollAwayBar(_ title: String, onSearch: @escaping () -> Void) -> some View {
-        modifier(ScrollAwayBar(title: title, onSearch: onSearch))
+    func scrollAwayBar(_ title: String) -> some View {
+        modifier(ScrollAwayBar(title: title))
     }
 }
 
 private struct ScrollAwayBar: ViewModifier {
     let title: String
-    let onSearch: () -> Void
 
     @State private var bar = ScrollBarState()
 
@@ -44,13 +43,6 @@ private struct ScrollAwayBar: ViewModifier {
                             .font(.title2.weight(.bold))
                             .fixedSize()
                             .accessibilityHidden(true)
-                    }
-                }
-                .sharedBackgroundVisibility(.hidden)
-                ToolbarItem(placement: .topBarTrailing) {
-                    ScrollBarItem(bar: bar) {
-                        ScrollBarButton(title: "Rechercher", systemImage: "magnifyingglass", action: onSearch)
-                            .accessibilityIdentifier("library-search")
                     }
                 }
                 .sharedBackgroundVisibility(.hidden)

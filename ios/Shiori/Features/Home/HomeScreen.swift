@@ -42,7 +42,6 @@ struct HomeScreen: View {
     /// prompt was cancelled or pulled down: nothing is finished then.
     @State private var pendingFinish: Book?
     /// The search over the reader's books, from the loupe in the corner.
-    @State private var showSearch = false
     /// The month's costs and readers, behind a toolbar button only an admin
     /// account sees.
     @State private var showAdmin = false
@@ -102,9 +101,6 @@ struct HomeScreen: View {
             Button("OK", role: .cancel) { dismissSyncError() }
         } message: {
             Text("\(audibleSync.errorMessage ?? kindleSync.errorMessage ?? "") Vous pouvez relancer la synchronisation depuis les réglages.")
-        }
-        .sheet(isPresented: $showSearch) {
-            LibrarySearchScreen()
         }
         // A recording awaited or given up comes into the releases, or leaves.
         .onReceive(NotificationCenter.default.publisher(for: .shioriAwaitedEditionsDidChange)) { _ in
@@ -185,16 +181,6 @@ struct HomeScreen: View {
                         }
                     }
                     .sharedBackgroundVisibility(.hidden)
-                    ToolbarItem(placement: .topBarTrailing) {
-                        ScrollBarItem(bar: bar) {
-                            ScrollBarButton(title: "Rechercher", systemImage: "magnifyingglass") {
-                                showSearch = true
-                            }
-                            .accessibilityIdentifier("home-search")
-                        }
-                    }
-                    .sharedBackgroundVisibility(.hidden)
-                    ToolbarSpacer(.fixed, placement: .topBarTrailing)
                     if isAdmin {
                         ToolbarItem(placement: .topBarTrailing) {
                             ScrollBarItem(bar: bar) {
@@ -211,7 +197,6 @@ struct HomeScreen: View {
                     }
                     .sharedBackgroundVisibility(.hidden)
                 } else {
-                    ToolbarItem(placement: .topBarLeading) { searchButton }
                     trailingButtons
                 }
             }
@@ -232,14 +217,6 @@ struct HomeScreen: View {
             // Left for another tab or a page pushed over it: the discoveries
             // taken from the carousel leave the line while out of sight.
             .onDisappear { Task { await viewModel.releaseTaken() } }
-    }
-
-    private var searchButton: some View {
-        Button { showSearch = true } label: {
-            Label("Rechercher", systemImage: "magnifyingglass")
-        }
-        .labelStyle(.iconOnly)
-        .accessibilityIdentifier("home-search")
     }
 
     @ToolbarContentBuilder

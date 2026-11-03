@@ -2,9 +2,8 @@ import SwiftUI
 
 /// The search, connected: owns the view model and the shared index, and
 /// pushes a book or a saga over the results.
-/// Presented as a sheet from the Home and Library tabs.
+/// The Rechercher tab.
 struct LibrarySearchScreen: View {
-    @Environment(\.dismiss) private var dismiss
     @State private var viewModel: LibrarySearchViewModel
     @State private var selectedBook: Book?
     @State private var path: [SeriesHit] = []
@@ -39,7 +38,6 @@ struct LibrarySearchScreen: View {
                 case let .useRecent(recent): viewModel.useRecent(recent)
                 case .clearRecentSearches: viewModel.clearRecentSearches()
                 case .retry: await viewModel.retry()
-                case .close: dismiss()
                 }
             }
             .navigationDestination(for: SeriesHit.self) { hit in

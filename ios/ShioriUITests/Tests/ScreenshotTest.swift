@@ -21,7 +21,7 @@ final class ScreenshotTest: XCTestCase {
         language == "en"
             ? [
                 "Bibliothèque": "Library", "Découvrir": "Discover", "Partagé": "Shared",
-                "Scanner": "Scan", "Accueil": "Home", "Vérifier": "Review",
+                "Scanner": "Scan", "Accueil": "Home", "Vérifier": "Review", "Rechercher": "Search",
                 "Premium annuel": "Premium Yearly",
             ]
             : [:]
@@ -169,8 +169,8 @@ final class ScreenshotTest: XCTestCase {
     /// The search, and the cover picker reached from a book it finds: the
     /// landing page's tour, not the App Store's.
     func testCaptureSearchAndCover() throws {
-        try open("Bibliothèque")
-        try tap(app.descendants(matching: .any)["library-search"], until: app.descendants(matching: .any)["search-viewed"].firstMatch)
+        try open("Rechercher")
+        try wait(app.descendants(matching: .any)["search-viewed"].firstMatch)
         settle()
         save("11-search")
 

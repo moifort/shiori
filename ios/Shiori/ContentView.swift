@@ -2,7 +2,7 @@ import PhotosUI
 import SwiftUI
 
 enum TabSelection: Int, CaseIterable, Identifiable {
-    case home, library, news, shared, scan
+    case home, library, news, search, scan
     var id: Int { rawValue }
 
     var label: String {
@@ -10,7 +10,7 @@ enum TabSelection: Int, CaseIterable, Identifiable {
         case .home: String(localized: "Accueil")
         case .library: String(localized: "Bibliothèque")
         case .news: String(localized: "Actu")
-        case .shared: String(localized: "Partagé")
+        case .search: String(localized: "Rechercher")
         case .scan: String(localized: "Scanner")
         }
     }
@@ -21,7 +21,7 @@ enum TabSelection: Int, CaseIterable, Identifiable {
         // An open book, as the Books app wears on its icon.
         case .library: "book"
         case .news: "newspaper"
-        case .shared: "person.2"
+        case .search: "magnifyingglass"
         case .scan: "camera.viewfinder"
         }
     }
@@ -65,6 +65,8 @@ struct ContentView: View {
     @State private var showPhotoPicker = false
     @State private var pickedPhoto: PhotosPickerItem?
     @State private var showManualAdd = false
+    /// Partagé, opened from the home: its tab gave way to the search.
+    @State private var showShared = false
     /// A page shared into Shiori from elsewhere on the phone, picked up when the
     /// app comes to the front. Nil the rest of the time.
     @State private var sharedStart: ScanScreen.Start?
@@ -135,6 +137,7 @@ struct ContentView: View {
             }
             // Every list redraws itself on the data-change notice the mutation
             // posts, so the form only has to close.
+            .sheet(isPresented: $showShared) { SharedScreen() }
             .sheet(isPresented: $showManualAdd) {
                 ManualAddScreen(onAdded: { _ in showManualAdd = false })
             }
@@ -234,7 +237,7 @@ struct ContentView: View {
                     },
                     onScan: { showAddSheet = true },
                     onShowDiscover: { showDiscover(.books) },
-                    onShowShared: { selectedTab = .shared }
+                    onShowShared: { showShared = true }
                 )
             }
             Tab(
@@ -255,8 +258,8 @@ struct ContentView: View {
                     opensDiscover: $opensDiscover
                 )
             }
-            Tab(TabSelection.shared.label, systemImage: TabSelection.shared.symbol, value: .shared) {
-                SharedScreen()
+            Tab(TabSelection.search.label, systemImage: TabSelection.search.symbol, value: .search) {
+                LibrarySearchScreen()
             }
             Tab(
                 TabSelection.scan.label,

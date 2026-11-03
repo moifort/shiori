@@ -61,7 +61,7 @@ struct BookShelfScreen: View {
                 )
             }
         }
-        .searchesLibrary(shelf.title)
+        .scrollAwayBar(shelf.title)
         .pushesDetail(item: $destination) { LibraryDestinationScreen(destination: $0, client: client) }
         .performsBookQuickActions($quick, client: client) { destination = $0 }
         .sheet(item: $shareText) { shared in

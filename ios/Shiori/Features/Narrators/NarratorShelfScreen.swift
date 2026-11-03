@@ -41,7 +41,7 @@ struct NarratorShelfScreen: View {
             case .refresh: Task { await viewModel.load() }
             }
         }
-        .searchesLibrary(String(localized: "Narrateurs"))
+        .scrollAwayBar(String(localized: "Narrateurs"))
         .pushesDetail(item: $destination) { LibraryDestinationScreen(destination: $0, client: library) }
         .performsBookQuickActions($quick, client: library) { destination = $0 }
         .task { await viewModel.loadOnAppear() }

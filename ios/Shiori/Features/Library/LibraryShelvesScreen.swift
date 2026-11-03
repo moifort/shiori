@@ -18,7 +18,6 @@ struct LibraryShelvesScreen: View {
 
     @State private var viewModel: LibraryShelvesViewModel
     @State private var destination: LibraryDestination?
-    @State private var showSearch = false
     @State private var quick: BookQuickRequest?
 
     init(
@@ -76,13 +75,11 @@ struct LibraryShelvesScreen: View {
             case let .openGenre(genre): destination = .genre(genre)
             case let .selectFormat(format): Task { await viewModel.select(format: format) }
             case let .selectSubgenre(subgenre): Task { await viewModel.select(subgenre: subgenre) }
-            case .search: showSearch = true
             case let .menu(book, action): quick = BookQuickRequest(book: book, action: action)
             case .refresh: Task { await viewModel.load() }
             }
         }
         .performsBookQuickActions($quick, client: client) { destination = $0 }
-        .sheet(isPresented: $showSearch) { LibrarySearchScreen() }
         .task { await viewModel.loadOnAppear() }
         // A book added, finished, hearted or taken out: the rails are asked
         // again, in one request.

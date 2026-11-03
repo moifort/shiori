@@ -13,7 +13,6 @@ enum LibraryShelvesAction {
     case openGenre(BookGenre)
     case selectFormat(BookFormat?)
     case selectSubgenre(String?)
-    case search
     case menu(Book, BookQuickAction)
     case refresh
 }
@@ -58,7 +57,7 @@ struct LibraryShelvesPage: View {
         }
         .background(Color(.systemGroupedBackground))
         .navigationTitle(genre?.label ?? String(localized: "Bibliothèque"))
-        .scrollAwayBar(genre?.label ?? String(localized: "Bibliothèque")) { onAction(.search) }
+        .scrollAwayBar(genre?.label ?? String(localized: "Bibliothèque"))
         .refreshable { onAction(.refresh) }
         .overlay(alignment: .top) {
             if isLoading, shelves.isEmpty { ProgressView().padding(.top, 120) }

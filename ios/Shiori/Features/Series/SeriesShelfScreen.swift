@@ -32,7 +32,7 @@ struct SeriesShelfScreen: View {
             case .refresh: Task { await viewModel.load() }
             }
         }
-        .searchesLibrary(String(localized: "Séries"))
+        .scrollAwayBar(String(localized: "Séries"))
         .pushesDetail(item: $openSeries) { SeriesScreen(seriesId: $0.id) }
         .navigationDestination(isPresented: $showsSetAside) {
             SetAsideSeriesPage(

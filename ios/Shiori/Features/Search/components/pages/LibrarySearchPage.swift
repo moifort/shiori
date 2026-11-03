@@ -26,7 +26,6 @@ struct LibrarySearchPage: View {
         case useRecent(String)
         case clearRecentSearches
         case retry
-        case close
     }
 
     var body: some View {
@@ -59,16 +58,6 @@ struct LibrarySearchPage: View {
             placement: .navigationBarDrawer(displayMode: .always),
             prompt: Text("Titre, auteur, série")
         )
-        .toolbar {
-            ToolbarItem(placement: .cancellationAction) {
-                Button {
-                    Task { await onAction(.close) }
-                } label: {
-                    Label("Fermer", systemImage: "xmark")
-                }
-                .accessibilityIdentifier("search-close")
-            }
-        }
     }
 
     // MARK: - Filters
