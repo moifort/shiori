@@ -48,6 +48,9 @@ struct WishlistPage: View {
                     $0.format == .audiobook ? String(localized: "Audio") : String(localized: "Traduction")
                 }
             }
+            // Full width even with every section empty, so the empty state
+            // laid over the page is not squeezed into a zero-wide column.
+            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.top, 4)
             .padding(.bottom, 32)
         }
