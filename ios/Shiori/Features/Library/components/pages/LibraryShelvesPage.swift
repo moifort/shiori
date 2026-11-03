@@ -18,11 +18,11 @@ enum LibraryShelvesAction {
 }
 
 /// The Library tab's entry screen, as the TV app lays out its library: the
-/// bar's title with the search beside it, the format pills, then rails in a fixed
-/// order — what moved last, the pile, the series, the authors and the
-/// narrators, the books read,
-/// the favourites, the genres — and the rows of every book and of those given
-/// up on. A rail with nothing in it is not drawn, and no header counts.
+/// bar's title, the row of every book, the format pills that narrow it and
+/// everything under them, then rails in a fixed order — what moved last, the
+/// pile, the series, the authors and the narrators, the books read, the
+/// favourites, the genres.
+/// A rail with nothing in it is not drawn, and no header counts.
 ///
 /// A genre page is the same screen narrowed to a genre: its subgenres take
 /// the pills, and the rails are its pile, its books read, its series, its
@@ -68,6 +68,9 @@ struct LibraryShelvesPage: View {
 
     @ViewBuilder private var header: some View {
         VStack(alignment: .leading, spacing: 16) {
+            if genre == nil, !shelves.isEmpty {
+                AllBooksRow { onAction(.openShelf(.all)) }
+            }
             if genre != nil, !subgenres.isEmpty {
                 FilterPills(
                     pills: subgenres.map { FilterPills.Pill(id: $0, label: $0) },
@@ -99,7 +102,6 @@ struct LibraryShelvesPage: View {
                 GenreTileGrid(genres: shelves.genres) { onAction(.openGenre($0)) }
             }
         }
-        ShelfLinkRows(showsDropped: shelves.hasDropped) { onAction(.openShelf($0)) }
     }
 
     @ViewBuilder private var genreRails: some View {

@@ -744,7 +744,6 @@ enum Showcase {
             toRead: Array(kept.filter { $0.status == .toRead }.prefix(20)),
             readRecently: Array(kept.filter { $0.status == .read }.prefix(20)),
             favorites: Array(kept.filter { $0.status != .dropped && isLoved($0) }.prefix(20)),
-            hasDropped: kept.contains { $0.status == .dropped },
             genres: genres.values.sorted { ($0.count, $1.genre.label) > ($1.count, $0.genre.label) },
             subgenres: subgenres.sorted { ($0.value, $1.key) > ($1.value, $0.key) }.map(\.key),
             series: sagas.map(followed)

@@ -25,8 +25,6 @@ struct LibraryShelves: Codable, Sendable {
     var toRead: [Book] = []
     var readRecently: [Book] = []
     var favorites: [Book] = []
-    /// A book of the view was given up on: the "Abandonnés" row.
-    var hasDropped = false
     var genres: [GenreShelf] = []
     /// Under a genre page, the subgenres the reader used, the most used first.
     var subgenres: [String] = []

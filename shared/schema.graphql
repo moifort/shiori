@@ -2751,7 +2751,7 @@ type LibraryShelves {
   genres: [GenreShelf!]!
 
   """Whether the view holds a book given up on: the "Abandonnés" row."""
-  hasDropped: Boolean!
+  hasDropped: Boolean! @deprecated(reason: "The entry screen no longer draws the \"Abandonnés\" row: \"Tous les livres\" filters by status.")
 
   """
   The sagas of "Coups de cœur": those the reader hearted holding a book of the view, the one shelved last first, set aside or not. Reads those catalogues in one getAll.

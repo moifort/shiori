@@ -80,7 +80,6 @@ query LibraryShelves($format: BookFormat, $genre: Genre, $subgenre: Subgenre) {
     favorites {
       ...BookSummary
     }
-    hasDropped
     genres {
       genre
       count

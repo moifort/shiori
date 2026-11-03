@@ -23,7 +23,6 @@ enum LibraryAPI {
             toRead: shelves.toRead.map(\.fragments.bookSummary.asBook),
             readRecently: shelves.readRecently.map(\.fragments.bookSummary.asBook),
             favorites: shelves.favorites.map(\.fragments.bookSummary.asBook),
-            hasDropped: shelves.hasDropped,
             genres: shelves.genres.map {
                 GenreShelf(
                     genre: $0.genre.asDomain,

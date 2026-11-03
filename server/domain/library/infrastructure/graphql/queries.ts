@@ -103,6 +103,8 @@ LibraryShelvesType.implement({
     }),
     hasDropped: t.boolean({
       description: 'Whether the view holds a book given up on: the "Abandonnés" row.',
+      deprecationReason:
+        'The entry screen no longer draws the "Abandonnés" row: "Tous les livres" filters by status.',
       resolve: (shelves) => LibraryUseCase.hasDropped(shelves.userId, shelves.view),
     }),
     genres: t.field({
