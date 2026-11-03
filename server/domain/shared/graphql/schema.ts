@@ -114,6 +114,10 @@ import '~/domain/discovery/infrastructure/graphql/mutations'
 import '~/domain/awaited-edition/infrastructure/graphql/types'
 import '~/domain/awaited-edition/infrastructure/graphql/queries'
 import '~/domain/awaited-edition/infrastructure/graphql/mutations'
+// The wishlist: after awaited editions, whose type it lists beside the wishes.
+import '~/domain/wish/infrastructure/graphql/types'
+import '~/domain/wish/infrastructure/graphql/queries'
+import '~/domain/wish/infrastructure/graphql/mutations'
 
 // Award winners (the novels the awards of the reader's genre crowned). After
 // awaited editions, whose state enum it borrows.

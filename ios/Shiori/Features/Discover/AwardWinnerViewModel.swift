@@ -40,6 +40,8 @@ final class AwardWinnerViewModel {
                 var draft = winner.pileDraft
                 draft.status = .read
                 bookRead = try await client.addSuggestion(draft)
+            case .wish:
+                try await client.wish(winner.pileDraft, .award, winner.mentions.first?.award.name)
             case .undoAlreadyRead:
                 if let bookRead { try await client.deleteBook(bookRead) }
                 bookRead = nil

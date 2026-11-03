@@ -3,7 +3,8 @@ import SwiftUI
 /// The rows that open the library's lists, as Music and TV draw their
 /// library rows: a plain symbol, the title, a chevron, and a hairline under
 /// the title. They sit between the bar's title and the format pills, which
-/// narrow them too. A list with nothing in it offers no row.
+/// narrow them too. A list with nothing in it offers no row, but for the
+/// wishlist, whose empty page says how to fill it.
 struct LibraryLinkRows: View {
     var showsSeries = true
     var showsAuthors = true
@@ -31,6 +32,11 @@ struct LibraryLinkRows: View {
                     onAction(.openNarrators)
                 }
             }
+            // Always offered: an empty wishlist says how to fill it.
+            LibraryLinkRow(symbol: "gift", title: String(localized: "Liste d'envies")) {
+                onAction(.openWishlist)
+            }
+            .accessibilityIdentifier("library-wishlist")
         }
         .padding(.horizontal, 20)
     }

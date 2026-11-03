@@ -13,6 +13,8 @@ enum DiscoveryChoice {
     case add
     case await(ReleaseFormat)
     case alreadyRead
+    /// Onto the reader's wishlist, from the "+".
+    case wish
     /// The check pressed again on a book said read: it leaves the shelf.
     case undoAlreadyRead
     case notInterested
@@ -178,11 +180,7 @@ struct DiscoveryButtons<Item: Discovery>: View {
     }
 
     private var addActions: some View {
-        DiscoveryAddActions(
-            item: item,
-            onAdd: { choose(.add, from: .add, leaving: .added) },
-            onAwait: { choose(.await($0), from: .add, leaving: .added) }
-        )
+        DiscoveryAddActions(item: item) { choose($0, from: .add, leaving: $1) }
     }
 
     private var addLabel: some View {

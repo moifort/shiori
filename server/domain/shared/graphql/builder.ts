@@ -34,6 +34,7 @@ import type {
   UserId,
   Year,
 } from '~/domain/shared/types'
+import type { WishId } from '~/domain/wish/types'
 import type { SignedUrl } from '~/system/object-store/types'
 
 /** What every resolver is handed. There is no loader map here, unlike Vinarium:
@@ -97,6 +98,7 @@ export const builder = new SchemaBuilder<{
     KindleAsin: { Input: KindleAsin; Output: KindleAsin }
     DeviceToken: { Input: DeviceToken; Output: DeviceToken }
     AwaitedEditionId: { Input: AwaitedEditionId; Output: AwaitedEditionId }
+    WishId: { Input: WishId; Output: WishId }
   }
 }>({
   defaultFieldNullability: false,

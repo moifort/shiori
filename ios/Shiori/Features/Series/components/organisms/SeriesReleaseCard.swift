@@ -12,6 +12,9 @@ struct SeriesReleaseCard: View {
     let volume: DiscoveredVolume
     let author: String
     let isAudio: Bool
+    /// The line over the title, in place of the author and the volume's place:
+    /// an edition awaited outside any saga names its author and format.
+    var place: String?
     let onOpen: () -> Void
 
     /// The card's height with a one-line title; a second line adds to it.
@@ -44,7 +47,7 @@ struct SeriesReleaseCard: View {
                 // At the card's top, clear of the calendar leaf in its corner:
                 // the author and the volume's place over the title, as the
                 // book hero names the saga over the book.
-                Text(verbatim: "\(author) · \(String(localized: "Tome \(volume.number)"))")
+                Text(verbatim: place ?? "\(author) · \(String(localized: "Tome \(volume.number)"))")
                     .font(.caption)
                     .foregroundStyle(.white.opacity(0.75))
                     .lineLimit(1)

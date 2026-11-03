@@ -20,6 +20,8 @@ struct HomeClient: Sendable {
     var genreInsights: @Sendable () async throws -> GenreInsights
     /// A discovery put on the shelf from the carousel: the book's id.
     var addBook: @Sendable (BookDraft) async throws -> String = { _ in "" }
+    /// A discovery put on the wishlist from the carousel.
+    var wish: @Sendable (BookDraft) async throws -> Void = { _ in }
     /// A book said read by mistake from the carousel, off the shelf again.
     var deleteBook: @Sendable (_ id: String) async throws -> Void = { _ in }
     /// A discovery's edition awaited from the carousel.
@@ -45,6 +47,7 @@ extension HomeClient {
         reconsiderSuggestion: { try await SuggestionsAPI.reconsider(id: $0) },
         genreInsights: { try await HomeAPI.genreInsights() },
         addBook: { try await BookAddition.add($0, source: .discover).id },
+        wish: { try await WishlistAPI.wish($0, origin: .discovery) },
         deleteBook: { try await BookAPI.delete(id: $0) },
         awaitEdition: { _ = try await AwaitedAPI.awaitScanned($0, format: $1) },
         finish: { _ = try await BookAPI.setStatus(id: $0, status: .read) },

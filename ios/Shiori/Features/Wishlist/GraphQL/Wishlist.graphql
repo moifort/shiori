@@ -1,0 +1,47 @@
+# Everything the reader would like and does not hold: the books wished for and
+# the editions awaited, both formats. Read off the reader's own documents.
+query Wishlist {
+  wishlist {
+    wishes {
+      ...WishFields
+    }
+    awaited {
+      ...AwaitedEditionFields
+    }
+  }
+}
+
+# Wish for a book seen in Découvrir, among an award's winners or an author's
+# works, or scanned and not added.
+mutation WishBook($book: WishedBookInput!, $origin: WishOrigin!, $originLabel: String) {
+  wishBook(book: $book, origin: $origin, originLabel: $originLabel) {
+    ...WishFields
+  }
+}
+
+# Wish for a book seen on a friend's shelf: the server re-reads it.
+mutation WishFriendBook($userId: UserId!, $bookId: BookId!) {
+  wishFriendBook(userId: $userId, bookId: $bookId) {
+    ...WishFields
+  }
+}
+
+mutation RemoveWish($id: WishId!) {
+  removeWish(id: $id)
+}
+
+fragment WishFields on Wish {
+  id
+  title
+  authors
+  format
+  language
+  seriesName
+  volume
+  coverUrl
+  isbn13
+  origin
+  originLabel
+  friendId
+  wishedAt
+}

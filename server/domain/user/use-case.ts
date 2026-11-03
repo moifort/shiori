@@ -23,6 +23,7 @@ import {
 import { UserCommand } from '~/domain/user/command'
 import { UserQuery } from '~/domain/user/query'
 import type { Avatar, AvatarColor, AvatarHero } from '~/domain/user/types'
+import { WishCommand } from '~/domain/wish/command'
 import { objectStore } from '~/system/object-store'
 import { ContentType } from '~/system/object-store/primitives'
 import { atomically } from '~/utils/firestore'
@@ -114,6 +115,7 @@ export namespace UserUseCase {
       NotificationCommand.deleteForUser(userId),
       DiscoveryCommand.deleteForUser(userId),
       AwaitedEditionCommand.deleteAllForUser(userId),
+      WishCommand.deleteAllForUser(userId),
     ])
     await Promise.all([
       objectStore().removeByPrefix(coverPrefixOf(userId)),

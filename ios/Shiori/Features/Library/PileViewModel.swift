@@ -26,6 +26,8 @@ final class PileViewModel {
     private let caching: Bool
 
     private(set) var pile: Pile
+    /// The wishlist, for its rail: what can be had now.
+    private(set) var wishlist = Wishlist()
     private(set) var view: ShelvesView
     private(set) var isLoading = false
     private(set) var errorMessage: String?
@@ -54,6 +56,11 @@ final class PileViewModel {
     private static func cache(for view: ShelvesView, caching: Bool) -> SnapshotCache<Pile>? {
         guard caching else { return nil }
         return SnapshotCache("pile-\(view.cacheKey)", version: 2)
+    }
+
+    /// The wishlist's rail: what can be had now, in the format picked.
+    var wished: [Book] {
+        wishlist.availableNow.filter { view.format == nil || $0.format == view.format }
     }
 
     /// A format pill; nil is "Tout".
@@ -85,9 +92,13 @@ final class PileViewModel {
         let asked = view
         isLoading = true
         errorMessage = nil
+        // The wishlist's rail never holds the pile up, nor fails it.
+        async let wishes = try? client.wishlist()
         do {
             let fetched = try await client.pile(asked)
+            let wished = await wishes
             guard requested == generation else { return }
+            if let wished { withAnimation(.smooth) { wishlist = wished } }
             withAnimation(pile.sections.isEmpty ? nil : .smooth) {
                 pile = fetched
                 let unpicked = asked.format == nil && asked.genre == openedGenre

@@ -13,6 +13,8 @@ final class FriendBookViewModel {
     private(set) var errorMessage: String?
     /// What the reader just did with it from the "+" in the corner.
     private(set) var added: CopiedStatus?
+    /// Put on the reader's wishlist from the hero's menu.
+    private(set) var wished = false
     /// Whether Audible sells the book, for a printed one: until it answers,
     /// and when it cannot, the reader may still take it heard.
     private(set) var audio: AudioAvailability?
@@ -69,6 +71,17 @@ final class FriendBookViewModel {
         } catch {
             addFailed = reportError(error)
             return false
+        }
+    }
+
+    /// Puts the book on the reader's wishlist.
+    func wish() async {
+        do {
+            try await client.wish(friendId, bookId)
+            wished = true
+        } catch {
+            guard !isCancellation(error) else { return }
+            addFailed = reportError(error)
         }
     }
 

@@ -16,6 +16,7 @@ enum LibraryDestination: Identifiable, Hashable {
     case narrators
     case narrator(NarratorDestination)
     case genre(BookGenre)
+    case wishlist
 
     var id: String {
         switch self {
@@ -30,6 +31,7 @@ enum LibraryDestination: Identifiable, Hashable {
         case .narrators: "narrators"
         case let .narrator(narrator): "narrator-\(narrator.key)"
         case let .genre(genre): "genre-\(genre.rawValue)"
+        case .wishlist: "wishlist"
         }
     }
 
@@ -80,6 +82,8 @@ struct LibraryDestinationScreen: View {
             NarratorScreen(key: narrator.key, name: narrator.name)
         case let .genre(genre):
             LibraryShelvesScreen(genre: genre, client: client)
+        case .wishlist:
+            WishlistScreen()
         }
     }
 }

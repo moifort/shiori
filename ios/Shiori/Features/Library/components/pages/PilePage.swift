@@ -7,6 +7,7 @@ enum PileAction {
     case selectGenre(BookGenre?)
     case menu(Book, BookQuickAction)
     case openWholePile
+    case openWishlist
     case refresh
 }
 
@@ -17,6 +18,9 @@ enum PileAction {
 /// genre.
 struct PilePage: View {
     let pile: Pile
+    /// What can be had now from the wishlist, each cover labelled with where it
+    /// came from: a rail after the books begun, opening the list.
+    var wished: [PosterRow.Item] = []
     var formats: [BookFormat] = []
     var selectedFormat: BookFormat?
     var genres: [BookGenre] = []
@@ -34,7 +38,9 @@ struct PilePage: View {
                 } else {
                     ForEach(pile.sections) { section in
                         rail(section)
+                        if section.kind == .toFinish { wishRail }
                     }
+                    if pile.sections.first?.kind != .toFinish { wishRail }
                     LinkRowGroup {
                         LinkRow(symbol: "square.grid.3x3", title: String(localized: "Toute la pile")) {
                             onAction(.openWholePile)
@@ -81,6 +87,18 @@ struct PilePage: View {
             .contentMargins(.horizontal, 20, for: .scrollContent)
         }
         .accessibilityIdentifier("pile-section-\(section.kind.rawValue)")
+    }
+
+    @ViewBuilder private var wishRail: some View {
+        if !wished.isEmpty {
+            VStack(alignment: .leading, spacing: 12) {
+                RowHeader(title: "Liste d'envies", style: .inline) { onAction(.openWishlist) }
+                    .padding(.horizontal, 20)
+                PosterRow(items: wished) { _ in onAction(.openWishlist) }
+                    .contentMargins(.horizontal, 20, for: .scrollContent)
+            }
+            .accessibilityIdentifier("pile-section-wishlist")
+        }
     }
 
     @ViewBuilder private var empty: some View {

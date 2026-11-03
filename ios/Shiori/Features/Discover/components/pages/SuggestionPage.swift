@@ -56,11 +56,7 @@ struct SuggestionPage: View {
             // The hero's "+" again, within reach once it has scrolled away.
             ToolbarItem(placement: .primaryAction) {
                 Menu {
-                    DiscoveryAddActions(
-                        item: suggestion,
-                        onAdd: { choose(.add) },
-                        onAwait: { choose(.await($0)) }
-                    )
+                    DiscoveryAddActions(item: suggestion) { choose($0, leaving: $1) }
                 } label: {
                     Label("Ajouter", systemImage: "plus")
                         .labelStyle(.iconOnly)
@@ -75,8 +71,8 @@ struct SuggestionPage: View {
         Task { await onAction(action) }
     }
 
-    private func choose(_ choice: DiscoveryChoice) {
-        choices.choose(choice, for: suggestion, from: .add, leaving: .added, ask: onChoice)
+    private func choose(_ choice: DiscoveryChoice, leaving mark: DiscoveryMark) {
+        choices.choose(choice, for: suggestion, from: .add, leaving: mark, ask: onChoice)
     }
 
     // MARK: - Hero
@@ -140,24 +136,35 @@ struct SuggestionPage: View {
 }
 
 /// What a discovery's "+" offers, on its page and on the home screen's
-/// carousel: on the pile, or awaited in each format its edition is not out and
-/// not awaited yet in. "Déjà lu" is the eye's.
+/// carousel — the menu a friend's book and a scan offer too: on the pile,
+/// read already, on the wishlist, or awaited in each format its edition is
+/// not out and not awaited yet in. Each choice names the mark it leaves on the
+/// buttons.
 struct DiscoveryAddActions<Item: Discovery>: View {
     let item: Item
-    let onAdd: () -> Void
-    let onAwait: (ReleaseFormat) -> Void
+    let onChoose: (DiscoveryChoice, DiscoveryMark) -> Void
 
     var body: some View {
-        Button("Ajouter", systemImage: "books.vertical") { onAdd() }
+        Button("À lire", systemImage: "bookmark.fill") { onChoose(.add, .added) }
             .accessibilityIdentifier("suggestion-add")
-        ForEach(item.awaitableFormats) { format in
-            Button(
-                format.awaitLabel,
-                systemImage: format == .audiobook ? "headphones" : "character.book.closed"
-            ) {
-                onAwait(format)
+        Button("Déjà lu", systemImage: "checkmark") { onChoose(.alreadyRead, .read) }
+            .accessibilityIdentifier("suggestion-read")
+        Section {
+            Button("Liste d'envies", systemImage: "gift") { onChoose(.wish, .added) }
+                .accessibilityIdentifier("suggestion-wish")
+        }
+        if !item.awaitableFormats.isEmpty {
+            Section {
+                ForEach(item.awaitableFormats) { format in
+                    Button(
+                        format.awaitLabel,
+                        systemImage: format == .audiobook ? "headphones" : "character.book.closed"
+                    ) {
+                        onChoose(.await(format), .added)
+                    }
+                    .accessibilityIdentifier("suggestion-await-\(format.rawValue)")
+                }
             }
-            .accessibilityIdentifier("suggestion-await-\(format.rawValue)")
         }
     }
 }

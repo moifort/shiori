@@ -109,6 +109,8 @@ struct ScanScreen: View {
                     case .retake: viewModel.retake()
                     case let .awaitEdition(draft, format):
                         onAwait(draft, format)
+                    case let .wish(draft):
+                        if await viewModel.wish(draft) { onDismiss() }
                     case let .languageOrFormatChanged(language, format):
                         await viewModel.loadAwaitable(language: language, format: format)
                     }

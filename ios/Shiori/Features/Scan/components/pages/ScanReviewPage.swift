@@ -31,6 +31,8 @@ enum ScanReviewAction {
     /// The edition in the app's language awaited instead of the book added:
     /// the scan is then over.
     case awaitEdition(BookDraft, ReleaseFormat)
+    /// Onto the wishlist rather than the shelf: the scan is then over.
+    case wish(BookDraft)
     /// The language or the format was corrected: what may be awaited is asked again.
     case languageOrFormatChanged(BookLanguage?, BookFormat)
 }
@@ -164,7 +166,15 @@ struct ScanReviewPage: View {
         !draft.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !isSaving
     }
 
-    private func save() {
+    private func save(as status: ReadingStatus? = nil) {
+        if let status, status != draft.status {
+            draft.status = status
+            // Back on the pile, the book was not read: no stars, no heart.
+            if status == .toRead {
+                draft.rating = 0
+                draft.favorite = false
+            }
+        }
         var approved = draft
         approved.startedAt = draft.startedAt.map { min($0, latestStart) }
         Task { await onAction(.save(approved, renamedSeries)) }
@@ -172,14 +182,29 @@ struct ScanReviewPage: View {
 
     private var addMenu: some View {
         Menu {
-            Button("Ajouter", systemImage: "books.vertical", action: save)
+            // The menu a discovery and a friend's book offer too.
+            Button("À lire", systemImage: "bookmark.fill") { save(as: .toRead) }
                 .disabled(!canSave)
                 .accessibilityIdentifier("review-save")
-            ForEach(awaitable) { format in
-                Button(format.awaitLabel, systemImage: format == .audiobook ? "headphones" : "character.book.closed") {
-                    Task { await onAction(.awaitEdition(draft, format)) }
+            Button("Déjà lu", systemImage: "checkmark") { save(as: .read) }
+                .disabled(!canSave)
+                .accessibilityIdentifier("review-save-read")
+            Section {
+                Button("Liste d'envies", systemImage: "gift") {
+                    Task { await onAction(.wish(draft)) }
                 }
-                .accessibilityIdentifier("review-await-\(format.rawValue)")
+                .disabled(!canSave)
+                .accessibilityIdentifier("review-wish")
+            }
+            if !awaitable.isEmpty {
+                Section {
+                    ForEach(awaitable) { format in
+                        Button(format.awaitLabel, systemImage: format == .audiobook ? "headphones" : "character.book.closed") {
+                            Task { await onAction(.awaitEdition(draft, format)) }
+                        }
+                        .accessibilityIdentifier("review-await-\(format.rawValue)")
+                    }
+                }
             }
         } label: {
             Label("Ajouter", systemImage: "plus")

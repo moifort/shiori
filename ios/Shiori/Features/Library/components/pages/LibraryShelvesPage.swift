@@ -10,6 +10,7 @@ enum LibraryShelvesAction {
     case openAuthor(FollowedAuthor)
     case openNarrators
     case openNarrator(NarratorRow)
+    case openWishlist
     case openGenre(BookGenre)
     case selectFormat(BookFormat?)
     case selectSubgenre(String?)

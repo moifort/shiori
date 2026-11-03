@@ -2077,6 +2077,22 @@
         }
       }
     },
+    "Action impossible" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't do that"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Action impossible"
+          }
+        }
+      }
+    },
     "Actu" : {
       "localizations" : {
         "en" : {
@@ -2469,6 +2485,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ajoutez un auteur pour créer une nouvelle série."
+          }
+        }
+      }
+    },
+    "Ajoutez-y un livre depuis Découvrir ou chez un ami, ou guettez sa traduction." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add a book from Discover or a friend's shelf, or watch for its translation."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajoutez-y un livre depuis Découvrir ou chez un ami, ou guettez sa traduction."
           }
         }
       }
@@ -3381,6 +3413,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Aucune couverture trouvée pour ce livre. Collez l'adresse d'une image."
+          }
+        }
+      }
+    },
+    "Aucune envie" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing on your wishlist"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucune envie"
           }
         }
       }
@@ -5113,6 +5161,22 @@
         }
       }
     },
+    "Conseillés par vos amis" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recommended by friends"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conseillés par vos amis"
+          }
+        }
+      }
+    },
     "Contenu" : {
       "localizations" : {
         "en" : {
@@ -5689,6 +5753,22 @@
         }
       }
     },
+    "Disponibles" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Available"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disponibles"
+          }
+        }
+      }
+    },
     "Dites-nous ce qui manque ou ce qui gagnerait à changer." : {
       "localizations" : {
         "en" : {
@@ -5865,6 +5945,22 @@
         }
       }
     },
+    "Découverte" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Discovery"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Découverte"
+          }
+        }
+      }
+    },
     "Découverte de %@" : {
       "localizations" : {
         "en" : {
@@ -5893,6 +5989,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Découverte d’%@"
+          }
+        }
+      }
+    },
+    "Découvertes" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Discoveries"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Découvertes"
           }
         }
       }
@@ -6917,6 +7029,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Guetter en français"
+          }
+        }
+      }
+    },
+    "Guetté" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Watched"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guetté"
           }
         }
       }
@@ -8817,6 +8945,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Lisbeth Salander"
+          }
+        }
+      }
+    },
+    "Liste d'envies" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wishlist"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Liste d'envies"
+          }
+        }
+      }
+    },
+    "Liste d'envies indisponible" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wishlist unavailable"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Liste d'envies indisponible"
           }
         }
       }
@@ -11237,6 +11397,22 @@
         }
       }
     },
+    "Pas encore annoncés" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not announced yet"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pas encore annoncés"
+          }
+        }
+      }
+    },
     "Pas encore en audio" : {
       "localizations" : {
         "en" : {
@@ -13285,6 +13461,22 @@
         }
       }
     },
+    "Scan" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scan"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scan"
+          }
+        }
+      }
+    },
     "Scanner" : {
       "localizations" : {
         "en" : {
@@ -13393,6 +13585,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Scannez sans compter"
+          }
+        }
+      }
+    },
+    "Scannés" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scanned"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scannés"
           }
         }
       }
@@ -15189,6 +15397,22 @@
         }
       }
     },
+    "Traduction" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Translation"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Traduction"
+          }
+        }
+      }
+    },
     "Tranche illisible" : {
       "localizations" : {
         "en" : {
@@ -15281,6 +15505,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ukrainien"
+          }
+        }
+      }
+    },
+    "Un ami" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A friend"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un ami"
           }
         }
       }

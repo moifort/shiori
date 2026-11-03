@@ -334,6 +334,8 @@ final class HomeViewModel {
                 try await client.awaitEdition(suggestion.draft, format)
             case .alreadyRead:
                 booksRead[suggestion.id] = try await client.addBook(suggestion.shelfDraft(status: .read))
+            case .wish:
+                try await client.wish(suggestion.shelfDraft(status: .toRead))
             case .undoAlreadyRead:
                 if let book = booksRead[suggestion.id] { try await client.deleteBook(book) }
                 booksRead[suggestion.id] = nil

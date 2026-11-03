@@ -213,6 +213,13 @@ export namespace AwaitedEditionUseCase {
       now,
     )
 
+  /** Every edition the reader awaits, in both formats, in the shelf's order:
+   *  what the wishlist draws beside the wishes. */
+  export const everyAwaited = async (
+    userId: UserId,
+    now = new Date(),
+  ): Promise<AwaitedEditionView[]> => inShelfOrder(await awaitedOf(userId, now), now)
+
   /** The hourly pass's share: every edition anybody awaits whose watch was
    *  never looked up, then every one two weeks old, until the budget is spent;
    *  whatever is not reached goes first next hour. A refusal for want of

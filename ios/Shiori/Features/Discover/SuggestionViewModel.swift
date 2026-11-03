@@ -38,6 +38,8 @@ final class SuggestionViewModel {
                 _ = try await client.awaitEdition(suggestion.draft, format)
             case .alreadyRead:
                 bookRead = try await client.addSuggestion(suggestion.shelfDraft(status: .read))
+            case .wish:
+                try await client.wish(suggestion.shelfDraft(status: .toRead), .discovery, nil)
             case .undoAlreadyRead:
                 if let bookRead { try await client.deleteBook(bookRead) }
                 bookRead = nil

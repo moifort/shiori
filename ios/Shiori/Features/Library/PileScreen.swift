@@ -17,6 +17,7 @@ struct PileScreen: View {
     var body: some View {
         PilePage(
             pile: viewModel.pile,
+            wished: viewModel.wished.map { .init(book: $0, caption: viewModel.wishlist.caption(of: $0)) },
             formats: viewModel.shownFormats,
             selectedFormat: viewModel.view.format,
             genres: viewModel.shownGenres,
@@ -31,6 +32,9 @@ struct PileScreen: View {
         .onReceive(NotificationCenter.default.publisher(for: .shioriDataDidChange)) { _ in
             Task { await viewModel.load() }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .shioriWishlistDidChange)) { _ in
+            Task { await viewModel.load() }
+        }
     }
 
     private func handle(_ action: PileAction) {
@@ -40,6 +44,7 @@ struct PileScreen: View {
         case let .selectGenre(genre): Task { await viewModel.select(genre: genre) }
         case let .menu(book, action): quick = BookQuickRequest(book: book, action: action)
         case .openWholePile: destination = .wholePile(viewModel.view)
+        case .openWishlist: destination = .wishlist
         case .refresh: Task { await viewModel.load() }
         }
     }

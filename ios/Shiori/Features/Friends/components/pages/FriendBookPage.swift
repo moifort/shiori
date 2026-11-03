@@ -14,6 +14,8 @@ enum FriendBookAction {
     /// Onto the reader's own shelf, as the hero's first button offers it.
     case add(CopiedStatus, BookFormat)
     case awaitEdition(ReleaseFormat)
+    /// Onto the reader's wishlist.
+    case wish
 }
 
 /// What a friend's book page draws once the book is known: the reader's own
@@ -36,6 +38,8 @@ struct FriendBookPage: View {
     var formats: [BookFormat] = []
     /// The editions the reader may await from here.
     var awaitable: [ReleaseFormat] = []
+    /// On the reader's wishlist already.
+    var wished = false
     let onAction: (FriendBookAction) async -> Void
 
     private var book: Book { entry.book }
@@ -137,7 +141,9 @@ struct FriendBookPage: View {
                 owned: owned,
                 awaitable: awaitable,
                 onAdd: { status, format in await onAction(.add(status, format)) },
-                onAwait: { format in Task { await onAction(.awaitEdition(format)) } }
+                wished: wished,
+                onAwait: { format in Task { await onAction(.awaitEdition(format)) } },
+                onWish: { await onAction(.wish) }
             )
             // One or the other: a heart is the top mark, so it stands
             // in for the stars rather than sitting beside them.

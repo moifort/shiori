@@ -18,6 +18,8 @@ struct LibraryClient: Sendable {
     var setFavorite: @Sendable (_ id: String, Bool) async throws -> Book = { _, _ in .preview }
     var rate: @Sendable (_ id: String, _ stars: Double) async throws -> Book = { _, _ in .preview }
     var delete: @Sendable (_ id: String) async throws -> Void = { _ in }
+    /// The wishlist, for the pile's rail of what can be had now.
+    var wishlist: @Sendable () async throws -> Wishlist = { Wishlist() }
 }
 
 extension LibraryClient {
@@ -29,7 +31,8 @@ extension LibraryClient {
         setStatus: { try await BookAPI.setStatus(id: $0, status: $1) },
         setFavorite: { try await BookAPI.setFavorite(id: $0, favorite: $1) },
         rate: { try await BookAPI.rate(id: $0, stars: $1) },
-        delete: { try await BookAPI.delete(id: $0) }
+        delete: { try await BookAPI.delete(id: $0) },
+        wishlist: { try await WishlistAPI.wishlist() }
     )
 }
 
@@ -40,7 +43,8 @@ extension LibraryClient {
         shelves: { Showcase.libraryShelves(view: $0) },
         shelf: { Showcase.shelfPage($0, limit: $1, after: $2) },
         pile: { Showcase.pile(view: $0) },
-        lovedSeries: { Showcase.lovedSeries(view: $0) }
+        lovedSeries: { Showcase.lovedSeries(view: $0) },
+        wishlist: { .preview }
     )
 }
 #endif

@@ -23,6 +23,8 @@ struct ScanClient: Sendable {
     var addDetected: @Sendable (DetectedBook) async throws -> Book
     /// Scans left, month and granted together; nil when unknown.
     var remainingScans: @Sendable () async -> Int?
+    /// Onto the wishlist rather than the shelf: the scan is then over.
+    var wish: @Sendable (BookDraft) async throws -> Void = { _ in }
 }
 
 extension ScanClient {
@@ -40,7 +42,8 @@ extension ScanClient {
         subgenres: { try await BookAPI.subgenres() },
         detectShelf: { try await ShelfAPI.detect(jpeg: $0) },
         addDetected: { try await ShelfAPI.add($0) },
-        remainingScans: { (try? await SubscriptionAPI.quota())?.totalRemaining }
+        remainingScans: { (try? await SubscriptionAPI.quota())?.totalRemaining },
+        wish: { try await WishlistAPI.wish($0, origin: .scan) }
     )
 }
 

@@ -15,7 +15,10 @@ struct FriendBookAddMenu: View {
     /// The editions the reader may await.
     let awaitable: [ReleaseFormat]
     let onAdd: (CopiedStatus, BookFormat) async -> Void
+    /// On the reader's wishlist already, from this menu.
+    var wished = false
     let onAwait: (ReleaseFormat) -> Void
+    var onWish: () async -> Void = {}
 
     var body: some View {
         Menu {
@@ -37,6 +40,15 @@ struct FriendBookAddMenu: View {
                         }
                         .accessibilityIdentifier("friend-book-add-read-\(format.rawValue)")
                     }
+                }
+            }
+            if !owned {
+                Section {
+                    Button("Liste d'envies", systemImage: wished ? "checkmark" : "gift") {
+                        Task { await onWish() }
+                    }
+                    .disabled(wished)
+                    .accessibilityIdentifier("friend-book-wish")
                 }
             }
             if !awaitable.isEmpty {

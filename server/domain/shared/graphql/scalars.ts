@@ -33,6 +33,7 @@ import {
   UserId,
   Year,
 } from '~/domain/shared/primitives'
+import { WishId } from '~/domain/wish/primitives'
 import { builder } from './builder'
 
 // A brand's Zod constructor is the single definition of what the value may be, so
@@ -79,6 +80,14 @@ builder.scalarType('AwaitedEditionId', {
     'the language, joined. Opaque to the client.',
   serialize: (value) => value as string,
   parseValue: validatedParse('AwaitedEditionId', AwaitedEditionId),
+})
+
+builder.scalarType('WishId', {
+  description:
+    'Identifier of one book a reader wishes for: the reader and the story, joined. ' +
+    'Opaque to the client.',
+  serialize: (value) => value as string,
+  parseValue: validatedParse('WishId', WishId),
 })
 
 builder.scalarType('BookTitle', {

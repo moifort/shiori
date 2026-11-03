@@ -3352,6 +3352,9 @@ type Mutation {
   """Take a saga rating back. Leaves the heart alone."""
   removeSeriesRating(seriesId: SeriesId!): SeriesOpinion!
 
+  """Drop a wish. False when the reader has none by that id."""
+  removeWish(id: WishId!): Boolean!
+
   """
   Read a book cover with AI and return a record for the reader to review.
   
@@ -3562,6 +3565,27 @@ type Mutation {
   Correct a record the scan got wrong. Omitted fields are left alone; an optional field passed as null is cleared. BAD_USER_INPUT when `series` names a saga the reader does not hold and the book has no author to key it with, or when a reading date is in the future, is one the status does not carry, or two typed together are out of order. A typed date that contradicts a stored one is kept, and the stored ones follow it: added, started, finished stay in order.
   """
   updateBook(id: BookId!, input: BookEditInput!): Book!
+
+  """
+  Wish for a book seen in Découvrir, among an award’s winners or an author’s works, or scanned and not added. Wishing for it twice answers the first wish, from wherever it came. Fails with `ALREADY_IN_LIBRARY` when the library holds the story, and `TOO_MANY_WISHES` past five hundred. A friend’s book goes through `wishFriendBook`: `BAD_USER_INPUT` for the `FRIEND` origin here.
+  """
+  wishBook(
+    book: WishedBookInput!
+    origin: WishOrigin!
+
+    """What the cover labels it with: the award’s name, say."""
+    originLabel: String
+  ): Wish!
+
+  """
+  Wish for a book seen on a friend’s shelf. Only the friend and the book are named: the server re-reads the book and keeps its catalogue facts, never what the friend made of it, nor their photo of the cover. Wishing for it twice answers the first wish, from wherever it came. Fails with `ALREADY_IN_LIBRARY` when the library holds the story, and `TOO_MANY_WISHES` past five hundred. `NOT_FOUND` for a stranger, a missing book or one marked "do not share".
+  """
+  wishFriendBook(
+    bookId: BookId!
+
+    """The friend"""
+    userId: UserId!
+  ): Wish!
 }
 
 """
@@ -4485,6 +4509,11 @@ type Query {
   vocabulary: ShelfVocabulary!
 
   """
+  The reader’s wishlist: the books wished for and the editions awaited. Neither one the library now holds — they go on their own. Read off the reader’s own documents and the shared release watches: no web lookup.
+  """
+  wishlist: Wishlist!
+
+  """
   What came out since the start of the year: the volumes of the sagas the reader follows, held or not, and the editions they await. The newest first. Read off the release watches: no web lookup.
   """
   yearReleases: [UpcomingRelease!]!
@@ -5282,6 +5311,78 @@ type VolumeRelease {
 
   """Its title in that language."""
   title: BookTitle!
+}
+
+"""
+A book the reader does not hold and would like to. Private to its reader, never counted, grouped into a saga nor shared: only the catalogue facts of the page it was wished from. It goes on its own once the library holds the story — scanned, synced, or added from anywhere.
+"""
+type Wish {
+  authors: [AuthorName!]!
+  coverUrl: CoverUrl
+  format: BookFormat!
+
+  """The friend it was seen at, for a wish from a friend’s shelf."""
+  friendId: UserId
+  id: WishId!
+  isbn13: Isbn13
+  language: BookLanguage
+  origin: WishOrigin!
+
+  """
+  Who or what it came from, as the cover labels it: the friend’s first name, the award’s. Null where the origin says it all.
+  """
+  originLabel: String
+  seriesName: SeriesName
+  title: BookTitle!
+  volume: VolumeNumber
+  wishedAt: DateTime!
+}
+
+"""
+Identifier of one book a reader wishes for: the reader and the story, joined. Opaque to the client.
+"""
+scalar WishId
+
+"""Where the reader came across a book they wish for."""
+enum WishOrigin {
+  """Among the works of an author."""
+  AUTHOR
+
+  """Among an award’s winners."""
+  AWARD
+
+  """Among the month’s discoveries."""
+  DISCOVERY
+
+  """On a friend’s shelf."""
+  FRIEND
+
+  """Scanned, and not added."""
+  SCAN
+}
+
+"""A book as the page the reader wishes for it from shows it."""
+input WishedBookInput {
+  authors: [AuthorName!]
+  coverUrl: CoverUrl
+  format: BookFormat!
+  isbn13: Isbn13
+  language: BookLanguage
+  series: SeriesPlacementInput
+  title: BookTitle!
+}
+
+"""
+Everything the reader would like and does not hold: the books they wished for, and the editions they await.
+"""
+type Wishlist {
+  """
+  Every edition awaited, in both formats: the ones out first, then the ones announced, the soonest first, then the ones not announced.
+  """
+  awaited: [AwaitedEdition!]!
+
+  """The books wished for, the latest first."""
+  wishes: [Wish!]!
 }
 
 """

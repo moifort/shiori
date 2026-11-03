@@ -194,6 +194,20 @@ final class ScanViewModel {
         }
     }
 
+    /// Puts the book on the wishlist rather than the shelf. Says whether the
+    /// server took it: the review stays open otherwise, its error said.
+    func wish(_ draft: BookDraft) async -> Bool {
+        isSaving = true
+        defer { isSaving = false }
+        do {
+            try await client.wish(draft)
+            return true
+        } catch {
+            self.error = reportError(error)
+            return false
+        }
+    }
+
     /// Asked again whenever the language or the format is corrected: a book
     /// switched to the app's language is left only its recording to await. A
     /// failure leaves the offer out — the book's page makes it once added.

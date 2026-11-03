@@ -55,11 +55,7 @@ struct AwardWinnerPage: View {
             // The hero's "+" again, within reach once it has scrolled away.
             ToolbarItem(placement: .primaryAction) {
                 Menu {
-                    DiscoveryAddActions(
-                        item: winner,
-                        onAdd: { choose(.add) },
-                        onAwait: { choose(.await($0)) }
-                    )
+                    DiscoveryAddActions(item: winner) { choose($0, leaving: $1) }
                 } label: {
                     Label("Ajouter", systemImage: "plus")
                         .labelStyle(.iconOnly)
@@ -74,8 +70,8 @@ struct AwardWinnerPage: View {
         Task { await onAction(action) }
     }
 
-    private func choose(_ choice: DiscoveryChoice) {
-        choices.choose(choice, for: winner, from: .add, leaving: .added, ask: onChoice)
+    private func choose(_ choice: DiscoveryChoice, leaving mark: DiscoveryMark) {
+        choices.choose(choice, for: winner, from: .add, leaving: mark, ask: onChoice)
     }
 
     // MARK: - Hero

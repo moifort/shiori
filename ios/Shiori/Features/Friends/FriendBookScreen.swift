@@ -49,7 +49,8 @@ struct FriendBookScreen: View {
                     added: viewModel.added,
                     awaited: viewModel.offer.awaited,
                     formats: entry.book.format.takenAs.filter { $0 != .audiobook || viewModel.audio != .unavailable },
-                    awaitable: viewModel.offer.awaitable
+                    awaitable: viewModel.offer.awaitable,
+                    wished: viewModel.wished
                 ) { action in
                     switch action {
                     case .openSeries: showsSaga = true
@@ -60,6 +61,7 @@ struct FriendBookScreen: View {
                     case let .add(status, format):
                         if await viewModel.add(status, as: format) { onAdded() }
                     case let .awaitEdition(format): viewModel.awaitEdition(format)
+                    case .wish: await viewModel.wish()
                     }
                 }
             } else if let errorMessage = viewModel.errorMessage {
