@@ -2,30 +2,36 @@ import SwiftUI
 
 /// Everything the Actualités page can ask for.
 enum NewsAction {
+    case selectTab(NewsTab)
     case selectFormat(BookFormat?)
+    case selectFriend(String?)
     case openFriendBook(FeedEvent)
     case take(FeedEvent, BookFormat)
     case openAuthor(UpcomingRelease)
-    case openWinner(AwardWinner)
-    case addWinner(AwardWinner)
-    case dismissWinner
     case openNarrator(NarratorNews)
     case addNarrator(NarratorNews)
-    case openUpcoming
+    case invite
     case openAlerts
     case prefetch(String)
     case loadMore
     case refresh
 }
 
-/// The Actualités page, pure: the format pills, the year's four counts, the week's friends' feed with
-/// the author's and the award's cards among it, and "Prochainement" with its
-/// calendar. The pages a tap opens are the screen's.
+/// The Actualités page, pure, cut in two by who speaks. Sorties: the format
+/// pills, what came out in the last thirty days among the series, authors,
+/// narrators and awaited editions the reader follows, then "À venir" and its
+/// calendar. Amis: the friends as stories, then their moves under journal
+/// periods, the same move by several of them on one line. The pages a tap
+/// opens are the screen's.
 struct NewsPage: View {
-    let sections: [FeedSection]
-    let yearRecap: YearRecap
+    let tab: NewsTab
+    let friendsHaveNews: Bool
+    let released: [ReleasedItem]
     let calendar: ReleaseCalendar
     let format: BookFormat?
+    let stories: [FriendStory]
+    let friendSections: [FriendSection]
+    let friendId: String?
     let hasMore: Bool
     let pageFailed: Bool
     let isLoading: Bool
@@ -38,7 +44,7 @@ struct NewsPage: View {
         Task { await onAction(action) }
     }
 
-    private var isEmpty: Bool { sections.allSatisfy(\.items.isEmpty) }
+    private var isEmpty: Bool { released.isEmpty && calendar.releases.isEmpty && stories.isEmpty }
 
     var body: some View {
         content
@@ -52,52 +58,96 @@ struct NewsPage: View {
 
     @ViewBuilder
     private var content: some View {
-        if let errorMessage, isEmpty, calendar.releases.isEmpty, !isLoading {
+        if let errorMessage, isEmpty, !isLoading {
             EmptyState.failure("Actualités indisponibles", message: errorMessage) {
                 await onAction(.refresh)
             }
-        } else if isLoading, isEmpty, calendar.releases.isEmpty {
+        } else if isLoading, isEmpty {
             ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 0) {
-                    FilterPills(
-                        pills: NewsFeedLayout.pillFormats.map { .init(id: $0.rawValue, label: $0.pillLabel) },
-                        selected: format?.rawValue
-                    ) { id in
-                        act(.selectFormat(id.flatMap(BookFormat.init(rawValue:))))
+                    NewsTabPicker(selected: tab, friendsHaveNews: friendsHaveNews) { act(.selectTab($0)) }
+                        .padding(.horizontal, 20)
+                        .padding(.top, 4)
+                    switch tab {
+                    case .releases: releases
+                    case .friends: friends
                     }
-                    .padding(.bottom, 4)
-                    YearRecapSection(recap: yearRecap)
-                        .padding(.top, 22)
-                    feed
-                    ReleaseCalendarSection(
-                        calendar: calendar,
-                        onOpen: { act(.openAuthor($0)) }
-                    )
-                    .padding(.top, 30)
-                    .padding(.bottom, 24)
                 }
+                .padding(.bottom, 24)
             }
             .refreshable { await onAction(.refresh) }
         }
     }
 
-    /// Nothing happened lately: nothing is drawn, the calendar rises to the pills.
+    // MARK: - Sorties
+
     @ViewBuilder
-    private var feed: some View {
-        if !isEmpty {
-            ForEach(sections) { section in
-                if !section.items.isEmpty {
-                    Text(section.title)
-                        .font(.title2.weight(.bold))
-                        .padding(.horizontal, 20)
-                        .padding(.top, 24)
-                        .padding(.bottom, 6)
-                    ForEach(section.items) { item in
-                        row(item)
-                            .task { if case let .friend(event) = item { await onAction(.prefetch(event.id)) } }
-                    }
+    private var releases: some View {
+        FilterPills(
+            pills: NewsFeedLayout.pillFormats.map { .init(id: $0.rawValue, label: $0.pillLabel) },
+            selected: format?.rawValue
+        ) { id in
+            act(.selectFormat(id.flatMap(BookFormat.init(rawValue:))))
+        }
+        .padding(.top, 14)
+        HStack(alignment: .firstTextBaseline, spacing: 6) {
+            Text("Sorti").font(.title2.weight(.bold))
+            Text("30 derniers jours").font(.footnote).foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 24)
+        .padding(.bottom, 6)
+        .accessibilityIdentifier("news-released-header")
+        if released.isEmpty {
+            Text("Rien n'est sorti ces 30 derniers jours.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 8)
+        } else {
+            ForEach(released) { item in
+                switch item {
+                case let .release(release, day):
+                    ReleasedRow(release: release, day: day, onOpen: release.author == nil ? nil : { act(.openAuthor(release)) })
+                case let .narrator(news, _):
+                    NarratorEventRow(news: news, onOpen: { act(.openNarrator(news)) }, onAdd: { await onAction(.addNarrator(news)) })
+                }
+            }
+        }
+        ReleaseCalendarSection(calendar: calendar, onOpen: { act(.openAuthor($0)) })
+            .padding(.top, 30)
+    }
+
+    // MARK: - Amis
+
+    @ViewBuilder
+    private var friends: some View {
+        if stories.isEmpty {
+            noFriends
+        } else {
+            FriendStoriesRail(
+                stories: stories,
+                selected: friendId,
+                onSelect: { act(.selectFriend($0)) },
+                onInvite: { await onAction(.invite) }
+            )
+            .padding(.top, 18)
+            ForEach(friendSections) { section in
+                Text(section.title)
+                    .font(.title2.weight(.bold))
+                    .padding(.horizontal, 20)
+                    .padding(.top, 24)
+                    .padding(.bottom, 6)
+                ForEach(section.moves) { move in
+                    FeedEventRow(
+                        event: move.lead,
+                        others: move.others,
+                        onOpen: { act(.openFriendBook(move.lead)) },
+                        onTake: { await onAction(.take(move.lead, $0)) }
+                    )
+                    .task { await onAction(.prefetch((move.others.last ?? move.lead).id)) }
                 }
             }
             if hasMore {
@@ -109,62 +159,74 @@ struct NewsPage: View {
         }
     }
 
-    @ViewBuilder
-    private func row(_ item: FeedItem) -> some View {
-        switch item {
-        case let .friend(event):
-            FeedEventRow(
-                event: event,
-                onOpen: { act(.openFriendBook(event)) },
-                onTake: { await onAction(.take(event, $0)) }
-            )
-        case let .narrator(news):
-            NarratorEventRow(news: news, onOpen: { act(.openNarrator(news)) }, onAdd: { await onAction(.addNarrator(news)) })
-        case let .author(release):
-            AuthorAnnouncementCard(release: release) { act(.openAuthor(release)) }
-        case let .award(winner):
-            AwardNewsCard(
-                winner: winner,
-                onOpen: { act(.openWinner(winner)) },
-                onAdd: { await onAction(.addWinner(winner)) },
-                onDismiss: { act(.dismissWinner) }
-            )
+    /// Nobody shares their shelves yet: the way to change that, not a blank tab.
+    private var noFriends: some View {
+        VStack(spacing: 8) {
+            Image(systemName: "person.2")
+                .font(.title)
+                .foregroundStyle(.secondary)
+            Text("Aucun ami pour l'instant")
+                .font(.headline)
+            Text("Partagez votre bibliothèque pour voir ce que vos amis lisent.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+            AsyncButton { await onAction(.invite) } label: {
+                Text("Inviter")
+                    .font(.subheadline.weight(.semibold))
+                    .padding(.horizontal, 18)
+                    .frame(height: 36)
+                    .background(Color.primary, in: .capsule)
+                    .foregroundStyle(Color(.systemBackground))
+            }
+            .buttonStyle(.plain)
+            .padding(.top, 10)
+            .accessibilityIdentifier("news-invite-empty")
         }
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 40)
+        .padding(.top, 72)
     }
 }
 
 private struct NewsPagePreview: View {
-    var events: [FeedEvent] = FeedEvent.previews
+    @State var tab: NewsTab = .releases
+    var events: [FeedEvent] = FeedEvent.previews + FeedEvent.sameStartPreviews
     var releases: [UpcomingRelease] = UpcomingRelease.previews
-    var yearRecap: YearRecap = .preview
     var isLoading = false
     var errorMessage: String?
 
     var body: some View {
         NavigationStack {
             NewsPage(
-                sections: NewsFeedLayout.sections(
-                    events: events,
-                    narrator: events.isEmpty ? [] : [.preview],
-                    spotlight: releases.first,
-                    award: nil
+                tab: tab,
+                friendsHaveNews: tab == .releases && !events.isEmpty,
+                released: NewsFeedLayout.released(
+                    releases: UpcomingRelease.releasedPreviews,
+                    narrator: [.preview],
+                    format: nil
                 ),
-                yearRecap: yearRecap,
                 calendar: ReleaseCalendar(releases: releases, now: .now),
                 format: nil,
+                stories: NewsFeedLayout.stories(events: events, seenAt: .now.addingTimeInterval(-86400)),
+                friendSections: NewsFeedLayout.friendSections(events: events),
+                friendId: nil,
                 hasMore: false,
                 pageFailed: false,
                 isLoading: isLoading,
                 errorMessage: errorMessage,
                 alertsSilenced: false,
-                onAction: { _ in }
+                onAction: { action in
+                    if case let .selectTab(next) = action { tab = next }
+                }
             )
         }
         .preferredColorScheme(.dark)
     }
 }
 
-#Preview("Filled") { NewsPagePreview() }
-#Preview("Nothing yet") { NewsPagePreview(events: [], releases: [], yearRecap: .empty) }
+#Preview("Sorties") { NewsPagePreview() }
+#Preview("Amis") { NewsPagePreview(tab: .friends) }
+#Preview("Amis, vide") { NewsPagePreview(tab: .friends, events: []) }
 #Preview("Loading") { NewsPagePreview(events: [], releases: [], isLoading: true) }
 #Preview("Failed") { NewsPagePreview(events: [], releases: [], errorMessage: "Le réseau est indisponible.") }

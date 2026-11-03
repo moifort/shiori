@@ -4,9 +4,8 @@ import SwiftUI
 /// tap opens. Draws `NewsPage`.
 ///
 /// What opens is what the app already has: a friend's book on its read-only
-/// page, an author's page, an award winner's page. The "Prochainement" header
-/// opens Découvrir, whole, over the tab — its series, authors, awards and
-/// awaited editions stay where they were.
+/// page, an author's page, a narrator's page. A release alert or a book awaited
+/// opens Découvrir, whole, over the tab.
 struct NewsScreen: View {
     /// Held by `ContentView`, which brings it back to the books on each visit.
     @Binding var discoverShelf: LibraryShelf
@@ -34,15 +33,14 @@ struct NewsScreen: View {
     var body: some View {
         DetailSplit(item: $detail) {
             NewsPage(
-                sections: NewsFeedLayout.sections(
-                    events: viewModel.shownEvents,
-                    narrator: viewModel.shownNarratorNews,
-                    spotlight: viewModel.spotlight,
-                    award: nil
-                ),
-                yearRecap: viewModel.yearRecap(),
+                tab: viewModel.tab,
+                friendsHaveNews: viewModel.friendsHaveNews,
+                released: viewModel.released(),
                 calendar: viewModel.calendar(),
                 format: viewModel.format,
+                stories: viewModel.stories,
+                friendSections: viewModel.friendSections(),
+                friendId: viewModel.friendId,
                 hasMore: viewModel.hasMore,
                 pageFailed: viewModel.pageFailed,
                 isLoading: viewModel.isLoading,
@@ -55,6 +53,10 @@ struct NewsScreen: View {
                     NotificationSettingsScreen(onDone: { showsAlerts = false })
                 }
                 .presentationDetents([.medium, .large])
+            }
+            // Shared the moment it comes back, as the Partagé tab does.
+            .sheet(item: $viewModel.invitation) { invitation in
+                InvitationSheet(invitation: invitation, myShelf: nil)
             }
         } detail: { detail in
             detailContent(detail)
@@ -88,44 +90,43 @@ struct NewsScreen: View {
             AuthorScreen(key: author.key, name: author.name, isOffered: false)
         case let .narrator(narrator):
             NarratorScreen(key: narrator.key, name: narrator.name)
-        case let .winner(winner):
-            AwardWinnerScreen(winner: winner, others: viewModel.yearAwards.latestFirst)
         }
     }
 
     private func handle(_ action: NewsAction) async {
         switch action {
+        case let .selectTab(tab): viewModel.tab = tab
         case let .selectFormat(format): viewModel.format = format
-        case let .openFriendBook(event): detail = .friendBook(event)
+        case let .selectFriend(friendId): viewModel.friendId = friendId
+        case let .openFriendBook(event): open(.friendBook(event))
         case let .take(event, format): await viewModel.take(event, as: format)
         case let .openAuthor(release):
-            if let author = release.author { detail = .author(.init(key: author.key, name: author.name)) }
-        case let .openWinner(winner): detail = .winner(winner)
-        case let .addWinner(winner): await viewModel.add(winner)
-        case .dismissWinner: viewModel.dismissWinner()
-        case let .openNarrator(news): detail = .narrator(.init(key: news.narratorKey, name: news.narrator))
+            if let author = release.author { open(.author(.init(key: author.key, name: author.name))) }
+        case let .openNarrator(news): open(.narrator(.init(key: news.narratorKey, name: news.narrator)))
         case let .addNarrator(news): await viewModel.add(news)
-        case .openUpcoming: opensDiscover = true
+        case .invite: await viewModel.invite()
         case .openAlerts: showsAlerts = true
         case let .prefetch(id): await viewModel.prefetchIfNeeded(for: id)
         case .loadMore: await viewModel.loadMore()
         case .refresh: await viewModel.load()
         }
     }
+
+    private func open(_ target: NewsDetail) {
+        detail = target
+    }
 }
 
-private enum NewsDetail: Identifiable {
+private enum NewsDetail: Identifiable, Hashable {
     case friendBook(FeedEvent)
     case author(AuthorDestination)
     case narrator(NarratorDestination)
-    case winner(AwardWinner)
 
     var id: String {
         switch self {
         case let .friendBook(event): "friend-book-\(event.id)"
         case let .author(author): "author-\(author.id)"
         case let .narrator(narrator): "narrator-\(narrator.id)"
-        case let .winner(winner): "winner-\(winner.id)"
         }
     }
 }

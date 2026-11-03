@@ -4,14 +4,14 @@ import Testing
 
 @MainActor
 struct NewsViewModelTests {
-    @Test func loadFillsTheFeedTheReleasesAndTheAward() async {
+    @Test func loadFillsTheFeedAndTheReleases() async {
         let viewModel = NewsViewModel(client: .preview, caching: false)
 
         await viewModel.loadOnAppear()
 
         #expect(viewModel.shownEvents.map(\.id) == FeedEvent.previews.map(\.id))
         #expect(viewModel.releases.count == UpcomingRelease.previews.count)
-        #expect(viewModel.winner != nil)
+        #expect(viewModel.yearReleases.count == UpcomingRelease.previews.count)
         #expect(viewModel.narratorNews.count == 1)
         #expect(viewModel.isLoading == false)
         #expect(viewModel.errorMessage == nil)
@@ -83,28 +83,25 @@ struct NewsViewModelTests {
         #expect(viewModel.events.count == FeedEvent.previews.count)
     }
 
-    @Test func aFormatPillNarrowsTheFeedTheCalendarAndTheAward() async {
+    @Test func aFormatPillNarrowsTheCalendar() async {
         let viewModel = NewsViewModel(client: .preview, caching: false)
         await viewModel.load()
 
         viewModel.format = .manga
 
-        #expect(viewModel.shownEvents.map(\.format) == [.manga])
         #expect(viewModel.shownReleases.allSatisfy { $0.format == .manga })
-        #expect(viewModel.shownWinner == nil)
-        viewModel.format = .book
-        #expect(viewModel.shownWinner != nil)
+        #expect(viewModel.shownEvents.count == FeedEvent.previews.count)
     }
 
-    @Test func narratorNewsAreRecordingsSoOnlyTheAudiobookPillKeepsThem() async {
+    @Test func openingAmisPutsItsDotOut() async {
         let viewModel = NewsViewModel(client: .preview, caching: false)
         await viewModel.load()
-        #expect(viewModel.shownNarratorNews.count == 1)
+        #expect(viewModel.friendsHaveNews)
 
-        viewModel.format = .audiobook
-        #expect(viewModel.shownNarratorNews.count == 1)
-        viewModel.format = .book
-        #expect(viewModel.shownNarratorNews.isEmpty)
+        viewModel.tab = .friends
+        viewModel.tab = .releases
+
+        #expect(viewModel.friendsHaveNews == false)
     }
 
     @Test func narratorNewsFailingLeavesTheRestOfThePage() async {
@@ -129,12 +126,11 @@ struct NewsViewModelTests {
         #expect(viewModel.shownEvents.first { $0.id == event!.id }?.inLibrary == true)
     }
 
-    @Test func dismissingTheAwardLeavesItOutForTheSession() async {
+    @Test func invitingHandsTheInvitationOver() async {
         let viewModel = NewsViewModel(client: .preview, caching: false)
-        await viewModel.load()
 
-        viewModel.dismissWinner()
+        await viewModel.invite()
 
-        #expect(viewModel.shownWinner == nil)
+        #expect(viewModel.invitation != nil)
     }
 }

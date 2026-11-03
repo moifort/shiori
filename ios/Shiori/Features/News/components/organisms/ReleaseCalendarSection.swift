@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// "Prochainement": everything announced; with nothing announced, an icon and a
+/// "À venir": everything announced; with nothing announced, an icon and a
 /// sentence say what will come. Draws what it is given.
 struct ReleaseCalendarSection: View {
     let calendar: ReleaseCalendar
@@ -9,7 +9,7 @@ struct ReleaseCalendarSection: View {
     var body: some View {
         let sections = calendar.sections
         VStack(alignment: .leading, spacing: 12) {
-            Text("Prochainement")
+            Text("À venir")
                 .font(.title2.weight(.bold))
                 .padding(.horizontal, 20)
                 .accessibilityIdentifier("news-upcoming-header")

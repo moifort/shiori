@@ -27,6 +27,17 @@ struct AwardLaurels: View {
     }
 }
 
+extension LiteraryAward {
+    /// What the prize crowns, under its year.
+    var categoryName: String {
+        switch self {
+        case .locusScienceFiction: String(localized: "Meilleur roman de SF")
+        case .locusFantasy: String(localized: "Meilleur roman de fantasy")
+        default: String(localized: "Meilleur roman")
+        }
+    }
+}
+
 #Preview("Award laurels") {
     AwardLaurels(mention: AwardMention(award: .hugo, year: 2026))
         .padding()

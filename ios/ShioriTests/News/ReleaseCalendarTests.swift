@@ -65,57 +65,100 @@ struct NewsFeedLayoutTests {
         return calendar
     }
 
+    /// Saturday 31 October 2026, noon UTC.
     private let now = Date(timeIntervalSince1970: 1_793_448_000)
 
-    private func event(_ id: String, hoursAgo: Double) -> FeedEvent {
-        var event = FeedEvent.previews[0]
-        event = FeedEvent(
-            id: id, kind: .loved, at: now.addingTimeInterval(-hoursAgo * 3600), friendId: "f",
-            friendName: "F", bookId: id, title: id, authors: [], format: .book, coverURL: nil,
-            rating: nil, alsoStartedBy: 0, inLibrary: false
+    private func event(
+        _ id: String, _ kind: FeedEventKind = .loved, friend: String = "f", title: String? = nil, hoursAgo: Double
+    ) -> FeedEvent {
+        FeedEvent(
+            id: id, kind: kind, at: now.addingTimeInterval(-hoursAgo * 3600), friendId: friend,
+            friendName: friend.capitalized, bookId: "\(friend)-\(id)", title: title ?? id, authors: ["A"],
+            format: .book, coverURL: nil, rating: nil, alsoStartedBy: 0, inLibrary: false
         )
-        return event
     }
 
-    @Test func eventsGroupByHowLongAgoAndCardsSlotIn() {
-        let sections = NewsFeedLayout.sections(
-            events: [event("a", hoursAgo: 1), event("b", hoursAgo: 2), event("c", hoursAgo: 3), event("d", hoursAgo: 30), event("e", hoursAgo: 24 * 4), event("old", hoursAgo: 24 * 8)],
-            spotlight: .authorPreview,
-            award: .newsPreview,
-            now: now,
-            calendar: calendar
+    private func release(_ id: String, _ date: String?, format: BookFormat = .book) -> UpcomingRelease {
+        UpcomingRelease(
+            id: id, source: .saga, format: format, title: id, authors: [], date: date, coverURL: nil,
+            seriesName: nil, volume: nil, author: nil, sagaRating: nil, sagaFavorite: false
         )
-
-        #expect(sections.map(\.title) == ["Cette semaine"])
-        #expect(sections[0].items.map(\.id) == [
-            "friend-a", "friend-b", "author-saga~red-rising~6", "friend-c",
-            "award-klara--kazuo-ishiguro", "friend-d", "friend-e",
-        ])
     }
 
-    @Test func aNarratorsRecordingFallsOnTheDayItCameOut() {
-        let day = now.addingTimeInterval(-3 * 86_400).formatted(.iso8601.year().month().day())
-        let news = NarratorNews(
-            id: "n", narratorKey: "k", narrator: "N", title: "T", authors: [], date: day,
+    private func news(_ id: String, _ date: String) -> NarratorNews {
+        NarratorNews(
+            id: id, narratorKey: "k", narrator: "N", title: id, authors: [], date: date,
             coverURL: nil, format: .audiobook
         )
+    }
 
-        let sections = NewsFeedLayout.sections(
-            events: [event("a", hoursAgo: 1), event("b", hoursAgo: 24 * 6)],
-            narrator: [news],
-            spotlight: nil,
-            award: nil,
+    @Test func releasedKeepsTheLastThirtyDaysNewestFirst() {
+        let items = NewsFeedLayout.released(
+            releases: [
+                release("week", "2026-10-24"), release("today", "2026-10-31"), release("old", "2026-09-30"),
+                release("month", "2026-10"), release("year", "2026"), release("coming", "2026-11-04"),
+            ],
+            narrator: [news("voice", "2026-10-28"), news("oldVoice", "2026-08-01")],
+            format: nil,
             now: now,
             calendar: calendar
         )
 
-        #expect(sections.map(\.title) == ["Cette semaine"])
-        #expect(sections[0].items.map(\.id) == ["friend-a", "narrator-n", "friend-b"])
+        #expect(items.map(\.id) == ["release-today", "narrator-voice", "release-week", "release-month"])
     }
 
-    @Test func aFeedWithNoEventStillShowsItsCards() {
-        let sections = NewsFeedLayout.sections(events: [], spotlight: .authorPreview, award: nil, now: now, calendar: calendar)
+    @Test func aFormatPillNarrowsReleasedAndKeepsRecordingsForAudio() {
+        let releases = [release("book", "2026-10-30"), release("audio", "2026-10-29", format: .audiobook)]
+        let voices = [news("voice", "2026-10-28")]
 
-        #expect(sections.flatMap(\.items).map(\.id) == ["author-saga~red-rising~6"])
+        let books = NewsFeedLayout.released(releases: releases, narrator: voices, format: .book, now: now, calendar: calendar)
+        let audio = NewsFeedLayout.released(releases: releases, narrator: voices, format: .audiobook, now: now, calendar: calendar)
+
+        #expect(books.map(\.id) == ["release-book"])
+        #expect(audio.map(\.id) == ["release-audio", "narrator-voice"])
+    }
+
+    @Test func friendsMovesFallUnderTheirPeriodsTheSameMoveOnOneLine() {
+        let sections = NewsFeedLayout.friendSections(
+            events: [
+                event("vagabond", .started, friend: "sophie", hoursAgo: 2),
+                event("dune", friend: "lea", hoursAgo: 3),
+                event("vagabond", .started, friend: "marc", hoursAgo: 4),
+                event("vagabond", .started, friend: "hugo", hoursAgo: 24 * 40),
+            ],
+            now: now,
+            calendar: calendar
+        )
+
+        #expect(sections.count == 2)
+        #expect(sections[0].title == String(localized: "Aujourd'hui"))
+        #expect(sections[0].moves.map(\.lead.friendId) == ["sophie", "lea"])
+        #expect(sections[0].moves[0].others.map(\.friendId) == ["marc"])
+        #expect(sections[1].moves.map(\.lead.friendId) == ["hugo"])
+    }
+
+    @Test func pickingAFriendKeepsTheirMovesAlone() {
+        let sections = NewsFeedLayout.friendSections(
+            events: [event("a", friend: "sophie", hoursAgo: 1), event("b", friend: "marc", hoursAgo: 2)],
+            friendId: "marc",
+            now: now,
+            calendar: calendar
+        )
+
+        #expect(sections.flatMap(\.moves).map(\.lead.friendId) == ["marc"])
+    }
+
+    @Test func aStoryIsLitWhenItsFriendMovedSinceTheLastLook() {
+        let stories = NewsFeedLayout.stories(
+            events: [
+                event("a", friend: "sophie", hoursAgo: 1),
+                event("b", friend: "lea", hoursAgo: 30),
+                event("c", friend: "sophie", hoursAgo: 50),
+            ],
+            seenAt: now.addingTimeInterval(-24 * 3600)
+        )
+
+        #expect(stories.map(\.id) == ["sophie", "lea"])
+        #expect(stories.map(\.isNew) == [true, false])
     }
 }

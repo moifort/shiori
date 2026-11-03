@@ -24,6 +24,22 @@ extension FeedEvent {
             rating: 4, alsoStartedBy: 0, inLibrary: false
         ),
     ]
+
+    /// Marc and Hugo starting Vagabond after Sophie: one line in Amis.
+    static let sameStartPreviews: [FeedEvent] = [
+        FeedEvent(
+            id: "marc~started~vagabond", kind: .started, at: .now.addingTimeInterval(-6 * 3600),
+            friendId: "marc", friendName: "Marc", avatarHero: .gandalf, bookId: "vagabond-marc", title: "Vagabond",
+            authors: ["Takehiko Inoue"], format: .manga, coverURL: nil,
+            rating: nil, alsoStartedBy: 3, inLibrary: false
+        ),
+        FeedEvent(
+            id: "hugo~started~vagabond", kind: .started, at: .now.addingTimeInterval(-7 * 3600),
+            friendId: "hugo", friendName: "Hugo", bookId: "vagabond-hugo", title: "Vagabond",
+            authors: ["Takehiko Inoue"], format: .manga, coverURL: nil,
+            rating: nil, alsoStartedBy: 3, inLibrary: false
+        ),
+    ]
 }
 
 extension NarratorNews {
@@ -43,6 +59,25 @@ extension UpcomingRelease {
         authors: ["Pierce Brown"], date: Self.isoDay(daysAhead: 48), coverURL: openLibraryCover("9780593157459"),
         seriesName: "Red Rising", volume: 6, author: pierce, sagaRating: 5, sagaFavorite: true
     )
+
+    /// Out lately among what the reader follows: "Sorti".
+    static let releasedPreviews: [UpcomingRelease] = [
+        UpcomingRelease(
+            id: "saga~berserk~42", source: .saga, format: .manga, title: "Berserk, tome 42",
+            authors: ["Kentaro Miura"], date: isoDay(daysAhead: -6), coverURL: nil,
+            seriesName: "Berserk", volume: 42, author: nil, sagaRating: nil, sagaFavorite: true
+        ),
+        UpcomingRelease(
+            id: "awaited~projet-derniere-chance", source: .awaited, format: .audiobook, title: "Projet Dernière Chance",
+            authors: ["Andy Weir"], date: isoDay(daysAhead: -12), coverURL: nil,
+            seriesName: nil, volume: nil, author: nil, sagaRating: nil, sagaFavorite: false
+        ),
+        UpcomingRelease(
+            id: "saga~expanse~9", source: .saga, format: .book, title: "The Expanse, tome 9",
+            authors: ["James S. A. Corey"], date: isoDay(daysAhead: -45), coverURL: nil,
+            seriesName: "The Expanse", volume: 9, author: nil, sagaRating: 4, sagaFavorite: false
+        ),
+    ]
 
     static let previews: [UpcomingRelease] = [
         authorPreview,
@@ -104,24 +139,4 @@ extension UpcomingRelease {
     private static func isoYear(yearsAhead: Int) -> String {
         String((Calendar.current.component(.year, from: .now)) + yearsAhead)
     }
-}
-
-extension AwardWinner {
-    /// A Nebula winner with its cover, for the feed's award card.
-    static let newsPreview = AwardWinner(
-        id: "klara--kazuo-ishiguro", format: .book, title: "Klara et le Soleil",
-        originalTitle: "Klara and the Sun", originalLanguage: .en, authors: ["Kazuo Ishiguro"],
-        mentions: [AwardMention(award: .nebula, year: 2025)], state: .available, watched: true,
-        date: nil, coverURL: openLibraryCover("9780571364879"), storeURL: nil,
-        awaitableFormats: [], awaitedEditionId: nil
-    )
-}
-
-extension YearRecap {
-    static let preview = YearRecap(tiles: [
-        Tile(kind: .awards, count: 3, covers: [AwardWinner.preview.cover]),
-        Tile(kind: .friendsFavourites, count: 5, covers: FeedEvent.previews.prefix(2).map(\.cover)),
-        Tile(kind: .seriesReleases, count: 4, covers: UpcomingRelease.previews.prefix(2).map(\.cover)),
-        Tile(kind: .awaitedAvailable, count: 2, covers: UpcomingRelease.previews.suffix(2).map(\.cover)),
-    ])
 }

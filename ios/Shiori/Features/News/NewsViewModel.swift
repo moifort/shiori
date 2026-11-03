@@ -3,23 +3,23 @@ import Observation
 import SwiftUI
 
 /// The Actualités tab's state: the friends' feed page by page, the releases
-/// the calendar is laid from, the award card, and the pills that narrow them.
-/// The tab opens on what it last showed: a `SnapshotCache` hands it back from
-/// disk before a byte is asked of the network, and the answer slides in over it.
+/// "Sorti" and "À venir" are laid from, the tab shown and the pills and friend
+/// that narrow them. The tab opens on what it last showed: a `SnapshotCache`
+/// hands it back from disk before a byte is asked of the network, and the
+/// answer slides in over it.
 @MainActor @Observable
 final class NewsViewModel {
     /// The page size of the feed: a few screens of rows.
     static let pageSize = 20
 
     private let client: NewsClient
+    private let defaults: UserDefaults?
     private var generation = 0
 
     private(set) var events: [FeedEvent] = []
     private(set) var hasMore = false
     private var cursor: String?
     private(set) var releases: [UpcomingRelease] = []
-    private(set) var winner: AwardWinner?
-    private(set) var yearAwards: [AwardWinner] = []
     private(set) var yearReleases: [UpcomingRelease] = []
     private(set) var narratorNews: [NarratorNews] = []
     private(set) var isLoading = false
@@ -30,17 +30,30 @@ final class NewsViewModel {
     /// Books the reader just took, greyed out at once.
     private(set) var taken: Set<String> = []
     private(set) var alertsSilenced = false
-    private var winnerDismissed = false
+    private(set) var isInviting = false
+    /// The invitation to pass on, presented the moment it comes back.
+    var invitation: FriendInvitation?
 
-    /// The pill chosen; nil is "Tout".
+    var tab: NewsTab = .releases {
+        didSet { if tab == .friends, oldValue != .friends { markFriendsSeen() } }
+    }
+    /// The pill chosen on Sorties; nil is "Tout".
     var format: BookFormat?
+    /// The friend picked at the top of Amis; nil is everyone.
+    var friendId: String?
+    /// When the reader last opened Amis: the dot on the tab and the lit rings
+    /// count from it.
+    private(set) var friendsSeenAt: Date?
+    /// The rings stay as they were when Amis opened, rather than going out
+    /// under the reader's eyes.
+    private var ringsSeenAt: Date?
+
+    private static let friendsSeenKey = "news.friendsSeenAt"
 
     /// What the tab opens on: the feed's first page and everything around it.
     private struct Snapshot: Codable {
         let events: [FeedEvent]
         let releases: [UpcomingRelease]
-        let winner: AwardWinner?
-        let yearAwards: [AwardWinner]
         let yearReleases: [UpcomingRelease]
         let narratorNews: [NarratorNews]
     }
@@ -50,15 +63,16 @@ final class NewsViewModel {
     private let cache: SnapshotCache<Snapshot>?
 
     /// - Parameter caching: off in tests, which must neither read nor leave
-    ///   a snapshot on disk.
+    ///   a snapshot on disk, nor the day Amis was last opened.
     init(client: NewsClient, caching: Bool = true) {
         self.client = client
-        cache = caching ? SnapshotCache<Snapshot>("news", version: 1) : nil
+        defaults = caching ? .standard : nil
+        cache = caching ? SnapshotCache<Snapshot>("news", version: 2) : nil
+        friendsSeenAt = defaults?.object(forKey: Self.friendsSeenKey) as? Date
+        ringsSeenAt = friendsSeenAt
         if let snapshot = cache?.read() {
             events = snapshot.events
             releases = snapshot.releases
-            winner = snapshot.winner
-            yearAwards = snapshot.yearAwards
             yearReleases = snapshot.yearReleases
             narratorNews = snapshot.narratorNews
         }
@@ -66,45 +80,39 @@ final class NewsViewModel {
 
     // MARK: - Reading
 
+    /// Every move, the books just taken marked as held.
     var shownEvents: [FeedEvent] {
-        events.filter { format == nil || $0.format == format }
-            .map { event in
-                var shown = event
-                if taken.contains(event.bookId) { shown.inLibrary = true }
-                return shown
-            }
+        events.map { event in
+            var shown = event
+            if taken.contains(event.bookId) { shown.inLibrary = true }
+            return shown
+        }
     }
 
     var shownReleases: [UpcomingRelease] {
         releases.filter { format == nil || $0.format == format }
     }
 
-    /// The favourite author's soonest announcement, which opens the feed's
-    /// second card.
-    var spotlight: UpcomingRelease? {
-        shownReleases.first { $0.author?.favorite == true && $0.date != nil }
-    }
-
-    /// The narrators' news the pills keep: recordings, so the audiobook pill
-    /// and "Tout".
-    var shownNarratorNews: [NarratorNews] {
-        format == nil || format == .audiobook ? narratorNews : []
-    }
-
-    var shownWinner: AwardWinner? {
-        guard let winner, !winnerDismissed else { return nil }
-        guard let format else { return winner }
-        return winner.cover.format == format ? winner : nil
-    }
-
-    /// The year's four counts, over every format: the pills narrow the feed,
-    /// not the year.
-    func yearRecap(now: Date = .now) -> YearRecap {
-        YearRecap.make(awards: yearAwards, events: events, released: yearReleases, now: now)
+    func released(now: Date = .now) -> [ReleasedItem] {
+        NewsFeedLayout.released(releases: yearReleases, narrator: narratorNews, format: format, now: now)
     }
 
     func calendar(now: Date = .now) -> ReleaseCalendar {
         ReleaseCalendar(releases: shownReleases, now: now)
+    }
+
+    func friendSections(now: Date = .now) -> [FriendSection] {
+        NewsFeedLayout.friendSections(events: shownEvents, friendId: friendId, now: now)
+    }
+
+    var stories: [FriendStory] {
+        NewsFeedLayout.stories(events: events, seenAt: ringsSeenAt)
+    }
+
+    /// A friend moved since the reader last opened Amis.
+    var friendsHaveNews: Bool {
+        guard tab != .friends, let latest = events.map(\.at).max() else { return false }
+        return friendsSeenAt.map { latest > $0 } ?? true
     }
 
     // MARK: - Loading
@@ -114,8 +122,8 @@ final class NewsViewModel {
         await load()
     }
 
-    /// The first page, the releases and the award, asked together. Over rows
-    /// already on screen a failure says nothing.
+    /// The first page and the releases, asked together. Over rows already on
+    /// screen a failure says nothing.
     func load() async {
         generation += 1
         let token = generation
@@ -123,11 +131,9 @@ final class NewsViewModel {
         defer { if token == generation { isLoading = false } }
         async let page = capture { try await client.feed(nil, Self.pageSize) }
         async let upcoming = capture { try await client.upcoming() }
-        async let latest = capture { try await client.latestWinner() }
         async let narrated = capture { try await client.narratorNews() }
-        async let crowned = capture { try await client.yearAwards() }
         async let released = capture { try await client.yearReleases() }
-        let (first, dated, award, voices, winners, year) = await (page, upcoming, latest, narrated, crowned, released)
+        let (first, dated, voices, year) = await (page, upcoming, narrated, released)
         guard token == generation else { return }
         // Over news already on screen, what changed slides into place rather
         // than the whole page redrawing at once.
@@ -136,13 +142,11 @@ final class NewsViewModel {
             if case let .success(first) = first {
                 events = first.items
                 cursor = first.endCursor
-                hasMore = first.hasMore && reachesThisWeek(first.items)
+                hasMore = first.hasMore
                 errorMessage = nil
             }
             if case let .success(dated) = dated { releases = dated }
-            if case let .success(award) = award { winner = award }
             if case let .success(voices) = voices { narratorNews = voices }
-            if case let .success(winners) = winners { yearAwards = winners }
             if case let .success(year) = year { yearReleases = year }
         }
         if case let .failure(error) = first, !isCancellation(error) {
@@ -168,7 +172,7 @@ final class NewsViewModel {
             let known = Set(events.map(\.id))
             events += page.items.filter { !known.contains($0.id) }
             self.cursor = page.endCursor
-            hasMore = page.hasMore && reachesThisWeek(page.items)
+            hasMore = page.hasMore
         } catch {
             guard !isCancellation(error) else { return }
             pageFailed = true
@@ -176,9 +180,9 @@ final class NewsViewModel {
         }
     }
 
-    /// Reached the row `prefetchThreshold` from the end.
+    /// Reached a row near the end of what is loaded.
     func prefetchIfNeeded(for id: String) async {
-        let ids = shownEvents.map(\.id)
+        let ids = events.map(\.id)
         guard let index = ids.firstIndex(of: id), index >= ids.count - 8 else { return }
         await loadMore()
     }
@@ -189,9 +193,12 @@ final class NewsViewModel {
         alertsSilenced = await client.alertsSilenced()
     }
 
-    /// "Pas intéressé": the card leaves the feed for this session.
-    func dismissWinner() {
-        winnerDismissed = true
+    /// Opening Amis puts its dot out; the rings keep what they showed until the
+    /// next visit.
+    private func markFriendsSeen(now: Date = .now) {
+        ringsSeenAt = friendsSeenAt
+        friendsSeenAt = now
+        defaults?.set(now, forKey: Self.friendsSeenKey)
     }
 
     func take(_ event: FeedEvent, as format: BookFormat) async {
@@ -213,9 +220,11 @@ final class NewsViewModel {
         }
     }
 
-    func add(_ winner: AwardWinner) async {
+    func invite() async {
+        isInviting = true
+        defer { isInviting = false }
         do {
-            try await client.addWinner(winner)
+            invitation = try await client.invite()
         } catch {
             guard !isCancellation(error) else { return }
             reportError(error)
@@ -228,18 +237,10 @@ final class NewsViewModel {
         let snapshot = Snapshot(
             events: Array(events.prefix(Self.pageSize)),
             releases: releases,
-            winner: winner,
-            yearAwards: yearAwards,
             yearReleases: yearReleases,
             narratorNews: narratorNews
         )
         Task.detached { cache.write(snapshot) }
-    }
-
-    /// The feed runs newest first and stops at the week: a page ending earlier
-    /// has nothing further to show.
-    private func reachesThisWeek(_ page: [FeedEvent]) -> Bool {
-        page.last.map { NewsFeedLayout.isThisWeek($0.at, now: .now, calendar: .current) } ?? false
     }
 
     private func capture<T: Sendable>(_ work: @Sendable () async throws -> T) async -> Result<T, Error> {
