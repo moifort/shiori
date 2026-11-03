@@ -834,33 +834,33 @@ describe('where a book is bought on Amazon', () => {
         kindleAsin: KindleAsin('B0G26NZ911'),
         isbn13: Isbn13('9782266320481'),
       }),
-    ).toBe('https://www.amazon.fr/dp/B0G26NZ911?tag=polyforms-21')
+    ).toBe('https://www.amazon.fr/dp/B0G26NZ911?tag=polyforms09-21')
   })
 
   test('is the printed edition its ISBN-10 stands for', () => {
     expect(amazonUrlOf({ ...dune, isbn13: Isbn13('9782266320481') })).toBe(
-      'https://www.amazon.fr/dp/2266320483?tag=polyforms-21',
+      'https://www.amazon.fr/dp/2266320483?tag=polyforms09-21',
     )
   })
 
   test('writes an X where the ISBN-10 check digit is ten', () => {
     expect(amazonUrlOf({ ...dune, isbn13: Isbn13('9780306406157') })).toBe(
-      'https://www.amazon.fr/dp/0306406152?tag=polyforms-21',
+      'https://www.amazon.fr/dp/0306406152?tag=polyforms09-21',
     )
     expect(amazonUrlOf({ ...dune, isbn13: Isbn13('9780804429573') })).toBe(
-      'https://www.amazon.fr/dp/080442957X?tag=polyforms-21',
+      'https://www.amazon.fr/dp/080442957X?tag=polyforms09-21',
     )
   })
 
   test('is a search among books on the title and author without a product page', () => {
     expect(amazonUrlOf({ ...dune, isbn13: Isbn13('9791032705421') })).toBe(
-      'https://www.amazon.fr/s?k=Dune+Frank+Herbert&i=stripbooks&tag=polyforms-21',
+      'https://www.amazon.fr/s?k=Dune+Frank+Herbert&i=stripbooks&tag=polyforms09-21',
     )
   })
 
   test('is a search among recordings for an audiobook', () => {
     expect(amazonUrlOf({ ...dune, format: 'audiobook' })).toBe(
-      'https://www.amazon.fr/s?k=Dune+Frank+Herbert&i=audible&tag=polyforms-21',
+      'https://www.amazon.fr/s?k=Dune+Frank+Herbert&i=audible&tag=polyforms09-21',
     )
   })
 })

@@ -237,7 +237,7 @@ export const kindleMoveOf = (
 /** The Amazon Associates tag every store link carries. It belongs to amazon.fr
  *  alone — a tag is bound to one store and pays nothing on another — which is
  *  why every link points there, whatever store the reader's Kindle lives on. */
-export const AMAZON_ASSOCIATE_TAG = 'polyforms-21'
+export const AMAZON_ASSOCIATE_TAG = 'polyforms09-21'
 
 /** Where the book can be bought on amazon.fr, tagged. The exact product page
  *  when the record names one — its Kindle title, else the printed edition its

@@ -137,7 +137,7 @@ extension DiscoveredVolume {
     /// `amazonUrlOf` builds a book's: the printed edition's page when its
     /// ISBN has an ISBN-10, else a search on its title and author among books.
     func amazonURL(author: String) -> URL? {
-        let tag = "polyforms-21"
+        let tag = "polyforms09-21"
         if let isbn13, let isbn10 = Self.isbn10(of: isbn13) {
             return URL(string: "https://www.amazon.fr/dp/\(isbn10)?tag=\(tag)")
         }
