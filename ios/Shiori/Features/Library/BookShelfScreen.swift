@@ -34,6 +34,7 @@ struct BookShelfScreen: View {
                     sections: viewModel.sections,
                     formats: viewModel.shownFormats,
                     selectedFormat: viewModel.query.view.format,
+                    selectedStatus: viewModel.query.status,
                     isLoading: viewModel.isLoading,
                     errorMessage: viewModel.errorMessage,
                     hasMore: viewModel.hasMore,

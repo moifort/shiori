@@ -2825,6 +2825,22 @@
         }
       }
     },
+    "Aucun livre" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No books"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun livre"
+          }
+        }
+      }
+    },
     "Aucun livre Kindle sur ce compte." : {
       "localizations" : {
         "en" : {
@@ -2917,6 +2933,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Aucun livre de cet auteur dans votre bibliothèque."
+          }
+        }
+      }
+    },
+    "Aucun livre de la bibliothèque n'a ce statut." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No book in the library has this status."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun livre de la bibliothèque n'a ce statut."
           }
         }
       }

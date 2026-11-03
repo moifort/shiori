@@ -2,11 +2,14 @@ import SwiftUI
 
 /// "Tous les livres", as Photos lays out a library: the covers alone, five by
 /// row, edge to edge, under the month each was shelved in — the whole library
-/// at a glance. No label: a tap opens the book.
+/// at a glance. No title: each cover's foot carries its stars, a white heart
+/// for a favourite, and a tap opens the book. A menu in the toolbar narrows
+/// the mosaic to one reading status, as the library's list once did.
 struct BookMosaicPage: View {
     let sections: [ListSection<Book>]
     var formats: [BookFormat] = []
     var selectedFormat: BookFormat?
+    var selectedStatus: ReadingStatus?
     let isLoading: Bool
     let errorMessage: String?
     let hasMore: Bool
@@ -30,6 +33,13 @@ struct BookMosaicPage: View {
                 } else if sections.isEmpty, let errorMessage {
                     EmptyState.failure("Bibliothèque indisponible", message: errorMessage) { onAction(.refresh) }
                         .padding(.top, 60)
+                } else if sections.isEmpty, let selectedStatus {
+                    EmptyState(
+                        systemImage: selectedStatus.symbol,
+                        title: "Aucun livre",
+                        message: "Aucun livre de la bibliothèque n'a ce statut."
+                    )
+                    .padding(.top, 60)
                 }
                 ForEach(sections) { section in
                     Text(section.title)
@@ -51,6 +61,7 @@ struct BookMosaicPage: View {
                                     )
                                 }
                                 .aspectRatio(2 / 3, contentMode: .fit)
+                                .overlay(alignment: .bottom) { MosaicRating(book: book) }
                                 .clipped()
                                 .contentShape(.rect)
                             }
@@ -76,6 +87,61 @@ struct BookMosaicPage: View {
         .background(Color(.systemGroupedBackground))
         .navigationTitle(BookShelf.all.title)
         .refreshable { onAction(.refresh) }
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Menu {
+                    Picker("Statut", selection: Binding(
+                        get: { selectedStatus },
+                        set: { onAction(.selectStatus($0)) }
+                    )) {
+                        Label("Tous", systemImage: "tray.full").tag(ReadingStatus?.none)
+                        // In the order a book lives through them, as a friend's library.
+                        ForEach([ReadingStatus.reading, .toRead, .read, .dropped]) { status in
+                            Label(status.shelfTitle, systemImage: status.symbol)
+                                .tag(ReadingStatus?.some(status))
+                        }
+                    }
+                } label: {
+                    ShelfFilterLabel(
+                        symbol: selectedStatus?.symbol ?? "tray.full",
+                        title: selectedStatus?.shelfTitle ?? String(localized: "Tous")
+                    )
+                }
+                .accessibilityIdentifier("all-books-status-filter")
+            }
+        }
+    }
+}
+
+/// A cover's rating at its foot, in white on a blur of the cover: always five
+/// stars, the ones not given as outlines, or a single heart for a favourite.
+/// Nothing on a book not rated yet.
+private struct MosaicRating: View {
+    let book: Book
+
+    var body: some View {
+        if book.favorite || book.shownRating != nil {
+            Group {
+                if book.favorite {
+                    Image(systemName: "heart.fill")
+                        .font(.system(size: 10))
+                        .accessibilityLabel(Text("Coup de cœur"))
+                } else if let rating = book.shownRating {
+                    RatingStars(rating: rating, font: .system(size: 8), monochrome: true)
+                }
+            }
+            .foregroundStyle(.white)
+            .environment(\.colorScheme, .dark)
+            .shadow(color: .black.opacity(0.45), radius: 2)
+            .frame(maxWidth: .infinity)
+            .padding(.top, 10)
+            .padding(.bottom, 4)
+            .background(alignment: .bottom) {
+                Rectangle()
+                    .fill(.ultraThinMaterial)
+                    .mask(LinearGradient(colors: [.clear, .black], startPoint: .top, endPoint: .center))
+            }
+        }
     }
 }
 
