@@ -34,7 +34,7 @@ describe('the wishlist', () => {
 
     const titles = (await WishUseCase.wishes(bob)).map((wish) => wish.title)
 
-    expect(titles).toEqual(['Jonathan Strange', 'Piranesi'])
+    expect(titles).toEqual([BookTitle('Jonathan Strange'), BookTitle('Piranesi')])
   })
 
   test('reads the wishes and the library in one query each', async () => {
