@@ -20,8 +20,8 @@ enum LibraryShelvesAction {
 /// The Library tab's entry screen, as the TV app lays out its library: the
 /// bar's title, the rows of the books, the series, the authors and the
 /// narrators, the format pills that narrow them and everything under them,
-/// then rails in a fixed order — what moved last, the pile, the books read,
-/// the favourites, the genres.
+/// then rails in a fixed order — what moved last, the pile, the favourites,
+/// the genres.
 /// A rail with nothing in it is not drawn, and no header counts.
 ///
 /// A genre page is the same screen narrowed to a genre: its subgenres take
@@ -95,7 +95,6 @@ struct LibraryShelvesPage: View {
     @ViewBuilder private var entryRails: some View {
         bookRail(.recent, shelves.recent, context: .recent)
         bookRail(.toRead, shelves.toRead, context: .pile)
-        bookRail(.read, shelves.readRecently, context: .read)
         bookRail(.loved, shelves.favorites, context: .lovedByYear)
         if !shelves.genres.isEmpty {
             VStack(alignment: .leading, spacing: 12) {
