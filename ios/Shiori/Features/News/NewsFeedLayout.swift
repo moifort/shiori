@@ -33,6 +33,65 @@ enum ReleasedItem: Identifiable, Hashable, Sendable {
         case let .release(_, day), let .narrator(_, day): day
         }
     }
+
+    var cover: Book {
+        switch self {
+        case let .release(release, _): release.cover
+        case let .narrator(news, _): news.cover
+        }
+    }
+
+    var title: String {
+        switch self {
+        case let .release(release, _): release.title ?? release.cover.title
+        case let .narrator(news, _): news.title
+        }
+    }
+
+    var authors: [String] {
+        switch self {
+        case let .release(release, _): release.authors
+        case let .narrator(news, _): news.authors
+        }
+    }
+
+    var format: BookFormat {
+        switch self {
+        case let .release(release, _): release.format
+        case .narrator: .audiobook
+        }
+    }
+
+    /// Why the reader is told of it, under its author; nil when the signature
+    /// says it all.
+    var subtitle: String? {
+        guard case let .release(release, _) = self else { return nil }
+        switch release.source {
+        case .saga, .awaited:
+            let reason = release.format == .audiobook && release.source == .awaited
+                ? String(localized: "Dans votre liste d'envie")
+                : release.reason
+            return reason.isEmpty ? nil : reason
+        case .author, .narrator:
+            return nil
+        }
+    }
+
+    /// The book as an addition, a wish or an await would send it.
+    var draft: BookDraft {
+        var draft = BookDraft(title: title, authors: authors)
+        draft.format = format
+        draft.media = format == .audiobook ? [] : [.print]
+        draft.coverURL = cover.coverURL
+        return draft
+    }
+}
+
+/// The lines of "Sorti" under one journal period.
+struct ReleasedSection: Identifiable, Hashable, Sendable {
+    let title: String
+    let items: [ReleasedItem]
+    var id: String { title }
 }
 
 /// A friend's move, with the other friends who made the same one on the same
@@ -98,6 +157,22 @@ enum NewsFeedLayout {
             }
         }
         return items.sorted { $0.day > $1.day }
+    }
+
+    /// "Sorti" under the journal's periods, as Amis is: Aujourd'hui, Cette
+    /// semaine, then the months.
+    static func releasedSections(
+        _ items: [ReleasedItem],
+        now: Date = .now,
+        calendar: Calendar = .current
+    ) -> [ReleasedSection] {
+        var sections: [(period: JournalPeriod, items: [ReleasedItem])] = []
+        for item in items.sorted(by: { $0.day > $1.day }) {
+            let period = JournalPeriod(item.day, now: now, calendar: calendar)
+            if sections.last?.period != period { sections.append((period, [])) }
+            sections[sections.count - 1].items.append(item)
+        }
+        return sections.map { ReleasedSection(title: $0.period.title(now: now, calendar: calendar), items: $0.items) }
     }
 
     /// `YYYY-MM-DD` or `YYYY-MM`; a bare year names no day.

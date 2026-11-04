@@ -9,10 +9,16 @@ struct NewsClient: Sendable {
     /// What came out since the start of the year, which "Sorti" draws from.
     var yearReleases: @Sendable () async throws -> [UpcomingRelease]
     var narratorNews: @Sendable () async throws -> [NarratorNews]
-    /// A friend's book onto the reader's pile, in the format they take it in.
-    var takeFriendBook: @Sendable (_ friendId: String, _ bookId: String, BookFormat) async throws -> Void
-    /// A narrator's recording onto the pile.
-    var addRecording: @Sendable (NarratorNews) async throws -> Void
+    /// A friend's book onto the reader's pile or among the books read, in the
+    /// format they take it in.
+    var addFriendBook: @Sendable (_ friendId: String, _ bookId: String, CopiedStatus, BookFormat) async throws -> Void
+    var wishFriendBook: @Sendable (_ friendId: String, _ bookId: String) async throws -> Void
+    /// The friend's book's edition awaited in the app's language.
+    var awaitFriendBook: @Sendable (_ friendId: String, _ bookId: String, ReleaseFormat) async throws -> Void
+    /// A book out lately onto the shelf, as its row describes it.
+    var addReleased: @Sendable (BookDraft) async throws -> Void
+    var wishReleased: @Sendable (BookDraft) async throws -> Void
+    var awaitReleased: @Sendable (BookDraft, ReleaseFormat) async throws -> Void
     /// Whether nothing can reach the reader: the bell is struck through.
     var alertsSilenced: @Sendable () async -> Bool
     /// An invitation to pass on, from the empty Amis tab and its rail.
@@ -25,16 +31,18 @@ extension NewsClient {
         upcoming: { try await NewsAPI.upcoming() },
         yearReleases: { try await NewsAPI.yearReleases() },
         narratorNews: { try await NewsAPI.narratorNews() },
-        takeFriendBook: { friendId, bookId, format in
-            _ = try await FriendsAPI.addBook(friendId: friendId, bookId: bookId, status: .toRead, format: format)
+        addFriendBook: { friendId, bookId, status, format in
+            _ = try await FriendsAPI.addBook(friendId: friendId, bookId: bookId, status: status, format: format)
         },
-        addRecording: { news in
-            var draft = BookDraft(title: news.title, authors: news.authors)
-            draft.format = .audiobook
-            draft.media = []
-            draft.status = .toRead
-            _ = try await BookAddition.add(draft, source: .discover)
+        wishFriendBook: { friendId, bookId in
+            _ = try await WishlistAPI.wish(friendId: friendId, bookId: bookId)
         },
+        awaitFriendBook: { friendId, bookId, format in
+            _ = try await AwaitedAPI.awaitEdition(friendId: friendId, bookId: bookId, format: format)
+        },
+        addReleased: { draft in _ = try await BookAddition.add(draft, source: .discover) },
+        wishReleased: { draft in _ = try await WishlistAPI.wish(draft, origin: .discovery) },
+        awaitReleased: { draft, format in _ = try await AwaitedAPI.awaitScanned(draft, format: format) },
         alertsSilenced: { await DiscoverClient.live.alertsSilenced() },
         invite: { try await FriendsAPI.invite() }
     )
@@ -46,8 +54,12 @@ extension NewsClient {
         upcoming: { UpcomingRelease.previews },
         yearReleases: { UpcomingRelease.previews },
         narratorNews: { [.preview] },
-        takeFriendBook: { _, _, _ in },
-        addRecording: { _ in },
+        addFriendBook: { _, _, _, _ in },
+        wishFriendBook: { _, _ in },
+        awaitFriendBook: { _, _, _ in },
+        addReleased: { _ in },
+        wishReleased: { _ in },
+        awaitReleased: { _, _ in },
         alertsSilenced: { false },
         invite: { .preview }
     )

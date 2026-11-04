@@ -22,48 +22,15 @@ struct FriendBookAddMenu: View {
 
     var body: some View {
         Menu {
-            if !owned {
-                ForEach(formats, id: \.self) { format in
-                    Section(format.label) {
-                        Button(
-                            format == .audiobook ? "À écouter" : "À lire",
-                            systemImage: "bookmark.fill"
-                        ) {
-                            Task { await onAdd(.toRead, format) }
-                        }
-                        .accessibilityIdentifier("friend-book-add-pile-\(format.rawValue)")
-                        Button(
-                            format == .audiobook ? "Déjà écouté" : "Déjà lu",
-                            systemImage: "checkmark"
-                        ) {
-                            Task { await onAdd(.read, format) }
-                        }
-                        .accessibilityIdentifier("friend-book-add-read-\(format.rawValue)")
-                    }
-                }
-            }
-            if !owned {
-                Section {
-                    Button("Liste d'envies", systemImage: wished ? "checkmark" : "gift") {
-                        Task { await onWish() }
-                    }
-                    .disabled(wished)
-                    .accessibilityIdentifier("friend-book-wish")
-                }
-            }
-            if !awaitable.isEmpty {
-                Section {
-                    ForEach(awaitable) { format in
-                        Button(
-                            format.awaitLabel,
-                            systemImage: format == .audiobook ? "headphones" : "character.book.closed"
-                        ) {
-                            onAwait(format)
-                        }
-                        .accessibilityIdentifier("friend-book-await-\(format.rawValue)")
-                    }
-                }
-            }
+            BookAddMenuItems(
+                formats: formats,
+                owned: owned,
+                awaitable: awaitable,
+                onAdd: onAdd,
+                wished: wished,
+                onAwait: onAwait,
+                onWish: onWish
+            )
         } label: {
             Label(
                 owned ? "Chez vous" : "Ajouter",
@@ -79,6 +46,65 @@ struct FriendBookAddMenu: View {
         .disabled(owned && awaitable.isEmpty)
         .accessibilityLabel(owned ? Text("Chez vous") : Text("Ajouter à ma bibliothèque"))
         .accessibilityIdentifier("friend-book-add-menu")
+    }
+}
+
+/// What a book the reader does not hold may become: onto the pile or among
+/// the books read, in each format they may take it in; onto the wishlist; its
+/// edition in the app's language awaited. The friend's book hero and the "…"
+/// of an Actualités row open these same items.
+struct BookAddMenuItems: View {
+    let formats: [BookFormat]
+    let owned: Bool
+    let awaitable: [ReleaseFormat]
+    let onAdd: (CopiedStatus, BookFormat) async -> Void
+    var wished = false
+    let onAwait: (ReleaseFormat) -> Void
+    var onWish: () async -> Void = {}
+
+    var body: some View {
+        if !owned {
+            ForEach(formats, id: \.self) { format in
+                Section(format.label) {
+                    Button(
+                        format == .audiobook ? "À écouter" : "À lire",
+                        systemImage: "bookmark.fill"
+                    ) {
+                        Task { await onAdd(.toRead, format) }
+                    }
+                    .accessibilityIdentifier("friend-book-add-pile-\(format.rawValue)")
+                    Button(
+                        format == .audiobook ? "Déjà écouté" : "Déjà lu",
+                        systemImage: "checkmark"
+                    ) {
+                        Task { await onAdd(.read, format) }
+                    }
+                    .accessibilityIdentifier("friend-book-add-read-\(format.rawValue)")
+                }
+            }
+        }
+        if !owned {
+            Section {
+                Button("Liste d'envies", systemImage: wished ? "checkmark" : "gift") {
+                    Task { await onWish() }
+                }
+                .disabled(wished)
+                .accessibilityIdentifier("friend-book-wish")
+            }
+        }
+        if !awaitable.isEmpty {
+            Section {
+                ForEach(awaitable) { format in
+                    Button(
+                        format.awaitLabel,
+                        systemImage: format == .audiobook ? "headphones" : "character.book.closed"
+                    ) {
+                        onAwait(format)
+                    }
+                    .accessibilityIdentifier("friend-book-await-\(format.rawValue)")
+                }
+            }
+        }
     }
 }
 

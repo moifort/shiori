@@ -64,7 +64,7 @@ extension UpcomingRelease {
     static let releasedPreviews: [UpcomingRelease] = [
         UpcomingRelease(
             id: "saga~berserk~42", source: .saga, format: .manga, title: "Berserk, tome 42",
-            authors: ["Kentaro Miura"], date: isoDay(daysAhead: -6), coverURL: nil,
+            authors: ["Kentaro Miura"], date: isoDay(daysAhead: -6), coverURL: openLibraryCover("9782344040003"),
             seriesName: "Berserk", volume: 42, author: nil, sagaRating: nil, sagaFavorite: true
         ),
         UpcomingRelease(
@@ -74,7 +74,7 @@ extension UpcomingRelease {
         ),
         UpcomingRelease(
             id: "saga~expanse~9", source: .saga, format: .book, title: "The Expanse, tome 9",
-            authors: ["James S. A. Corey"], date: isoDay(daysAhead: -45), coverURL: nil,
+            authors: ["James S. A. Corey"], date: isoDay(daysAhead: -45), coverURL: openLibraryCover("9780316332941"),
             seriesName: "The Expanse", volume: 9, author: nil, sagaRating: 4, sagaFavorite: false
         ),
     ]

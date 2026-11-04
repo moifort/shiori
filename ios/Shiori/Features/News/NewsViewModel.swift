@@ -27,8 +27,12 @@ final class NewsViewModel {
     private(set) var hasLoaded = false
     private(set) var errorMessage: String?
     private(set) var pageFailed = false
-    /// Books the reader just took, greyed out at once.
+    /// Books the reader just took, greyed out at once: a friend's by its book
+    /// id, a release by its row id.
     private(set) var taken: Set<String> = []
+    /// Rows whose book the reader just wished for or awaited, by the same keys.
+    private(set) var wished: Set<String> = []
+    private(set) var awaited: Set<String> = []
     private(set) var alertsSilenced = false
     private(set) var isInviting = false
     /// The invitation to pass on, presented the moment it comes back.
@@ -95,6 +99,10 @@ final class NewsViewModel {
 
     func released(now: Date = .now) -> [ReleasedItem] {
         NewsFeedLayout.released(releases: yearReleases, narrator: narratorNews, format: format, now: now)
+    }
+
+    func releasedSections(now: Date = .now) -> [ReleasedSection] {
+        NewsFeedLayout.releasedSections(released(now: now), now: now)
     }
 
     func calendar(now: Date = .now) -> ReleaseCalendar {
@@ -201,22 +209,61 @@ final class NewsViewModel {
         defaults?.set(now, forKey: Self.friendsSeenKey)
     }
 
-    func take(_ event: FeedEvent, as format: BookFormat) async {
-        do {
-            try await client.takeFriendBook(event.friendId, event.bookId, format)
+    // A friend's book, from the "…" of its row.
+
+    func add(_ event: FeedEvent, _ status: CopiedStatus, as format: BookFormat) async {
+        if await perform({ try await client.addFriendBook(event.friendId, event.bookId, status, format) }) {
             taken.insert(event.bookId)
-        } catch {
-            guard !isCancellation(error) else { return }
-            reportError(error)
         }
     }
 
-    func add(_ news: NarratorNews) async {
+    func wish(_ event: FeedEvent) async {
+        if await perform({ try await client.wishFriendBook(event.friendId, event.bookId) }) {
+            wished.insert(event.bookId)
+        }
+    }
+
+    /// Shown awaited at once: the server looks the edition up on the web behind.
+    func awaitEdition(_ event: FeedEvent, _ format: ReleaseFormat) async {
+        awaited.insert(event.bookId)
+        if !(await perform({ try await client.awaitFriendBook(event.friendId, event.bookId, format) })) {
+            awaited.remove(event.bookId)
+        }
+    }
+
+    // A book out lately, from the "…" of its row in "Sorti".
+
+    func add(_ item: ReleasedItem, _ status: CopiedStatus, as format: BookFormat) async {
+        var draft = item.draft
+        draft.format = format
+        draft.media = format == .audiobook ? [] : [.print]
+        draft.status = status == .read ? .read : .toRead
+        if await perform({ try await client.addReleased(draft) }) {
+            taken.insert(item.id)
+        }
+    }
+
+    func wish(_ item: ReleasedItem) async {
+        if await perform({ try await client.wishReleased(item.draft) }) {
+            wished.insert(item.id)
+        }
+    }
+
+    func awaitEdition(_ item: ReleasedItem, _ format: ReleaseFormat) async {
+        awaited.insert(item.id)
+        if !(await perform({ try await client.awaitReleased(item.draft, format) })) {
+            awaited.remove(item.id)
+        }
+    }
+
+    /// Runs a write, reporting a failure. True once it went through.
+    private func perform(_ write: () async throws -> Void) async -> Bool {
         do {
-            try await client.addRecording(news)
+            try await write()
+            return true
         } catch {
-            guard !isCancellation(error) else { return }
-            reportError(error)
+            if !isCancellation(error) { reportError(error) }
+            return false
         }
     }
 

@@ -6,10 +6,14 @@ enum NewsAction {
     case selectFormat(BookFormat?)
     case selectFriend(String?)
     case openFriendBook(FeedEvent)
-    case take(FeedEvent, BookFormat)
+    case addFriendBook(FeedEvent, CopiedStatus, BookFormat)
+    case wishFriendBook(FeedEvent)
+    case awaitFriendBook(FeedEvent, ReleaseFormat)
+    case addReleased(ReleasedItem, CopiedStatus, BookFormat)
+    case wishReleased(ReleasedItem)
+    case awaitReleased(ReleasedItem, ReleaseFormat)
     case openAuthor(UpcomingRelease)
     case openNarrator(NarratorNews)
-    case addNarrator(NarratorNews)
     case invite
     case openAlerts
     case prefetch(String)
@@ -19,14 +23,21 @@ enum NewsAction {
 
 /// The Actualités page, pure, cut in two by who speaks. Sorties: the format
 /// pills, what came out in the last thirty days among the series, authors,
-/// narrators and awaited editions the reader follows, then "À venir" and its
-/// calendar. Amis: the friends as stories, then their moves under journal
-/// periods, the same move by several of them on one line. The pages a tap
-/// opens are the screen's.
+/// narrators and awaited editions the reader follows under journal periods,
+/// the book first; then "À venir" and its calendar. Amis: the friends as
+/// stories, then their moves under journal periods as notifications, the same
+/// move by several of them on one line. Every row ends on the "…" that takes
+/// the book, wishes for it or awaits its recording. The pages a tap opens are
+/// the screen's.
 struct NewsPage: View {
     let tab: NewsTab
     let friendsHaveNews: Bool
-    let released: [ReleasedItem]
+    let released: [ReleasedSection]
+    /// The rows' books just taken, wished for or awaited: a friend's by its
+    /// book id, a release by its row id.
+    var taken: Set<String> = []
+    var wished: Set<String> = []
+    var awaited: Set<String> = []
     let calendar: ReleaseCalendar
     let format: BookFormat?
     let stories: [FriendStory]
@@ -92,27 +103,28 @@ struct NewsPage: View {
             act(.selectFormat(id.flatMap(BookFormat.init(rawValue:))))
         }
         .padding(.top, 14)
-        HStack(alignment: .firstTextBaseline, spacing: 6) {
-            Text("Sorti").font(.title2.weight(.bold))
-            Text("30 derniers jours").font(.footnote).foregroundStyle(.secondary)
-        }
-        .padding(.horizontal, 20)
-        .padding(.top, 24)
-        .padding(.bottom, 6)
-        .accessibilityIdentifier("news-released-header")
         if released.isEmpty {
             Text("Rien n'est sorti ces 30 derniers jours.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 20)
-                .padding(.vertical, 8)
+                .padding(.top, 24)
+                .padding(.bottom, 8)
+                .accessibilityIdentifier("news-released-empty")
         } else {
-            ForEach(released) { item in
-                switch item {
-                case let .release(release, day):
-                    ReleasedRow(release: release, day: day, onOpen: release.author == nil ? nil : { act(.openAuthor(release)) })
-                case let .narrator(news, _):
-                    NarratorEventRow(news: news, onOpen: { act(.openNarrator(news)) }, onAdd: { await onAction(.addNarrator(news)) })
+            ForEach(released) { section in
+                sectionTitle(section.title)
+                ForEach(section.items) { item in
+                    ReleasedRow(
+                        item: item,
+                        owned: taken.contains(item.id),
+                        wished: wished.contains(item.id),
+                        awaited: awaited.contains(item.id),
+                        onOpen: open(item),
+                        onAdd: { await onAction(.addReleased(item, $0, $1)) },
+                        onWish: { await onAction(.wishReleased(item)) },
+                        onAwait: { format in act(.awaitReleased(item, format)) }
+                    )
                 }
             }
         }
@@ -135,17 +147,17 @@ struct NewsPage: View {
             )
             .padding(.top, 18)
             ForEach(friendSections) { section in
-                Text(section.title)
-                    .font(.title2.weight(.bold))
-                    .padding(.horizontal, 20)
-                    .padding(.top, 24)
-                    .padding(.bottom, 6)
+                sectionTitle(section.title)
                 ForEach(section.moves) { move in
                     FeedEventRow(
                         event: move.lead,
                         others: move.others,
+                        wished: wished.contains(move.lead.bookId),
+                        awaited: awaited.contains(move.lead.bookId),
                         onOpen: { act(.openFriendBook(move.lead)) },
-                        onTake: { await onAction(.take(move.lead, $0)) }
+                        onAdd: { await onAction(.addFriendBook(move.lead, $0, $1)) },
+                        onWish: { await onAction(.wishFriendBook(move.lead)) },
+                        onAwait: { format in act(.awaitFriendBook(move.lead, format)) }
                     )
                     .task { await onAction(.prefetch((move.others.last ?? move.lead).id)) }
                 }
@@ -156,6 +168,23 @@ struct NewsPage: View {
                 }
                 .padding(.vertical, 8)
             }
+        }
+    }
+
+    private func sectionTitle(_ title: String) -> some View {
+        Text(title)
+            .font(.title2.weight(.bold))
+            .padding(.horizontal, 20)
+            .padding(.top, 24)
+            .padding(.bottom, 4)
+    }
+
+    /// What a tap on a row opens: the author of their book, the narrator of
+    /// theirs; a series' volume or an edition awaited opens nothing yet.
+    private func open(_ item: ReleasedItem) -> (() -> Void)? {
+        switch item {
+        case let .release(release, _): release.author == nil ? nil : { act(.openAuthor(release)) }
+        case let .narrator(news, _): { act(.openNarrator(news)) }
         }
     }
 
@@ -201,11 +230,11 @@ private struct NewsPagePreview: View {
             NewsPage(
                 tab: tab,
                 friendsHaveNews: tab == .releases && !events.isEmpty,
-                released: NewsFeedLayout.released(
+                released: NewsFeedLayout.releasedSections(NewsFeedLayout.released(
                     releases: UpcomingRelease.releasedPreviews,
                     narrator: [.preview],
                     format: nil
-                ),
+                )),
                 calendar: ReleaseCalendar(releases: releases, now: .now),
                 format: nil,
                 stories: NewsFeedLayout.stories(events: events, seenAt: .now.addingTimeInterval(-86400)),

@@ -1469,6 +1469,22 @@
         }
       }
     },
+    "**%@** a adoré" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "**%@** loved"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "**%@** a adoré"
+          }
+        }
+      }
+    },
     "**%@** a adoré **%@**" : {
       "localizations" : {
         "en" : {
@@ -1481,6 +1497,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "**%1$@** a adoré **%2$@**"
+          }
+        }
+      }
+    },
+    "**%@** a commencé" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "**%@** started"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "**%@** a commencé"
           }
         }
       }
@@ -1501,6 +1533,22 @@
         }
       }
     },
+    "**%@** a terminé" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "**%@** finished"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "**%@** a terminé"
+          }
+        }
+      }
+    },
     "**%@** a terminé **%@**" : {
       "localizations" : {
         "en" : {
@@ -1517,50 +1565,98 @@
         }
       }
     },
-    "**%@** et **%@** ont adoré **%@**" : {
+    "**%@** et **%@** ont adoré" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**%1$@** and **%2$@** loved **%3$@**"
+            "value" : "**%1$@** and **%2$@** loved"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "**%1$@** et **%2$@** ont adoré **%3$@**"
+            "value" : "**%1$@** et **%2$@** ont adoré"
           }
         }
       }
     },
-    "**%@** et **%@** ont commencé **%@**" : {
+    "**%@** et **%@** ont commencé" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**%1$@** and **%2$@** started **%3$@**"
+            "value" : "**%1$@** and **%2$@** started"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "**%1$@** et **%2$@** ont commencé **%3$@**"
+            "value" : "**%1$@** et **%2$@** ont commencé"
           }
         }
       }
     },
-    "**%@** et **%@** ont terminé **%@**" : {
+    "**%@** et **%@** ont terminé" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**%1$@** and **%2$@** finished **%3$@**"
+            "value" : "**%1$@** and **%2$@** finished"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "**%1$@** et **%2$@** ont terminé **%3$@**"
+            "value" : "**%1$@** et **%2$@** ont terminé"
+          }
+        }
+      }
+    },
+    "**%@** nouveau livre" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "**%@** new book"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "**%@** nouveau livre"
+          }
+        }
+      }
+    },
+    "**%@** nouveau tome" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "**%@** new volume"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "**%@** nouveau tome"
+          }
+        }
+      }
+    },
+    "**%@** prête sa voix" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "**%@** lends their voice"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "**%@** prête sa voix"
           }
         }
       }
@@ -1581,98 +1677,114 @@
         }
       }
     },
-    "**%@**, **%@** et %lld autres ont adoré **%@**" : {
+    "**%@**, **%@** et %lld autres ont adoré" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**%1$@**, **%2$@** and %3$lld others loved **%4$@**"
+            "value" : "**%1$@**, **%2$@** and %3$lld others loved"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "**%1$@**, **%2$@** et %3$lld autres ont adoré **%4$@**"
+            "value" : "**%1$@**, **%2$@** et %3$lld autres ont adoré"
           }
         }
       }
     },
-    "**%@**, **%@** et %lld autres ont commencé **%@**" : {
+    "**%@**, **%@** et %lld autres ont commencé" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**%1$@**, **%2$@** and %3$lld others started **%4$@**"
+            "value" : "**%1$@**, **%2$@** and %3$lld others started"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "**%1$@**, **%2$@** et %3$lld autres ont commencé **%4$@**"
+            "value" : "**%1$@**, **%2$@** et %3$lld autres ont commencé"
           }
         }
       }
     },
-    "**%@**, **%@** et %lld autres ont terminé **%@**" : {
+    "**%@**, **%@** et %lld autres ont terminé" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**%1$@**, **%2$@** and %3$lld others finished **%4$@**"
+            "value" : "**%1$@**, **%2$@** and %3$lld others finished"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "**%1$@**, **%2$@** et %3$lld autres ont terminé **%4$@**"
+            "value" : "**%1$@**, **%2$@** et %3$lld autres ont terminé"
           }
         }
       }
     },
-    "**%@**, **%@** et 1 autre ont adoré **%@**" : {
+    "**%@**, **%@** et 1 autre ont adoré" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**%1$@**, **%2$@** and 1 other loved **%3$@**"
+            "value" : "**%1$@**, **%2$@** and 1 other loved"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "**%1$@**, **%2$@** et 1 autre ont adoré **%3$@**"
+            "value" : "**%1$@**, **%2$@** et 1 autre ont adoré"
           }
         }
       }
     },
-    "**%@**, **%@** et 1 autre ont commencé **%@**" : {
+    "**%@**, **%@** et 1 autre ont commencé" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**%1$@**, **%2$@** and 1 other started **%3$@**"
+            "value" : "**%1$@**, **%2$@** and 1 other started"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "**%1$@**, **%2$@** et 1 autre ont commencé **%3$@**"
+            "value" : "**%1$@**, **%2$@** et 1 autre ont commencé"
           }
         }
       }
     },
-    "**%@**, **%@** et 1 autre ont terminé **%@**" : {
+    "**%@**, **%@** et 1 autre ont terminé" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**%1$@**, **%2$@** and 1 other finished **%3$@**"
+            "value" : "**%1$@**, **%2$@** and 1 other finished"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "**%1$@**, **%2$@** et 1 autre ont terminé **%3$@**"
+            "value" : "**%1$@**, **%2$@** et 1 autre ont terminé"
+          }
+        }
+      }
+    },
+    "**Guetté**" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "**Watched**"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "**Guetté**"
           }
         }
       }
@@ -1913,22 +2025,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "14h32"
-          }
-        }
-      }
-    },
-    "30 derniers jours" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Last 30 days"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "30 derniers jours"
           }
         }
       }

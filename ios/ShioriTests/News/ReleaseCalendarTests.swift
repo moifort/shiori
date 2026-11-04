@@ -107,6 +107,31 @@ struct NewsFeedLayoutTests {
         #expect(items.map(\.id) == ["release-today", "narrator-voice", "release-week", "release-month"])
     }
 
+    @Test func releasedFallsUnderTheJournalsPeriods() {
+        let items = NewsFeedLayout.released(
+            releases: [release("week", "2026-10-24"), release("today", "2026-10-31"), release("month", "2026-10")],
+            narrator: [news("voice", "2026-10-28")],
+            format: nil,
+            now: now,
+            calendar: calendar
+        )
+
+        let sections = NewsFeedLayout.releasedSections(items, now: now, calendar: calendar)
+
+        #expect(sections.map { $0.items.map(\.id) } == [
+            ["release-today"], ["narrator-voice"], ["release-week"], ["release-month"],
+        ])
+    }
+
+    @Test func aRecordingIsAddedHeardAndADraftKeepsItsCover() {
+        let item = ReleasedItem.narrator(news("voice", "2026-10-28"), day: now)
+
+        #expect(item.format == .audiobook)
+        #expect(item.draft.format == .audiobook)
+        #expect(item.draft.media.isEmpty)
+        #expect(item.draft.title == "voice")
+    }
+
     @Test func aFormatPillNarrowsReleasedAndKeepsRecordingsForAudio() {
         let releases = [release("book", "2026-10-30"), release("audio", "2026-10-29", format: .audiobook)]
         let voices = [news("voice", "2026-10-28")]

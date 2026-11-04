@@ -121,9 +121,30 @@ struct NewsViewModelTests {
         let event = viewModel.shownEvents.first { !$0.inLibrary }
         #expect(event != nil)
 
-        await viewModel.take(event!, as: .book)
+        await viewModel.add(event!, .toRead, as: .book)
 
         #expect(viewModel.shownEvents.first { $0.id == event!.id }?.inLibrary == true)
+    }
+
+    @Test func aFailedAwaitTakesTheMarkBack() async {
+        var client = NewsClient.preview
+        client.awaitFriendBook = { _, _, _ in throw Boom() }
+        let viewModel = NewsViewModel(client: client, caching: false)
+        await viewModel.load()
+        let event = viewModel.shownEvents[0]
+
+        await viewModel.awaitEdition(event, .audiobook)
+
+        #expect(!viewModel.awaited.contains(event.bookId))
+    }
+
+    @Test func wishingAReleaseMarksItsRow() async {
+        let viewModel = NewsViewModel(client: .preview, caching: false)
+        let item = ReleasedItem.narrator(.preview, day: .now)
+
+        await viewModel.wish(item)
+
+        #expect(viewModel.wished.contains(item.id))
     }
 
     @Test func invitingHandsTheInvitationOver() async {

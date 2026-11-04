@@ -35,7 +35,10 @@ struct NewsScreen: View {
             NewsPage(
                 tab: viewModel.tab,
                 friendsHaveNews: viewModel.friendsHaveNews,
-                released: viewModel.released(),
+                released: viewModel.releasedSections(),
+                taken: viewModel.taken,
+                wished: viewModel.wished,
+                awaited: viewModel.awaited,
                 calendar: viewModel.calendar(),
                 format: viewModel.format,
                 stories: viewModel.stories,
@@ -99,11 +102,15 @@ struct NewsScreen: View {
         case let .selectFormat(format): viewModel.format = format
         case let .selectFriend(friendId): viewModel.friendId = friendId
         case let .openFriendBook(event): open(.friendBook(event))
-        case let .take(event, format): await viewModel.take(event, as: format)
+        case let .addFriendBook(event, status, format): await viewModel.add(event, status, as: format)
+        case let .wishFriendBook(event): await viewModel.wish(event)
+        case let .awaitFriendBook(event, format): await viewModel.awaitEdition(event, format)
+        case let .addReleased(item, status, format): await viewModel.add(item, status, as: format)
+        case let .wishReleased(item): await viewModel.wish(item)
+        case let .awaitReleased(item, format): await viewModel.awaitEdition(item, format)
         case let .openAuthor(release):
             if let author = release.author { open(.author(.init(key: author.key, name: author.name))) }
         case let .openNarrator(news): open(.narrator(.init(key: news.narratorKey, name: news.narrator)))
-        case let .addNarrator(news): await viewModel.add(news)
         case .invite: await viewModel.invite()
         case .openAlerts: showsAlerts = true
         case let .prefetch(id): await viewModel.prefetchIfNeeded(for: id)

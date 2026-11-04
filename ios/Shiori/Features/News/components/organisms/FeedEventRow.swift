@@ -1,38 +1,46 @@
 import SwiftUI
 
-/// A friend's move on a book, as the feed draws it: who, what they did, the
-/// cover, and the "+" that takes the book onto the reader's pile. Friends who
-/// made the same move on the same story share the line, their faces stacked.
+/// A friend's move as a notification: their face, what they did and their
+/// stars, the book's title and author beneath, how long ago; a small cover
+/// and the "…" at the end. The same move by several friends is one row, the
+/// second face over the first's corner.
 struct FeedEventRow: View {
     let event: FeedEvent
     /// The other friends who made the same move, the latest first.
     var others: [FeedEvent] = []
+    var wished = false
+    var awaited = false
     let onOpen: () -> Void
-    let onTake: (BookFormat) async -> Void
+    let onAdd: (CopiedStatus, BookFormat) async -> Void
+    let onWish: () async -> Void
+    let onAwait: (ReleaseFormat) -> Void
 
     var body: some View {
-        HStack(spacing: 14) {
+        HStack(alignment: .center, spacing: 12) {
             Button(action: onOpen) {
-                HStack(spacing: 14) {
+                HStack(alignment: .top, spacing: 12) {
                     faces
-                    VStack(alignment: .leading, spacing: 3) {
-                        sentence
+                    VStack(alignment: .leading, spacing: 2) {
+                        headline
                             .font(.subheadline)
                             .multilineTextAlignment(.leading)
-                        if let detail {
-                            Text(detail)
-                                .font(.footnote)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
-                        }
+                        bookLine
+                        Text(event.at.formatted(.relative(presentation: .numeric, unitsStyle: .abbreviated)))
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                            .padding(.top, 1)
                     }
-                    Spacer(minLength: 0)
-                    BookCover(book: event.cover, width: 46)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    BookCover(book: event.cover, width: 34)
+                        .padding(.top, 2)
                 }
                 .contentShape(.rect)
             }
             .buttonStyle(.plain)
-            TakeButton(owned: event.inLibrary, isAdding: false, format: event.format, action: onTake)
+            NewsRowMenu(
+                format: event.format, owned: event.inLibrary, wished: wished, awaited: awaited,
+                onAdd: onAdd, onWish: onWish, onAwait: onAwait
+            )
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 10)
@@ -42,17 +50,32 @@ struct FeedEventRow: View {
     @ViewBuilder
     private var faces: some View {
         if let second = others.first {
-            ZStack(alignment: .bottomTrailing) {
-                AccountAvatarView(avatar: event.avatar, firstName: event.friendName, size: 32)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                AccountAvatarView(avatar: second.avatar, firstName: second.friendName, size: 32)
-                    .padding(2)
-                    .background(Color(.systemBackground), in: .circle)
-                    .offset(x: 2, y: 2)
-            }
-            .frame(width: 44, height: 44)
+            AccountAvatarView(avatar: event.avatar, firstName: event.friendName, size: 44)
+                .overlay(alignment: .bottomTrailing) {
+                    AccountAvatarView(avatar: second.avatar, firstName: second.friendName, size: 26)
+                        .padding(2)
+                        .background(Color(.systemBackground), in: .circle)
+                        .offset(x: 6, y: 6)
+                }
         } else {
             AccountAvatarView(avatar: event.avatar, firstName: event.friendName, size: 44)
+        }
+    }
+
+    /// "**Marc** a adoré ★★★★★": who, what, and their stars for a verdict.
+    private var headline: Text {
+        guard let rating = event.rating, rating > 0, event.kind != .started else { return sentence }
+        return sentence + Text(verbatim: " ") + Text(verbatim: UpcomingRelease.stars(rating)).font(.caption)
+    }
+
+    /// "**L'Arabe du futur** · Riad Sattouf", AUDIO framed on a recording.
+    private var bookLine: some View {
+        HStack(spacing: 6) {
+            (Text(event.title).fontWeight(.semibold).foregroundStyle(.primary)
+                + Text(verbatim: event.authors.first.map { " · \($0)" } ?? "").foregroundStyle(.secondary))
+                .font(.footnote)
+                .lineLimit(1)
+            CoverTags(language: nil, isAudio: event.format == .audiobook, isFrosted: false)
         }
     }
 
@@ -62,39 +85,23 @@ struct FeedEventRow: View {
         let other = second.friendName
         let rest = others.count - 1
         switch (event.kind, rest) {
-        case (.loved, 0): return Text("**\(first)** et **\(other)** ont adoré **\(event.title)**")
-        case (.finished, 0): return Text("**\(first)** et **\(other)** ont terminé **\(event.title)**")
-        case (.started, 0): return Text("**\(first)** et **\(other)** ont commencé **\(event.title)**")
-        case (.loved, 1): return Text("**\(first)**, **\(other)** et 1 autre ont adoré **\(event.title)**")
-        case (.finished, 1): return Text("**\(first)**, **\(other)** et 1 autre ont terminé **\(event.title)**")
-        case (.started, 1): return Text("**\(first)**, **\(other)** et 1 autre ont commencé **\(event.title)**")
-        case (.loved, _): return Text("**\(first)**, **\(other)** et \(rest) autres ont adoré **\(event.title)**")
-        case (.finished, _): return Text("**\(first)**, **\(other)** et \(rest) autres ont terminé **\(event.title)**")
-        case (.started, _): return Text("**\(first)**, **\(other)** et \(rest) autres ont commencé **\(event.title)**")
+        case (.loved, 0): return Text("**\(first)** et **\(other)** ont adoré")
+        case (.finished, 0): return Text("**\(first)** et **\(other)** ont terminé")
+        case (.started, 0): return Text("**\(first)** et **\(other)** ont commencé")
+        case (.loved, 1): return Text("**\(first)**, **\(other)** et 1 autre ont adoré")
+        case (.finished, 1): return Text("**\(first)**, **\(other)** et 1 autre ont terminé")
+        case (.started, 1): return Text("**\(first)**, **\(other)** et 1 autre ont commencé")
+        case (.loved, _): return Text("**\(first)**, **\(other)** et \(rest) autres ont adoré")
+        case (.finished, _): return Text("**\(first)**, **\(other)** et \(rest) autres ont terminé")
+        case (.started, _): return Text("**\(first)**, **\(other)** et \(rest) autres ont commencé")
         }
     }
 
     private var single: Text {
         switch event.kind {
-        case .loved: Text("**\(event.friendName)** a adoré **\(event.title)**")
-        case .finished: Text("**\(event.friendName)** a terminé **\(event.title)**")
-        case .started: Text("**\(event.friendName)** a commencé **\(event.title)**")
-        }
-    }
-
-    /// Stars and how long ago for a verdict; how many friends began it too for a start.
-    /// Shared by several friends, how long ago the latest did it.
-    private var detail: String? {
-        let ago = event.at.formatted(.relative(presentation: .numeric, unitsStyle: .abbreviated))
-        guard others.isEmpty else { return ago }
-        switch event.kind {
-        case .started:
-            return event.alsoStartedBy > 0
-                ? String(localized: "Comme \(event.alsoStartedBy) de vos amis")
-                : ago
-        case .loved, .finished:
-            guard let rating = event.rating, rating > 0 else { return ago }
-            return "\(UpcomingRelease.stars(rating)) · \(ago)"
+        case .loved: Text("**\(event.friendName)** a adoré")
+        case .finished: Text("**\(event.friendName)** a terminé")
+        case .started: Text("**\(event.friendName)** a commencé")
         }
     }
 }
@@ -102,9 +109,12 @@ struct FeedEventRow: View {
 #Preview("Feed event row") {
     VStack(spacing: 0) {
         ForEach(FeedEvent.previews) { event in
-            FeedEventRow(event: event, onOpen: {}, onTake: { _ in })
+            FeedEventRow(event: event, onOpen: {}, onAdd: { _, _ in }, onWish: {}, onAwait: { _ in })
         }
-        FeedEventRow(event: FeedEvent.previews[1], others: Array(FeedEvent.sameStartPreviews), onOpen: {}, onTake: { _ in })
+        FeedEventRow(
+            event: FeedEvent.previews[1], others: Array(FeedEvent.sameStartPreviews),
+            onOpen: {}, onAdd: { _, _ in }, onWish: {}, onAwait: { _ in }
+        )
     }
     .preferredColorScheme(.dark)
 }
