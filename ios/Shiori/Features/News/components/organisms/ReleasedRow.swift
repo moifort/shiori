@@ -1,9 +1,11 @@
 import SwiftUI
 
-/// A book out lately among what the reader follows, as "Sorti" lists it: the
-/// cover first, its title and author at the cover's top, AUDIO framed when it
-/// is a recording, why the reader is told beneath; at its foot the signature,
-/// who brought it and the day; the "…" at the end.
+/// A book out lately among what the reader follows, as the feed lists it, the
+/// way the book's page heads it: the cover first, AUDIO and a foreign
+/// language tagged in its corner; the series and volume above the title, the
+/// binoculars beside it for an edition awaited, the author, the day it came
+/// out. A narrator or an author the reader follows signs it at its foot, their
+/// face and name; the "…" at the end.
 struct ReleasedRow: View {
     let item: ReleasedItem
     var owned = false
@@ -20,23 +22,35 @@ struct ReleasedRow: View {
         HStack(alignment: .center, spacing: 14) {
             Button { onOpen?() } label: {
                 HStack(alignment: .top, spacing: 14) {
-                    BookCover(book: item.cover, width: Self.coverWidth)
+                    BookCover(book: item.cover, width: Self.coverWidth, showsFormatBadge: false)
+                        .overlay(alignment: .topTrailing) {
+                            CoverTags(language: item.language, isAudio: item.format == .audiobook)
+                                .padding(4)
+                        }
                     VStack(alignment: .leading, spacing: 0) {
-                        Text(item.title)
-                            .font(.headline)
-                            .lineLimit(2)
-                            .multilineTextAlignment(.leading)
-                        authorLine
-                            .padding(.top, 1)
-                        if let subtitle = item.subtitle {
-                            Text(subtitle)
+                        if let seriesLine = item.seriesLine {
+                            Text(seriesLine)
+                                .font(.footnote)
+                                .foregroundStyle(.primary.opacity(0.85))
+                                .lineLimit(1)
+                                .padding(.bottom, 2)
+                        }
+                        title
+                        if let author = item.authors.first {
+                            Text(author)
                                 .font(.footnote)
                                 .foregroundStyle(.secondary)
                                 .lineLimit(1)
-                                .padding(.top, 5)
+                                .padding(.top, 1)
                         }
-                        Spacer(minLength: 10)
-                        signature
+                        Text(dayText)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                            .padding(.top, 5)
+                        if hasSignature {
+                            Spacer(minLength: 10)
+                            signature
+                        }
                     }
                     .frame(maxWidth: .infinity, minHeight: Self.coverWidth * 1.5, alignment: .topLeading)
                 }
@@ -54,52 +68,55 @@ struct ReleasedRow: View {
         .accessibilityIdentifier("news-released")
     }
 
-    private var authorLine: some View {
-        HStack(spacing: 6) {
-            if let author = item.authors.first {
-                Text(author)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+    private var title: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 7) {
+            Text(item.shownTitle)
+                .font(.headline)
+                .lineLimit(2)
+                .multilineTextAlignment(.leading)
+            if item.isAwaited {
+                Image(systemName: "binoculars")
+                    .font(.footnote.weight(.semibold))
+                    .accessibilityLabel(Text("Suivi"))
             }
-            CoverTags(language: item.language, isAudio: item.format == .audiobook, isFrosted: false)
         }
     }
 
+    /// "Aujourd'hui", else the day and the month in full: "28 octobre".
+    private var dayText: String {
+        guard !Calendar.current.isDateInToday(item.day) else { return String(localized: "Aujourd'hui") }
+        return item.day.formatted(.dateTime.day().month(.wide))
+    }
+
     // MARK: - Signature
+
+    /// A person brought it: the narrator who lent their voice, the author.
+    private var hasSignature: Bool {
+        switch item {
+        case .narrator: true
+        case let .release(release, _): release.source == .author || release.source == .narrator
+        }
+    }
 
     private var signature: some View {
         HStack(spacing: 7) {
             mark
                 .frame(width: 22, height: 22)
-            (signatureText + Text(dayText).foregroundStyle(.secondary))
-                .font(.footnote)
-                .lineLimit(2)
+            signatureText
+                .font(.footnote.weight(.semibold))
+                .lineLimit(1)
         }
     }
 
     private var signatureText: Text {
         switch item {
         case let .narrator(news, _):
-            return Text("**\(news.narrator)** prête sa voix")
+            Text(verbatim: news.narrator)
         case let .release(release, _):
-            switch release.source {
-            case .author:
-                return Text("**\(release.author?.name ?? release.authors.first ?? "")** nouveau livre")
-            case .saga:
-                return Text("**\(release.seriesName ?? release.title ?? "")** nouveau tome")
-            case .awaited:
-                return Text("**Guetté**")
-            case .narrator:
-                return Text("**\(release.narrator ?? "")** prête sa voix")
-            }
+            Text(verbatim: release.source == .narrator
+                ? release.narrator ?? ""
+                : release.author?.name ?? release.authors.first ?? "")
         }
-    }
-
-    /// " · 15 oct.", nothing for today: the section says it.
-    private var dayText: String {
-        guard !Calendar.current.isDateInToday(item.day) else { return "" }
-        return " · " + item.day.formatted(.dateTime.day().month(.abbreviated))
     }
 
     @ViewBuilder
@@ -120,22 +137,12 @@ struct ReleasedRow: View {
                 } else {
                     FriendMonogram(name: release.author?.name ?? release.authors.first ?? "", size: 22)
                 }
-            case .saga:
-                symbol("square.stack.fill")
-            case .awaited:
-                symbol(release.format == .audiobook ? "headphones" : "character.book.closed.fill")
+            case .saga, .awaited:
+                EmptyView()
             case .narrator:
                 FriendMonogram(name: release.narrator ?? "", size: 22)
             }
         }
-    }
-
-    private func symbol(_ name: String) -> some View {
-        Image(systemName: name)
-            .font(.system(size: 10, weight: .semibold))
-            .frame(width: 22, height: 22)
-            .background(Color(.secondarySystemGroupedBackground), in: .circle)
-            .accessibilityHidden(true)
     }
 }
 

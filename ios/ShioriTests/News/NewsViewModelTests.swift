@@ -93,17 +93,6 @@ struct NewsViewModelTests {
         #expect(viewModel.shownEvents.count == FeedEvent.previews.count)
     }
 
-    @Test func openingAmisPutsItsDotOut() async {
-        let viewModel = NewsViewModel(client: .preview, caching: false)
-        await viewModel.load()
-        #expect(viewModel.friendsHaveNews)
-
-        viewModel.tab = .friends
-        viewModel.tab = .releases
-
-        #expect(viewModel.friendsHaveNews == false)
-    }
-
     @Test func narratorNewsFailingLeavesTheRestOfThePage() async {
         var client = NewsClient.preview
         client.narratorNews = { throw Boom() }

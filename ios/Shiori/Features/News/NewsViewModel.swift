@@ -2,8 +2,8 @@ import Foundation
 import Observation
 import SwiftUI
 
-/// The Actualités tab's state: the friends' feed page by page, the releases
-/// "Sorti" and "À venir" are laid from, the tab shown and the pills and friend
+/// The Actualités tab's state: the friends' moves page by page and the
+/// releases the one feed and "À venir" are laid from, the pill and the friend
 /// that narrow them. The tab opens on what it last showed: a `SnapshotCache`
 /// hands it back from disk before a byte is asked of the network, and the
 /// answer slides in over it.
@@ -17,7 +17,8 @@ final class NewsViewModel {
     private var generation = 0
 
     private(set) var events: [FeedEvent] = []
-    private(set) var hasMore = false
+    /// Another page of moves exists on the server.
+    private var moreOnServer = false
     private var cursor: String?
     private(set) var releases: [UpcomingRelease] = []
     private(set) var yearReleases: [UpcomingRelease] = []
@@ -38,17 +39,13 @@ final class NewsViewModel {
     /// The invitation to pass on, presented the moment it comes back.
     var invitation: FriendInvitation?
 
-    var tab: NewsTab = .releases {
-        didSet { if tab == .friends, oldValue != .friends { markFriendsSeen() } }
-    }
-    /// The pill chosen on Sorties; nil is "Tout".
+    /// The pill chosen; nil is "Tout".
     var format: BookFormat?
-    /// The friend picked at the top of Amis; nil is everyone.
+    /// The friend picked among the stories; nil is everyone.
     var friendId: String?
-    /// When the reader last opened Amis: the dot on the tab and the lit rings
-    /// count from it.
+    /// When the reader last opened Actualités: the lit rings count from it.
     private(set) var friendsSeenAt: Date?
-    /// The rings stay as they were when Amis opened, rather than going out
+    /// The rings stay as they were when the tab opened, rather than going out
     /// under the reader's eyes.
     private var ringsSeenAt: Date?
 
@@ -101,31 +98,34 @@ final class NewsViewModel {
         NewsFeedLayout.released(releases: yearReleases, narrator: narratorNews, format: format, now: now)
     }
 
-    func releasedSections(now: Date = .now) -> [ReleasedSection] {
-        NewsFeedLayout.releasedSections(released(now: now), now: now)
+    /// The one feed: releases and friends' moves of the last thirty days.
+    func feedSections(now: Date = .now) -> [NewsFeedSection] {
+        NewsFeedLayout.feedSections(
+            released: released(now: now), events: shownEvents, format: format, friendId: friendId, now: now
+        )
     }
 
     func calendar(now: Date = .now) -> ReleaseCalendar {
         ReleaseCalendar(releases: shownReleases, now: now)
     }
 
-    func friendSections(now: Date = .now) -> [FriendSection] {
-        NewsFeedLayout.friendSections(events: shownEvents, friendId: friendId, now: now)
+    /// More moves to fetch while the oldest loaded still falls in the feed's
+    /// thirty days.
+    var hasMore: Bool {
+        guard moreOnServer, let oldest = events.map(\.at).min() else { return false }
+        let since = Calendar.current.date(byAdding: .day, value: -NewsFeedLayout.releasedDays, to: .now) ?? .now
+        return oldest >= since
     }
 
     var stories: [FriendStory] {
         NewsFeedLayout.stories(events: events, seenAt: ringsSeenAt)
     }
 
-    /// A friend moved since the reader last opened Amis.
-    var friendsHaveNews: Bool {
-        guard tab != .friends, let latest = events.map(\.at).max() else { return false }
-        return friendsSeenAt.map { latest > $0 } ?? true
-    }
-
     // MARK: - Loading
 
+    /// Each visit lights the rings of who moved since the last one.
     func loadOnAppear() async {
+        markFriendsSeen()
         guard !hasLoaded else { return }
         await load()
     }
@@ -150,7 +150,7 @@ final class NewsViewModel {
             if case let .success(first) = first {
                 events = first.items
                 cursor = first.endCursor
-                hasMore = first.hasMore
+                moreOnServer = first.hasMore
                 errorMessage = nil
             }
             if case let .success(dated) = dated { releases = dated }
@@ -180,7 +180,7 @@ final class NewsViewModel {
             let known = Set(events.map(\.id))
             events += page.items.filter { !known.contains($0.id) }
             self.cursor = page.endCursor
-            hasMore = page.hasMore
+            moreOnServer = page.hasMore
         } catch {
             guard !isCancellation(error) else { return }
             pageFailed = true
@@ -201,8 +201,7 @@ final class NewsViewModel {
         alertsSilenced = await client.alertsSilenced()
     }
 
-    /// Opening Amis puts its dot out; the rings keep what they showed until the
-    /// next visit.
+    /// The rings keep what they showed until the next visit.
     private func markFriendsSeen(now: Date = .now) {
         ringsSeenAt = friendsSeenAt
         friendsSeenAt = now

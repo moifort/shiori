@@ -1,8 +1,8 @@
 import SwiftUI
 
-/// A friend's move as a notification: their face, what they did and their
-/// stars, the book's title and author beneath, how long ago; a small cover
-/// and the "…" at the end. The same move by several friends is one row, the
+/// A friend's move as a notification: their face, what they did to the book in
+/// one sentence, their stars beneath when they finished it, how long ago; a
+/// small cover tagged in its corner and the "…" at the end. The same move by several friends is one row, the
 /// second face over the first's corner.
 struct FeedEventRow: View {
     let event: FeedEvent
@@ -21,17 +21,25 @@ struct FeedEventRow: View {
                 HStack(alignment: .top, spacing: 12) {
                     faces
                     VStack(alignment: .leading, spacing: 2) {
-                        headline
+                        (sentence + Text(verbatim: " ") + Text(event.title).fontWeight(.semibold))
                             .font(.subheadline)
                             .multilineTextAlignment(.leading)
-                        bookLine
+                        if let stars {
+                            Text(verbatim: stars)
+                                .font(.caption)
+                        }
                         Text(event.at.formatted(.relative(presentation: .numeric, unitsStyle: .abbreviated)))
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                             .padding(.top, 1)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    BookCover(book: event.cover, width: 34)
+                    BookCover(book: event.cover, width: 34, showsFormatBadge: false)
+                        .overlay(alignment: .topTrailing) {
+                            CoverTags(language: event.language, isAudio: event.format == .audiobook)
+                                .scaleEffect(0.7, anchor: .topTrailing)
+                                .padding(2)
+                        }
                         .padding(.top, 2)
                 }
                 .contentShape(.rect)
@@ -62,22 +70,10 @@ struct FeedEventRow: View {
         }
     }
 
-    /// "**Marc** a adoré ★★★★★": who, what, and their stars for a verdict.
-    private var headline: Text {
-        guard let rating = event.rating, rating > 0, event.kind != .started else { return sentence }
-        return sentence + Text(verbatim: " ") + Text(verbatim: UpcomingRelease.stars(rating)).font(.caption)
-    }
-
-    /// "**L'Arabe du futur** · Riad Sattouf", EN framed on a foreign edition,
-    /// AUDIO on a recording.
-    private var bookLine: some View {
-        HStack(spacing: 6) {
-            (Text(event.title).fontWeight(.semibold).foregroundStyle(.primary)
-                + Text(verbatim: event.authors.first.map { " · \($0)" } ?? "").foregroundStyle(.secondary))
-                .font(.footnote)
-                .lineLimit(1)
-            CoverTags(language: event.language, isAudio: event.format == .audiobook, isFrosted: false)
-        }
+    /// The stars of a book finished; "a adoré" says enough, "a commencé" has none.
+    private var stars: String? {
+        guard event.kind == .finished, let rating = event.rating, rating > 0 else { return nil }
+        return UpcomingRelease.stars(rating)
     }
 
     private var sentence: Text {

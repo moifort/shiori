@@ -1,20 +1,5 @@
 import Foundation
 
-/// The two halves of the tab: what came out and is coming from what the reader
-/// follows, and what their friends did.
-enum NewsTab: String, CaseIterable, Identifiable, Sendable {
-    case releases, friends
-
-    var id: String { rawValue }
-
-    var label: String {
-        switch self {
-        case .releases: String(localized: "Sorties")
-        case .friends: String(localized: "Amis")
-        }
-    }
-}
-
 /// One line of "Sorti": a series' volume or an awaited edition now out, or a
 /// recording a narrator the reader follows lent their voice to.
 enum ReleasedItem: Identifiable, Hashable, Sendable {
@@ -69,19 +54,24 @@ enum ReleasedItem: Identifiable, Hashable, Sendable {
         }
     }
 
-    /// Why the reader is told of it, under its author; nil when the signature
-    /// says it all.
-    var subtitle: String? {
+    /// "Berserk · Tome 43" above the title, as the book's page has it.
+    var seriesLine: String? {
         guard case let .release(release, _) = self else { return nil }
-        switch release.source {
-        case .saga, .awaited:
-            let reason = release.format == .audiobook && release.source == .awaited
-                ? String(localized: "Dans votre liste d'envie")
-                : release.reason
-            return reason.isEmpty ? nil : reason
-        case .author, .narrator:
-            return nil
-        }
+        return release.seriesLine
+    }
+
+    /// The volume's own title under its series line; the series' name for a
+    /// volume known only as "Berserk, tome 43".
+    var shownTitle: String {
+        guard case let .release(release, _) = self, let series = release.seriesName else { return title }
+        guard let own = release.title, !own.lowercased().hasPrefix(series.lowercased()) else { return series }
+        return own
+    }
+
+    /// An edition the reader was waiting for: the binoculars beside the title.
+    var isAwaited: Bool {
+        guard case let .release(release, _) = self else { return false }
+        return release.source == .awaited
     }
 
     /// The book as an addition, a wish or an await would send it.
@@ -126,6 +116,36 @@ struct FriendStory: Identifiable {
     let name: String
     let avatar: AccountAvatar
     let isNew: Bool
+}
+
+/// One line of the Actualités feed: a book out lately among what the reader
+/// follows, or a friend's move.
+enum NewsFeedItem: Identifiable, Hashable, Sendable {
+    case released(ReleasedItem)
+    case friend(FriendMove)
+
+    var id: String {
+        switch self {
+        case let .released(item): item.id
+        case let .friend(move): "friend-\(move.id)"
+        }
+    }
+
+    /// When it happened: a release counts from the start of its day, so a
+    /// friend's move the same day comes before it.
+    var date: Date {
+        switch self {
+        case let .released(item): item.day
+        case let .friend(move): move.lead.at
+        }
+    }
+}
+
+/// The feed's lines of one journal period, under its heading.
+struct NewsFeedSection: Identifiable, Hashable, Sendable {
+    let title: String
+    let items: [NewsFeedItem]
+    var id: String { title }
 }
 
 enum NewsFeedLayout {
@@ -181,6 +201,39 @@ enum NewsFeedLayout {
             sections[sections.count - 1].items.append(item)
         }
         return sections.map { ReleasedSection(title: $0.period.title(now: now, calendar: calendar), items: $0.items) }
+    }
+
+    /// The one feed: what came out and what the friends did over the same
+    /// thirty days, mixed by date under the journal's periods. The pill narrows
+    /// both; a friend picked keeps their moves alone.
+    static func feedSections(
+        released: [ReleasedItem],
+        events: [FeedEvent],
+        format: BookFormat?,
+        friendId: String?,
+        now: Date = .now,
+        calendar: Calendar = .current
+    ) -> [NewsFeedSection] {
+        let since = calendar.date(byAdding: .day, value: -releasedDays, to: calendar.startOfDay(for: now)) ?? now
+        let moves = friendSections(
+            events: events.filter { $0.at >= since && (format == nil || $0.format == format) },
+            friendId: friendId,
+            now: now,
+            calendar: calendar
+        )
+        .flatMap(\.moves)
+        .map(NewsFeedItem.friend)
+        let releases = friendId == nil ? released.map(NewsFeedItem.released) : []
+        var sections: [(period: JournalPeriod, items: [NewsFeedItem])] = []
+        for item in (moves + releases).sorted(by: { $0.date > $1.date }) {
+            let period = JournalPeriod(item.date, now: now, calendar: calendar)
+            if let index = sections.firstIndex(where: { $0.period == period }) {
+                sections[index].items.append(item)
+            } else {
+                sections.append((period, [item]))
+            }
+        }
+        return sections.map { NewsFeedSection(title: $0.period.title(now: now, calendar: calendar), items: $0.items) }
     }
 
     /// `YYYY-MM-DD` or `YYYY-MM`; a bare year names no day.

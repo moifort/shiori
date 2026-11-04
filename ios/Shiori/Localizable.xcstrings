@@ -1613,54 +1613,6 @@
         }
       }
     },
-    "**%@** nouveau livre" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**%@** new book"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**%@** nouveau livre"
-          }
-        }
-      }
-    },
-    "**%@** nouveau tome" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**%@** new volume"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**%@** nouveau tome"
-          }
-        }
-      }
-    },
-    "**%@** prête sa voix" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**%@** lends their voice"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**%@** prête sa voix"
-          }
-        }
-      }
-    },
     "**%@** prête sa voix à **%@**" : {
       "localizations" : {
         "en" : {
@@ -1769,22 +1721,6 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "**%1$@**, **%2$@** et 1 autre ont terminé"
-          }
-        }
-      }
-    },
-    "**Guetté**" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**Watched**"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**Guetté**"
           }
         }
       }
@@ -2793,22 +2729,6 @@
         }
       }
     },
-    "Amis" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Friends"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Amis"
-          }
-        }
-      }
-    },
     "Amis indisponibles" : {
       "localizations" : {
         "en" : {
@@ -3141,22 +3061,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Aucun abonnement à restaurer sur ce compte."
-          }
-        }
-      }
-    },
-    "Aucun ami pour l'instant" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No friends yet"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aucun ami pour l'instant"
           }
         }
       }
@@ -10629,22 +10533,6 @@
         }
       }
     },
-    "Nouveau" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "New"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nouveau"
-          }
-        }
-      }
-    },
     "Nouveau livre" : {
       "localizations" : {
         "en" : {
@@ -11377,22 +11265,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Partagez vos lectures"
-          }
-        }
-      }
-    },
-    "Partagez votre bibliothèque pour voir ce que vos amis lisent." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Share your library to see what your friends are reading."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Partagez votre bibliothèque pour voir ce que vos amis lisent."
           }
         }
       }

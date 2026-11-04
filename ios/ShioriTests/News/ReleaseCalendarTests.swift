@@ -173,6 +173,65 @@ struct NewsFeedLayoutTests {
         #expect(sections.flatMap(\.moves).map(\.lead.friendId) == ["marc"])
     }
 
+    @Test func theFeedMixesReleasesAndFriendsMovesByDateOverThirtyDays() {
+        let released = NewsFeedLayout.released(
+            releases: [release("today", "2026-10-31"), release("week", "2026-10-27")],
+            narrator: [],
+            format: nil,
+            now: now,
+            calendar: calendar
+        )
+
+        let sections = NewsFeedLayout.feedSections(
+            released: released,
+            events: [
+                event("loved", hoursAgo: 2),
+                event("started", .started, hoursAgo: 24 * 3),
+                event("old", hoursAgo: 24 * 40),
+            ],
+            format: nil,
+            friendId: nil,
+            now: now,
+            calendar: calendar
+        )
+
+        #expect(sections.map { $0.items.map(\.id) } == [
+            ["friend-loved", "release-today"], ["friend-started", "release-week"],
+        ])
+    }
+
+    @Test func aFriendPickedLeavesTheirMovesAloneAndAPillNarrowsThem() {
+        let released = NewsFeedLayout.released(
+            releases: [release("today", "2026-10-31")], narrator: [], format: nil, now: now, calendar: calendar
+        )
+        let events = [event("a", friend: "sophie", hoursAgo: 1), event("b", friend: "marc", hoursAgo: 2)]
+
+        let picked = NewsFeedLayout.feedSections(
+            released: released, events: events, format: nil, friendId: "marc", now: now, calendar: calendar
+        )
+        let manga = NewsFeedLayout.feedSections(
+            released: [], events: events, format: .manga, friendId: nil, now: now, calendar: calendar
+        )
+
+        #expect(picked.flatMap(\.items).map(\.id) == ["friend-b"])
+        #expect(manga.isEmpty)
+    }
+
+    @Test func aVolumeKnownByItsNumberShowsItsSeriesAboveAndAsItsTitle() {
+        let volume = UpcomingRelease(
+            id: "berserk", source: .saga, format: .manga, title: "Berserk, tome 43", authors: [], date: "2026-10-28",
+            coverURL: nil, seriesName: "Berserk", volume: 43, author: nil, sagaRating: nil, sagaFavorite: true
+        )
+        let named = UpcomingRelease(
+            id: "light", source: .saga, format: .book, title: "Light Bringer", authors: [], date: "2026-10-28",
+            coverURL: nil, seriesName: "Red Rising", volume: 6, author: nil, sagaRating: nil, sagaFavorite: false
+        )
+
+        #expect(ReleasedItem.release(volume, day: now).shownTitle == "Berserk")
+        #expect(ReleasedItem.release(volume, day: now).seriesLine == String(localized: "Berserk · Tome 43"))
+        #expect(ReleasedItem.release(named, day: now).shownTitle == "Light Bringer")
+    }
+
     @Test func aStoryIsLitWhenItsFriendMovedSinceTheLastLook() {
         let stories = NewsFeedLayout.stories(
             events: [

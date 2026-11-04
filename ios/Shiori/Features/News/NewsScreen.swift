@@ -33,16 +33,13 @@ struct NewsScreen: View {
     var body: some View {
         DetailSplit(item: $detail) {
             NewsPage(
-                tab: viewModel.tab,
-                friendsHaveNews: viewModel.friendsHaveNews,
-                released: viewModel.releasedSections(),
+                feed: viewModel.feedSections(),
                 taken: viewModel.taken,
                 wished: viewModel.wished,
                 awaited: viewModel.awaited,
                 calendar: viewModel.calendar(),
                 format: viewModel.format,
                 stories: viewModel.stories,
-                friendSections: viewModel.friendSections(),
                 friendId: viewModel.friendId,
                 hasMore: viewModel.hasMore,
                 pageFailed: viewModel.pageFailed,
@@ -98,7 +95,6 @@ struct NewsScreen: View {
 
     private func handle(_ action: NewsAction) async {
         switch action {
-        case let .selectTab(tab): viewModel.tab = tab
         case let .selectFormat(format): viewModel.format = format
         case let .selectFriend(friendId): viewModel.friendId = friendId
         case let .openFriendBook(event): open(.friendBook(event))
