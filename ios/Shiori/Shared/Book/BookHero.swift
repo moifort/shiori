@@ -170,7 +170,7 @@ struct BookHero<Actions: View>: View {
             } else {
                 Menu {
                     ForEach(authors) { author in
-                        Button(author.name, systemImage: "person") { onOpenAuthor(author) }
+                        Button { onOpenAuthor(author) } label: { Label(author.name, image: "author") }
                     }
                 } label: { label }
                     .buttonStyle(.plain)

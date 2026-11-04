@@ -62,7 +62,7 @@ private struct BookContextMenuItems: View {
                 Button("Voir la série", systemImage: "square.stack") { onAction(.openSeries(series.id)) }
             }
             if let author = book.authors.first, let key = book.authorKeys?.first {
-                Button("Voir l'auteur", systemImage: "person") { onAction(.openAuthor(key: key, name: author)) }
+                Button { onAction(.openAuthor(key: key, name: author)) } label: { Label("Voir l'auteur", image: "author") }
             }
             ShareLink(item: "\(book.title) — \(book.authorLine)") {
                 Label("Partager", systemImage: "square.and.arrow.up")
