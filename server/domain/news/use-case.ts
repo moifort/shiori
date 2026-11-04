@@ -1,3 +1,5 @@
+import { isHeld } from '~/domain/awaited-edition/business-rules'
+import { AwaitedEditionUseCase } from '~/domain/awaited-edition/use-case'
 import { shelfKeysOf } from '~/domain/book/business-rules'
 import { BookQuery } from '~/domain/book/query'
 import type { BookFormat } from '~/domain/book/types'
@@ -31,7 +33,8 @@ export namespace NewsUseCase {
   }
 
   /** Everything announced across the sagas the reader follows, the authors they
-   *  hold and the editions they await, optionally in one format. Read off the
+   *  hold and the editions they await — those still unannounced too, undated —
+   *  optionally in one format. Read off the
    *  release watches the scheduled passes keep: no web lookup happens here. */
   export const upcoming = async (
     userId: UserId,
@@ -45,8 +48,15 @@ export namespace NewsUseCase {
         discovery: await DiscoveryUseCase.discover(userId, language, releaseFormat),
       })),
     )
-    const { upcoming: narrated } = await narratedOf(userId, now)
-    const releases = upcomingOf(discoveries, narrated)
+    const [{ upcoming: narrated }, awaited, library] = await Promise.all([
+      narratedOf(userId, now),
+      AwaitedEditionUseCase.everyAwaited(userId, now),
+      BookQuery.all(userId),
+    ])
+    const waiting = awaited.filter(
+      (view) => view.state !== 'available' && !isHeld(view, view.found, library),
+    )
+    const releases = upcomingOf(discoveries, narrated, waiting)
     return format ? releases.filter((release) => release.format === format) : releases
   }
 

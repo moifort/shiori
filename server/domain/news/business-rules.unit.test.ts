@@ -228,6 +228,33 @@ describe('the format of an upcoming release', () => {
     expect(formatsOf([], [row])).toEqual(['bande-dessinee'])
   })
 
+  test('lists the waits nothing announced yet, undated, and an announced one once', () => {
+    const waiting = (
+      id: string,
+      title: string,
+      state: AwaitedEditionView['state'],
+      date?: string,
+    ) =>
+      ({
+        id,
+        format: 'book',
+        state,
+        source: { title, authors: ['Díaz Canales'] },
+        ...(date ? { found: { title, date } } : {}),
+      }) as unknown as AwaitedEditionView
+    const announced = waiting('a1', 'Blacksad', 'announced', '2026-12-01')
+    const row = { ...authorRow({}, []), next: undefined, awaited: [announced] }
+    const releases = upcomingOf(
+      [{ format: 'book', discovery: { sagas: [], authors: [row] } as unknown as Discovery }],
+      [],
+      [announced, waiting('a2', 'Le Problème à trois corps', 'unannounced')],
+    )
+    expect(releases.map(({ id, date }) => [id, date])).toEqual([
+      ['awaited~a1', '2026-12-01'],
+      ['awaited~a2', undefined],
+    ])
+  })
+
   test('draws a recording as one whatever the saga is', () => {
     const releases = upcomingOf([
       {

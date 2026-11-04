@@ -195,10 +195,13 @@ const awaitedRelease = (view: AwaitedEditionView, format: ReleaseFormat): Upcomi
 /** What is announced across the release watches, one entry per story and
  *  format, the soonest first and the undated last. A story announced both by
  *  its author's watch and by the reader's wait for it is listed once, the saga
- *  winning over the author and the author over the wait. */
+ *  winning over the author and the author over the wait. `awaited` holds the
+ *  editions the reader still waits for, the ones nothing announced yet
+ *  included: they close the list undated. */
 export const upcomingOf = (
   discoveries: readonly { format: ReleaseFormat; discovery: Discovery }[],
   narrated: readonly UpcomingRelease[] = [],
+  awaited: readonly AwaitedEditionView[] = [],
 ): UpcomingRelease[] => {
   const all = [
     ...discoveries.flatMap(({ format, discovery }) => [
@@ -207,6 +210,10 @@ export const upcomingOf = (
       ),
       ...discovery.authors.flatMap((row) => authorRelease(row, format)),
     ]),
+    // After the authors' rows, which already list the waits they announce:
+    // what is left are the waits of authors the reader does not hold, and
+    // the ones nothing announced yet.
+    ...awaited.map((view) => awaitedRelease(view, view.format)),
     // Last, so a recording the sagas, the authors or the reader's own waits
     // already announce is listed as they have it.
     ...narrated,
