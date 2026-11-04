@@ -111,7 +111,7 @@ struct BookEditSheet: View {
                             .accessibilityIdentifier("edit-authors")
                     }
                     if format == .audiobook {
-                        LabeledField(title: "Narrateurs", icon: "person.wave.2") {
+                        LabeledField(title: "Narrateurs", icon: "music.mic") {
                             TextField("Narrateur", text: $narrators, axis: .vertical)
                                 .textInputAutocapitalization(.words)
                                 .accessibilityIdentifier("edit-narrators")
@@ -220,7 +220,7 @@ struct BookEditSheet: View {
 
                 Section {
                     VStack(alignment: .leading, spacing: 8) {
-                        Label("Nom", systemImage: "books.vertical")
+                        Label("Nom", systemImage: "square.stack")
                             .foregroundStyle(.secondary)
                         SeriesNameField(text: $seriesName, suggestions: seriesSuggestions)
                     }

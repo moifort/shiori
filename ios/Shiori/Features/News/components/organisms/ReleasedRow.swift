@@ -121,7 +121,7 @@ struct ReleasedRow: View {
                     FriendMonogram(name: release.author?.name ?? release.authors.first ?? "", size: 22)
                 }
             case .saga:
-                symbol("books.vertical.fill")
+                symbol("square.stack.fill")
             case .awaited:
                 symbol(release.format == .audiobook ? "headphones" : "character.book.closed.fill")
             case .narrator:

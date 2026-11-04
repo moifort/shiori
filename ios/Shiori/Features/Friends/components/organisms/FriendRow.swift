@@ -40,7 +40,7 @@ struct FriendRow: View {
                             .accessibilityLabel(Text("\(friend.favoriteCount) favoris"))
                         Label("\(friend.readingCount)", systemImage: "book")
                             .accessibilityLabel(Text("\(friend.readingCount) en cours"))
-                        Label("\(friend.bookCount)", systemImage: "books.vertical")
+                        Label("\(friend.bookCount)", systemImage: "book.pages")
                             .accessibilityLabel(Text("\(friend.bookCount) livres partagés"))
                     }
                     .labelStyle(.caption)

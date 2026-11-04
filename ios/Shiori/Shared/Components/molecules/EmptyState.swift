@@ -125,7 +125,7 @@ struct EmptyState: View {
 
 #Preview {
     EmptyState(
-        systemImage: "books.vertical",
+        systemImage: "book.pages",
         title: "Votre bibliothèque est vide",
         message: "Scannez la couverture d'un livre pour commencer.",
         primary: .init("Scanner un livre", systemImage: "camera") {},

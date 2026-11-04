@@ -85,7 +85,7 @@ struct BookAddMenuItems: View {
         }
         if !owned {
             Section {
-                Button("Liste d'envies", systemImage: wished ? "checkmark" : "gift") {
+                Button("Liste d'envies", systemImage: wished ? "checkmark" : "bookmark") {
                     Task { await onWish() }
                 }
                 .disabled(wished)

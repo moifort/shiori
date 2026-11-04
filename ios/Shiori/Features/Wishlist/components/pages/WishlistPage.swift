@@ -139,7 +139,7 @@ struct WishlistPage: View {
                 EmptyState.failure("Liste d'envies indisponible", message: errorMessage) { onAction(.refresh) }
             } else {
                 EmptyState(
-                    systemImage: "gift",
+                    systemImage: "bookmark",
                     title: "Aucune envie",
                     message: "Ajoutez-y un livre depuis Découvrir ou chez un ami, ou guettez sa traduction."
                 )

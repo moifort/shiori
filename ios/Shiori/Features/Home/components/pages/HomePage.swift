@@ -514,7 +514,7 @@ struct HomePage: View {
             Label {
                 Text("Votre bibliothèque est vide").font(.headline)
             } icon: {
-                Image(systemName: "books.vertical").foregroundStyle(.tint)
+                Image(systemName: "book.pages").foregroundStyle(.tint)
             }
             Text("Scannez la couverture d'un livre pour commencer. Chaque rangée ci-dessous se remplira avec vos lectures.")
                 .font(.subheadline)

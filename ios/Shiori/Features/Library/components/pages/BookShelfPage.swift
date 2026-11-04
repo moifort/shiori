@@ -176,7 +176,7 @@ struct BookShelfPage: View {
                 .frame(maxWidth: .infinity)
                 .padding(.top, 80)
         } else {
-            EmptyState(systemImage: "books.vertical", title: "Rien ici pour l'instant", message: "Les livres de ce rayon s'afficheront ici.")
+            EmptyState(systemImage: "book.pages", title: "Rien ici pour l'instant", message: "Les livres de ce rayon s'afficheront ici.")
                 .padding(.top, 60)
         }
     }

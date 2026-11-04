@@ -180,7 +180,7 @@ struct LibraryShelvesPage: View {
             }
         } else if !isLoading {
             EmptyState(
-                systemImage: "books.vertical",
+                systemImage: "book.pages",
                 title: genre == nil ? "Votre bibliothèque est vide" : "Aucun livre de ce genre",
                 message: "Scannez la couverture d'un livre pour commencer."
             )

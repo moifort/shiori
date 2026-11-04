@@ -391,7 +391,7 @@ struct DiscoverPage: View {
             SagaReleasesSummary(releases: row.releases, missing: row.missing, section: section)
         }
         .contextMenu {
-            Button("Série", systemImage: "books.vertical") { act(.openSeries(row)) }
+            Button("Série", systemImage: "square.stack") { act(.openSeries(row)) }
         }
         .accessibilityIdentifier("discover-series-row")
     }

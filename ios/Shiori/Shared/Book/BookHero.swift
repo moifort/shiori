@@ -208,7 +208,7 @@ struct BookHero<Actions: View>: View {
                 } else {
                     Menu {
                         ForEach(narrators) { narrator in
-                            Button(narrator.name, systemImage: "waveform") { onOpenNarrator(narrator) }
+                            Button(narrator.name, systemImage: "music.mic") { onOpenNarrator(narrator) }
                         }
                     } label: { label }
                         .buttonStyle(.plain)

@@ -78,7 +78,7 @@ struct WholePilePage: View {
                 .frame(maxWidth: .infinity)
                 .padding(.top, 80)
         } else {
-            EmptyState(systemImage: "books.vertical", title: "Pile vide", message: "Les livres à lire s'afficheront ici.")
+            EmptyState(systemImage: "book.pages", title: "Pile vide", message: "Les livres à lire s'afficheront ici.")
                 .padding(.top, 60)
         }
     }

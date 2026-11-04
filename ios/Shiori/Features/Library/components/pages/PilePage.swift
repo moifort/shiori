@@ -111,7 +111,7 @@ struct PilePage: View {
                 .padding(.top, 80)
         } else {
             EmptyState(
-                systemImage: "books.vertical",
+                systemImage: "book.pages",
                 title: "Pile vide",
                 message: "Les livres à lire et ceux en cours s'afficheront ici."
             )

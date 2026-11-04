@@ -13,7 +13,7 @@ struct LibraryLinkRows: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            LibraryLinkRow(symbol: "books.vertical", title: String(localized: "Livres")) {
+            LibraryLinkRow(symbol: "book.pages", title: String(localized: "Livres")) {
                 onAction(.openShelf(.all))
             }
             .accessibilityIdentifier("library-all-books")
@@ -30,12 +30,12 @@ struct LibraryLinkRows: View {
                 }
             }
             if showsNarrators {
-                LibraryLinkRow(symbol: "mic", title: String(localized: "Narrateurs")) {
+                LibraryLinkRow(symbol: "music.mic", title: String(localized: "Narrateurs")) {
                     onAction(.openNarrators)
                 }
             }
             // Always offered: an empty wishlist says how to fill it.
-            LibraryLinkRow(symbol: "gift", title: String(localized: "Liste d'envies")) {
+            LibraryLinkRow(symbol: "bookmark", title: String(localized: "Liste d'envies")) {
                 onAction(.openWishlist)
             }
             .accessibilityIdentifier("library-wishlist")

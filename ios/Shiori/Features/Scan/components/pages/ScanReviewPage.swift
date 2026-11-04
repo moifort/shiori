@@ -190,7 +190,7 @@ struct ScanReviewPage: View {
                 .disabled(!canSave)
                 .accessibilityIdentifier("review-save-read")
             Section {
-                Button("Liste d'envies", systemImage: "gift") {
+                Button("Liste d'envies", systemImage: "bookmark") {
                     Task { await onAction(.wish(draft)) }
                 }
                 .disabled(!canSave)

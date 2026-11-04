@@ -24,7 +24,7 @@ struct SeriesNewsTile: View {
             if let audibleURL = opened.volume.audibleURL {
                 Button("Audible", systemImage: "headphones") { openURL(audibleURL) }
             }
-            Button("Série", systemImage: "books.vertical", action: onOpenSeries)
+            Button("Série", systemImage: "square.stack", action: onOpenSeries)
         }
         .accessibilityIdentifier("discover-volume-row")
     }

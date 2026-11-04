@@ -150,7 +150,7 @@ struct DiscoveryAddActions<Item: Discovery>: View {
         Button("Déjà lu", systemImage: "checkmark") { onChoose(.alreadyRead, .read) }
             .accessibilityIdentifier("suggestion-read")
         Section {
-            Button("Liste d'envies", systemImage: "gift") { onChoose(.wish, .added) }
+            Button("Liste d'envies", systemImage: "bookmark") { onChoose(.wish, .added) }
                 .accessibilityIdentifier("suggestion-wish")
         }
         if !item.awaitableFormats.isEmpty {

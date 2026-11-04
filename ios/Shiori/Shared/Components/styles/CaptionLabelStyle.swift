@@ -35,7 +35,7 @@ extension LabelStyle where Self == CaptionLabelStyle {
 #Preview {
     List {
         VStack(alignment: .leading, spacing: 2) {
-            Label("Lu par Thibault de Montalembert", systemImage: "waveform")
+            Label("Lu par Thibault de Montalembert", systemImage: "music.mic")
             Label("14h32", systemImage: "clock")
         }
         .labelStyle(.caption)

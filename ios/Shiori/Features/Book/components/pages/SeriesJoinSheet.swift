@@ -47,7 +47,7 @@ struct SeriesJoinSheet: View {
                             SeriesNameField(text: $name, suggestions: suggestions)
                         }
                     } icon: {
-                        Image(systemName: "books.vertical").foregroundStyle(.secondary)
+                        Image(systemName: "square.stack").foregroundStyle(.secondary)
                     }
                     if !trimmed(name).isEmpty {
                         Label {
