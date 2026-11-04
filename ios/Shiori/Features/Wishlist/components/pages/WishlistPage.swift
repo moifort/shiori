@@ -56,6 +56,7 @@ struct WishlistPage: View {
         }
         .background(Color(.systemGroupedBackground))
         .navigationTitle("Liste d'envies")
+        .navigationBarTitleDisplayMode(.large)
         .refreshable { onAction(.refresh) }
         .overlay { emptyState }
     }

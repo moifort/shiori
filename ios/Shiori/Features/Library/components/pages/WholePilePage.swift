@@ -52,6 +52,7 @@ struct WholePilePage: View {
         }
         .background(Color(.systemGroupedBackground))
         .navigationTitle(String(localized: "Toute la pile"))
+        .navigationBarTitleDisplayMode(.large)
         .refreshable { onAction(.refresh) }
     }
 

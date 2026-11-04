@@ -19,9 +19,11 @@ struct SeriesReleaseCard: View {
     var isAwaited = false
     let onOpen: () -> Void
 
-    /// The card's height with a one-line title; a second line adds to it.
+    /// The card's height: every card of a rail stands as tall, as the home's
+    /// "En cours" cards do — one line of title, and the room of the countdown
+    /// and of the button kept when a volume has neither.
     private static let height: CGFloat = 124
-    /// Tall enough to fill the card with a two-line title.
+    /// Taller than the card, so the cover fills it at any text size.
     private static let coverHeight: CGFloat = 150
     private static let coverWidth: CGFloat = 82
     /// The calendar leaf's width and its margin, kept clear by the text.
@@ -29,8 +31,8 @@ struct SeriesReleaseCard: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 14) {
-            // The cover runs the card's full height, however tall a long
-            // title makes it, cropped at its foot rather than letterboxed.
+            // The cover runs the card's full height, cropped at its foot
+            // rather than letterboxed.
             Color.clear
                 .frame(width: Self.coverWidth)
                 .frame(maxHeight: .infinity)
@@ -57,7 +59,7 @@ struct SeriesReleaseCard: View {
                 HStack(alignment: .firstTextBaseline, spacing: 7) {
                     Text(volume.title)
                         .font(.headline)
-                        .lineLimit(2)
+                        .lineLimit(1)
                     if isAwaited {
                         Image(systemName: "binoculars")
                             .font(.footnote.weight(.semibold))
@@ -66,14 +68,23 @@ struct SeriesReleaseCard: View {
                 }
                 .padding(.trailing, volume.date == nil ? 0 : Self.leafRoom)
                 // How long is left, under the title in an outlined tag.
-                if let countdown = volume.date.flatMap({ ReleaseDateText.countdown($0) }) {
-                    OutlinedTag(text: countdown, isFrosted: false)
-                        .padding(.top, 3)
+                // A volume with no date keeps the tag's room.
+                ZStack(alignment: .leading) {
+                    OutlinedTag(text: "0", isFrosted: false).hidden()
+                    if let countdown = volume.date.flatMap({ ReleaseDateText.countdown($0) }) {
+                        OutlinedTag(text: countdown, isFrosted: false)
+                    }
                 }
+                .padding(.top, 3)
                 Spacer(minLength: 8)
-                // The next step at the card's foot.
-                if let store {
-                    preorderButton(store)
+                // The next step at the card's foot; with no store, its room.
+                ZStack(alignment: .leading) {
+                    preorderButton((URL(string: "https://www.amazon.fr")!, "amazon-logo"))
+                        .hidden()
+                        .accessibilityHidden(true)
+                    if let store {
+                        preorderButton(store)
+                    }
                 }
             }
             .foregroundStyle(.white)

@@ -58,6 +58,7 @@ struct LibraryShelvesPage: View {
         }
         .background(Color(.systemGroupedBackground))
         .navigationTitle(genre?.label ?? String(localized: "Bibliothèque"))
+        .navigationBarTitleDisplayMode(.large)
         .scrollAwayBar(genre?.label ?? String(localized: "Bibliothèque"))
         .refreshable { onAction(.refresh) }
         .overlay(alignment: .top) {

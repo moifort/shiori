@@ -89,6 +89,7 @@ struct BookShelfPage: View {
         }
         .background(Color(.systemGroupedBackground))
         .navigationTitle(shelf.title)
+        .navigationBarTitleDisplayMode(.large)
         .toolbar { shareButton }
         .refreshable { onAction(.refresh) }
     }
