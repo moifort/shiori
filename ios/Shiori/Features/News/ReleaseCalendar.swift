@@ -7,6 +7,9 @@ struct ReleaseDay: Identifiable, Hashable, Sendable {
     /// "mer." above the number; nil when the label is not a day.
     let weekday: String?
     let label: String
+    /// A symbol standing in the date column instead of the label: the
+    /// binoculars of the editions awaited with nothing announced.
+    var symbol: String?
     let releases: [UpcomingRelease]
 }
 
@@ -41,16 +44,27 @@ struct ReleaseCalendar: Sendable {
         (calendar.component(.year, from: now), calendar.component(.month, from: now))
     }
 
+    /// What the rail at the head of Actualités shows: every release dated to a
+    /// month or a day, the soonest first.
+    var dated: [UpcomingRelease] {
+        sections.filter { $0.id != Self.beyondID && $0.id != Self.awaitedID }.flatMap { $0.days.flatMap(\.releases) }
+    }
+
+    private static let beyondID = "beyond"
+    private static let awaitedID = "awaited"
+
     /// The list, a month at a time. A release already out is not in it; what is
-    /// dated to a year alone, or not at all, closes it.
+    /// dated to a year alone, or not at all, closes it, then the editions
+    /// awaited that nothing announced yet.
     var sections: [ReleaseMonthSection] {
         let today = calendar.startOfDay(for: now)
         var months: [String: (start: Date, days: [Int: [UpcomingRelease]], monthOnly: [UpcomingRelease])] = [:]
         var years: [Int: [UpcomingRelease]] = [:]
         var undated: [UpcomingRelease] = []
+        var waiting: [UpcomingRelease] = []
         for release in releases {
             guard let date = parsed(release.date) else {
-                undated.append(release)
+                if release.source == .awaited { waiting.append(release) } else { undated.append(release) }
                 continue
             }
             guard let month = date.month else {
@@ -98,7 +112,14 @@ struct ReleaseCalendar: Sendable {
             beyond.append(ReleaseDay(id: "undated", weekday: nil, label: String(localized: "Sans date"), releases: undated))
         }
         if !beyond.isEmpty {
-            sections.append(ReleaseMonthSection(id: "beyond", title: String(localized: "Au-delà"), days: beyond))
+            sections.append(ReleaseMonthSection(id: Self.beyondID, title: String(localized: "Au-delà"), days: beyond))
+        }
+        if !waiting.isEmpty {
+            sections.append(ReleaseMonthSection(
+                id: Self.awaitedID,
+                title: String(localized: "Guettés, pas encore annoncés"),
+                days: [ReleaseDay(id: "awaited", weekday: nil, label: "", symbol: "binoculars", releases: waiting)]
+            ))
         }
         return sections
     }

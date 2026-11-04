@@ -121,6 +121,26 @@ struct UpcomingRelease: Identifiable, Hashable, Codable, Sendable {
         return volume.map { String(localized: "\(seriesName) · Tome \($0)") } ?? seriesName
     }
 
+    /// The volume's own title under its series line; the series' name for a
+    /// volume known only as "Berserk, tome 43".
+    var shownTitle: String {
+        guard let seriesName else { return title ?? cover.title }
+        guard let own = title, !own.lowercased().hasPrefix(seriesName.lowercased()) else { return seriesName }
+        return own
+    }
+
+    /// Over the title of its card in the rail: the author, the volume's place
+    /// in its series and, on a recording, the format. "Takehiko Inoue · Tome 38".
+    var cardPlace: String {
+        [
+            authors.first,
+            volume.map { String(localized: "Tome \($0)") },
+            format == .audiobook ? String(localized: "Livre audio") : nil,
+        ]
+        .compactMap { $0 }
+        .joined(separator: " · ")
+    }
+
     /// Why the reader is told of it, under its title in the calendar.
     var reason: String {
         switch source {

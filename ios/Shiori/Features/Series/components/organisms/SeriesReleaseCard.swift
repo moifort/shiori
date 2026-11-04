@@ -15,6 +15,8 @@ struct SeriesReleaseCard: View {
     /// The line over the title, in place of the author and the volume's place:
     /// an edition awaited outside any saga names its author and format.
     var place: String?
+    /// An edition the reader waits for: the binoculars after the title.
+    var isAwaited = false
     let onOpen: () -> Void
 
     /// The card's height with a one-line title; a second line adds to it.
@@ -52,10 +54,17 @@ struct SeriesReleaseCard: View {
                     .foregroundStyle(.white.opacity(0.75))
                     .lineLimit(1)
                     .padding(.trailing, volume.date == nil ? 0 : Self.leafRoom)
-                Text(volume.title)
-                    .font(.headline)
-                    .lineLimit(2)
-                    .padding(.trailing, volume.date == nil ? 0 : Self.leafRoom)
+                HStack(alignment: .firstTextBaseline, spacing: 7) {
+                    Text(volume.title)
+                        .font(.headline)
+                        .lineLimit(2)
+                    if isAwaited {
+                        Image(systemName: "binoculars")
+                            .font(.footnote.weight(.semibold))
+                            .accessibilityLabel(Text("Suivi"))
+                    }
+                }
+                .padding(.trailing, volume.date == nil ? 0 : Self.leafRoom)
                 // How long is left, under the title in an outlined tag.
                 if let countdown = volume.date.flatMap({ ReleaseDateText.countdown($0) }) {
                     OutlinedTag(text: countdown, isFrosted: false)

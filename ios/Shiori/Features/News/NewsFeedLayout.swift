@@ -63,9 +63,8 @@ enum ReleasedItem: Identifiable, Hashable, Sendable {
     /// The volume's own title under its series line; the series' name for a
     /// volume known only as "Berserk, tome 43".
     var shownTitle: String {
-        guard case let .release(release, _) = self, let series = release.seriesName else { return title }
-        guard let own = release.title, !own.lowercased().hasPrefix(series.lowercased()) else { return series }
-        return own
+        guard case let .release(release, _) = self else { return title }
+        return release.shownTitle
     }
 
     /// An edition the reader was waiting for: the binoculars beside the title.

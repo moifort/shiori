@@ -18,7 +18,14 @@ struct UpcomingReleaseRow: View {
                 }
                 thumbnail
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(title).font(.subheadline.weight(.semibold)).lineLimit(2)
+                    HStack(alignment: .firstTextBaseline, spacing: 6) {
+                        Text(title).font(.subheadline.weight(.semibold)).lineLimit(2)
+                        if release.source == .awaited {
+                            Image(systemName: "binoculars")
+                                .font(.caption.weight(.semibold))
+                                .accessibilityLabel(Text("Suivi"))
+                        }
+                    }
                     Text(subtitle).font(.caption).foregroundStyle(.secondary).lineLimit(1)
                 }
                 Spacer(minLength: 0)
@@ -41,11 +48,7 @@ struct UpcomingReleaseRow: View {
     }
 
     private var baseSubtitle: String {
-        guard release.title == nil else {
-            return release.date == nil && release.source == .awaited
-                ? "\(release.authors.first ?? "") · \(String(localized: "annoncé, jamais daté"))"
-                : release.reason
-        }
+        guard release.title == nil else { return release.reason }
         return "\(release.authors.first ?? "") · \(String(localized: "sans titre"))"
     }
 

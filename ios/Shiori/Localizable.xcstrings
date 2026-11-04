@@ -7049,6 +7049,22 @@
         }
       }
     },
+    "Guettés, pas encore annoncés" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Watched, not announced yet"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guettés, pas encore annoncés"
+          }
+        }
+      }
+    },
     "Habitudes" : {
       "localizations" : {
         "en" : {

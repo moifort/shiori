@@ -34,14 +34,22 @@ struct ReleaseList: View {
 
     private func date(_ day: ReleaseDay) -> some View {
         VStack(spacing: 0) {
-            if let weekday = day.weekday {
+            if let symbol = day.symbol {
+                Image(systemName: symbol)
+                    .font(.title3)
+                    .foregroundStyle(.secondary)
+                    .accessibilityLabel(Text("Suivi"))
+                    .padding(.top, 2)
+            } else if let weekday = day.weekday {
                 Text(weekday).font(.caption2.weight(.bold)).foregroundStyle(.secondary).textCase(.uppercase)
             }
-            Text(day.label)
+            if day.symbol == nil {
+                Text(day.label)
                 .font(day.weekday == nil ? .footnote.weight(.bold) : .title2.weight(.bold))
                 .multilineTextAlignment(.center)
                 .minimumScaleFactor(0.8)
                 .lineLimit(2)
+            }
         }
         .frame(width: 40)
         .padding(.top, 10)

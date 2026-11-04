@@ -12,6 +12,7 @@ enum NewsAction {
     case wishReleased(ReleasedItem)
     case awaitReleased(ReleasedItem, ReleaseFormat)
     case openAuthor(UpcomingRelease)
+    case openUpcoming
     case openNarrator(NarratorNews)
     case invite
     case openAlerts
@@ -20,11 +21,12 @@ enum NewsAction {
     case refresh
 }
 
-/// The Actualités page, pure: one feed. The friends as stories at the top,
-/// the format pills, then over the last thirty days what came out among the
-/// series, authors, narrators and awaited editions the reader follows mixed
-/// with what their friends did, under journal periods, the same move by
-/// several of them on one line; then "À venir" and its calendar. Every row ends
+/// The Actualités page, pure: one feed. "À venir" at the top, its release
+/// cards in a rail and its title opening the full list; the friends as
+/// stories, the format pills, then over the last thirty days what came out
+/// among the series, authors, narrators and awaited editions the reader
+/// follows mixed with what their friends did, under journal periods, the same
+/// move by several of them on one line. Every row ends
 /// on the "…" that takes the book, wishes for it or awaits its recording. The
 /// pages a tap opens are the screen's.
 struct NewsPage: View {
@@ -73,6 +75,14 @@ struct NewsPage: View {
         } else {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 0) {
+                    if !calendar.releases.isEmpty {
+                        UpcomingRail(
+                            releases: calendar.dated,
+                            onOpenList: { act(.openUpcoming) },
+                            onOpen: { release in act(release.author == nil ? .openUpcoming : .openAuthor(release)) }
+                        )
+                        .padding(.top, 8)
+                    }
                     if !stories.isEmpty {
                         FriendStoriesRail(
                             stories: stories,
@@ -80,7 +90,7 @@ struct NewsPage: View {
                             onSelect: { act(.selectFriend($0)) },
                             onInvite: { await onAction(.invite) }
                         )
-                        .padding(.top, 4)
+                        .padding(.top, calendar.releases.isEmpty ? 4 : 18)
                     }
                     FilterPills(
                         pills: NewsFeedLayout.pillFormats.map { .init(id: $0.rawValue, label: $0.pillLabel) },
@@ -90,8 +100,6 @@ struct NewsPage: View {
                     }
                     .padding(.top, 14)
                     lines
-                    ReleaseCalendarSection(calendar: calendar, onOpen: { act(.openAuthor($0)) })
-                        .padding(.top, 30)
                 }
                 .padding(.bottom, 24)
             }

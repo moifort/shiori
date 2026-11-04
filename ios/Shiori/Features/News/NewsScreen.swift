@@ -90,6 +90,8 @@ struct NewsScreen: View {
             AuthorScreen(key: author.key, name: author.name, isOffered: false)
         case let .narrator(narrator):
             NarratorScreen(key: narrator.key, name: narrator.name)
+        case .upcoming:
+            UpcomingReleasesScreen(releases: viewModel.calendar().releases)
         }
     }
 
@@ -107,6 +109,7 @@ struct NewsScreen: View {
         case let .openAuthor(release):
             if let author = release.author { open(.author(.init(key: author.key, name: author.name))) }
         case let .openNarrator(news): open(.narrator(.init(key: news.narratorKey, name: news.narrator)))
+        case .openUpcoming: open(.upcoming)
         case .invite: await viewModel.invite()
         case .openAlerts: showsAlerts = true
         case let .prefetch(id): await viewModel.prefetchIfNeeded(for: id)
@@ -124,12 +127,41 @@ private enum NewsDetail: Identifiable, Hashable {
     case friendBook(FeedEvent)
     case author(AuthorDestination)
     case narrator(NarratorDestination)
+    case upcoming
 
     var id: String {
         switch self {
+        case .upcoming: "upcoming"
         case let .friendBook(event): "friend-book-\(event.id)"
         case let .author(author): "author-\(author.id)"
         case let .narrator(narrator): "narrator-\(narrator.id)"
+        }
+    }
+}
+
+/// The full list of what is announced, opened from the head of Actualités: an
+/// author a row names is pushed on the list's own stack.
+private struct UpcomingReleasesScreen: View {
+    let releases: [UpcomingRelease]
+    @State private var author: AuthorDestination?
+    @Environment(\.dismiss) private var dismissPresentation
+    @Environment(\.detailClosing) private var closing
+
+    var body: some View {
+        UpcomingReleasesPage(releases: releases) { release in
+            if let ref = release.author { author = .init(key: ref.key, name: ref.name) }
+        }
+        .toolbar {
+            if closing.showsCloseButton {
+                ToolbarItem(placement: .cancellationAction) {
+                    ToolbarIconButton(title: "Fermer", systemImage: "xmark", role: .cancel) {
+                        closing.close(dismissPresentation)
+                    }
+                }
+            }
+        }
+        .pushesDetail(item: $author) { author in
+            AuthorScreen(key: author.key, name: author.name, isOffered: false)
         }
     }
 }

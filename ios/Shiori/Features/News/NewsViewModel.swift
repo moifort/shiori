@@ -90,10 +90,6 @@ final class NewsViewModel {
         }
     }
 
-    var shownReleases: [UpcomingRelease] {
-        releases.filter { format == nil || $0.format == format }
-    }
-
     func released(now: Date = .now) -> [ReleasedItem] {
         NewsFeedLayout.released(releases: yearReleases, narrator: narratorNews, format: format, now: now)
     }
@@ -105,8 +101,10 @@ final class NewsViewModel {
         )
     }
 
+    /// Everything announced, whatever the pill: the rail sits above the pills,
+    /// and the full list has its own.
     func calendar(now: Date = .now) -> ReleaseCalendar {
-        ReleaseCalendar(releases: shownReleases, now: now)
+        ReleaseCalendar(releases: releases, now: now)
     }
 
     /// More moves to fetch while the oldest loaded still falls in the feed's
