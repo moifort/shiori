@@ -370,7 +370,7 @@ struct DiscoverPage: View {
             ForEach(volumes) { opened in
                 Button(opened.volume.title, systemImage: "book") { act(.openVolume(opened)) }
             }
-            Button("Auteur", systemImage: "person") { act(.openAuthor(destination)) }
+            Button { act(.openAuthor(destination)) } label: { Label("Auteur", image: "author") }
         }
         .accessibilityIdentifier("discover-author-row")
     }

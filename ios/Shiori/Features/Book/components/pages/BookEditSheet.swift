@@ -105,7 +105,7 @@ struct BookEditSheet: View {
                             .textInputAutocapitalization(.words)
                             .accessibilityIdentifier("edit-title")
                     }
-                    LabeledField(title: "Auteurs", icon: "person") {
+                    LabeledField(title: "Auteurs", image: "author") {
                         TextField("Auteur", text: $authors, axis: .vertical)
                             .textInputAutocapitalization(.words)
                             .accessibilityIdentifier("edit-authors")
@@ -513,15 +513,26 @@ private struct DateField: View {
 /// the field trailing where the value was. Shared by every edit form, so a
 /// saga's and an author's read as a book's.
 struct LabeledField<Field: View>: View {
-    let title: LocalizedStringKey
-    let icon: String
-    @ViewBuilder let field: Field
+    let label: Label<Text, Image>
+    let field: Field
+
+    /// A field titled with one of Apple's symbols.
+    init(title: LocalizedStringKey, icon: String, @ViewBuilder field: () -> Field) {
+        label = Label(title, systemImage: icon)
+        self.field = field()
+    }
+
+    /// A field titled with one of the app's own symbols, such as the author's quill.
+    init(title: LocalizedStringKey, image: String, @ViewBuilder field: () -> Field) {
+        label = Label(title, image: image)
+        self.field = field()
+    }
 
     var body: some View {
         LabeledContent {
             field.multilineTextAlignment(.trailing)
         } label: {
-            Label(title, systemImage: icon)
+            label
         }
     }
 }

@@ -23,7 +23,9 @@ struct LibraryLinkRows: View {
                 }
             }
             if showsAuthors {
-                LibraryLinkRow(symbol: "pencil", title: String(localized: "Auteurs")) {
+                // The app's own quill (`Assets.xcassets/author`), drawn for the
+                // author everywhere the app names one.
+                LibraryLinkRow(image: Image("author"), title: String(localized: "Auteurs")) {
                     onAction(.openAuthors)
                 }
             }
@@ -44,14 +46,24 @@ struct LibraryLinkRows: View {
 
 /// One of the library's rows: the symbol, the title, the chevron, the hairline.
 private struct LibraryLinkRow: View {
-    let symbol: String
+    let image: Image
     let title: String
     let action: () -> Void
+
+    init(image: Image, title: String, action: @escaping () -> Void) {
+        self.image = image
+        self.title = title
+        self.action = action
+    }
+
+    init(symbol: String, title: String, action: @escaping () -> Void) {
+        self.init(image: Image(systemName: symbol), title: title, action: action)
+    }
 
     var body: some View {
         Button(action: action) {
             HStack(spacing: 16) {
-                Image(systemName: symbol)
+                image
                     .font(.title3)
                     .foregroundStyle(.primary)
                     .frame(width: 28)
