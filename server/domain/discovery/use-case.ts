@@ -771,7 +771,7 @@ const authorRowsOf = async (
     )
     const quiet = !releases.next && releases.recent.length === 0
     if (quiet && awaited.length === 0 && sagas.length === 0) return []
-    return [{ ...releases, awaited, sagas, author }]
+    return [{ ...releases, awaited, sagas, author, language: watchedAuthor.language }]
   })
   // An author held only in the other format is on the shelf for what the
   // reader awaits of them in this one.

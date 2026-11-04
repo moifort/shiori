@@ -71,7 +71,7 @@ final class NewsViewModel {
     init(client: NewsClient, caching: Bool = true) {
         self.client = client
         defaults = caching ? .standard : nil
-        cache = caching ? SnapshotCache<Snapshot>("news", version: 2) : nil
+        cache = caching ? SnapshotCache<Snapshot>("news", version: 3) : nil
         friendsSeenAt = defaults?.object(forKey: Self.friendsSeenKey) as? Date
         ringsSeenAt = friendsSeenAt
         if let snapshot = cache?.read() {

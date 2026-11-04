@@ -1,6 +1,6 @@
 import type { SharedFavorite } from '~/domain/analytics/types'
 import type { AuthorKey, PortraitUrl } from '~/domain/author/types'
-import type { BookFormat, CoverUrl, NarratorName } from '~/domain/book/types'
+import type { BookFormat, BookLanguage, CoverUrl, NarratorName } from '~/domain/book/types'
 import type { NarratorKey } from '~/domain/narrator/types'
 import type { ReleaseDate, SeriesName, VolumeNumber } from '~/domain/series/types'
 import type { AuthorName, BookTitle, StarRating, UserId } from '~/domain/shared/types'
@@ -61,6 +61,8 @@ export type UpcomingRelease = {
   sagaFavorite: boolean
   /** The narrator who lends their voice, on a recording they were found for. */
   narrator?: NarratorName
+  /** The edition's language, when the watch that announced it knows it. */
+  language?: BookLanguage
 }
 
 /** A narrator the reader follows lending their voice to a recording out
@@ -74,4 +76,6 @@ export type NarratorNews = {
   authors: AuthorName[]
   date: ReleaseDate
   coverUrl?: CoverUrl
+  /** The language the narrator recorded it in. */
+  language?: BookLanguage
 }

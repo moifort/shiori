@@ -62,6 +62,13 @@ enum ReleasedItem: Identifiable, Hashable, Sendable {
         }
     }
 
+    var language: BookLanguage? {
+        switch self {
+        case let .release(release, _): release.language
+        case let .narrator(news, _): news.language
+        }
+    }
+
     /// Why the reader is told of it, under its author; nil when the signature
     /// says it all.
     var subtitle: String? {
@@ -83,6 +90,7 @@ enum ReleasedItem: Identifiable, Hashable, Sendable {
         draft.format = format
         draft.media = format == .audiobook ? [] : [.print]
         draft.coverURL = cover.coverURL
+        draft.language = language
         return draft
     }
 }

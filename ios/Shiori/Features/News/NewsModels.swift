@@ -19,6 +19,8 @@ struct FeedEvent: Identifiable, Hashable, Codable, Sendable {
     let title: String
     let authors: [String]
     let format: BookFormat
+    /// The edition's language, tagged on the row when it is not the app's.
+    var language: BookLanguage?
     let coverURL: URL?
     /// Their stars, when they gave any.
     let rating: Double?
@@ -50,6 +52,8 @@ struct NarratorNews: Identifiable, Hashable, Codable, Sendable {
     let date: String
     let coverURL: URL?
     let format: BookFormat
+    /// The language the narrator recorded it in.
+    var language: BookLanguage?
 
     /// Where the feed files it: the first day the date can mean.
     func day(calendar: Calendar) -> Date? {
@@ -97,6 +101,8 @@ struct UpcomingRelease: Identifiable, Hashable, Codable, Sendable {
     let sagaFavorite: Bool
     /// The narrator who lends their voice, on a recording found for one.
     var narrator: String?
+    /// The edition's language, when the watch that announced it knows it.
+    var language: BookLanguage?
 
     var cover: Book {
         Book(

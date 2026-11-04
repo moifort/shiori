@@ -213,6 +213,9 @@ export type AuthorReleases = {
 
 export type AuthorDiscovery = AuthorReleases & {
   author: FollowedAuthor
+  /** The language the author's works were looked up in. Absent on a row held
+   *  only for what the reader awaits of them, which carries its own. */
+  language?: BookLanguage
   /** The sagas of theirs among the tab's rows, with a volume announced or
    *  just out: the Books shelf's volumes are their news too. */
   sagas: SagaDiscovery[]

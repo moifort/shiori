@@ -1,4 +1,4 @@
-import { BookFormatEnum } from '~/domain/book/infrastructure/graphql/enums'
+import { BookFormatEnum, BookLanguageEnum } from '~/domain/book/infrastructure/graphql/enums'
 import { FeedEventKindEnum, ReleaseSourceEnum } from '~/domain/news/infrastructure/graphql/enums'
 import type { FeedEvent, FeedPage, NarratorNews, UpcomingRelease } from '~/domain/news/types'
 import { builder } from '~/domain/shared/graphql/builder'
@@ -38,6 +38,12 @@ export const FeedEventType = builder.objectRef<FeedEvent>('FeedEvent').implement
     title: t.field({ type: 'BookTitle', resolve: (event) => event.book.title }),
     authors: t.field({ type: ['AuthorName'], resolve: (event) => event.book.authors }),
     format: t.field({ type: BookFormatEnum, resolve: (event) => event.book.format }),
+    language: t.field({
+      type: BookLanguageEnum,
+      nullable: true,
+      description: 'The language of the friend’s edition. Null when their record names none.',
+      resolve: (event) => event.book.language ?? null,
+    }),
     coverUrl: t.string({
       nullable: true,
       description: 'Their photo of the cover, else the publisher’s.',
@@ -159,6 +165,12 @@ export const UpcomingReleaseType = builder.objectRef<UpcomingRelease>('UpcomingR
       description: 'The narrator who lends their voice, on a recording found for one.',
       resolve: (release) => release.narrator ?? null,
     }),
+    language: t.field({
+      type: BookLanguageEnum,
+      nullable: true,
+      description: 'The edition’s language. Null when the watch that announced it names none.',
+      resolve: (release) => release.language ?? null,
+    }),
   }),
 })
 
@@ -180,6 +192,12 @@ export const NarratorNewsType = builder.objectRef<NarratorNews>('NarratorNews').
       type: 'CoverUrl',
       nullable: true,
       resolve: (news) => news.coverUrl ?? null,
+    }),
+    language: t.field({
+      type: BookLanguageEnum,
+      nullable: true,
+      description: 'The language the narrator recorded it in.',
+      resolve: (news) => news.language ?? null,
     }),
   }),
 })

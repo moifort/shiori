@@ -27,6 +27,7 @@ enum NewsAPI {
                 title: row.title,
                 authors: row.authors,
                 format: row.format.asDomain,
+                language: row.language?.asDomain,
                 coverURL: row.coverUrl.flatMap(URL.init(string:)),
                 rating: row.rating,
                 alsoStartedBy: row.alsoStartedBy,
@@ -54,7 +55,8 @@ enum NewsAPI {
                 authors: $0.authors,
                 date: $0.date,
                 coverURL: $0.coverUrl.flatMap(URL.init(string:)),
-                format: .audiobook
+                format: .audiobook,
+                language: $0.language?.asDomain
             )
         }
     }
@@ -106,7 +108,8 @@ enum NewsAPI {
             },
             sagaRating: row.sagaRating,
             sagaFavorite: row.sagaFavorite,
-            narrator: row.narrator
+            narrator: row.narrator,
+            language: row.language?.asDomain
         )
     }
 }

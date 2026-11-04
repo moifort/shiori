@@ -62,7 +62,7 @@ struct ReleasedRow: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
-            CoverTags(language: nil, isAudio: item.format == .audiobook, isFrosted: false)
+            CoverTags(language: item.language, isAudio: item.format == .audiobook, isFrosted: false)
         }
     }
 

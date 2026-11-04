@@ -20,7 +20,7 @@ extension FeedEvent {
         FeedEvent(
             id: "lea~finished~dune", kind: .finished, at: .now.addingTimeInterval(-3 * 86400),
             friendId: "lea", friendName: "Léa", avatarHero: .hermione, bookId: "dune", title: "Dune",
-            authors: ["Frank Herbert"], format: .book, coverURL: openLibraryCover("9780441013593"),
+            authors: ["Frank Herbert"], format: .book, language: .en, coverURL: openLibraryCover("9780441013593"),
             rating: 4, alsoStartedBy: 0, inLibrary: false
         ),
     ]
@@ -75,7 +75,8 @@ extension UpcomingRelease {
         UpcomingRelease(
             id: "saga~expanse~9", source: .saga, format: .book, title: "The Expanse, tome 9",
             authors: ["James S. A. Corey"], date: isoDay(daysAhead: -45), coverURL: openLibraryCover("9780316332941"),
-            seriesName: "The Expanse", volume: 9, author: nil, sagaRating: 4, sagaFavorite: false
+            seriesName: "The Expanse", volume: 9, author: nil, sagaRating: 4, sagaFavorite: false,
+            language: .en
         ),
     ]
 

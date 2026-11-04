@@ -125,6 +125,7 @@ const sagaRelease = (
   series: { name: series.name, volume: volume.number },
   ...(series.opinion?.rating ? { sagaRating: series.opinion.rating } : {}),
   sagaFavorite: series.opinion?.favorite === true,
+  ...(series.language ? { language: series.language } : {}),
 })
 
 /** A saga is one kind of object: one volume known as drawn tells for all, the
@@ -166,6 +167,7 @@ const authorRelease = (row: AuthorDiscovery, format: ReleaseFormat): UpcomingRel
             : {}),
           author,
           sagaFavorite: false,
+          ...(row.language ? { language: row.language } : {}),
         },
       ]
     : []
@@ -187,6 +189,7 @@ const awaitedRelease = (view: AwaitedEditionView, format: ReleaseFormat): Upcomi
     : {}),
   ...(view.source.series ? { series: view.source.series } : {}),
   sagaFavorite: false,
+  language: view.language,
 })
 
 /** What is announced across the release watches, one entry per story and
@@ -286,6 +289,7 @@ export const narratedWorksOf = (
           ...(work.coverUrl ? { coverUrl: work.coverUrl } : {}),
           narrator: watch.name,
           sagaFavorite: false,
+          language: watch.language,
         })
       else if (day >= since)
         recent.push({
@@ -296,6 +300,7 @@ export const narratedWorksOf = (
           authors: work.authors,
           date: work.date,
           ...(work.coverUrl ? { coverUrl: work.coverUrl } : {}),
+          language: watch.language,
         })
     }
   return { recent: recent.sort((a, b) => (a.date < b.date ? 1 : -1)), upcoming }

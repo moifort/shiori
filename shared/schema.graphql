@@ -1657,6 +1657,11 @@ type FeedEvent {
   inLibrary: Boolean!
   kind: FeedEventKind!
 
+  """
+  The language of the friend’s edition. Null when their record names none.
+  """
+  language: BookLanguage
+
   """Their stars, when they gave any."""
   rating: StarRating
   title: BookTitle!
@@ -3623,6 +3628,9 @@ type NarratorNews {
   """When it came out: `YYYY`, `YYYY-MM` or `YYYY-MM-DD`."""
   date: String!
   id: String!
+
+  """The language the narrator recorded it in."""
+  language: BookLanguage
   narrator: String!
   narratorKey: NarratorKey!
   title: BookTitle!
@@ -5206,6 +5214,11 @@ type UpcomingRelease {
   date: String
   format: BookFormat!
   id: String!
+
+  """
+  The edition’s language. Null when the watch that announced it names none.
+  """
+  language: BookLanguage
 
   """The narrator who lends their voice, on a recording found for one."""
   narrator: String

@@ -68,14 +68,15 @@ struct FeedEventRow: View {
         return sentence + Text(verbatim: " ") + Text(verbatim: UpcomingRelease.stars(rating)).font(.caption)
     }
 
-    /// "**L'Arabe du futur** · Riad Sattouf", AUDIO framed on a recording.
+    /// "**L'Arabe du futur** · Riad Sattouf", EN framed on a foreign edition,
+    /// AUDIO on a recording.
     private var bookLine: some View {
         HStack(spacing: 6) {
             (Text(event.title).fontWeight(.semibold).foregroundStyle(.primary)
                 + Text(verbatim: event.authors.first.map { " · \($0)" } ?? "").foregroundStyle(.secondary))
                 .font(.footnote)
                 .lineLimit(1)
-            CoverTags(language: nil, isAudio: event.format == .audiobook, isFrosted: false)
+            CoverTags(language: event.language, isAudio: event.format == .audiobook, isFrosted: false)
         }
     }
 
