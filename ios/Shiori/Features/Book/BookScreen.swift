@@ -20,7 +20,9 @@ struct BookScreen: View {
     @State private var showGenreEditor = false
     @State private var showSeriesJoin = false
     @State private var showRecommendation = false
-    @State private var showNote = false
+    /// The reader's comment being written in the field over the keyboard,
+    /// as Messages writes, rather than in a sheet over the page.
+    @State private var isComposingNote = false
     @State private var showCoverPicker = false
     @State private var showRatingPrompt = false
     @State private var showProgress = false
@@ -39,6 +41,9 @@ struct BookScreen: View {
     private func dismiss() { closing.close(dismissPresentation) }
 
     private let client: BookClient
+
+    /// The longest `ReadingNote` the server accepts.
+    static let noteMaxLength = 10_000
 
     init(
         bookId: String,
@@ -69,7 +74,7 @@ struct BookScreen: View {
                     onEdit: { showEditor = true },
                     onEditGenre: { showGenreEditor = true },
                     onEditRecommendation: { showRecommendation = true },
-                    onEditNote: { showNote = true },
+                    onEditNote: { isComposingNote = true },
                     onEditField: { editedField = $0 },
                     onOpenProgress: { showProgress = true },
                     // This volume as the page has it, its status just changed
@@ -85,8 +90,28 @@ struct BookScreen: View {
                     onStopAwaiting: { edition in Task { await viewModel.stopAwaiting(edition) } },
                     secondPage: showEditor && isSpread
                         ? AnyView(editor(book, onClose: { showEditor = false }))
-                        : nil
+                        : nil,
+                    isComposingNote: isComposingNote
                 )
+                .safeAreaInset(edge: .bottom) {
+                    if isComposingNote {
+                        MessageComposer(
+                            current: book.note,
+                            maxLength: Self.noteMaxLength,
+                            onCancel: { isComposingNote = false },
+                            onSend: { note in
+                                Task {
+                                    // A failure keeps the field and its words;
+                                    // the screen's alert says why.
+                                    if await viewModel.setNote(note) { isComposingNote = false }
+                                    if let book = viewModel.book { onChanged(book) }
+                                }
+                            }
+                        )
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                    }
+                }
+                .animation(.smooth, value: isComposingNote)
             } else if viewModel.isLoading {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -152,17 +177,6 @@ struct BookScreen: View {
             if let book = viewModel.book {
                 RecommendationSheet(current: book.recommendation) { recommendation in
                     let saved = await viewModel.setRecommendation(recommendation)
-                    if let book = viewModel.book { onChanged(book) }
-                    guard !saved else { return nil }
-                    defer { viewModel.dismissError() }
-                    return viewModel.errorMessage ?? String(localized: "Une erreur est survenue")
-                }
-            }
-        }
-        .sheet(isPresented: $showNote) {
-            if let book = viewModel.book {
-                NoteSheet(current: book.note) { note in
-                    let saved = await viewModel.setNote(note)
                     if let book = viewModel.book { onChanged(book) }
                     guard !saved else { return nil }
                     defer { viewModel.dismissError() }

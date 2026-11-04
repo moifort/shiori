@@ -41,6 +41,10 @@ struct BookPage: View {
     /// — the edit form — drawn there in place of the reading, beside the book
     /// it changes rather than over it.
     var secondPage: AnyView? = nil
+    /// Whether the reader is writing their comment in the field over the
+    /// keyboard: the page shows where it will stand, and their bubble fades
+    /// while its words are in the field.
+    var isComposingNote = false
 
     /// The comment the page holding it scrolls to: the reader's remarks on
     /// "Remarques" once written, rather than the form again, and a comment
@@ -48,10 +52,13 @@ struct BookPage: View {
     @State private var commentRequest = CommentRequest(anchor: Self.noteAnchor)
     private static let noteAnchor = "book-note-anchor"
     private static let recommendationAnchor = "book-recommendation-anchor"
+    /// The foot of the page, where a first comment will stand.
+    private static let endAnchor = "book-page-end"
 
     private struct CommentRequest: Equatable {
         let anchor: String
         var count = 0
+        var unitPoint: UnitPoint = .center
     }
 
     var body: some View {
@@ -94,6 +101,18 @@ struct BookPage: View {
         .onChange(of: book.recommendation) { old, new in
             if new != nil, new != old { revealComment(Self.recommendationAnchor) }
         }
+        // Once the keyboard is up, the comment sits right over the field.
+        .onChange(of: isComposingNote) {
+            guard isComposingNote else { return }
+            Task {
+                try? await Task.sleep(for: .milliseconds(350))
+                commentRequest = CommentRequest(
+                    anchor: book.note == nil ? Self.endAnchor : Self.noteAnchor,
+                    count: commentRequest.count + 1,
+                    unitPoint: .bottom
+                )
+            }
+        }
     }
 
     /// Scrolls to a comment after its sheet has slid away, so the reader sees
@@ -111,12 +130,15 @@ struct BookPage: View {
         let content = content()
         return ScrollViewReader { proxy in
             ScrollView {
-                VStack(spacing: 0) { content }
+                VStack(spacing: 0) {
+                    content
+                    Color.clear.frame(height: 1).id(Self.endAnchor)
+                }
             }
             // Only the page that holds the comments has their anchors: on an
             // unfolded Duo the other one ignores the request.
             .onChange(of: commentRequest) {
-                withAnimation(.smooth) { proxy.scrollTo(commentRequest.anchor, anchor: .center) }
+                withAnimation(.smooth) { proxy.scrollTo(commentRequest.anchor, anchor: commentRequest.unitPoint) }
             }
         }
         .background(Color(.systemGroupedBackground))
@@ -275,7 +297,7 @@ struct BookPage: View {
 
     /// The reader's remarks on the book, whatever its status: what they
     /// thought of it so far, or once read. Once written, the button takes the
-    /// reader to them; their bubble opens the form.
+    /// reader to them; their bubble opens the field over the keyboard.
     private var noteButton: some View {
         Button {
             if book.note == nil {
@@ -436,6 +458,8 @@ struct BookPage: View {
                     if let note = book.note {
                         MessageBubble(text: note, isMine: true, action: onEditNote)
                             .copyable(note)
+                            .opacity(isComposingNote ? 0.4 : 1)
+                            .animation(.smooth, value: isComposingNote)
                             .id(Self.noteAnchor)
                             .accessibilityIdentifier("book-note")
                     }
@@ -570,7 +594,7 @@ extension Book {
 }
 
 private extension BookPage {
-    init(previewing book: Book, volumes: [SeriesStripItem] = []) {
+    init(previewing book: Book, volumes: [SeriesStripItem] = [], isComposingNote: Bool = false) {
         self.init(
             book: book,
             isSaving: false,
@@ -582,7 +606,8 @@ private extension BookPage {
             onEditRecommendation: {},
             onEditNote: {},
             onEditField: { _ in },
-            seriesVolumes: volumes
+            seriesVolumes: volumes,
+            isComposingNote: isComposingNote
         )
     }
 }
@@ -590,6 +615,15 @@ private extension BookPage {
 #Preview("Reading") {
     NavigationStack {
         BookPage(previewing: .preview)
+    }
+}
+
+#Preview("Writing a comment") {
+    NavigationStack {
+        BookPage(previewing: .preview, isComposingNote: true)
+            .safeAreaInset(edge: .bottom) {
+                MessageComposer(current: Book.preview.note, onCancel: {}, onSend: { _ in })
+            }
     }
 }
 
