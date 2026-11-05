@@ -117,7 +117,12 @@ struct JournalSectionTests {
 }
 
 struct SeriesShelfTests {
-    private func saga(owned: [ReadingStatus], published: Int, announced: Bool = false) -> FollowedSeries {
+    private func saga(
+        owned: [ReadingStatus],
+        published: Int,
+        announced: Bool = false,
+        state: SeriesState = .inProgress
+    ) -> FollowedSeries {
         let books = owned.enumerated().map { index, status in
             var book = Book(id: "v\(index + 1)", title: "Tome \(index + 1)", authors: [], status: status)
             book.series = SeriesMembership(id: "s", name: "Série", volume: index + 1, kind: .main)
@@ -132,7 +137,7 @@ struct SeriesShelfTests {
         }
         return FollowedSeries(
             seriesId: "s", name: "Série", author: nil, language: nil,
-            state: .inProgress, genre: nil, ownedCount: books.count, volumes: books, strip: strip
+            state: state, genre: nil, ownedCount: books.count, volumes: books, strip: strip
         )
     }
 
@@ -165,6 +170,17 @@ struct SeriesShelfTests {
         #expect(offered.contains(.inProgress))
         #expect(offered.contains(.incomplete))
         #expect(!offered.contains(.complete))
+        #expect(!offered.contains(.notFollowed))
+    }
+
+    @Test func aSagaSetAsideIsUnderNonSuiviesAlone() {
+        let aside = saga(owned: [.read], published: 3, state: .unfollowed)
+        let followed = saga(owned: [.read], published: 3)
+
+        #expect(SeriesShelfFilter.notFollowed.keeps(aside))
+        #expect(!SeriesShelfFilter.notFollowed.keeps(followed))
+        #expect(!SeriesShelfFilter.all.keeps(aside))
+        #expect(SeriesShelfFilter.offered(for: [followed, aside]).last == .notFollowed)
     }
 }
 

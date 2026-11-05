@@ -4,21 +4,21 @@ import SwiftUI
 enum SeriesShelfAction {
     case openSeries(FollowedSeries)
     case selectFilter(SeriesShelfFilter)
-    case openSetAside
+    case follow(FollowedSeries)
     case refresh
 }
 
 /// The series, as the TV app sets out the shows one follows: "À suivre", the
 /// next volume of each saga in progress; "Prochaines sorties", the volumes
 /// announced, each drawn as the saga screen's release card, in a rail; then every saga as the home's cards, two by
-/// row, under their filters — and, at the foot, the sagas no longer followed.
+/// row, under their filters, the last of which, "Non suivies", lists the
+/// sagas no longer followed, greyed.
 struct SeriesShelfPage: View {
     let upNext: [(series: FollowedSeries, volume: FollowedSeries.NextVolume)]
     let releases: [(series: FollowedSeries, volume: DiscoveredVolume)]
     let filters: [SeriesShelfFilter]
     let filter: SeriesShelfFilter
     let series: [FollowedSeries]
-    let hasSetAside: Bool
     let isLoading: Bool
     let errorMessage: String?
     let onAction: (SeriesShelfAction) -> Void
@@ -44,9 +44,6 @@ struct SeriesShelfPage: View {
                     }
                 }
                 allSeries
-                if hasSetAside {
-                    setAsideRow
-                }
             }
             .padding(.vertical, 8)
             .padding(.bottom, 24)
@@ -145,12 +142,28 @@ struct SeriesShelfPage: View {
                         allLabel: nil
                     ) { id in onAction(.selectFilter(id.flatMap(SeriesShelfFilter.init(rawValue:)) ?? .all)) }
                 }
+                if filter == .notFollowed {
+                    Text("Ces séries ne sont plus suivies : elles n'apparaissent ni dans « À suivre », ni dans les sorties, ni sur l'accueil. Leurs tomes restent dans la bibliothèque.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 20)
+                }
                 LazyVGrid(columns: columns, spacing: 13) {
                     ForEach(series) { saga in
-                        SeriesShowCard(series: saga.progress, tag: tag(of: saga), isCompact: true) {
+                        SeriesShowCard(
+                            series: saga.progress,
+                            tag: tag(of: saga),
+                            isCompact: true,
+                            isSetAside: saga.isSetAside
+                        ) {
                             onAction(.openSeries(saga))
                         }
                         .frame(height: 128)
+                        .contextMenu {
+                            if saga.isSetAside {
+                                Button("Suivre à nouveau", systemImage: "bell") { onAction(.follow(saga)) }
+                            }
+                        }
                         .transition(.homeCard)
                     }
                 }
@@ -168,27 +181,6 @@ struct SeriesShelfPage: View {
             : String(localized: "\(missing) tomes à ajouter")
     }
 
-    private var setAsideRow: some View {
-        Button { onAction(.openSetAside) } label: {
-            HStack(spacing: 12) {
-                Image(systemName: "eye.slash")
-                    .foregroundStyle(.secondary)
-                    .frame(width: 26)
-                Text("Non suivies")
-                    .foregroundStyle(.primary)
-                Spacer(minLength: 8)
-                Image(systemName: "chevron.right")
-                    .font(.footnote.weight(.semibold))
-                    .foregroundStyle(.tertiary)
-            }
-            .padding(.horizontal, 16)
-            .frame(height: 50)
-            .background(Color(.secondarySystemGroupedBackground), in: .rect(cornerRadius: 18))
-            .contentShape(.rect)
-        }
-        .buttonStyle(.plain)
-        .padding(.horizontal, 20)
-    }
 }
 
 #if DEBUG
@@ -201,7 +193,6 @@ struct SeriesShelfPage: View {
             filters: SeriesShelfFilter.offered(for: series),
             filter: .all,
             series: series,
-            hasSetAside: true,
             isLoading: false,
             errorMessage: nil
         ) { _ in }

@@ -112,7 +112,7 @@ extension FollowedSeries {
 
 /// The filters of "Toutes les séries", each offered only when it holds a saga.
 enum SeriesShelfFilter: String, CaseIterable, Identifiable, Sendable {
-    case all, inProgress, incomplete, loved, notStarted, complete
+    case all, inProgress, incomplete, loved, notStarted, complete, notFollowed
 
     var id: String { rawValue }
 
@@ -124,12 +124,14 @@ enum SeriesShelfFilter: String, CaseIterable, Identifiable, Sendable {
         case .loved: String(localized: "Préférées")
         case .notStarted: String(localized: "À commencer")
         case .complete: String(localized: "Terminées")
+        case .notFollowed: String(localized: "Non suivies")
         }
     }
 
-    /// Whether the filter keeps the saga. A saga set aside is under none of
-    /// them: it has its own page.
+    /// Whether the filter keeps the saga. A saga set aside is under
+    /// "Non suivies" alone, the last pill.
     func keeps(_ series: FollowedSeries) -> Bool {
+        if self == .notFollowed { return series.isSetAside }
         guard !series.isSetAside else { return false }
         switch self {
         case .all: return true
@@ -138,6 +140,7 @@ enum SeriesShelfFilter: String, CaseIterable, Identifiable, Sendable {
         case .loved: return series.opinion?.favorite == true || (series.opinion?.rating ?? 0) >= 4
         case .notStarted: return series.state == .notStarted
         case .complete: return series.state == .complete
+        case .notFollowed: return true
         }
     }
 
