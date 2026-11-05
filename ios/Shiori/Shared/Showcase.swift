@@ -928,6 +928,9 @@ enum Showcase {
 
     // MARK: - Authors
 
+    /// The authors the reader hearted on their pages: all that "Préférés" lists.
+    static let heartedAuthors: Set<String> = ["Matt Dinniman", "Patrick Rothfuss", "Andy Weir"]
+
     /// The Authors shelf, derived from the books as the server derives it: one
     /// row per author, their books newest shelved first.
     static func authorsPage(limit: Int, after: String?, order: AuthorListOrder) -> CursorPage<FollowedAuthor> {
@@ -947,13 +950,14 @@ enum Showcase {
                 favoriteCount: theirs.filter(\.favorite).count,
                 averageRating: ratings.isEmpty ? nil : Double(ratings.reduce(0, +)) / Double(ratings.count),
                 shelvedAt: theirs.compactMap(\.shelvedAt).max(),
-                books: theirs
+                books: theirs,
+                favorite: heartedAuthors.contains(name)
             )
         }
         let sorted = switch order {
         case .recent: authors.sorted { ($0.shelvedAt ?? .distantPast) > ($1.shelvedAt ?? .distantPast) }
         case .name: authors.sorted { ($0.indexLetter, $0.name) < ($1.indexLetter, $1.name) }
-        case .loved: authors.sorted { ($0.favoriteCount, $0.bookCount) > ($1.favoriteCount, $1.bookCount) }
+        case .loved: authors.filter(\.favorite).sorted { ($0.favoriteCount, $0.bookCount) > ($1.favoriteCount, $1.bookCount) }
         }
         return CursorPage(sorted, limit: limit, after: after, cursor: \.id)
     }
@@ -996,13 +1000,15 @@ enum Showcase {
                 key: narratorKey(name),
                 name: name,
                 shelvedAt: theirs.compactMap(\.shelvedAt).max(),
-                books: theirs
+                books: theirs,
+                // The reader hearted the voices of the recordings they hearted.
+                favorite: theirs.contains(where: \.favorite)
             )
         }
         let sorted = switch order {
         case .recent: narrators.sorted { ($0.shelvedAt ?? .distantPast) > ($1.shelvedAt ?? .distantPast) }
         case .name: narrators.sorted { $0.name < $1.name }
-        case .loved: narrators.sorted { $0.books.count > $1.books.count }
+        case .loved: narrators.filter(\.favorite).sorted { $0.books.count > $1.books.count }
         }
         return CursorPage(sorted, limit: limit, after: after, cursor: \.id)
     }

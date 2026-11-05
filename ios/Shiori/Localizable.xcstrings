@@ -3065,6 +3065,22 @@
         }
       }
     },
+    "Aucun auteur préféré" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No favorite authors"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun auteur préféré"
+          }
+        }
+      }
+    },
     "Aucun de vos livres audio n'est lu par %@." : {
       "localizations" : {
         "en" : {
@@ -3317,6 +3333,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Aucun livre trouvé, essayez un autre titre"
+          }
+        }
+      }
+    },
+    "Aucun narrateur préféré" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No favorite narrators"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun narrateur préféré"
           }
         }
       }
@@ -15153,6 +15185,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Touchez l'étoile sélectionnée pour retirer la note."
+          }
+        }
+      }
+    },
+    "Touchez le cœur sur la page d’un auteur pour le retrouver ici." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap the heart on an author’s page to find them here."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Touchez le cœur sur la page d’un auteur pour le retrouver ici."
+          }
+        }
+      }
+    },
+    "Touchez le cœur sur la page d’un narrateur pour le retrouver ici." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap the heart on a narrator’s page to find them here."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Touchez le cœur sur la page d’un narrateur pour le retrouver ici."
           }
         }
       }

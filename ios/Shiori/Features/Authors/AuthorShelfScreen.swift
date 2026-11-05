@@ -21,6 +21,8 @@ struct AuthorShelfScreen: View {
         PersonShelfPage(
             title: "Auteurs",
             failureTitle: "Auteurs indisponibles",
+            noFavoritesTitle: "Aucun auteur préféré",
+            noFavoritesMessage: "Touchez le cœur sur la page d’un auteur pour le retrouver ici.",
             rowIdentifier: "author-row",
             people: viewModel.people,
             order: viewModel.order,

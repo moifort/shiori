@@ -46,7 +46,7 @@ export const FollowedAuthorType = builder.objectRef<FollowedAuthor>('FollowedAut
     favorite: t.boolean({
       description:
         'The reader hearted the author themself, apart from the hearts their books and ' +
-        'sagas carry: the heart of the author page. Those authors lead `LOVED`.',
+        'sagas carry: the heart of the author page. `LOVED` lists those authors alone.',
       resolve: (author) => author.favorite === true,
     }),
     bookCount: t.field({
@@ -279,9 +279,8 @@ export const AuthorOrderEnum = builder.enumType('AuthorOrder', {
     LOVED: {
       value: 'loved',
       description:
-        'The ones the reader loves first: those they hearted themself, then most ' +
-        'hearts on their books and sagas, then the best mean of stars, then the most ' +
-        'books, then by name.',
+        'Only the ones the reader hearted themself, the most hearts on their books ' +
+        'and sagas first, then the best mean of stars, then the most books, then by name.',
     },
     NAME: {
       value: 'name',

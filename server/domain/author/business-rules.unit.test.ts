@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import {
   filingNameOf,
+  heartedOnly,
   inActivityOrder,
   inAuthorOrder,
   indexLetterOf,
@@ -150,6 +151,17 @@ describe('inAuthorOrder', () => {
     const kept = matchingAuthorFilter([author('Loved', 2), author('Read', 0)], { favorite: true })
 
     expect(kept.map((entry) => String(entry.name))).toEqual(['Loved'])
+  })
+})
+
+describe('heartedOnly', () => {
+  test('keeps the people the reader hearted themself, in the order given', () => {
+    const kept = heartedOnly(
+      [{ key: 'zed' }, { key: 'read' }, { key: 'alpha' }],
+      new Set(['alpha', 'zed']),
+    )
+
+    expect(kept.map((entry) => entry.key)).toEqual(['zed', 'alpha'])
   })
 })
 

@@ -417,12 +417,11 @@ describe('the narrators list', () => {
     ])
   })
 
-  test('puts the narrators the reader hearted first', async () => {
+  test('lists only the narrators the reader hearted under LOVED', async () => {
     await execute('mutation { setNarratorFavorite(key: "frederic-kneip", favorite: true) }')
     const loved = await narratorsPage('order: LOVED')
     expect(loved.items.map((narrator) => [narrator.key, narrator.favorite])).toEqual([
       ['frederic-kneip', true],
-      ['bernard-gabay', false],
     ])
   })
 

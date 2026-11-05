@@ -1,7 +1,7 @@
 import { match } from 'ts-pattern'
 import { AdminCommand } from '~/domain/admin/command'
 import {
-  heartedFirst,
+  heartedOnly,
   inActivityOrder,
   inAuthorOrder,
   inNameOrder,
@@ -39,8 +39,8 @@ import { createLogger } from '~/system/logger'
 
 const logger = createLogger('author')
 
-/** How the Authors tab lists its rows: the loved ones first, by name, or the
- *  ones read most recently first. */
+/** How the Authors tab lists its rows: the hearted ones alone, by name, or
+ *  the ones read most recently first. */
 export type AuthorOrder = 'loved' | 'name' | 'recent'
 
 /** An author of the Authors tab: what the library says, and the portrait once
@@ -68,7 +68,7 @@ export type AuthorPage = {
 }
 
 export namespace AuthorUseCase {
-  /** One page of the Authors tab, the authors the reader loves first — or in
+  /** One page of the Authors tab, the authors the reader hearted alone — or in
    *  alphabetical order, as a contact list, when `order` is `name`, or the most
    *  recently shelved first when it is `recent` — narrowed
    *  to those with a heart when `favorite` is set.
@@ -90,7 +90,7 @@ export namespace AuthorUseCase {
     const ranked = match(order)
       .with('name', () => inNameOrder(matching))
       .with('recent', () => inActivityOrder(matching))
-      .with('loved', () => heartedFirst(inAuthorOrder(matching), hearted))
+      .with('loved', () => heartedOnly(inAuthorOrder(matching), hearted))
       .exhaustive()
     const { items, ...rest } = pageAfter(ranked, page, (author) => author.key)
     return { items: await withPortraits(items, userId), ...rest }

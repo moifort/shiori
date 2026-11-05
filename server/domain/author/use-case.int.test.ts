@@ -119,7 +119,7 @@ describe('a page of the Authors tab', () => {
     const docReads = fake.docReads
     const queryReads = fake.queryReads
 
-    const { items, hasMore } = await AuthorUseCase.followedPage(reader, { limit: 5 }, {})
+    const { items, hasMore } = await AuthorUseCase.followedPage(reader, { limit: 5 }, {}, 'recent')
 
     expect(items).toHaveLength(5)
     expect(hasMore).toBe(true)
@@ -127,19 +127,40 @@ describe('a page of the Authors tab', () => {
     expect(fake.queryReads - queryReads).toBe(3)
   })
 
-  test('puts the authors the reader hearted first, and says so', async () => {
-    await writeSagas(3)
+  test('lists only the authors the reader hearted themself under Préférés', async () => {
+    await writeSagas(4)
     await SeriesOpinionCommand.setFavorite(reader, SagaKey('saga-2'), true)
+    await AuthorCommand.setFavorite(reader, authorKeyOf(AuthorName('Author 0')), true)
+    await AuthorCommand.setFavorite(reader, authorKeyOf(AuthorName('Author 3')), true)
+    startFakeRequest()
+
+    const { items, hasMore } = await AuthorUseCase.followedPage(reader, { limit: 10 }, {}, 'loved')
+
+    expect(items.map((author) => String(author.name))).toEqual(['Author 0', 'Author 3'])
+    expect(items.every((author) => author.favorite)).toBe(true)
+    expect(hasMore).toBe(false)
+  })
+
+  test('lists nobody under Préférés before the reader hearts an author', async () => {
+    await writeSagas(3)
+    await SeriesOpinionCommand.setFavorite(reader, SagaKey('saga-1'), true)
+
+    const { items, hasMore } = await AuthorUseCase.followedPage(reader, { limit: 10 }, {}, 'loved')
+
+    expect(items).toEqual([])
+    expect(hasMore).toBe(false)
+  })
+
+  test('says which authors the reader hearted', async () => {
+    await writeSagas(2)
     await AuthorCommand.setFavorite(reader, authorKeyOf(AuthorName('Author 0')), true)
     startFakeRequest()
 
-    const { items } = await AuthorUseCase.followedPage(reader, { limit: 10 }, {})
+    const { items } = await AuthorUseCase.followedPage(reader, { limit: 10 }, {}, 'name')
     const favorites = await AuthorUseCase.followedPage(reader, { limit: 10 }, { favorite: true })
 
-    expect(items.map((author) => String(author.name))).toEqual(['Author 0', 'Author 2', 'Author 1'])
-    expect(items[0]?.favorite).toBe(true)
-    expect(items[1]?.favorite).toBe(false)
-    expect(favorites.items).toHaveLength(2)
+    expect(items.map((author) => author.favorite)).toEqual([true, false])
+    expect(favorites.items).toHaveLength(1)
   })
 
   test('takes the heart back', async () => {
@@ -149,16 +170,18 @@ describe('a page of the Authors tab', () => {
     await AuthorCommand.setFavorite(reader, key, false)
     startFakeRequest()
 
-    const { items } = await AuthorUseCase.followedPage(reader, { limit: 10 }, {})
+    const { items } = await AuthorUseCase.followedPage(reader, { limit: 10 }, {}, 'name')
 
     expect(items[0]?.favorite).toBe(false)
   })
 
-  test('puts the author the reader loves first', async () => {
+  test('ranks the hearted authors by the hearts their books carry', async () => {
     await writeSagas(3)
     await SeriesOpinionCommand.setFavorite(reader, SagaKey('saga-2'), true)
+    for (const index of [0, 1, 2])
+      await AuthorCommand.setFavorite(reader, authorKeyOf(AuthorName(`Author ${index}`)), true)
 
-    const { items } = await AuthorUseCase.followedPage(reader, { limit: 10 }, {})
+    const { items } = await AuthorUseCase.followedPage(reader, { limit: 10 }, {}, 'loved')
 
     expect(items[0]?.name).toBe(AuthorName('Author 2'))
     expect(Number(items[0]?.favoriteCount)).toBe(1)
@@ -172,6 +195,7 @@ describe('a page of the Authors tab', () => {
       reader,
       { limit: 10 },
       { favorite: true },
+      'recent',
     )
 
     expect(items.map((author) => String(author.name))).toEqual(['Author 1'])
@@ -181,12 +205,13 @@ describe('a page of the Authors tab', () => {
   test('answers the same rows as a whole list, cut to the page', async () => {
     await writeSagas(4)
 
-    const whole = await AuthorUseCase.followedPage(reader, { limit: 10 }, {})
-    const first = await AuthorUseCase.followedPage(reader, { limit: 2 }, {})
+    const whole = await AuthorUseCase.followedPage(reader, { limit: 10 }, {}, 'recent')
+    const first = await AuthorUseCase.followedPage(reader, { limit: 2 }, {}, 'recent')
     const second = await AuthorUseCase.followedPage(
       reader,
       { limit: 2, after: first.endCursor ?? undefined },
       {},
+      'recent',
     )
 
     expect(second.items.map((author) => author.key)).toEqual(

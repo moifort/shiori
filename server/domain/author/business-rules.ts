@@ -236,15 +236,12 @@ export const matchingAuthorFilter = <Author extends { key: AuthorKey; favoriteCo
     ? authors.filter((author) => author.favoriteCount > 0 || hearted.has(author.key))
     : [...authors]
 
-/** The authors the reader hearted themself lead, in the order given: what
- *  "Préférés" lists first, before the hearts their books carry. */
-export const heartedFirst = <Key extends string, Author extends { key: Key }>(
+/** The people the reader hearted themself, in the order given: all that
+ *  "Préférés" lists. The hearts their books and sagas carry only rank them. */
+export const heartedOnly = <Key extends string, Author extends { key: Key }>(
   authors: readonly Author[],
   hearted: ReadonlySet<Key>,
-): Author[] => [
-  ...authors.filter((author) => hearted.has(author.key)),
-  ...authors.filter((author) => !hearted.has(author.key)),
-]
+): Author[] => authors.filter((author) => hearted.has(author.key))
 
 const newestShelvedFirst = <Book extends Omit<AuthoredBook, 'authors'>>(
   books: readonly Book[],

@@ -22,6 +22,8 @@ struct NarratorShelfScreen: View {
         PersonShelfPage(
             title: "Narrateurs",
             failureTitle: "Narrateurs indisponibles",
+            noFavoritesTitle: "Aucun narrateur préféré",
+            noFavoritesMessage: "Touchez le cœur sur la page d’un narrateur pour le retrouver ici.",
             rowIdentifier: "narrator-row",
             people: viewModel.people,
             order: viewModel.order,

@@ -416,7 +416,7 @@ How `myAuthorsPage` lists the authors, and `myNarratorsPage` the narrators, coun
 """
 enum AuthorOrder {
   """
-  The ones the reader loves first: those they hearted themself, then most hearts on their books and sagas, then the best mean of stars, then the most books, then by name.
+  Only the ones the reader hearted themself, the most hearts on their books and sagas first, then the best mean of stars, then the most books, then by name.
   """
   LOVED
 
@@ -1707,7 +1707,7 @@ type FollowedAuthor {
   books: [Book!]!
 
   """
-  The reader hearted the author themself, apart from the hearts their books and sagas carry: the heart of the author page. Those authors lead `LOVED`.
+  The reader hearted the author themself, apart from the hearts their books and sagas carry: the heart of the author page. `LOVED` lists those authors alone.
   """
   favorite: Boolean!
 

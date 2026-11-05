@@ -14,11 +14,14 @@ enum PersonShelfAction<Person: ShelvedPerson> {
 /// The authors, or the narrators, as the TV app lists a filmography: a row per
 /// person — the portrait and the name, opening their page — then their books
 /// as posters, the line in each cover as everywhere: the stars, "Ajouté", the
-/// bookmark. Ordered by the pills: the preferred first, the most recent, or A
+/// bookmark. Ordered by the pills: the hearted alone, the most recent, or A
 /// to Z.
 struct PersonShelfPage<Person: ShelvedPerson>: View {
     let title: LocalizedStringKey
     let failureTitle: LocalizedStringKey
+    /// What "Préférés" says while the reader has hearted nobody.
+    let noFavoritesTitle: LocalizedStringKey
+    let noFavoritesMessage: LocalizedStringKey
     /// What UI tests find each row by.
     let rowIdentifier: String
     let people: [Person]
@@ -66,6 +69,8 @@ struct PersonShelfPage<Person: ShelvedPerson>: View {
                     ProgressView()
                 } else if let errorMessage {
                     EmptyState.failure(failureTitle, message: errorMessage) { onAction(.refresh) }
+                } else if order == .loved {
+                    EmptyState(systemImage: "heart", title: noFavoritesTitle, message: noFavoritesMessage)
                 }
             }
         }
@@ -116,9 +121,29 @@ extension AuthorListOrder {
         PersonShelfPage(
             title: "Auteurs",
             failureTitle: "Auteurs indisponibles",
+            noFavoritesTitle: "Aucun auteur préféré",
+            noFavoritesMessage: "Touchez le cœur sur la page d’un auteur pour le retrouver ici.",
             rowIdentifier: "author-row",
             people: Showcase.authorsPage(limit: 8, after: nil, order: .recent).items,
             order: .recent,
+            isLoading: false,
+            errorMessage: nil,
+            hasMore: false,
+            loadMoreFailed: false
+        ) { _ in }
+    }
+}
+
+#Preview("Favourites, none yet") {
+    NavigationStack {
+        PersonShelfPage<FollowedAuthor>(
+            title: "Auteurs",
+            failureTitle: "Auteurs indisponibles",
+            noFavoritesTitle: "Aucun auteur préféré",
+            noFavoritesMessage: "Touchez le cœur sur la page d’un auteur pour le retrouver ici.",
+            rowIdentifier: "author-row",
+            people: [],
+            order: .loved,
             isLoading: false,
             errorMessage: nil,
             hasMore: false,
@@ -132,6 +157,8 @@ extension AuthorListOrder {
         PersonShelfPage(
             title: "Narrateurs",
             failureTitle: "Narrateurs indisponibles",
+            noFavoritesTitle: "Aucun narrateur préféré",
+            noFavoritesMessage: "Touchez le cœur sur la page d’un narrateur pour le retrouver ici.",
             rowIdentifier: "narrator-row",
             people: Showcase.narratorsPage(limit: 8, after: nil, order: .recent).items,
             order: .recent,

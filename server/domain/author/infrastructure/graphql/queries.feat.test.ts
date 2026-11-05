@@ -62,7 +62,7 @@ type AuthorRow = {
   books: { title: string; status: string }[]
 }
 
-const myAuthorsPage = async (args = 'limit: 40') => {
+const myAuthorsPage = async (args = 'limit: 40, order: RECENT') => {
   const result = await execute(
     `{ myAuthorsPage(${args}) { hasMore endCursor items {
       key name bookCount seriesCount favoriteCount averageRating
@@ -120,7 +120,7 @@ describe('the Authors tab', () => {
     ])
   })
 
-  test('ranks the authors with a heart first, and keeps only them in the favourites', async () => {
+  test('keeps only the authors with a heart in the favourites', async () => {
     const loved = await addBook('title: "Earthsea", authors: ["Ursula K. Le Guin"]')
     await addBook('title: "Mistborn", authors: ["Brandon Sanderson"]')
     const hearted = await execute(
@@ -128,14 +128,20 @@ describe('the Authors tab', () => {
     )
     expect(hearted.errors).toBeUndefined()
 
-    const all = await myAuthorsPage()
-    expect(all.items.map((author) => author.name)).toEqual([
-      'Ursula K. Le Guin',
-      'Brandon Sanderson',
-    ])
-
-    const favorites = await myAuthorsPage('favorite: true')
+    const favorites = await myAuthorsPage('favorite: true, order: RECENT')
     expect(favorites.items.map((author) => author.name)).toEqual(['Ursula K. Le Guin'])
+  })
+
+  test('lists only the authors the reader hearted themself under LOVED', async () => {
+    const loved = await addBook('title: "Earthsea", authors: ["Ursula K. Le Guin"]')
+    await addBook('title: "Mistborn", authors: ["Brandon Sanderson"]')
+    await addBook('title: "Dune", authors: ["Frank Herbert"]')
+    await execute(`mutation { setBookFavorite(id: "${loved}", favorite: true) { id } }`)
+    const key = (await myAuthorsPage()).items.find((a) => a.name === 'Frank Herbert')?.key
+    await execute(`mutation { setAuthorFavorite(key: "${key}", favorite: true) }`)
+
+    const favorites = await myAuthorsPage('order: LOVED')
+    expect(favorites.items.map((author) => author.name)).toEqual(['Frank Herbert'])
   })
 
   test('lists the authors by surname, each with the letter it is filed under', async () => {
@@ -186,8 +192,8 @@ describe('the Authors tab', () => {
     for (const name of ['A', 'B', 'C']) await addBook(`title: "${name}", authors: ["${name}"]`)
 
     const whole = await myAuthorsPage()
-    const first = await myAuthorsPage('limit: 2')
-    const second = await myAuthorsPage(`limit: 2, after: "${first.endCursor}"`)
+    const first = await myAuthorsPage('limit: 2, order: RECENT')
+    const second = await myAuthorsPage(`limit: 2, after: "${first.endCursor}", order: RECENT`)
 
     expect(first).toMatchObject({ hasMore: true, items: whole.items.slice(0, 2) })
     expect(second).toMatchObject({ hasMore: false, items: whole.items.slice(2) })
@@ -197,7 +203,7 @@ describe('the Authors tab', () => {
     for (const name of ['A', 'B', 'C']) await addBook(`title: "${name}", authors: ["${name}"]`)
 
     const whole = await myAuthorsPage()
-    const second = await myAuthorsPage('limit: 2, offset: 2')
+    const second = await myAuthorsPage('limit: 2, offset: 2, order: RECENT')
 
     expect(second).toMatchObject({ hasMore: false, items: whole.items.slice(2) })
   })
@@ -287,9 +293,9 @@ describe('an author’s page', () => {
       },
     ]
 
-    const before = await execute('{ myAuthorsPage { items { portraitUrl } } }')
+    const before = await execute('{ myAuthorsPage(order: RECENT) { items { portraitUrl } } }')
     await execute('{ authorPage(key: "frank-herbert") { author { name } } }')
-    const after = await execute('{ myAuthorsPage { items { portraitUrl } } }')
+    const after = await execute('{ myAuthorsPage(order: RECENT) { items { portraitUrl } } }')
 
     expect(before.data).toEqual({ myAuthorsPage: { items: [{ portraitUrl: null }] } })
     expect(after.data).toEqual({

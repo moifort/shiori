@@ -1,7 +1,7 @@
 import { match } from 'ts-pattern'
 import { AdminCommand } from '~/domain/admin/command'
 import {
-  heartedFirst,
+  heartedOnly,
   inActivityOrder,
   inAuthorOrder,
   inNameOrder,
@@ -64,7 +64,7 @@ export type NarratorPage = {
 
 export namespace NarratorUseCase {
   /** One page of the Library's narrators list, ordered as the authors' is:
-   *  the loved ones first, by name, or the one shelved last first. Which
+   *  the hearted ones alone, by name, or the one shelved last first. Which
    *  narrators a page holds depends on the books and the opinions alone; only
    *  the page's own entries are read, in one getAll, for their faces. */
   export const followedPage = async (
@@ -81,7 +81,7 @@ export namespace NarratorUseCase {
     const ranked = match(order)
       .with('name', () => inNameOrder(shelved))
       .with('recent', () => inActivityOrder(shelved))
-      .with('loved', () => heartedFirst(inAuthorOrder(shelved), hearted))
+      .with('loved', () => heartedOnly(inAuthorOrder(shelved), hearted))
       .exhaustive()
     const { items, ...rest } = pageAfter(ranked, page, (narrator) => narrator.key)
     return { items: await withFaces(items, hearted), ...rest }
