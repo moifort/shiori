@@ -7,6 +7,7 @@ import type { AwaitedEditionView } from '~/domain/awaited-edition/types'
 import { BookQuery } from '~/domain/book/query'
 import type { Book, BookLanguage } from '~/domain/book/types'
 import {
+  type Announcement,
   AUTHOR_RECENT_DAYS,
   alertOf,
   announcedEditionOf,
@@ -19,7 +20,9 @@ import {
   dueAuthorWatches,
   dueNarratorWatches,
   dueWatches,
+  dueWorkAlertsOf,
   formatOf,
+  inAnnouncementOrder,
   inDiscoveryOrder,
   isDescriptionFresh,
   isDiscoverable,
@@ -31,22 +34,27 @@ import {
   mergedVolumes,
   mergedWorks,
   missingVolumesOf,
+  NO_WORK_CONTEXT,
   narratorWatchKeyOf,
   newAnnouncementsOf,
+  newWorkAnnouncementsOf,
   onAudible,
   readerIsStale,
   recentReleasesOf,
   releaseDescriptionKeyOf,
   releaseDescriptionOf,
   releaseEditionOf,
+  releaseFormatOf,
   releasesOf,
   sagasByAuthorOf,
   sagasToListOnAudible,
   todayOf,
+  type WorkContext,
   watchedAuthorsOf,
   watchedNarratorsOf,
   watchedSagasOf,
   watchKeyOf,
+  workAlertOf,
   yearVolumesOf,
 } from '~/domain/discovery/business-rules'
 import { DiscoveryCommand } from '~/domain/discovery/command'
@@ -550,28 +558,54 @@ export namespace DiscoveryUseCase {
   }
 
   /** The morning pass: every volume that came out, pushed to the readers who
-   *  follow its saga, once. No model and no library is read; the hourly pass
-   *  already knows the dates and the sagas. */
+   *  follow its saga, and every work out by an author they hold or read by a
+   *  narrator they follow, once. No model is called; the hourly pass already
+   *  knows the dates. A reader's books are read only when one of their
+   *  authors or narrators has something out. */
   export const sendAlertsToEveryReader = async (now = new Date()): Promise<{ readers: number }> => {
     const readers = await DiscoveryQuery.allReaders()
-    const watches = await DiscoveryQuery.watches(
-      readers.flatMap((reader) => reader.sagas.map(watchKeyOf)),
-    )
+    const [watches, authorWatches, narratorWatches] = await everyWatchOf(readers)
+    const today = todayOf(now)
     let reached = 0
     for (const reader of readers) {
-      const due = dueAlertsOf(reader, watches, todayOf(now))
-      if (due.length === 0) continue
       try {
-        // A volume no device heard stays due: the reader may register one
+        const volumes = dueAlertsOf(reader, watches, today)
+        const unread = dueWorkAlertsOf(
+          reader,
+          authorWatches,
+          narratorWatches,
+          NO_WORK_CONTEXT,
+          today,
+        )
+        const works =
+          unread.length === 0
+            ? []
+            : dueWorkAlertsOf(
+                reader,
+                authorWatches,
+                narratorWatches,
+                await workContextOf(reader.userId, now),
+                today,
+              )
+        const due = [
+          ...volumes.map((alert) => ({ key: alert.key, ...alertOf(alert, reader.language) })),
+          ...works.map((release) => ({
+            key: release.key,
+            ...workAlertOf(release, reader.language),
+          })),
+        ]
+        if (due.length === 0) continue
+        // A release no device heard stays due: the reader may register one
         // before its two weeks are up.
         const settled: string[] = []
-        for (const alert of due) {
+        for (const { key, title, body } of due) {
           const delivery = await NotificationUseCase.notify(reader.userId, {
             kind: 'translation',
-            ...alertOf(alert, reader.language),
+            title,
+            body,
             link: 'shiori://discover',
           })
-          if (delivery !== 'undelivered') settled.push(alert.key)
+          if (delivery !== 'undelivered') settled.push(key)
         }
         if (settled.length === 0) continue
         await DiscoveryCommand.markNotified(reader, settled)
@@ -589,15 +623,32 @@ export namespace DiscoveryUseCase {
    *  read to know what they hold. A reader with nothing new hears nothing. */
   export const sendDigestToEveryReader = async (now = new Date()): Promise<{ readers: number }> => {
     const readers = await DiscoveryQuery.allReaders()
-    const watches = await DiscoveryQuery.watches(
-      readers.flatMap((reader) => reader.sagas.map(watchKeyOf)),
-    )
+    const [watches, authorWatches, narratorWatches] = await everyWatchOf(readers)
     const today = todayOf(now)
     let reached = 0
     for (const reader of readers) {
       try {
-        const followed = await withRequestCacheScope(() => SeriesUseCase.followed(reader.userId))
-        const due = newAnnouncementsOf(followed, watches, new Set(reader.announced ?? []), today)
+        const announced = new Set(reader.announced ?? [])
+        const [followed, context, editions] = await withRequestCacheScope(() =>
+          Promise.all([
+            SeriesUseCase.followed(reader.userId),
+            workContextOf(reader.userId, now),
+            announcedEditionsOf(reader.userId, now),
+          ]),
+        )
+        const due = inAnnouncementOrder([
+          ...newAnnouncementsOf(followed, watches, announced, today),
+          ...newWorkAnnouncementsOf(
+            reader,
+            authorWatches,
+            narratorWatches,
+            context,
+            announced,
+            today,
+          ),
+          ...editions.filter(({ key }) => !announced.has(key)),
+        ])
+        // Nothing new this week: no notification.
         if (due.length === 0) continue
         const delivery = await NotificationUseCase.notify(reader.userId, {
           kind: 'digest',
@@ -620,6 +671,59 @@ export namespace DiscoveryUseCase {
 }
 
 // MARK: - The parts of a pass
+
+/** Every watch the readers' alerts and digests are worked out from: their
+ *  sagas', their authors' and their narrators', each in one getAll. */
+const everyWatchOf = (readers: readonly DiscoveryReader[]) =>
+  Promise.all([
+    DiscoveryQuery.watches(readers.flatMap((reader) => reader.sagas.map(watchKeyOf))),
+    DiscoveryQuery.authorWatches(
+      readers.flatMap((reader) => (reader.authors ?? []).map(authorWatchKeyOf)),
+    ),
+    DiscoveryQuery.narratorWatches(
+      readers.flatMap((reader) => (reader.narrators ?? []).map(narratorWatchKeyOf)),
+    ),
+  ])
+
+/** What a reader holds and awaits, folded, to tell a work they care for from
+ *  one named by another alert. */
+const workContextOf = async (userId: UserId, now: Date): Promise<WorkContext> => {
+  const [books, awaited] = await Promise.all([BookQuery.all(userId), awaitedOf(userId, now)])
+  const titlesIn = (format: ReleaseFormat) =>
+    new Set(
+      books
+        .filter((book) => releaseFormatOf(book.format) === format)
+        .map((book) => slugify(book.title)),
+    )
+  return {
+    sagaNames: new Set(books.flatMap((book) => (book.series ? [slugify(book.series.name)] : []))),
+    heldTitles: { book: titlesIn('book'), audiobook: titlesIn('audiobook') },
+    awaitedTitles: new Set(
+      awaited.flatMap((view) => [
+        slugify(view.source.title),
+        ...(view.found ? [slugify(view.found.title)] : []),
+      ]),
+    ),
+  }
+}
+
+/** The editions the reader awaits that are announced for a known date and
+ *  still to come, as the digest names them. */
+const announcedEditionsOf = async (userId: UserId, now: Date): Promise<Announcement[]> =>
+  (await awaitedOf(userId, now)).flatMap((view): Announcement[] => {
+    const date = view.found?.date
+    if (view.state !== 'announced' || !date) return []
+    const author = view.source.authors[0]
+    return [
+      {
+        key: `edition--${view.watchKey}`,
+        date,
+        kind: 'edition',
+        title: view.found?.title ?? view.source.title,
+        ...(author ? { author } : {}),
+      },
+    ]
+  })
 
 /** What the tab is worked out from: the reader's sagas and authors, and which
  *  of them are watched. */
@@ -647,7 +751,10 @@ const libraryOf = async (userId: UserId, known?: DiscoveryReader): Promise<Libra
     followed,
     shelved,
     sagas: watchedSagasOf(followed),
-    authors: watchedAuthorsOf(shelved.filter(isFollowedAuthor)),
+    authors: watchedAuthorsOf(
+      shelved.filter(isFollowedAuthor),
+      new Set(followed.filter(({ state }) => state === 'unfollowed').map(({ id }) => id)),
+    ),
     narrators: watchedNarratorsOf(shelvedNarratorsOf(books, opinions), heartedNarrators),
     known: reader,
   }

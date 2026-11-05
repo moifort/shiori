@@ -1,7 +1,7 @@
 import { mainLanguageOf } from '~/domain/author/business-rules'
 import { authorKeyOf } from '~/domain/author/primitives'
 import type { AuthorKey, ShelvedAuthor } from '~/domain/author/types'
-import type { Book, BookFormat, BookLanguage } from '~/domain/book/types'
+import type { Book, BookFormat, BookLanguage, NarratorName } from '~/domain/book/types'
 import type { NarratorKey, ShelvedNarrator } from '~/domain/narrator/types'
 import type { ScanResult } from '~/domain/scan/types'
 import {
@@ -11,10 +11,11 @@ import {
   withReleases,
 } from '~/domain/series/business-rules'
 import { isAudioSeries } from '~/domain/series/primitives'
-import type { SagaKey, Series, VolumeNumber } from '~/domain/series/types'
+import type { SagaKey, Series, SeriesId, VolumeNumber } from '~/domain/series/types'
 import type { FollowedSeries } from '~/domain/series/use-case'
 import { type Language, SUPPORTED_LANGUAGES } from '~/domain/shared/language'
 import { Year } from '~/domain/shared/primitives'
+import type { AuthorName, BookTitle } from '~/domain/shared/types'
 import { slugify } from '~/utils/slug'
 import type {
   AnnouncedVolumePreview,
@@ -227,7 +228,9 @@ export const authorWatchKeyOf = ({
 export const releaseFormatOf = (format: BookFormat | undefined): ReleaseFormat =>
   format === 'audiobook' ? 'audiobook' : 'book'
 
-type HeldBook = Pick<Book, 'format' | 'language' | 'status'>
+type HeldBook = Pick<Book, 'format' | 'language' | 'status'> & {
+  series?: Pick<NonNullable<Book['series']>, 'id'>
+}
 
 /** Whether the reader cares for an author enough to have the web searched for
  *  them: two of their books held, or one rated four stars or more, or loved.
@@ -245,17 +248,25 @@ export const isFollowedAuthor = (
 
 /** Every author the reader holds, in each format they hold them in and the
  *  language most of those books are in: an author only heard is watched among
- *  the recordings, one only read among the books, one both in both. Not an
- *  author whose every book the reader gave up on, nor a format whose books
+ *  the recordings, one only read among the books, one both in both. The
+ *  language is counted on the books the reader still cares for: a book given
+ *  up on, or a volume of a saga edition set aside, says nothing of the
+ *  language they read the author in now — a reader who stopped following
+ *  Dungeon Crawler Carl in English is watched for Matt Dinniman in French. Not
+ *  an author whose every book the reader gave up on, nor a format whose books
  *  record no language — it cannot be searched for. */
 export const watchedAuthorsOf = (
   authors: readonly Pick<ShelvedAuthor<HeldBook>, 'key' | 'name' | 'books'>[],
+  setAside: ReadonlySet<SeriesId> = new Set(),
 ): WatchedAuthor[] =>
   authors.flatMap((author) => {
     if (author.books.every((book) => book.status === 'dropped')) return []
+    const kept = author.books.filter(
+      (book) => book.status !== 'dropped' && !(book.series && setAside.has(book.series.id)),
+    )
     return (['book', 'audiobook'] as const).flatMap((format): WatchedAuthor[] => {
       const language = mainLanguageOf(
-        author.books.filter((book) => releaseFormatOf(book.format) === format),
+        kept.filter((book) => releaseFormatOf(book.format) === format),
       )
       return language ? [{ authorKey: author.key, name: author.name, format, language }] : []
     })
@@ -714,12 +725,136 @@ export const alertOf = (
   }
 }
 
+/** What tells a work the reader cares for from one already named elsewhere:
+ *  the sagas they hold anything of — whose volumes the saga alerts and the
+ *  Séries shelf watch, or which they set aside — the titles they hold in each
+ *  format, and the editions they await, alerted on their own. Folded names
+ *  and titles throughout. */
+export type WorkContext = {
+  sagaNames: ReadonlySet<string>
+  heldTitles: Readonly<Record<ReleaseFormat, ReadonlySet<string>>>
+  awaitedTitles: ReadonlySet<string>
+}
+
+export const NO_WORK_CONTEXT: WorkContext = {
+  sagaNames: new Set(),
+  heldTitles: { book: new Set(), audiobook: new Set() },
+  awaitedTitles: new Set(),
+}
+
+/** A work out or announced outside the sagas: by an author the reader holds,
+ *  or read by a narrator they follow. */
+export type WorkRelease = {
+  /** `{watchKey}--{folded title}`: named once. */
+  key: string
+  work: FoundWork
+  format: ReleaseFormat
+} & ({ by: 'author'; author: AuthorName } | { by: 'narrator'; narrator: NarratorName })
+
+/** Every work the reader's authors and narrators have, each once — the
+ *  author's watch first, so a recording found by both is the author's — left
+ *  out a volume of a saga they hold and an edition they await, named by their
+ *  own alerts. */
+const worksOf = (
+  reader: DiscoveryReader,
+  authorWatches: ReadonlyMap<string, AuthorWatch>,
+  narratorWatches: ReadonlyMap<string, NarratorWatch>,
+  context: WorkContext,
+): WorkRelease[] => {
+  const seen = new Set<string>()
+  const fresh = (work: FoundWork, format: ReleaseFormat) => {
+    const title = `${format}--${slugify(work.title)}`
+    if (seen.has(title)) return false
+    if (work.seriesName && context.sagaNames.has(slugify(work.seriesName))) return false
+    if (context.awaitedTitles.has(slugify(work.title))) return false
+    seen.add(title)
+    return true
+  }
+  const byAuthors = (reader.authors ?? []).flatMap((author): WorkRelease[] => {
+    const watch = authorWatches.get(authorWatchKeyOf(author))
+    if (!watch) return []
+    return watch.works
+      .filter((work) => fresh(work, watch.format))
+      .map((work) => ({
+        key: `${watch.key}--${slugify(work.title)}`,
+        work,
+        format: watch.format,
+        by: 'author' as const,
+        author: watch.name,
+      }))
+  })
+  const byNarrators = (reader.narrators ?? []).flatMap((narrator): WorkRelease[] => {
+    const watch = narratorWatches.get(narratorWatchKeyOf(narrator))
+    if (!watch) return []
+    return watch.works
+      .filter((work) => fresh(work, 'audiobook'))
+      .map((work) => ({
+        key: `${watch.key}--${slugify(work.title)}`,
+        work,
+        format: 'audiobook' as const,
+        by: 'narrator' as const,
+        narrator: watch.name,
+      }))
+  })
+  return [...byAuthors, ...byNarrators]
+}
+
+/** The works whose alert is due for a reader: out on a known day, today or in
+ *  the last two weeks, by an author they hold or read by a narrator they
+ *  follow, not pushed yet. A work they already hold is still news the day it
+ *  comes out: a pre-order lands on the shelf that morning. */
+export const dueWorkAlertsOf = (
+  reader: DiscoveryReader,
+  authorWatches: ReadonlyMap<string, AuthorWatch>,
+  narratorWatches: ReadonlyMap<string, NarratorWatch>,
+  context: WorkContext,
+  today: string,
+): WorkRelease[] => {
+  const since = dayMinus(today, ALERT_GRACE_DAYS)
+  const notified = new Set(reader.notified)
+  return worksOf(reader, authorWatches, narratorWatches, context).filter(
+    ({ key, work: { date } }) =>
+      date !== undefined &&
+      date.length === 10 &&
+      date <= today &&
+      date >= since &&
+      !notified.has(key),
+  )
+}
+
+/** The alert for a work out, in the reader's language. */
+export const workAlertOf = (
+  release: WorkRelease,
+  language: Language,
+): { title: string; body: string } => {
+  const audio = release.format === 'audiobook'
+  const { title } = release.work
+  if (language === 'fr') {
+    const by = release.by === 'author' ? ` de ${release.author}` : `, lu par ${release.narrator},`
+    return {
+      title: 'Nouvelle sortie',
+      body: `« ${title} »${by} est sorti${audio ? ' en livre audio' : ''}.`,
+    }
+  }
+  const by = release.by === 'author' ? ` by ${release.author}` : `, read by ${release.narrator},`
+  return { title: 'Out now', body: `"${title}"${by} is out${audio ? ' as an audiobook' : ''}.` }
+}
+
 // MARK: - The weekly digest
 
 /** How many volumes the digest names before it counts the rest. */
 const DIGEST_NAMED = 4
 
-export type Announcement = { key: string; watch: SagaWatch; volume: FoundVolume }
+/** One release named in the weekly digest: a volume of a saga the reader
+ *  follows, a work by an author they hold or read by a narrator they follow,
+ *  or an edition they await. */
+export type Announcement = { key: string; date: ReleaseDate } & (
+  | { kind: 'volume'; watch: SagaWatch; volume: FoundVolume }
+  | { kind: 'work'; release: WorkRelease }
+  | { kind: 'edition'; title: BookTitle; author?: AuthorName }
+)
+
+export type VolumeAnnouncement = Extract<Announcement, { kind: 'volume' }>
 
 /** The volumes to name in a reader's weekly digest: announced for a known
  *  date — a day, a month or a year — by the rule Découvrir lists them by, of a
@@ -730,9 +865,9 @@ export const newAnnouncementsOf = (
   watches: ReadonlyMap<string, SagaWatch>,
   announced: ReadonlySet<string>,
   today: string,
-): Announcement[] =>
+): VolumeAnnouncement[] =>
   followed
-    .flatMap((series): Announcement[] => {
+    .flatMap((series): VolumeAnnouncement[] => {
       if (!isDiscoverable(series)) return []
       const watch = watches.get(watchKeyOf({ seriesId: series.saga, language: series.language }))
       if (!watch) return []
@@ -740,15 +875,14 @@ export const newAnnouncementsOf = (
       return candidatesOf(watch, series.catalogue, today).flatMap(({ volume, upcoming }) => {
         const key = `${watch.key}--${volume.number}`
         return upcoming && volume.date && !held.has(volume.number) && !announced.has(key)
-          ? [{ key, watch, volume }]
+          ? [{ key, date: volume.date, kind: 'volume' as const, watch, volume }]
           : []
       })
     })
     .sort(
       (left, right) =>
-        lastDayOf(left.volume.date as ReleaseDate).localeCompare(
-          lastDayOf(right.volume.date as ReleaseDate),
-        ) || left.volume.number - right.volume.number,
+        lastDayOf(left.date).localeCompare(lastDayOf(right.date)) ||
+        left.volume.number - right.volume.number,
     )
 
 const MONTHS: Record<Language, readonly string[]> = {
@@ -798,19 +932,62 @@ const whenOf = (date: ReleaseDate, language: Language, today: string): string =>
   return monthName ? `in ${monthName}${thisYear ? '' : ` ${year}`}` : `in ${year}`
 }
 
-/** The weekly digest: one notification naming the volumes newly announced,
- *  one per line, the soonest first, and counting the ones past the fourth. */
+/** The works newly announced for the weekly digest: dated — a day, a month
+ *  or a year — and still to come, by an author the reader holds or read by a
+ *  narrator they follow, not held in that format, never named before. */
+export const newWorkAnnouncementsOf = (
+  reader: DiscoveryReader,
+  authorWatches: ReadonlyMap<string, AuthorWatch>,
+  narratorWatches: ReadonlyMap<string, NarratorWatch>,
+  context: WorkContext,
+  announced: ReadonlySet<string>,
+  today: string,
+): Announcement[] =>
+  worksOf(reader, authorWatches, narratorWatches, context).flatMap((release): Announcement[] => {
+    const { date, title } = release.work
+    if (!date || !isUpcoming(date, today) || announced.has(release.key)) return []
+    if (context.heldTitles[release.format].has(slugify(title))) return []
+    return [{ key: release.key, date, kind: 'work', release }]
+  })
+
+/** The digest's order: the soonest first, a month or a year counted from its
+ *  last day, as Découvrir lists them. */
+export const inAnnouncementOrder = (announcements: readonly Announcement[]): Announcement[] =>
+  [...announcements].sort((left, right) =>
+    lastDayOf(left.date).localeCompare(lastDayOf(right.date)),
+  )
+
+/** One digest line, without its date. */
+const announcedOf = (announcement: Announcement, language: Language): string => {
+  const fr = language === 'fr'
+  switch (announcement.kind) {
+    case 'volume':
+      return `${announcement.watch.name}, ${fr ? 'tome' : 'book'} ${announcement.volume.number}`
+    case 'edition':
+      return announcement.author
+        ? `${announcement.title}, ${announcement.author}`
+        : announcement.title
+    case 'work': {
+      const { release } = announcement
+      if (release.by === 'author') return `${release.work.title}, ${release.author}`
+      return `${release.work.title}, ${fr ? 'lu par' : 'read by'} ${release.narrator}`
+    }
+  }
+}
+
+/** The weekly digest: one notification naming the releases newly announced,
+ *  one per line, in the order given, and counting the ones past the fourth. */
 export const digestOf = (
   announcements: readonly Announcement[],
   language: Language,
   today: string,
 ): { title: string; body: string } => {
-  const named = announcements.slice(0, DIGEST_NAMED).map(({ watch, volume }) => {
-    const when = whenOf(volume.date as ReleaseDate, language, today)
-    return language === 'fr'
-      ? `${watch.name}, tome ${volume.number}, ${when}`
-      : `${watch.name}, book ${volume.number}, ${when}`
-  })
+  const named = announcements
+    .slice(0, DIGEST_NAMED)
+    .map(
+      (announcement) =>
+        `${announcedOf(announcement, language)}, ${whenOf(announcement.date, language, today)}`,
+    )
   const rest = announcements.length - named.length
   if (rest > 0)
     named.push(language === 'fr' ? `et ${rest} autre${rest > 1 ? 's' : ''}` : `and ${rest} more`)

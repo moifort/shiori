@@ -838,7 +838,7 @@ describe('the saga screen', () => {
 })
 
 describe('the morning alerts', () => {
-  test('push a volume out today to the readers who follow its saga, once', async () => {
+  test('push a volume out today to the readers who follow its saga, and a work of an author they hold, once', async () => {
     await stock(reader)
     await NotificationCommand.registerDevice(reader, DeviceToken('ab'.repeat(32)), 'production')
     await DiscoveryUseCase.watchDueSagas(now)
@@ -846,7 +846,10 @@ describe('the morning alerts', () => {
     await DiscoveryUseCase.sendAlertsToEveryReader(now)
     await DiscoveryUseCase.sendAlertsToEveryReader(now)
 
-    expect(pushed).toEqual(['« Carl 3 », tome 3 de Dungeon Crawler Carl, est sorti.'])
+    expect(pushed).toEqual([
+      '« Carl 3 », tome 3 de Dungeon Crawler Carl, est sorti.',
+      '« La Tour 1 » de Matt Dinniman est sorti.',
+    ])
   })
 
   test('never push a volume due while the reader had the alert off', async () => {
@@ -870,12 +873,27 @@ describe('the morning alerts', () => {
     await NotificationCommand.registerDevice(reader, DeviceToken('ab'.repeat(32)), 'production')
     await DiscoveryUseCase.sendAlertsToEveryReader(now)
 
-    expect(pushed).toEqual(['« Carl 3 », tome 3 de Dungeon Crawler Carl, est sorti.'])
+    expect(pushed).toEqual([
+      '« Carl 3 », tome 3 de Dungeon Crawler Carl, est sorti.',
+      '« La Tour 1 » de Matt Dinniman est sorti.',
+    ])
   })
 })
 
 describe('the Sunday digest', () => {
-  test('names the volumes newly announced in one notification, each once', async () => {
+  test('sends nothing when nothing new was announced', async () => {
+    await stock(reader)
+    await NotificationCommand.registerDevice(reader, DeviceToken('ab'.repeat(32)), 'production')
+    await DiscoveryUseCase.watchDueSagas(now)
+    await DiscoveryUseCase.sendDigestToEveryReader(now)
+    pushed.length = 0
+
+    await DiscoveryUseCase.sendDigestToEveryReader(now)
+
+    expect(pushed).toEqual([])
+  })
+
+  test('names the volumes and works newly announced in one notification, each once', async () => {
     await stock(reader)
     await NotificationCommand.registerDevice(reader, DeviceToken('ab'.repeat(32)), 'production')
     await DiscoveryUseCase.watchDueSagas(now)
@@ -883,7 +901,9 @@ describe('the Sunday digest', () => {
     await DiscoveryUseCase.sendDigestToEveryReader(now)
     await DiscoveryUseCase.sendDigestToEveryReader(now)
 
-    expect(pushed).toEqual(['Dungeon Crawler Carl, tome 4, le 12 février 2027'])
+    expect(pushed).toEqual([
+      'Kaiju Battlefield Surgeon, Matt Dinniman, le 3 novembre\nDungeon Crawler Carl, tome 4, le 12 février 2027',
+    ])
   })
 
   test('keeps a volume for the Sunday a device can hear it', async () => {
@@ -894,6 +914,8 @@ describe('the Sunday digest', () => {
     await NotificationCommand.registerDevice(reader, DeviceToken('ab'.repeat(32)), 'production')
     await DiscoveryUseCase.sendDigestToEveryReader(now)
 
-    expect(pushed).toEqual(['Dungeon Crawler Carl, tome 4, le 12 février 2027'])
+    expect(pushed).toEqual([
+      'Kaiju Battlefield Surgeon, Matt Dinniman, le 3 novembre\nDungeon Crawler Carl, tome 4, le 12 février 2027',
+    ])
   })
 })

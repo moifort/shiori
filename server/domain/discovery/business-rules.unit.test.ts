@@ -23,6 +23,8 @@ import {
   digestOf,
   dueAlertsOf,
   dueWatches,
+  dueWorkAlertsOf,
+  inAnnouncementOrder,
   inDiscoveryOrder,
   isFollowedAuthor,
   lastVolumeOutOf,
@@ -32,15 +34,19 @@ import {
   mergedVolumes,
   mergedWorks,
   missingVolumesOf,
+  NO_WORK_CONTEXT,
   newAnnouncementsOf,
+  newWorkAnnouncementsOf,
   onAudible,
   recentReleasesOf,
   releasesOf,
   sagasByAuthorOf,
   sagasToListOnAudible,
+  type WorkContext,
   watchedAuthorsOf,
   watchedSagasOf,
   watchIsStale,
+  workAlertOf,
   yearVolumesOf,
 } from './business-rules'
 import { releasesPrompt } from './prompts'
@@ -49,6 +55,7 @@ import type {
   DiscoveryReader,
   FoundVolume,
   FoundWork,
+  NarratorWatch,
   SagaDiscovery,
   SagaWatch,
   WatchedSaga,
@@ -729,7 +736,9 @@ describe('an announced volume’s page', () => {
 })
 
 describe('the authors watched for a reader', () => {
-  const author = (...books: Pick<Book, 'format' | 'language' | 'status'>[]) => ({
+  const author = (
+    ...books: (Pick<Book, 'format' | 'language' | 'status'> & { series?: { id: never } })[]
+  ) => ({
     key: 'matt-dinniman' as AuthorKey,
     name: 'Matt Dinniman' as AuthorName,
     books,
@@ -775,6 +784,25 @@ describe('the authors watched for a reader', () => {
 
     expect(watchedAuthorsOf([dropped])).toEqual([])
     expect(watchedAuthorsOf([halfway])).toHaveLength(1)
+  })
+
+  test('are watched in the language of the books still cared for', () => {
+    const english = 'dungeon-crawler-carl--matt-dinniman--audio~en' as never
+    const watched = watchedAuthorsOf(
+      [
+        author(
+          { format: 'audiobook', language: 'en', status: 'read', series: { id: english } },
+          { format: 'audiobook', language: 'en', status: 'read', series: { id: english } },
+          { format: 'audiobook', language: 'en', status: 'read', series: { id: english } },
+          { format: 'audiobook', language: 'en', status: 'dropped' },
+          { format: 'audiobook', language: 'fr', status: 'read' },
+          { format: 'audiobook', language: 'fr', status: 'to-read' },
+        ),
+      ],
+      new Set([english]),
+    )
+
+    expect(watched.map(({ language }) => language)).toEqual(['fr'])
   })
 
   test('are not watched in a format whose books record no language', () => {
@@ -1056,5 +1084,152 @@ describe('the sagas an Audible sync lists', () => {
     }
 
     expect(sagasToListOnAudible([heard('silent'), read], new Map())).toEqual([])
+  })
+})
+
+describe('the releases of authors and narrators', () => {
+  const today = '2026-11-05'
+  const work = (title: string, date?: string, extra: Partial<FoundWork> = {}): FoundWork => ({
+    title: title as BookTitle,
+    ...(date ? { date: date as ReleaseDate } : {}),
+    ...extra,
+  })
+  const reader: DiscoveryReader = {
+    userId: 'bob' as UserId,
+    language: 'fr',
+    sagas: [],
+    syncedAt: new Date(),
+    notified: ['matt-dinniman--audiobook--fr--already-pushed'],
+    authors: [
+      {
+        authorKey: 'matt-dinniman' as AuthorKey,
+        name: 'Matt Dinniman' as AuthorName,
+        format: 'audiobook',
+        language: 'fr',
+      },
+    ],
+    narrators: [
+      { narratorKey: 'leo-audouy' as never, name: 'Léo Audouy' as never, language: 'fr' },
+    ],
+  }
+  const authorWatches = new Map<string, AuthorWatch>([
+    [
+      'matt-dinniman--audiobook--fr',
+      {
+        key: 'matt-dinniman--audiobook--fr',
+        authorKey: 'matt-dinniman' as AuthorKey,
+        name: 'Matt Dinniman' as AuthorName,
+        format: 'audiobook',
+        language: 'fr',
+        checkedAt: new Date('2026-11-01'),
+        works: [
+          work('Opération Bounce House', '2026-11-05'),
+          work('Already pushed', '2026-11-01'),
+          work('Long ago', '2026-09-01'),
+          work('Tome 7', '2026-11-04', { seriesName: 'Dungeon Crawler Carl' as SeriesName }),
+          work('Awaited', '2026-11-03'),
+          work('Coming', '2026-12'),
+          work('Undated'),
+        ],
+      },
+    ],
+  ])
+  const narratorWatches = new Map<string, NarratorWatch>([
+    [
+      'leo-audouy--fr',
+      {
+        key: 'leo-audouy--fr',
+        narratorKey: 'leo-audouy' as never,
+        name: 'Léo Audouy' as never,
+        language: 'fr',
+        checkedAt: new Date('2026-11-01'),
+        works: [
+          { ...work('Opération Bounce House', '2026-11-05'), authors: [] },
+          { ...work('Le Vol', '2026-11-02'), authors: [] },
+          { ...work('La Voix', '2027-01-15'), authors: [] },
+        ],
+      },
+    ],
+  ])
+  const context: WorkContext = {
+    sagaNames: new Set([slugify('Dungeon Crawler Carl')]),
+    heldTitles: { book: new Set(), audiobook: new Set([slugify('Coming')]) },
+    awaitedTitles: new Set([slugify('Awaited')]),
+  }
+
+  test('alert once a work out in the last two weeks, a saga volume or an awaited one left to their own alerts', () => {
+    const due = dueWorkAlertsOf(reader, authorWatches, narratorWatches, context, today)
+    expect(due.map(({ key }) => key)).toEqual([
+      'matt-dinniman--audiobook--fr--operation-bounce-house',
+      'leo-audouy--fr--vol',
+    ])
+  })
+
+  test('without the reader’s books, every work out is a candidate', () => {
+    const due = dueWorkAlertsOf(reader, authorWatches, narratorWatches, NO_WORK_CONTEXT, today)
+    expect(due.map(({ work }) => work.title)).toContain('Tome 7' as BookTitle)
+  })
+
+  test('name the work and who wrote or read it', () => {
+    const [byAuthor, byNarrator] = dueWorkAlertsOf(
+      reader,
+      authorWatches,
+      narratorWatches,
+      context,
+      today,
+    )
+    expect(workAlertOf(byAuthor, 'fr')).toEqual({
+      title: 'Nouvelle sortie',
+      body: '« Opération Bounce House » de Matt Dinniman est sorti en livre audio.',
+    })
+    expect(workAlertOf(byNarrator, 'en').body).toBe(
+      '"Le Vol", read by Léo Audouy, is out as an audiobook.',
+    )
+  })
+
+  test('the digest names the works newly dated and still to come, not held, once', () => {
+    const due = newWorkAnnouncementsOf(
+      reader,
+      authorWatches,
+      narratorWatches,
+      context,
+      new Set(['leo-audouy--fr--voix-x']),
+      today,
+    )
+    expect(due.map(({ key }) => key)).toEqual(['leo-audouy--fr--voix'])
+    expect(
+      newWorkAnnouncementsOf(
+        reader,
+        authorWatches,
+        narratorWatches,
+        context,
+        new Set(['leo-audouy--fr--voix']),
+        today,
+      ),
+    ).toEqual([])
+  })
+
+  test('the digest mixes volumes, works and editions, the soonest first', () => {
+    const works = newWorkAnnouncementsOf(
+      reader,
+      authorWatches,
+      narratorWatches,
+      NO_WORK_CONTEXT,
+      new Set(),
+      today,
+    )
+    const edition = {
+      key: 'edition--blindsight',
+      date: '2026-12-10' as ReleaseDate,
+      kind: 'edition' as const,
+      title: 'Vision aveugle' as BookTitle,
+      author: 'Peter Watts' as AuthorName,
+    }
+    const { body } = digestOf(inAnnouncementOrder([edition, ...works]), 'fr', today)
+    expect(body.split('\n')).toEqual([
+      'Vision aveugle, Peter Watts, le 10 décembre',
+      'Coming, Matt Dinniman, en décembre',
+      'La Voix, lu par Léo Audouy, le 15 janvier 2027',
+    ])
   })
 })
