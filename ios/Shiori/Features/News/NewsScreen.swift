@@ -39,6 +39,7 @@ struct NewsScreen: View {
                 awaited: viewModel.awaited,
                 calendar: viewModel.calendar(),
                 format: viewModel.format,
+                pillFormats: viewModel.pillFormats(),
                 stories: viewModel.stories,
                 friendId: viewModel.friendId,
                 hasMore: viewModel.hasMore,

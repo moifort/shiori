@@ -83,14 +83,16 @@ struct NewsViewModelTests {
         #expect(viewModel.events.count == FeedEvent.previews.count)
     }
 
-    @Test func aFormatPillNarrowsTheCalendar() async {
+    @Test func aFormatPillNarrowsTheFeedButKeepsTheOtherPills() async {
         let viewModel = NewsViewModel(client: .preview, caching: false)
         await viewModel.load()
+        let pills = viewModel.pillFormats()
 
         viewModel.format = .manga
 
-        #expect(viewModel.shownReleases.allSatisfy { $0.format == .manga })
+        #expect(viewModel.feedSections().flatMap(\.items).allSatisfy { $0.format == .manga })
         #expect(viewModel.shownEvents.count == FeedEvent.previews.count)
+        #expect(viewModel.pillFormats() == pills)
     }
 
     @Test func narratorNewsFailingLeavesTheRestOfThePage() async {

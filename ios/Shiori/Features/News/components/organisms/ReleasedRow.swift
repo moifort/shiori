@@ -1,11 +1,12 @@
 import SwiftUI
 
-/// A book out lately among what the reader follows, as the feed lists it, the
-/// way the book's page heads it: the cover first, AUDIO and a foreign
-/// language tagged in its corner; the series and volume above the title, the
-/// binoculars beside it for an edition awaited, the author, the day it came
-/// out. A narrator or an author the reader follows signs it at its foot, their
-/// face and name; the "…" at the end.
+/// A book out lately among what the reader follows, as the feed lists it, at
+/// a friend's row's height: the cover at full height on the left; the series
+/// and volume above the title, the binoculars beside it for an edition
+/// awaited, the author, then the edition's tags (a foreign language, AUDIO).
+/// No day: the period heading above says it. A narrator or an author the
+/// reader follows signs it at its foot, their face and name. No "…": sliding
+/// the row to the left opens its menu.
 struct ReleasedRow: View {
     let item: ReleasedItem
     var owned = false
@@ -16,56 +17,72 @@ struct ReleasedRow: View {
     let onWish: () async -> Void
     let onAwait: (ReleaseFormat) -> Void
 
-    private static let coverWidth: CGFloat = 72
+    /// The height of the text beside the cover, which the cover stretches to
+    /// so its bottom sits level with the last line.
+    @State private var textHeight: CGFloat?
 
     var body: some View {
-        HStack(alignment: .center, spacing: 14) {
-            Button { onOpen?() } label: {
-                HStack(alignment: .top, spacing: 14) {
-                    BookCover(book: item.cover, width: Self.coverWidth, showsFormatBadge: false)
-                        .overlay(alignment: .topTrailing) {
-                            CoverTags(language: item.language, isAudio: item.format == .audiobook)
-                                .padding(4)
-                        }
-                    VStack(alignment: .leading, spacing: 0) {
-                        if let seriesLine = item.seriesLine {
-                            Text(seriesLine)
-                                .font(.footnote)
-                                .foregroundStyle(.primary.opacity(0.85))
-                                .lineLimit(1)
-                                .padding(.bottom, 2)
-                        }
-                        title
-                        if let author = item.authors.first {
-                            Text(author)
-                                .font(.footnote)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
-                                .padding(.top, 1)
-                        }
-                        Text(dayText)
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                            .padding(.top, 5)
-                        if hasSignature {
-                            Spacer(minLength: 10)
-                            signature
-                        }
-                    }
-                    .frame(maxWidth: .infinity, minHeight: Self.coverWidth * 1.5, alignment: .topLeading)
-                }
-                .contentShape(.rect)
-            }
-            .buttonStyle(.plain)
-            .allowsHitTesting(onOpen != nil)
-            NewsRowMenu(
-                format: item.format, owned: owned, wished: wished, awaited: awaited,
-                onAdd: onAdd, onWish: onWish, onAwait: onAwait
+        opening
+            .swipeOpensMenu(
+                .newsRow(
+                    format: item.format, owned: owned, wished: wished, awaited: awaited,
+                    onAdd: onAdd, onWish: onWish, onAwait: onAwait
+                )
             )
+            .accessibilityIdentifier("news-released")
+    }
+
+    /// The row opens what it can: its author, its narrator. A volume of a
+    /// series or an edition awaited opens nothing yet, but still slides.
+    @ViewBuilder
+    private var opening: some View {
+        if let onOpen {
+            Button(action: onOpen) { content }
+                .buttonStyle(.plain)
+        } else {
+            content
+        }
+    }
+
+    private var content: some View {
+        HStack(alignment: .top, spacing: 12) {
+            BookCover(book: item.cover, showsFormatBadge: false, minHeight: textHeight)
+            VStack(alignment: .leading, spacing: 0) {
+                if let seriesLine = item.seriesLine {
+                    Text(seriesLine)
+                        .font(.footnote)
+                        .foregroundStyle(.primary.opacity(0.85))
+                        .lineLimit(1)
+                        .padding(.bottom, 2)
+                }
+                title
+                if let author = item.authors.first {
+                    Text(author)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .padding(.top, 1)
+                }
+                if !tags.isEmpty {
+                    tags
+                        .fixedSize()
+                        .padding(.top, 3)
+                }
+                if hasSignature {
+                    Spacer(minLength: 6)
+                    signature
+                }
+            }
+            .frame(maxWidth: .infinity, minHeight: 84, alignment: .topLeading)
+            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { textHeight = $0 }
         }
         .padding(.horizontal, 20)
-        .padding(.vertical, 12)
-        .accessibilityIdentifier("news-released")
+        .padding(.vertical, 10)
+        .contentShape(.rect)
+    }
+
+    private var tags: CoverTags {
+        CoverTags(language: item.language, isAudio: item.format == .audiobook, isFrosted: false)
     }
 
     private var title: some View {
@@ -80,12 +97,6 @@ struct ReleasedRow: View {
                     .accessibilityLabel(Text("Suivi"))
             }
         }
-    }
-
-    /// "Aujourd'hui", else the day and the month in full: "28 octobre".
-    private var dayText: String {
-        guard !Calendar.current.isDateInToday(item.day) else { return String(localized: "Aujourd'hui") }
-        return item.day.formatted(.dateTime.day().month(.wide))
     }
 
     // MARK: - Signature

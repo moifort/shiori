@@ -26,9 +26,9 @@ enum NewsAction {
 /// stories, the format pills, then over the last thirty days what came out
 /// among the series, authors, narrators and awaited editions the reader
 /// follows mixed with what their friends did, under journal periods, the same
-/// move by several of them on one line. Every row ends
-/// on the "…" that takes the book, wishes for it or awaits its recording. The
-/// pages a tap opens are the screen's.
+/// move by several of them on one line. No row carries a "…": slid to the
+/// left, each opens the menu that takes the book, wishes for it or awaits its
+/// recording. The pages a tap opens are the screen's.
 struct NewsPage: View {
     let feed: [NewsFeedSection]
     /// The rows' books just taken, wished for or awaited: a friend's by its
@@ -38,6 +38,8 @@ struct NewsPage: View {
     var awaited: Set<String> = []
     let calendar: ReleaseCalendar
     let format: BookFormat?
+    /// The formats the pills offer: those the feed holds something in.
+    var pillFormats: [BookFormat] = NewsFeedLayout.pillFormats
     let stories: [FriendStory]
     let friendId: String?
     let hasMore: Bool
@@ -93,7 +95,7 @@ struct NewsPage: View {
                         .padding(.top, calendar.releases.isEmpty ? 4 : 18)
                     }
                     FilterPills(
-                        pills: NewsFeedLayout.pillFormats.map { .init(id: $0.rawValue, label: $0.pillLabel) },
+                        pills: pillFormats.map { .init(id: $0.rawValue, label: $0.pillLabel) },
                         selected: format?.rawValue
                     ) { id in
                         act(.selectFormat(id.flatMap(BookFormat.init(rawValue:))))
@@ -189,21 +191,26 @@ private struct NewsPagePreview: View {
     var isLoading = false
     var errorMessage: String?
 
+    private var feed: [NewsFeedSection] {
+        NewsFeedLayout.feedSections(
+            released: NewsFeedLayout.released(
+                releases: UpcomingRelease.releasedPreviews,
+                narrator: [.preview],
+                format: nil
+            ),
+            events: events,
+            format: nil,
+            friendId: nil
+        )
+    }
+
     var body: some View {
         NavigationStack {
             NewsPage(
-                feed: NewsFeedLayout.feedSections(
-                    released: NewsFeedLayout.released(
-                        releases: UpcomingRelease.releasedPreviews,
-                        narrator: [.preview],
-                        format: nil
-                    ),
-                    events: events,
-                    format: nil,
-                    friendId: nil
-                ),
+                feed: feed,
                 calendar: ReleaseCalendar(releases: releases, now: .now),
                 format: nil,
+                pillFormats: NewsFeedLayout.pillFormats(in: feed, selected: nil),
                 stories: NewsFeedLayout.stories(events: events, seenAt: .now.addingTimeInterval(-86400)),
                 friendId: nil,
                 hasMore: false,

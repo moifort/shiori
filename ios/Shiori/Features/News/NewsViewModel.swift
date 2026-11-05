@@ -101,6 +101,15 @@ final class NewsViewModel {
         )
     }
 
+    /// The pills over the feed: the formats its unnarrowed lines are in.
+    func pillFormats(now: Date = .now) -> [BookFormat] {
+        let everything = NewsFeedLayout.feedSections(
+            released: NewsFeedLayout.released(releases: yearReleases, narrator: narratorNews, format: nil, now: now),
+            events: shownEvents, format: nil, friendId: friendId, now: now
+        )
+        return NewsFeedLayout.pillFormats(in: everything, selected: format)
+    }
+
     /// Everything announced, whatever the pill: the rail sits above the pills,
     /// and the full list has its own.
     func calendar(now: Date = .now) -> ReleaseCalendar {

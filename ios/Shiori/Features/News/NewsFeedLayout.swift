@@ -138,6 +138,14 @@ enum NewsFeedItem: Identifiable, Hashable, Sendable {
         case let .friend(move): move.lead.at
         }
     }
+
+    /// What the book is, the property the format pills narrow on.
+    var format: BookFormat {
+        switch self {
+        case let .released(item): item.format
+        case let .friend(move): move.lead.format
+        }
+    }
 }
 
 /// The feed's lines of one journal period, under its heading.
@@ -296,4 +304,11 @@ enum NewsFeedLayout {
 
     /// The formats the pills offer, in the board's order.
     static let pillFormats: [BookFormat] = [.book, .audiobook, .bandeDessinee, .comic, .manga]
+
+    /// The pills a feed offers: only the formats something in it is in, so no
+    /// pill narrows to nothing. The one picked stays, or it could not be put back.
+    static func pillFormats(in feed: [NewsFeedSection], selected: BookFormat?) -> [BookFormat] {
+        let present = Set(feed.flatMap(\.items).map(\.format))
+        return pillFormats.filter { present.contains($0) || $0 == selected }
+    }
 }
