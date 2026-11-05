@@ -207,7 +207,7 @@ struct SeriesPage: View {
     @ViewBuilder
     private func releaseCard(_ series: BookSeries) -> some View {
         if friend == nil, let next = releases?.next, !heldNumbers.contains(next.number) {
-            SeriesReleaseCard(volume: next, author: series.author, isAudio: series.isAudio) {
+            SeriesReleaseCard(volume: next, author: series.author, isAudio: series.isAudio, language: language) {
                 Task { await onAction(.openAnnounced(next)) }
             }
         }

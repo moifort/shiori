@@ -129,13 +129,12 @@ struct UpcomingRelease: Identifiable, Hashable, Codable, Sendable {
         return own
     }
 
-    /// Over the title of its card in the rail: the author, the volume's place
-    /// in its series and, on a recording, the format. "Takehiko Inoue · Tome 38".
+    /// Over the title of its card in the rail: the author and the volume's place
+    /// in its series, "Takehiko Inoue · Tome 38". A recording says so in a tag.
     var cardPlace: String {
         [
             authors.first,
             volume.map { String(localized: "Tome \($0)") },
-            format == .audiobook ? String(localized: "Livre audio") : nil,
         ]
         .compactMap { $0 }
         .joined(separator: " · ")

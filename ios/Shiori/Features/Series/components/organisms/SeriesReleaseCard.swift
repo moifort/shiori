@@ -4,7 +4,9 @@ import SwiftUI
 /// card: its cover edge to edge on the leading side, over the cover's own
 /// colours the title, the author and the volume's place at the top, and at
 /// the foot one white button that orders it from the store — Audible for a recording, Amazon
-/// otherwise. How long is left is tagged under the title; the day itself sits
+/// otherwise. Under the title, side by side, the outlined tags: how long is
+/// left, "Audio" for a recording, the language when it is not the phone's, and
+/// the binoculars for an edition awaited; nothing on the cover. The day itself sits
 /// in the corner as a white calendar leaf on glass. A tap elsewhere opens the
 /// volume's page, as on Découvrir. No "wait for it": the saga's bell already
 /// alerts on the day.
@@ -15,19 +17,27 @@ struct SeriesReleaseCard: View {
     /// The line over the title, in place of the author and the volume's place:
     /// an edition awaited outside any saga names its author and format.
     var place: String?
-    /// An edition the reader waits for: the binoculars after the title.
+    /// The edition's language: tagged only when it is not the phone's.
+    var language: BookLanguage?
+    /// An edition the reader waits for: the binoculars among the tags.
     var isAwaited = false
     let onOpen: () -> Void
 
     /// The card's height: every card of a rail stands as tall, as the home's
-    /// "En cours" cards do — one line of title, and the room of the countdown
-    /// and of the button kept when a volume has neither.
-    private static let height: CGFloat = 124
-    /// Taller than the card, so the cover fills it at any text size.
+    /// "En cours" cards do — two lines of title, and the room of the tags and
+    /// of the button kept when a volume has neither. As tall as the cover, so
+    /// the cover shows whole.
+    private static let height: CGFloat = 150
+    /// A cover's 2:3 at the card's height: whole, not cropped. It grows, cropped
+    /// at its foot, only when larger text makes the card taller.
     private static let coverHeight: CGFloat = 150
-    private static let coverWidth: CGFloat = 82
+    private static let coverWidth: CGFloat = 100
     /// The calendar leaf's width and its margin, kept clear by the text.
     private static let leafRoom: CGFloat = 48
+    /// Between a rail of these cards and the header over it — "À venir",
+    /// "Prochaines sorties": more than a shelf's, so the title does not sit
+    /// against the card.
+    static let headerSpacing: CGFloat = 18
 
     var body: some View {
         HStack(alignment: .top, spacing: 14) {
@@ -56,24 +66,15 @@ struct SeriesReleaseCard: View {
                     .foregroundStyle(.white.opacity(0.75))
                     .lineLimit(1)
                     .padding(.trailing, volume.date == nil ? 0 : Self.leafRoom)
-                HStack(alignment: .firstTextBaseline, spacing: 7) {
-                    Text(volume.title)
-                        .font(.headline)
-                        .lineLimit(1)
-                    if isAwaited {
-                        Image(systemName: "binoculars")
-                            .font(.footnote.weight(.semibold))
-                            .accessibilityLabel(Text("Suivi"))
-                    }
-                }
-                .padding(.trailing, volume.date == nil ? 0 : Self.leafRoom)
-                // How long is left, under the title in an outlined tag.
-                // A volume with no date keeps the tag's room.
+                Text(volume.title)
+                    .font(.headline)
+                    .lineLimit(2)
+                    .padding(.trailing, volume.date == nil ? 0 : Self.leafRoom)
+                // The tags side by side under the title. A volume with none
+                // keeps their room.
                 ZStack(alignment: .leading) {
                     OutlinedTag(text: "0", isFrosted: false).hidden()
-                    if let countdown = volume.date.flatMap({ ReleaseDateText.countdown($0) }) {
-                        OutlinedTag(text: countdown, isFrosted: false)
-                    }
+                    tags
                 }
                 .padding(.top, 3)
                 Spacer(minLength: 8)
@@ -111,6 +112,26 @@ struct SeriesReleaseCard: View {
         .accessibilityElement(children: .contain)
         .accessibilityAddTraits(.isButton)
         .accessibilityIdentifier("series-releases")
+    }
+
+    private var tags: some View {
+        HStack(spacing: 6) {
+            if let countdown = volume.date.flatMap({ ReleaseDateText.countdown($0) }) {
+                OutlinedTag(text: countdown, isFrosted: false)
+            }
+            if isAudio {
+                OutlinedTag(text: String(localized: "Audio"), isFrosted: false)
+            }
+            if let language, language.isForeign {
+                OutlinedTag(text: language.code, isFrosted: false)
+                    .accessibilityLabel(Text(language.label))
+            }
+            if isAwaited {
+                Image(systemName: "binoculars")
+                    .font(.footnote.weight(.semibold))
+                    .accessibilityLabel(Text("Suivi"))
+            }
+        }
     }
 
     private var book: Book {

@@ -14,7 +14,7 @@ struct UpcomingRail: View {
     @State private var inView: String?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: SeriesReleaseCard.headerSpacing) {
             RowHeader(title: "À venir", style: .inline, action: onOpenList)
                 .padding(.horizontal, 20)
                 .accessibilityIdentifier("news-upcoming-header")
@@ -40,6 +40,7 @@ struct UpcomingRail: View {
                             author: release.authors.first ?? "",
                             isAudio: release.format == .audiobook,
                             place: release.cardPlace,
+                            language: release.language,
                             isAwaited: release.source == .awaited
                         ) { onOpen(release) }
                         .containerRelativeFrame(.horizontal) { width, _ in

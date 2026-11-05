@@ -38,7 +38,7 @@ struct SeriesShelfPage: View {
                     }
                 }
                 if !releases.isEmpty {
-                    VStack(alignment: .leading, spacing: 12) {
+                    VStack(alignment: .leading, spacing: SeriesReleaseCard.headerSpacing) {
                         RowHeader(title: "Prochaines sorties", style: .inline).padding(.horizontal, 20)
                         releaseRail
                     }
@@ -104,7 +104,8 @@ struct SeriesShelfPage: View {
                         SeriesReleaseCard(
                             volume: entry.volume,
                             author: entry.series.author ?? entry.series.name,
-                            isAudio: entry.series.isAudio
+                            isAudio: entry.series.isAudio,
+                            language: entry.series.language
                         ) { onAction(.openSeries(entry.series)) }
                         .containerRelativeFrame(.horizontal) { width, _ in
                             releases.count > 1 ? width - 50 : width - 40

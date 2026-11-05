@@ -33,7 +33,7 @@ struct WishlistPage: View {
                     ) { onAction(.selectFormat($0.flatMap(BookFormat.init(rawValue:)))) }
                 }
                 if !wishlist.upcoming.isEmpty {
-                    VStack(alignment: .leading, spacing: 12) {
+                    VStack(alignment: .leading, spacing: SeriesReleaseCard.headerSpacing) {
                         RowHeader(title: "Prochaines sorties", style: .inline).padding(.horizontal, 20)
                         releaseRail
                     }
@@ -162,11 +162,8 @@ extension AwaitedEdition {
         )
     }
 
-    /// Over the card's title: the author, and "Audio" for a recording.
-    var place: String {
-        let author = authors.first ?? ""
-        return format == .audiobook ? "\(author) · \(String(localized: "Audio"))" : author
-    }
+    /// Over the card's title: the author. "Audio" is a tag under the title.
+    var place: String { authors.first ?? "" }
 }
 
 #Preview("Filled") {
