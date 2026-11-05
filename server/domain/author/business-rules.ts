@@ -180,19 +180,23 @@ const particles = new Set([
   'ter',
 ])
 
-/** The part of an author's name they are filed under, as a bookshop files them:
- *  the surname, a lowercase particle set aside as French does it — Balzac under
- *  B, but Le Guin under L and La Fontaine under L. A single name is its own
+/** The surname as the name writes it, the part a list sets in bold: a
+ *  lowercase particle set aside as French does it — "Balzac" of Honoré de
+ *  Balzac, but "Le Guin" and "La Fontaine" whole. A single name is its own
  *  surname. */
-export const filingNameOf = (name: string): string => {
+export const surnameOf = (name: string): string => {
   const words = name.trim().split(/\s+/)
   let start = words.length - 1
   while (start > 1 && particles.has(stripApostrophe(words[start - 1] ?? '').toLowerCase()))
     start -= 1
   const surname = words.slice(Math.max(start, 0))
   while (surname.length > 1 && isLowercaseParticle(surname[0] ?? '')) surname.shift()
-  return surname.join(' ').replace(/^[dl]['’]/i, '')
+  return surname.join(' ')
 }
+
+/** The part of an author's name they are filed under, as a bookshop files them:
+ *  the surname, an elided article dropped — d'Ormesson under O. */
+export const filingNameOf = (name: string): string => surnameOf(name).replace(/^[dl]['’]/i, '')
 
 const stripApostrophe = (word: string) => word.replace(/['’].*$/, '')
 

@@ -1738,6 +1738,11 @@ type FollowedAuthor {
   The date their newest book is shelved on — finished, else started, else added — which the list ordered by `RECENT` is sorted and cut into month sections by.
   """
   shelvedAt: DateTime!
+
+  """
+  The surname as the name writes it, a lowercase particle set aside — Balzac of Honoré de Balzac, Le Guin of Ursula K. Le Guin: the part the A to Z list sets in bold. The whole name when it is a single word.
+  """
+  surname: String!
 }
 
 """
@@ -1778,6 +1783,11 @@ type FollowedNarrator {
 
   """Hearted recordings plus hearted sagas."""
   favoriteCount: Count!
+
+  """
+  The letter of the alphabet index the narrator is filed under, as an author is: the surname’s first letter, accent stripped, a lowercase particle set aside. `#` when it is no Latin letter. The sections of the list ordered by `NAME`.
+  """
+  indexLetter: String!
   key: NarratorKey!
 
   """The spelling most of the reader’s recordings use."""
@@ -1798,6 +1808,11 @@ type FollowedNarrator {
   The date their newest recording is shelved on, which the list ordered by `RECENT` is sorted by.
   """
   shelvedAt: DateTime!
+
+  """
+  The surname as the name writes it, a lowercase particle set aside — Balzac of Honoré de Balzac, Le Guin of Ursula K. Le Guin: the part the A to Z list sets in bold. The whole name when it is a single word.
+  """
+  surname: String!
 }
 
 """

@@ -91,6 +91,8 @@ query MyNarratorsPage($limit: Int, $after: String, $order: AuthorOrder) {
     items {
       key
       name
+      indexLetter
+      surname
       portraitUrl
       favorite
       shelvedAt

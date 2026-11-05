@@ -136,7 +136,8 @@ extension FollowedAuthor {
             averageRating: row.averageRating,
             shelvedAt: GraphQLHelpers.parseISO8601(row.shelvedAt),
             books: row.books.map(\.fragments.bookSummary.asBook),
-            favorite: row.favorite
+            favorite: row.favorite,
+            surname: row.surname
         )
     }
 }

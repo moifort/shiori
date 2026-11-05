@@ -92,10 +92,12 @@ enum NarratorsAPI {
                 FollowedNarrator(
                     key: row.key,
                     name: row.name,
+                    indexLetter: row.indexLetter,
                     portraitURL: row.portraitUrl.flatMap(URL.init(string:)),
                     shelvedAt: GraphQLHelpers.parseISO8601(row.shelvedAt),
                     books: row.books.map(\.fragments.bookSummary.asBook),
-                    favorite: row.favorite
+                    favorite: row.favorite,
+                    surname: row.surname
                 )
             },
             hasMore: page.hasMore,

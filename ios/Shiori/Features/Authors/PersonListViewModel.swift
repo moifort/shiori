@@ -50,6 +50,9 @@ protocol ShelvedPerson: PortraitPerson, Codable, Sendable where ID == String {
     var favorite: Bool { get }
     /// The letter the A to Z list files them under.
     var indexLetter: String { get }
+    /// Their surname as the name writes it: the part of the name the A to Z
+    /// list sets in bold. Nil when unknown: the whole name stays regular.
+    var surname: String? { get }
 }
 
 extension FollowedAuthor: ShelvedPerson {}
@@ -117,7 +120,7 @@ final class PersonListViewModel<Person: ShelvedPerson> {
         case .recent: "by-activity"
         case .loved: "all"
         }
-        return SnapshotCache("\(cacheName)-\(suffix)", version: 7)
+        return SnapshotCache("\(cacheName)-\(suffix)", version: 8)
     }
 
     /// Lists the rows the other way: last session's snapshot of that order at

@@ -1,4 +1,4 @@
-import { sagaCountOf } from '~/domain/author/business-rules'
+import { indexLetterOf, sagaCountOf, surnameOf } from '~/domain/author/business-rules'
 import { AuthorOrderEnum, PortraitChoiceType } from '~/domain/author/infrastructure/graphql/queries'
 import { BookType } from '~/domain/book/infrastructure/graphql/types'
 import { BookQuery } from '~/domain/book/query'
@@ -25,6 +25,20 @@ export const FollowedNarratorType = builder
         type: 'NarratorName',
         description: 'The spelling most of the reader’s recordings use.',
         resolve: (narrator) => narrator.name,
+      }),
+      indexLetter: t.string({
+        description:
+          'The letter of the alphabet index the narrator is filed under, as an author is: ' +
+          'the surname’s first letter, accent stripped, a lowercase particle set aside. ' +
+          '`#` when it is no Latin letter. The sections of the list ordered by `NAME`.',
+        resolve: (narrator) => indexLetterOf(narrator.name),
+      }),
+      surname: t.string({
+        description:
+          'The surname as the name writes it, a lowercase particle set aside — Balzac of ' +
+          'Honoré de Balzac, Le Guin of Ursula K. Le Guin: the part the A to Z list sets ' +
+          'in bold. The whole name when it is a single word.',
+        resolve: (narrator) => surnameOf(narrator.name),
       }),
       portraitUrl: t.field({
         type: 'PortraitUrl',

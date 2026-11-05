@@ -3,6 +3,7 @@ import {
   preferredFormatOf,
   sagaCountOf,
   sagasNotHeldOf,
+  surnameOf,
 } from '~/domain/author/business-rules'
 import type { Author, AuthorSeries, AuthorWork, PortraitChoice } from '~/domain/author/types'
 import { type AuthorPage, AuthorUseCase, type FollowedAuthor } from '~/domain/author/use-case'
@@ -34,6 +35,13 @@ export const FollowedAuthorType = builder.objectRef<FollowedAuthor>('FollowedAut
         'particle set aside — Balzac under B, Le Guin under L. `#` when it is no ' +
         'Latin letter. The sections of the list ordered by `NAME`.',
       resolve: (author) => indexLetterOf(author.name),
+    }),
+    surname: t.string({
+      description:
+        'The surname as the name writes it, a lowercase particle set aside — Balzac of ' +
+        'Honoré de Balzac, Le Guin of Ursula K. Le Guin: the part the A to Z list sets ' +
+        'in bold. The whole name when it is a single word.',
+      resolve: (author) => surnameOf(author.name),
     }),
     portraitUrl: t.field({
       type: 'PortraitUrl',

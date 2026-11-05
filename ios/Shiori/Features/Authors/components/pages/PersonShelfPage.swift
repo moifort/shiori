@@ -131,15 +131,20 @@ struct PersonShelfPage<Person: ShelvedPerson>: View {
         .scrollContentBackground(.hidden)
     }
 
-    /// The people cut where their letter changes, in the server's order.
+    /// The people under their letter, each letter once and A to Z with "#"
+    /// last, the server's order kept inside a letter: a row filed out of
+    /// order joins its letter rather than opening it a second time.
     private var letterSections: [(letter: String, people: [Person])] {
-        people.reduce(into: []) { sections, person in
-            if sections.last?.letter == person.indexLetter {
-                sections[sections.count - 1].people.append(person)
-            } else {
-                sections.append((person.indexLetter, [person]))
+        Self.letterSections(of: people)
+    }
+
+    static func letterSections(of people: [Person]) -> [(letter: String, people: [Person])] {
+        Dictionary(grouping: people, by: \.indexLetter)
+            .map { (letter: $0.key, people: $0.value) }
+            .sorted { left, right in
+                if (left.letter == "#") != (right.letter == "#") { return right.letter == "#" }
+                return left.letter.localizedStandardCompare(right.letter) == .orderedAscending
             }
-        }
     }
 
     private func alphabeticalRow(_ person: Person) -> some View {
@@ -147,7 +152,7 @@ struct PersonShelfPage<Person: ShelvedPerson>: View {
             HStack(spacing: 14) {
                 AuthorAvatar(initials: person.initials, portraitURL: person.portraitURL, size: 48)
                 HStack(spacing: 6) {
-                    Text(person.name)
+                    Text(Self.name(of: person))
                         .foregroundStyle(.primary)
                         .lineLimit(1)
                     if person.favorite { favoriteHeart }
@@ -165,6 +170,17 @@ struct PersonShelfPage<Person: ShelvedPerson>: View {
         .listRowInsets(EdgeInsets(top: 6, leading: 20, bottom: 6, trailing: 28))
         .listRowBackground(Color.clear)
         .accessibilityIdentifier(rowIdentifier)
+    }
+
+    /// The name with its surname in bold, as Contacts sets it, so the first
+    /// name and the surname tell apart: "Ursula K. **Le Guin**".
+    static func name(of person: Person) -> AttributedString {
+        guard let surname = person.surname, !surname.isEmpty, person.name.hasSuffix(surname) else {
+            return AttributedString(person.name)
+        }
+        var bold = AttributedString(surname)
+        bold.inlinePresentationIntent = .stronglyEmphasized
+        return AttributedString(person.name.dropLast(surname.count)) + bold
     }
 
     /// The reader hearted them: in the text's own colour, as every mark is

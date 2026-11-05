@@ -15,6 +15,7 @@ import {
   sagasNotHeldOf,
   shelvedAuthorsOf,
   standaloneBooksOf,
+  surnameOf,
   worksNotHeldOf,
 } from '~/domain/author/business-rules'
 import { authorKeyOf, PortraitUrl } from '~/domain/author/primitives'
@@ -200,6 +201,15 @@ describe('the alphabetical order', () => {
     expect(filingNameOf('Jean de La Fontaine')).toBe('La Fontaine')
     expect(filingNameOf('Valéry Giscard d’Estaing')).toBe('Estaing')
     expect(filingNameOf('CLAMP')).toBe('CLAMP')
+  })
+
+  test('keeps the surname as written for the bold part of a name, elided article included', () => {
+    expect(surnameOf('Honoré de Balzac')).toBe('Balzac')
+    expect(surnameOf('Ursula K. Le Guin')).toBe('Le Guin')
+    expect(surnameOf('Valéry Giscard d’Estaing')).toBe('d’Estaing')
+    expect(surnameOf('Marcha Van Boven')).toBe('Van Boven')
+    expect(surnameOf('Éric Herson-Macarel')).toBe('Herson-Macarel')
+    expect(surnameOf('CLAMP')).toBe('CLAMP')
   })
 
   test('indexes an author under the unaccented first letter, or # outside the alphabet', () => {

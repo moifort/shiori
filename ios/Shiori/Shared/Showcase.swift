@@ -951,7 +951,8 @@ enum Showcase {
                 averageRating: ratings.isEmpty ? nil : Double(ratings.reduce(0, +)) / Double(ratings.count),
                 shelvedAt: theirs.compactMap(\.shelvedAt).max(),
                 books: theirs,
-                favorite: heartedAuthors.contains(name)
+                favorite: heartedAuthors.contains(name),
+                surname: surname
             )
         }
         let sorted = switch order {
@@ -996,18 +997,21 @@ enum Showcase {
         let names = Array(Set(heard.flatMap(\.narrators)))
         let narrators = names.map { name -> FollowedNarrator in
             let theirs = heard.filter { $0.narrators.contains(name) }
+            let surname = name.split(separator: " ").last.map(String.init) ?? name
             return FollowedNarrator(
                 key: narratorKey(name),
                 name: name,
+                indexLetter: String(surname.folding(options: .diacriticInsensitive, locale: nil).prefix(1)).uppercased(),
                 shelvedAt: theirs.compactMap(\.shelvedAt).max(),
                 books: theirs,
                 // The reader hearted the voices of the recordings they hearted.
-                favorite: theirs.contains(where: \.favorite)
+                favorite: theirs.contains(where: \.favorite),
+                surname: surname
             )
         }
         let sorted = switch order {
         case .recent: narrators.sorted { ($0.shelvedAt ?? .distantPast) > ($1.shelvedAt ?? .distantPast) }
-        case .name: narrators.sorted { $0.name < $1.name }
+        case .name: narrators.sorted { ($0.indexLetter, $0.name) < ($1.indexLetter, $1.name) }
         case .loved: narrators.filter(\.favorite).sorted { $0.books.count > $1.books.count }
         }
         return CursorPage(sorted, limit: limit, after: after, cursor: \.id)

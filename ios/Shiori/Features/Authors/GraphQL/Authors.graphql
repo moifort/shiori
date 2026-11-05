@@ -17,6 +17,7 @@ fragment FollowedAuthorRow on FollowedAuthor {
   key
   name
   indexLetter
+  surname
   portraitUrl
   favorite
   bookCount

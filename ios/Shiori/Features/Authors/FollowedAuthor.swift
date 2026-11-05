@@ -32,6 +32,9 @@ struct FollowedAuthor: Identifiable, Codable, Sendable {
     /// The reader hearted the author themself, apart from the hearts their
     /// books and sagas carry: the heart of the author's page.
     var favorite = false
+    /// Their surname as the name writes it — Le Guin, Balzac — set in bold in
+    /// the A to Z list. Nil where the server was not asked for it.
+    var surname: String?
 
     /// The author's initials, drawn in the avatar until the author has a
     /// portrait of their own: the first letter of the first and last words, so
