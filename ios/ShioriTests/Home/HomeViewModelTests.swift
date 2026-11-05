@@ -86,6 +86,26 @@ struct HomeViewModelTests {
         await onReturn.value
     }
 
+    /// Between midnight and the server's own midnight (UTC) the server still
+    /// says an edition out today is announced: it must lead the line anyway.
+    @Test func editionOutTodayStaysWhileTheServerStillSaysAnnounced() async {
+        let today = Date.now.formatted(Date.ISO8601FormatStyle(timeZone: .current).year().month().day())
+        let base = AwaitedEdition.preview
+        let edition = AwaitedEdition(
+            id: base.id, format: base.format, state: .announced, title: base.title,
+            originalTitle: base.originalTitle, originalLanguage: base.originalLanguage,
+            authors: base.authors, date: today, coverURL: nil, storeURL: base.storeURL,
+            awaitedAt: base.awaitedAt, bookId: base.bookId, ownerId: base.ownerId
+        )
+        var client = HomeClient.preview
+        client.awaited = { format in format == .audiobook ? [edition] : [] }
+        let viewModel = HomeViewModel(client: client, caching: false)
+
+        await viewModel.load()
+
+        #expect(viewModel.releases.contains { $0.id == HomeRelease.awaited(edition).id })
+    }
+
     @Test func releasesLeftOutWhenAFormatCannotBeRead() async {
         var client = HomeClient.preview
         client.discovery = { format in

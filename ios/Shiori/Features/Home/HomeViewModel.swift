@@ -290,9 +290,13 @@ final class HomeViewModel {
         let awaitedComing = awaited
             .filter { $0.state == .announced }
             .map(HomeRelease.awaited)
+        // Today counts too: the server tells days in UTC, so for the first
+        // hours of the reader's day it still says announced what is out.
+        let today = Date.now.formatted(Date.ISO8601FormatStyle(timeZone: .current).year().month().day())
         let upcoming = (nextVolumes + awaitedComing)
             .compactMap { release -> (HomeRelease, String)? in
-                guard let date = release.date, ReleaseDateText.isUpcoming(date) else { return nil }
+                guard let date = release.date, date == today || ReleaseDateText.isUpcoming(date)
+                else { return nil }
                 return (release, ReleaseDateText.lastDay(date))
             }
             .sorted { $0.1 != $1.1 ? $0.1 < $1.1 : $0.0.name.localizedStandardCompare($1.0.name) == .orderedAscending }
