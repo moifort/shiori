@@ -18,6 +18,10 @@ struct BookMosaicPage: View {
 
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 2), count: 5)
 
+    /// The books given up on, in black and white and dimmed, as a poster
+    /// draws one; their stars stay white.
+    private var isShowingDropped: Bool { selectedStatus == .dropped }
+
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 0) {
@@ -59,6 +63,8 @@ struct BookMosaicPage: View {
                                         showsFormatBadge: false,
                                         cornerRadius: 0
                                     )
+                                    .saturation(isShowingDropped ? 0 : 1)
+                                    .overlay { if isShowingDropped { Color.black.opacity(PosterLabel.setAsideDimming) } }
                                 }
                                 .aspectRatio(2 / 3, contentMode: .fit)
                                 .overlay(alignment: .bottom) { MosaicRating(book: book) }
@@ -152,6 +158,19 @@ private struct MosaicRating: View {
         BookMosaicPage(
             sections: ListSection.byMonth(Showcase.shelved, on: \.shelvedAt),
             formats: [.book, .manga],
+            isLoading: false,
+            errorMessage: nil,
+            hasMore: false,
+            loadMoreFailed: false
+        ) { _ in }
+    }
+}
+
+#Preview("Dropped") {
+    NavigationStack {
+        BookMosaicPage(
+            sections: ListSection.byMonth(Showcase.shelved.filter { $0.status == .dropped }, on: \.shelvedAt),
+            selectedStatus: .dropped,
             isLoading: false,
             errorMessage: nil,
             hasMore: false,
