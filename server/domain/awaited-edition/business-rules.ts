@@ -110,6 +110,16 @@ export const isHeld = (
   )
 }
 
+/** Whether an edition held stops being awaited: once the library holds it,
+ *  but never on the day it comes out — a recording pre-ordered reaches the
+ *  library that very morning, and the home screen still says it is out
+ *  today. */
+export const isNoLongerAwaited = (
+  view: Pick<AwaitedEditionView, 'format' | 'language' | 'source' | 'found'>,
+  books: Parameters<typeof isHeld>[2],
+  today: string,
+): boolean => view.found?.date !== today && isHeld(view, view.found, books)
+
 /** The watches the hourly pass looks up: the ones never looked up first, then
  *  the ones two weeks old, each once however many readers await it. An edition
  *  out and confirmed is not looked up again: there is nothing left to learn. A

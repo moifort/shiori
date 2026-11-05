@@ -60,6 +60,10 @@ mock.module('~/domain/discovery/infrastructure/amazon-catalogue', () => ({
 mock.module('~/domain/scan/published-cover', () => ({
   shelfCoverOf: async () => undefined,
   publishedCoverOf: async () => 'https://covers.example/vent.jpg',
+  isbnCoversOf: async () => ({}),
+  isbnsInLanguage: () => [],
+  otherEditionCoversOf: async () => [],
+  isImageAt: async () => true,
   isCoverGone: async () => false,
 }))
 
@@ -283,6 +287,28 @@ describe('the editions awaited', () => {
     startFakeRequest()
 
     expect(await AwaitedEditionUseCase.awaited(reader, 'audiobook', now)).toEqual([])
+    expect(fake.snapshot('awaited-editions').size).toBe(0)
+  })
+
+  test('stay on the day they come out, held already, and go the day after', async () => {
+    answers = { 'Wind and Truth': recorded }
+    await AwaitedEditionUseCase.awaitOwnBook(reader, await stock(reader), 'audiobook', 'fr', now)
+    const [{ found }] = await AwaitedEditionUseCase.awaited(reader, 'audiobook', now)
+    const releaseDay = new Date(`${found?.date}T09:00:00Z`)
+    await BookUseCase.add(reader, {
+      title: BookTitle('Vent et vérité'),
+      authors: [AuthorName('Brandon Sanderson')],
+      status: 'to-read',
+      language: 'fr',
+      format: 'audiobook',
+    })
+    startFakeRequest()
+
+    const onTheDay = await AwaitedEditionUseCase.awaited(reader, 'audiobook', releaseDay)
+    const dayAfter = new Date(releaseDay.getTime() + 86_400_000)
+
+    expect(onTheDay.map((view) => view.state)).toEqual(['available'])
+    expect(await AwaitedEditionUseCase.awaited(reader, 'audiobook', dayAfter)).toEqual([])
     expect(fake.snapshot('awaited-editions').size).toBe(0)
   })
 

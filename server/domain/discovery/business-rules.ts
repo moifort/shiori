@@ -526,7 +526,8 @@ const isAvailable = (
  *  hold and can have now, the newest first: out on a known day — a month
  *  alone does not say it was this fortnight — as the same shared watch the next
  *  volume is read off dates it. A volume announced moves here on its day,
- *  with no new look on the web. */
+ *  with no new look on the web, and stays that day even held already or not
+ *  yet in a store: the home screen always says what comes out today. */
 export const recentReleasesOf = (
   books: readonly Pick<Book, 'series'>[],
   watch: SagaWatch | undefined,
@@ -541,11 +542,12 @@ export const recentReleasesOf = (
     .map(({ volume }) => volume)
     .filter(
       (volume) =>
-        volume.date?.length === 10 &&
-        volume.date <= today &&
-        volume.date > since &&
-        !held.has(volume.number) &&
-        isAvailable(volume, format),
+        volume.date === today ||
+        (volume.date?.length === 10 &&
+          volume.date < today &&
+          volume.date > since &&
+          !held.has(volume.number) &&
+          isAvailable(volume, format)),
     )
     .sort(
       (left, right) =>

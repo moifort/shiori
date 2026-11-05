@@ -380,6 +380,13 @@ describe('the volumes a saga has just brought out', () => {
     expect(recentReleasesOf(held(5), watch, undefined, today)).toEqual([])
   })
 
+  test('keep, on the day it comes out, a volume held already or not yet in a store', () => {
+    const watch = watchOf(carl, [volume(5, today), volume(6, '2026-09-24')])
+    expect(
+      recentReleasesOf(held(5, 6), watch, undefined, today).map(({ number }) => number),
+    ).toEqual([5] as VolumeNumber[])
+  })
+
   test('leave out a volume dated to the month only', () => {
     const watch = watchOf(carl, [volume(5, '2026-09', { isbn13 })])
     expect(recentReleasesOf(held(), watch, undefined, today)).toEqual([])

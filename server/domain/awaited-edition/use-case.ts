@@ -7,7 +7,7 @@ import {
   dueWatchesOf,
   editionWatchKeyOf,
   inShelfOrder,
-  isHeld,
+  isNoLongerAwaited,
   MAX_AWAITED,
   viewOf,
 } from '~/domain/awaited-edition/business-rules'
@@ -301,7 +301,7 @@ const awaitedOf = async (userId: UserId, now: Date): Promise<AwaitedEditionView[
   const views = all.map((awaited) => viewOf(awaited, watches.get(awaited.watchKey), today))
   if (!views.some((view) => view.found)) return views
   const books = await BookQuery.all(userId)
-  const held = views.filter((view) => isHeld(view, view.found, books))
+  const held = views.filter((view) => isNoLongerAwaited(view, books, today))
   if (held.length === 0) return views
   await AwaitedEditionCommand.remove(
     userId,
