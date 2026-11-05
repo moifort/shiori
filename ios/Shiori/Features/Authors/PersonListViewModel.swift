@@ -46,6 +46,10 @@ enum AuthorListOrder: String, CaseIterable, Identifiable {
 /// books as posters — an author, a narrator.
 protocol ShelvedPerson: PortraitPerson, Codable, Sendable where ID == String {
     var books: [Book] { get }
+    /// The reader hearted them themself: the heart beside their name.
+    var favorite: Bool { get }
+    /// The letter the A to Z list files them under.
+    var indexLetter: String { get }
 }
 
 extension FollowedAuthor: ShelvedPerson {}

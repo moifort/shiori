@@ -16,6 +16,15 @@ struct FollowedNarrator: Identifiable, Codable, Sendable, ShelvedPerson {
     /// The reader hearted the narrator themself.
     var favorite = false
 
+    /// The first letter of their name as it is written, accents folded — Éric
+    /// under E — since the server orders narrators by name; "#" for anything
+    /// that is not a letter.
+    var indexLetter: String {
+        let first = name.first.map { String($0).folding(options: [.diacriticInsensitive, .caseInsensitive], locale: nil) }
+        guard let first, first.first?.isLetter == true else { return "#" }
+        return first.uppercased()
+    }
+
     /// The first letter of the first and last words, as an author's.
     var initials: String {
         let words = name.split(separator: " ")

@@ -15,7 +15,9 @@ enum PersonShelfAction<Person: ShelvedPerson> {
 /// person — the portrait and the name, opening their page — then their books
 /// as posters, the line in each cover as everywhere: the stars, "Ajouté", the
 /// bookmark. Ordered by the pills: the hearted alone, the most recent, or A
-/// to Z.
+/// to Z — which the Music app's artists list draws instead: a letter, a row
+/// per person, the index on the edge. Outside "Préférés" a heart follows the
+/// name of whoever the reader hearted.
 struct PersonShelfPage<Person: ShelvedPerson>: View {
     let title: LocalizedStringKey
     let failureTitle: LocalizedStringKey
@@ -35,29 +37,12 @@ struct PersonShelfPage<Person: ShelvedPerson>: View {
     private static var orders: [AuthorListOrder] { [.loved, .recent, .name] }
 
     var body: some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: 26) {
-                FilterPills(
-                    pills: Self.orders.map { FilterPills.Pill(id: $0.rawValue, label: $0.pillLabel) },
-                    selected: order.rawValue,
-                    allLabel: nil
-                ) { id in
-                    if let order = id.flatMap(AuthorListOrder.init(rawValue:)) { onAction(.order(order)) }
-                }
-                ForEach(people) { person in
-                    row(person)
-                        .onAppear { onAction(.reached(person.id)) }
-                }
-                if hasMore {
-                    LoadMoreRow(
-                        failed: loadMoreFailed,
-                        loadingLabel: "Chargement de la suite",
-                        onLoadMore: { onAction(.loadMore) }
-                    )
-                }
+        Group {
+            if order == .name {
+                alphabetical
+            } else {
+                shelves
             }
-            .padding(.vertical, 8)
-            .padding(.bottom, 24)
         }
         .background(Color(.systemGroupedBackground))
         .navigationTitle(title)
@@ -76,6 +61,121 @@ struct PersonShelfPage<Person: ShelvedPerson>: View {
         }
     }
 
+    private var pills: some View {
+        FilterPills(
+            pills: Self.orders.map { FilterPills.Pill(id: $0.rawValue, label: $0.pillLabel) },
+            selected: order.rawValue,
+            allLabel: nil
+        ) { id in
+            if let order = id.flatMap(AuthorListOrder.init(rawValue:)) { onAction(.order(order)) }
+        }
+    }
+
+    @ViewBuilder private var loadMore: some View {
+        if hasMore {
+            LoadMoreRow(
+                failed: loadMoreFailed,
+                loadingLabel: "Chargement de la suite",
+                onLoadMore: { onAction(.loadMore) }
+            )
+        }
+    }
+
+    /// "Préférés" and "Récents": a row per person, their posters under it.
+    private var shelves: some View {
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 26) {
+                pills
+                ForEach(people) { person in
+                    row(person)
+                        .onAppear { onAction(.reached(person.id)) }
+                }
+                loadMore
+            }
+            .padding(.vertical, 8)
+            .padding(.bottom, 24)
+        }
+    }
+
+    /// "A–Z", as the Music app lists its artists: the people under their
+    /// letter, one line each, the letters on the trailing edge to jump by.
+    private var alphabetical: some View {
+        List {
+            pills
+                .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
+            ForEach(letterSections, id: \.letter) { section in
+                // The letter is the section's first row rather than its
+                // header: a header would stay pinned under the clear bar.
+                Section {
+                    Text(section.letter)
+                        .font(.title3.weight(.bold))
+                        .listRowInsets(EdgeInsets(top: 16, leading: 20, bottom: 2, trailing: 20))
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
+                        .accessibilityAddTraits(.isHeader)
+                    ForEach(section.people) { person in
+                        alphabeticalRow(person)
+                            .onAppear { onAction(.reached(person.id)) }
+                    }
+                }
+                .sectionIndexLabel(section.letter)
+            }
+            loadMore
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
+        }
+        .listStyle(.plain)
+        .listSectionIndexVisibility(.visible)
+        .scrollContentBackground(.hidden)
+    }
+
+    /// The people cut where their letter changes, in the server's order.
+    private var letterSections: [(letter: String, people: [Person])] {
+        people.reduce(into: []) { sections, person in
+            if sections.last?.letter == person.indexLetter {
+                sections[sections.count - 1].people.append(person)
+            } else {
+                sections.append((person.indexLetter, [person]))
+            }
+        }
+    }
+
+    private func alphabeticalRow(_ person: Person) -> some View {
+        Button { onAction(.openPerson(person)) } label: {
+            HStack(spacing: 14) {
+                AuthorAvatar(initials: person.initials, portraitURL: person.portraitURL, size: 48)
+                HStack(spacing: 6) {
+                    Text(person.name)
+                        .foregroundStyle(.primary)
+                        .lineLimit(1)
+                    if person.favorite { favoriteHeart }
+                }
+                // The hairline starts under the name, as in Music.
+                .alignmentGuide(.listRowSeparatorLeading) { $0[.leading] }
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+            }
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .listRowInsets(EdgeInsets(top: 6, leading: 20, bottom: 6, trailing: 28))
+        .listRowBackground(Color.clear)
+        .accessibilityIdentifier(rowIdentifier)
+    }
+
+    /// The reader hearted them: in the text's own colour, as every mark is
+    /// off a cover.
+    private var favoriteHeart: some View {
+        Image(systemName: "heart.fill")
+            .font(.footnote)
+            .foregroundStyle(.primary)
+            .accessibilityLabel("Préféré")
+    }
+
     private func row(_ person: Person) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Button { onAction(.openPerson(person)) } label: {
@@ -85,6 +185,7 @@ struct PersonShelfPage<Person: ShelvedPerson>: View {
                         .font(.title3.weight(.bold))
                         .foregroundStyle(.primary)
                         .lineLimit(1)
+                    if person.favorite, order != .loved { favoriteHeart }
                     Image(systemName: "chevron.right")
                         .font(.subheadline.weight(.bold))
                         .foregroundStyle(.secondary)
