@@ -21,6 +21,9 @@ struct ReleasedRow: View {
     /// so its bottom sits level with the last line.
     @State private var textHeight: CGFloat?
 
+    /// The friend row's, so the feed's lines are one height.
+    static let coverHeight = FeedEventRow.coverHeight
+
     var body: some View {
         opening
             .swipeOpensMenu(
@@ -46,7 +49,7 @@ struct ReleasedRow: View {
 
     private var content: some View {
         HStack(alignment: .top, spacing: 12) {
-            BookCover(book: item.cover, showsFormatBadge: false, minHeight: textHeight)
+            BookCover(book: item.cover, showsFormatBadge: false, minHeight: max(textHeight ?? 0, Self.coverHeight))
             VStack(alignment: .leading, spacing: 0) {
                 if let seriesLine = item.seriesLine {
                     Text(seriesLine)
@@ -73,7 +76,7 @@ struct ReleasedRow: View {
                     signature
                 }
             }
-            .frame(maxWidth: .infinity, minHeight: 84, alignment: .topLeading)
+            .frame(maxWidth: .infinity, minHeight: Self.coverHeight, alignment: .topLeading)
             .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { textHeight = $0 }
         }
         .padding(.horizontal, 20)

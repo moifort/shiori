@@ -21,10 +21,15 @@ struct FeedEventRow: View {
     /// so its bottom sits level with the last line.
     @State private var textHeight: CGFloat?
 
+    /// The cover's least height, a little over its proportions so a tag line
+    /// and a signature under it keep some air between them. Shared by every
+    /// Actualités row, which keeps them one height.
+    static let coverHeight: CGFloat = 92
+
     var body: some View {
         Button(action: onOpen) {
             HStack(alignment: .top, spacing: 12) {
-                BookCover(book: event.cover, showsFormatBadge: false, minHeight: textHeight)
+                BookCover(book: event.cover, showsFormatBadge: false, minHeight: max(textHeight ?? 0, Self.coverHeight))
                 VStack(alignment: .leading, spacing: 3) {
                     HStack(alignment: .center, spacing: 7) {
                         faces
