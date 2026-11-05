@@ -27,6 +27,7 @@ SwiftUI and the board are always in sync.
   the same task.
 - **One element, every screen**: changing a badge, label, button or component on one artboard
   means changing it on every artboard that shows it.
+- A rail holding a single card draws it full width (343 px on a 393 px phone), as iOS does.
 - A prod component is drawn from its SwiftUI source and a real capture, never copied from an
   older artboard, which may lag.
 

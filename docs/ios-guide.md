@@ -386,6 +386,8 @@ Previews check how a view looks; unit tests check what the app decides. They do 
 - **Colours that mean something**: an upcoming or announced date is orange, an available one
   green. A destructive button's icon is red too — with `.labelStyle(.row)` it stays accent
   blue unless coloured.
+- **A rail holding one card draws it full width**: the screen's width less its 20 pt margins,
+  with no page dots. From two cards on, each is 10 pt narrower so the next one peeks in.
 - **Icons beside a title and description sit at the top** (`HStack(alignment: .top)`), never
   centred.
 - **No hint text under sections** — no `footer:` caption explaining a picker. A message that
