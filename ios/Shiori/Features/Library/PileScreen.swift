@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// "Pile à lire", connected: owns its view model, pushes the books and the
-/// whole pile it opens, and carries out the long press.
+/// sagas it opens, and carries out the long press.
 struct PileScreen: View {
     var client: LibraryClient = .live
 
@@ -48,7 +48,6 @@ struct PileScreen: View {
         case let .openSeries(saga): destination = .series(saga.seriesId)
         case let .selectGenre(genre): Task { await viewModel.select(genre: genre) }
         case let .menu(book, action): quick = BookQuickRequest(book: book, action: action)
-        case .openWholePile: destination = .wholePile(viewModel.view)
         case .openWishlist: destination = .wishlist
         case .refresh:
             Task { await viewModel.load() }

@@ -6,8 +6,6 @@ enum LibraryDestination: Identifiable, Hashable {
     case book(Book)
     /// The formats are the opener's pills, offered again over the shelf.
     case shelf(BookShelf, ShelvesView = ShelvesView(), status: ReadingStatus? = nil, formats: [BookFormat] = [])
-    /// "Toute la pile", opened from the bottom of the pile.
-    case wholePile(ShelvesView)
     case seriesShelf(SeriesShelfFilter = .all)
     case setAsideSeries
     case series(String)
@@ -22,7 +20,6 @@ enum LibraryDestination: Identifiable, Hashable {
         switch self {
         case let .book(book): "book-\(book.id)"
         case let .shelf(shelf, view, status, _): "shelf-\(shelf.rawValue)-\(view.cacheKey)-\(status?.rawValue ?? "")"
-        case let .wholePile(view): "whole-pile-\(view.cacheKey)"
         case let .seriesShelf(filter): "series-shelf-\(filter.rawValue)"
         case .setAsideSeries: "series-set-aside"
         case let .series(id): "series-\(id)"
@@ -62,8 +59,6 @@ struct LibraryDestinationScreen: View {
             BookMosaicScreen(view: view, formats: formats, client: client)
         case let .shelf(.toRead, view, _, _):
             PileScreen(view: view, client: client)
-        case let .wholePile(view):
-            WholePileScreen(view: view, client: client)
         case let .shelf(shelf, view, status, formats):
             BookShelfScreen(shelf: shelf, view: view, status: status, formats: formats, client: client)
         case let .seriesShelf(filter):

@@ -68,59 +68,6 @@ struct PileLabelTests {
     }
 }
 
-struct WholePileTests {
-    private let pile = [
-        book("dune", format: .audiobook, genre: .scienceFiction, waited: 0),
-        book("frieren", format: .manga, genre: .fantasy, waited: 3),
-        book("circe", genre: .fantasy, waited: 60),
-        book("expanse", genre: .scienceFiction, waited: 500),
-        book("1984", genre: .literaryFiction, waited: 1500),
-        book("sapiens", waited: 40),
-    ]
-
-    private func outline(_ grouping: PileGrouping) -> [String] {
-        WholePile.sections(pile, by: grouping, now: now, calendar: calendar).map { section in
-            "\(section.title): \(section.rows.map(\.id).joined(separator: ","))"
-        }
-    }
-
-    @Test func byDateTheNewestSpanComesFirst() {
-        #expect(outline(.date) == [
-            "\(String(localized: "Ce mois-ci")): dune,frieren",
-            "\(String(localized: "Moins d'un an")): circe,sapiens",
-            "\(String(localized: "1 à 2 ans")): expanse",
-            "\(String(localized: "Plus de 2 ans")): 1984",
-        ])
-    }
-
-    @Test func byFormatTheFormatsComeInTheAppsOrder() {
-        #expect(outline(.format) == [
-            "\(BookFormat.book.shelfLabel): circe,expanse,1984,sapiens",
-            "\(BookFormat.audiobook.shelfLabel): dune",
-            "\(BookFormat.manga.shelfLabel): frieren",
-        ])
-    }
-
-    @Test func byGenreTheFullestComesFirstAndABookWithoutOneIsOther() {
-        // Two each for fantasy and science fiction, one each for the rest: the label breaks a tie.
-        #expect(outline(.genre) == [
-            "\(BookGenre.fantasy.label): frieren,circe",
-            "\(BookGenre.scienceFiction.label): dune,expanse",
-            "\(BookGenre.other.label): sapiens",
-            "\(BookGenre.literaryFiction.label): 1984",
-        ])
-    }
-
-    @Test func aCoverSaysWhatItsHeadingDoesNot() {
-        let dune = pile[0]
-
-        #expect(WholePile.label(of: dune, by: .date, now: now, calendar: calendar).caption == BookGenre.scienceFiction.shortLabel)
-        #expect(WholePile.label(of: dune, by: .format, now: now, calendar: calendar).caption == BookGenre.scienceFiction.shortLabel)
-        #expect(WholePile.label(of: dune, by: .genre, now: now, calendar: calendar).caption == PosterLabel.waited(daysAgo(0), now: now, calendar: calendar))
-        #expect(WholePile.label(of: pile[5], by: .date, now: now, calendar: calendar).caption == PosterLabel.waited(daysAgo(40), now: now, calendar: calendar))
-    }
-}
-
 @MainActor
 struct PileViewModelTests {
     @Test func keepsThePillsWhenAGenreIsChosen() async {

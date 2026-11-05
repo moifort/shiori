@@ -6,7 +6,6 @@ enum PileAction {
     case openSeries(FollowedSeries)
     case selectGenre(BookGenre?)
     case menu(Book, BookQuickAction)
-    case openWholePile
     case openWishlist
     case refresh
 }
@@ -14,8 +13,7 @@ enum PileAction {
 /// "Pile à lire", for choosing the next book: a rail per reason to read one —
 /// what was begun, the next volume of each saga in progress as the series
 /// screen's "À suivre" draws it, what someone recommended, the favourite
-/// authors and narrators, the award winners, the authors never read — and
-/// the whole pile a row away. The pills narrow every rail to a genre.
+/// authors and narrators, the award winners, the authors never read. The pills narrow every rail to a genre.
 struct PilePage: View {
     let pile: Pile
     /// What can be had now from the wishlist, each cover labelled with where it
@@ -42,12 +40,6 @@ struct PilePage: View {
                         rail(section)
                         if section.kind == .toFinish { followOn }
                     }
-                    LinkRowGroup {
-                        LinkRow(symbol: "square.grid.3x3", title: String(localized: "Toute la pile")) {
-                            onAction(.openWholePile)
-                        }
-                    }
-                    .accessibilityIdentifier("pile-whole")
                 }
             }
             .padding(.bottom, 32)
