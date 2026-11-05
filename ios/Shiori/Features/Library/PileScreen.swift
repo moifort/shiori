@@ -23,8 +23,6 @@ struct PileScreen: View {
             pile: viewModel.pile,
             wished: viewModel.wished.map { .init(book: $0, caption: viewModel.wishlist.caption(of: $0)) },
             upNext: series.upNext.filter(viewModel.view.keeps),
-            formats: viewModel.shownFormats,
-            selectedFormat: viewModel.view.format,
             genres: viewModel.shownGenres,
             selectedGenre: viewModel.view.genre,
             isLoading: viewModel.isLoading,
@@ -48,7 +46,6 @@ struct PileScreen: View {
         switch action {
         case let .openBook(book): destination = .book(book)
         case let .openSeries(saga): destination = .series(saga.seriesId)
-        case let .selectFormat(format): Task { await viewModel.select(format: format) }
         case let .selectGenre(genre): Task { await viewModel.select(genre: genre) }
         case let .menu(book, action): quick = BookQuickRequest(book: book, action: action)
         case .openWholePile: destination = .wholePile(viewModel.view)

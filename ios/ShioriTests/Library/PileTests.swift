@@ -123,35 +123,15 @@ struct WholePileTests {
 
 @MainActor
 struct PileViewModelTests {
-    @Test func keepsThePillsWhenAFormatIsChosen() async {
+    @Test func keepsThePillsWhenAGenreIsChosen() async {
         let client = LibraryClient(pile: { view in
-            Pile(
-                formats: view.format == nil ? [.book, .manga] : [.manga],
-                sections: [PileSection(kind: .newAuthors, picks: [PilePick(book: book("frieren", format: .manga))])]
-            )
-        })
-        let viewModel = PileViewModel(client: client, caching: false)
-
-        await viewModel.load()
-        await viewModel.select(format: .manga)
-
-        #expect(viewModel.shownFormats == [.book, .manga])
-        #expect(viewModel.view.format == .manga)
-    }
-
-    @Test func keepsBothRowsWhenAGenreIsChosen() async {
-        let client = LibraryClient(pile: { view in
-            Pile(
-                formats: view.genre == nil ? [.book, .manga] : [.book],
-                genres: view.genre == nil ? [.fantasy, .scienceFiction] : [.fantasy]
-            )
+            Pile(genres: view.genre == nil ? [.fantasy, .scienceFiction] : [.fantasy])
         })
         let viewModel = PileViewModel(client: client, caching: false)
 
         await viewModel.load()
         await viewModel.select(genre: .fantasy)
 
-        #expect(viewModel.shownFormats == [.book, .manga])
         #expect(viewModel.shownGenres == [.fantasy, .scienceFiction])
         #expect(viewModel.view.genre == .fantasy)
     }
@@ -178,15 +158,5 @@ struct PileViewModelTests {
         await viewModel.load()
 
         #expect(viewModel.pile.sections.map(\.kind) == [.toFinish])
-    }
-
-    @Test func aFormatChosenBeforeKeepsItsPills() async {
-        let client = LibraryClient(pile: { _ in Pile(formats: [.book, .manga]) })
-        let viewModel = PileViewModel(client: client, view: ShelvesView(format: .manga), caching: false)
-
-        await viewModel.load()
-
-        #expect(viewModel.shownFormats == [.book, .manga])
-        #expect(viewModel.view.format == .manga)
     }
 }

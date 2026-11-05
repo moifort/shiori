@@ -2,7 +2,7 @@ import Foundation
 import SwiftUI
 
 /// Owns "Pile à lire": the pile cut into the reasons to read its books, and
-/// its format and genre pills. It opens on the snapshot of its last visit, refreshed
+/// its genre pills. It opens on the snapshot of its last visit, refreshed
 /// silently underneath.
 @MainActor
 @Observable
@@ -20,7 +20,6 @@ final class PileViewModel {
         self.pile = pile
         wishlistCache = caching ? .wishlist : nil
         wishlist = wishlistCache?.read() ?? Wishlist()
-        formats = pile.formats
         genres = pile.genres
     }
 
@@ -35,9 +34,8 @@ final class PileViewModel {
     private(set) var view: ShelvesView
     private(set) var isLoading = false
     private(set) var errorMessage: String?
-    /// The pills offered, kept from the view without a pill: choosing one,
-    /// of either row, must not take the others away.
-    private(set) var formats: [BookFormat] = []
+    /// The pills offered, kept from the view without a pill: choosing one
+    /// must not take the others away.
     private(set) var genres: [BookGenre] = []
     /// The genre page it was opened from, whose genre is not the pills' to
     /// change.
@@ -45,11 +43,6 @@ final class PileViewModel {
 
     private var loaded = false
     private var generation = 0
-
-    /// The format pills, shown only when there are two to choose from.
-    var shownFormats: [BookFormat] {
-        formats.count > 1 ? formats : []
-    }
 
     /// The genre pills, shown only when there are two to choose from and the
     /// pile was not opened from a genre page.
@@ -62,17 +55,10 @@ final class PileViewModel {
         return SnapshotCache("pile-\(view.cacheKey)", version: 2)
     }
 
-    /// The wishlist's rail: what can be had now, in the format picked.
+    /// The wishlist's rail: what can be had now, in the format the pile was
+    /// opened in.
     var wished: [Book] {
         wishlist.availableNow.filter { view.format == nil || $0.format == view.format }
-    }
-
-    /// A format pill; nil is "Tout".
-    func select(format: BookFormat?) async {
-        guard view.format != format else { return }
-        view.format = format
-        if let snapshot = Self.cache(for: view, caching: caching)?.read() { pile = snapshot }
-        await load()
     }
 
     /// A genre pill; nil is "Tout".
@@ -108,8 +94,7 @@ final class PileViewModel {
             }
             withAnimation(pile.sections.isEmpty ? nil : .smooth) {
                 pile = fetched
-                let unpicked = asked.format == nil && asked.genre == openedGenre
-                if unpicked || formats.isEmpty { formats = fetched.formats }
+                let unpicked = asked.genre == openedGenre
                 if unpicked || genres.isEmpty { genres = fetched.genres }
             }
             loaded = true

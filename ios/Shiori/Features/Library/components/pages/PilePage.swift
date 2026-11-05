@@ -4,7 +4,6 @@ import SwiftUI
 enum PileAction {
     case openBook(Book)
     case openSeries(FollowedSeries)
-    case selectFormat(BookFormat?)
     case selectGenre(BookGenre?)
     case menu(Book, BookQuickAction)
     case openWholePile
@@ -16,8 +15,7 @@ enum PileAction {
 /// what was begun, the next volume of each saga in progress as the series
 /// screen's "À suivre" draws it, what someone recommended, the favourite
 /// authors and narrators, the award winners, the authors never read — and
-/// the whole pile a row away. The pills narrow every rail to a format and a
-/// genre.
+/// the whole pile a row away. The pills narrow every rail to a genre.
 struct PilePage: View {
     let pile: Pile
     /// What can be had now from the wishlist, each cover labelled with where it
@@ -26,8 +24,6 @@ struct PilePage: View {
     /// The series screen's "À suivre", narrowed to the pills: a rail after
     /// the books begun, above the wishlist's.
     var upNext: [(series: FollowedSeries, volume: FollowedSeries.NextVolume)] = []
-    var formats: [BookFormat] = []
-    var selectedFormat: BookFormat?
     var genres: [BookGenre] = []
     var selectedGenre: BookGenre?
     let isLoading: Bool
@@ -76,21 +72,11 @@ struct PilePage: View {
     }
 
     @ViewBuilder private var pills: some View {
-        if formats.count > 1 || genres.count > 1 {
-            VStack(alignment: .leading, spacing: 10) {
-                if formats.count > 1 {
-                    FilterPills(
-                        pills: formats.map { FilterPills.Pill(id: $0.rawValue, label: $0.shelfLabel) },
-                        selected: selectedFormat?.rawValue
-                    ) { onAction(.selectFormat($0.flatMap(BookFormat.init(rawValue:)))) }
-                }
-                if genres.count > 1 {
-                    FilterPills(
-                        pills: genres.map { FilterPills.Pill(id: $0.rawValue, label: $0.label) },
-                        selected: selectedGenre?.rawValue
-                    ) { onAction(.selectGenre($0.flatMap(BookGenre.init(rawValue:)))) }
-                }
-            }
+        if genres.count > 1 {
+            FilterPills(
+                pills: genres.map { FilterPills.Pill(id: $0.rawValue, label: $0.label) },
+                selected: selectedGenre?.rawValue
+            ) { onAction(.selectGenre($0.flatMap(BookGenre.init(rawValue:)))) }
         }
     }
 
@@ -145,7 +131,6 @@ struct PilePage: View {
         PilePage(
             pile: Showcase.pile(view: ShelvesView()),
             upNext: Showcase.seriesPage(limit: 200, after: nil, mode: .all, state: nil).items.filter { !$0.isSetAside }.upNext,
-            formats: Showcase.pile(view: ShelvesView()).formats,
             genres: Showcase.pile(view: ShelvesView()).genres,
             isLoading: false,
             errorMessage: nil
