@@ -121,7 +121,8 @@ struct SeriesShelfTests {
         owned: [ReadingStatus],
         published: Int,
         announced: Bool = false,
-        state: SeriesState = .inProgress
+        state: SeriesState = .inProgress,
+        genre: BookGenre? = nil
     ) -> FollowedSeries {
         let books = owned.enumerated().map { index, status in
             var book = Book(id: "v\(index + 1)", title: "Tome \(index + 1)", authors: [], status: status)
@@ -137,7 +138,7 @@ struct SeriesShelfTests {
         }
         return FollowedSeries(
             seriesId: "s", name: "Série", author: nil, language: nil,
-            state: state, genre: nil, ownedCount: books.count, volumes: books, strip: strip
+            state: state, genre: genre, ownedCount: books.count, volumes: books, strip: strip
         )
     }
 
@@ -156,6 +157,23 @@ struct SeriesShelfTests {
         } else {
             Issue.record("expected the first volume lacking")
         }
+    }
+
+    @Test func upNextListsTheSagasInProgressOnly() {
+        let sagas = [saga(owned: [.read], published: 3), saga(owned: [.read], published: 1, state: .complete)]
+
+        #expect(sagas.upNext.count == 1)
+    }
+
+    @Test func thePilePillsNarrowUpNextToTheSagasFormatAndGenre() {
+        var audio = saga(owned: [.read], published: 3, genre: .fantasy)
+        audio.isAudio = true
+        let entry = (series: audio, volume: audio.nextVolume!)
+
+        #expect(ShelvesView().keeps(entry))
+        #expect(ShelvesView(format: .audiobook, genre: .fantasy).keeps(entry))
+        #expect(!ShelvesView(format: .book).keeps(entry))
+        #expect(!ShelvesView(genre: .scienceFiction).keeps(entry))
     }
 
     @Test func theNextReleaseIsTheVolumeAnnounced() {

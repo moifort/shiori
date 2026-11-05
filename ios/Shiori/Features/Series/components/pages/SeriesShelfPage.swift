@@ -31,11 +31,7 @@ struct SeriesShelfPage: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 30) {
                 if !upNext.isEmpty {
-                    VStack(alignment: .leading, spacing: 12) {
-                        RowHeader(title: "À suivre", style: .inline).padding(.horizontal, 20)
-                        PosterRow(items: upNext.map(upNextItem)) { _ in }
-                            .contentMargins(.horizontal, 20, for: .scrollContent)
-                    }
+                    SeriesUpNextRail(upNext: upNext) { onAction(.openSeries($0)) }
                 }
                 if !releases.isEmpty {
                     VStack(alignment: .leading, spacing: SeriesReleaseCard.headerSpacing) {
@@ -60,34 +56,6 @@ struct SeriesShelfPage: View {
                     EmptyState.failure("Séries indisponibles", message: errorMessage) { onAction(.refresh) }
                 }
             }
-        }
-    }
-
-    private func upNextItem(_ entry: (series: FollowedSeries, volume: FollowedSeries.NextVolume)) -> PosterRow.Item {
-        let open = { onAction(.openSeries(entry.series)) }
-        switch entry.volume {
-        case let .owned(book):
-            let caption = book.series?.volume.map { String(localized: "Tome \($0)") } ?? book.title
-            return PosterRow.Item(
-                book: book,
-                label: PosterLabel(caption: caption, marksReading: book.status == .reading),
-                open: open
-            )
-        case let .missing(number, title, coverURL):
-            let book = Book(
-                id: "next-\(entry.series.id)",
-                title: title,
-                authors: entry.series.author.map { [$0] } ?? [],
-                format: entry.series.isAudio ? .audiobook : .book,
-                language: entry.series.language,
-                coverURL: coverURL,
-                status: .toRead
-            )
-            return PosterRow.Item(
-                book: book,
-                caption: number.map { String(localized: "Tome \($0)") } ?? title,
-                open: open
-            )
         }
     }
 

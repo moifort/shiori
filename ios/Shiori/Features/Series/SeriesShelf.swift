@@ -110,6 +110,30 @@ extension FollowedSeries {
     }
 }
 
+extension [FollowedSeries] {
+    /// "À suivre": the sagas being read, the next volume of each.
+    var upNext: [(series: FollowedSeries, volume: FollowedSeries.NextVolume)] {
+        filter { $0.state == .inProgress }
+            .compactMap { saga in saga.nextVolume.map { (saga, $0) } }
+    }
+}
+
+extension ShelvesView {
+    /// Whether a saga's next volume belongs to the view: the format a
+    /// volume out the reader lacks takes is the saga's, its genre the saga's.
+    func keeps(_ entry: (series: FollowedSeries, volume: FollowedSeries.NextVolume)) -> Bool {
+        let format: BookFormat = switch entry.volume {
+        case let .owned(book): book.format
+        case .missing: entry.series.isAudio ? .audiobook : .book
+        }
+        let genre: BookGenre? = switch entry.volume {
+        case let .owned(book): book.genre ?? entry.series.genre
+        case .missing: entry.series.genre
+        }
+        return (self.format == nil || format == self.format) && (self.genre == nil || genre == self.genre)
+    }
+}
+
 /// The filters of "Toutes les séries", each offered only when it holds a saga.
 enum SeriesShelfFilter: String, CaseIterable, Identifiable, Sendable {
     case all, inProgress, incomplete, loved, notStarted, complete, notFollowed

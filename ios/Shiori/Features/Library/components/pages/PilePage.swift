@@ -3,6 +3,7 @@ import SwiftUI
 /// Everything the pile's page can ask for.
 enum PileAction {
     case openBook(Book)
+    case openSeries(FollowedSeries)
     case selectFormat(BookFormat?)
     case selectGenre(BookGenre?)
     case menu(Book, BookQuickAction)
@@ -12,7 +13,8 @@ enum PileAction {
 }
 
 /// "Pile à lire", for choosing the next book: a rail per reason to read one —
-/// what was begun, what follows on, what someone recommended, the favourite
+/// what was begun, the next volume of each saga in progress as the series
+/// screen's "À suivre" draws it, what someone recommended, the favourite
 /// authors and narrators, the award winners, the authors never read — and
 /// the whole pile a row away. The pills narrow every rail to a format and a
 /// genre.
@@ -21,6 +23,9 @@ struct PilePage: View {
     /// What can be had now from the wishlist, each cover labelled with where it
     /// came from: a rail after the books begun, opening the list.
     var wished: [PosterRow.Item] = []
+    /// The series screen's "À suivre", narrowed to the pills: a rail after
+    /// the books begun, above the wishlist's.
+    var upNext: [(series: FollowedSeries, volume: FollowedSeries.NextVolume)] = []
     var formats: [BookFormat] = []
     var selectedFormat: BookFormat?
     var genres: [BookGenre] = []
@@ -33,14 +38,14 @@ struct PilePage: View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 28) {
                 pills
-                if pile.sections.isEmpty {
+                if sections.isEmpty, upNext.isEmpty {
                     empty
                 } else {
-                    ForEach(pile.sections) { section in
+                    if sections.first?.kind != .toFinish { followOn }
+                    ForEach(sections) { section in
                         rail(section)
-                        if section.kind == .toFinish { wishRail }
+                        if section.kind == .toFinish { followOn }
                     }
-                    if pile.sections.first?.kind != .toFinish { wishRail }
                     LinkRowGroup {
                         LinkRow(symbol: "square.grid.3x3", title: String(localized: "Toute la pile")) {
                             onAction(.openWholePile)
@@ -55,6 +60,19 @@ struct PilePage: View {
         .navigationTitle(BookShelf.toRead.title)
         .navigationBarTitleDisplayMode(.large)
         .refreshable { onAction(.refresh) }
+    }
+
+    /// The server's sections but its "La suite", which "À suivre" replaces.
+    private var sections: [PileSection] {
+        pile.sections.filter { $0.kind != .nextVolume }
+    }
+
+    /// What comes after the books begun: "À suivre", then the wishlist.
+    @ViewBuilder private var followOn: some View {
+        if !upNext.isEmpty {
+            SeriesUpNextRail(upNext: upNext) { onAction(.openSeries($0)) }
+        }
+        wishRail
     }
 
     @ViewBuilder private var pills: some View {
@@ -126,6 +144,7 @@ struct PilePage: View {
     NavigationStack {
         PilePage(
             pile: Showcase.pile(view: ShelvesView()),
+            upNext: Showcase.seriesPage(limit: 200, after: nil, mode: .all, state: nil).items.filter { !$0.isSetAside }.upNext,
             formats: Showcase.pile(view: ShelvesView()).formats,
             genres: Showcase.pile(view: ShelvesView()).genres,
             isLoading: false,

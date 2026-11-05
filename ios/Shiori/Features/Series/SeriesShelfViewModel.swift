@@ -30,9 +30,7 @@ final class SeriesShelfViewModel {
 
     /// The sagas being read, the next volume of each: what to pick up next.
     var upNext: [(series: FollowedSeries, volume: FollowedSeries.NextVolume)] {
-        followed
-            .filter { $0.state == .inProgress }
-            .compactMap { saga in saga.nextVolume.map { (saga, $0) } }
+        followed.upNext
     }
 
     /// The volumes announced, as the saga screen announces each, the nearest
