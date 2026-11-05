@@ -187,7 +187,7 @@ struct BookShelfViewModelTests {
 
     @Test func recentlyStopsSixMonthsBack() async {
         let recent = (1...20).map { book("new\($0)", .toRead, shelved: $0) }
-        let viewModel = BookShelfViewModel(client: serving(recent + [book("old", .read, shelved: 250)]), shelf: .recent, now: { now })
+        let viewModel = BookShelfViewModel(client: serving(recent + [book("old", .read, shelved: 250)]), shelf: .recent, caching: false, now: { now })
 
         await viewModel.load()
 
@@ -199,7 +199,7 @@ struct BookShelfViewModelTests {
         var old = book("old", .read, shelved: 250)
         old.format = .manga
         let viewModel = BookShelfViewModel(
-            client: serving([old]), shelf: .recent, view: ShelvesView(format: .manga), now: { now }
+            client: serving([old]), shelf: .recent, view: ShelvesView(format: .manga), caching: false, now: { now }
         )
 
         await viewModel.load()
@@ -210,7 +210,7 @@ struct BookShelfViewModelTests {
     @Test func aStatusPillNarrowsRecently() async {
         let asked = Calls()
         let books = [book("a", .toRead, shelved: 1), book("b", .reading, shelved: 2)]
-        let viewModel = BookShelfViewModel(client: serving(books, asked: asked), shelf: .recent, status: .reading, now: { now })
+        let viewModel = BookShelfViewModel(client: serving(books, asked: asked), shelf: .recent, status: .reading, caching: false, now: { now })
 
         await viewModel.load()
 
@@ -219,7 +219,7 @@ struct BookShelfViewModelTests {
     }
 
     @Test func aBookFinishedLeavesThePile() async {
-        let viewModel = BookShelfViewModel(client: serving([book("a", .toRead, shelved: 1)]), shelf: .toRead, now: { now })
+        let viewModel = BookShelfViewModel(client: serving([book("a", .toRead, shelved: 1)]), shelf: .toRead, caching: false, now: { now })
         await viewModel.load()
 
         viewModel.apply(book("a", .reading, shelved: 0))
@@ -234,7 +234,7 @@ struct BookShelfViewModelTests {
         var hobbit = book("hobbit", .read, shelved: 1)
         hobbit.genre = .fantasy
         let untagged = book("untagged", .read, shelved: 2)
-        let viewModel = BookShelfViewModel(client: serving([dune, hobbit, untagged]), shelf: .loved, now: { now })
+        let viewModel = BookShelfViewModel(client: serving([dune, hobbit, untagged]), shelf: .loved, caching: false, now: { now })
         await viewModel.load()
 
         #expect(viewModel.shownFormats.isEmpty)
@@ -253,7 +253,7 @@ struct BookShelfViewModelTests {
     @Test func theBooksReadHaveNoPills() async {
         var manga = book("m", .read, shelved: 1)
         manga.format = .manga
-        let viewModel = BookShelfViewModel(client: serving([book("a", .read, shelved: 0), manga]), shelf: .read, now: { now })
+        let viewModel = BookShelfViewModel(client: serving([book("a", .read, shelved: 0), manga]), shelf: .read, caching: false, now: { now })
 
         await viewModel.load()
 
@@ -265,7 +265,7 @@ struct BookShelfViewModelTests {
     @Test func formatPillsShowOnlyWithTwoFormats() async {
         var manga = book("m", .toRead, shelved: 1)
         manga.format = .manga
-        let viewModel = BookShelfViewModel(client: serving([book("a", .toRead, shelved: 0), manga]), shelf: .toRead, now: { now })
+        let viewModel = BookShelfViewModel(client: serving([book("a", .toRead, shelved: 0), manga]), shelf: .toRead, caching: false, now: { now })
 
         await viewModel.load()
 
@@ -280,6 +280,7 @@ struct BookShelfViewModelTests {
             shelf: .toRead,
             view: ShelvesView(format: .manga),
             formats: [.book, .manga],
+            caching: false,
             now: { now }
         )
 

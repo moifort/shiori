@@ -5,6 +5,7 @@ import SwiftUI
 /// pile, the books read, the favourites, the books given up on, every book —
 /// loaded by pages, with its pills: the statuses over "Récemment", the genres
 /// over the favourites, none over the books read, the formats elsewhere.
+/// It opens on the snapshot of its last visit, refreshed silently underneath.
 @MainActor
 @Observable
 final class BookShelfViewModel {
@@ -14,15 +15,20 @@ final class BookShelfViewModel {
         view: ShelvesView = ShelvesView(),
         status: ReadingStatus? = nil,
         formats: [BookFormat] = [],
+        caching: Bool = true,
         now: @escaping @Sendable () -> Date = { .now }
     ) {
         self.client = client
+        self.caching = caching
         self.now = now
         query = ShelfQuery(shelf: shelf, view: view, status: status)
         self.formats = formats
+        if let snapshot = Self.cache(for: query, caching: caching)?.read() { show(snapshot) }
     }
 
     private let client: LibraryClient
+    /// Off in tests, which must neither read nor leave a snapshot.
+    private let caching: Bool
     private let now: @Sendable () -> Date
 
     private(set) var query: ShelfQuery
@@ -74,6 +80,31 @@ final class BookShelfViewModel {
         shelf != .recent && !Self.formatsAbove.contains(shelf) && formats.count > 1 ? formats : []
     }
 
+    /// What the shelf showed last, for each shelf, view and status pill: its
+    /// first page and its pills.
+    struct Snapshot: Codable, Sendable {
+        var books: [Book]
+        var lovedSeries: [FollowedSeries]
+        var formats: [BookFormat]
+        var genres: [BookGenre]
+    }
+
+    private static func cache(for query: ShelfQuery, caching: Bool) -> SnapshotCache<Snapshot>? {
+        guard caching else { return nil }
+        let status = query.status?.rawValue ?? "any"
+        return SnapshotCache("book-shelf-\(query.shelf.rawValue)-\(query.view.cacheKey)-\(status)", version: 1)
+    }
+
+    /// Draws a snapshot. Its pills stay those already offered, the opener's
+    /// or the shelf's unpicked view's, so choosing one never takes the others
+    /// away. The page past it waits for the refresh: `hasMore` stays off.
+    private func show(_ snapshot: Snapshot) {
+        books = snapshot.books
+        lovedSeries = snapshot.lovedSeries
+        if formats.isEmpty { formats = snapshot.formats }
+        if genres.isEmpty { genres = snapshot.genres }
+    }
+
     /// The shelves whose formats the Library tab's own pills already choose.
     private static let formatsAbove: Set<BookShelf> = [.read, .loved]
 
@@ -111,14 +142,18 @@ final class BookShelfViewModel {
         scheduleReload()
     }
 
-    /// The books already shown stay until the new ones land, which then
-    /// take their place as the home's cards do: those that leave shrink
-    /// away, the others slide into their new places.
+    /// The pill's last rows show at once when it has a snapshot; otherwise
+    /// the books already shown stay until the new ones land. Either way the
+    /// answer takes their place as the home's cards do: those that leave
+    /// shrink away, the others slide into their new places.
     private func scheduleReload() {
         reloadTask?.cancel()
         generation += 1
         hasMore = false
         loaded = false
+        if let snapshot = Self.cache(for: query, caching: caching)?.read() {
+            withAnimation(books.isEmpty ? nil : .smooth) { show(snapshot) }
+        }
         reloadTask = Task { await load() }
     }
 
@@ -133,6 +168,7 @@ final class BookShelfViewModel {
         generation += 1
         let requested = generation
         let wanted = keepingDepth ? max(books.count, pageSize) : pageSize
+        let asked = query
         isLoading = true
         errorMessage = nil
         loadMoreFailed = false
@@ -165,6 +201,12 @@ final class BookShelfViewModel {
             }
             loaded = true
             CoverImages.prefetch(kept.compactMap(\.coverURL))
+            if let cache = Self.cache(for: asked, caching: caching) {
+                let snapshot = Snapshot(
+                    books: Array(kept.prefix(pageSize)), lovedSeries: loved, formats: formats, genres: genres
+                )
+                Task.detached { cache.write(snapshot) }
+            }
         } catch {
             guard requested == generation else { return }
             isLoading = false

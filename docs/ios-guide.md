@@ -276,8 +276,10 @@ of the caches directory.
 - **Not for data worthless when stale**: a quota, a subscription state, an invitation code.
 
 Screens on snapshots today: Home (dashboard, releases, friends' favourites, discoveries),
-Actualités (feed, releases, the year's counts), the Library's entry screen and its series screen, the Authors list, Discover (feed, awards, discoveries), Shared, a friend's
-profile.
+Actualités (feed, releases, the year's counts), the Library's entry screen and its series screen,
+every shelf opened from a Library rail (Récemment, the pile and Toute la pile, the books read, the
+favourites, the books given up on, Tous les livres — one file per shelf, view and pill), the
+Authors list, Discover (feed, awards, discoveries), Shared, a friend's profile.
 
 ## Covers
 
