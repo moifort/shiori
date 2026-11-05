@@ -8,7 +8,9 @@ final class AuthorViewModel {
     let key: String
     let name: String
 
-    private(set) var page: AuthorPage?
+    private(set) var page: AuthorPage? {
+        didSet { keepSnapshot() }
+    }
     /// What the author has announced or brought out lately, in each format:
     /// asked beside the page, and left out if it cannot be had.
     private(set) var releases: [ReleaseFormat: AuthorReleases] = [:]
@@ -34,11 +36,28 @@ final class AuthorViewModel {
     private let isOffered: Bool
     private let client: AuthorsClient
 
-    init(key: String, name: String, isOffered: Bool, client: AuthorsClient) {
+    /// What the page showed last, one file per author. Nil in tests, which
+    /// must neither read nor leave a snapshot.
+    private let cache: SnapshotCache<AuthorPage>?
+
+    /// - Parameter caching: off in tests, which must neither read nor leave a
+    ///   snapshot on disk.
+    init(key: String, name: String, isOffered: Bool, client: AuthorsClient, caching: Bool = true) {
         self.key = key
         self.name = name
         self.isOffered = isOffered
         self.client = client
+        cache = caching ? SnapshotCache("author-\(key)", version: 1) : nil
+        if let snapshot = cache?.read() {
+            page = snapshot
+            isFavorite = snapshot.author.favorite
+        }
+    }
+
+    /// Whatever the page now shows goes to disk, for its next opening.
+    private func keepSnapshot() {
+        guard let cache, let page else { return }
+        Task.detached { cache.write(page) }
     }
 
     func load() async {
@@ -53,7 +72,8 @@ final class AuthorViewModel {
             if fresh == nil { errorMessage = nil }
         } catch {
             guard !isCancellation(error) else { return }
-            errorMessage = reportError(error)
+            // Over the snapshot on screen, a failed refresh says nothing.
+            if page == nil { errorMessage = reportError(error) } else { _ = reportError(error) }
         }
     }
 

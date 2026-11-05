@@ -18,6 +18,8 @@ final class PileViewModel {
         openedGenre = view.genre
         let pile = Self.cache(for: view, caching: caching)?.read() ?? Pile()
         self.pile = pile
+        wishlistCache = caching ? .wishlist : nil
+        wishlist = wishlistCache?.read() ?? Wishlist()
         formats = pile.formats
         genres = pile.genres
     }
@@ -26,8 +28,10 @@ final class PileViewModel {
     private let caching: Bool
 
     private(set) var pile: Pile
-    /// The wishlist, for its rail: what can be had now.
-    private(set) var wishlist = Wishlist()
+    /// The wishlist, for its rail: what can be had now. It opens on the
+    /// wishlist's own snapshot, so the rail is there on the first frame.
+    private(set) var wishlist: Wishlist
+    private let wishlistCache: SnapshotCache<Wishlist>?
     private(set) var view: ShelvesView
     private(set) var isLoading = false
     private(set) var errorMessage: String?
@@ -98,7 +102,10 @@ final class PileViewModel {
             let fetched = try await client.pile(asked)
             let wished = await wishes
             guard requested == generation else { return }
-            if let wished { withAnimation(.smooth) { wishlist = wished } }
+            if let wished {
+                withAnimation(wishlist.isEmpty ? nil : .smooth) { wishlist = wished }
+                if let cache = wishlistCache { Task.detached { cache.write(wished) } }
+            }
             withAnimation(pile.sections.isEmpty ? nil : .smooth) {
                 pile = fetched
                 let unpicked = asked.format == nil && asked.genre == openedGenre

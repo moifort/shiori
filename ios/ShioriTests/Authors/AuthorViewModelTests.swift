@@ -5,7 +5,7 @@ import Testing
 @MainActor
 struct AuthorViewModelTests {
     private func model(_ client: AuthorsClient = .preview, offered: Bool = false) -> AuthorViewModel {
-        AuthorViewModel(key: "robin hobb", name: "Robin Hobb", isOffered: offered, client: client)
+        AuthorViewModel(key: "robin hobb", name: "Robin Hobb", isOffered: offered, client: client, caching: false)
     }
 
     @Test func offeredAuthorIsAskedByName() async {
@@ -20,6 +20,23 @@ struct AuthorViewModelTests {
         await model(client, offered: true).load()
 
         #expect(asked.all == ["nil", "Robin Hobb"])
+    }
+
+    @Test func aFailedRefreshOverThePageSaysNothing() async {
+        let fails = Flag()
+        var client = AuthorsClient.preview
+        client.page = { _, _ in
+            if fails.isOn { throw Boom() }
+            return .preview
+        }
+        let viewModel = model(client)
+        await viewModel.load()
+        fails.isOn = true
+
+        await viewModel.load()
+
+        #expect(viewModel.page != nil)
+        #expect(viewModel.errorMessage == nil)
     }
 
     @Test func authorAwaitingTheCatalogueIsBuiltWhileTheBooksShow() async {

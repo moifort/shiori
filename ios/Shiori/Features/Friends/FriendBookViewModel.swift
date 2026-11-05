@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 /// A friend's book: the book itself, whether Audible sells it, what may be
 /// awaited of it in the app's language, and what the reader took of it.
@@ -29,19 +30,32 @@ final class FriendBookViewModel {
     /// them, so giving one up waits for the server's id.
     private var awaiting: [ReleaseFormat: Task<AwaitedEdition?, Never>] = [:]
 
-    init(friendId: String, bookId: String, client: FriendsClient) {
+    /// What the page showed last, one file per friend and book. Nil in
+    /// tests, which must neither read nor leave a snapshot.
+    private let cache: SnapshotCache<FriendBook>?
+
+    /// - Parameter caching: off in tests, which must neither read nor leave a
+    ///   snapshot on disk.
+    init(friendId: String, bookId: String, client: FriendsClient, caching: Bool = true) {
         self.friendId = friendId
         self.bookId = bookId
         self.client = client
+        cache = caching ? SnapshotCache("friend-book-\(friendId)-\(bookId)", version: 1) : nil
+        entry = cache?.read()
     }
 
+    /// Over the snapshot already on screen, the answer slides into place and a
+    /// failure says nothing: the page stays as it was.
     func load() async {
         isLoading = true
         errorMessage = nil
         do {
-            entry = try await client.book(friendId, bookId)
+            let fetched = try await client.book(friendId, bookId)
+            withAnimation(entry == nil ? nil : .smooth) { entry = fetched }
+            if let fetched, let cache { Task.detached { cache.write(fetched) } }
+            if fetched == nil { cache?.forget() }
         } catch {
-            errorMessage = reportError(error)
+            if entry == nil { errorMessage = reportError(error) } else { _ = reportError(error) }
         }
         isLoading = false
     }

@@ -64,6 +64,13 @@ struct Wish: Identifiable, Hashable, Codable, Sendable {
     }
 }
 
+extension SnapshotCache where Value == Wishlist {
+    /// The one wishlist snapshot, shared by the wishlist screen and the pile's
+    /// rail: whichever loaded last leaves it for the other to open on. Bump
+    /// the version whenever `Wishlist` changes shape.
+    static var wishlist: SnapshotCache<Wishlist> { SnapshotCache("wishlist", version: 1) }
+}
+
 /// Everything the reader would like and does not hold: the books wished for
 /// and the editions awaited, cut into the sections the list draws.
 struct Wishlist: Codable, Sendable, Equatable {

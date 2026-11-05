@@ -2,7 +2,7 @@ import Foundation
 
 /// Everything a narrator's page draws: who they are, and the reader's
 /// recordings in their voice, to rate and to heart as an author's books are.
-struct NarratorPage: Sendable {
+struct NarratorPage: Codable, Sendable {
     let key: String
     /// The spelling most of the reader's recordings use.
     let name: String

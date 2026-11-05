@@ -45,7 +45,7 @@ struct FollowedAuthor: Identifiable, Codable, Sendable {
 
 /// Everything an author's page draws: who they are, what the reader holds and
 /// thinks of their work, and what they could add.
-struct AuthorPage: Sendable {
+struct AuthorPage: Codable, Sendable {
     let author: FollowedAuthor
     /// Books of theirs the reader has read.
     let readCount: Int
@@ -82,7 +82,7 @@ struct AuthorPage: Sendable {
 }
 
 /// A saga the author wrote that the reader holds nothing of.
-struct AuthorSeries: Identifiable, Sendable {
+struct AuthorSeries: Identifiable, Codable, Sendable {
     /// The id its catalogue is keyed on: a volume added with it joins the saga.
     let id: String
     let name: String
@@ -102,7 +102,7 @@ struct AuthorSeries: Identifiable, Sendable {
 }
 
 /// A book the author wrote outside any saga, that the reader does not hold.
-struct AuthorWork: Identifiable, Sendable {
+struct AuthorWork: Identifiable, Codable, Sendable {
     var id: String { title }
     let title: String
     let publishedIn: Int?

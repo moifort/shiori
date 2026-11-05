@@ -522,7 +522,7 @@ enum SeriesStripItem: Identifiable, Hashable, Codable, Sendable {
 /// One entry of a saga catalogue, owned or not. Most of these are books the
 /// reader does not own: the catalogue lists what exists in the world, and
 /// nothing enters a library until they add it.
-struct Volume: Identifiable, Hashable, Sendable {
+struct Volume: Identifiable, Hashable, Codable, Sendable {
     var id: String { "\(kind.rawValue)-\(number.map(String.init) ?? title)" }
     let number: Int?
     let title: String
@@ -621,7 +621,7 @@ extension [Volume] {
 }
 
 /// A volume in one language, as the weekly release watch found it.
-struct VolumeRelease: Hashable, Sendable {
+struct VolumeRelease: Hashable, Codable, Sendable {
     let language: BookLanguage
     /// `YYYY`, `YYYY-MM` or `YYYY-MM-DD`: as precisely as it was announced.
     let date: String
@@ -631,7 +631,7 @@ struct VolumeRelease: Hashable, Sendable {
 
 /// The shared catalogue of a saga. A public fact with no reader in it, which is
 /// why one fetch serves every reader of that saga.
-struct BookSeries: Identifiable, Sendable {
+struct BookSeries: Identifiable, Codable, Sendable {
     /// The edition: the saga in one language, as the server names it.
     let id: String
     /// The language of that edition, which the hero tags when it is not the

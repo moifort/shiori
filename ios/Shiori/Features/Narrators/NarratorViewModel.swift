@@ -7,7 +7,9 @@ final class NarratorViewModel {
     let key: String
     let name: String
 
-    private(set) var page: NarratorPage?
+    private(set) var page: NarratorPage? {
+        didSet { keepSnapshot() }
+    }
     private(set) var isLoading = true
     var errorMessage: String?
     /// The AI is describing a narrator nobody had: the reader's recordings are
@@ -19,10 +21,24 @@ final class NarratorViewModel {
 
     private let client: NarratorsClient
 
-    init(key: String, name: String, client: NarratorsClient) {
+    /// What the page showed last, one file per narrator. Nil in tests, which
+    /// must neither read nor leave a snapshot.
+    private let cache: SnapshotCache<NarratorPage>?
+
+    /// - Parameter caching: off in tests, which must neither read nor leave a
+    ///   snapshot on disk.
+    init(key: String, name: String, client: NarratorsClient, caching: Bool = true) {
         self.key = key
         self.name = name
         self.client = client
+        cache = caching ? SnapshotCache("narrator-\(key)", version: 1) : nil
+        page = cache?.read()
+    }
+
+    /// Whatever the page now shows goes to disk, for its next opening.
+    private func keepSnapshot() {
+        guard let cache, let page else { return }
+        Task.detached { cache.write(page) }
     }
 
     var isFavorite: Bool { page?.favorite ?? false }
@@ -38,7 +54,8 @@ final class NarratorViewModel {
             if fresh == nil { errorMessage = nil }
         } catch {
             guard !isCancellation(error) else { return }
-            errorMessage = reportError(error)
+            // Over the snapshot on screen, a failed refresh says nothing.
+            if page == nil { errorMessage = reportError(error) } else { _ = reportError(error) }
         }
     }
 

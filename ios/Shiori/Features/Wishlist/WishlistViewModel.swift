@@ -8,7 +8,7 @@ import SwiftUI
 final class WishlistViewModel {
     init(client: WishlistClient, caching: Bool = true) {
         self.client = client
-        cache = caching ? SnapshotCache("wishlist", version: 1) : nil
+        cache = caching ? .wishlist : nil
         wishlist = cache?.read() ?? Wishlist()
     }
 

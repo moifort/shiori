@@ -231,7 +231,7 @@ struct FriendProfileViewModelTests {
 @MainActor
 struct FriendBookViewModelTests {
     @Test func addSaysWhatTheReaderTook() async {
-        let viewModel = FriendBookViewModel(friendId: "camille", bookId: "preview", client: .preview)
+        let viewModel = FriendBookViewModel(friendId: "camille", bookId: "preview", client: .preview, caching: false)
 
         let added = await viewModel.add(.read, as: .book)
 
@@ -242,7 +242,7 @@ struct FriendBookViewModelTests {
     @Test func refusedAddSaysSo() async {
         var client = FriendsClient.preview
         client.addBook = { _, _, _, _ in throw Boom() }
-        let viewModel = FriendBookViewModel(friendId: "camille", bookId: "preview", client: client)
+        let viewModel = FriendBookViewModel(friendId: "camille", bookId: "preview", client: client, caching: false)
 
         let added = await viewModel.add(.toRead, as: .book)
 
@@ -252,7 +252,7 @@ struct FriendBookViewModelTests {
     }
 
     @Test func awaitedEditionShowsAtOnceAndGivesWayToTheAnswer() async {
-        let viewModel = FriendBookViewModel(friendId: "camille", bookId: "preview", client: .preview)
+        let viewModel = FriendBookViewModel(friendId: "camille", bookId: "preview", client: .preview, caching: false)
         await viewModel.load()
 
         viewModel.awaitEdition(.audiobook)

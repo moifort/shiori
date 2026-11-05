@@ -7,7 +7,7 @@ struct SeriesViewModelTests {
     private static var sagaId: String { SeriesFixtures.followed[0].seriesId }
 
     private func model(_ client: SeriesClient = .preview, friend: SeriesFriend? = nil) -> SeriesViewModel {
-        SeriesViewModel(seriesId: Self.sagaId, proposal: nil, friend: friend, client: client)
+        SeriesViewModel(seriesId: Self.sagaId, proposal: nil, friend: friend, client: client, caching: false)
     }
 
     @Test func loadDrawsTheCatalogueAndTheVolumesHeld() async {

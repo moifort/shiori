@@ -5,12 +5,29 @@ import Testing
 @MainActor
 struct BookViewModelTests {
     @Test func loadShowsTheBook() async {
-        let viewModel = BookViewModel(bookId: "preview", client: .preview)
+        let viewModel = BookViewModel(bookId: "preview", client: .preview, caching: false)
 
         await viewModel.load()
 
         #expect(viewModel.book?.id == Book.preview.id)
         #expect(viewModel.isLoading == false)
+    }
+
+    @Test func aFailedRefreshOverTheBookSaysNothing() async {
+        let fails = Flag()
+        var client = BookClient.preview
+        client.book = { _ in
+            if fails.isOn { throw Boom() }
+            return .preview
+        }
+        let viewModel = BookViewModel(bookId: "preview", client: client, caching: false)
+        await viewModel.load()
+        fails.isOn = true
+
+        await viewModel.load()
+
+        #expect(viewModel.book?.id == Book.preview.id)
+        #expect(viewModel.errorMessage == nil)
     }
 
     @Test func pageRecordedThenTheBookGivenUp() async {
@@ -29,7 +46,7 @@ struct BookViewModelTests {
             book.status = status
             return book
         }
-        let viewModel = BookViewModel(bookId: "preview", client: client)
+        let viewModel = BookViewModel(bookId: "preview", client: client, caching: false)
         await viewModel.load()
 
         let saved = await viewModel.recordPage(226, then: .dropped)
@@ -48,7 +65,7 @@ struct BookViewModelTests {
             calls.record("status")
             return Book.preview
         }
-        let viewModel = BookViewModel(bookId: "preview", client: client)
+        let viewModel = BookViewModel(bookId: "preview", client: client, caching: false)
         await viewModel.load()
 
         let saved = await viewModel.recordPage(226, then: .read)
@@ -72,7 +89,7 @@ struct BookViewModelTests {
     @Test func missingBookSaysSo() async {
         var client = BookClient.preview
         client.book = { _ in throw Boom() }
-        let viewModel = BookViewModel(bookId: "preview", client: client)
+        let viewModel = BookViewModel(bookId: "preview", client: client, caching: false)
 
         await viewModel.load()
 
@@ -89,7 +106,7 @@ struct BookViewModelTests {
             book.awaitingDescription = false
             return book
         }
-        let viewModel = BookViewModel(bookId: "2", client: client)
+        let viewModel = BookViewModel(bookId: "2", client: client, caching: false)
         await viewModel.load()
 
         let changed = await viewModel.describeIfAwaiting()
@@ -102,7 +119,7 @@ struct BookViewModelTests {
     @Test func describedBookIsNotAskedAgain() async {
         var client = BookClient.preview
         client.describe = { _ in throw Boom() }
-        let viewModel = BookViewModel(bookId: "preview", client: client)
+        let viewModel = BookViewModel(bookId: "preview", client: client, caching: false)
         await viewModel.load()
 
         #expect(await viewModel.describeIfAwaiting() == false)
@@ -113,7 +130,7 @@ struct BookViewModelTests {
         var client = BookClient.preview
         client.book = { _ in .previewFromShelf }
         client.describe = { _ in throw Boom() }
-        let viewModel = BookViewModel(bookId: "2", client: client)
+        let viewModel = BookViewModel(bookId: "2", client: client, caching: false)
         await viewModel.load()
 
         #expect(await viewModel.describeIfAwaiting() == false)
@@ -136,7 +153,7 @@ struct BookViewModelTests {
             book.rating = stars
             return book
         }
-        let viewModel = BookViewModel(bookId: "2", client: client)
+        let viewModel = BookViewModel(bookId: "2", client: client, caching: false)
         await viewModel.load()
 
         await viewModel.rate(4)
@@ -145,7 +162,7 @@ struct BookViewModelTests {
     }
 
     @Test func mutationTakesTheServersRecord() async {
-        let viewModel = BookViewModel(bookId: "preview", client: .preview)
+        let viewModel = BookViewModel(bookId: "preview", client: .preview, caching: false)
         await viewModel.load()
 
         await viewModel.rate(5)
@@ -157,7 +174,7 @@ struct BookViewModelTests {
     @Test func refusedMutationKeepsTheBook() async {
         var client = BookClient.preview
         client.setFavorite = { _, _ in throw Boom() }
-        let viewModel = BookViewModel(bookId: "preview", client: client)
+        let viewModel = BookViewModel(bookId: "preview", client: client, caching: false)
         await viewModel.load()
         let before = viewModel.book?.favorite
 
@@ -174,7 +191,7 @@ struct BookViewModelTests {
             ratings.record(rating.map { $0?.starsText ?? "nil" } ?? "unchanged")
             return .preview
         }
-        let viewModel = BookViewModel(bookId: "preview", client: client)
+        let viewModel = BookViewModel(bookId: "preview", client: client, caching: false)
         await viewModel.load()
         let current = viewModel.book?.rating
 
@@ -187,7 +204,7 @@ struct BookViewModelTests {
     @Test func refusedSaveKeepsTheFormOpen() async {
         var client = BookClient.preview
         client.save = { _, _, _ in throw Boom() }
-        let viewModel = BookViewModel(bookId: "preview", client: client)
+        let viewModel = BookViewModel(bookId: "preview", client: client, caching: false)
         await viewModel.load()
 
         let saved = await viewModel.save(BookCorrection(), rating: nil)
@@ -199,14 +216,14 @@ struct BookViewModelTests {
     @Test func coversAreSoughtAfreshEachTimeThePickerOpens() async {
         var client = BookClient.preview
         client.coverChoices = { _ in throw Boom() }
-        let viewModel = BookViewModel(bookId: "preview", client: client)
+        let viewModel = BookViewModel(bookId: "preview", client: client, caching: false)
 
         await viewModel.loadCoverChoices()
         #expect(viewModel.coverChoices == nil)
         #expect(viewModel.coverChoicesFailed != nil)
 
         client.coverChoices = { _ in CoverChoice.previews }
-        let retried = BookViewModel(bookId: "preview", client: client)
+        let retried = BookViewModel(bookId: "preview", client: client, caching: false)
         await retried.loadCoverChoices()
         #expect(retried.coverChoices == CoverChoice.previews)
         #expect(retried.coverChoicesFailed == nil)
@@ -219,7 +236,7 @@ struct BookViewModelTests {
             await sent.record(url)
             return .preview
         }
-        let viewModel = BookViewModel(bookId: "preview", client: client)
+        let viewModel = BookViewModel(bookId: "preview", client: client, caching: false)
         await viewModel.load()
         let photo = CoverChoice(source: .photo, url: URL(string: "https://fake.store/photo.jpg")!, isCurrent: false)
         let amazon = CoverChoice.previews[2]
@@ -233,7 +250,7 @@ struct BookViewModelTests {
     @Test func aRefusedCoverKeepsThePickerOpen() async {
         var client = BookClient.preview
         client.chooseCover = { _, _ in throw Boom() }
-        let viewModel = BookViewModel(bookId: "preview", client: client)
+        let viewModel = BookViewModel(bookId: "preview", client: client, caching: false)
         await viewModel.load()
 
         let chosen = await viewModel.chooseCover(CoverChoice.previews[1])
@@ -244,7 +261,7 @@ struct BookViewModelTests {
     }
 
     @Test func awaitedEditionShowsAtOnceAndCanBeGivenUp() async {
-        let viewModel = BookViewModel(bookId: "preview", client: .preview)
+        let viewModel = BookViewModel(bookId: "preview", client: .preview, caching: false)
         await viewModel.load()
 
         viewModel.awaitEdition(.audiobook)
@@ -257,7 +274,7 @@ struct BookViewModelTests {
     @Test func refusedAwaitIsTakenBackAndSaid() async {
         var client = BookClient.preview
         client.awaitEdition = { _, _ in throw Boom() }
-        let viewModel = BookViewModel(bookId: "preview", client: client)
+        let viewModel = BookViewModel(bookId: "preview", client: client, caching: false)
         await viewModel.load()
 
         viewModel.awaitEdition(.book)

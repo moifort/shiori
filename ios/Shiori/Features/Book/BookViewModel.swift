@@ -8,7 +8,9 @@ import SwiftUI
 @MainActor
 @Observable
 final class BookViewModel {
-    private(set) var book: Book?
+    private(set) var book: Book? {
+        didSet { keepSnapshot() }
+    }
     private(set) var isLoading = true
     private(set) var errorMessage: String?
     /// Set while a mutation is in flight, so the screen can disable its controls
@@ -25,7 +27,9 @@ final class BookViewModel {
     /// What the page offers to await in the app's language, and what it awaits.
     private(set) var offer = EditionOffer()
     /// The volumes of its saga, held or lacking, for the row on its page.
-    private(set) var sagaVolumes: [SeriesStripItem] = []
+    private(set) var sagaVolumes: [SeriesStripItem] = [] {
+        didSet { keepSnapshot() }
+    }
     /// An await refused, said in its own alert.
     var awaitFailed: String?
 
@@ -35,20 +39,48 @@ final class BookViewModel {
     /// them, so giving one up waits for the server's id.
     private var awaiting: [ReleaseFormat: Task<AwaitedEdition?, Never>] = [:]
 
-    init(bookId: String, client: BookClient) {
+    /// What the page showed last, one file per book. Nil in tests, which
+    /// must neither read nor leave a snapshot.
+    private let cache: SnapshotCache<Snapshot>?
+
+    struct Snapshot: Codable, Sendable {
+        var book: Book
+        var sagaVolumes: [SeriesStripItem]
+    }
+
+    /// - Parameter caching: off in tests, which must neither read nor leave a
+    ///   snapshot on disk.
+    init(bookId: String, client: BookClient, caching: Bool = true) {
         self.bookId = bookId
         self.client = client
+        cache = caching ? SnapshotCache("book-\(bookId)", version: 1) : nil
+        if let snapshot = cache?.read() {
+            book = snapshot.book
+            sagaVolumes = snapshot.sagaVolumes
+        }
+    }
+
+    /// Whatever the page now shows goes to disk, for its next opening.
+    private func keepSnapshot() {
+        guard let cache, let book else { return }
+        let snapshot = Snapshot(book: book, sagaVolumes: sagaVolumes)
+        Task.detached { cache.write(snapshot) }
     }
 
     /// The book alone: its saga's catalogue is the series screen's business,
     /// one tap away, and reading it here cost a catalogue call per opening.
+    /// Over the snapshot already on screen, the answer slides into place and a
+    /// failure says nothing: the page stays as it was, and a pull tries again.
     func load() async {
         isLoading = true
         errorMessage = nil
         do {
-            book = try await client.book(bookId)
+            let fetched = try await client.book(bookId)
+            withAnimation(book == nil ? nil : .smooth) { book = fetched }
+            // A book gone from the library leaves no page to open on.
+            if fetched == nil { cache?.forget() }
         } catch {
-            errorMessage = reportError(error)
+            if book == nil { errorMessage = reportError(error) } else { _ = reportError(error) }
         }
         isLoading = false
     }
@@ -206,6 +238,7 @@ final class BookViewModel {
         defer { isSaving = false }
         do {
             try await client.delete(bookId)
+            cache?.forget()
             return true
         } catch {
             errorMessage = reportError(error)

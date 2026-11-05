@@ -57,6 +57,12 @@ struct SnapshotCache<Value: Codable & Sendable>: Sendable {
         try? data.write(to: file, options: .atomic)
     }
 
+    /// Drops the snapshot of something that is gone, such as a deleted book,
+    /// so its page never opens on it again.
+    func forget() {
+        try? FileManager.default.removeItem(at: file)
+    }
+
     private struct Stored: Codable {
         let version: Int
         let value: Value

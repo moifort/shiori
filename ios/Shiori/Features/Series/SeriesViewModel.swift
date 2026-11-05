@@ -13,11 +13,17 @@ final class SeriesViewModel {
     /// theirs, and nothing changes the reader's library.
     let friend: SeriesFriend?
 
-    private(set) var series: BookSeries?
+    private(set) var series: BookSeries? {
+        didSet { keepSnapshot() }
+    }
     /// Every volume of the saga the reader holds — the friend, on their
     /// shelf — numbered or not.
-    private(set) var owned: [Book] = []
-    private(set) var opinion: SeriesOpinion?
+    private(set) var owned: [Book] = [] {
+        didSet { keepSnapshot() }
+    }
+    private(set) var opinion: SeriesOpinion? {
+        didSet { keepSnapshot() }
+    }
     private(set) var isLoading = true
     var errorMessage: String?
     /// The volume being added, its "+" turning.
@@ -32,7 +38,9 @@ final class SeriesViewModel {
     private(set) var isLookingUpReleases = false
     /// The next volume announced in the edition opened. Last opening's at
     /// once, brought up to date underneath.
-    private(set) var releases: SagaReleases?
+    private(set) var releases: SagaReleases? {
+        didSet { keepSnapshot() }
+    }
 
     private let proposal: SeriesProposal?
     private let client: SeriesClient
@@ -41,13 +49,44 @@ final class SeriesViewModel {
         seriesId: String,
         proposal: SeriesProposal?,
         friend: SeriesFriend?,
-        client: SeriesClient
+        client: SeriesClient,
+        caching: Bool = true
     ) {
         self.seriesId = seriesId
         self.proposal = proposal
         self.friend = friend
         self.client = client
+        let shelf = friend.map { "-friend-\($0.id)" } ?? ""
+        cache = caching ? SnapshotCache("series-\(seriesId)\(shelf)", version: 1) : nil
+        if let snapshot = cache?.read() {
+            series = snapshot.series
+            owned = snapshot.owned
+            opinion = snapshot.opinion
+            releases = snapshot.releases
+        }
     }
+
+    /// What the screen showed last, one file per saga and shelf. Nil in tests,
+    /// which must neither read nor leave a snapshot.
+    private let cache: SnapshotCache<Snapshot>?
+
+    struct Snapshot: Codable, Sendable {
+        var series: BookSeries?
+        var owned: [Book]
+        var opinion: SeriesOpinion?
+        var releases: SagaReleases?
+    }
+
+    /// Whatever the screen now shows goes to disk, for its next opening.
+    private func keepSnapshot() {
+        guard let cache, series != nil || !owned.isEmpty else { return }
+        let snapshot = Snapshot(series: series, owned: owned, opinion: opinion, releases: releases)
+        Task.detached { cache.write(snapshot) }
+    }
+
+    /// Something on screen already, the snapshot or an earlier load: a
+    /// refresh slides into place over it, and its failure says nothing.
+    private var isShowing: Bool { series != nil || !owned.isEmpty }
 
     /// The language of the edition opened, as its catalogue or a volume held
     /// says it; nil until the screen has loaded.
@@ -101,11 +140,14 @@ final class SeriesViewModel {
         }
         do {
             let screen = try await client.screen(seriesId, proposal)
-            series = screen.series
-            opinion = screen.opinion
-            owned = screen.owned
+            withAnimation(isShowing ? .smooth : nil) {
+                series = screen.series
+                opinion = screen.opinion
+                owned = screen.owned
+            }
         } catch {
-            errorMessage = reportError(error)
+            guard !isCancellation(error) else { return }
+            if isShowing { _ = reportError(error) } else { errorMessage = reportError(error) }
         }
     }
 
@@ -130,13 +172,16 @@ final class SeriesViewModel {
     private func loadFriendShelf(_ friend: SeriesFriend) async {
         do {
             let screen = try await client.friendScreen(friend.id, seriesId)
-            series = screen.series
-            owned = screen.saga?.volumes ?? []
-            opinion = screen.saga.map {
-                SeriesOpinion(seriesId: seriesId, rating: $0.rating, favorite: $0.favorite)
+            withAnimation(isShowing ? .smooth : nil) {
+                series = screen.series
+                owned = screen.saga?.volumes ?? []
+                opinion = screen.saga.map {
+                    SeriesOpinion(seriesId: seriesId, rating: $0.rating, favorite: $0.favorite)
+                }
             }
         } catch {
-            errorMessage = reportError(error)
+            guard !isCancellation(error) else { return }
+            if isShowing { _ = reportError(error) } else { errorMessage = reportError(error) }
         }
     }
 
@@ -232,6 +277,7 @@ final class SeriesViewModel {
         defer { isSaving = false }
         do {
             try await client.delete(seriesId)
+            cache?.forget()
             return true
         } catch {
             errorMessage = reportError(error)
