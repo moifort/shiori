@@ -292,7 +292,7 @@ struct CoverRow: View {
     }
 }
 
-/// A tile of "Sorties": a volume out or to come,
+/// A tile of "Prochaines sorties": a volume out or to come,
 /// its cover small over its own colours, the date in green once out and orange
 /// while announced.
 struct NewsTile: View {
