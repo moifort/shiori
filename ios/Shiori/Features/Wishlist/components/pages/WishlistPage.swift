@@ -73,7 +73,7 @@ struct WishlistPage: View {
                             place: edition.place
                         ) { onAction(.openEdition(edition)) }
                         .containerRelativeFrame(.horizontal) { width, _ in
-                            wishlist.upcoming.count > 1 ? width - 50 : width - 40
+                            SeriesReleaseCard.railWidth(width, count: wishlist.upcoming.count)
                         }
                         .id(edition.id)
                     }

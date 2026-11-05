@@ -39,6 +39,14 @@ struct SeriesReleaseCard: View {
     /// against the card.
     static let headerSpacing: CGFloat = 18
 
+    /// A card's width in a rail of `count` cards, from the width
+    /// `containerRelativeFrame` hands over — the rail's own, its 20 pt content
+    /// margins already taken off. A lone card spans all of it; from two on,
+    /// each is narrower so the next one peeks in.
+    static func railWidth(_ width: CGFloat, count: Int) -> CGFloat {
+        count > 1 ? width - 50 : width
+    }
+
     var body: some View {
         HStack(alignment: .top, spacing: 14) {
             // The cover runs the card's full height, cropped at its foot

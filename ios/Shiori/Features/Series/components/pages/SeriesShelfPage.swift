@@ -73,7 +73,7 @@ struct SeriesShelfPage: View {
                             language: entry.series.language
                         ) { onAction(.openSeries(entry.series)) }
                         .containerRelativeFrame(.horizontal) { width, _ in
-                            releases.count > 1 ? width - 50 : width - 40
+                            SeriesReleaseCard.railWidth(width, count: releases.count)
                         }
                         .id(entry.series.id)
                     }
