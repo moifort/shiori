@@ -87,7 +87,7 @@ struct NewsPage: View {
                         )
                         .padding(.top, 8)
                     }
-                    if !stories.isEmpty {
+                    if !stories.isEmpty || hasNoHistory {
                         FriendStoriesRail(
                             stories: stories,
                             selected: friendId,
@@ -96,19 +96,39 @@ struct NewsPage: View {
                         )
                         .padding(.top, calendar.releases.isEmpty ? 4 : 18)
                     }
-                    FilterPills(
-                        pills: pillFormats.map { .init(id: $0.rawValue, label: $0.pillLabel) },
-                        selected: format?.rawValue
-                    ) { id in
-                        act(.selectFormat(id.flatMap(BookFormat.init(rawValue:))))
+                    if hasNoHistory {
+                        noHistory
+                    } else {
+                        FilterPills(
+                            pills: pillFormats.map { .init(id: $0.rawValue, label: $0.pillLabel) },
+                            selected: format?.rawValue
+                        ) { id in
+                            act(.selectFormat(id.flatMap(BookFormat.init(rawValue:))))
+                        }
+                        .padding(.top, 14)
+                        lines
                     }
-                    .padding(.top, 14)
-                    lines
                 }
                 .padding(.bottom, 24)
             }
             .refreshable { await onAction(.refresh) }
         }
+    }
+
+    /// Nothing came out and no friend moved in the last thirty days, with no
+    /// pill or friend narrowing the feed: the page says what will fill it
+    /// rather than leaving a bare list. "À venir" stays above when it holds
+    /// something, and the friends' row keeps its "Inviter".
+    private var hasNoHistory: Bool { feed.isEmpty && format == nil && friendId == nil && !hasMore }
+
+    private var noHistory: some View {
+        EmptyState(
+            systemImage: "newspaper.fill",
+            title: "Rien de neuf pour l'instant",
+            message: "Ce fil se remplit tout seul à partir de votre bibliothèque."
+        )
+        .padding(.top, calendar.releases.isEmpty ? 72 : 32)
+        .accessibilityIdentifier("news-no-history")
     }
 
     // MARK: - The feed
@@ -192,12 +212,13 @@ private struct NewsPagePreview: View {
     var releases: [UpcomingRelease] = UpcomingRelease.previews
     var isLoading = false
     var errorMessage: String?
+    var released = true
 
     private var feed: [NewsFeedSection] {
         NewsFeedLayout.feedSections(
             released: NewsFeedLayout.released(
-                releases: UpcomingRelease.releasedPreviews,
-                narrator: [.preview],
+                releases: released ? UpcomingRelease.releasedPreviews : [],
+                narrator: released ? [.preview] : [],
                 format: nil
             ),
             events: events,
@@ -229,5 +250,7 @@ private struct NewsPagePreview: View {
 
 #Preview("Actualités") { NewsPagePreview() }
 #Preview("Sans amis") { NewsPagePreview(events: []) }
+#Preview("Sans historique") { NewsPagePreview(events: [], releases: [], released: false) }
+#Preview("Sans historique, à venir") { NewsPagePreview(events: [], released: false) }
 #Preview("Loading") { NewsPagePreview(events: [], releases: [], isLoading: true) }
 #Preview("Failed") { NewsPagePreview(events: [], releases: [], errorMessage: "Le réseau est indisponible.") }

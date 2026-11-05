@@ -4217,6 +4217,22 @@
         }
       }
     },
+    "Ce fil se remplit tout seul à partir de votre bibliothèque." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This feed fills up on its own from your library."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ce fil se remplit tout seul à partir de votre bibliothèque."
+          }
+        }
+      }
+    },
     "Ce livre n'est plus dans votre bibliothèque." : {
       "localizations" : {
         "en" : {
