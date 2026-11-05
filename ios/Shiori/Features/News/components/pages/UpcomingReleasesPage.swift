@@ -3,7 +3,7 @@ import SwiftUI
 /// Everything announced, pure: the format pills, then the calendar a month at
 /// a time, what is dated to a year alone or not at all, and last the editions
 /// awaited that nothing announced yet. With nothing announced, an icon and a
-/// sentence say what will come. A tap on a row opens its author.
+/// sentence say what will come. A tap on a row opens the page its card opens.
 struct UpcomingReleasesPage: View {
     let releases: [UpcomingRelease]
     let onOpen: (UpcomingRelease) -> Void

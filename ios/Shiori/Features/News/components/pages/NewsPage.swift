@@ -12,6 +12,8 @@ enum NewsAction {
     case wishReleased(ReleasedItem)
     case awaitReleased(ReleasedItem, ReleaseFormat)
     case openAuthor(UpcomingRelease)
+    /// A release of "À venir", on the page the rest of the app opens it on.
+    case openRelease(UpcomingRelease)
     case openUpcoming
     case openNarrator(NarratorNews)
     case invite
@@ -81,7 +83,7 @@ struct NewsPage: View {
                         UpcomingRail(
                             releases: calendar.dated,
                             onOpenList: { act(.openUpcoming) },
-                            onOpen: { release in act(release.author == nil ? .openUpcoming : .openAuthor(release)) }
+                            onOpen: { act(.openRelease($0)) }
                         )
                         .padding(.top, 8)
                     }

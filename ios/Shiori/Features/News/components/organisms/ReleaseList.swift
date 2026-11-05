@@ -20,7 +20,7 @@ struct ReleaseList: View {
                         date(day)
                         VStack(alignment: .leading, spacing: 0) {
                             ForEach(day.releases) { release in
-                                UpcomingReleaseRow(release: release, onOpen: release.author == nil ? nil : { onOpen(release) })
+                                UpcomingReleaseRow(release: release, onOpen: { onOpen(release) })
                                     .padding(.horizontal, -20)
                             }
                         }

@@ -93,6 +93,10 @@ struct NewsScreen: View {
             NarratorScreen(key: narrator.key, name: narrator.name)
         case .upcoming:
             UpcomingReleasesScreen(releases: viewModel.calendar().releases)
+        case let .announced(volume):
+            AnnouncedVolumeScreen(saga: volume.saga, volume: volume.volume)
+        case let .awaited(edition):
+            AwaitedEditionScreen(edition: edition) { Task { await viewModel.load() } }
         }
     }
 
@@ -110,6 +114,8 @@ struct NewsScreen: View {
         case let .openAuthor(release):
             if let author = release.author { open(.author(.init(key: author.key, name: author.name))) }
         case let .openNarrator(news): open(.narrator(.init(key: news.narratorKey, name: news.narrator)))
+        case let .openRelease(release):
+            if let destination = await UpcomingReleaseDestination.of(release) { open(NewsDetail(destination)) }
         case .openUpcoming: open(.upcoming)
         case .invite: await viewModel.invite()
         case .openAlerts: showsAlerts = true
@@ -124,15 +130,28 @@ struct NewsScreen: View {
     }
 }
 
-private enum NewsDetail: Identifiable, Hashable {
+private enum NewsDetail: Identifiable {
     case friendBook(FeedEvent)
     case author(AuthorDestination)
     case narrator(NarratorDestination)
     case upcoming
+    case announced(DiscoveryVolume)
+    case awaited(AwaitedEdition)
+
+    init(_ destination: UpcomingReleaseDestination) {
+        switch destination {
+        case let .announced(volume): self = .announced(volume)
+        case let .awaited(edition): self = .awaited(edition)
+        case let .author(author): self = .author(author)
+        case let .narrator(narrator): self = .narrator(narrator)
+        }
+    }
 
     var id: String {
         switch self {
         case .upcoming: "upcoming"
+        case let .announced(volume): "announced-\(volume.id)"
+        case let .awaited(edition): "awaited-\(edition.id)"
         case let .friendBook(event): "friend-book-\(event.id)"
         case let .author(author): "author-\(author.id)"
         case let .narrator(narrator): "narrator-\(narrator.id)"
@@ -140,17 +159,29 @@ private enum NewsDetail: Identifiable, Hashable {
     }
 }
 
-/// The full list of what is announced, opened from the head of Actualités: an
-/// author a row names is pushed on the list's own stack.
+/// The full list of what is announced, opened from the head of Actualités'
+/// "À venir" title alone: a row pushes on the list's own stack the page its
+/// card opens.
 private struct UpcomingReleasesScreen: View {
     let releases: [UpcomingRelease]
+    @State private var announced: DiscoveryVolume?
+    @State private var awaited: AwaitedEdition?
     @State private var author: AuthorDestination?
+    @State private var narrator: NarratorDestination?
     @Environment(\.dismiss) private var dismissPresentation
     @Environment(\.detailClosing) private var closing
 
     var body: some View {
         UpcomingReleasesPage(releases: releases) { release in
-            if let ref = release.author { author = .init(key: ref.key, name: ref.name) }
+            Task {
+                switch await UpcomingReleaseDestination.of(release) {
+                case let .announced(volume): announced = volume
+                case let .awaited(edition): awaited = edition
+                case let .author(destination): author = destination
+                case let .narrator(destination): narrator = destination
+                case nil: break
+                }
+            }
         }
         .toolbar {
             if closing.showsCloseButton {
@@ -163,6 +194,15 @@ private struct UpcomingReleasesScreen: View {
         }
         .pushesDetail(item: $author) { author in
             AuthorScreen(key: author.key, name: author.name, isOffered: false)
+        }
+        .pushesDetail(item: $announced) { volume in
+            AnnouncedVolumeScreen(saga: volume.saga, volume: volume.volume)
+        }
+        .pushesDetail(item: $awaited) { edition in
+            AwaitedEditionScreen(edition: edition) {}
+        }
+        .pushesDetail(item: $narrator) { narrator in
+            NarratorScreen(key: narrator.key, name: narrator.name)
         }
     }
 }
