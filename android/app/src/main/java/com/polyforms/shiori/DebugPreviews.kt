@@ -93,6 +93,20 @@ fun DebugPreviews(name: String) {
             "friend-book" -> com.polyforms.shiori.features.friends.components.pages.FriendBookPage(
                 DebugFixtures.friendBook, "Léa", null, emptyList(), listOf(BookFormat.BOOK, BookFormat.AUDIOBOOK), emptyList(),
             ) {}
+            "discover" -> androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize().background(com.polyforms.shiori.shared.components.styles.Shiori.colors.groupedBackground)) {
+                val feed = DebugFixtures.discoverFeed
+                com.polyforms.shiori.features.discover.components.pages.DiscoverPage(
+                    com.polyforms.shiori.shared.components.molecules.LibraryShelf.BOOKS,
+                    feed,
+                    DebugFixtures.discoverAwaited,
+                    null,
+                    emptyList(),
+                    com.polyforms.shiori.features.discover.DiscoveriesLine.Shown(DebugFixtures.discoveries),
+                    false,
+                    false,
+                    null,
+                ) {}
+            }
             "news" -> androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize().background(com.polyforms.shiori.shared.components.styles.Shiori.colors.groupedBackground)) {
                 val feed = com.polyforms.shiori.features.news.NewsFeedLayout.feedSections(emptyList(), DebugFixtures.newsEvents, null, null)
                 com.polyforms.shiori.features.news.components.pages.NewsPage(

@@ -52,5 +52,14 @@
  },
  "%lld séries": {
   "en": "%lld series"
+ },
+ "1 livre attendu": {
+  "en": "1 book awaited"
+ },
+ "%lld livres attendus": {
+  "en": "%lld books awaited"
+ },
+ "1 tome": {
+  "en": "1 volume"
  }
 }

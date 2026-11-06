@@ -216,6 +216,49 @@ object DebugFixtures {
         inLibrary = false,
     )
 
+    private fun saga(id: String, name: String, author: String, owned: List<Book>, next: com.polyforms.shiori.shared.DiscoveredVolume?, recent: List<com.polyforms.shiori.shared.DiscoveredVolume> = emptyList()) =
+        com.polyforms.shiori.features.discover.SagaDiscovery(
+            com.polyforms.shiori.shared.FollowedSeries(id, name, author = author, language = BookLanguage.FR, state = com.polyforms.shiori.shared.SeriesState.IN_PROGRESS, genre = BookGenre.FANTASY, ownedCount = owned.size, volumes = owned),
+            com.polyforms.shiori.features.discover.SagaReleases(true, next),
+            missing = recent.map { it.number },
+            recent = recent,
+        )
+
+    private fun volume(number: Int, title: String, days: Long, slug: String) =
+        com.polyforms.shiori.shared.DiscoveredVolume(number, title, java.time.LocalDate.now().plusDays(days).toString(), null, cover(slug))
+
+    private fun awaitedEdition(id: String, title: String, author: String, slug: String, state: com.polyforms.shiori.features.discover.AwaitedState, days: Long?) =
+        com.polyforms.shiori.features.discover.AwaitedEdition(
+            id, com.polyforms.shiori.features.discover.ReleaseFormat.BOOK, state, title, title, BookLanguage.EN, listOf(author),
+            days?.let { java.time.LocalDate.now().plusDays(it).toString() }, cover(slug), null, ago(10), null, "me",
+        )
+
+    val discoverFeed = com.polyforms.shiori.features.discover.DiscoveryFeed(
+        rows = mapOf(
+            com.polyforms.shiori.features.discover.ReleaseFormat.BOOK to listOf(
+                saga("frieren", "Frieren", "Kanehito Yamada", listOf(reading[2]), volume(16, "Frieren 16", 4, "frieren-05")),
+                saga("one-piece", "One Piece", "Eiichirō Oda", emptyList(), volume(112, "One Piece 112", 12, "one-piece-107"), listOf(volume(111, "One Piece 111", -6, "one-piece-107"))),
+                saga("blue-lock", "Blue Lock", "Muneyuki Kaneshiro", emptyList(), null, listOf(volume(21, "Blue Lock 21", -3, "blue-lock-20"))),
+            ),
+        ),
+        followed = mapOf(com.polyforms.shiori.features.discover.ReleaseFormat.BOOK to 3),
+        picks = com.polyforms.shiori.features.friends.FriendPicks(
+            books = listOf(
+                com.polyforms.shiori.features.friends.LovedBook(friendBook(toRead[2]), com.polyforms.shiori.features.friends.FriendLovers(listOf(com.polyforms.shiori.features.friends.FriendLovers.Lover("lea", "Léa"), com.polyforms.shiori.features.friends.FriendLovers.Lover("hugo", "Hugo")), true)),
+                com.polyforms.shiori.features.friends.LovedBook(friendBook(toRead[3]), com.polyforms.shiori.features.friends.FriendLovers(listOf(com.polyforms.shiori.features.friends.FriendLovers.Lover("lea", "Léa")), false)),
+            ),
+        ),
+        awaited = mapOf(
+            com.polyforms.shiori.features.discover.ReleaseFormat.BOOK to listOf(
+                awaitedEdition("a1", "Les Dépossédés", "Ursula K. Le Guin", "depossedes", com.polyforms.shiori.features.discover.AwaitedState.ANNOUNCED, 20),
+                awaitedEdition("a2", "Neuromancien", "William Gibson", "neuromancien", com.polyforms.shiori.features.discover.AwaitedState.AVAILABLE, -2),
+                awaitedEdition("a3", "Blacksad", "Juan Díaz Canales", "blacksad-04", com.polyforms.shiori.features.discover.AwaitedState.UNANNOUNCED, null),
+            ),
+        ),
+    )
+
+    val discoverAwaited get() = discoverFeed.awaited.values.flatten()
+
     val coverSlugs = (reading + toRead).mapNotNull { it.coverURL?.substringAfterLast('/')?.removeSuffix(".jpg") } +
         listOf("one-piece-107", "frieren-05", "blacksad-04", "hyperion-audio-01", "blue-lock-20", "depossedes", "neuromancien")
 }
