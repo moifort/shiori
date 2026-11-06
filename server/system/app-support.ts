@@ -15,3 +15,14 @@ export const MINIMUM_SUPPORTED_IOS_BUILD = 1
 
 /** Direct App Store link, opened by the update screen. */
 export const APP_STORE_URL = 'https://apps.apple.com/app/id6811938144'
+
+/**
+ * Oldest Android build the deployed schema still supports, the twin of the iOS floor. The
+ * Android `versionCode` is the same `git rev-list --count HEAD` at tag time, and both apps ship
+ * the same version (Workflow rule 10), so the deprecation routine raises both together.
+ */
+export const MINIMUM_SUPPORTED_ANDROID_BUILD = 1
+
+/** The Play Store page, opened by the Android update screen. */
+export const PLAY_STORE_URL =
+  'https://play.google.com/store/apps/details?id=com.polyforms.shiori.app'
