@@ -58,7 +58,15 @@ fun HomeScreen(client: HomeClient = HomeClient.live) {
     val account = LocalAccount.current
     var sheet by remember { mutableStateOf<HomeSheet?>(null) }
 
-    LaunchedEffect(Unit) { viewModel.loadOnAppear() }
+    LaunchedEffect(Unit) {
+        if (LibraryPreparation.isActive) {
+            LibraryPreparation.loadHome = {
+                viewModel.load()
+                viewModel.errorMessage == null
+            }
+        }
+        viewModel.loadOnAppear()
+    }
     LaunchedEffect(Unit) { DataChanges.notices.collect { viewModel.load() } }
 
     fun connect(source: ImportSource) = navigator.push {

@@ -61,17 +61,19 @@ fun ShioriButton(
     enabled: Boolean = true,
     large: Boolean = false,
     fillWidth: Boolean = false,
+    foreground: Color? = null,
     action: suspend () -> Unit,
 ) {
     var inProgress by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val colors = Shiori.colors
     val base = if (destructive) colors.red else tint
-    val (background, foreground) = when (kind) {
+    val (background, shown) = when (kind) {
         ButtonKind.PROMINENT -> base to Color.White
         ButtonKind.BORDERED -> base.copy(alpha = 0.15f) to base
         ButtonKind.PLAIN -> Color.Transparent to base
     }
+    val foreground = foreground ?: shown
     Row(
         modifier
             .then(if (fillWidth) Modifier.fillMaxWidth() else Modifier)

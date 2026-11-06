@@ -196,3 +196,15 @@ sealed interface AccountAvatar {
 /** "TM" for "Thibaut Mottet": the first letters of the first two words. */
 fun initials(name: String?): String =
     (name ?: "").split(' ', '-').filter { it.isNotEmpty() }.take(2).map { it.first().uppercase() }.joinToString("")
+
+/** A photo cropped to its centre square at 512 pixels, as the avatar upload takes it. */
+fun squarePhoto(data: ByteArray): ByteArray? {
+    val image = android.graphics.BitmapFactory.decodeByteArray(data, 0, data.size) ?: return null
+    val side = minOf(image.width, image.height)
+    val square = android.graphics.Bitmap.createBitmap(image, (image.width - side) / 2, (image.height - side) / 2, side, side)
+    val scaled = android.graphics.Bitmap.createScaledBitmap(square, 512, 512, true)
+    return java.io.ByteArrayOutputStream().use { out ->
+        scaled.compress(android.graphics.Bitmap.CompressFormat.JPEG, 85, out)
+        out.toByteArray()
+    }
+}

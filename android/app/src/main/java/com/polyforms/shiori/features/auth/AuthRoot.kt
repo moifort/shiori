@@ -81,7 +81,17 @@ fun AuthRoot() {
                         OnboardingGate.State.Required -> ShioriTheme(dark = true) {
                             OnboardingScreen(onCompleted = { name, avatar -> gate.markCompleted(name, avatar) })
                         }
-                        OnboardingGate.State.Ready -> ContentView()
+                        OnboardingGate.State.Ready -> Box(Modifier.fillMaxSize()) {
+                            ContentView()
+                            if (com.polyforms.shiori.features.home.LibraryPreparation.isActive) {
+                                ShioriTheme(dark = true) {
+                                    Box(Modifier.fillMaxSize()) {
+                                        CoverVeil(covering = true)
+                                        com.polyforms.shiori.features.home.LibraryPreparationView()
+                                    }
+                                }
+                            }
+                        }
                         is OnboardingGate.State.Failed -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                             FailureState(L("Connexion impossible"), route.message) { gate.refresh(subscriptions) }
                         }

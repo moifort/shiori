@@ -10,3 +10,6 @@ object AppContext {
     }
     fun get(): Context = context
 }
+
+/** Work that outlives the screen that started it: a background sync after a sign-in. */
+object AppScope : kotlinx.coroutines.CoroutineScope by kotlinx.coroutines.MainScope()

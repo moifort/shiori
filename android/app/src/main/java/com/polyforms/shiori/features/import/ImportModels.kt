@@ -54,9 +54,9 @@ enum class AmazonMarketplace(val graphQLName: String, val audibleLabel: String, 
     }
 }
 
-data class AudibleAccount(val marketplace: AmazonMarketplace, val connectedAt: Instant?, val lastImportedAt: Instant?, val autoSync: Boolean)
+data class AudibleAccount(override val marketplace: AmazonMarketplace, override val connectedAt: Instant?, override val lastImportedAt: Instant?, override val autoSync: Boolean) : ImportAccount
 
-data class KindleAccount(val marketplace: AmazonMarketplace, val connectedAt: Instant?, val lastImportedAt: Instant?, val autoSync: Boolean, val lastSyncFailedAt: Instant?)
+data class KindleAccount(override val marketplace: AmazonMarketplace, override val connectedAt: Instant?, override val lastImportedAt: Instant?, override val autoSync: Boolean, override val lastSyncFailedAt: Instant?) : ImportAccount
 
 /** The Amazon sign-in page the server prepared: where to open it, what ends it, its cookies. */
 data class AmazonLogin(val url: String, val redirectURL: String, val cookies: List<Cookie>) {
@@ -67,48 +67,48 @@ data class AmazonLogin(val url: String, val redirectURL: String, val cookies: Li
 
 /** A recording of the reader's Audible library, offered to import. */
 data class ImportableBook(
-    val asin: String,
-    val title: String,
+    override val asin: String,
+    override val title: String,
     val authors: List<String>,
     val narrators: List<String>,
     val durationMinutes: Int?,
     val coverURL: String?,
     val seriesName: String?,
     val volume: Int?,
-    val status: ReadingStatus,
+    override val status: ReadingStatus,
     val finishedAt: Instant?,
-    val alreadyInLibrary: Boolean,
-    val removedByReader: Boolean = false,
-) {
+    override val alreadyInLibrary: Boolean,
+    override val removedByReader: Boolean = false,
+) : ImportItem {
     val id: String get() = asin
-    val authorLine: String get() = if (authors.isEmpty()) L("Auteur inconnu") else authors.joinToString(", ")
+    override val authorLine: String get() = if (authors.isEmpty()) L("Auteur inconnu") else authors.joinToString(", ")
 
-    val detailLine: String
+    override val detailLine: String
         get() = buildList {
             seriesName?.let { add(volume?.let { v -> "$it $v" } ?: it) }
             durationMinutes?.takeIf { it > 0 }?.let { m -> add(if (m / 60 > 0) "${m / 60}h${"%02d".format(m % 60)}" else "${m}min") }
             if (narrators.isNotEmpty()) add(narrators.joinToString(", "))
         }.joinToString(" · ")
 
-    val asCoverSubject: Book get() = Book(id = asin, title = title, authors = authors, coverURL = coverURL, status = status)
+    override val asCoverSubject: Book get() = Book(id = asin, title = title, authors = authors, coverURL = coverURL, status = status)
 }
 
 /** A book of the reader's Kindle library, offered to import. */
 data class ImportableKindleBook(
-    val asin: String,
-    val title: String,
+    override val asin: String,
+    override val title: String,
     val authors: List<String>,
     val coverURL: String?,
     val seriesName: String?,
     val volume: Int?,
-    val status: ReadingStatus,
-    val alreadyInLibrary: Boolean,
-    val removedByReader: Boolean = false,
-) {
+    override val status: ReadingStatus,
+    override val alreadyInLibrary: Boolean,
+    override val removedByReader: Boolean = false,
+) : ImportItem {
     val id: String get() = asin
-    val authorLine: String get() = if (authors.isEmpty()) L("Auteur inconnu") else authors.joinToString(", ")
-    val detailLine: String get() = seriesName?.let { s -> volume?.let { "$s $it" } ?: s } ?: ""
-    val asCoverSubject: Book get() = Book(id = asin, title = title, authors = authors, coverURL = coverURL, status = status)
+    override val authorLine: String get() = if (authors.isEmpty()) L("Auteur inconnu") else authors.joinToString(", ")
+    override val detailLine: String get() = seriesName?.let { s -> volume?.let { "$s $it" } ?: s } ?: ""
+    override val asCoverSubject: Book get() = Book(id = asin, title = title, authors = authors, coverURL = coverURL, status = status)
 }
 
 enum class ImportSource {
@@ -132,3 +132,24 @@ data class SyncOutcome(val imported: Int, val updated: Int) {
 
 /** A sync's answer: what it brought, the account after it, the library offered again. */
 data class SyncResult<Account, Item>(val outcome: SyncOutcome, val account: Account, val library: List<Item>?)
+
+/** An Amazon account as the import screens show it, Audible or Kindle alike. */
+interface ImportAccount {
+    val marketplace: AmazonMarketplace
+    val connectedAt: Instant?
+    val lastImportedAt: Instant?
+    val autoSync: Boolean
+    val lastSyncFailedAt: Instant? get() = null
+}
+
+/** A book of an Amazon library offered to import. */
+interface ImportItem {
+    val asin: String
+    val title: String
+    val authorLine: String
+    val detailLine: String
+    val asCoverSubject: Book
+    val status: ReadingStatus
+    val alreadyInLibrary: Boolean
+    val removedByReader: Boolean
+}

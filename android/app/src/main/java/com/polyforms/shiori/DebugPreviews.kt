@@ -62,6 +62,23 @@ fun DebugPreviews(name: String) {
                 ) {}
             }
             "scan" -> com.polyforms.shiori.features.scan.ScanScreen(onDismiss = {}, onAwait = { _, _ -> }, onAdded = {})
+            "onboarding" -> androidx.compose.runtime.CompositionLocalProvider(com.polyforms.shiori.features.auth.LocalAuthSession provides remember { com.polyforms.shiori.features.auth.AuthSession() }) {
+                com.polyforms.shiori.shared.components.styles.ShioriTheme(dark = true) {
+                    androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize()) {
+                        com.polyforms.shiori.shared.shell.CoverWall()
+                        com.polyforms.shiori.features.onboarding.OnboardingScreen({ _, _ -> })
+                    }
+                }
+            }
+            "preparation" -> com.polyforms.shiori.shared.components.styles.ShioriTheme(dark = true) {
+                androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize()) {
+                    com.polyforms.shiori.shared.shell.CoverWall()
+                    com.polyforms.shiori.shared.shell.CoverVeil(covering = true)
+                    androidx.compose.runtime.LaunchedEffect(Unit) { com.polyforms.shiori.features.home.LibraryPreparation.begin(listOf(com.polyforms.shiori.features.import.ImportSource.AUDIBLE)) }
+                    if (com.polyforms.shiori.features.home.LibraryPreparation.isActive) com.polyforms.shiori.features.home.LibraryPreparationView()
+                }
+            }
+            "audible" -> com.polyforms.shiori.features.import.components.pages.ImportConnectPage(com.polyforms.shiori.features.import.ImportSource.AUDIBLE, com.polyforms.shiori.features.import.AmazonMarketplace.FR, {}, false) {}
             else -> ShioriRoot()
         }
     }

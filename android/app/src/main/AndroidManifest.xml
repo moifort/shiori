@@ -9,6 +9,8 @@
     <application
         android:name=".ShioriApplication"
         android:label="Shiori"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
         android:allowBackup="false"
         android:localeConfig="@xml/locales_config"
         android:supportsRtl="true"
