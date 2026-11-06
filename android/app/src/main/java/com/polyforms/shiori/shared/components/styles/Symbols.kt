@@ -135,6 +135,7 @@ import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material.icons.outlined.StarHalf
 import androidx.compose.material.icons.outlined.SportsScore
 import androidx.compose.material.icons.outlined.Sync
+import androidx.compose.material.icons.outlined.Tag
 import androidx.compose.material.icons.outlined.TabletAndroid
 import androidx.compose.material.icons.outlined.TheaterComedy
 import androidx.compose.material.icons.outlined.ThumbDown
@@ -300,6 +301,7 @@ fun Symbol(name: String): ImageVector = when (name) {
     "image" -> Icons.Outlined.Image
     "flag" -> Icons.Outlined.Flag
     "insights" -> Icons.Outlined.Insights
+    "number" -> Icons.Outlined.Tag
     "bag" -> Icons.Outlined.ShoppingBag
     "arrow.outward" -> Icons.Outlined.ArrowOutward
     "download" -> Icons.Outlined.Download

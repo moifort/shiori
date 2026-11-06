@@ -7,6 +7,7 @@ import com.polyforms.shiori.shared.SystemTint
 /** A line under a book page's hero that says where the book stands for the reader. */
 data class BookState(val text: String, val tint: SystemTint) {
     companion object {
+
         fun release(date: String?): BookState {
             if (date == null) return BookState(L("Annoncé"), SystemTint.GRAY)
             return if (ReleaseDateText.isUpcoming(date)) {
