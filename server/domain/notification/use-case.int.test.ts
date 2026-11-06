@@ -16,6 +16,17 @@ mock.module('~/system/apns', () => ({
   },
 }))
 
+const fcmSent: { token: string; title: string }[] = []
+let fcmAnswer: PushOutcome = 'sent'
+mock.module('~/system/fcm', () => ({
+  Fcm: {
+    send: async (token: string, message: { title: string }) => {
+      fcmSent.push({ token, title: message.title })
+      return fcmAnswer
+    },
+  },
+}))
+
 const { NotificationCommand } = await import('~/domain/notification/command')
 const { NotificationQuery } = await import('~/domain/notification/query')
 const { NotificationUseCase } = await import('~/domain/notification/use-case')
@@ -33,6 +44,8 @@ beforeEach(() => {
   resetFakeFirestore()
   sent.length = 0
   answer = 'sent'
+  fcmSent.length = 0
+  fcmAnswer = 'sent'
 })
 
 describe('pushing an alert', () => {
@@ -68,6 +81,28 @@ describe('pushing an alert', () => {
 
     await NotificationUseCase.notify(reader, alert)
 
+    expect((await NotificationQuery.settings(reader)).devices).toEqual([])
+  })
+})
+
+describe('pushing an alert to an Android phone', () => {
+  const android = DeviceToken(`fcm-token:${'A1_b-'.repeat(30)}`)
+
+  test('goes through FCM, an iPhone of the same reader through APNs', async () => {
+    await NotificationCommand.registerDevice(reader, phone, 'production')
+    await NotificationCommand.registerDevice(reader, android, 'fcm')
+
+    expect(await NotificationUseCase.notify(reader, alert)).toBe('delivered')
+
+    expect(fcmSent).toEqual([{ token: android as string, title: alert.title }])
+    expect(sent).toEqual([{ token: phone as string, title: alert.title }])
+  })
+
+  test('forgets a phone FCM reports gone', async () => {
+    await NotificationCommand.registerDevice(reader, android, 'fcm')
+    fcmAnswer = 'unregistered'
+
+    expect(await NotificationUseCase.notify(reader, alert)).toBe('undelivered')
     expect((await NotificationQuery.settings(reader)).devices).toEqual([])
   })
 })

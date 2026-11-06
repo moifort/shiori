@@ -23,10 +23,15 @@ export const AlertKindEnum = builder.enumType('AlertKind', {
 
 export const PushEnvironmentEnum = builder.enumType('PushEnvironment', {
   description:
-    'Which APNs gateway a device token belongs to: a development build gets a ' +
-    'sandbox token, which the production gateway rejects.',
+    'Where a device is reached: an APNs gateway for an iPhone — a development build gets a ' +
+    'sandbox token, which the production gateway rejects — or Firebase Cloud Messaging for an ' +
+    'Android phone.',
   values: {
     SANDBOX: { value: 'sandbox' },
     PRODUCTION: { value: 'production' },
+    FCM: {
+      value: 'fcm',
+      description: 'An Android phone, reached through Firebase Cloud Messaging.',
+    },
   } as const,
 })

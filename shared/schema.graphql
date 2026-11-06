@@ -1478,7 +1478,7 @@ type DetectedBox {
 }
 
 """
-The token APNs hands a device for this app, in hexadecimal, as the app receives it on registering for remote notifications.
+The token a device is reached by: the one APNs hands an iPhone, in hexadecimal, or the registration token Firebase Cloud Messaging hands an Android phone.
 """
 scalar DeviceToken
 
@@ -3922,9 +3922,11 @@ The publisher of this edition, 1 to 200 characters. Example: "DAW Books".
 scalar Publisher
 
 """
-Which APNs gateway a device token belongs to: a development build gets a sandbox token, which the production gateway rejects.
+Where a device is reached: an APNs gateway for an iPhone — a development build gets a sandbox token, which the production gateway rejects — or Firebase Cloud Messaging for an Android phone.
 """
 enum PushEnvironment {
+  """An Android phone, reached through Firebase Cloud Messaging."""
+  FCM
   PRODUCTION
   SANDBOX
 }

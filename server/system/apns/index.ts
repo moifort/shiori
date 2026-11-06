@@ -11,7 +11,11 @@ const TOPIC = 'com.polyforms.shiori.app'
 /** Which APNs gateway a device token belongs to. A build signed for
  *  development gets a sandbox token, which the production gateway rejects, and
  *  the reverse: the app says which it is when it registers. */
-export type PushEnvironment = 'sandbox' | 'production'
+export type ApnsEnvironment = 'sandbox' | 'production'
+
+/** Where a device is reached: one of the APNs gateways for an iPhone, Firebase
+ *  Cloud Messaging for an Android phone. */
+export type PushEnvironment = ApnsEnvironment | 'fcm'
 
 export type PushMessage = {
   title: string
@@ -27,7 +31,7 @@ export type PushMessage = {
  *  `unconfigured` means no APNs key was deployed: the alert is only logged. */
 export type PushOutcome = 'sent' | 'unregistered' | 'failed' | 'unconfigured'
 
-const HOSTS: Record<PushEnvironment, string> = {
+const HOSTS: Record<ApnsEnvironment, string> = {
   production: 'https://api.push.apple.com',
   sandbox: 'https://api.sandbox.push.apple.com',
 }
@@ -40,7 +44,7 @@ let cachedToken: { value: string; issuedAt: number } | undefined
 export namespace Apns {
   /** Send one notification to one device, over HTTP/2 as APNs requires. */
   export const send = async (
-    device: { token: string; environment: PushEnvironment },
+    device: { token: string; environment: ApnsEnvironment },
     message: PushMessage,
   ): Promise<PushOutcome> => {
     const { apnsKeyId, apnsPrivateKey, apnsTeamId } = config()

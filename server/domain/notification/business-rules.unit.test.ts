@@ -79,3 +79,18 @@ describe('whether an alert goes out', () => {
     expect(twice.alerts).toEqual(['translation', 'digest', 'discoveries'])
   })
 })
+
+describe('reading a device token', () => {
+  test('lowercases an APNs token', () => {
+    expect(DeviceToken('AB'.repeat(32)) as string).toBe('ab'.repeat(32))
+  })
+
+  test('keeps an FCM registration token as it came', () => {
+    const token = `dK3x:APA91b${'Qz-_9'.repeat(30)}`
+    expect(DeviceToken(token) as string).toBe(token)
+  })
+
+  test('refuses what is neither', () => {
+    expect(() => DeviceToken('not a token')).toThrow()
+  })
+})

@@ -1,9 +1,17 @@
 import { wantsAlert } from '~/domain/notification/business-rules'
 import { NotificationCommand } from '~/domain/notification/command'
 import * as repository from '~/domain/notification/infrastructure/repository'
-import type { Alert, Delivery } from '~/domain/notification/types'
+import type { Alert, Delivery, Device } from '~/domain/notification/types'
 import type { UserId } from '~/domain/shared/types'
-import { Apns } from '~/system/apns'
+import { Apns, type PushMessage } from '~/system/apns'
+import { Fcm } from '~/system/fcm'
+
+// An iPhone is reached through APNs, an Android phone through FCM: the device says
+// which when it registers, and the alert itself is the same.
+const push = (device: Device, message: PushMessage) =>
+  device.environment === 'fcm'
+    ? Fcm.send(device.token, message)
+    : Apns.send({ token: device.token, environment: device.environment }, message)
 
 export namespace NotificationUseCase {
   /** Push an alert to every device of the reader, if they switched its kind
@@ -19,7 +27,7 @@ export namespace NotificationUseCase {
     const outcomes = await Promise.all(
       settings.devices.map(async (device) => ({
         device,
-        outcome: await Apns.send(device, {
+        outcome: await push(device, {
           title: alert.title,
           body: alert.body,
           threadId: alert.kind,

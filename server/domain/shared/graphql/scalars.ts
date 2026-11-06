@@ -347,8 +347,8 @@ builder.scalarType('KindleAsin', {
 
 builder.scalarType('DeviceToken', {
   description:
-    'The token APNs hands a device for this app, in hexadecimal, as the app ' +
-    'receives it on registering for remote notifications.',
+    'The token a device is reached by: the one APNs hands an iPhone, in hexadecimal, or the ' +
+    'registration token Firebase Cloud Messaging hands an Android phone.',
   serialize: (value) => value as string,
   parseValue: validatedParse('DeviceToken', DeviceToken),
 })
