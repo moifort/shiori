@@ -82,6 +82,17 @@ fun DebugPreviews(name: String) {
             "settings" -> androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize().background(com.polyforms.shiori.shared.components.styles.Shiori.colors.groupedBackground)) {
                 com.polyforms.shiori.features.settings.components.pages.SettingsHomePage("Thibaut Mottet", false, false, "1.0", "1") {}
             }
+            "news" -> androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize().background(com.polyforms.shiori.shared.components.styles.Shiori.colors.groupedBackground)) {
+                val feed = com.polyforms.shiori.features.news.NewsFeedLayout.feedSections(emptyList(), DebugFixtures.newsEvents, null, null)
+                com.polyforms.shiori.features.news.components.pages.NewsPage(
+                    feed, emptySet(), emptySet(), emptySet(),
+                    com.polyforms.shiori.features.news.ReleaseCalendar(DebugFixtures.upcoming),
+                    null,
+                    com.polyforms.shiori.features.news.NewsFeedLayout.pillFormats(feed, null),
+                    com.polyforms.shiori.features.news.NewsFeedLayout.stories(DebugFixtures.newsEvents, null),
+                    null, false, false, false, null,
+                ) {}
+            }
             else -> ShioriRoot()
         }
     }

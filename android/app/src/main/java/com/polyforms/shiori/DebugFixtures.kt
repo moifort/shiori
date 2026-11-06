@@ -154,6 +154,30 @@ object DebugFixtures {
         coverURL = cover("horde-du-contrevent"),
     )
 
+    private fun event(id: String, kind: com.polyforms.shiori.features.news.FeedEventKind, hours: Long, friend: String, color: com.polyforms.shiori.shared.account.AvatarColor, title: String, author: String, slug: String, rating: Double? = null) =
+        com.polyforms.shiori.features.news.FeedEvent(
+            id = id, kind = kind, at = Instant.now().minus(hours, ChronoUnit.HOURS), friendId = friend.lowercase(), friendName = friend,
+            avatarColor = color, bookId = "b-$id", title = title, authors = listOf(author), format = BookFormat.BOOK, coverURL = cover(slug),
+            rating = rating, alsoStartedBy = 0, inLibrary = false,
+        )
+
+    val newsEvents = listOf(
+        event("e1", com.polyforms.shiori.features.news.FeedEventKind.FINISHED, 3, "Léa", com.polyforms.shiori.shared.account.AvatarColor.PINK, "Dune", "Frank Herbert", "dune", 5.0),
+        event("e2", com.polyforms.shiori.features.news.FeedEventKind.STARTED, 26, "Hugo", com.polyforms.shiori.shared.account.AvatarColor.BLUE, "Fondation", "Isaac Asimov", "fondation"),
+        event("e3", com.polyforms.shiori.features.news.FeedEventKind.LOVED, 72, "Léa", com.polyforms.shiori.shared.account.AvatarColor.PINK, "Le Problème à trois corps", "Liu Cixin", "trois-corps"),
+    )
+
+    val upcoming = listOf(
+        com.polyforms.shiori.features.news.UpcomingRelease(
+            id = "u1", source = com.polyforms.shiori.features.news.ReleaseSource.SAGA, format = BookFormat.MANGA, title = "Frieren", authors = listOf("Kanehito Yamada"),
+            date = java.time.LocalDate.now().plusDays(4).toString(), coverURL = cover("frieren-05"), seriesName = "Frieren", volume = 16, author = null, sagaRating = 4.5, sagaFavorite = true,
+        ),
+        com.polyforms.shiori.features.news.UpcomingRelease(
+            id = "u2", source = com.polyforms.shiori.features.news.ReleaseSource.SAGA, format = BookFormat.MANGA, title = "One Piece", authors = listOf("Eiichirō Oda"),
+            date = java.time.LocalDate.now().plusDays(12).toString(), coverURL = cover("one-piece-107"), seriesName = "One Piece", volume = 112, author = null, sagaRating = null, sagaFavorite = false,
+        ),
+    )
+
     val coverSlugs = (reading + toRead).mapNotNull { it.coverURL?.substringAfterLast('/')?.removeSuffix(".jpg") } +
         listOf("one-piece-107", "frieren-05", "blacksad-04", "hyperion-audio-01", "blue-lock-20", "depossedes", "neuromancien")
 }
