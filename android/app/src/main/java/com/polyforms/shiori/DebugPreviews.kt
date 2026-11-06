@@ -1,5 +1,7 @@
 package com.polyforms.shiori
 
+import com.polyforms.shiori.shared.BookFormat
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -82,6 +84,15 @@ fun DebugPreviews(name: String) {
             "settings" -> androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize().background(com.polyforms.shiori.shared.components.styles.Shiori.colors.groupedBackground)) {
                 com.polyforms.shiori.features.settings.components.pages.SettingsHomePage("Thibaut Mottet", false, false, "1.0", "1") {}
             }
+            "shared" -> androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize().background(com.polyforms.shiori.shared.components.styles.Shiori.colors.groupedBackground)) {
+                com.polyforms.shiori.features.friends.components.pages.SharedPage(DebugFixtures.myShelf, DebugFixtures.friends, false, null, false) {}
+            }
+            "friend" -> androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize().background(com.polyforms.shiori.shared.components.styles.Shiori.colors.groupedBackground)) {
+                com.polyforms.shiori.features.friends.components.pages.FriendProfilePage(DebugFixtures.friends[0], DebugFixtures.myShelf.copy(firstName = "Léa"), false, false, null) {}
+            }
+            "friend-book" -> com.polyforms.shiori.features.friends.components.pages.FriendBookPage(
+                DebugFixtures.friendBook, "Léa", null, emptyList(), listOf(BookFormat.BOOK, BookFormat.AUDIOBOOK), emptyList(),
+            ) {}
             "news" -> androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize().background(com.polyforms.shiori.shared.components.styles.Shiori.colors.groupedBackground)) {
                 val feed = com.polyforms.shiori.features.news.NewsFeedLayout.feedSections(emptyList(), DebugFixtures.newsEvents, null, null)
                 com.polyforms.shiori.features.news.components.pages.NewsPage(

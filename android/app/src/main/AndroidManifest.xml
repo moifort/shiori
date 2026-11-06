@@ -28,6 +28,20 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- An invitation link: the App Link the server publishes, and the scheme its page's
+                 "Ouvrir dans Shiori" button uses. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="shiori-server-hvrhl6ox5q-ey.a.run.app" android:pathPrefix="/invite/" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="shiori" android:host="invite" />
+            </intent-filter>
         </activity>
         <service
             android:name=".shared.ShioriMessagingService"

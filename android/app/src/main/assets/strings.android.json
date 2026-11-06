@@ -46,5 +46,11 @@
  },
  "Votre bibliothèque, vos notes et vos séries seront effacées sans possibilité de récupération. Un abonnement Premium éventuel n'est pas résilié et reste à annuler dans Google Play.": {
   "en": "Your library, notes and series will be erased with no way to recover them. A Premium subscription is not cancelled and must be cancelled in Google Play."
+ },
+ "1 série": {
+  "en": "1 series"
+ },
+ "%lld séries": {
+  "en": "%lld series"
  }
 }

@@ -16,7 +16,11 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
+import com.polyforms.shiori.features.friends.InvitationAcceptSheet
+import com.polyforms.shiori.features.friends.InvitationRequest
+import com.polyforms.shiori.features.friends.SharedScreen
 import com.polyforms.shiori.features.home.HomeScreen
+import com.polyforms.shiori.shared.platform.ShioriSheet
 import com.polyforms.shiori.features.library.AddBookFlow
 import com.polyforms.shiori.features.library.LibraryRequest
 import com.polyforms.shiori.features.library.LibraryTab
@@ -62,6 +66,7 @@ class AppRouter {
     var libraryRequest by mutableStateOf<LibraryRequest?>(null)
     var seriesRequest by mutableStateOf<SeriesRequest?>(null)
     var showShared by mutableStateOf(false)
+    var invitation by mutableStateOf<InvitationRequest?>(null)
     var opensDiscover by mutableStateOf(false)
 
     /** Opens Découvrir, in the News tab. */
@@ -121,6 +126,13 @@ fun ContentView(router: AppRouter = remember { AppRouter() }) {
         PushRegistrar.refreshRegistration()
     }
     LaunchedEffect(Unit) { PushRegistrar.openDiscover.collect { router.showDiscover() } }
+    LaunchedEffect(Unit) {
+        MainActivity.invitations.collect {
+            @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+            MainActivity.invitations.resetReplayCache()
+            router.invitation = InvitationRequest(it)
+        }
+    }
     Box(Modifier.fillMaxSize()) {
         listOf(TabSelection.HOME, TabSelection.LIBRARY, TabSelection.NEWS, TabSelection.SEARCH).forEach { tab ->
             val visible = router.selectedTab == tab
@@ -156,5 +168,13 @@ fun ContentView(router: AppRouter = remember { AppRouter() }) {
         }
     }
         AddBookFlow(router)
+        if (router.showShared) {
+            ShioriSheet({ router.showShared = false }) {
+                Box(Modifier.fillMaxSize()) { NavigationStack { SharedScreen() } }
+            }
+        }
+        // The invitation is asked about rather than accepted: the link came from somewhere the
+        // reader does not control, and accepting opens their library to whoever sent it.
+        router.invitation?.let { InvitationAcceptSheet(it, { router.invitation = null }) }
     }
 }

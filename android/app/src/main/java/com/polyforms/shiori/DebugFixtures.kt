@@ -178,6 +178,44 @@ object DebugFixtures {
         ),
     )
 
+    private fun friendBook(book: Book, favoritedAt: Instant? = null) = com.polyforms.shiori.features.friends.FriendBook(book, inLibrary = false, favoritedAt = favoritedAt, lastActivityAt = book.startedAt ?: book.addedAt)
+
+    val myShelf = com.polyforms.shiori.features.friends.FriendProfile(
+        userId = "me",
+        firstName = "Thibaut",
+        reading = reading.map { friendBook(it) },
+        pile = toRead.map { friendBook(it) },
+        favorites = listOf(friendBook(toRead[4].copy(favorite = true, status = ReadingStatus.READ), ago(2))),
+        sagas = emptyList(),
+        lastAdded = friendBook(toRead[0]),
+        bookCount = 84,
+        readThisYear = 17,
+    )
+
+    private fun activity(kind: com.polyforms.shiori.features.friends.RecentActivity.Kind, book: Book, days: Long) =
+        com.polyforms.shiori.features.friends.RecentActivity(kind, friendBook(book), ago(days))
+
+    val friends = listOf(
+        com.polyforms.shiori.features.friends.Friend(
+            "lea", "Léa", ago(200), bookCount = 132, favoriteCount = 12, readingCount = 2, toReadCount = 9, readThisYear = 21,
+            recentActivity = listOf(
+                activity(com.polyforms.shiori.features.friends.RecentActivity.Kind.READING, toRead[2], 2),
+                activity(com.polyforms.shiori.features.friends.RecentActivity.Kind.FINISHED, toRead[4], 5),
+                activity(com.polyforms.shiori.features.friends.RecentActivity.Kind.HEARTED, toRead[3], 9),
+                activity(com.polyforms.shiori.features.friends.RecentActivity.Kind.ADDED, toRead[0], 12),
+            ),
+        ),
+        com.polyforms.shiori.features.friends.Friend(
+            "hugo", "Hugo", ago(90), bookCount = 47, favoriteCount = 4, readingCount = 1, toReadCount = 3, readThisYear = 9,
+            recentActivity = listOf(activity(com.polyforms.shiori.features.friends.RecentActivity.Kind.READING, reading[2], 1)),
+        ),
+    )
+
+    val friendBook = com.polyforms.shiori.features.friends.FriendBook(
+        toRead[4].copy(status = ReadingStatus.READ, finishedAt = ago(5), rating = 5.0, favorite = true, synopsis = "Sur Arrakis, la planète des sables, la famille Atréides prend la tête de l'exploitation de l'Épice.", note = "Le meilleur space opera que j'aie lu. Lis-le !"),
+        inLibrary = false,
+    )
+
     val coverSlugs = (reading + toRead).mapNotNull { it.coverURL?.substringAfterLast('/')?.removeSuffix(".jpg") } +
         listOf("one-piece-107", "frieren-05", "blacksad-04", "hyperion-audio-01", "blue-lock-20", "depossedes", "neuromancien")
 }
