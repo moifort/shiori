@@ -3578,6 +3578,29 @@ type Mutation {
   """
   syncKindleNow: KindleSync!
 
+  """
+  Hand over a Google Play subscription purchase: after a purchase, after a restore, and on every launch of the Android app while a subscription is running.
+  
+  Google is asked what the token bought, and the purchase must carry this account’s `appAccountToken` as its obfuscated account id, so this is what grants Premium on Android: nothing else does. The purchase is acknowledged to Google once recorded.
+  
+  Fails with `INVALID_TRANSACTION` when Google does not know the token, and `TRANSACTION_NOT_YOURS` when the purchase belongs to another account.
+  
+  ```graphql
+  mutation {
+    syncPlayEntitlement(purchaseToken: "opaque-token-from-play-billing") {
+      plan
+      expiresOn
+    }
+  }
+  ```
+  """
+  syncPlayEntitlement(
+    """
+    The purchase token Play Billing handed the app for the subscription, e.g. `Purchase.purchaseToken`
+    """
+    purchaseToken: String!
+  ): Entitlement!
+
   """Forget a device, when the reader signs out of it."""
   unregisterDevice(token: DeviceToken!): NotificationSettings!
 

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test'
 import type { UserId } from '~/domain/shared/types'
 import type { AppleNotification, AppleTransaction } from '~/system/apple/types'
+import type { PlaySubscription } from '~/system/google-play/types'
 import { fakeDb, resetFakeFirestore, startFakeRequest } from '~/test/fake-firestore'
 
 mock.module('~/system/firebase', () => ({ db: fakeDb }))
@@ -14,6 +15,19 @@ mock.module('~/system/apple', () => ({
   Apple: {
     verifyTransaction: async () => verifiedTransaction,
     verifyNotification: async () => verifiedNotification,
+  },
+}))
+
+// Google's answer for a purchase token, as the Play Developer API would give it.
+let verifiedPlay: PlaySubscription | 'invalid-token' = 'invalid-token'
+let acknowledged: string[] = []
+
+mock.module('~/system/google-play', () => ({
+  GooglePlay: {
+    verifySubscription: async () => verifiedPlay,
+    acknowledge: async (subscription: PlaySubscription) => {
+      acknowledged.push(subscription.purchaseToken)
+    },
   },
 }))
 
@@ -50,6 +64,8 @@ beforeEach(() => {
   verifiedTransaction = 'invalid-signature'
   verifiedNotification = 'invalid-signature'
   compedUserIds = []
+  verifiedPlay = 'invalid-token'
+  acknowledged = []
 })
 
 describe('syncing a purchase the app hands over', () => {
@@ -240,5 +256,78 @@ describe('reading the plan', () => {
 
     expect(fake.docReads - before).toBe(1)
     expect(fake.queryReads).toBe(0)
+  })
+})
+
+const aPlayPurchase = (overrides: Partial<PlaySubscription> = {}): PlaySubscription => ({
+  productId: 'com.polyforms.shiori.app.premium.yearly',
+  purchaseToken: 'play-token-1',
+  accountToken: tokenOf('u1'),
+  expiresAt: new Date('2099-01-01T00:00:00.000Z'),
+  needsAcknowledgement: true,
+  ...overrides,
+})
+
+describe('syncing a Google Play purchase the Android app hands over', () => {
+  test('records the entitlement as Google Play’s and turns the account premium', async () => {
+    verifiedPlay = aPlayPurchase()
+
+    const result = await EntitlementUseCase.syncPlay(user('u1'), 'play-token-1')
+
+    expect(result).toMatchObject({
+      userId: 'u1',
+      productId: 'com.polyforms.shiori.app.premium.yearly',
+      originalTransactionId: 'play-token-1',
+      store: 'google-play',
+    })
+    expect(await EntitlementQuery.planOf(user('u1'))).toBe('premium')
+  })
+
+  test('acknowledges a purchase Google still waits on, and only that one', async () => {
+    verifiedPlay = aPlayPurchase()
+    await EntitlementUseCase.syncPlay(user('u1'), 'play-token-1')
+    verifiedPlay = aPlayPurchase({ needsAcknowledgement: false })
+    await EntitlementUseCase.syncPlay(user('u1'), 'play-token-1')
+
+    expect(acknowledged).toEqual(['play-token-1'])
+  })
+
+  test('refuses a token Google does not know', async () => {
+    expect(await EntitlementUseCase.syncPlay(user('u1'), 'made-up')).toBe('invalid-transaction')
+    expect(fake.snapshot('entitlements').size).toBe(0)
+  })
+
+  test('refuses a purchase that names another account', async () => {
+    verifiedPlay = aPlayPurchase({ accountToken: tokenOf('someone-else') })
+
+    expect(await EntitlementUseCase.syncPlay(user('u1'), 'play-token-1')).toBe(
+      'transaction-not-yours',
+    )
+    expect(fake.snapshot('entitlements').size).toBe(0)
+    expect(acknowledged).toEqual([])
+  })
+
+  test('refuses a purchase made without an account', async () => {
+    verifiedPlay = aPlayPurchase({ accountToken: undefined })
+
+    expect(await EntitlementUseCase.syncPlay(user('u1'), 'play-token-1')).toBe(
+      'invalid-transaction',
+    )
+  })
+
+  test('hands the Premium welcome scans, as an App Store purchase does', async () => {
+    verifiedPlay = aPlayPurchase()
+
+    await EntitlementUseCase.syncPlay(user('u1'), 'play-token-1')
+
+    expect((await QuotaQuery.creditOf(user('u1'))).scans as number).toBe(PREMIUM_WELCOME_SCANS)
+  })
+
+  test('reads a refunded purchase as free', async () => {
+    verifiedPlay = aPlayPurchase({ revokedAt: new Date('2026-11-01T00:00:00.000Z') })
+
+    await EntitlementUseCase.syncPlay(user('u1'), 'play-token-1')
+
+    expect(await EntitlementQuery.planOf(user('u1'))).toBe('free')
   })
 })

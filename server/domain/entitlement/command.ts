@@ -3,6 +3,7 @@ import { AppAccountToken, OriginalTransactionId, ProductId } from '~/domain/enti
 import type { Entitlement } from '~/domain/entitlement/types'
 import type { UserId } from '~/domain/shared/types'
 import type { AppleTransaction } from '~/system/apple/types'
+import type { PlaySubscription } from '~/system/google-play/types'
 
 export namespace EntitlementCommand {
   // Write down what the App Store sold, from a transaction whose signature has
@@ -21,6 +22,24 @@ export namespace EntitlementCommand {
       ...(transaction.revokedAt ? { revokedAt: transaction.revokedAt } : {}),
       ...(transaction.startedAt ? { startedAt: transaction.startedAt } : {}),
       updatedAt: new Date(),
+    })
+
+  // Write down what Google Play sold, from a purchase Google has already vouched for. The
+  // purchase token names the chain, as Apple's original transaction id does.
+  export const recordPlay = async (
+    userId: UserId,
+    subscription: PlaySubscription & { expiresAt: Date; accountToken: string },
+  ): Promise<Entitlement> =>
+    repository.save({
+      userId,
+      productId: ProductId(subscription.productId),
+      originalTransactionId: OriginalTransactionId(subscription.purchaseToken),
+      appAccountToken: AppAccountToken(subscription.accountToken),
+      expiresAt: subscription.expiresAt,
+      ...(subscription.revokedAt ? { revokedAt: subscription.revokedAt } : {}),
+      ...(subscription.startedAt ? { startedAt: subscription.startedAt } : {}),
+      updatedAt: new Date(),
+      store: 'google-play',
     })
 
   // Forget the account's stored entitlement (account deletion). Removes only our

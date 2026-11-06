@@ -7,6 +7,8 @@ import { QuotaCommand } from '~/domain/quota/command'
 import type { UserId } from '~/domain/shared/types'
 import { Apple } from '~/system/apple'
 import type { AppleTransaction } from '~/system/apple/types'
+import { GooglePlay } from '~/system/google-play'
+import type { PlaySubscription } from '~/system/google-play/types'
 
 // A transaction we can act on: signed by Apple, naming an account, and granting
 // time (a one-off purchase would carry no expiry — there is none in this app, but
@@ -27,6 +29,11 @@ const recordAndWelcome = async (userId: UserId, transaction: SubscriptionTransac
   return entitlement
 }
 
+type PlayGrant = PlaySubscription & { expiresAt: Date; accountToken: string }
+
+const playGrantsTime = (subscription: PlaySubscription): subscription is PlayGrant =>
+  subscription.expiresAt !== undefined && subscription.accountToken !== undefined
+
 export namespace EntitlementUseCase {
   // Take the app's word for nothing. The client hands over the transaction the
   // App Store signed for it; this checks that signature, checks the purchase
@@ -46,6 +53,27 @@ export namespace EntitlementUseCase {
       return 'transaction-not-yours'
 
     return recordAndWelcome(userId, transaction)
+  }
+
+  // The Android app's sync: it hands over the token Play Billing gave its purchase, Google
+  // says what that token bought and for which account, and only a purchase naming *this*
+  // account is recorded — the same account-token check as the App Store's, carried as Play's
+  // obfuscated account id. Google refunds a purchase nobody acknowledges within three days,
+  // so a grant is acknowledged here, once recorded.
+  export const syncPlay = async (
+    userId: UserId,
+    purchaseToken: string,
+  ): Promise<Entitlement | 'invalid-transaction' | 'transaction-not-yours'> => {
+    const subscription = await GooglePlay.verifySubscription(purchaseToken)
+    if (subscription === 'invalid-token') return 'invalid-transaction'
+    if (!playGrantsTime(subscription)) return 'invalid-transaction'
+    if (subscription.accountToken !== (EntitlementQuery.tokenFor(userId) as string))
+      return 'transaction-not-yours'
+
+    const entitlement = await EntitlementCommand.recordPlay(userId, subscription)
+    if (isActive(entitlement, new Date())) await QuotaCommand.grantPremiumWelcome(userId)
+    if (subscription.needsAcknowledgement) await GooglePlay.acknowledge(subscription)
+    return entitlement
   }
 
   // Apply what Apple pushed to the webhook: a renewal, an expiry, a refund. The

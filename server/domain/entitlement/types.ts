@@ -14,7 +14,11 @@ export type OriginalTransactionId = Brand<string, 'OriginalTransactionId'>
  *  just proof that *somebody* paid. */
 export type AppAccountToken = Brand<string, 'AppAccountToken'>
 
-/** What the App Store sold, as we recorded it. One document per account: an
+/** Which store sold the subscription. Absent on an entitlement recorded before Google Play
+ *  sold any: those were all the App Store's. */
+export type EntitlementStore = 'app-store' | 'google-play'
+
+/** What the App Store or Google Play sold, as we recorded it. One document per account: an
  *  account has at most one entitlement, and a renewal overwrites it in place.
  *  `revokedAt` is set on a refund or a family-sharing removal — Premium ends then
  *  and there, whatever `expiresAt` still says. `startedAt` is when the chain
@@ -23,10 +27,13 @@ export type AppAccountToken = Brand<string, 'AppAccountToken'>
 export type Entitlement = {
   userId: UserId
   productId: ProductId
+  /** Apple's original transaction id, or the Play purchase token: what names the purchase
+   *  chain in the store that sold it. */
   originalTransactionId: OriginalTransactionId
   appAccountToken: AppAccountToken
   expiresAt: Date
   revokedAt?: Date
   startedAt?: Date
   updatedAt: Date
+  store?: EntitlementStore
 }
