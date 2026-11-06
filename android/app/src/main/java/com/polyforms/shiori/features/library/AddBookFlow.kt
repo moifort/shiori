@@ -5,6 +5,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -50,6 +51,22 @@ fun AddBookFlow(router: AppRouter) {
                 context.contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it) }?.scaledJpeg()
             } ?: return@launch
             flow = AddFlow.Scan(ScanStart.Photo(jpeg))
+        }
+    }
+    // A page shared from a browser or a bookshop app opens on its book; a shared photo is scanned.
+    LaunchedEffect(Unit) {
+        com.polyforms.shiori.MainActivity.shared.collect { intake ->
+            @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+            com.polyforms.shiori.MainActivity.shared.resetReplayCache()
+            when (intake) {
+                is com.polyforms.shiori.SharedIntake.Link -> flow = AddFlow.Scan(ScanStart.Link(intake.url))
+                is com.polyforms.shiori.SharedIntake.Image -> {
+                    val jpeg = withContext(Dispatchers.IO) {
+                        runCatching { context.contentResolver.openInputStream(intake.uri)?.use { BitmapFactory.decodeStream(it) }?.scaledJpeg() }.getOrNull()
+                    }
+                    if (jpeg != null) flow = AddFlow.Scan(ScanStart.Photo(jpeg))
+                }
+            }
         }
     }
     if (router.showAddSheet) {

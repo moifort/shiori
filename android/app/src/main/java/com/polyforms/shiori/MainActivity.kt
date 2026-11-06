@@ -35,6 +35,18 @@ class MainActivity : ComponentActivity() {
     private fun route(intent: Intent) {
         if (intent.getBooleanExtra(OPEN_DISCOVER, false)) PushRegistrar.openDiscover.tryEmit(Unit)
         intent.data?.let(InvitationLink::code)?.let { invitations.tryEmit(it) }
+        if (intent.action == Intent.ACTION_SEND) {
+            val image = if (android.os.Build.VERSION.SDK_INT >= 33) {
+                intent.getParcelableExtra(Intent.EXTRA_STREAM, android.net.Uri::class.java)
+            } else {
+                @Suppress("DEPRECATION") intent.getParcelableExtra(Intent.EXTRA_STREAM)
+            }
+            val link = intent.getStringExtra(Intent.EXTRA_TEXT)?.let { Regex("https?://\\S+").find(it)?.value }
+            when {
+                image != null -> shared.tryEmit(SharedIntake.Image(image))
+                link != null -> shared.tryEmit(SharedIntake.Link(link))
+            }
+        }
     }
 
     companion object {
@@ -42,5 +54,14 @@ class MainActivity : ComponentActivity() {
 
         /** Invitation codes from tapped links, kept until the signed-in app takes them. */
         val invitations = MutableSharedFlow<String>(replay = 1, extraBufferCapacity = 1)
+
+        /** What another app shared to Shiori, kept until the signed-in app scans it. */
+        val shared = MutableSharedFlow<SharedIntake>(replay = 1, extraBufferCapacity = 1)
     }
+}
+
+/** A page or a photo shared from another app, opened on the scan. */
+sealed interface SharedIntake {
+    data class Link(val url: String) : SharedIntake
+    data class Image(val uri: android.net.Uri) : SharedIntake
 }
