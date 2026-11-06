@@ -13,5 +13,23 @@
  },
  "Google n'a pas renvoyé de jeton.": {
   "en": "Google did not return a token."
+ },
+ "Annuel": {
+  "en": "Yearly"
+ },
+ "Mensuel": {
+  "en": "Monthly"
+ },
+ "Autoriser": {
+  "en": "Allow"
+ },
+ "Autorisez l'accès à la caméra dans les réglages pour scanner une couverture.": {
+  "en": "Allow camera access in Settings to scan a cover."
+ },
+ "Caméra indisponible": {
+  "en": "Camera unavailable"
+ },
+ "Retour": {
+  "en": "Back"
  }
 }
