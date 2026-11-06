@@ -57,7 +57,7 @@ private fun ImageProxy.uprightBitmap(): Bitmap {
  * over as a JPEG. Asks for the camera permission first, and says so when it is refused.
  */
 @Composable
-fun CameraView(captureRequest: Int, modifier: Modifier = Modifier, onCapture: (ByteArray) -> Unit) {
+fun CameraView(captureRequest: Int, modifier: Modifier = Modifier, maxDimension: Int = 1000, onCapture: (ByteArray) -> Unit) {
     val context = LocalContext.current
     val owner = LocalLifecycleOwner.current
     var granted by remember { mutableStateOf(ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) }
@@ -99,7 +99,7 @@ fun CameraView(captureRequest: Int, modifier: Modifier = Modifier, onCapture: (B
             override fun onCaptureSuccess(image: ImageProxy) {
                 val bitmap = image.uprightBitmap()
                 image.close()
-                onCapture(bitmap.scaledJpeg())
+                onCapture(bitmap.scaledJpeg(maxDimension))
             }
 
             override fun onError(exception: ImageCaptureException) {
