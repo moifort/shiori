@@ -46,6 +46,8 @@ fun DebugPreviews(name: String) {
                     header = { HomeHeader(false, avatar = {}) {} },
                 ) {}
             }
+            "statistics" -> com.polyforms.shiori.features.home.HomeStatisticsScreen(DebugFixtures.dashboard, {}) { DebugFixtures.genreInsights }
+            "genres" -> com.polyforms.shiori.features.home.GenreInsightsScreen { DebugFixtures.genreInsights }
             else -> ShioriRoot()
         }
     }

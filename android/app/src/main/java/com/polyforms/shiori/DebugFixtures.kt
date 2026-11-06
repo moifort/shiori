@@ -76,12 +76,12 @@ object DebugFixtures {
         hoursPerMonth = listOf(6, 11, 4, 0, 9, 14, 7, 12, 3, 5, 0, 0).mapIndexed { i, h -> Dashboard.MonthHours(i + 1, h) },
         reading = reading,
         toRead = toRead,
-        lastFinished = null,
         toReadCount = 27,
         readCount = 142,
         pagesRead = 41_230,
         hoursListened = 212,
-        genres = emptyList(),
+        genres = listOf(BookGenre.SCIENCE_FICTION to 48, BookGenre.FANTASY to 39, BookGenre.CRIME to 17, null to 38).map { Dashboard.GenreSlice(it.first, it.second) },
+        lastFinished = reading.first().copy(id = "f1", status = ReadingStatus.READ, rating = 4.5, startedAt = ago(20), finishedAt = ago(3)),
         series = listOf(
             Dashboard.SeriesProgress("one-piece", "One Piece", readCount = 107, totalCount = 111, favorite = true, coverURL = cover("one-piece-107")),
             Dashboard.SeriesProgress("frieren", "Frieren", readCount = 5, totalCount = 15, coverURL = cover("frieren-05")),
@@ -109,6 +109,34 @@ object DebugFixtures {
                 state = AwaitedState.AVAILABLE, watched = false, date = null, coverURL = cover("neuromancien"), storeURL = null,
                 awaitableFormats = listOf(ReleaseFormat.AUDIOBOOK), awaitedEditionId = null,
             ),
+        ),
+    )
+
+    val genreInsights = com.polyforms.shiori.features.home.GenreInsights(
+        readCount = 142,
+        shares = listOf(BookGenre.SCIENCE_FICTION to 48, BookGenre.FANTASY to 39, BookGenre.CRIME to 17, BookGenre.LITERARY_FICTION to 14, BookGenre.HISTORY to 9, BookGenre.HORROR to 6)
+            .map { com.polyforms.shiori.features.home.GenreInsights.Share(it.first, it.second) },
+        formats = listOf(
+            com.polyforms.shiori.features.home.GenreInsights.FormatShare(BookFormat.BOOK, 92, BookGenre.SCIENCE_FICTION),
+            com.polyforms.shiori.features.home.GenreInsights.FormatShare(BookFormat.MANGA, 31, BookGenre.FANTASY),
+            com.polyforms.shiori.features.home.GenreInsights.FormatShare(BookFormat.AUDIOBOOK, 19, BookGenre.FANTASY),
+        ),
+        tastes = listOf(
+            com.polyforms.shiori.features.home.GenreInsights.Taste(BookGenre.SCIENCE_FICTION, readCount = 48, averageRating = 4.3),
+            com.polyforms.shiori.features.home.GenreInsights.Taste(BookGenre.FANTASY, readCount = 39, averageRating = 4.0),
+            com.polyforms.shiori.features.home.GenreInsights.Taste(BookGenre.CRIME, readCount = 17, averageRating = 3.6),
+            com.polyforms.shiori.features.home.GenreInsights.Taste(BookGenre.HORROR, readCount = 6, averageRating = 4.7),
+            com.polyforms.shiori.features.home.GenreInsights.Taste(BookGenre.HISTORY, readCount = 9, averageRating = 3.2),
+        ),
+        averageRating = 4.0,
+        gem = com.polyforms.shiori.features.home.GenreInsights.Taste(BookGenre.HORROR, readCount = 6, averageRating = 4.7),
+        longest = com.polyforms.shiori.features.home.GenreInsights.LongestRecord(BookGenre.FANTASY, 612),
+        fastest = com.polyforms.shiori.features.home.GenreInsights.FastestRecord(BookGenre.CRIME, 5),
+        mostDropped = com.polyforms.shiori.features.home.GenreInsights.DroppedRecord(BookGenre.HISTORY, 3, 12),
+        unexplored = listOf(
+            com.polyforms.shiori.features.home.GenreInsights.Unexplored(BookGenre.POETRY, 2),
+            com.polyforms.shiori.features.home.GenreInsights.Unexplored(BookGenre.COOKING, 0),
+            com.polyforms.shiori.features.home.GenreInsights.Unexplored(BookGenre.TRAVEL, 0),
         ),
     )
 
