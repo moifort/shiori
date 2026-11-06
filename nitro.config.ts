@@ -82,6 +82,8 @@ export default defineNitroConfig({
     // The GA4 property the app reports to, for the admin screen's sessions.
     ga4PropertyId: '',
     attachmentsBucket: '',
+    // The SHA-256 fingerprints the Android app is signed with, comma-separated, for App Links.
+    androidCertSha256: '',
     // Seals the Amazon device credentials an Audible connection is made of, so a
     // Firestore export does not hand out standing access to readers' accounts.
     audibleKey: '',

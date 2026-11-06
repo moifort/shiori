@@ -139,6 +139,9 @@ resource "google_cloudfunctions2_function" "server" {
       NITRO_APNS_TEAM_ID = var.apns_key_id != "" ? var.apple_team_id : ""
       # The private bucket holding wine attachments (see storage.tf).
       NITRO_ATTACHMENTS_BUCKET = google_storage_bucket.attachments.name
+
+      # The App Links file lists the certificates the Android app is signed with.
+      NITRO_ANDROID_CERT_SHA256 = join(",", var.android_cert_sha256)
     }
 
     dynamic "secret_environment_variables" {

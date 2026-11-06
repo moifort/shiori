@@ -176,3 +176,28 @@ variable "apns_private_key_path" {
   type        = string
   default     = ""
 }
+
+variable "android_package_name" {
+  description = "Android application id"
+  type        = string
+  default     = "com.polyforms.shiori.app"
+}
+
+variable "android_cert_sha256" {
+  description = "SHA-256 fingerprints of the Play app signing key and the upload key, as Play Console shows them. They let Google sign-in trust the app and the invitation App Links open it."
+  type        = list(string)
+  default     = []
+}
+
+variable "google_oauth_client_id" {
+  description = "Web OAuth client id Sign in with Google issues ID tokens for. Blank leaves Google sign-in unconfigured."
+  type        = string
+  default     = ""
+}
+
+variable "google_oauth_client_secret" {
+  description = "Secret of that web OAuth client."
+  type        = string
+  default     = ""
+  sensitive   = true
+}

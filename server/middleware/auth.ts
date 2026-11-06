@@ -29,6 +29,8 @@ export default defineEventHandler(async (event) => {
   // fetches it from its own CDN with no credentials of anybody's, and it says
   // nothing a reader could not read off the App Store listing.
   if (path === '/.well-known/apple-app-site-association') return
+  // The same for Android's App Links, which Google's verifier fetches without credentials.
+  if (path === '/.well-known/assetlinks.json') return
 
   // App Store Server Notifications. Apple calls this with no bearer token of
   // ours; its proof of origin is the JWS signature on the payload, which the
