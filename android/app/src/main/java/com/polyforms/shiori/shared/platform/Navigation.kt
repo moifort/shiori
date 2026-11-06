@@ -44,7 +44,11 @@ class Navigator {
     fun popToRoot() = entries.clear()
 }
 
-val LocalNavigator = staticCompositionLocalOf<Navigator> { error("No navigator") }
+val LocalNavigator = staticCompositionLocalOf<Navigator?> { null }
+
+/** The navigator of the stack the calling screen is in. */
+val currentNavigator: Navigator
+    @Composable get() = LocalNavigator.current ?: error("No navigation stack around this screen")
 
 /** The screens of one tab: the root, then everything pushed over it. */
 @Composable
