@@ -22,6 +22,9 @@ enum class ReadingStatus {
             DROPPED -> L("Abandonné")
         }
 
+    /** The status as a shelf of the Library names it. */
+    val shelfTitle: String get() = label
+
     /** One symbol per status, everywhere the status is drawn. */
     val symbol: String
         get() = when (this) {
