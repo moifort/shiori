@@ -16,8 +16,9 @@ apps ship the same version.
 - The same look as iOS — dark, cover-led, white-on-glass labels, the board's components — not a
   stock Material app. Android conventions win only where the platform imposes them: system back
   gesture, status/navigation bars, share sheet, permissions, notification channels.
-- The same server and the same accounts: Android talks to the same GraphQL API, with the same
-  operation documents, and a reader who signs in with Apple on both phones sees one library.
+- The same server: Android talks to the same GraphQL API, with the same operation documents.
+  Each platform signs in with its own provider — Apple on iOS, **Google only** on Android (the
+  user's decision) — so an Android account is a separate account from an iOS one.
 - Freemium on Google Play: the same two subscriptions (yearly, monthly), the same free tier and
   scan allowance, Premium recognised by the server whichever store sold it.
 - A repeatable release ritual: before every App Store release, port the diff, build, check
@@ -30,8 +31,8 @@ apps ship the same version.
 - No Android-only features. Anything new is designed on iOS (and on the board) first.
 - No tablet- or ChromeOS-specific layouts in the first pass (phones, plus foldables where the
   iOS app already handles the iPhone Duo fold).
-- No cross-store subscription transfer: a Premium bought on the App Store is Premium on Android
-  because the account is the same, not because Google knows about it.
+- No Sign in with Apple on Android, and no Google sign-in on iOS.
+- No cross-store subscription: Premium on Android is bought on Google Play.
 
 ## Anti-goals
 
@@ -43,10 +44,8 @@ apps ship the same version.
 
 ## Constraints
 
-- Public release on Google Play requires a Play Console developer account (the user's). A
-  **personal** account created after November 2023 must run a closed test with at least 12
-  testers for 14 days before it can publish to production; an **organisation** account
-  (Polyforms, with a D-U-N-S number) does not.
+- Public release on Google Play goes through the Polyforms **organisation** Play Console account,
+  which can publish to production without the closed-test period imposed on personal accounts.
 - The GraphQL schema is not versioned (docs/api-evolution.md): Android builds join the same
   deprecation rule. `MINIMUM_SUPPORTED_IOS_BUILD` gains an Android twin.
 - Every server change follows the existing domain rules (branded types, outcomes, flat
@@ -60,7 +59,7 @@ apps ship the same version.
 |---|---|
 | SwiftUI, iOS 26 | Kotlin, Jetpack Compose, minSdk 29 (Android 10), target the latest SDK |
 | Apollo iOS, operations in `Features/*/GraphQL/*.graphql` | Apollo Kotlin, reading the **same** `.graphql` files from `ios/` |
-| Firebase Auth, Sign in with Apple | Firebase Auth: Sign in with Apple (web flow) **and Google** |
+| Firebase Auth, Sign in with Apple | Firebase Auth, Google sign-in (Credential Manager) |
 | StoreKit 2, `syncEntitlement(signedTransaction)` | Play Billing, `syncPlayEntitlement(purchaseToken)` |
 | APNs (`registerDevice`) | FCM (`registerDevice` with a new `FCM` environment) |
 | Sentry, Firebase Analytics | Sentry Android, Firebase Analytics |
