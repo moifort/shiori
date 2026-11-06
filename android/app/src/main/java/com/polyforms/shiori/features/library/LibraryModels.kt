@@ -160,3 +160,13 @@ data class PileSection(val kind: PileSectionKind, val picks: List<PilePick>) {
 
 @Serializable
 data class Pile(val formats: List<BookFormat> = emptyList(), val genres: List<BookGenre> = emptyList(), val sections: List<PileSection> = emptyList())
+
+/** A format's name as a Library pill: "Mangas", "Livres audio". */
+val BookFormat.shelfLabel: String
+    get() = when (this) {
+        BookFormat.BOOK -> L("Livres")
+        BookFormat.AUDIOBOOK -> L("Livres audio")
+        BookFormat.BANDE_DESSINEE -> L("BD")
+        BookFormat.COMIC -> L("Comics")
+        BookFormat.MANGA -> L("Mangas")
+    }

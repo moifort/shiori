@@ -3,6 +3,8 @@ package com.polyforms.shiori
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -15,7 +17,9 @@ import androidx.compose.ui.zIndex
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import com.polyforms.shiori.features.home.HomeScreen
+import com.polyforms.shiori.features.library.LibraryRequest
 import com.polyforms.shiori.features.library.LibraryTab
+import com.polyforms.shiori.features.series.SeriesRequest
 import com.polyforms.shiori.features.news.NewsScreen
 import com.polyforms.shiori.features.search.LibrarySearchScreen
 import com.polyforms.shiori.shared.DataChanges
@@ -52,7 +56,24 @@ enum class TabSelection {
 class AppRouter {
     var selectedTab by mutableStateOf(TabSelection.HOME)
     var showAddSheet by mutableStateOf(false)
+    var libraryRequest by mutableStateOf<LibraryRequest?>(null)
+    var seriesRequest by mutableStateOf<SeriesRequest?>(null)
+
+    /** Opens the Library on what the dashboard asked for. */
+    fun openLibrary(request: LibraryRequest) {
+        libraryRequest = request
+        selectedTab = TabSelection.LIBRARY
+    }
+
+    /** Opens the Library's sagas, as the dashboard's series card asks. */
+    fun openSeries(request: SeriesRequest) {
+        seriesRequest = request
+        selectedTab = TabSelection.LIBRARY
+    }
 }
+
+/** The routing of the tabs, for the screens that send the reader to another tab. */
+val LocalAppRouter = staticCompositionLocalOf { AppRouter() }
 
 /**
  * The app once signed in: four tabs, each its own navigation stack kept alive, and the scan
@@ -71,6 +92,7 @@ fun ContentView(router: AppRouter = remember { AppRouter() }) {
         backgroundedAt = null
     }
 
+    CompositionLocalProvider(LocalAppRouter provides router) {
     Box(Modifier.fillMaxSize()) {
         listOf(TabSelection.HOME, TabSelection.LIBRARY, TabSelection.NEWS, TabSelection.SEARCH).forEach { tab ->
             val visible = router.selectedTab == tab
@@ -104,5 +126,6 @@ fun ContentView(router: AppRouter = remember { AppRouter() }) {
                 )
             }
         }
+    }
     }
 }

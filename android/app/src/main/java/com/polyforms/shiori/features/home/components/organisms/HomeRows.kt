@@ -1,6 +1,8 @@
 package com.polyforms.shiori.features.home.components.organisms
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -141,6 +143,7 @@ fun CoverRow(items: List<CoverRowItem>, modifier: Modifier = Modifier, coverWidt
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 /** A saga as a card: its cover melted into a blur, its name and how far the reader got. */
 @Composable
 fun SeriesShowCard(
@@ -149,6 +152,7 @@ fun SeriesShowCard(
     tag: String? = null,
     isCompact: Boolean = false,
     isSetAside: Boolean = false,
+    onLongPress: (() -> Unit)? = null,
     onOpen: () -> Unit,
 ) {
     val shape = RoundedCornerShape(18.dp)
@@ -157,7 +161,7 @@ fun SeriesShowCard(
             .heightIn(min = if (isCompact) 128.dp else 176.dp)
             .clip(shape)
             .border(1.dp, Color.White.copy(alpha = 0.22f), shape)
-            .plainClickable(onClick = onOpen),
+            .combinedClickable(interactionSource = null, indication = null, onLongClick = onLongPress, onClick = onOpen),
     ) {
         Box(Modifier.matchParentSize().alpha(if (isSetAside) 0.55f else 1f)) {
             Box(Modifier.fillMaxSize().background(Color(0xFF262626)))

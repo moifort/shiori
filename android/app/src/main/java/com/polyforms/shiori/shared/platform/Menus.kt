@@ -1,6 +1,16 @@
 package com.polyforms.shiori.shared.platform
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import com.polyforms.shiori.shared.components.atoms.ShelfFilterLabel
+import com.polyforms.shiori.shared.components.styles.glass
+import com.polyforms.shiori.shared.components.styles.plainClickable
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -66,3 +76,18 @@ fun ToolbarMenuButton(title: String, symbol: String, entries: List<MenuEntry>, m
     }
 }
 
+
+/** A glass capsule naming the filter in force, opening a menu of the others. */
+@Composable
+fun ToolbarFilterMenu(symbol: String, title: String, entries: List<MenuEntry>, modifier: Modifier = Modifier) {
+    var expanded by remember { mutableStateOf(false) }
+    Box(modifier) {
+        Box(
+            Modifier.height(44.dp).clip(CircleShape).glass(CircleShape).plainClickable { expanded = true }.padding(horizontal = 12.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            CompositionLocalProvider(LocalContentColor provides Shiori.colors.label) { ShelfFilterLabel(symbol, title) }
+        }
+        MenuEntries(entries, expanded) { expanded = false }
+    }
+}
