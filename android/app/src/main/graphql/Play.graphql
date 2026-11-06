@@ -1,0 +1,10 @@
+# The operations only the Android app sends. Everything else is read from the iOS app's own
+# documents, so the two apps ask the server the same questions.
+
+# Hands a Google Play purchase token to the server, which asks Google what it bought before
+# granting anything.
+mutation SyncPlayEntitlement($purchaseToken: String!) {
+  syncPlayEntitlement(purchaseToken: $purchaseToken) {
+    ...EntitlementFields
+  }
+}

@@ -85,6 +85,8 @@ apollo {
         // read by both apps, so a query changed for iOS is changed for Android too.
         schemaFiles.from(file("../../shared/schema.graphql"))
         srcDir(file("../../ios/Shiori/Features"))
+        // The few operations only Android sends (its store purchase sync).
+        srcDir(file("src/main/graphql"))
         generateKotlinModels.set(true)
         listOf(
             "AudibleAsin", "AuthorBiography", "AuthorKey", "AuthorName", "AwaitedEditionId",

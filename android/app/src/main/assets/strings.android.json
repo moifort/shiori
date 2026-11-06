@@ -1,0 +1,17 @@
+{
+ "L’achat a bien été enregistré, mais nous n’avons pas pu l’activer. Rouvrez l’app dans un instant : il sera repris automatiquement. Si rien ne change, touchez « Restaurer mes achats ».": {
+  "en": "Your purchase went through, but we could not activate it. Reopen the app in a moment: it will be picked up automatically. If nothing changes, tap “Restore purchases”."
+ },
+ "L’abonnement se renouvelle automatiquement sauf résiliation au moins 24 heures avant la fin de la période en cours. La gestion et la résiliation se font dans les abonnements Google Play.": {
+  "en": "The subscription renews automatically unless cancelled at least 24 hours before the end of the current period. Manage or cancel it in your Google Play subscriptions."
+ },
+ "Cette version de Shiori n'est plus compatible avec le serveur. La dernière version est disponible sur Google Play.": {
+  "en": "This version of Shiori no longer works with the server. The latest version is available on Google Play."
+ },
+ "Continuer avec Google": {
+  "en": "Continue with Google"
+ },
+ "Google n'a pas renvoyé de jeton.": {
+  "en": "Google did not return a token."
+ }
+}

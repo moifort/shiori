@@ -28,9 +28,16 @@ object Strings {
     val appLanguage: String
         get() = if (Locale.getDefault().language == "fr") "fr" else "en"
 
+    /**
+     * The iOS catalogue, then the few strings only Android says (`strings.android.json`, kept by
+     * hand: Google where iOS says Apple, Play where it says the App Store).
+     */
     fun load(context: Context) {
-        val text = context.assets.open("strings.json").bufferedReader().use { it.readText() }
-        table = Json.parseToJsonElement(text).jsonObject.mapValues { it.value.jsonObject }
+        fun read(name: String): Map<String, JsonObject> = runCatching {
+            val text = context.assets.open(name).bufferedReader().use { it.readText() }
+            Json.parseToJsonElement(text).jsonObject.mapValues { it.value.jsonObject }
+        }.getOrDefault(emptyMap())
+        table = read("strings.json") + read("strings.android.json")
     }
 
     fun format(key: String, args: Array<out Any?>): String {
