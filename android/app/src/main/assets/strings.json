@@ -1,0 +1,3428 @@
+{
+ "": {
+  "en": ""
+ },
+ "%@": {
+  "en": "%@"
+ },
+ "%@ %@ — %@": {
+  "fr": "%1$@ %2$@ — %3$@",
+  "en": "%1$@ %2$@ — %3$@"
+ },
+ "%@ (série)": {
+  "en": "%@ (series)"
+ },
+ "%@ : %@ ★ en moyenne, sur %lld livres seulement.": {
+  "fr": "%1$@ : %2$@ ★ en moyenne, sur %3$lld livres seulement.",
+  "en": "%1$@: %2$@ ★ on average, over only %3$lld books."
+ },
+ "%@ Vous pourrez réessayer depuis les réglages.": {
+  "en": "%@ You can try again from Settings."
+ },
+ "%@ Vous pouvez relancer la synchronisation depuis les réglages.": {
+  "en": "%@ You can restart the sync from Settings."
+ },
+ "%@ brut": {
+  "en": "%@ gross"
+ },
+ "%@ d'infra": {
+  "en": "%@ of infra"
+ },
+ "%@ et %@": {
+  "fr": "%1$@ et %2$@",
+  "en": "%1$@ and %2$@"
+ },
+ "%@ l'a abandonné": {
+  "en": "%@ gave up on it"
+ },
+ "%@ l'a commencé aujourd'hui": {
+  "en": "%@ started it today"
+ },
+ "%@ l'a lu": {
+  "en": "%@ read it"
+ },
+ "%@ l'a lu le %@": {
+  "fr": "%1$@ l'a lu le %2$@",
+  "en": "%1$@ read it on %2$@"
+ },
+ "%@ l'a écouté": {
+  "en": "%@ listened to it"
+ },
+ "%@ l'a écouté le %@": {
+  "fr": "%1$@ l'a écouté le %2$@",
+  "en": "%1$@ listened to it on %2$@"
+ },
+ "%@ l'écoute depuis %lld jours": {
+  "fr": "%1$@ l'écoute depuis %2$lld jours",
+  "en": "%1$@ has been listening for %2$lld days"
+ },
+ "%@ l'écoute depuis hier": {
+  "en": "%@ has been listening since yesterday"
+ },
+ "%@ l'écoute en ce moment": {
+  "en": "%@ is listening to it"
+ },
+ "%@ le lit depuis %lld jours": {
+  "fr": "%1$@ le lit depuis %2$lld jours",
+  "en": "%1$@ has been reading it for %2$lld days"
+ },
+ "%@ le lit depuis hier": {
+  "en": "%@ has been reading it since yesterday"
+ },
+ "%@ le lit en ce moment": {
+  "en": "%@ is reading it"
+ },
+ "%@ prête sa voix": {
+  "en": "%@ lends their voice"
+ },
+ "%@ restantes": {
+  "en": "%@ left"
+ },
+ "%@ voit votre bibliothèque, et vous voyez la sienne.": {
+  "en": "%@ sees your library, and you see theirs."
+ },
+ "%@ vs %@": {
+  "fr": "%1$@ vs %2$@",
+  "en": "%1$@ vs %2$@"
+ },
+ "%@ · %@": {
+  "fr": "%1$@ · %2$@",
+  "en": "%1$@ · %2$@"
+ },
+ "%@ · %lld sur la pile": {
+  "fr": "%1$@ · %2$lld sur la pile",
+  "en": "%1$@ · %2$lld on the pile"
+ },
+ "%@ · Tome %lld": {
+  "fr": "%1$@ · Tome %2$lld",
+  "en": "%1$@ · Volume %2$lld"
+ },
+ "%@ écouté": {
+  "en": "%@ listened"
+ },
+ "%@ étoiles": {
+  "en": "%@ stars"
+ },
+ "%@, %@": {
+  "fr": "%1$@, %2$@",
+  "en": "%1$@, %2$@"
+ },
+ "%@, %@, à ajouter": {
+  "fr": "%1$@, %2$@, à ajouter",
+  "en": "%1$@, %2$@, to add"
+ },
+ "%@, %@, à paraître": {
+  "fr": "%1$@, %2$@, à paraître",
+  "en": "%1$@, %2$@, coming soon"
+ },
+ "%@, %lld séries": {
+  "fr": "%1$@, %2$lld séries",
+  "en": "%1$@, %2$lld series"
+ },
+ "%@, 1 série": {
+  "en": "%@, 1 series"
+ },
+ "%lld": {
+  "en": "%lld"
+ },
+ "%lld %@": {
+  "fr": "%1$lld %2$@",
+  "en": "%1$lld %2$@"
+ },
+ "%lld / %lld": {
+  "fr": "%1$lld / %2$lld",
+  "en": "%1$lld / %2$lld"
+ },
+ "%lld ans": {
+  "en": "%lld years"
+ },
+ "%lld ans offerts": {
+  "en": {
+   "one": "%lld year free",
+   "other": "%lld years free"
+  }
+ },
+ "%lld caractères sur %lld au plus.": {
+  "fr": "%1$lld caractères sur %2$lld au plus.",
+  "en": "%1$lld characters out of %2$lld at most."
+ },
+ "%lld en cours": {
+  "en": "%lld reading"
+ },
+ "%lld favoris": {
+  "en": {
+   "one": "%lld favorite",
+   "other": "%lld favorites"
+  }
+ },
+ "%lld jours": {
+  "en": "%lld days"
+ },
+ "%lld jours offerts": {
+  "en": {
+   "one": "%lld day free",
+   "other": "%lld days free"
+  }
+ },
+ "%lld jours par livre": {
+  "en": {
+   "one": "%lld day per book",
+   "other": "%lld days per book"
+  }
+ },
+ "%lld livre(s) ajouté(s), %lld mis à jour.": {
+  "fr": "%1$lld livre(s) ajouté(s), %2$lld mis à jour.",
+  "en": "%1$lld book(s) added, %2$lld updated."
+ },
+ "%lld livre(s) ajouté(s).": {
+  "en": {
+   "one": "%lld book added.",
+   "other": "%lld books added."
+  }
+ },
+ "%lld livre(s) mis à jour.": {
+  "en": {
+   "one": "%lld book updated.",
+   "other": "%lld books updated."
+  }
+ },
+ "%lld livres": {
+  "en": {
+   "one": "%lld book",
+   "other": "%lld books"
+  }
+ },
+ "%lld livres partagés": {
+  "en": {
+   "one": "%lld book shared",
+   "other": "%lld books shared"
+  }
+ },
+ "%lld livres trouvés": {
+  "en": {
+   "one": "%lld book found",
+   "other": "%lld books found"
+  }
+ },
+ "%lld mois": {
+  "en": "%lld months"
+ },
+ "%lld mois offerts": {
+  "en": {
+   "one": "%lld month free",
+   "other": "%lld months free"
+  }
+ },
+ "%lld pages": {
+  "en": "%lld pages"
+ },
+ "%lld pages en moyenne": {
+  "en": {
+   "one": "%lld page on average",
+   "other": "%lld pages on average"
+  }
+ },
+ "%lld restantes": {
+  "en": "%lld left"
+ },
+ "%lld scans offerts en réserve": {
+  "en": {
+   "one": "%lld free scan in reserve",
+   "other": "%lld free scans in reserve"
+  }
+ },
+ "%lld scans restants": {
+  "en": {
+   "one": "%lld scan left",
+   "other": "%lld scans left"
+  }
+ },
+ "%lld sem.": {
+  "en": "%lld wk"
+ },
+ "%lld semaines offertes": {
+  "en": {
+   "one": "%lld week free",
+   "other": "%lld weeks free"
+  }
+ },
+ "%lld sorties": {
+  "en": "%lld releases"
+ },
+ "%lld sur %lld": {
+  "fr": "%1$lld sur %2$lld",
+  "en": "%1$lld of %2$lld"
+ },
+ "%lld sur %lld commencés": {
+  "fr": "%1$lld sur %2$lld commencés",
+  "en": "%1$lld of %2$lld started"
+ },
+ "%lld sur %lld lus": {
+  "fr": "%1$lld sur %2$lld lus",
+  "en": "%lld of %lld read"
+ },
+ "%lld sur %lld écoutés": {
+  "fr": "%1$lld sur %2$lld écoutés",
+  "en": "%lld of %lld heard"
+ },
+ "%lld tomes": {
+  "fr": {
+   "one": "%lld tome",
+   "other": "%lld tomes"
+  },
+  "en": {
+   "one": "%lld volume",
+   "other": "%lld volumes"
+  }
+ },
+ "%lld tomes lus sur %lld": {
+  "fr": "%1$lld tomes lus sur %2$lld",
+  "en": "%lld of %lld volumes read"
+ },
+ "%lld tomes à ajouter": {
+  "en": "%lld volumes to add"
+ },
+ "%lld à lire": {
+  "en": "%lld to read"
+ },
+ "%lld étoiles": {
+  "en": {
+   "one": "%lld star",
+   "other": "%lld stars"
+  }
+ },
+ "%lld%%": {
+  "en": "%lld%%"
+ },
+ "%lld%% de vos lectures": {
+  "en": "%lld%% of your reading"
+ },
+ "%lld%% écouté": {
+  "en": "%lld%% listened"
+ },
+ "%llde": {
+  "en": "#%lld"
+ },
+ "%lldh": {
+  "en": "%lldh"
+ },
+ "%lldh%@": {
+  "fr": "%1$lldh%2$@",
+  "en": "%1$lldh%2$@"
+ },
+ "%lldmin": {
+  "en": "%lldmin"
+ },
+ "**%@** a adoré": {
+  "en": "**%@** loved"
+ },
+ "**%@** a adoré **%@**": {
+  "fr": "**%1$@** a adoré **%2$@**",
+  "en": "**%1$@** loved **%2$@**"
+ },
+ "**%@** a commencé": {
+  "en": "**%@** started"
+ },
+ "**%@** a commencé **%@**": {
+  "fr": "**%1$@** a commencé **%2$@**",
+  "en": "**%1$@** started **%2$@**"
+ },
+ "**%@** a terminé": {
+  "en": "**%@** finished"
+ },
+ "**%@** a terminé **%@**": {
+  "fr": "**%1$@** a terminé **%2$@**",
+  "en": "**%1$@** finished **%2$@**"
+ },
+ "**%@** et **%@** ont adoré": {
+  "fr": "**%1$@** et **%2$@** ont adoré",
+  "en": "**%1$@** and **%2$@** loved"
+ },
+ "**%@** et **%@** ont commencé": {
+  "fr": "**%1$@** et **%2$@** ont commencé",
+  "en": "**%1$@** and **%2$@** started"
+ },
+ "**%@** et **%@** ont terminé": {
+  "fr": "**%1$@** et **%2$@** ont terminé",
+  "en": "**%1$@** and **%2$@** finished"
+ },
+ "**%@** prête sa voix à **%@**": {
+  "fr": "**%1$@** prête sa voix à **%2$@**",
+  "en": "**%1$@** lends their voice to **%2$@**"
+ },
+ "**%@**, **%@** et %lld autres ont adoré": {
+  "fr": "**%1$@**, **%2$@** et %3$lld autres ont adoré",
+  "en": "**%1$@**, **%2$@** and %3$lld others loved"
+ },
+ "**%@**, **%@** et %lld autres ont commencé": {
+  "fr": "**%1$@**, **%2$@** et %3$lld autres ont commencé",
+  "en": "**%1$@**, **%2$@** and %3$lld others started"
+ },
+ "**%@**, **%@** et %lld autres ont terminé": {
+  "fr": "**%1$@**, **%2$@** et %3$lld autres ont terminé",
+  "en": "**%1$@**, **%2$@** and %3$lld others finished"
+ },
+ "**%@**, **%@** et 1 autre ont adoré": {
+  "fr": "**%1$@**, **%2$@** et 1 autre ont adoré",
+  "en": "**%1$@**, **%2$@** and 1 other loved"
+ },
+ "**%@**, **%@** et 1 autre ont commencé": {
+  "fr": "**%1$@**, **%2$@** et 1 autre ont commencé",
+  "en": "**%1$@**, **%2$@** and 1 other started"
+ },
+ "**%@**, **%@** et 1 autre ont terminé": {
+  "fr": "**%1$@**, **%2$@** et 1 autre ont terminé",
+  "en": "**%1$@**, **%2$@** and 1 other finished"
+ },
+ "+%lld ce mois": {
+  "en": "+%lld this month"
+ },
+ "+%lld pages": {
+  "en": "+%lld pages"
+ },
+ "1 an": {
+  "en": "1 year"
+ },
+ "1 an offert": {
+  "en": "1 year free"
+ },
+ "1 jour offert": {
+  "en": "1 day free"
+ },
+ "1 livre": {
+  "en": "1 book"
+ },
+ "1 mois": {
+  "en": "1 month"
+ },
+ "1 mois offert": {
+  "en": "1 month free"
+ },
+ "1 semaine offerte": {
+  "en": "1 week free"
+ },
+ "1 sortie": {
+  "en": "1 release"
+ },
+ "1 tome à ajouter": {
+  "en": "1 volume to add"
+ },
+ "1 à 2 ans": {
+  "en": "1 to 2 years"
+ },
+ "1 étoile": {
+  "en": "1 star"
+ },
+ "14h30": {
+  "en": "14h30"
+ },
+ "14h32": {
+  "en": "14h32"
+ },
+ "6 mois": {
+  "en": "6 months"
+ },
+ "978…": {
+  "en": "978…"
+ },
+ "Abandonner": {
+  "en": "Drop"
+ },
+ "Abandonné": {
+  "en": "Dropped"
+ },
+ "Abandonnés": {
+  "en": "Dropped"
+ },
+ "Accepter": {
+  "en": "Accept"
+ },
+ "Accueil": {
+  "en": "Home"
+ },
+ "Accueil indisponible": {
+  "en": "Home unavailable"
+ },
+ "Achat impossible": {
+  "en": "Purchase failed"
+ },
+ "Action impossible": {
+  "en": "Couldn't do that"
+ },
+ "Actu": {
+  "en": "News"
+ },
+ "Actualisation": {
+  "en": "Refreshed"
+ },
+ "Actualités": {
+  "en": "News"
+ },
+ "Actualités indisponibles": {
+  "en": "News unavailable"
+ },
+ "Actuel": {
+  "en": "Current"
+ },
+ "Actuelle": {
+  "en": "Current"
+ },
+ "Adamsberg": {
+  "en": "Adamsberg"
+ },
+ "Admin": {
+  "en": "Admin"
+ },
+ "Adoré par vos amis": {
+  "en": "Loved by your friends"
+ },
+ "Afficher l'identifiant": {
+  "en": "Show account ID"
+ },
+ "Ajout de %lld livres": {
+  "en": {
+   "one": "Adding %lld book",
+   "other": "Adding %lld books"
+  }
+ },
+ "Ajout impossible": {
+  "en": "Couldn’t add"
+ },
+ "Ajouter": {
+  "en": "Add"
+ },
+ "Ajouter %lld livres · %lld scans": {
+  "fr": "Ajouter %1$lld livres · %2$lld scans",
+  "en": "Add %1$lld books · %2$lld scans"
+ },
+ "Ajouter aux favoris": {
+  "en": "Add to favorites"
+ },
+ "Ajouter la série à mes séries": {
+  "en": "Add the series to my series"
+ },
+ "Ajouter un livre": {
+  "en": "Add a book"
+ },
+ "Ajouter « %@ » à ma bibliothèque": {
+  "en": "Add “%@” to my library"
+ },
+ "Ajouter à la main": {
+  "en": "Add manually"
+ },
+ "Ajouter à ma bibliothèque": {
+  "en": "Add to my library"
+ },
+ "Ajouter à ma pile": {
+  "en": "Add to my pile"
+ },
+ "Ajouter à mes séries": {
+  "en": "Add to my series"
+ },
+ "Ajouter à une série": {
+  "en": "Add to a series"
+ },
+ "Ajoutez un auteur pour créer une nouvelle série.": {
+  "en": "Add an author to create a new series."
+ },
+ "Ajoutez-y un livre depuis Découvrir ou chez un ami, ou guettez sa traduction.": {
+  "en": "Add a book from Discover or a friend's shelf, or watch for its translation."
+ },
+ "Ajouté": {
+  "en": "Added"
+ },
+ "Ajouté hier": {
+  "en": "Added yesterday"
+ },
+ "Ajouté le": {
+  "en": "Added on"
+ },
+ "Ajouté à vos livres lus": {
+  "en": "Added to your read books"
+ },
+ "Ajouté à votre pile à lire": {
+  "en": "Added to your to-read pile"
+ },
+ "Ajoutée": {
+  "en": "Added"
+ },
+ "Ajoutés": {
+  "en": "Added"
+ },
+ "Alice": {
+  "en": "Alice"
+ },
+ "Allemand": {
+  "en": "German"
+ },
+ "Alphabétique": {
+  "en": "Alphabetical"
+ },
+ "Amazon": {
+  "en": "Amazon"
+ },
+ "Amazon a refusé la dernière synchronisation": {
+  "en": "Amazon refused the last sync"
+ },
+ "Amis indisponibles": {
+  "en": "Friends unavailable"
+ },
+ "Analyse de l'étagère": {
+  "en": "Reading the shelf"
+ },
+ "Analyse de la couverture": {
+  "en": "Reading the cover"
+ },
+ "Anglais": {
+  "en": "English"
+ },
+ "Annoncé": {
+  "en": "Announced"
+ },
+ "Annoncé, sans date": {
+  "en": "Announced, no date"
+ },
+ "Annoncés": {
+  "en": "Announced"
+ },
+ "Annuler": {
+  "en": "Cancel"
+ },
+ "Année": {
+  "en": "Year"
+ },
+ "Année d'édition": {
+  "en": "Edition year"
+ },
+ "Appellation": {
+  "en": "Name"
+ },
+ "Apple n'a pas renvoyé de jeton.": {
+  "en": "Apple didn’t return a token."
+ },
+ "Application": {
+  "en": "App"
+ },
+ "Arabe": {
+  "en": "Arabic"
+ },
+ "Arsène Lupin": {
+  "en": "Arsène Lupin"
+ },
+ "Art": {
+  "en": "Art"
+ },
+ "Arthur Dent": {
+  "en": "Arthur Dent"
+ },
+ "Arya": {
+  "en": "Arya"
+ },
+ "AssaSynth": {
+  "en": "Murderbot"
+ },
+ "Au-delà": {
+  "en": "Beyond"
+ },
+ "Aucun abonnement à restaurer sur ce compte.": {
+  "en": "No subscription to restore on this account."
+ },
+ "Aucun auteur préféré": {
+  "en": "No favorite authors"
+ },
+ "Aucun de vos livres audio n'est lu par %@.": {
+  "en": "None of your audiobooks is narrated by %@."
+ },
+ "Aucun jour facturé": {
+  "en": "No billed day"
+ },
+ "Aucun livre": {
+  "en": "No books"
+ },
+ "Aucun livre Kindle sur ce compte.": {
+  "en": "No Kindle books on this account."
+ },
+ "Aucun livre Kindle sur ce compte. Vérifiez la boutique : une bibliothèque française ne s'ouvre pas depuis amazon.com.": {
+  "en": "No Kindle books on this account. Check the store: a library from one Amazon store doesn’t open from another."
+ },
+ "Aucun livre audio de ce narrateur dans votre bibliothèque.": {
+  "en": "No audiobook by this narrator in your library."
+ },
+ "Aucun livre audio sur ce compte.": {
+  "en": "No audiobooks on this account."
+ },
+ "Aucun livre de ce genre": {
+  "en": "No books in this genre"
+ },
+ "Aucun livre de cet auteur dans votre bibliothèque.": {
+  "en": "No books by this author in your library."
+ },
+ "Aucun livre de la bibliothèque n'a ce statut.": {
+  "en": "No book in the library has this status."
+ },
+ "Aucun livre en cours de lecture.": {
+  "en": "No book currently being read."
+ },
+ "Aucun livre n'a été ajouté à cette bibliothèque.": {
+  "en": "No books have been added to this library."
+ },
+ "Aucun livre ne correspond": {
+  "en": "No book matches"
+ },
+ "Aucun livre ne correspond.": {
+  "en": "No book matches."
+ },
+ "Aucun livre reconnu": {
+  "en": "No book recognized"
+ },
+ "Aucun livre trouvé, essayez un autre titre": {
+  "en": "No book found, try another title"
+ },
+ "Aucun narrateur préféré": {
+  "en": "No favorite narrators"
+ },
+ "Aucun portrait trouvé pour cet auteur. Collez l'adresse d'une image.": {
+  "en": "No portrait found for this author. Paste an image address."
+ },
+ "Aucun résultat": {
+  "en": "No results"
+ },
+ "Aucun tome ouvert": {
+  "en": "No volume open"
+ },
+ "Aucune": {
+  "en": "None"
+ },
+ "Aucune autre série": {
+  "en": "No other series"
+ },
+ "Aucune couverture trouvée pour ce livre. Collez l'adresse d'une image.": {
+  "en": "No cover found for this book. Paste the address of an image."
+ },
+ "Aucune envie": {
+  "en": "Nothing on your wishlist"
+ },
+ "Aucune session": {
+  "en": "No sessions"
+ },
+ "Aucune série en cours.": {
+  "en": "No series in progress."
+ },
+ "Aucune série n'a été ajoutée à cette bibliothèque.": {
+  "en": "No series have been added to this library."
+ },
+ "Aucune série ne correspond.": {
+  "en": "No matching series."
+ },
+ "Audible": {
+  "en": "Audible"
+ },
+ "Audio": {
+  "en": "Audio"
+ },
+ "Aujourd'hui": {
+  "en": "Today"
+ },
+ "Aussi ce mois-ci": {
+  "en": "Also this month"
+ },
+ "Auteur": {
+  "en": "Author"
+ },
+ "Auteur (facultatif)": {
+  "en": "Author (optional)"
+ },
+ "Auteur favori": {
+  "en": "Favourite author"
+ },
+ "Auteur favori · %@": {
+  "en": "Favourite author · %@"
+ },
+ "Auteur inconnu": {
+  "en": "Unknown author"
+ },
+ "Auteurs": {
+  "en": "Authors"
+ },
+ "Auteurs indisponibles": {
+  "en": "Authors unavailable"
+ },
+ "Auteurs préférés": {
+  "en": "Favorite authors"
+ },
+ "Autoriser les photos": {
+  "en": "Allow photos"
+ },
+ "Autre": {
+  "en": "Other"
+ },
+ "Autre édition": {
+  "en": "Other edition"
+ },
+ "Autres": {
+  "en": "Others"
+ },
+ "Autres lauréats": {
+  "en": "Other winners"
+ },
+ "Avatar": {
+  "en": "Avatar"
+ },
+ "Aventure": {
+  "en": "Adventure"
+ },
+ "A–Z": {
+  "en": "A–Z"
+ },
+ "BD": {
+  "en": "Graphic novel"
+ },
+ "Bibliothèque": {
+  "en": "Library"
+ },
+ "Bibliothèque indisponible": {
+  "en": "Library unavailable"
+ },
+ "Bibliothèque vide": {
+  "en": "Empty library"
+ },
+ "Bientôt": {
+  "en": "Soon"
+ },
+ "Bientôt disponible": {
+  "en": "Coming soon"
+ },
+ "Bientôt en FR": {
+  "en": "Coming in English"
+ },
+ "Bientôt en audio": {
+  "en": "Coming to audio"
+ },
+ "Bilbo": {
+  "en": "Bilbo"
+ },
+ "Biographie": {
+  "en": "Biography"
+ },
+ "Bleu": {
+  "en": "Blue"
+ },
+ "Boutique": {
+  "en": "Store"
+ },
+ "Boutique Amazon": {
+  "en": "Amazon store"
+ },
+ "Boutique Audible": {
+  "en": "Audible store"
+ },
+ "Breq": {
+  "en": "Breq"
+ },
+ "C'est le prénom que vos amis verront lors d'un partage.": {
+  "en": "This is the name your friends see when you share."
+ },
+ "Cadrez la couverture dans le viseur, bien éclairée.": {
+  "en": "Frame the cover in the viewfinder, in good light."
+ },
+ "Cadrez la couverture entière, bien éclairée et sans reflet. Ce scan n'a pas été décompté.": {
+  "en": "Frame the whole cover, well lit and without glare. This scan wasn’t counted."
+ },
+ "Carl": {
+  "en": "Carl"
+ },
+ "Catalogue complet des séries": {
+  "en": "Complete series catalogue"
+ },
+ "Catalogue des sagas": {
+  "en": "Saga catalogue"
+ },
+ "Catalogue provisoire, dessiné d'après le nombre de tomes que vous avez indiqué.": {
+  "en": "Provisional catalogue, drawn from the number of volumes you entered."
+ },
+ "Catégorie": {
+  "en": "Category"
+ },
+ "Ce fil se remplit tout seul à partir de votre bibliothèque.": {
+  "en": "This feed fills up on its own from your library."
+ },
+ "Ce livre n'est plus dans votre bibliothèque.": {
+  "en": "This book is no longer in your library."
+ },
+ "Ce livre n'est plus partagé.": {
+  "en": "This book is no longer shared."
+ },
+ "Ce mois-ci": {
+  "en": "This month"
+ },
+ "Ce qu'on vous en a dit…": {
+  "en": "What you were told about it…"
+ },
+ "Ce que vous en pensez, un passage à retenir…": {
+  "en": "What you think of it, a passage to remember…"
+ },
+ "Ce que vous partagez": {
+  "en": "What you share"
+ },
+ "Ce que vous touchez s'ouvre sur cette page.": {
+  "en": "Whatever you tap opens on this page."
+ },
+ "Celle sur laquelle vous achetez vos livres audio.": {
+  "en": "The one where you buy your audiobooks."
+ },
+ "Ces séries ne sont plus suivies : elles n'apparaissent ni dans « À suivre », ni dans les sorties, ni sur l'accueil. Leurs tomes restent dans la bibliothèque.": {
+  "en": "These series are no longer followed: they appear neither in “Up Next”, nor in the releases, nor on the home screen. Their volumes stay in the library."
+ },
+ "Cette adresse mène à une page, pas à une image. Ouvrez l'image de la couverture seule, puis copiez son adresse.": {
+  "en": "This address leads to a page, not an image. Open the cover image on its own, then copy its address."
+ },
+ "Cette adresse mène à une page, pas à une image. Ouvrez la photo seule, puis copiez son adresse.": {
+  "en": "This address leads to a page, not an image. Open the photo on its own, then copy its address."
+ },
+ "Cette semaine": {
+  "en": "This week"
+ },
+ "Cette version de Shiori n'est plus compatible avec le serveur. La dernière version est disponible sur l'App Store.": {
+  "en": "This version of Shiori is no longer compatible with the server. The latest version is available on the App Store."
+ },
+ "Chargement de la suite": {
+  "en": "Loading more"
+ },
+ "Chargement de plus d'actualités": {
+  "en": "Loading more news"
+ },
+ "Chargement de plus de vins": {
+  "en": "Loading more"
+ },
+ "Cherchez un titre, un auteur ou une série de votre bibliothèque.": {
+  "en": "Search a title, an author or a series from your library."
+ },
+ "Chez %@": {
+  "en": "%@’s"
+ },
+ "Chez vous": {
+  "en": "In your library"
+ },
+ "Chinois": {
+  "en": "Chinese"
+ },
+ "Choisir ce portrait": {
+  "en": "Choose this portrait"
+ },
+ "Choisir cette couverture": {
+  "en": "Choose this cover"
+ },
+ "Choisir dans les contacts": {
+  "en": "Choose from contacts"
+ },
+ "Choisir des livres": {
+  "en": "Choose books"
+ },
+ "Choisir des livres à importer": {
+  "en": "Choose books to import"
+ },
+ "Choisir une photo": {
+  "en": "Choose a photo"
+ },
+ "Choisissez une série de votre bibliothèque pour y ranger ce livre avec les autres tomes, ou nommez-en une nouvelle.": {
+  "en": "Choose a series from your library to file this book with its other volumes, or name a new one."
+ },
+ "Choisissez une série de votre bibliothèque pour y ranger ce livre avec les autres tomes. Un hors-série — préquelle, nouvelle, guide — se range à part, sous son propre numéro. Videz le nom pour le sortir de sa série.": {
+  "en": "Pick a series from your library to file this book with its other volumes. A spin-off — prequel, novella, guide — is filed apart, under its own number. Clear the name to take it out of its series."
+ },
+ "Cocher": {
+  "en": "Tick"
+ },
+ "Code ou lien": {
+  "en": "Code or link"
+ },
+ "Coller l'adresse d'une image": {
+  "en": "Paste the address of an image"
+ },
+ "Collez le code à huit caractères, ou le lien que l'on vous a envoyé.": {
+  "en": "Paste the eight-character code, or the link you were sent."
+ },
+ "Comics": {
+  "en": "Comics"
+ },
+ "Commander": {
+  "en": "Order"
+ },
+ "Comme %lld de vos amis": {
+  "en": "Like %lld of your friends"
+ },
+ "Commencer": {
+  "en": "Get started"
+ },
+ "Commencer l'écoute": {
+  "en": "Start listening"
+ },
+ "Commencer la lecture": {
+  "en": "Start reading"
+ },
+ "Commencé": {
+  "en": "Started"
+ },
+ "Commencé le": {
+  "en": "Started on"
+ },
+ "Commencée": {
+  "en": "Started"
+ },
+ "Comment vous appelez-vous ?": {
+  "en": "What’s your name?"
+ },
+ "Commentaire": {
+  "en": "Comment"
+ },
+ "Commentaires": {
+  "en": "Comments"
+ },
+ "Compagnon": {
+  "en": "Companion"
+ },
+ "Compte": {
+  "en": "Account"
+ },
+ "Conditions d’utilisation": {
+  "en": "Terms of Use"
+ },
+ "Confidentialité": {
+  "en": "Privacy Policy"
+ },
+ "Connecter": {
+  "en": "Connect"
+ },
+ "Connecter mon compte Amazon": {
+  "en": "Connect my Amazon account"
+ },
+ "Connectez celles que vous utilisez : elles sont importées pendant que vous découvrez l'application, puis suivies chaque nuit. Vous pourrez aussi le faire plus tard depuis les réglages.": {
+  "en": "Connect the ones you use: they’re imported while you explore the app, then kept in sync every night. You can also do it later from Settings."
+ },
+ "Connectez votre compte Amazon une fois, puis choisissez les livres audio à ajouter. Ils rejoignent votre bibliothèque avec leur couverture, leur série et votre avancement d'écoute.": {
+  "en": "Connect your Amazon account once, then choose the audiobooks to add. They join your library with their cover, their series and your listening progress."
+ },
+ "Connectez votre compte Amazon une fois, puis choisissez les livres à ajouter. Ils rejoignent votre bibliothèque avec leur couverture et leur série, et ceux que vous avez finis sur Kindle sont marqués comme lus.": {
+  "en": "Connect your Amazon account once, then choose the books to add. They join your library with their cover and their series, and the ones you finished on Kindle are marked as read."
+ },
+ "Connecté le": {
+  "en": "Connected on"
+ },
+ "Connexion Amazon": {
+  "en": "Amazon sign-in"
+ },
+ "Connexion impossible": {
+  "en": "Couldn’t connect"
+ },
+ "Connexion, import et synchronisation": {
+  "en": "Connection, import and sync"
+ },
+ "Conseillé": {
+  "en": "Recommended"
+ },
+ "Conseillé par": {
+  "en": "Recommended by"
+ },
+ "Conseillé par un ami": {
+  "en": "Recommended by a friend"
+ },
+ "Conseillé par…": {
+  "en": "Recommended by…"
+ },
+ "Conseillés par vos amis": {
+  "en": "Recommended by friends"
+ },
+ "Contenu": {
+  "en": "Content"
+ },
+ "Continuer": {
+  "en": "Continue"
+ },
+ "Copier": {
+  "en": "Copy"
+ },
+ "Copier l'auteur": {
+  "en": "Copy the author"
+ },
+ "Copier la liste": {
+  "en": "Copy the list"
+ },
+ "Copier le lecteur": {
+  "en": "Copy the narrator"
+ },
+ "Copier le titre": {
+  "en": "Copy the title"
+ },
+ "Corriger": {
+  "en": "Correct"
+ },
+ "Coréen": {
+  "en": "Korean"
+ },
+ "Coude à coude avec %@ pour la première place !": {
+  "en": "Neck and neck with %@ for first place!"
+ },
+ "Coup de cœur": {
+  "en": "Favorite"
+ },
+ "Coup de cœur de %@": {
+  "en": "%@'s favourite"
+ },
+ "Coups de cœur": {
+  "en": "Favorites"
+ },
+ "Coups de cœur de vos amis": {
+  "en": "Your friends’ favorites"
+ },
+ "Couverture": {
+  "en": "Cover"
+ },
+ "Coût du mois": {
+  "en": "Cost this month"
+ },
+ "Coûts par jour": {
+  "en": "Costs per day"
+ },
+ "Cuisine": {
+  "en": "Cooking"
+ },
+ "Cœurs, puis étoiles": {
+  "en": "Hearts, then stars"
+ },
+ "Daneel Olivaw": {
+  "en": "Daneel Olivaw"
+ },
+ "Dans %@": {
+  "en": "In %@"
+ },
+ "Dans la pile de %@": {
+  "en": "On %@'s pile"
+ },
+ "Dans votre liste d'envie": {
+  "en": "On your wish list"
+ },
+ "Dans votre liste d'envie · audio": {
+  "en": "On your wish list · audio"
+ },
+ "Dans votre pile": {
+  "en": "On your pile"
+ },
+ "Dark fantasy, Jeunesse": {
+  "en": "Dark fantasy, Young adult"
+ },
+ "Date": {
+  "en": "Date"
+ },
+ "Depuis %@": {
+  "en": "Since %@"
+ },
+ "Dernier livre terminé": {
+  "en": "Last book finished"
+ },
+ "Dernier livre terminé · aujourd'hui": {
+  "en": "Last book finished · today"
+ },
+ "Dernier livre terminé · hier": {
+  "en": "Last book finished · yesterday"
+ },
+ "Dernier livre terminé · il y a %lldj": {
+  "en": "Last book finished · %lldd ago"
+ },
+ "Dernière synchronisation": {
+  "en": "Last sync"
+ },
+ "Disponible": {
+  "en": "Available"
+ },
+ "Disponible : %@": {
+  "en": "Available: %@"
+ },
+ "Disponible : Tome %@": {
+  "en": "Available: Volume %@"
+ },
+ "Disponibles": {
+  "en": "Available"
+ },
+ "Dites-nous ce qui manque ou ce qui gagnerait à changer.": {
+  "en": "Tell us what’s missing or what could be better."
+ },
+ "Donnez des étoiles ou un cœur à vos lectures pour recevoir vos livres du mois": {
+  "en": "Give your books stars or a heart to get your books of the month"
+ },
+ "Donut": {
+  "en": "Donut"
+ },
+ "Dorothy": {
+  "en": "Dorothy"
+ },
+ "Dracula": {
+  "en": "Dracula"
+ },
+ "Dupin": {
+  "en": "Dupin"
+ },
+ "Durée": {
+  "en": "Duration"
+ },
+ "Déceptions": {
+  "en": "Letdowns"
+ },
+ "Décocher": {
+  "en": "Untick"
+ },
+ "Déconnecter Audible": {
+  "en": "Disconnect Audible"
+ },
+ "Déconnecter Kindle": {
+  "en": "Disconnect Kindle"
+ },
+ "Découverte": {
+  "en": "Discovery"
+ },
+ "Découverte de %@": {
+  "en": "%@’s discovery"
+ },
+ "Découverte d’%@": {
+  "en": "%@’s discovery"
+ },
+ "Découvertes": {
+  "en": "Discoveries"
+ },
+ "Découvertes du mois": {
+  "en": "Monthly discoveries"
+ },
+ "Découvrir": {
+  "en": "Discover"
+ },
+ "Découvrir Premium": {
+  "en": "Discover Premium"
+ },
+ "Découvrir indisponible": {
+  "en": "Discover unavailable"
+ },
+ "Décrivez ce que vous faisiez et ce qui s'est passé.": {
+  "en": "Describe what you were doing and what happened."
+ },
+ "Décès": {
+  "en": "Died"
+ },
+ "Défi lecture %@": {
+  "en": "Reading challenge %@"
+ },
+ "Déjà chez vous": {
+  "en": "Already yours"
+ },
+ "Déjà dans votre bibliothèque": {
+  "en": "Already in your library"
+ },
+ "Déjà lu": {
+  "en": "Already read"
+ },
+ "Déjà présent": {
+  "en": "Already there"
+ },
+ "Déjà écouté": {
+  "en": "Already listened"
+ },
+ "Désactivées dans les réglages de l'iPhone": {
+  "en": "Turned off in the iPhone’s Settings"
+ },
+ "Dév. perso": {
+  "en": "Self-help"
+ },
+ "Développement personnel": {
+  "en": "Self-help"
+ },
+ "D’après vos %lld livres": {
+  "en": "From your %lld books"
+ },
+ "D’après vos préférences": {
+  "en": "From your tastes"
+ },
+ "Effacer": {
+  "en": "Clear"
+ },
+ "En %@, sans jour précis": {
+  "en": "In %@, no exact day"
+ },
+ "En cours": {
+  "en": "Reading"
+ },
+ "Encore %lld livres pour doubler %@. À vos pages !": {
+  "fr": "Encore %1$lld livres pour doubler %2$@. À vos pages !",
+  "en": "%1$lld more books to overtake %2$@. Get reading!"
+ },
+ "Encore un livre et vous doublez %@ !": {
+  "en": "One more book and you overtake %@!"
+ },
+ "Ender": {
+  "en": "Ender"
+ },
+ "Enregistrement impossible": {
+  "en": "Couldn’t save"
+ },
+ "Enregistrer": {
+  "en": "Save"
+ },
+ "Enrichissement des scans": {
+  "en": "Scan enrichment"
+ },
+ "Envoyer": {
+  "en": "Send"
+ },
+ "Envoyer l'invitation": {
+  "en": "Send the invitation"
+ },
+ "Envoyer une invitation": {
+  "en": "Send an invitation"
+ },
+ "Envoyer…": {
+  "en": "Send…"
+ },
+ "Erreur serveur (%lld)": {
+  "en": "Server error (%lld)"
+ },
+ "Espagnol": {
+  "en": "Spanish"
+ },
+ "Essai": {
+  "en": "Essay"
+ },
+ "Essai gratuit": {
+  "en": "Free trial"
+ },
+ "Explorer Découvrir": {
+  "en": "Explore Discover"
+ },
+ "Facturation indisponible": {
+  "en": "Billing unavailable"
+ },
+ "Facture, comptes et sessions": {
+  "en": "Bill, accounts and sessions"
+ },
+ "Facturé jusqu'au %@": {
+  "en": "Billed until %@"
+ },
+ "Fantastique": {
+  "en": "Fantasy"
+ },
+ "Fantasy": {
+  "en": "Fantasy"
+ },
+ "Fantasy Urbaine, Roman Initiatique, Dark Fantasy, et une ligne de plus": {
+  "en": "Urban fantasy, Coming of age, Dark fantasy, and one more line"
+ },
+ "Favori": {
+  "en": "Favorite"
+ },
+ "Favoris": {
+  "en": "Favorites"
+ },
+ "Fermer": {
+  "en": "Close"
+ },
+ "Fiche indisponible": {
+  "en": "Page unavailable"
+ },
+ "Fiches enrichies par l'IA": {
+  "en": "AI-enriched records"
+ },
+ "Format": {
+  "en": "Format"
+ },
+ "Formats": {
+  "en": "Formats"
+ },
+ "Français": {
+  "en": "French"
+ },
+ "Fusion impossible": {
+  "en": "Couldn’t merge"
+ },
+ "Fusionner": {
+  "en": "Merge"
+ },
+ "Fusionner avec…": {
+  "en": "Merge with…"
+ },
+ "Fusionner dans « %@ » ?": {
+  "en": "Merge into “%@”?"
+ },
+ "Gandalf": {
+  "en": "Gandalf"
+ },
+ "Gemini": {
+  "en": "Gemini"
+ },
+ "Gemini / Infra": {
+  "en": "Gemini / Infra"
+ },
+ "Gemini du mois": {
+  "en": "Gemini this month"
+ },
+ "Genre": {
+  "en": "Genre"
+ },
+ "Genres": {
+  "en": "Genres"
+ },
+ "Genres indisponibles": {
+  "en": "Genres unavailable"
+ },
+ "Genres lus": {
+  "en": "Genres read"
+ },
+ "Geralt": {
+  "en": "Geralt"
+ },
+ "Guetter en audio": {
+  "en": "Watch for the audiobook"
+ },
+ "Guetter en français": {
+  "en": "Watch for the English edition"
+ },
+ "Guetté": {
+  "en": "Watched"
+ },
+ "Guettés, pas encore annoncés": {
+  "en": "Watched, not announced yet"
+ },
+ "Habitudes": {
+  "en": "Habits"
+ },
+ "Hari Seldon": {
+  "en": "Hari Seldon"
+ },
+ "Harry Bosch": {
+  "en": "Harry Bosch"
+ },
+ "Harry Hole": {
+  "en": "Harry Hole"
+ },
+ "Harry Potter": {
+  "en": "Harry Potter"
+ },
+ "Hercule Poirot": {
+  "en": "Hercule Poirot"
+ },
+ "Hermione": {
+  "en": "Hermione"
+ },
+ "Heures": {
+  "en": "Hours"
+ },
+ "Heures écoutées": {
+  "en": "Hours listened"
+ },
+ "Hier": {
+  "en": "Yesterday"
+ },
+ "Histoire": {
+  "en": "History"
+ },
+ "Historique": {
+  "en": "Historical"
+ },
+ "Horreur": {
+  "en": "Horror"
+ },
+ "Hors de ce filtre, %lld livres correspondent.": {
+  "fr": {
+   "one": "Hors de ce filtre, %lld livre correspond.",
+   "other": "Hors de ce filtre, %lld livres correspondent."
+  },
+  "en": {
+   "one": "%lld book outside this filter matches.",
+   "other": "%lld books outside this filter match."
+  }
+ },
+ "Hors-série": {
+  "en": "Spin-off"
+ },
+ "Hors-série %lld": {
+  "en": "Spin-off %lld"
+ },
+ "Humour": {
+  "en": "Humor"
+ },
+ "Héritée de la série": {
+  "en": "Inherited from the series"
+ },
+ "ISBN": {
+  "en": "ISBN"
+ },
+ "Identifiant": {
+  "en": "User ID"
+ },
+ "Il rejoindra votre fiche, désormais en %@. Un seul livre, quel que soit le support.": {
+  "en": "It will join your record, now in %@. One book, whatever the medium."
+ },
+ "Il vous reste %lld scans ce mois-ci. Décochez des livres pour continuer.": {
+  "en": {
+   "one": "You have %lld scan left this month. Untick some books to continue.",
+   "other": "You have %lld scans left this month. Untick some books to continue."
+  }
+ },
+ "Il y a %lld ans": {
+  "en": "%lld years ago"
+ },
+ "Il y a %lld mois": {
+  "en": "%lld mo ago"
+ },
+ "Il y a %lld sem.": {
+  "en": "%lld wk ago"
+ },
+ "Il y a %lldj": {
+  "en": "%lldd ago"
+ },
+ "Il y a 1 an": {
+  "en": "1 year ago"
+ },
+ "Import Audible interrompu": {
+  "en": "Audible import interrupted"
+ },
+ "Import Kindle interrompu": {
+  "en": "Kindle import interrupted"
+ },
+ "Import en cours, gardez l'écran ouvert...": {
+  "en": "Importing, keep the screen open…"
+ },
+ "Importer %lld livre(s)": {
+  "en": {
+   "one": "Import %lld book",
+   "other": "Import %lld books"
+  }
+ },
+ "Importer depuis Audible": {
+  "en": "Import from Audible"
+ },
+ "Importer vos livres": {
+  "en": "Import your books"
+ },
+ "Importez votre bibliothèque Audible": {
+  "en": "Import your Audible library"
+ },
+ "Importez votre bibliothèque Kindle": {
+  "en": "Import your Kindle library"
+ },
+ "Impossible d'ajouter ce livre": {
+  "en": "Couldn’t add this book"
+ },
+ "Impossible d'enregistrer": {
+  "en": "Couldn’t save"
+ },
+ "Impossible de préparer l’achat. Réessayez dans un instant.": {
+  "en": "Couldn’t prepare the purchase. Try again in a moment."
+ },
+ "Impossible de suivre ce livre": {
+  "en": "Couldn’t follow this book"
+ },
+ "Impossible de terminer": {
+  "en": "Couldn’t finish"
+ },
+ "Indiquer le nombre de tomes": {
+  "en": "Enter the number of volumes"
+ },
+ "Indisponible": {
+  "en": "Unavailable"
+ },
+ "Informations": {
+  "en": "Details"
+ },
+ "Infra": {
+  "en": "Infra"
+ },
+ "Initiales": {
+  "en": "Initials"
+ },
+ "Invitation": {
+  "en": "Invitation"
+ },
+ "Invitation refusée": {
+  "en": "Invitation declined"
+ },
+ "Inviter": {
+  "en": "Invite"
+ },
+ "Inviter un ami": {
+  "en": "Invite a friend"
+ },
+ "Invitez un ami": {
+  "en": "Invite a friend"
+ },
+ "Invitez un ami : vous verrez sa bibliothèque et il verra la vôtre. Chacun pourra piocher des livres chez l'autre.": {
+  "en": "Invite a friend: you’ll see their library and they’ll see yours. You can each pick books from the other’s shelves."
+ },
+ "Italien": {
+  "en": "Italian"
+ },
+ "J'ai fini ce livre": {
+  "en": "I finished this book"
+ },
+ "J'ai reçu une invitation": {
+  "en": "I received an invitation"
+ },
+ "Jack Reacher": {
+  "en": "Jack Reacher"
+ },
+ "Japonais": {
+  "en": "Japanese"
+ },
+ "Je n'aime pas": {
+  "en": "I don’t like it"
+ },
+ "Je t'ouvre ma bibliothèque sur Shiori. Code : %@": {
+  "en": "I’m opening my library to you on Shiori. Code: %@"
+ },
+ "Je te le conseille.": {
+  "en": "I recommend it."
+ },
+ "Jour": {
+  "en": "Day"
+ },
+ "Kaladin": {
+  "en": "Kaladin"
+ },
+ "Katniss": {
+  "en": "Katniss"
+ },
+ "Kindle": {
+  "en": "Kindle"
+ },
+ "Kvothe": {
+  "en": "Kvothe"
+ },
+ "L'Homme invisible": {
+  "en": "The Invisible Man"
+ },
+ "L'IA de Shiori est momentanément indisponible. Rien n'a été décompté ; réessayez dans un moment.": {
+  "en": "Shiori's AI is unavailable for the moment. Nothing was counted; try again in a little while."
+ },
+ "L'IA prépare la fiche": {
+  "en": "AI is preparing the page"
+ },
+ "L'ISBN doit compter 13 chiffres valides.": {
+  "en": "The ISBN must have 13 valid digits."
+ },
+ "L'URL doit commencer par https://.": {
+  "en": "The URL must start with https://."
+ },
+ "L'analyse n'a pas abouti": {
+  "en": "The analysis didn’t finish"
+ },
+ "L'analyse peut prendre jusqu'à une minute. Vous pouvez la relancer avec la même photo, sans dépenser de scan supplémentaire.": {
+  "en": "The analysis can take up to a minute. You can run it again with the same photo, without using another scan."
+ },
+ "L'année de décès précède celle de naissance.": {
+  "en": "The year of death comes before the year of birth."
+ },
+ "L'année doit être un nombre à partir de 1450.": {
+  "en": "The year must be a number from 1450 on."
+ },
+ "L'année doit être un nombre.": {
+  "en": "The year must be a number."
+ },
+ "La Créature": {
+  "en": "The Creature"
+ },
+ "La course est ouverte : le premier livre terminé prend la tête.": {
+  "en": "The race is on: the first book finished takes the lead."
+ },
+ "La durée s'écrit comme 14h30, 14 h ou 45 min.": {
+  "en": "Write the duration as 14h30, 14h or 45 min."
+ },
+ "La page de connexion est celle d'Amazon : votre mot de passe ne passe jamais par Shiori. L'import ne consomme aucun scan.": {
+  "en": "The sign-in page is Amazon’s: your password never goes through Shiori. Importing doesn’t use any scans."
+ },
+ "La première visite peut prendre jusqu'à une minute et demie. Les suivantes s'ouvrent aussitôt.": {
+  "en": "The first visit can take up to a minute and a half. After that, it opens right away."
+ },
+ "La semaine dernière": {
+  "en": "Last week"
+ },
+ "La suite": {
+  "en": "Up next"
+ },
+ "Langue": {
+  "en": "Language"
+ },
+ "Le Gritche": {
+  "en": "The Shrike"
+ },
+ "Le Voyageur": {
+  "en": "The Time Traveller"
+ },
+ "Le catalogue complet de vos séries, tomes à paraître compris": {
+  "en": "The complete catalogue of your series, upcoming volumes included"
+ },
+ "Le nombre de pages doit être un nombre positif.": {
+  "en": "The page count must be a positive number."
+ },
+ "Le numéro de hors-série doit être un nombre entre 1 et 200.": {
+  "en": "The spin-off number must be between 1 and 200."
+ },
+ "Le pavé": {
+  "en": "The doorstopper"
+ },
+ "Le plus abandonné": {
+  "en": "Most dropped"
+ },
+ "Le plus dévoré": {
+  "en": "Most devoured"
+ },
+ "Le résumé, la série et les autres informations ne sont renseignés que par un scan.": {
+  "en": "The summary, the series and the other details are only filled in by a scan."
+ },
+ "Le scan a échoué": {
+  "en": "The scan failed"
+ },
+ "Le tome doit être un nombre entre 1 et 200.": {
+  "en": "The volume must be a number between 1 and 200."
+ },
+ "Le tome touché s'ouvre sur cette page.": {
+  "en": "The volume you tap opens on this page."
+ },
+ "Lecture": {
+  "en": "Reading"
+ },
+ "Lecture de votre bibliothèque Audible...": {
+  "en": "Reading your Audible library…"
+ },
+ "Lecture de votre bibliothèque Kindle...": {
+  "en": "Reading your Kindle library…"
+ },
+ "Lecture terminée": {
+  "en": "Finished"
+ },
+ "Les %lld livres de cette série dans votre bibliothèque seront supprimés avec elle, ainsi que votre note. Cette action est définitive.": {
+  "en": {
+   "one": "The %lld book of this series in your library will be deleted with it, along with your rating. This can’t be undone.",
+   "other": "The %lld books of this series in your library will be deleted with it, along with your rating. This can’t be undone."
+  }
+ },
+ "Les %lld livres de « %@ » passeront dans « %@ », et « %@ » sera supprimée avec votre note.": {
+  "fr": "Les %1$lld livres de « %2$@ » passeront dans « %3$@ », et « %4$@ » sera supprimée avec votre note.",
+  "en": "The %1$lld books of “%2$@” will move to “%3$@”, and “%4$@” will be deleted along with your rating."
+ },
+ "Les découvertes de %@": {
+  "en": "%@’s discoveries"
+ },
+ "Les découvertes d’%@": {
+  "en": "%@’s discoveries"
+ },
+ "Les livres arrêtés en cours de route. Ils ne comptent pas comme lus et n'apparaissent nulle part ailleurs dans la bibliothèque.": {
+  "en": "Books stopped along the way. They don't count as read and appear nowhere else in the library."
+ },
+ "Les livres de ce rayon s'afficheront ici.": {
+  "en": "The books of this shelf will show here."
+ },
+ "Les livres de « %@ » rejoindront la série choisie, à leur numéro de tome.": {
+  "en": "The books of “%@” will join the chosen series, at their volume number."
+ },
+ "Les livres à lire et ceux en cours s'afficheront ici.": {
+  "en": "Books to read and books in progress will show up here."
+ },
+ "Les livres à lire s'afficheront ici.": {
+  "en": "Books to read will show up here."
+ },
+ "Les nouveautés et les prochains livres annoncés de vos auteurs apparaîtront ici.": {
+  "en": "New releases and upcoming books from your authors will show up here."
+ },
+ "Les nouveautés et les prochains tomes annoncés de vos séries apparaîtront ici.": {
+  "en": "New releases and upcoming volumes of your series will show up here."
+ },
+ "Les offres ne sont pas disponibles pour le moment.": {
+  "en": "Plans aren’t available right now."
+ },
+ "Les prochaines arrivent en %@": {
+  "en": "The next ones arrive in %@"
+ },
+ "Les prochaines sorties de vos séries, de vos auteurs et de vos livres guettés s'afficheront ici.": {
+  "en": "Upcoming releases from your series, authors and awaited books will show up here."
+ },
+ "Lilas": {
+  "en": "Lilac"
+ },
+ "Lire la suite": {
+  "en": "Read more"
+ },
+ "Lisbeth Salander": {
+  "en": "Lisbeth Salander"
+ },
+ "Liste d'envies": {
+  "en": "Wishlist"
+ },
+ "Liste d'envies indisponible": {
+  "en": "Wishlist unavailable"
+ },
+ "Littérature": {
+  "en": "Literary fiction"
+ },
+ "Livre": {
+  "en": "Book"
+ },
+ "Livre audio": {
+  "en": "Audiobook"
+ },
+ "Livre indisponible": {
+  "en": "Book unavailable"
+ },
+ "Livre introuvable": {
+  "en": "Book not found"
+ },
+ "Livres": {
+  "en": "Books"
+ },
+ "Livres audio": {
+  "en": "Audiobooks"
+ },
+ "Livres audio sur Audible": {
+  "en": "Audiobooks on Audible"
+ },
+ "Livres lus": {
+  "en": "Books read"
+ },
+ "Livres sur Kindle": {
+  "en": "Books on Kindle"
+ },
+ "Livres · %lld": {
+  "en": "Books · %lld"
+ },
+ "Locke Lamora": {
+  "en": "Locke Lamora"
+ },
+ "Lu": {
+  "en": "Read"
+ },
+ "Lu aujourd'hui": {
+  "en": "Read today"
+ },
+ "Lu automatiquement sur la couverture : touchez une ligne pour la corriger avant d'ajouter le livre.": {
+  "en": "Read automatically from the cover: tap a line to correct it before adding the book."
+ },
+ "Lu en %@": {
+  "en": "Read in %@"
+ },
+ "Lu hier": {
+  "en": "Read yesterday"
+ },
+ "Lu le %@": {
+  "en": "Read %@"
+ },
+ "Lu par %@": {
+  "en": "Narrated by %@"
+ },
+ "Lu par Thibault de Montalembert": {
+  "en": "Narrated by Thibault de Montalembert"
+ },
+ "Luo Ji": {
+  "en": "Luo Ji"
+ },
+ "Lus": {
+  "en": "Read"
+ },
+ "Lus récemment": {
+  "en": "Recently Read"
+ },
+ "L’abonnement se renouvelle automatiquement sauf résiliation au moins 24 heures avant la fin de la période en cours. La gestion et la résiliation se font dans les réglages du compte App Store.": {
+  "en": "The subscription renews automatically unless cancelled at least 24 hours before the end of the current period. Manage or cancel it in your App Store account settings."
+ },
+ "L’achat a bien été enregistré par Apple, mais nous n’avons pas pu l’activer. Rouvrez l’app dans un instant : il sera repris automatiquement. Si rien ne change, touchez « Restaurer mes achats ».": {
+  "en": "Apple recorded the purchase, but we couldn’t activate it. Reopen the app in a moment: it will be picked up automatically. If nothing changes, tap “Restore purchases”."
+ },
+ "L’achat est en attente d’approbation.": {
+  "en": "The purchase is waiting for approval."
+ },
+ "Ma bibliothèque sur Shiori": {
+  "en": "My library on Shiori"
+ },
+ "Ma lecture": {
+  "en": "My reading"
+ },
+ "Ma pile à lire": {
+  "en": "My reading pile"
+ },
+ "Maigret": {
+  "en": "Maigret"
+ },
+ "Manga": {
+  "en": "Manga"
+ },
+ "Mangas": {
+  "en": "Manga"
+ },
+ "Mark Watney": {
+  "en": "Mark Watney"
+ },
+ "Marquer comme vu": {
+  "en": "Mark as seen"
+ },
+ "Marquer lu": {
+  "en": "Mark read"
+ },
+ "Marvin": {
+  "en": "Marvin"
+ },
+ "Me prévenir": {
+  "en": "Notify me"
+ },
+ "Meilleur roman": {
+  "en": "Best novel"
+ },
+ "Meilleur roman de SF": {
+  "en": "Best science fiction novel"
+ },
+ "Meilleur roman de fantasy": {
+  "en": "Best fantasy novel"
+ },
+ "Merci, votre message nous aide à améliorer l'application.": {
+  "en": "Thank you, your message helps us improve the app."
+ },
+ "Merlin": {
+  "en": "Merlin"
+ },
+ "Mes amis": {
+  "en": "My friends"
+ },
+ "Mes coups de cœur 📚": {
+  "en": "My favourite reads 📚"
+ },
+ "Mes favoris": {
+  "en": "My favorites"
+ },
+ "Message envoyé": {
+  "en": "Message sent"
+ },
+ "Mesure": {
+  "en": "Measure"
+ },
+ "Mettre à jour": {
+  "en": "Update"
+ },
+ "Mise à jour requise": {
+  "en": "Update required"
+ },
+ "Modifie la page où vous en êtes": {
+  "en": "Changes the page you are on"
+ },
+ "Modifier": {
+  "en": "Edit"
+ },
+ "Modifier l'avatar": {
+  "en": "Edit avatar"
+ },
+ "Modifier la note": {
+  "en": "Change the rating"
+ },
+ "Moins": {
+  "en": "Less"
+ },
+ "Moins d'un an": {
+  "en": "Under a year"
+ },
+ "Mois": {
+  "en": "Month"
+ },
+ "Mosaïque": {
+  "en": "Mosaic"
+ },
+ "Métriques indisponibles": {
+  "en": "Metrics unavailable"
+ },
+ "Naissance": {
+  "en": "Born"
+ },
+ "Narrateur": {
+  "en": "Narrator"
+ },
+ "Narrateur · %@": {
+  "en": "Narrator · %@"
+ },
+ "Narrateurs": {
+  "en": "Narrators"
+ },
+ "Narrateurs indisponibles": {
+  "en": "Narrators unavailable"
+ },
+ "Narrateurs préférés": {
+  "en": "Favorite narrators"
+ },
+ "Nationalité": {
+  "en": "Nationality"
+ },
+ "Ne pas partager": {
+  "en": "Don’t share"
+ },
+ "Ne plus guetter en audio": {
+  "en": "Stop watching for the audiobook"
+ },
+ "Ne plus guetter en français": {
+  "en": "Stop watching for the English edition"
+ },
+ "Ne plus partager avec %@ ?": {
+  "en": "Stop sharing with %@?"
+ },
+ "Ne plus suivre": {
+  "en": "Unfollow"
+ },
+ "Ne plus suivre ce livre ?": {
+  "en": "Stop following this book?"
+ },
+ "Ne plus être prévenu": {
+  "en": "Stop alerts"
+ },
+ "Nemo": {
+  "en": "Nemo"
+ },
+ "Nom": {
+  "en": "Name"
+ },
+ "Nombre de tomes": {
+  "en": "Number of volumes"
+ },
+ "Non partagé": {
+  "en": "Not shared"
+ },
+ "Non renseigné": {
+  "en": "Not set"
+ },
+ "Non renseignée": {
+  "en": "Not set"
+ },
+ "Non suivie": {
+  "en": "Not followed"
+ },
+ "Non suivies": {
+  "en": "Not followed"
+ },
+ "Non traduit": {
+  "en": "Not translated"
+ },
+ "Note": {
+  "en": "Rating"
+ },
+ "Note : %@ sur %lld": {
+  "fr": "Note : %1$@ sur %2$lld",
+  "en": "Rating: %1$@ out of %2$lld"
+ },
+ "Note de la série : %@ sur %lld": {
+  "fr": "Note de la série : %1$@ sur %2$lld",
+  "en": "Series rating: %1$@ out of %2$lld"
+ },
+ "Note moyenne": {
+  "en": "Average rating"
+ },
+ "Note moyenne %@": {
+  "en": "Average rating %@"
+ },
+ "Noter": {
+  "en": "Rate"
+ },
+ "Noter ce livre": {
+  "en": "Rate this book"
+ },
+ "Noter cette série": {
+  "en": "Rate this series"
+ },
+ "Noter mes lectures": {
+  "en": "Rate my books"
+ },
+ "Noter un livre le marque comme lu.": {
+  "en": "Rating a book marks it as read."
+ },
+ "Notes de version indisponibles": {
+  "en": "Release notes unavailable"
+ },
+ "Notez vos lectures": {
+  "en": "Rate your books"
+ },
+ "Notifications": {
+  "en": "Notifications"
+ },
+ "Notifications désactivées": {
+  "en": "Notifications turned off"
+ },
+ "Noté %lld sur 5 par %@": {
+  "fr": "Noté %1$lld sur 5 par %2$@",
+  "en": "Rated %1$lld out of 5 by %2$@"
+ },
+ "Nous écrire": {
+  "en": "Write to us"
+ },
+ "Nouveau livre": {
+  "en": "New book"
+ },
+ "Nouveau livre annoncé": {
+  "en": "New book announced"
+ },
+ "Nouveau roman": {
+  "en": "New novel"
+ },
+ "Nouveau tome annoncé": {
+  "en": "New volume announced"
+ },
+ "Nouveauté hebdomadaire": {
+  "en": "Weekly releases"
+ },
+ "Nouveautés": {
+  "en": "New releases"
+ },
+ "Nouveautés séries": {
+  "en": "Series news"
+ },
+ "Nouveaux auteurs": {
+  "en": "New authors"
+ },
+ "Nouvelle": {
+  "en": "Novella"
+ },
+ "Nouvelle sortie": {
+  "en": "New release"
+ },
+ "Nouvelles parutions": {
+  "en": "New releases"
+ },
+ "Numérique": {
+  "en": "Digital"
+ },
+ "Numéro": {
+  "en": "Number"
+ },
+ "Néerlandais": {
+  "en": "Dutch"
+ },
+ "OK": {
+  "en": "OK"
+ },
+ "On demande aux sirènes si elles ont lu la suite": {
+  "en": "Asking the sirens if they’ve read the sequel"
+ },
+ "On fouille sous les tables de nouveautés": {
+  "en": "Digging under the new-release tables"
+ },
+ "On interroge les libraires": {
+  "en": "Asking the booksellers"
+ },
+ "On retourne terre et mer…": {
+  "en": "Searching land and sea…"
+ },
+ "On réveille le bibliothécaire": {
+  "en": "Waking up the librarian"
+ },
+ "On secoue les éditeurs": {
+  "en": "Shaking the publishers"
+ },
+ "On traverse la forêt des manuscrits": {
+  "en": "Crossing the forest of manuscripts"
+ },
+ "On époussette les couvertures": {
+  "en": "Dusting off the covers"
+ },
+ "Open Library": {
+  "en": "Open Library"
+ },
+ "Options": {
+  "en": "Options"
+ },
+ "Orange": {
+  "en": "Orange"
+ },
+ "Ouvre la fiche de l'auteur": {
+  "en": "Opens the author's page"
+ },
+ "Ouvre la fiche du narrateur": {
+  "en": "Opens the narrator's page"
+ },
+ "Ouvrir dans %@": {
+  "en": "Open in %@"
+ },
+ "Ouvrir les réglages de l'iPhone": {
+  "en": "Open the iPhone’s Settings"
+ },
+ "Où en êtes-vous ?": {
+  "en": "Where are you?"
+ },
+ "PLUS": {
+  "en": "MORE"
+ },
+ "Page %lld": {
+  "en": "Page %lld"
+ },
+ "Page %lld sur %lld": {
+  "fr": "Page %1$lld sur %2$lld",
+  "en": "Page %1$lld of %2$lld"
+ },
+ "Pages": {
+  "en": "Pages"
+ },
+ "Pages lues": {
+  "en": "Pages read"
+ },
+ "Papier": {
+  "en": "Print"
+ },
+ "Par %@": {
+  "en": "From %@"
+ },
+ "Par date": {
+  "en": "By date"
+ },
+ "Par genre": {
+  "en": "By Genre"
+ },
+ "Par nom": {
+  "en": "By name"
+ },
+ "Par type": {
+  "en": "By type"
+ },
+ "Parfait": {
+  "en": "Great"
+ },
+ "Partager": {
+  "en": "Share"
+ },
+ "Partager mes favoris": {
+  "en": "Share my favorites"
+ },
+ "Partagez vos lectures": {
+  "en": "Share your reading"
+ },
+ "Partagé": {
+  "en": "Shared"
+ },
+ "Parution": {
+  "en": "Published"
+ },
+ "Pas annoncé": {
+  "en": "Not announced"
+ },
+ "Pas assez de scans": {
+  "en": "Not enough scans"
+ },
+ "Pas encore": {
+  "en": "Not yet"
+ },
+ "Pas encore annoncé": {
+  "en": "Not announced yet"
+ },
+ "Pas encore annoncés": {
+  "en": "Not announced yet"
+ },
+ "Pas encore en audio": {
+  "en": "Not yet in audio"
+ },
+ "Pas encore paru": {
+  "en": "Not out yet"
+ },
+ "Pas intéressé": {
+  "en": "Not interested"
+ },
+ "Pas maintenant": {
+  "en": "Not now"
+ },
+ "Pas pour moi": {
+  "en": "Not for me"
+ },
+ "Paul Atréides": {
+  "en": "Paul Atreides"
+ },
+ "Photo": {
+  "en": "Photo"
+ },
+ "Photo récente": {
+  "en": "Recent photo"
+ },
+ "Photographier les livres": {
+  "en": "Photograph the books"
+ },
+ "Photographiez les tranches de face, bien éclairées, ou posez les couvertures à plat sans qu'elles se chevauchent. Rien n'a été décompté.": {
+  "en": "Photograph the spines head-on, well lit, or lay the covers flat without overlapping. Nothing was counted."
+ },
+ "Photographiez une couverture : le livre rejoint votre bibliothèque avec son résumé et sa série. Passez en Premium pour scanner sans limite.": {
+  "en": "Take a photo of a cover: the book joins your library with its summary and its series. Go Premium to scan without limits."
+ },
+ "Photographiez une étagère entière : chaque livre est reconnu, vous cochez ceux à ajouter. Réservé à Shiori Premium.": {
+  "en": "Photograph a whole shelf: each book is recognized, and you tick the ones to add. Shiori Premium only."
+ },
+ "Pile indisponible": {
+  "en": "To-read pile unavailable"
+ },
+ "Pile vide": {
+  "en": "To-read pile empty"
+ },
+ "Pile à lire": {
+  "en": "To-read pile"
+ },
+ "Plus": {
+  "en": "More"
+ },
+ "Plus d'actions": {
+  "en": "More actions"
+ },
+ "Plus de 2 ans": {
+  "en": "Over 2 years"
+ },
+ "Plus de découvertes ce mois-ci : prochaines en %@.": {
+  "en": "No more discoveries this month: the next ones come in %@."
+ },
+ "Plus tard": {
+  "en": "Later"
+ },
+ "Plus tôt": {
+  "en": "Earlier"
+ },
+ "Plus tôt en %@": {
+  "en": "Earlier in %@"
+ },
+ "Plusieurs livres": {
+  "en": "Several books"
+ },
+ "Plusieurs livres correspondent": {
+  "en": "Several books match"
+ },
+ "Plusieurs livres d'un coup": {
+  "en": "Several books at once"
+ },
+ "Polar": {
+  "en": "Crime"
+ },
+ "Polonais": {
+  "en": "Polish"
+ },
+ "Portrait": {
+  "en": "Portrait"
+ },
+ "Portugais": {
+  "en": "Portuguese"
+ },
+ "Pourquoi ce conseil ?": {
+  "en": "Why this recommendation?"
+ },
+ "Pourquoi ce livre": {
+  "en": "Why this book"
+ },
+ "Poésie": {
+  "en": "Poetry"
+ },
+ "Premier": {
+  "en": "First"
+ },
+ "Premium": {
+  "en": "Premium"
+ },
+ "Première parution": {
+  "en": "First published"
+ },
+ "Primés": {
+  "en": "Award winners"
+ },
+ "Prix": {
+  "en": "Awards"
+ },
+ "Prix Arthur C. Clarke": {
+  "en": "Arthur C. Clarke Award"
+ },
+ "Prix Goncourt": {
+  "en": "Prix Goncourt"
+ },
+ "Prix Hugo": {
+  "en": "Hugo Award"
+ },
+ "Prix Locus de la fantasy": {
+  "en": "Locus Award for Fantasy"
+ },
+ "Prix Locus de la science-fiction": {
+  "en": "Locus Award for Science Fiction"
+ },
+ "Prix Nebula": {
+  "en": "Nebula Award"
+ },
+ "Prix littéraires": {
+  "en": "Literary awards"
+ },
+ "Problème": {
+  "en": "Problem"
+ },
+ "Prochain : %@": {
+  "en": "Next: %@"
+ },
+ "Prochaine sortie et nouvelle disponibilité": {
+  "en": "Next release and newly available"
+ },
+ "Prochainement": {
+  "en": "Coming soon"
+ },
+ "Prochaines sorties": {
+  "en": "Upcoming releases"
+ },
+ "Profil": {
+  "en": "Profile"
+ },
+ "Progression": {
+  "en": "Progress"
+ },
+ "Précommander": {
+  "en": "Pre-order"
+ },
+ "Préféré": {
+  "en": "Favorite"
+ },
+ "Préférées": {
+  "en": "Favorites"
+ },
+ "Préférés": {
+  "en": "Favorites"
+ },
+ "Prénom": {
+  "en": "First name"
+ },
+ "Préparation de vos livres…": {
+  "en": "Preparing your books…"
+ },
+ "Préparation de votre bibliothèque": {
+  "en": "Preparing your library"
+ },
+ "Préparation de votre bibliothèque…": {
+  "en": "Preparing your library…"
+ },
+ "Préquelle": {
+  "en": "Prequel"
+ },
+ "Publication": {
+  "en": "Publication"
+ },
+ "Pépite sous-explorée": {
+  "en": "Underexplored gem"
+ },
+ "Qu'en avez-vous pensé ?": {
+  "en": "What did you think?"
+ },
+ "Rayon": {
+  "en": "Shelf"
+ },
+ "Rayon indisponible": {
+  "en": "Shelf unavailable"
+ },
+ "Recherche de vos découvertes…": {
+  "en": "Finding your discoveries…"
+ },
+ "Recherche des couvertures…": {
+  "en": "Looking for covers…"
+ },
+ "Recherche des portraits…": {
+  "en": "Looking for portraits…"
+ },
+ "Recherche en cours": {
+  "en": "Searching"
+ },
+ "Recherche indisponible": {
+  "en": "Search unavailable"
+ },
+ "Rechercher": {
+  "en": "Search"
+ },
+ "Rechercher une série": {
+  "en": "Search for a series"
+ },
+ "Recherches Google": {
+  "en": "Google searches"
+ },
+ "Recherches Google par étape": {
+  "en": "Google searches by step"
+ },
+ "Recherches récentes": {
+  "en": "Recent searches"
+ },
+ "Recommandé": {
+  "en": "Recommended"
+ },
+ "Recommandés": {
+  "en": "Recommended"
+ },
+ "Reconnecter mon compte Amazon": {
+  "en": "Reconnect my Amazon account"
+ },
+ "Reconnectez votre compte pour que votre bibliothèque Kindle continue de vous suivre.": {
+  "en": "Reconnect your account so your Kindle library keeps following you."
+ },
+ "Records par genre": {
+  "en": "Records by genre"
+ },
+ "Relancer l'analyse": {
+  "en": "Run the analysis again"
+ },
+ "Relire": {
+  "en": "Read again"
+ },
+ "Remarques": {
+  "en": "Notes"
+ },
+ "Renouvellement le %@": {
+  "en": "Renews on %@"
+ },
+ "Reprendre": {
+  "en": "Resume"
+ },
+ "Reprendre la lecture": {
+  "en": "Resume reading"
+ },
+ "Reprendre une photo": {
+  "en": "Retake the photo"
+ },
+ "Restaurer mes achats": {
+  "en": "Restore purchases"
+ },
+ "Retirer": {
+  "en": "Remove"
+ },
+ "Retirer des coups de cœur": {
+  "en": "Remove from Favorites"
+ },
+ "Retirer des favoris": {
+  "en": "Remove from favorites"
+ },
+ "Retirer des préférés": {
+  "en": "Remove from favorites"
+ },
+ "Retirer la note": {
+  "en": "Remove the rating"
+ },
+ "Retirer le conseil": {
+  "en": "Remove the recommendation"
+ },
+ "Retirer le filtre": {
+  "en": "Remove the filter"
+ },
+ "Revenus Premium": {
+  "en": "Premium revenue"
+ },
+ "Rien": {
+  "en": "Nothing"
+ },
+ "Rien d'annoncé ce mois-ci": {
+  "en": "Nothing announced this month"
+ },
+ "Rien d'annoncé plus loin": {
+  "en": "Nothing announced further out"
+ },
+ "Rien d'annoncé pour l'instant": {
+  "en": "Nothing announced yet"
+ },
+ "Rien d'ouvert": {
+  "en": "Nothing open"
+ },
+ "Rien de neuf pour l'instant": {
+  "en": "Nothing new for now"
+ },
+ "Rien de nouveau depuis la dernière fois.": {
+  "en": "Nothing new since last time."
+ },
+ "Rien ici pour l'instant": {
+  "en": "Nothing here yet"
+ },
+ "Rien n'est sorti ces 30 derniers jours.": {
+  "en": "Nothing came out in the last 30 days."
+ },
+ "Rocky": {
+  "en": "Rocky"
+ },
+ "Roman historique": {
+  "en": "Historical fiction"
+ },
+ "Romance": {
+  "en": "Romance"
+ },
+ "Rose": {
+  "en": "Pink"
+ },
+ "Rouge": {
+  "en": "Red"
+ },
+ "Rouletabille": {
+  "en": "Rouletabille"
+ },
+ "Russe": {
+  "en": "Russian"
+ },
+ "Récemment": {
+  "en": "Recently"
+ },
+ "Récents": {
+  "en": "Recent"
+ },
+ "Réduire": {
+  "en": "Show less"
+ },
+ "Réessayer": {
+  "en": "Try again"
+ },
+ "Région": {
+  "en": "Region"
+ },
+ "Réglages": {
+  "en": "Settings"
+ },
+ "Réponse invalide du serveur": {
+  "en": "Invalid server response"
+ },
+ "Résumé": {
+  "en": "Summary"
+ },
+ "SF": {
+  "en": "Sci-fi"
+ },
+ "Sa note et ses commentaires partent avec lui.": {
+  "en": "Its rating and comments go with it."
+ },
+ "Sa pile à lire": {
+  "en": "Their reading pile"
+ },
+ "Sans date": {
+  "en": "No date"
+ },
+ "Sans jour": {
+  "en": "No day"
+ },
+ "Sans note": {
+  "en": "Unrated"
+ },
+ "Sans numéro": {
+  "en": "No number"
+ },
+ "Sans titre": {
+  "en": "Untitled"
+ },
+ "Scan": {
+  "en": "Scan"
+ },
+ "Scanner": {
+  "en": "Scan"
+ },
+ "Scanner la couverture": {
+  "en": "Scan the cover"
+ },
+ "Scanner un livre": {
+  "en": "Scan a book"
+ },
+ "Scanner une couverture": {
+  "en": "Scan a cover"
+ },
+ "Scannez la couverture d'un livre pour commencer.": {
+  "en": "Scan a book’s cover to get started."
+ },
+ "Scannez la couverture d'un livre pour commencer. Chaque rangée ci-dessous se remplira avec vos lectures.": {
+  "en": "Scan a book's cover to begin. Every row below will fill up with your reading."
+ },
+ "Scannez sans compter": {
+  "en": "Scan without counting"
+ },
+ "Scannés": {
+  "en": "Scanned"
+ },
+ "Scans": {
+  "en": "Scans"
+ },
+ "Scans ce mois-ci": {
+  "en": "Scans this month"
+ },
+ "Scans illimités": {
+  "en": "Unlimited scans"
+ },
+ "Scans épuisés": {
+  "en": "Out of scans"
+ },
+ "Science-fiction": {
+  "en": "Science fiction"
+ },
+ "Sciences": {
+  "en": "Science"
+ },
+ "Se déconnecter": {
+  "en": "Sign out"
+ },
+ "Se poursuit en arrière-plan": {
+  "en": "Continuing in the background"
+ },
+ "Servis par le cache": {
+  "en": "Served from cache"
+ },
+ "Ses favoris": {
+  "en": "Their favorites"
+ },
+ "Sessions": {
+  "en": "Sessions"
+ },
+ "Sessions indisponibles": {
+  "en": "Sessions unavailable"
+ },
+ "Sessions par jour": {
+  "en": "Sessions per day"
+ },
+ "Seul en piste : invitez un ami à vous défier !": {
+  "en": "Alone on the track: invite a friend to challenge you!"
+ },
+ "Sherlock Holmes": {
+  "en": "Sherlock Holmes"
+ },
+ "Shiori Premium": {
+  "en": "Shiori Premium"
+ },
+ "Shiori n'a pas réussi à constituer le catalogue de cette série. Réessayez plus tard, ou scannez la couverture d'un de ses tomes.": {
+  "en": "Shiori couldn’t put together the catalogue of this series. Try again later, or scan the cover of one of its volumes."
+ },
+ "Shiori n'est pas autorisé à vous prévenir. Activez ses notifications dans les réglages de l'iPhone pour recevoir ces alertes.": {
+  "en": "Shiori isn’t allowed to notify you. Turn its notifications on in the iPhone’s Settings to get these alerts."
+ },
+ "Signaler un problème ou proposer une idée": {
+  "en": "Report a problem or suggest an idea"
+ },
+ "Sort %@": {
+  "en": "Out %@"
+ },
+ "Sort %@ prochain": {
+  "en": "Out next %@"
+ },
+ "Sort demain": {
+  "en": "Out tomorrow"
+ },
+ "Sort en %@": {
+  "en": "Comes out in %@"
+ },
+ "Sort le %@": {
+  "en": "Comes out on %@"
+ },
+ "Sorti": {
+  "en": "Out"
+ },
+ "Sorti %@": {
+  "en": "Released %@"
+ },
+ "Sorti en %@": {
+  "en": "Released in %@"
+ },
+ "Sorti le %@": {
+  "en": "Released on %@"
+ },
+ "Sortie %@": {
+  "en": "Out %@"
+ },
+ "Sortie aujourd'hui": {
+  "en": "Out today"
+ },
+ "Sortie avant-hier": {
+  "en": "Out two days ago"
+ },
+ "Sortie ce mois-ci": {
+  "en": "Out this month"
+ },
+ "Sortie cette semaine": {
+  "en": "Out this week"
+ },
+ "Sortie demain": {
+  "en": "Out tomorrow"
+ },
+ "Sortie hier": {
+  "en": "Out yesterday"
+ },
+ "Sorties": {
+  "en": "Releases"
+ },
+ "Sources": {
+  "en": "Sources"
+ },
+ "Sous-genres": {
+  "en": "Subgenres"
+ },
+ "Soutenez l’application pour qu’elle puisse s’autofinancer": {
+  "en": "Support the app so it can pay its own way"
+ },
+ "Statistiques": {
+  "en": "Statistics"
+ },
+ "Statut": {
+  "en": "Status"
+ },
+ "Suggestion": {
+  "en": "Suggestion"
+ },
+ "Suivi": {
+  "en": "Followed"
+ },
+ "Suivre": {
+  "en": "Follow"
+ },
+ "Suivre à nouveau": {
+  "en": "Follow again"
+ },
+ "Sujet": {
+  "en": "Subject"
+ },
+ "Support": {
+  "en": "Medium"
+ },
+ "Supprimer": {
+  "en": "Delete"
+ },
+ "Supprimer ce livre ?": {
+  "en": "Delete this book?"
+ },
+ "Supprimer définitivement le compte ?": {
+  "en": "Permanently delete the account?"
+ },
+ "Supprimer la série ?": {
+  "en": "Delete the series?"
+ },
+ "Supprimer le commentaire": {
+  "en": "Delete the comment"
+ },
+ "Supprimer mon compte": {
+  "en": "Delete my account"
+ },
+ "Surtout %@": {
+  "en": "Mostly %@"
+ },
+ "Suédois": {
+  "en": "Swedish"
+ },
+ "Synchronisation": {
+  "en": "Sync"
+ },
+ "Synchroniser": {
+  "en": "Sync"
+ },
+ "Synchroniser chaque nuit": {
+  "en": "Sync every night"
+ },
+ "Synchroniser maintenant": {
+  "en": "Sync now"
+ },
+ "Sélectionnez des livres": {
+  "en": "Select books"
+ },
+ "Séparez les auteurs et les narrateurs par des virgules.": {
+  "en": "Separate authors and narrators with commas."
+ },
+ "Séparez les auteurs par des virgules.": {
+  "en": "Separate authors with commas."
+ },
+ "Séparez les sous-genres par des virgules, trois au plus ; le premier est celui qui s'affiche dans la liste.": {
+  "en": "Separate subgenres with commas, three at most; the first is the one shown in the list."
+ },
+ "Séparez les sous-genres par des virgules, trois au plus ; le premier est celui qui s'affiche dans la liste. Un champ vidé est effacé.": {
+  "en": "Separate subgenres with commas, three at most; the first is the one shown in the list. A cleared field is erased."
+ },
+ "Séparez les sous-genres par des virgules, trois au plus. Le genre décrit la série : il sera appliqué à tous ses tomes de votre bibliothèque.": {
+  "en": "Separate subgenres with commas, three at most. The genre describes the series: it will apply to all its volumes in your library."
+ },
+ "Séparés par des virgules": {
+  "en": "Separated by commas"
+ },
+ "Série": {
+  "en": "Series"
+ },
+ "Série déjà dans votre bibliothèque": {
+  "en": "Series already in your library"
+ },
+ "Série en coup de cœur": {
+  "en": "Favourite series"
+ },
+ "Série favorite": {
+  "en": "Favorite series"
+ },
+ "Série non cataloguée": {
+  "en": "Series not catalogued"
+ },
+ "Série notée %@": {
+  "en": "Series rated %@"
+ },
+ "Séries": {
+  "en": "Series"
+ },
+ "Séries en cours": {
+  "en": "Series in progress"
+ },
+ "Séries indisponibles": {
+  "en": "Series unavailable"
+ },
+ "Tendances": {
+  "en": "Trends"
+ },
+ "Terminez un livre pour le retrouver ici.": {
+  "en": "Finish a book to find it here."
+ },
+ "Terminez un livre pour voir vos genres.": {
+  "en": "Finish a book to see your genres."
+ },
+ "Terminé": {
+  "en": "Done"
+ },
+ "Terminé le": {
+  "en": "Finished on"
+ },
+ "Terminée": {
+  "en": "Finished"
+ },
+ "Terminées": {
+  "en": "Finished"
+ },
+ "Terminés": {
+  "en": "Finished"
+ },
+ "Terres inexplorées": {
+  "en": "Uncharted lands"
+ },
+ "The Primal Hunter": {
+  "en": "The Primal Hunter"
+ },
+ "Thriller": {
+  "en": "Thriller"
+ },
+ "Théâtre": {
+  "en": "Drama"
+ },
+ "Titre": {
+  "en": "Title"
+ },
+ "Titre du livre": {
+  "en": "Book title"
+ },
+ "Titre et auteur": {
+  "en": "Title and author"
+ },
+ "Titre original": {
+  "en": "Original title"
+ },
+ "Titre, auteur, série": {
+  "en": "Title, author, series"
+ },
+ "Tome": {
+  "en": "Volume"
+ },
+ "Tome %lld": {
+  "en": "Volume %lld"
+ },
+ "Tome %lld disponible": {
+  "en": "Volume %lld out"
+ },
+ "Tome %lld · %@": {
+  "fr": "Tome %1$lld · %2$@",
+  "en": "Volume %lld · %@"
+ },
+ "Tomes": {
+  "en": "Volumes"
+ },
+ "Touchez l'étoile sélectionnée pour retirer la note.": {
+  "en": "Tap the selected star to remove the rating."
+ },
+ "Touchez le cœur sur la page d’un auteur pour le retrouver ici.": {
+  "en": "Tap the heart on an author’s page to find them here."
+ },
+ "Touchez le cœur sur la page d’un narrateur pour le retrouver ici.": {
+  "en": "Tap the heart on a narrator’s page to find them here."
+ },
+ "Touchez pour saisir le titre": {
+  "en": "Tap to enter the title"
+ },
+ "Tous": {
+  "en": "All"
+ },
+ "Tous les livres": {
+  "en": "All Books"
+ },
+ "Tous vos livres,\nau même endroit": {
+  "en": "All your books,\nin one place"
+ },
+ "Tous vos scans ont été utilisés. Passez en Premium pour scanner sans limite.": {
+  "en": "You’ve used all your scans. Go Premium to scan without limits."
+ },
+ "Tout": {
+  "en": "All"
+ },
+ "Tout désactiver": {
+  "en": "Turn all off"
+ },
+ "Tout désélectionner": {
+  "en": "Deselect all"
+ },
+ "Tout sélectionner": {
+  "en": "Select all"
+ },
+ "Tout voir": {
+  "en": "See all"
+ },
+ "Toute la pile": {
+  "en": "Whole Pile"
+ },
+ "Toutes": {
+  "en": "All"
+ },
+ "Toutes les photos": {
+  "en": "All photos"
+ },
+ "Toutes les séries": {
+  "en": "All Series"
+ },
+ "Traduction": {
+  "en": "Translation"
+ },
+ "Tranche illisible": {
+  "en": "Unreadable spine"
+ },
+ "Tranches bien lisibles, ou couvertures posées à plat. Jusqu'à 30 livres.": {
+  "en": "Clearly readable spines, or covers laid flat. Up to 30 books."
+ },
+ "Turc": {
+  "en": "Turkish"
+ },
+ "Type": {
+  "en": "Type"
+ },
+ "Tyrion": {
+  "en": "Tyrion"
+ },
+ "Ukrainien": {
+  "en": "Ukrainian"
+ },
+ "Un ami": {
+  "en": "A friend"
+ },
+ "Un champ vidé est effacé.": {
+  "en": "A cleared field is erased."
+ },
+ "Un lecteur": {
+  "en": "A reader"
+ },
+ "Un livre a besoin d'un titre.": {
+  "en": "A book needs a title."
+ },
+ "Un titre, l'IA cherche le reste": {
+  "en": "A title, AI finds the rest"
+ },
+ "Une erreur est survenue": {
+  "en": "Something went wrong"
+ },
+ "Une photo de la couverture suffit": {
+  "en": "A photo of the cover is enough"
+ },
+ "Une photo de la couverture suffit.": {
+  "en": "A photo of the cover is all it takes."
+ },
+ "Une série a besoin d'un nom.": {
+  "en": "A series needs a name."
+ },
+ "Utilisateurs": {
+  "en": "Users"
+ },
+ "Valeurs sûres": {
+  "en": "Safe bets"
+ },
+ "Valider": {
+  "en": "Confirm"
+ },
+ "Version et nouveautés": {
+  "en": "Version and what’s new"
+ },
+ "Vert": {
+  "en": "Green"
+ },
+ "Vin": {
+  "en": "Vin"
+ },
+ "Violet": {
+  "en": "Violet"
+ },
+ "Voir l'auteur": {
+  "en": "View Author"
+ },
+ "Voir la sortie": {
+  "en": "See the release"
+ },
+ "Voir la série": {
+  "en": "See the series"
+ },
+ "Voir ma bibliothèque": {
+  "en": "See my library"
+ },
+ "Voir sur Amazon": {
+  "en": "View on Amazon"
+ },
+ "Vos bibliothèques": {
+  "en": "Your libraries"
+ },
+ "Vos coups de cœur d'abord": {
+  "en": "Your favorites first"
+ },
+ "Vos livres audio, avec ce que vous avez déjà écouté.": {
+  "en": "Your audiobooks, with what you’ve already listened to."
+ },
+ "Vos livres audio, avec leur avancement.": {
+  "en": "Your audiobooks, with how far you got."
+ },
+ "Vos livres de %@ arrivent": {
+  "en": "Your %@ books are on their way"
+ },
+ "Vos livres d’%@ arrivent": {
+  "en": "Your %@ books are on their way"
+ },
+ "Vos livres lus et en cours, marqués comme tels.": {
+  "en": "Your books read and in progress, marked as such."
+ },
+ "Vos livres numériques, avec ceux que vous avez finis.": {
+  "en": "Your ebooks, with the ones you’ve finished."
+ },
+ "Vos livres n’ont pas pu être chargés.": {
+  "en": "Your books couldn’t be loaded."
+ },
+ "Vos scans de bienvenue": {
+  "en": "Your welcome scans"
+ },
+ "Vos tomes prendront leur place dans la série, et ceux qui vous manquent seront listés par leur numéro. Le catalogue complet remplacera ce décompte dès que Shiori pourra le constituer.": {
+  "en": "Your volumes will take their place in the series, and the ones you’re missing will be listed by number. The complete catalogue will replace this count as soon as Shiori can put it together."
+ },
+ "Votre accueil": {
+  "en": "Your home"
+ },
+ "Votre bibliothèque Audible": {
+  "en": "Your Audible library"
+ },
+ "Votre bibliothèque Kindle": {
+  "en": "Your Kindle library"
+ },
+ "Votre bibliothèque commence ici": {
+  "en": "Your library starts here"
+ },
+ "Votre bibliothèque est vide": {
+  "en": "Your library is empty"
+ },
+ "Votre bibliothèque ne compte aucune autre série dans laquelle fusionner celle-ci.": {
+  "en": "Your library has no other series to merge this one into."
+ },
+ "Votre bibliothèque, vos notes et vos séries seront effacées sans possibilité de récupération. Un abonnement Premium éventuel n'est pas résilié et reste à annuler dans l'App Store.": {
+  "en": "Your library, your ratings and your series will be erased with no way to recover them. Any Premium subscription isn’t cancelled and must be cancelled in the App Store."
+ },
+ "Votre note sera perdue. Cette action est définitive.": {
+  "en": "Your rating will be lost. This can’t be undone."
+ },
+ "Votre photo": {
+  "en": "Your photo"
+ },
+ "Votre profil": {
+  "en": "Your profile"
+ },
+ "Votre signature": {
+  "en": "Your signature"
+ },
+ "Vous": {
+  "en": "You"
+ },
+ "Vous avez fait le tour": {
+  "en": "You’ve seen them all"
+ },
+ "Vous menez la course avec %lld livres d'avance sur %@ !": {
+  "fr": "Vous menez la course avec %1$lld livres d'avance sur %2$@ !",
+  "en": "You lead the race by %1$lld books over %2$@!"
+ },
+ "Vous menez la course, un livre devant %@. Ne relâchez rien !": {
+  "en": "You lead the race, one book ahead of %@. Keep going!"
+ },
+ "Vous ne serez plus prévenu de sa sortie.": {
+  "en": "You won’t be notified when it comes out anymore."
+ },
+ "Vous ne verrez plus sa bibliothèque, et il ne verra plus la vôtre.": {
+  "en": "You won’t see their library anymore, and they won’t see yours."
+ },
+ "Vous partagerez vos livres": {
+  "en": "You’ll share your books"
+ },
+ "Vous partagez maintenant vos livres": {
+  "en": "You’re now sharing your books"
+ },
+ "Vous partagez vos bibliothèques": {
+  "en": "You’re sharing your libraries"
+ },
+ "Vous pourrez réessayer depuis les réglages": {
+  "en": "You can try again from the settings"
+ },
+ "Vous pouvez fermer : l'ajout continue et les livres apparaissent dans la bibliothèque.": {
+  "en": "You can close this: adding continues and the books show up in your library."
+ },
+ "Vous pouvez l'ajouter une seconde fois, pour une autre édition par exemple.": {
+  "en": "You can add it a second time, for another edition for example."
+ },
+ "Vous verrez sa bibliothèque et il verra la vôtre.": {
+  "en": "You will see their library and they will see yours."
+ },
+ "Voyage": {
+  "en": "Travel"
+ },
+ "Vu": {
+  "en": "Seen"
+ },
+ "Vus récemment": {
+  "en": "Recently viewed"
+ },
+ "Vérifier": {
+  "en": "Review"
+ },
+ "Wallander": {
+  "en": "Wallander"
+ },
+ "Web": {
+  "en": "Web"
+ },
+ "Wikidata": {
+  "en": "Wikidata"
+ },
+ "Wikipédia": {
+  "en": "Wikipedia"
+ },
+ "World Fantasy Award": {
+  "en": "World Fantasy Award"
+ },
+ "Ye Wenjie": {
+  "en": "Ye Wenjie"
+ },
+ "^[%lld livre attendu](inflect: true)": {
+  "en": "^[%lld book awaited](inflect: true)"
+ },
+ "^[%lld livre](inflect: true)": {
+  "en": "^[%lld book](inflect: true)"
+ },
+ "^[%lld série](inflect: true)": {
+  "en": "^[%lld series](inflect: true)"
+ },
+ "^[%lld tome](inflect: true)": {
+  "en": "^[%lld volume](inflect: true)"
+ },
+ "ajouté aujourd'hui": {
+  "en": "added today"
+ },
+ "ajouté hier": {
+  "en": "added yesterday"
+ },
+ "annoncé": {
+  "en": "announced"
+ },
+ "annoncé, jamais daté": {
+  "en": "announced, never dated"
+ },
+ "annoncés": {
+  "en": "announced"
+ },
+ "aujourd'hui": {
+  "en": "today"
+ },
+ "commencé aujourd'hui": {
+  "en": "started today"
+ },
+ "d'écoute": {
+  "en": "listened"
+ },
+ "depuis %lld ans": {
+  "en": "for %lld years"
+ },
+ "depuis %lld mois": {
+  "en": "for %lld mo"
+ },
+ "depuis %lld sem.": {
+  "en": "for %lld wk"
+ },
+ "depuis %lldj": {
+  "en": "for %lldd"
+ },
+ "depuis 1 an": {
+  "en": "for 1 year"
+ },
+ "depuis hier": {
+  "en": "since yesterday"
+ },
+ "en %@": {
+  "en": "in %@"
+ },
+ "en cours %@": {
+  "en": "reading %@"
+ },
+ "favoris": {
+  "en": "favourites"
+ },
+ "genres explorés": {
+  "en": "genres explored"
+ },
+ "heures d'écoute en %@": {
+  "en": "hours listened in %@"
+ },
+ "hier": {
+  "en": "yesterday"
+ },
+ "il y a %lldj": {
+  "en": "%lldd ago"
+ },
+ "jamais": {
+  "en": "never"
+ },
+ "le %@": {
+  "en": "on %@"
+ },
+ "livres en %@": {
+  "en": "books in %@"
+ },
+ "livres lus": {
+  "en": "books read"
+ },
+ "lu en %@": {
+  "en": "read in %@"
+ },
+ "lu en %lld jours": {
+  "en": "read in %lld days"
+ },
+ "lu le %@": {
+  "en": "read %@"
+ },
+ "lus": {
+  "en": "read"
+ },
+ "lus en %@": {
+  "en": "read in %@"
+ },
+ "modifier": {
+  "en": "edit"
+ },
+ "moyenne": {
+  "en": "average"
+ },
+ "page %lld": {
+  "en": "page %lld"
+ },
+ "page %lld · %lld%%": {
+  "fr": "page %1$lld · %2$lld%%",
+  "en": "page %lld · %lld%%"
+ },
+ "pages": {
+  "en": "pages"
+ },
+ "pages en %@": {
+  "en": "pages in %@"
+ },
+ "sans titre": {
+  "en": "untitled"
+ },
+ "sur **%lld** pages": {
+  "en": "of **%lld** pages"
+ },
+ "série": {
+  "en": "series"
+ },
+ "séries": {
+  "en": "series"
+ },
+ "tomes": {
+  "en": "volumes"
+ },
+ "tout voir": {
+  "en": "see all"
+ },
+ "À commencer": {
+  "en": "To Start"
+ },
+ "À compléter": {
+  "en": "To Complete"
+ },
+ "À creuser": {
+  "en": "Worth digging"
+ },
+ "À découvrir": {
+  "en": "To Discover"
+ },
+ "À finir": {
+  "en": "To finish"
+ },
+ "À lire": {
+  "en": "To read"
+ },
+ "À suivre": {
+  "en": "Up Next"
+ },
+ "À venir": {
+  "en": "Coming soon"
+ },
+ "À venir : %@": {
+  "en": "Coming: %@"
+ },
+ "À venir : %@ · %@": {
+  "fr": "À venir : %1$@ · %2$@",
+  "en": "Coming: %1$@ · %2$@"
+ },
+ "À venir : Tome %lld": {
+  "en": "Coming: Volume %lld"
+ },
+ "À écouter": {
+  "en": "To listen"
+ },
+ "Écarté": {
+  "en": "Turned down"
+ },
+ "Échec": {
+  "en": "Failed"
+ },
+ "Économie": {
+  "en": "Business"
+ },
+ "Écouter sur Audible": {
+  "en": "Listen on Audible"
+ },
+ "Écouté à %@": {
+  "en": "Listened to %@"
+ },
+ "Éditeur": {
+  "en": "Publisher"
+ },
+ "Éditions guettées": {
+  "en": "Editions awaited"
+ },
+ "Égalité en tête : %lld lecteurs se disputent la première place !": {
+  "en": "Tied at the top: %lld readers are fighting for first place!"
+ },
+ "État": {
+  "en": "State"
+ },
+ "Être prévenu de la sortie": {
+  "en": "Alert me on release"
+ },
+ "à lire": {
+  "en": "to read"
+ },
+ "à lire depuis %lld ans": {
+  "en": "to read for %lld years"
+ },
+ "à lire depuis %lld mois": {
+  "en": "to read for %lld months"
+ },
+ "à lire depuis %lld sem.": {
+  "en": "to read for %lld wk"
+ },
+ "à lire depuis %lldj": {
+  "en": "to read for %lldd"
+ },
+ "à lire depuis 1 an": {
+  "en": "to read for 1 year"
+ },
+ "à lire depuis hier": {
+  "en": "to read since yesterday"
+ },
+ "à écouter": {
+  "en": "to listen"
+ },
+ "écoutées": {
+  "en": "listened"
+ },
+ "écoutés": {
+  "en": "listened"
+ },
+ "–": {
+  "en": "–"
+ },
+ "≈ %@ fin de mois": {
+  "en": "≈ %@ by month end"
+ }
+}
