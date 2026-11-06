@@ -17,6 +17,7 @@ import androidx.compose.ui.zIndex
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import com.polyforms.shiori.features.home.HomeScreen
+import com.polyforms.shiori.features.library.AddBookFlow
 import com.polyforms.shiori.features.library.LibraryRequest
 import com.polyforms.shiori.features.library.LibraryTab
 import com.polyforms.shiori.features.series.SeriesRequest
@@ -135,5 +136,6 @@ fun ContentView(router: AppRouter = remember { AppRouter() }) {
             }
         }
     }
+        AddBookFlow(router)
     }
 }

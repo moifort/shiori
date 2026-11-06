@@ -140,6 +140,20 @@ object DebugFixtures {
         ),
     )
 
+    val reviewDraft = com.polyforms.shiori.features.book.BookDraft(
+        title = "La Horde du Contrevent",
+        authors = listOf("Alain Damasio"),
+        publisher = "Folio",
+        firstPublishedIn = 2004,
+        synopsis = "Imaginez une Terre poncée, avec en son centre une bande de cinq cents kilomètres de large et de cinq mille de long, battue par un vent continu. Vingt-trois hordiers remontent ce vent jusqu'à sa source.",
+        genre = BookGenre.SCIENCE_FICTION,
+        subgenres = listOf("Aventure"),
+        pageCount = 736,
+        isbn13 = "9782070342266",
+        language = BookLanguage.FR,
+        coverURL = cover("horde-du-contrevent"),
+    )
+
     val coverSlugs = (reading + toRead).mapNotNull { it.coverURL?.substringAfterLast('/')?.removeSuffix(".jpg") } +
         listOf("one-piece-107", "frieren-05", "blacksad-04", "hyperion-audio-01", "blue-lock-20", "depossedes", "neuromancien")
 }

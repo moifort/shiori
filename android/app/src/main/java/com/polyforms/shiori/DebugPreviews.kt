@@ -48,6 +48,20 @@ fun DebugPreviews(name: String) {
             }
             "statistics" -> com.polyforms.shiori.features.home.HomeStatisticsScreen(DebugFixtures.dashboard, {}) { DebugFixtures.genreInsights }
             "genres" -> com.polyforms.shiori.features.home.GenreInsightsScreen { DebugFixtures.genreInsights }
+            "add" -> androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize().background(com.polyforms.shiori.shared.components.styles.Shiori.colors.groupedBackground)) {
+                com.polyforms.shiori.features.library.components.organisms.AddBookSheet(false, { emptyList() }, {}) {}
+            }
+            "review" -> androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize().background(com.polyforms.shiori.shared.components.styles.Shiori.colors.groupedBackground)) {
+                com.polyforms.shiori.features.scan.components.pages.ScanReviewPage(
+                    DebugFixtures.reviewDraft,
+                    null,
+                    isSaving = false,
+                    awaitable = emptyList(),
+                    loadSubgenres = { emptyList() },
+                    loadVocabulary = { null },
+                ) {}
+            }
+            "scan" -> com.polyforms.shiori.features.scan.ScanScreen(onDismiss = {}, onAwait = { _, _ -> }, onAdded = {})
             else -> ShioriRoot()
         }
     }
