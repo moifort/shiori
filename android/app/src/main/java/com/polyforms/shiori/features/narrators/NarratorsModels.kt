@@ -3,6 +3,7 @@
 package com.polyforms.shiori.features.narrators
 
 import com.polyforms.shiori.features.authors.PersonFacts
+import com.polyforms.shiori.features.authors.ShelvedPerson
 import com.polyforms.shiori.features.authors.personInitials
 import com.polyforms.shiori.features.series.cardCoverURL
 import com.polyforms.shiori.shared.Book
@@ -14,17 +15,17 @@ import java.time.Instant
 
 @Serializable
 data class FollowedNarrator(
-    val key: String,
-    val name: String,
-    val indexLetter: String,
-    val portraitURL: String? = null,
+    override val key: String,
+    override val name: String,
+    override val indexLetter: String,
+    override val portraitURL: String? = null,
     val shelvedAt: Instant?,
-    val books: List<Book>,
-    val favorite: Boolean = false,
-    val surname: String? = null,
-) {
-    val id: String get() = key
-    val initials: String get() = personInitials(name)
+    override val books: List<Book>,
+    override val favorite: Boolean = false,
+    override val surname: String? = null,
+) : ShelvedPerson {
+    override val id: String get() = key
+    override val initials: String get() = personInitials(name)
 }
 
 @Serializable

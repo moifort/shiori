@@ -54,3 +54,14 @@ fun BoxScope.ScreenBar(
 fun LoadingScreen() {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
 }
+
+/** A screen's large title, under the floating bar, scrolling away with the content. */
+@Composable
+fun LargeTitle(title: String, modifier: Modifier = Modifier) {
+    Text(
+        title,
+        style = Shiori.type.largeTitle,
+        color = Shiori.colors.label,
+        modifier = modifier.statusBarsPadding().padding(top = 56.dp).padding(horizontal = 20.dp, vertical = 4.dp),
+    )
+}

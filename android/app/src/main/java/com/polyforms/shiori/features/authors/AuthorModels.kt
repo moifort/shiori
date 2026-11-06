@@ -18,21 +18,21 @@ import java.time.Instant
 /** An author the reader holds books of, as the Authors shelf draws them. */
 @Serializable
 data class FollowedAuthor(
-    val key: String,
-    val name: String,
-    val indexLetter: String,
-    val portraitURL: String? = null,
+    override val key: String,
+    override val name: String,
+    override val indexLetter: String,
+    override val portraitURL: String? = null,
     val bookCount: Int,
     val seriesCount: Int,
     val favoriteCount: Int,
     val averageRating: Double?,
     val shelvedAt: Instant?,
-    val books: List<Book>,
-    val favorite: Boolean = false,
-    val surname: String? = null,
-) {
-    val id: String get() = key
-    val initials: String get() = personInitials(name)
+    override val books: List<Book>,
+    override val favorite: Boolean = false,
+    override val surname: String? = null,
+) : ShelvedPerson {
+    override val id: String get() = key
+    override val initials: String get() = personInitials(name)
 }
 
 /** "RH" for "Robin Hobb": the first and last words' first letters. */
@@ -136,3 +136,24 @@ enum class AuthorListOrder {
             LOVED -> "heart.fill"
         }
 }
+
+/** A person the reader holds books of, as the Authors and Narrators shelves draw them. */
+interface ShelvedPerson {
+    val id: String
+    val key: String
+    val name: String
+    val initials: String
+    val portraitURL: String?
+    val books: List<Book>
+    val favorite: Boolean
+    val indexLetter: String
+    val surname: String?
+}
+
+/** The order's label as a pill. */
+val AuthorListOrder.pillLabel: String
+    get() = when (this) {
+        AuthorListOrder.LOVED -> L("Préférés")
+        AuthorListOrder.RECENT -> L("Récents")
+        AuthorListOrder.NAME -> L("A–Z")
+    }
