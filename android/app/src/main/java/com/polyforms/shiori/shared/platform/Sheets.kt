@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -122,3 +123,38 @@ fun ShioriAlert(
 
 @Composable
 fun HSpacer(width: androidx.compose.ui.unit.Dp) = Spacer(Modifier.width(width))
+
+/** One choice of a [ConfirmationSheet]. */
+data class ConfirmationChoice(val title: String, val destructive: Boolean = false, val action: () -> Unit)
+
+/** `confirmationDialog`: a title over a column of choices, as iOS's action sheet. */
+@Composable
+fun ConfirmationSheet(title: String, choices: List<ConfirmationChoice>, onDismiss: () -> Unit) {
+    ShioriSheet(onDismiss) { dismiss ->
+        val colors = Shiori.colors
+        androidx.compose.material3.Text(
+            title,
+            style = Shiori.type.footnote.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold),
+            color = colors.secondaryLabel,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 14.dp),
+        )
+        androidx.compose.foundation.layout.Column(Modifier.padding(horizontal = 16.dp).padding(bottom = 24.dp)) {
+            choices.forEach { choice ->
+                Box(
+                    Modifier.fillMaxWidth().height(56.dp).clickable {
+                        dismiss()
+                        choice.action()
+                    },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    androidx.compose.material3.Text(choice.title, style = Shiori.type.title3, color = if (choice.destructive) colors.red else colors.accent)
+                }
+                com.polyforms.shiori.shared.components.styles.ShioriDivider()
+            }
+            Box(Modifier.fillMaxWidth().height(56.dp).clickable { dismiss() }, contentAlignment = Alignment.Center) {
+                androidx.compose.material3.Text(L("Annuler"), style = Shiori.type.title3.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold), color = colors.accent)
+            }
+        }
+    }
+}

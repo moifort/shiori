@@ -62,6 +62,7 @@ class AuthSession {
         SnapshotCaches.clear()
         RecentSearches().clear()
         RecentlyViewed().clear()
+        com.polyforms.shiori.features.search.LibrarySearchIndex.shared.forget()
     }
 
     companion object {
