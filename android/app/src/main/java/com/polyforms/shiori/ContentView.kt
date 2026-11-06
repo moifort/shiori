@@ -58,6 +58,14 @@ class AppRouter {
     var showAddSheet by mutableStateOf(false)
     var libraryRequest by mutableStateOf<LibraryRequest?>(null)
     var seriesRequest by mutableStateOf<SeriesRequest?>(null)
+    var showShared by mutableStateOf(false)
+    var opensDiscover by mutableStateOf(false)
+
+    /** Opens Découvrir, in the News tab. */
+    fun showDiscover() {
+        opensDiscover = true
+        selectedTab = TabSelection.NEWS
+    }
 
     /** Opens the Library on what the dashboard asked for. */
     fun openLibrary(request: LibraryRequest) {

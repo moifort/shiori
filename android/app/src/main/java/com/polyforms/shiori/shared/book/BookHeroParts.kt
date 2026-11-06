@@ -28,6 +28,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
@@ -69,7 +70,7 @@ fun CoverBackdrop(
     ground: Color = Shiori.colors.groupedBackground,
     tint: Color? = null,
 ) {
-    Box(modifier.background(Color(0xFF1F1F1F))) {
+    Box(modifier.clipToBounds().background(Color(0xFF1F1F1F))) {
         if (url != null) {
             CoverEffectImage(url, CoverEffect.Backdrop, Modifier.fillMaxSize().scale(1.6f).alpha(0.85f)) {
                 Box(Modifier.fillMaxSize().background(tint ?: Color.Transparent))

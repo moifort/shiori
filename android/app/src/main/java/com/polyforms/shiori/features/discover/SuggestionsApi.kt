@@ -186,3 +186,16 @@ val SuggestionFields.asDomain: Suggestion
             else -> null
         },
     )
+
+/** The suggestion as a book of the reader's shelf, in the edition it was proposed in. */
+fun Suggestion.shelfDraft(status: com.polyforms.shiori.shared.ReadingStatus): BookDraft {
+    val format = if (this.format == ReleaseFormat.AUDIOBOOK) BookFormat.AUDIOBOOK else BookFormat.BOOK
+    return draft.copy(
+        title = title,
+        language = null,
+        coverURL = coverURL,
+        format = format,
+        media = if (format == BookFormat.AUDIOBOOK) emptyList() else draft.media,
+        status = status,
+    )
+}

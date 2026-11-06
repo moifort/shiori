@@ -1,6 +1,12 @@
 package com.polyforms.shiori
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import com.polyforms.shiori.features.discover.components.organisms.DiscoveryChoices
+import com.polyforms.shiori.features.home.components.pages.HomeHeader
+import com.polyforms.shiori.features.home.components.pages.HomePage
 import com.polyforms.shiori.features.book.BookFixtures
 import com.polyforms.shiori.features.book.components.pages.BookPage
 import com.polyforms.shiori.shared.platform.NavigationStack
@@ -25,6 +31,21 @@ fun DebugPreviews(name: String) {
                 onEditNote = {},
                 onEditField = {},
             )
+            "home" -> androidx.compose.foundation.layout.Box(
+                androidx.compose.ui.Modifier.fillMaxSize().background(com.polyforms.shiori.shared.components.styles.Shiori.colors.groupedBackground),
+            ) {
+                HomePage(
+                    DebugFixtures.dashboard,
+                    emptyList(),
+                    emptySet(),
+                    DebugFixtures.discoveries,
+                    isSearchingDiscoveries = false,
+                    discoveryChoices = remember { DiscoveryChoices() },
+                    onDiscoveryChoice = { _, _ -> true },
+                    onRefresh = {},
+                    header = { HomeHeader(false, avatar = {}) {} },
+                ) {}
+            }
             else -> ShioriRoot()
         }
     }
