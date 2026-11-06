@@ -21,6 +21,7 @@ class ShioriApplication : Application(), SingletonImageLoader.Factory {
         Strings.load(this)
         FirebaseApp.initializeApp(this)
         Analytics.start(this)
+        com.polyforms.shiori.shared.PushRegistrar.createChannel(this)
         startSentry()
     }
 

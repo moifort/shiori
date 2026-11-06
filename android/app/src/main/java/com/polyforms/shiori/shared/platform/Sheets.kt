@@ -129,7 +129,7 @@ data class ConfirmationChoice(val title: String, val destructive: Boolean = fals
 
 /** `confirmationDialog`: a title over a column of choices, as iOS's action sheet. */
 @Composable
-fun ConfirmationSheet(title: String, choices: List<ConfirmationChoice>, onDismiss: () -> Unit) {
+fun ConfirmationSheet(title: String, choices: List<ConfirmationChoice>, message: String? = null, onDismiss: () -> Unit) {
     ShioriSheet(onDismiss) { dismiss ->
         val colors = Shiori.colors
         androidx.compose.material3.Text(
@@ -137,8 +137,17 @@ fun ConfirmationSheet(title: String, choices: List<ConfirmationChoice>, onDismis
             style = Shiori.type.footnote.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold),
             color = colors.secondaryLabel,
             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 14.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(top = 14.dp, bottom = if (message == null) 14.dp else 4.dp),
         )
+        if (message != null) {
+            androidx.compose.material3.Text(
+                message,
+                style = Shiori.type.footnote,
+                color = colors.secondaryLabel,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = 14.dp),
+            )
+        }
         androidx.compose.foundation.layout.Column(Modifier.padding(horizontal = 16.dp).padding(bottom = 24.dp)) {
             choices.forEach { choice ->
                 Box(

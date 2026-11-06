@@ -24,6 +24,8 @@ import com.polyforms.shiori.features.series.SeriesRequest
 import com.polyforms.shiori.features.news.NewsScreen
 import com.polyforms.shiori.features.search.LibrarySearchScreen
 import com.polyforms.shiori.shared.DataChanges
+import com.polyforms.shiori.shared.PushRegistrar
+import androidx.compose.runtime.LaunchedEffect
 import com.polyforms.shiori.shared.L
 import com.polyforms.shiori.shared.platform.FloatingTabBar
 import com.polyforms.shiori.shared.platform.NavigationStack
@@ -102,6 +104,23 @@ fun ContentView(router: AppRouter = remember { AppRouter() }) {
     }
 
     CompositionLocalProvider(LocalAppRouter provides router) {
+    val permission = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.RequestPermission()) { granted ->
+        PushRegistrar.pendingAnswer?.complete(granted)
+    }
+    LaunchedEffect(Unit) {
+        PushRegistrar.requester = {
+            if (android.os.Build.VERSION.SDK_INT < 33) {
+                true
+            } else {
+                val answer = kotlinx.coroutines.CompletableDeferred<Boolean>()
+                PushRegistrar.pendingAnswer = answer
+                permission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                answer.await()
+            }
+        }
+        PushRegistrar.refreshRegistration()
+    }
+    LaunchedEffect(Unit) { PushRegistrar.openDiscover.collect { router.showDiscover() } }
     Box(Modifier.fillMaxSize()) {
         listOf(TabSelection.HOME, TabSelection.LIBRARY, TabSelection.NEWS, TabSelection.SEARCH).forEach { tab ->
             val visible = router.selectedTab == tab

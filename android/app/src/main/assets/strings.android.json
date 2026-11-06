@@ -31,5 +31,20 @@
  },
  "Retour": {
   "en": "Back"
+ },
+ "Alertes": {
+  "en": "Alerts"
+ },
+ "Désactivées dans les réglages du téléphone": {
+  "en": "Turned off in the phone's settings"
+ },
+ "Ouvrir les réglages du téléphone": {
+  "en": "Open the phone's settings"
+ },
+ "Shiori n'est pas autorisé à vous prévenir. Activez ses notifications dans les réglages du téléphone pour recevoir ces alertes.": {
+  "en": "Shiori is not allowed to notify you. Turn its notifications on in the phone's settings to receive these alerts."
+ },
+ "Votre bibliothèque, vos notes et vos séries seront effacées sans possibilité de récupération. Un abonnement Premium éventuel n'est pas résilié et reste à annuler dans Google Play.": {
+  "en": "Your library, notes and series will be erased with no way to recover them. A Premium subscription is not cancelled and must be cancelled in Google Play."
  }
 }

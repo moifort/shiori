@@ -79,6 +79,9 @@ fun DebugPreviews(name: String) {
                 }
             }
             "audible" -> com.polyforms.shiori.features.import.components.pages.ImportConnectPage(com.polyforms.shiori.features.import.ImportSource.AUDIBLE, com.polyforms.shiori.features.import.AmazonMarketplace.FR, {}, false) {}
+            "settings" -> androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize().background(com.polyforms.shiori.shared.components.styles.Shiori.colors.groupedBackground)) {
+                com.polyforms.shiori.features.settings.components.pages.SettingsHomePage("Thibaut Mottet", false, false, "1.0", "1") {}
+            }
             else -> ShioriRoot()
         }
     }
