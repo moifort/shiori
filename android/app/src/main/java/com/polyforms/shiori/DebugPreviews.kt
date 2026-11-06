@@ -107,6 +107,7 @@ fun DebugPreviews(name: String) {
                     null,
                 ) {}
             }
+            "awaited" -> com.polyforms.shiori.features.discover.AwaitedEditionScreen(DebugFixtures.discoverAwaited[0]) {}
             "news" -> androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize().background(com.polyforms.shiori.shared.components.styles.Shiori.colors.groupedBackground)) {
                 val feed = com.polyforms.shiori.features.news.NewsFeedLayout.feedSections(emptyList(), DebugFixtures.newsEvents, null, null)
                 com.polyforms.shiori.features.news.components.pages.NewsPage(
