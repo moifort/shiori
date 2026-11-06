@@ -11,6 +11,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.zIndex
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import com.polyforms.shiori.features.home.HomeScreen
@@ -73,7 +74,7 @@ fun ContentView(router: AppRouter = remember { AppRouter() }) {
     Box(Modifier.fillMaxSize()) {
         listOf(TabSelection.HOME, TabSelection.LIBRARY, TabSelection.NEWS, TabSelection.SEARCH).forEach { tab ->
             val visible = router.selectedTab == tab
-            Box(Modifier.fillMaxSize().graphicsLayer { alpha = if (visible) 1f else 0f }) {
+            Box(Modifier.fillMaxSize().graphicsLayer { alpha = if (visible) 1f else 0f }.zIndex(if (visible) 1f else 0f)) {
                 if (visible || navigators.getValue(tab).depth > 0 || tab == TabSelection.HOME) {
                     holder.SaveableStateProvider(tab) {
                         NavigationStack(navigators.getValue(tab), active = visible) {
@@ -91,7 +92,7 @@ fun ContentView(router: AppRouter = remember { AppRouter() }) {
         }
         // The bar shows on a tab's root only, as iOS hides it under a pushed page.
         if (navigators.getValue(router.selectedTab).depth == 0) {
-            Box(Modifier.align(Alignment.BottomCenter)) {
+            Box(Modifier.align(Alignment.BottomCenter).zIndex(2f)) {
                 FloatingTabBar(
                     tabs = listOf(TabSelection.HOME, TabSelection.LIBRARY, TabSelection.NEWS, TabSelection.SEARCH).map { TabItem(it, it.label, it.symbol) },
                     selected = router.selectedTab,
