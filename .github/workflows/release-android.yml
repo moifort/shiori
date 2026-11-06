@@ -1,0 +1,94 @@
+name: Release Android
+
+on:
+  push:
+    tags: ['android-v*']
+  workflow_dispatch:
+    inputs:
+      version_name:
+        description: 'Version name shown on Google Play, e.g. 1.2 (the same as the iOS release)'
+        required: true
+      track:
+        description: 'Play track the bundle goes to'
+        required: false
+        default: 'internal'
+        type: choice
+        options: [internal, alpha, beta, production]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-upload
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: 🤖 Build and upload to Google Play
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Take the version from the tag, or from the manual run
+        id: version
+        env:
+          INPUT_VERSION: ${{ github.event.inputs.version_name }}
+          INPUT_TRACK: ${{ github.event.inputs.track }}
+        run: |
+          set -euo pipefail
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            NAME="${GITHUB_REF_NAME#android-v}"
+            TRACK="internal"
+          else
+            NAME="$INPUT_VERSION"
+            TRACK="${INPUT_TRACK:-internal}"
+          fi
+          # Play refuses a version code it has seen: the run number only grows.
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          echo "code=$((1000 + GITHUB_RUN_NUMBER))" >> "$GITHUB_OUTPUT"
+          echo "track=$TRACK" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Write the Firebase config and the upload key
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.ANDROID_GOOGLE_SERVICES_JSON }}
+          UPLOAD_KEYSTORE: ${{ secrets.ANDROID_UPLOAD_KEYSTORE }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$GOOGLE_SERVICES_JSON" > android/app/google-services.json
+          printf '%s' "$UPLOAD_KEYSTORE" | base64 --decode > "$RUNNER_TEMP/upload.jks"
+          echo "SHIORI_UPLOAD_KEYSTORE=$RUNNER_TEMP/upload.jks" >> "$GITHUB_ENV"
+
+      - name: Test
+        working-directory: android
+        run: ./gradlew :app:testDebugUnitTest
+
+      - name: Build the signed bundle
+        working-directory: android
+        env:
+          SHIORI_UPLOAD_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_PASSWORD }}
+          SHIORI_UPLOAD_KEY_ALIAS: ${{ secrets.ANDROID_UPLOAD_KEY_ALIAS }}
+          SHIORI_UPLOAD_KEY_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEY_PASSWORD }}
+          SHIORI_GOOGLE_WEB_CLIENT_ID: ${{ secrets.ANDROID_GOOGLE_WEB_CLIENT_ID }}
+          SHIORI_SENTRY_DSN: ${{ secrets.ANDROID_SENTRY_DSN }}
+        run: >-
+          ./gradlew :app:bundleRelease
+          -Pshiori.versionName=${{ steps.version.outputs.name }}
+          -Pshiori.versionCode=${{ steps.version.outputs.code }}
+
+      - name: Upload to Google Play
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.polyforms.shiori.app
+          releaseFiles: android/app/build/outputs/bundle/release/app-release.aab
+          track: ${{ steps.version.outputs.track }}
+          status: ${{ steps.version.outputs.track == 'production' && 'draft' || 'completed' }}
+          mappingFile: android/app/build/outputs/mapping/release/mapping.txt
