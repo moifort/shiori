@@ -7,7 +7,9 @@ const PACKAGE_NAME = 'com.polyforms.shiori.app'
 export const assetLinks = (fingerprints: string) => {
   const certificates = fingerprints
     .split(',')
-    .map((fingerprint) => fingerprint.trim().toUpperCase())
+    // Firebase writes them as bare hex; the statement wants colon-separated pairs.
+    .map((fingerprint) => fingerprint.trim().toUpperCase().replaceAll(':', ''))
+    .map((fingerprint) => fingerprint.match(/.{1,2}/g)?.join(':') ?? '')
     .filter((fingerprint) => fingerprint.length > 0)
   if (certificates.length === 0) return []
   return [

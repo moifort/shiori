@@ -7,8 +7,8 @@ describe('the App Links statement', () => {
     expect(assetLinks(' , ')).toEqual([])
   })
 
-  test('trusts every certificate the app is signed with, upper-cased', () => {
-    const [statement] = assetLinks('ab:cd, EF:01')
+  test('trusts every certificate the app is signed with, as colon-separated pairs', () => {
+    const [statement] = assetLinks('ab:cd, ef01')
 
     expect(statement?.target).toEqual({
       namespace: 'android_app',
