@@ -183,6 +183,10 @@ jobs:
           ga4_property_id        = "${{ vars.GA4_PROPERTY_ID }}"
           apns_key_id            = "${{ secrets.APNS_KEY_ID }}"
           apns_private_key_path  = "./apns.p8"
+          android_cert_sha1      = ${{ vars.ANDROID_CERT_SHA1 || '[]' }}
+          android_cert_sha256    = ${{ vars.ANDROID_CERT_SHA256 || '[]' }}
+          google_oauth_client_id = "${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}"
+          google_oauth_client_secret = "${{ secrets.GOOGLE_OAUTH_CLIENT_SECRET }}"
           EOF
 
       - name: Terraform init + apply

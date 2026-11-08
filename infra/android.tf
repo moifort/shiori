@@ -6,6 +6,7 @@ resource "google_firebase_android_app" "android" {
   project       = google_project.this.project_id
   display_name  = "Shiori Android"
   package_name  = var.android_package_name
+  sha1_hashes   = var.android_cert_sha1
   sha256_hashes = var.android_cert_sha256
 
   depends_on = [google_firebase_project.this]

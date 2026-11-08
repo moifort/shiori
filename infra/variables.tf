@@ -183,6 +183,12 @@ variable "android_package_name" {
   default     = "com.polyforms.shiori.app"
 }
 
+variable "android_cert_sha1" {
+  description = "SHA-1 fingerprints of the keys the Android app is signed with (debug, upload, Play app signing). Google sign-in matches the app on these."
+  type        = list(string)
+  default     = []
+}
+
 variable "android_cert_sha256" {
   description = "SHA-256 fingerprints of the Play app signing key and the upload key, as Play Console shows them. They let Google sign-in trust the app and the invitation App Links open it."
   type        = list(string)
