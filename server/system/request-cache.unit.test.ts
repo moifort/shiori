@@ -5,6 +5,7 @@ import {
   isInRequestCache,
   memoizedPerRequest,
   reviseInRequestCache,
+  withRequestCacheScope,
 } from './request-cache'
 
 // The request cache reads the current H3 event via the auto-imported useEvent().
@@ -161,6 +162,47 @@ describe('memoizedPerRequest shared in flight', () => {
       memoizedPerRequest('library', run, sharing),
       memoizedPerRequest('library', run, sharing),
     ])
+    expect(calls).toBe(2)
+  })
+})
+
+describe('withRequestCacheScope', () => {
+  afterEach(() => {
+    delete (globalThis as unknown as { useEvent?: unknown }).useEvent
+  })
+
+  const pause = () => new Promise((resolve) => setTimeout(resolve, 1))
+
+  test('gives scopes running side by side a cache each, and leaves the request its own', async () => {
+    const request: Record<string, unknown> = {}
+    withRequest(request)
+    memoizedPerRequest('outer', () => 'request')
+
+    const inScope = (reader: string) =>
+      withRequestCacheScope(async () => {
+        memoizedPerRequest('library', () => reader)
+        await pause()
+        const seen = memoizedPerRequest('library', () => 'read again')
+        evictFromRequestCache('library')
+        return [seen, isInRequestCache('outer')]
+      })
+
+    expect(await Promise.all([inScope('a'), inScope('b'), inScope('c')])).toEqual([
+      ['a', false],
+      ['b', false],
+      ['c', false],
+    ])
+    expect(isInRequestCache('outer')).toBe(true)
+    expect(isInRequestCache('library')).toBe(false)
+  })
+
+  test('runs uncached outside a request', async () => {
+    let calls = 0
+    const read = () => ++calls
+    await withRequestCacheScope(async () => {
+      memoizedPerRequest('k', read)
+      memoizedPerRequest('k', read)
+    })
     expect(calls).toBe(2)
   })
 })

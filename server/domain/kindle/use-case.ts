@@ -41,15 +41,20 @@ import { SeriesUseCase } from '~/domain/series/use-case'
 import type { UserId } from '~/domain/shared/types'
 import { config } from '~/system/config'
 import { createLogger } from '~/system/logger'
-import { withRequestCacheScope } from '~/system/request-cache'
 import { bulkSave } from '~/utils/firestore'
 import { isPresent } from '~/utils/input'
+import { passOverReaders } from '~/utils/nightly-pass'
 
 const logger = createLogger('kindle')
 
 /** How long a nightly run may spend before it leaves the rest for tomorrow: two
  *  thirds of the function's 180s ceiling, checked between readers. */
 const SYNC_BUDGET_MS = 120_000
+
+/** How many readers a nightly run passes over side by side: a pass mostly waits
+ *  on Amazon. Kept low because every call leaves from the same few Google
+ *  addresses, and Amazon's firewall already refuses some Kindle endpoints. */
+const SYNC_CONCURRENCY = 4
 
 export namespace KindleUseCase {
   /** The reader's Kindle library, as books they could catalogue. Nothing is
@@ -211,32 +216,24 @@ export namespace KindleUseCase {
     startedAt = Date.now(),
   ): Promise<KindleSyncRun> => {
     const readers = await KindleQuery.readersToSync()
-    let synced = 0
-    let failed = 0
-
-    for (const [index, userId] of readers.entries()) {
-      if (Date.now() - startedAt > budgetMs) {
-        const deferred = readers.length - index
-        logger.warn('nightly Kindle sync budget spent, readers left for tomorrow', {
-          synced: index,
-          deferred,
-        })
-        return { synced, failed, deferred }
-      }
-      try {
-        // A cache of its own per reader: the run is one request, and it must not
-        // hold every library it has passed over until the last reader.
-        const outcome = await withRequestCacheScope(() => syncLibrary(userId))
-        if (typeof outcome === 'object') synced += 1
-      } catch (error) {
-        failed += 1
+    const run = await passOverReaders(readers, {
+      syncOne: async (userId) => typeof (await syncLibrary(userId)) === 'object',
+      onFailure: async (userId, error) => {
         logger.warn('nightly Kindle sync failed', { error, userId })
         await KindleCommand.recordFailure(userId).catch((recordError) =>
           logger.warn('Kindle sync failure could not be recorded', { error: recordError, userId }),
         )
-      }
-    }
-    return { synced, failed, deferred: 0 }
+      },
+      budgetMs,
+      startedAt,
+      concurrency: SYNC_CONCURRENCY,
+    })
+    if (run.deferred > 0)
+      logger.warn('nightly Kindle sync budget spent, readers left for tomorrow', {
+        synced: run.synced,
+        deferred: run.deferred,
+      })
+    return run
   }
 
   /** What an Amazon data export holds, ticked against the library it would join.

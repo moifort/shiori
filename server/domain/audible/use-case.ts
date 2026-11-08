@@ -41,9 +41,9 @@ import type { SagaKey, SeriesName, VolumeNumber } from '~/domain/series/types'
 import { SeriesUseCase } from '~/domain/series/use-case'
 import type { AuthorName, BookTitle, UserId } from '~/domain/shared/types'
 import { createLogger } from '~/system/logger'
-import { withRequestCacheScope } from '~/system/request-cache'
 import { bulkSave } from '~/utils/firestore'
 import { isPresent } from '~/utils/input'
+import { passOverReaders } from '~/utils/nightly-pass'
 
 const logger = createLogger('audible')
 
@@ -304,29 +304,19 @@ export namespace AudibleUseCase {
     startedAt = Date.now(),
   ): Promise<SyncRun> => {
     const readers = await AudibleQuery.readersToSync()
-    let synced = 0
-    let failed = 0
-
-    for (const [index, userId] of readers.entries()) {
-      if (Date.now() - startedAt > budgetMs) {
-        const deferred = readers.length - index
-        logger.warn('nightly sync budget spent, readers left for tomorrow', {
-          synced: index,
-          deferred,
-        })
-        return { synced, failed, deferred }
-      }
-      try {
-        // A cache of its own per reader: the run is one request, and it must not
-        // hold every library it has passed over until the very last reader.
-        const outcome = await withRequestCacheScope(() => syncLibrary(userId))
-        if (typeof outcome === 'object') synced += 1
-      } catch (error) {
-        failed += 1
-        logger.warn('nightly Audible sync failed', { error, userId })
-      }
-    }
-    return { synced, failed, deferred: 0 }
+    const run = await passOverReaders(readers, {
+      syncOne: async (userId) => typeof (await syncLibrary(userId)) === 'object',
+      onFailure: (userId, error) => logger.warn('nightly Audible sync failed', { error, userId }),
+      budgetMs,
+      startedAt,
+      concurrency: SYNC_CONCURRENCY,
+    })
+    if (run.deferred > 0)
+      logger.warn('nightly sync budget spent, readers left for tomorrow', {
+        synced: run.synced,
+        deferred: run.deferred,
+      })
+    return run
   }
 }
 
@@ -337,6 +327,12 @@ export namespace AudibleUseCase {
  *  by however long the last one takes. A 504 in the middle of a pass would leave
  *  a library half-written with nothing recording where it stopped. */
 const SYNC_BUDGET_MS = 120_000
+
+/** How many readers a nightly run passes over side by side. A pass mostly waits
+ *  on Amazon, so four multiply what a night reaches (about a dozen readers one at
+ *  a time, measured 2026-11-08) without four times the load on one account; kept
+ *  low because every call leaves from the same few Google addresses. */
+const SYNC_CONCURRENCY = 4
 
 /** One trip to Amazon, with the rotated access token written back.
  *

@@ -24,6 +24,8 @@
 // this instance a write also forgets the read in flight under its key, and the
 // request that wrote never joins one: it reads on its own, as it always did.
 
+import { AsyncLocalStorage } from 'node:async_hooks'
+
 const JOINABLE_BEFORE_ARRIVAL_MS = 10
 
 type RequestContext = {
@@ -33,7 +35,13 @@ type RequestContext = {
   _arrivedAt?: number
 }
 
+/** The caches opened by `withRequestCacheScope`, one per async flow: readers
+ *  passed over side by side must not see, or swap out, each other's. */
+const scopes = new AsyncLocalStorage<RequestContext>()
+
 const contextOrUndefined = (): RequestContext | undefined => {
+  const scoped = scopes.getStore()
+  if (scoped) return scoped
   try {
     return useEvent().context as RequestContext
   } catch {
@@ -86,14 +94,8 @@ const markWritten = (key: string) => {
 }
 
 export const isInRequestCache = (key: string): boolean => {
-  try {
-    const event = useEvent()
-    return Boolean(
-      event.context._queryCache && key in (event.context._queryCache as Record<string, unknown>),
-    )
-  } catch {
-    return false
-  }
+  const cache = contextOrUndefined()?._queryCache
+  return Boolean(cache && key in cache)
 }
 
 export const evictFromRequestCache = (key: string) => {
@@ -120,20 +122,10 @@ export const reviseInRequestCache = <T>(key: string, revise: (value: T) => T) =>
 }
 
 /** Run `fn` with a cache of its own, dropped when it returns. For a request that
- *  walks many accounts in turn — the nightly sync — which would otherwise hold
- *  every library it passed over until the very end. */
-export const withRequestCacheScope = async <T>(fn: () => Promise<T>): Promise<T> => {
-  let event: ReturnType<typeof useEvent>
-  try {
-    event = useEvent()
-  } catch {
-    return fn()
-  }
-  const outer = event.context._queryCache
-  event.context._queryCache = {}
-  try {
-    return await fn()
-  } finally {
-    event.context._queryCache = outer
-  }
-}
+ *  walks many accounts — the nightly sync — which would otherwise hold every
+ *  library it passed over until the very end. The scope follows `fn`'s async
+ *  flow rather than sitting on the event, so several run side by side within one
+ *  request, each reading and writing only its own. Outside a request, `fn` runs
+ *  uncached, as every read there does. */
+export const withRequestCacheScope = <T>(fn: () => Promise<T>): Promise<T> =>
+  contextOrUndefined() ? scopes.run({}, fn) : fn()
