@@ -13,7 +13,8 @@
       "!site",
       "!server/system/changelog-content.ts",
       "!ios/Shiori/Assets.xcassets",
-      "!ios/Shiori/Resources/Localizable.xcstrings"
+      "!ios/Shiori/Resources/Localizable.xcstrings",
+      "!android"
     ]
   },
   "formatter": {
