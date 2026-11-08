@@ -1,7 +1,8 @@
 import { Isbn13, PageCount } from '~/domain/book/primitives'
 import type { LibraryEdition } from '~/domain/scan/types'
 import { createLogger } from '~/system/logger'
-import { isTemporaryDnsFailure, isTimeout } from '~/utils/fetch'
+import { addressFromCloudflare, fetchFromAddress } from '~/utils/dns-over-https'
+import { isTimeout } from '~/utils/fetch'
 import { isPresent, optionally } from '~/utils/input'
 
 const logger = createLogger('bnf')
@@ -59,26 +60,26 @@ export const bnfEditionsOf = async (book: CataloguedBook): Promise<LibraryEditio
   }
 }
 
-/** How long the second name lookup waits for the resolver. Asked again at
- *  once, a resolver that just said "try again" said it again on every retry
- *  seen between October 26th and November 1st 2026; half a second is nothing
- *  beside the paid search a failed lookup falls back on. */
-export const RETRY_PAUSE_MS = 500
+/** The catalogue's host, whose address is asked of Cloudflare. */
+const CATALOGUE_HOST = 'catalogue.bnf.fr'
 
-/** The catalogue's answer, asked a second time when the first attempt never
- *  reached it. catalogue.bnf.fr publishes its address with a lifetime of a
- *  hundred seconds, so nearly every scan resolves the name afresh, and in
- *  October 2026 the resolver answered "try again" (EAI_AGAIN) to a third of
- *  them, turning free lookups into paid web searches. Once, after a pause,
- *  not a loop: a second failure is the caller's to report. */
+/** The catalogue answers 403 to a request that names no user agent. */
+const headers = { 'user-agent': 'Shiori/1.0 (https://github.com/moifort/shiori)' }
+
+/** The catalogue's answer, reached at the address Cloudflare's resolver gives.
+ *
+ *  Cloud Run resolves names through Google Public DNS, and the BnF's two name
+ *  servers leave it unanswered most of the time: on 2026-11-07 it answered
+ *  SERVFAIL after four seconds, "Name servers did not respond", to four queries
+ *  in five, while Cloudflare's resolver answered every one. The platform's
+ *  lookup then failed with EAI_AGAIN and turned the free catalogue lookup into
+ *  a paid web search; asking it again, even after a pause, failed the same way.
+ *  The platform's resolver is used only when Cloudflare gives no address. */
 const answered = async (url: string): Promise<Response> => {
-  try {
-    return await fetch(url, { signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS) })
-  } catch (error) {
-    if (!isTemporaryDnsFailure(error)) throw error
-    await new Promise((resolve) => setTimeout(resolve, RETRY_PAUSE_MS))
-    return fetch(url, { signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS) })
-  }
+  const address = await addressFromCloudflare(CATALOGUE_HOST)
+  if (address === undefined)
+    return fetch(url, { headers, signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS) })
+  return fetchFromAddress(url, address, { timeoutMs: LOOKUP_TIMEOUT_MS, headers })
 }
 
 /** The last word of a name, which the catalogue indexes whatever order the

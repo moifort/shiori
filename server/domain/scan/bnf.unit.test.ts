@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, spyOn, test } from 'bun:test'
 import * as Sentry from '@sentry/node'
-import { bnfEditionsOf, editionsIn, isbn13Of, pagesIn, RETRY_PAUSE_MS } from '~/domain/scan/bnf'
+import { bnfEditionsOf, editionsIn, isbn13Of, pagesIn } from '~/domain/scan/bnf'
+import * as dnsOverHttps from '~/utils/dns-over-https'
 
 const field = (tag: string, subfields: Record<string, string>) =>
   `<mxc:datafield tag="${tag}" ind1=" " ind2=" ">${Object.entries(subfields)
@@ -116,24 +117,82 @@ describe('reading an ISBN', () => {
 
 describe('bnfEditionsOf', () => {
   const book = { title: 'La Chambre des curiosités', author: 'Douglas Preston' }
+  const catalogueAddress = '194.199.8.30'
 
-  /** Answers every request by throwing the given error. */
-  const bnfThrows = (error: Error) =>
-    spyOn(globalThis, 'fetch').mockImplementation((async () => {
+  /** Cloudflare's DNS-over-HTTPS answer for the catalogue, a CNAME before the address. */
+  const cloudflareAnswers = () =>
+    new Response(
+      JSON.stringify({
+        Status: 0,
+        Answer: [
+          { name: 'catalogue.bnf.fr', type: 5, data: 'front.bnf.fr.' },
+          { name: 'front.bnf.fr', type: 1, data: catalogueAddress },
+        ],
+      }),
+    )
+
+  const catalogueAnswer = () =>
+    new Response(answer(record(field('010', { a: '978-2-07-282204-9' }))))
+
+  /** Cloudflare gives the address; the catalogue, reached at it, throws the given error. */
+  const catalogueThrows = (error: Error) => {
+    spyOn(globalThis, 'fetch').mockImplementation((async () =>
+      cloudflareAnswers()) as unknown as typeof fetch)
+    return spyOn(dnsOverHttps, 'fetchFromAddress').mockImplementation(async () => {
       throw error
-    }) as unknown as typeof fetch)
+    })
+  }
 
   const reported = () => spyOn(Sentry, 'captureException')
 
   afterEach(() => {
     ;(globalThis.fetch as unknown as { mockRestore?: () => void }).mockRestore?.()
+    ;(dnsOverHttps.fetchFromAddress as unknown as { mockRestore?: () => void }).mockRestore?.()
     ;(Sentry.captureException as unknown as { mockRestore?: () => void }).mockRestore?.()
+  })
+
+  // Google Public DNS, which Cloud Run resolves through, gets no answer from the
+  // BnF's two name servers most of the time (SERVFAIL after four seconds, "Name
+  // servers did not respond", 2026-11-07), while Cloudflare's resolver does. The
+  // address comes from Cloudflare, and the catalogue is reached at it directly.
+  test("reads the catalogue at the address Cloudflare gives, never through the platform's resolver", async () => {
+    const asked = spyOn(globalThis, 'fetch').mockImplementation((async () =>
+      cloudflareAnswers()) as unknown as typeof fetch)
+    const reached = spyOn(dnsOverHttps, 'fetchFromAddress').mockImplementation(async () =>
+      catalogueAnswer(),
+    )
+    const reports = reported()
+
+    expect(await bnfEditionsOf(book)).toEqual([{ isbn13: '9782072822049' }] as never)
+    expect(asked).toHaveBeenCalledTimes(1)
+    expect(String(asked.mock.calls[0]?.[0])).toStartWith('https://1.1.1.1/dns-query?')
+    expect(reached).toHaveBeenCalledTimes(1)
+    expect(reached.mock.calls[0]?.[0]).toStartWith('https://catalogue.bnf.fr/api/SRU?')
+    expect(reached.mock.calls[0]?.[1]).toBe(catalogueAddress)
+    // Without a user agent the catalogue answers 403.
+    expect(reached.mock.calls[0]?.[2].headers['user-agent']).toStartWith('Shiori/')
+    expect(reports).not.toHaveBeenCalled()
+  })
+
+  // Cloudflare out of reach is no reason to give the free catalogue up: the
+  // platform's resolver may still know the address.
+  test("falls back on the platform's resolver when Cloudflare cannot answer", async () => {
+    const asked = spyOn(globalThis, 'fetch')
+      .mockImplementationOnce((async () => {
+        throw new TypeError('fetch failed')
+      }) as unknown as typeof fetch)
+      .mockImplementationOnce((async () => catalogueAnswer()) as unknown as typeof fetch)
+    reported()
+
+    expect(await bnfEditionsOf(book)).toEqual([{ isbn13: '9782072822049' }] as never)
+    expect(asked).toHaveBeenCalledTimes(2)
+    expect(String(asked.mock.calls[1]?.[0])).toStartWith('https://catalogue.bnf.fr/api/SRU?')
   })
 
   // The lookup gives the catalogue five seconds, then describes the book another
   // way: a timeout is that cutoff doing its job, nothing to fix.
   test('gives up on a slow catalogue, and reports it to no one', async () => {
-    bnfThrows(new DOMException('The operation was aborted due to timeout', 'TimeoutError'))
+    catalogueThrows(new DOMException('The operation was aborted due to timeout', 'TimeoutError'))
     const reports = reported()
 
     expect(await bnfEditionsOf(book)).toEqual([])
@@ -141,67 +200,10 @@ describe('bnfEditionsOf', () => {
   })
 
   test('reports the catalogue failing for any other reason', async () => {
-    bnfThrows(new Error('getaddrinfo ENOTFOUND catalogue.bnf.fr'))
+    catalogueThrows(new Error('connect ECONNREFUSED 194.199.8.30:443'))
     const reports = reported()
 
     expect(await bnfEditionsOf(book)).toEqual([])
-    expect(reports).toHaveBeenCalledTimes(1)
-  })
-
-  /** A resolver that could not answer for the host in time, as Node's fetch
-   *  throws it: a TypeError whose cause carries the code. */
-  const nameLookupAsksAgain = () =>
-    new TypeError('fetch failed', {
-      cause: Object.assign(new Error('getaddrinfo EAI_AGAIN catalogue.bnf.fr'), {
-        code: 'EAI_AGAIN',
-      }),
-    })
-
-  // The catalogue's address lives a hundred seconds in a resolver's cache, so
-  // nearly every scan resolves it afresh, and a resolver asking to try again
-  // is obeyed once before the book is described the paid way.
-  test('asks again when the name lookup asked to, and reports nothing once answered', async () => {
-    const lookups = spyOn(globalThis, 'fetch')
-      .mockImplementationOnce((async () => {
-        throw nameLookupAsksAgain()
-      }) as unknown as typeof fetch)
-      .mockImplementationOnce(
-        (async () =>
-          new Response(
-            answer(record(field('010', { a: '978-2-07-282204-9' }))),
-          )) as unknown as typeof fetch,
-      )
-    const reports = reported()
-
-    expect(await bnfEditionsOf(book)).toEqual([{ isbn13: '9782072822049' }] as never)
-    expect(lookups).toHaveBeenCalledTimes(2)
-    expect(reports).not.toHaveBeenCalled()
-  })
-
-  // Asked again at once, the resolver that just said "try again" says it
-  // again: on 2026-10-26, 10-28 and 11-01 the second attempt failed like the
-  // first. A short pause lets it recover before the catalogue is given up on.
-  test('pauses before asking the name lookup again', async () => {
-    const askedAt: number[] = []
-    spyOn(globalThis, 'fetch').mockImplementation((async () => {
-      askedAt.push(Date.now())
-      throw nameLookupAsksAgain()
-    }) as unknown as typeof fetch)
-    reported()
-
-    await bnfEditionsOf(book)
-
-    expect(askedAt).toHaveLength(2)
-    const [first = 0, second = 0] = askedAt
-    expect(second - first).toBeGreaterThanOrEqual(RETRY_PAUSE_MS - 5)
-  })
-
-  test('reports a name lookup that failed twice, and asks no third time', async () => {
-    const lookups = bnfThrows(nameLookupAsksAgain())
-    const reports = reported()
-
-    expect(await bnfEditionsOf(book)).toEqual([])
-    expect(lookups).toHaveBeenCalledTimes(2)
     expect(reports).toHaveBeenCalledTimes(1)
   })
 })
