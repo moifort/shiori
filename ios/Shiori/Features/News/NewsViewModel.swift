@@ -23,6 +23,12 @@ final class NewsViewModel {
     private(set) var releases: [UpcomingRelease] = []
     private(set) var yearReleases: [UpcomingRelease] = []
     private(set) var narratorNews: [NarratorNews] = []
+    /// The prizes' winners and the month's discoveries, for Découvrir's
+    /// "Prix littéraires" and "Sorties et découvertes".
+    private(set) var awardSections: [AwardSection] = []
+    private(set) var suggestions: [Suggestion] = []
+    /// Discoveries and winners turned down: gone from the page at once.
+    private(set) var dismissed: Set<String> = []
     private(set) var isLoading = false
     private(set) var isLoadingMore = false
     private(set) var hasLoaded = false
@@ -57,6 +63,8 @@ final class NewsViewModel {
         let releases: [UpcomingRelease]
         let yearReleases: [UpcomingRelease]
         let narratorNews: [NarratorNews]
+        var awardSections: [AwardSection] = []
+        var suggestions: [Suggestion] = []
     }
 
     /// The last news on disk. Bump the version whenever one of these types
@@ -68,7 +76,7 @@ final class NewsViewModel {
     init(client: NewsClient, caching: Bool = true) {
         self.client = client
         defaults = caching ? .standard : nil
-        cache = caching ? SnapshotCache<Snapshot>("news", version: 3) : nil
+        cache = caching ? SnapshotCache<Snapshot>("news", version: 4) : nil
         friendsSeenAt = defaults?.object(forKey: Self.friendsSeenKey) as? Date
         ringsSeenAt = friendsSeenAt
         if let snapshot = cache?.read() {
@@ -76,7 +84,23 @@ final class NewsViewModel {
             releases = snapshot.releases
             yearReleases = snapshot.yearReleases
             narratorNews = snapshot.narratorNews
+            awardSections = snapshot.awardSections
+            suggestions = snapshot.suggestions
         }
+    }
+
+    /// The Découvrir page: the latest news as stories, then the friends, the
+    /// releases and discoveries, the prizes.
+    func discoverLayout(now: Date = .now) -> NewsDiscoverLayout {
+        NewsDiscoverLayout(
+            released: NewsFeedLayout.released(releases: yearReleases, narrator: narratorNews, format: nil, now: now),
+            events: shownEvents,
+            upcoming: calendar(now: now).dated,
+            suggestions: suggestions,
+            awards: awardSections,
+            dismissed: dismissed,
+            now: now
+        )
     }
 
     // MARK: - Reading
@@ -148,7 +172,10 @@ final class NewsViewModel {
         async let upcoming = capture { try await client.upcoming() }
         async let narrated = capture { try await client.narratorNews() }
         async let released = capture { try await client.yearReleases() }
+        async let prizes = capture { try await client.awards() }
+        async let picks = capture { try await client.discoveries() }
         let (first, dated, voices, year) = await (page, upcoming, narrated, released)
+        let (winners, discoveries) = await (prizes, picks)
         guard token == generation else { return }
         // Over news already on screen, what changed slides into place rather
         // than the whole page redrawing at once.
@@ -163,7 +190,11 @@ final class NewsViewModel {
             if case let .success(dated) = dated { releases = dated }
             if case let .success(voices) = voices { narratorNews = voices }
             if case let .success(year) = year { yearReleases = year }
+            if case let .success(winners) = winners { awardSections = winners }
+            if case let .success(discoveries) = discoveries { suggestions = discoveries }
         }
+        if case let .failure(error) = winners, !isCancellation(error) { reportError(error) }
+        if case let .failure(error) = discoveries, !isCancellation(error) { reportError(error) }
         if case let .failure(error) = first, !isCancellation(error) {
             if events.isEmpty { errorMessage = error.localizedDescription }
             reportError(error)
@@ -262,6 +293,47 @@ final class NewsViewModel {
         }
     }
 
+    // A card of Découvrir, from its "+" or its thumb.
+
+    /// "+": the book onto the wish list, whatever brought it.
+    func wish(_ card: NewsCard) async {
+        switch card {
+        case let .friend(move): await wish(move.lead)
+        case let .released(item): await wish(item)
+        case let .upcoming(release):
+            if await perform({ try await client.wishReleased(ReleasedItem.release(release, day: .now).draft) }) {
+                wished.insert(card.key)
+            }
+        case let .suggestion(suggestion):
+            var draft = suggestion.draft
+            draft.coverURL = suggestion.coverURL
+            if await perform({ try await client.wishDiscovery(draft, .discovery) }) { wished.insert(card.key) }
+        case let .award(winner):
+            var draft = winner.draft
+            draft.coverURL = winner.coverURL
+            if await perform({ try await client.wishDiscovery(draft, .award) }) { wished.insert(card.key) }
+        }
+    }
+
+    /// "Pas intéressé": gone at once, back if the server refused.
+    func dismiss(_ card: NewsCard) async {
+        let client = client
+        let write: () async throws -> Void
+        switch card {
+        case let .suggestion(suggestion):
+            write = { try await client.dismissSuggestion(suggestion.id) }
+        case let .award(winner):
+            guard let key = winner.key else { return }
+            write = { try await client.dismissWinner(key) }
+        default:
+            return
+        }
+        withAnimation(.smooth) { _ = dismissed.insert(card.key) }
+        if !(await perform(write)) {
+            withAnimation(.smooth) { _ = dismissed.remove(card.key) }
+        }
+    }
+
     /// Runs a write, reporting a failure. True once it went through.
     private func perform(_ write: () async throws -> Void) async -> Bool {
         do {
@@ -291,7 +363,9 @@ final class NewsViewModel {
             events: Array(events.prefix(Self.pageSize)),
             releases: releases,
             yearReleases: yearReleases,
-            narratorNews: narratorNews
+            narratorNews: narratorNews,
+            awardSections: awardSections,
+            suggestions: suggestions
         )
         Task.detached { cache.write(snapshot) }
     }

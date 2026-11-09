@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The Actualités tab, connected: owns the ViewModel, its loads, and what a
+/// The Découvrir tab (ex-Actualités), connected: owns the ViewModel, its loads, and what a
 /// tap opens. Draws `NewsPage`.
 ///
 /// What opens is what the app already has: a friend's book on its read-only
@@ -33,17 +33,8 @@ struct NewsScreen: View {
     var body: some View {
         DetailSplit(item: $detail) {
             NewsPage(
-                feed: viewModel.feedSections(),
-                taken: viewModel.taken,
+                layout: viewModel.discoverLayout(),
                 wished: viewModel.wished,
-                awaited: viewModel.awaited,
-                calendar: viewModel.calendar(),
-                format: viewModel.format,
-                pillFormats: viewModel.pillFormats(),
-                stories: viewModel.stories,
-                friendId: viewModel.friendId,
-                hasMore: viewModel.hasMore,
-                pageFailed: viewModel.pageFailed,
                 isLoading: viewModel.isLoading,
                 errorMessage: viewModel.errorMessage,
                 alertsSilenced: viewModel.alertsSilenced,
@@ -97,31 +88,37 @@ struct NewsScreen: View {
             AnnouncedVolumeScreen(saga: volume.saga, volume: volume.volume)
         case let .awaited(edition):
             AwaitedEditionScreen(edition: edition) { Task { await viewModel.load() } }
+        case let .suggestion(suggestion):
+            SuggestionScreen(suggestion: suggestion)
+        case let .award(winner):
+            AwardWinnerScreen(winner: winner)
         }
     }
 
     private func handle(_ action: NewsAction) async {
         switch action {
-        case let .selectFormat(format): viewModel.format = format
-        case let .selectFriend(friendId): viewModel.friendId = friendId
-        case let .openFriendBook(event): open(.friendBook(event))
-        case let .addFriendBook(event, status, format): await viewModel.add(event, status, as: format)
-        case let .wishFriendBook(event): await viewModel.wish(event)
-        case let .awaitFriendBook(event, format): await viewModel.awaitEdition(event, format)
-        case let .addReleased(item, status, format): await viewModel.add(item, status, as: format)
-        case let .wishReleased(item): await viewModel.wish(item)
-        case let .awaitReleased(item, format): await viewModel.awaitEdition(item, format)
-        case let .openAuthor(release):
-            if let author = release.author { open(.author(.init(key: author.key, name: author.name))) }
-        case let .openNarrator(news): open(.narrator(.init(key: news.narratorKey, name: news.narrator)))
-        case let .openRelease(release):
-            if let destination = await UpcomingReleaseDestination.of(release) { open(NewsDetail(destination)) }
+        case let .open(card): await openCard(card)
+        case let .wish(card): await viewModel.wish(card)
+        case let .dismiss(card): await viewModel.dismiss(card)
         case .openUpcoming: open(.upcoming)
+        case .openDiscover: opensDiscover = true
         case .invite: await viewModel.invite()
         case .openAlerts: showsAlerts = true
-        case let .prefetch(id): await viewModel.prefetchIfNeeded(for: id)
-        case .loadMore: await viewModel.loadMore()
         case .refresh: await viewModel.load()
+        }
+    }
+
+    /// A card's book on the page the rest of the app opens it on: a friend's
+    /// on its read-only page, a release on the volume, edition, author or
+    /// narrator it came from, a discovery or a prize on its own.
+    private func openCard(_ card: NewsCard) async {
+        switch card {
+        case let .friend(move): open(.friendBook(move.lead))
+        case let .released(.release(release, _)), let .upcoming(release):
+            if let destination = await UpcomingReleaseDestination.of(release) { open(NewsDetail(destination)) }
+        case let .released(.narrator(news, _)): open(.narrator(.init(key: news.narratorKey, name: news.narrator)))
+        case let .suggestion(suggestion): open(.suggestion(suggestion))
+        case let .award(winner): open(.award(winner))
         }
     }
 
@@ -137,6 +134,8 @@ private enum NewsDetail: Identifiable {
     case upcoming
     case announced(DiscoveryVolume)
     case awaited(AwaitedEdition)
+    case suggestion(Suggestion)
+    case award(AwardWinner)
 
     init(_ destination: UpcomingReleaseDestination) {
         switch destination {
@@ -155,6 +154,8 @@ private enum NewsDetail: Identifiable {
         case let .friendBook(event): "friend-book-\(event.id)"
         case let .author(author): "author-\(author.id)"
         case let .narrator(narrator): "narrator-\(narrator.id)"
+        case let .suggestion(suggestion): "suggestion-\(suggestion.id)"
+        case let .award(winner): "award-\(winner.id)"
         }
     }
 }

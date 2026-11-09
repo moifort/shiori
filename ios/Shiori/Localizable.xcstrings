@@ -17,6 +17,22 @@
         }
       }
     },
+    " et " : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : " and "
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : " et "
+          }
+        }
+      }
+    },
     "%@" : {
       "localizations" : {
         "en" : {
@@ -113,6 +129,54 @@
         }
       }
     },
+    "%@ a adoré" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ loved it"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ a adoré"
+          }
+        }
+      }
+    },
+    "%@ a commencé" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ started it"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ a commencé"
+          }
+        }
+      }
+    },
+    "%@ a terminé" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ finished it"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ a terminé"
+          }
+        }
+      }
+    },
     "%@ brut" : {
       "localizations" : {
         "en" : {
@@ -157,6 +221,22 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "%1$@ et %2$@"
+          }
+        }
+      }
+    },
+    "%@ et %lld autres" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ and %lld others"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ et %2$lld autres"
           }
         }
       }
@@ -349,6 +429,54 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ le lit en ce moment"
+          }
+        }
+      }
+    },
+    "%@ ont adoré" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ loved it"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ ont adoré"
+          }
+        }
+      }
+    },
+    "%@ ont commencé" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ started it"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ ont commencé"
+          }
+        }
+      }
+    },
+    "%@ ont terminé" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ finished it"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ ont terminé"
           }
         }
       }
@@ -593,22 +721,6 @@
         }
       }
     },
-    "%lld %@" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$lld %2$@"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$lld %2$@"
-          }
-        }
-      }
-    },
     "%lld / %lld" : {
       "localizations" : {
         "en" : {
@@ -665,22 +777,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld ans offerts"
-          }
-        }
-      }
-    },
-    "%lld caractères sur %lld au plus." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$lld characters out of %2$lld at most."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$lld caractères sur %2$lld au plus."
           }
         }
       }
@@ -1161,22 +1257,6 @@
         }
       }
     },
-    "%lld sorties" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld releases"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld sorties"
-          }
-        }
-      }
-    },
     "%lld sur %lld" : {
       "localizations" : {
         "en" : {
@@ -1469,262 +1549,6 @@
         }
       }
     },
-    "**%@** a adoré" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**%@** loved"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**%@** a adoré"
-          }
-        }
-      }
-    },
-    "**%@** a adoré **%@**" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**%1$@** loved **%2$@**"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**%1$@** a adoré **%2$@**"
-          }
-        }
-      }
-    },
-    "**%@** a commencé" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**%@** started"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**%@** a commencé"
-          }
-        }
-      }
-    },
-    "**%@** a commencé **%@**" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**%1$@** started **%2$@**"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**%1$@** a commencé **%2$@**"
-          }
-        }
-      }
-    },
-    "**%@** a terminé" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**%@** finished"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**%@** a terminé"
-          }
-        }
-      }
-    },
-    "**%@** a terminé **%@**" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**%1$@** finished **%2$@**"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**%1$@** a terminé **%2$@**"
-          }
-        }
-      }
-    },
-    "**%@** et **%@** ont adoré" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**%1$@** and **%2$@** loved"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "**%1$@** et **%2$@** ont adoré"
-          }
-        }
-      }
-    },
-    "**%@** et **%@** ont commencé" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**%1$@** and **%2$@** started"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "**%1$@** et **%2$@** ont commencé"
-          }
-        }
-      }
-    },
-    "**%@** et **%@** ont terminé" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**%1$@** and **%2$@** finished"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "**%1$@** et **%2$@** ont terminé"
-          }
-        }
-      }
-    },
-    "**%@** prête sa voix à **%@**" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**%1$@** lends their voice to **%2$@**"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**%1$@** prête sa voix à **%2$@**"
-          }
-        }
-      }
-    },
-    "**%@**, **%@** et %lld autres ont adoré" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**%1$@**, **%2$@** and %3$lld others loved"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "**%1$@**, **%2$@** et %3$lld autres ont adoré"
-          }
-        }
-      }
-    },
-    "**%@**, **%@** et %lld autres ont commencé" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**%1$@**, **%2$@** and %3$lld others started"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "**%1$@**, **%2$@** et %3$lld autres ont commencé"
-          }
-        }
-      }
-    },
-    "**%@**, **%@** et %lld autres ont terminé" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**%1$@**, **%2$@** and %3$lld others finished"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "**%1$@**, **%2$@** et %3$lld autres ont terminé"
-          }
-        }
-      }
-    },
-    "**%@**, **%@** et 1 autre ont adoré" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**%1$@**, **%2$@** and 1 other loved"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "**%1$@**, **%2$@** et 1 autre ont adoré"
-          }
-        }
-      }
-    },
-    "**%@**, **%@** et 1 autre ont commencé" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**%1$@**, **%2$@** and 1 other started"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "**%1$@**, **%2$@** et 1 autre ont commencé"
-          }
-        }
-      }
-    },
-    "**%@**, **%@** et 1 autre ont terminé" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**%1$@**, **%2$@** and 1 other finished"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "**%1$@**, **%2$@** et 1 autre ont terminé"
-          }
-        }
-      }
-    },
     "+%lld ce mois" : {
       "localizations" : {
         "en" : {
@@ -1869,22 +1693,6 @@
         }
       }
     },
-    "1 sortie" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "1 release"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "1 sortie"
-          }
-        }
-      }
-    },
     "1 tome à ajouter" : {
       "localizations" : {
         "en" : {
@@ -1897,22 +1705,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "1 tome à ajouter"
-          }
-        }
-      }
-    },
-    "1 à 2 ans" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "1 to 2 years"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "1 à 2 ans"
           }
         }
       }
@@ -1961,22 +1753,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "14h32"
-          }
-        }
-      }
-    },
-    "6 mois" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "6 months"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "6 mois"
           }
         }
       }
@@ -2153,38 +1929,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Actualisation"
-          }
-        }
-      }
-    },
-    "Actualités" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "News"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Actualités"
-          }
-        }
-      }
-    },
-    "Actualités indisponibles" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "News unavailable"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Actualités indisponibles"
           }
         }
       }
@@ -2501,6 +2245,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ajouter à une série"
+          }
+        }
+      }
+    },
+    "Ajouter à vos envies" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add to your wish list"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajouter à vos envies"
           }
         }
       }
@@ -3625,22 +3385,6 @@
         }
       }
     },
-    "Auteur favori" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Favourite author"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Auteur favori"
-          }
-        }
-      }
-    },
     "Auteur favori · %@" : {
       "localizations" : {
         "en" : {
@@ -4217,22 +3961,6 @@
         }
       }
     },
-    "Ce fil se remplit tout seul à partir de votre bibliothèque." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "This feed fills up on its own from your library."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ce fil se remplit tout seul à partir de votre bibliothèque."
-          }
-        }
-      }
-    },
     "Ce livre n'est plus dans votre bibliothèque." : {
       "localizations" : {
         "en" : {
@@ -4265,22 +3993,6 @@
         }
       }
     },
-    "Ce mois-ci" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "This month"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ce mois-ci"
-          }
-        }
-      }
-    },
     "Ce qu'on vous en a dit…" : {
       "localizations" : {
         "en" : {
@@ -4297,18 +4009,18 @@
         }
       }
     },
-    "Ce que vous en pensez, un passage à retenir…" : {
+    "Ce que lisent et aiment vos amis s'affichera ici." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "What you think of it, a passage to remember…"
+            "value" : "What your friends read and love will show up here."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ce que vous en pensez, un passage à retenir…"
+            "value" : "Ce que lisent et aiment vos amis s'affichera ici."
           }
         }
       }
@@ -4409,6 +4121,22 @@
         }
       }
     },
+    "Cette page se remplit toute seule à partir de votre bibliothèque et de vos amis." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This page fills itself from your library and your friends."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cette page se remplit toute seule à partir de votre bibliothèque et de vos amis."
+          }
+        }
+      }
+    },
     "Cette semaine" : {
       "localizations" : {
         "en" : {
@@ -4453,22 +4181,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Chargement de la suite"
-          }
-        }
-      }
-    },
-    "Chargement de plus d'actualités" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Loading more news"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Chargement de plus d'actualités"
           }
         }
       }
@@ -4773,22 +4485,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Commander"
-          }
-        }
-      }
-    },
-    "Comme %lld de vos amis" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Like %lld of your friends"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Comme %lld de vos amis"
           }
         }
       }
@@ -5577,6 +5273,22 @@
         }
       }
     },
+    "Dans vos envies" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In your wish list"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dans vos envies"
+          }
+        }
+      }
+    },
     "Dans votre liste d'envie" : {
       "localizations" : {
         "en" : {
@@ -6341,22 +6053,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Effacer"
-          }
-        }
-      }
-    },
-    "En %@, sans jour précis" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "In %@, no exact day"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "En %@, sans jour précis"
           }
         }
       }
@@ -7517,6 +7213,22 @@
         }
       }
     },
+    "Il y a %lld jours" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld days ago"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il y a %lld jours"
+          }
+        }
+      }
+    },
     "Il y a %lld mois" : {
       "localizations" : {
         "en" : {
@@ -8053,22 +7765,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Japonais"
-          }
-        }
-      }
-    },
-    "Je n'aime pas" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "I don’t like it"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Je n'aime pas"
           }
         }
       }
@@ -8865,22 +8561,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Les livres à lire et ceux en cours s'afficheront ici."
-          }
-        }
-      }
-    },
-    "Les livres à lire s'afficheront ici." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Books to read will show up here."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Les livres à lire s'afficheront ici."
           }
         }
       }
@@ -9909,22 +9589,6 @@
         }
       }
     },
-    "Moins d'un an" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Under a year"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Moins d'un an"
-          }
-        }
-      }
-    },
     "Mois" : {
       "localizations" : {
         "en" : {
@@ -10613,22 +10277,6 @@
         }
       }
     },
-    "Nouveau livre annoncé" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "New book announced"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nouveau livre annoncé"
-          }
-        }
-      }
-    },
     "Nouveau roman" : {
       "localizations" : {
         "en" : {
@@ -10641,22 +10289,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nouveau roman"
-          }
-        }
-      }
-    },
-    "Nouveau tome annoncé" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "New volume announced"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nouveau tome annoncé"
           }
         }
       }
@@ -11253,22 +10885,6 @@
         }
       }
     },
-    "Par type" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "By type"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Par type"
-          }
-        }
-      }
-    },
     "Parfait" : {
       "localizations" : {
         "en" : {
@@ -11509,22 +11125,6 @@
         }
       }
     },
-    "Pas pour moi" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Not for me"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pas pour moi"
-          }
-        }
-      }
-    },
     "Paul Atréides" : {
       "localizations" : {
         "en" : {
@@ -11717,22 +11317,6 @@
         }
       }
     },
-    "Plus de 2 ans" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Over 2 years"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Plus de 2 ans"
-          }
-        }
-      }
-    },
     "Plus de découvertes ce mois-ci : prochaines en %@." : {
       "localizations" : {
         "en" : {
@@ -11761,22 +11345,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Plus tard"
-          }
-        }
-      }
-    },
-    "Plus tôt" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Earlier"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Plus tôt"
           }
         }
       }
@@ -12193,22 +11761,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Prochaine sortie et nouvelle disponibilité"
-          }
-        }
-      }
-    },
-    "Prochainement" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Coming soon"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Prochainement"
           }
         }
       }
@@ -12981,54 +12533,6 @@
         }
       }
     },
-    "Rien" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nothing"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rien"
-          }
-        }
-      }
-    },
-    "Rien d'annoncé ce mois-ci" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nothing announced this month"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rien d'annoncé ce mois-ci"
-          }
-        }
-      }
-    },
-    "Rien d'annoncé plus loin" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nothing announced further out"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rien d'annoncé plus loin"
-          }
-        }
-      }
-    },
     "Rien d'annoncé pour l'instant" : {
       "localizations" : {
         "en" : {
@@ -13105,22 +12609,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Rien ici pour l'instant"
-          }
-        }
-      }
-    },
-    "Rien n'est sorti ces 30 derniers jours." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nothing came out in the last 30 days."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rien n'est sorti ces 30 derniers jours."
           }
         }
       }
@@ -13473,22 +12961,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sans numéro"
-          }
-        }
-      }
-    },
-    "Sans titre" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Untitled"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sans titre"
           }
         }
       }
@@ -14085,22 +13557,6 @@
         }
       }
     },
-    "Sortie %@" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Out %@"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sortie %@"
-          }
-        }
-      }
-    },
     "Sortie aujourd'hui" : {
       "localizations" : {
         "en" : {
@@ -14165,22 +13621,6 @@
         }
       }
     },
-    "Sortie demain" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Out tomorrow"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sortie demain"
-          }
-        }
-      }
-    },
     "Sortie hier" : {
       "localizations" : {
         "en" : {
@@ -14197,18 +13637,18 @@
         }
       }
     },
-    "Sorties" : {
+    "Sorties et découvertes" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Releases"
+            "value" : "Releases and discoveries"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sorties"
+            "value" : "Sorties et découvertes"
           }
         }
       }
@@ -14449,22 +13889,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Supprimer la série ?"
-          }
-        }
-      }
-    },
-    "Supprimer le commentaire" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Delete the comment"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Supprimer le commentaire"
           }
         }
       }
@@ -15397,22 +14821,6 @@
         }
       }
     },
-    "Toute la pile" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Whole Pile"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Toute la pile"
-          }
-        }
-      }
-    },
     "Toutes" : {
       "localizations" : {
         "en" : {
@@ -15905,6 +15313,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Voir sur Amazon"
+          }
+        }
+      }
+    },
+    "Vos amis" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your friends"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vos amis"
           }
         }
       }
@@ -16741,22 +16165,6 @@
         }
       }
     },
-    "annoncé, jamais daté" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "announced, never dated"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "annoncé, jamais daté"
-          }
-        }
-      }
-    },
     "annoncés" : {
       "localizations" : {
         "en" : {
@@ -17441,6 +16849,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "À finir"
+          }
+        }
+      }
+    },
+    "À la une" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Featured"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "À la une"
           }
         }
       }

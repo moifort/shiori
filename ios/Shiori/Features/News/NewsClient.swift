@@ -23,6 +23,17 @@ struct NewsClient: Sendable {
     var alertsSilenced: @Sendable () async -> Bool
     /// An invitation to pass on, from the empty Amis tab and its rail.
     var invite: @Sendable () async throws -> FriendInvitation
+    /// The prizes' winners in print, as Découvrir lists them.
+    var awards: @Sendable () async throws -> [AwardSection] = { [] }
+    /// The month's discoveries already chosen: read, never asked for, so
+    /// opening the tab never sets the model to work.
+    var discoveries: @Sendable () async throws -> [Suggestion] = { [] }
+    /// A discovery or a prize onto the wish list.
+    var wishDiscovery: @Sendable (BookDraft, Wish.Origin) async throws -> Void = { _, _ in }
+    /// "Pas intéressé" on the month's discovery.
+    var dismissSuggestion: @Sendable (_ id: String) async throws -> Void = { _ in }
+    /// "Pas intéressé" on a prize's winner.
+    var dismissWinner: @Sendable (_ key: String) async throws -> Void = { _ in }
 }
 
 extension NewsClient {
@@ -44,7 +55,12 @@ extension NewsClient {
         wishReleased: { draft in _ = try await WishlistAPI.wish(draft, origin: .discovery) },
         awaitReleased: { draft, format in _ = try await AwaitedAPI.awaitScanned(draft, format: format) },
         alertsSilenced: { await DiscoverClient.live.alertsSilenced() },
-        invite: { try await FriendsAPI.invite() }
+        invite: { try await FriendsAPI.invite() },
+        awards: { try await AwardsAPI.sections(format: .book) },
+        discoveries: { try await SuggestionsAPI.monthly(format: .book, lookUp: false).suggestions },
+        wishDiscovery: { draft, origin in _ = try await WishlistAPI.wish(draft, origin: origin) },
+        dismissSuggestion: { try await SuggestionsAPI.dismiss(id: $0, reason: .notInterested) },
+        dismissWinner: { try await AwardsAPI.dismiss(key: $0) }
     )
 
     static let preview = NewsClient(
@@ -61,6 +77,8 @@ extension NewsClient {
         wishReleased: { _ in },
         awaitReleased: { _, _ in },
         alertsSilenced: { false },
-        invite: { .preview }
+        invite: { .preview },
+        awards: { AwardSection.previews },
+        discoveries: { MonthlyDiscoveries.preview.suggestions }
     )
 }
