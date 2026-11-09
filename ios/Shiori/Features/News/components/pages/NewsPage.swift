@@ -40,6 +40,9 @@ struct NewsPage: View {
             .navigationTitle("Découvrir")
             .toolbarTitleDisplayMode(.inlineLarge)
             .toolbarBackground(.hidden, for: .navigationBar)
+            // The title sits on the first story's cover colours, white in
+            // either appearance, as the home's hero carries it.
+            .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     DiscoverAlertsButton(isSilenced: alertsSilenced) { act(.openAlerts) }
@@ -144,11 +147,12 @@ struct NewsTodayStories: View {
             }
         }
         .tabViewStyle(.page(indexDisplayMode: .never))
+        .environment(\.colorScheme, .dark)
         .overlay(alignment: .top) { header }
         .containerRelativeFrame(.vertical) { height, _ in max(560, height - 150) }
         // The cover's colours run up under the title and fade into the page.
         .background(alignment: .bottom) {
-            CoverBackdrop(url: current.cover.coverURL, fadeHeight: 120, ground: Color(.systemBackground))
+            CoverBackdrop(url: current.cover.coverURL, fadeHeight: 44, ground: Color(.systemBackground))
                 .frame(height: 1100)
                 .animation(.smooth, value: index)
         }
@@ -210,7 +214,7 @@ private struct NewsStoryPage: View {
             }
             Spacer(minLength: 16)
             NewsCardButtons(card: card, isWished: isWished, onAction: onAction)
-                .padding(.bottom, 28)
+                .padding(.bottom, 56)
         }
         .frame(maxWidth: .infinity)
         .contentShape(.rect)
@@ -274,6 +278,9 @@ private struct NewsCoverTile: View {
             Task { await onAction(.open(card)) }
         } label: {
             PosterCover(book: card.cover, caption: "", width: width, dimming: 0.05)
+                // A poster-shaped image would stretch its tile past its row.
+                .frame(width: width, height: width * 1.5)
+                .clipShape(.rect(cornerRadius: PosterCover.cornerRadius, style: .continuous))
         }
         .buttonStyle(.plain)
         .accessibilityLabel(card.cover.title)

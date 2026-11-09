@@ -109,17 +109,12 @@ struct NewsDiscoverLayout: Hashable, Sendable {
         if today.count < 2 {
             today += [prizes.first, picks.first].compactMap { $0 }
         }
-        today = Array(today.prefix(Self.storyCount))
-        let told = Set(today.map(\.id))
-
-        self.today = today
-        friends = Array(moves.filter { !told.contains($0.id) }.prefix(Self.wallCount))
-        let soon = upcoming.map(NewsCard.upcoming)
-        releases = Array(
-            Self.interleave(out.filter { !told.contains($0.id) } + soon, picks.filter { !told.contains($0.id) })
-                .prefix(Self.wallCount)
-        )
-        self.awards = Array(prizes.filter { !told.contains($0.id) }.prefix(Self.wallCount))
+        // The walls keep what the stories tell: a story is gone once seen,
+        // the friends' books and the releases stay to come back to.
+        self.today = Array(today.prefix(Self.storyCount))
+        friends = Self.wall(moves)
+        releases = Self.wall(Self.interleave(out + upcoming.map(NewsCard.upcoming), picks))
+        self.awards = Array(prizes.prefix(Self.wallCount))
     }
 
     /// The winners of every list, the latest prize first, each novel once.
@@ -128,6 +123,13 @@ struct NewsDiscoverLayout: Hashable, Sendable {
         return sections.flatMap(\.winners)
             .sorted { ($0.mentions.first?.year ?? 0) > ($1.mentions.first?.year ?? 0) }
             .filter { seen.insert($0.id).inserted }
+    }
+
+    /// A wall's covers, two by two: an odd one out would leave a hole beside
+    /// it, unless it is the only one.
+    private static func wall(_ cards: [NewsCard]) -> [NewsCard] {
+        let shown = Array(cards.prefix(wallCount))
+        return shown.count > 1 && shown.count.isMultiple(of: 2) == false ? Array(shown.dropLast()) : shown
     }
 
     /// One of each in turn, so the wall mixes releases and discoveries.
