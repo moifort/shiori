@@ -149,7 +149,7 @@ struct NewsTodayStories: View {
         .tabViewStyle(.page(indexDisplayMode: .never))
         .environment(\.colorScheme, .dark)
         .overlay(alignment: .top) { header }
-        .containerRelativeFrame(.vertical) { height, _ in max(560, height - 150) }
+        .frame(height: 330)
         // The cover's colours run up under the title and fade into the page.
         .background(alignment: .bottom) {
             CoverBackdrop(url: current.cover.coverURL, fadeHeight: 44, ground: Color(.systemBackground))
@@ -184,47 +184,81 @@ struct NewsTodayStories: View {
     }
 }
 
-/// One story: why it is there, the cover large, a sentence, "Ajouter".
+/// One story: the cover at the home hero's size, and beside it the card's
+/// side — the emblem of what brought it, its title, its author, why — then
+/// "Ajouter".
 private struct NewsStoryPage: View {
     let card: NewsCard
     let isWished: Bool
     let onAction: (NewsAction) async -> Void
 
     var body: some View {
-        VStack(spacing: 0) {
-            NewsCardKicker(card: card, style: .story)
-                .padding(.top, 56)
+        VStack(alignment: .leading, spacing: 20) {
             Button {
                 Task { await onAction(.open(card)) }
             } label: {
-                BookCover(book: card.cover, width: 220, showsFormatBadge: false, isBound: true)
-                    .shadow(color: .black.opacity(0.5), radius: 24, y: 14)
+                HStack(alignment: .top, spacing: 18) {
+                    BookCover(book: card.cover, width: 124, showsFormatBadge: false, isBound: true)
+                        .shadow(color: .black.opacity(0.5), radius: 16, y: 10)
+                    VStack(alignment: .leading, spacing: 0) {
+                        NewsCardEmblem(card: card)
+                        Text(card.cover.title)
+                            .font(.title2.weight(.bold))
+                            .lineLimit(3)
+                            .minimumScaleFactor(0.8)
+                            .padding(.top, 8)
+                        Text(card.cover.authors.joined(separator: ", "))
+                            .font(.subheadline)
+                            .foregroundStyle(.white.opacity(0.85))
+                            .lineLimit(1)
+                            .padding(.top, 4)
+                        if let reason = NewsCardText.reason(card) {
+                            Text(reason)
+                                .font(.subheadline)
+                                .foregroundStyle(.white.opacity(0.72))
+                                .lineLimit(3)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .padding(.top, 8)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .foregroundStyle(.white)
+                .contentShape(.rect)
             }
             .buttonStyle(.plain)
-            .padding(.top, 18)
-            .accessibilityLabel(card.cover.title)
-            if let reason = NewsCardText.reason(card) {
-                Text(reason)
-                    .font(.callout)
-                    .foregroundStyle(.white.opacity(0.8))
-                    .multilineTextAlignment(.center)
-                    .lineLimit(3)
-                    .padding(.horizontal, 32)
-                    .padding(.top, 16)
-            }
-            Spacer(minLength: 16)
-            NewsCardButtons(card: card, isWished: isWished, onAction: onAction)
-                .padding(.bottom, 56)
+            NewsCardButtons(card: card, isWished: isWished, fills: true, onAction: onAction)
         }
-        .frame(maxWidth: .infinity)
-        .contentShape(.rect)
+        .padding(.horizontal, 20)
+        .padding(.top, 54)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+    }
+}
+
+/// What brought a card, over its title on the story's side: the prize between
+/// its laurels — both, when it won two — or the line with its symbol or its
+/// friends' faces.
+private struct NewsCardEmblem: View {
+    let card: NewsCard
+
+    var body: some View {
+        if case let .award(winner) = card, !winner.mentions.isEmpty {
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 6) {
+                    ForEach(winner.mentions.prefix(2), id: \.self) { AwardLaurels(mention: $0, compact: true) }
+                }
+                AwardLaurels(mention: winner.mentions[0], compact: true)
+            }
+        } else {
+            NewsCardKicker(card: card, style: .fiche)
+        }
     }
 }
 
 // MARK: - The walls
 
-/// A section of large covers two by two, each wearing on its foot who or what
-/// brought it and a "+".
+/// A section of covers three by three, each wearing on its foot who or what
+/// brought it, and a "+" in its corner.
 struct NewsCoverWall: View {
     let title: LocalizedStringKey
     let cards: [NewsCard]
@@ -234,10 +268,12 @@ struct NewsCoverWall: View {
 
     @State private var width: CGFloat = 353
 
-    private var tileWidth: CGFloat { max(120, (width - 12) / 2) }
+    private static let spacing: CGFloat = 10
+    private var columns: Int { NewsDiscoverLayout.wallColumns }
+    private var tileWidth: CGFloat { max(90, (width - Self.spacing * CGFloat(columns - 1)) / CGFloat(columns)) }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 10) {
             if let onOpenAll {
                 Button(action: onOpenAll) {
                     HStack(spacing: 6) {
@@ -253,7 +289,10 @@ struct NewsCoverWall: View {
                 Text(title)
                     .font(.title2.weight(.bold))
             }
-            LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 14) {
+            LazyVGrid(
+                columns: Array(repeating: GridItem(.flexible(), spacing: Self.spacing), count: columns),
+                spacing: 12
+            ) {
                 ForEach(cards) { card in
                     NewsCoverTile(card: card, width: tileWidth, isWished: wished.contains(card.key), onAction: onAction)
                 }
@@ -261,12 +300,12 @@ struct NewsCoverWall: View {
             .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
         }
         .padding(.horizontal, 20)
-        .padding(.top, 26)
+        .padding(.top, 24)
     }
 }
 
-/// A large cover, its foot blurred, who or what brought it there in white and
-/// the "+" beside it.
+/// A cover, its foot blurred, who or what brought it there in white under it
+/// and the "+" in its top corner.
 private struct NewsCoverTile: View {
     let card: NewsCard
     let width: CGFloat
@@ -285,13 +324,14 @@ private struct NewsCoverTile: View {
         .buttonStyle(.plain)
         .accessibilityLabel(card.cover.title)
         .overlay(alignment: .bottom) {
-            HStack(spacing: 6) {
-                NewsCardKicker(card: card, style: .tile)
-                Spacer(minLength: 0)
-                NewsWishButton(card: card, isWished: isWished, size: 30, onAction: onAction)
-            }
-            .padding(.horizontal, 8)
-            .padding(.bottom, 8)
+            NewsCardKicker(card: card, style: .tile)
+                .padding(.horizontal, 6)
+                .padding(.bottom, 7)
+                .allowsHitTesting(false)
+        }
+        .overlay(alignment: .topTrailing) {
+            NewsWishButton(card: card, isWished: isWished, size: 26, onAction: onAction)
+                .padding(6)
         }
     }
 }
@@ -334,7 +374,7 @@ struct NewsAwardsCarousel: View {
                         Button {
                             Task { await onAction(.open(card)) }
                         } label: {
-                            BookCover(book: card.cover, width: 200, showsFormatBadge: false, isBound: true)
+                            BookCover(book: card.cover, width: 150, showsFormatBadge: false, isBound: true)
                                 .shadow(color: .black.opacity(0.5), radius: 20, y: 12)
                         }
                         .buttonStyle(.plain)
@@ -347,11 +387,11 @@ struct NewsAwardsCarousel: View {
                 }
                 .scrollTargetLayout()
             }
-            .contentMargins(.horizontal, 96, for: .scrollContent)
+            .contentMargins(.horizontal, 121, for: .scrollContent)
             .scrollTargetBehavior(.viewAligned)
             .scrollIndicators(.hidden)
             .scrollPosition(id: $selected)
-            .frame(height: 310)
+            .frame(height: 235)
             NewsCardKicker(card: current, style: .story)
             NewsCardButtons(card: current, isWished: wished.contains(current.key), onAction: onAction)
             if cards.count > 1 {
@@ -388,6 +428,8 @@ struct NewsAwardsCarousel: View {
 private struct NewsCardButtons: View {
     let card: NewsCard
     let isWished: Bool
+    /// "Ajouter" takes the width the thumb leaves, under a story's side.
+    var fills = false
     let onAction: (NewsAction) async -> Void
 
     var body: some View {
@@ -398,7 +440,8 @@ private struct NewsCardButtons: View {
                 Label(isWished ? "Dans vos envies" : "Ajouter", systemImage: isWished ? "checkmark" : "plus")
                     .font(.body.weight(.semibold))
                     .foregroundStyle(.black)
-                    .frame(width: 210, height: 46)
+                    .frame(width: fills ? nil : 210, height: 46)
+                    .frame(maxWidth: fills ? .infinity : nil)
                     .background(.white, in: .capsule)
             }
             .buttonStyle(.plain)
@@ -446,22 +489,31 @@ private struct NewsWishButton: View {
 /// Who or what brought a card, in white: a friend's face and name, a prize
 /// between laurels, a release's day, the month's "comme …".
 struct NewsCardKicker: View {
-    enum Style { case story, tile }
+    /// `story`: on glass, under a carousel. `fiche`: bare, over a story's
+    /// title, its symbol in a disc. `tile`: on a cover's foot.
+    enum Style { case story, fiche, tile }
 
     let card: NewsCard
     let style: Style
 
+    private var isLong: Bool { style != .tile }
+
     var body: some View {
         Group {
-            if style == .story {
+            switch style {
+            case .story:
                 content
                     .font(.footnote.weight(.semibold))
                     .padding(.horizontal, 11)
                     .frame(height: 30)
                     .glassEffect(.regular, in: .capsule)
-            } else {
+            case .fiche:
                 content
                     .font(.footnote.weight(.semibold))
+                    .frame(minHeight: 25)
+            case .tile:
+                content
+                    .font(.caption.weight(.semibold))
                     .shadow(color: .black.opacity(0.45), radius: 4)
             }
         }
@@ -471,25 +523,32 @@ struct NewsCardKicker: View {
 
     @ViewBuilder
     private var content: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: style == .tile ? 4 : 6) {
             switch card {
             case let .friend(move):
                 HStack(spacing: -6) {
-                    ForEach(([move.lead] + move.others).prefix(2)) { event in
-                        AccountAvatarView(avatar: event.avatar, firstName: event.friendName, size: style == .story ? 22 : 20)
+                    ForEach(([move.lead] + move.others).prefix(style == .fiche ? 3 : 2)) { event in
+                        AccountAvatarView(avatar: event.avatar, firstName: event.friendName, size: style == .tile ? 18 : 22)
                     }
                 }
-                Text(NewsCardText.friend(move, long: style == .story))
+                Text(NewsCardText.friend(move, long: isLong))
                 if move.lead.kind == .loved {
-                    Image(systemName: "heart.fill").font(.caption)
+                    Image(systemName: "heart.fill").font(.caption2)
                 }
             case .award:
                 Image(systemName: "laurel.leading")
-                Text(NewsCardText.label(card, long: style == .story))
+                Text(NewsCardText.label(card, long: isLong))
                 Image(systemName: "laurel.trailing")
             default:
-                Image(systemName: NewsCardText.symbol(card)).font(.caption)
-                Text(NewsCardText.label(card, long: style == .story))
+                if style == .fiche {
+                    Image(systemName: NewsCardText.symbol(card))
+                        .font(.system(size: 11, weight: .semibold))
+                        .frame(width: 22, height: 22)
+                        .background(.white.opacity(0.16), in: .circle)
+                } else {
+                    Image(systemName: NewsCardText.symbol(card)).font(.caption2)
+                }
+                Text(NewsCardText.label(card, long: isLong))
             }
         }
     }
@@ -572,7 +631,8 @@ enum NewsCardText {
         switch card {
         case let .suggestion(suggestion): suggestion.reason
         case let .released(.release(release, _)), let .upcoming(release): release.reason.isEmpty ? nil : release.reason
-        case let .award(winner): winner.mentions.count > 1 ? winner.awardsLine : nil
+        // Two prizes stand as two emblems over the title; a third is said.
+        case let .award(winner): winner.mentions.count > 2 ? winner.awardsLine : nil
         default: nil
         }
     }

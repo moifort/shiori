@@ -125,11 +125,15 @@ struct NewsDiscoverLayout: Hashable, Sendable {
             .filter { seen.insert($0.id).inserted }
     }
 
-    /// A wall's covers, two by two: an odd one out would leave a hole beside
-    /// it, unless it is the only one.
+    /// How many covers a wall's row holds.
+    static let wallColumns = 3
+
+    /// A wall's covers, three by three: a short last row would leave a hole
+    /// beside it, unless it is the only row.
     private static func wall(_ cards: [NewsCard]) -> [NewsCard] {
         let shown = Array(cards.prefix(wallCount))
-        return shown.count > 1 && shown.count.isMultiple(of: 2) == false ? Array(shown.dropLast()) : shown
+        guard shown.count > wallColumns else { return shown }
+        return Array(shown.prefix(shown.count - shown.count % wallColumns))
     }
 
     /// One of each in turn, so the wall mixes releases and discoveries.
