@@ -12,5 +12,9 @@
     "forceConsistentCasingInFileNames": true,
     "types": ["nitropack", "bun-types"],
     "lib": ["ESNext", "DOM"]
-  }
+  },
+  // The include inherited from .nitro reaches the whole checkout: leave out
+  // the Xcode and Nitro output, and the git worktrees other sessions keep
+  // under build/ and .claude/worktrees/, which are other branches' code.
+  "exclude": ["node_modules", "build", ".claude", ".output", "dist"]
 }

@@ -1,2 +1,7 @@
 [install]
 exact = true
+
+[test]
+# Other branches' code: the git worktrees other sessions keep under build/ and
+# .claude/worktrees/, whose tests are not this checkout's.
+pathIgnorePatterns = ["build/**", ".claude/**"]
