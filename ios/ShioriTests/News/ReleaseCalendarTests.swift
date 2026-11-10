@@ -13,9 +13,9 @@ struct ReleaseCalendarTests {
     /// Saturday 31 October 2026.
     private let now = Date(timeIntervalSince1970: 1_793_448_000)
 
-    private func release(_ id: String, _ date: String?) -> UpcomingRelease {
+    private func release(_ id: String, _ date: String?, source: ReleaseSource = .awaited) -> UpcomingRelease {
         UpcomingRelease(
-            id: id, source: .awaited, format: .book, title: id, authors: [], date: date, coverURL: nil,
+            id: id, source: source, format: .book, title: id, authors: [], date: date, coverURL: nil,
             seriesName: nil, volume: nil, author: nil, sagaRating: nil, sagaFavorite: false
         )
     }
@@ -37,13 +37,19 @@ struct ReleaseCalendarTests {
         #expect(sections[1].days.map(\.releases).flatMap { $0 }.map(\.id) == ["late", "noDay"])
     }
 
+    /// A volume with no date closes the list after the years; an edition
+    /// awaited that nothing announced yet comes after it, apart.
     @Test func everythingClosesWithTheYearsAndWhatIsUndated() {
-        let sheet = laid([release("far", "2027-05-10"), release("year", "2028"), release("none", nil)])
+        let sheet = laid([
+            release("far", "2027-05-10"), release("year", "2028"), release("none", nil, source: .saga),
+            release("waiting", nil),
+        ])
 
         let sections = sheet.sections
 
-        #expect(sections.map(\.id) == ["2027-05", "beyond"])
+        #expect(sections.map(\.id) == ["2027-05", "beyond", "awaited"])
         #expect(sections[1].days.map(\.id) == ["year-2028", "undated"])
+        #expect(sections[2].days.flatMap(\.releases).map(\.id) == ["waiting"])
     }
 
     @Test func aReleaseAlreadyOutIsNotInTheList() {
