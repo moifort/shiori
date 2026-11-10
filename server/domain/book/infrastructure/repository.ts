@@ -18,7 +18,12 @@ import {
   memoizedPerRequest,
   reviseInRequestCache,
 } from '~/system/request-cache'
-import { deleteInBatches, genericDataConverter, withoutAbsentFields } from '~/utils/firestore'
+import {
+  deleteInBatches,
+  genericDataConverter,
+  transactionally,
+  withoutAbsentFields,
+} from '~/utils/firestore'
 
 // One flat collection for every reader, never a subcollection: a book carries its
 // owner in `userId`, and a library is an equality query on that field, which the
@@ -50,6 +55,12 @@ const asBook = ({ shelvedAt: _, format, media, ...book }: StoredBook): Book =>
 const ownedBy = (userId: UserId) => books().where('userId', '==', userId)
 
 const allCacheKey = (userId: UserId) => `books:all:${userId}`
+
+/** The books this request read or wrote one by one, by id, as it last saw
+ *  them: what `save` measures a write against. Outside a request there is
+ *  none, and a save writes the whole record as it always did. */
+const seenCopies = (userId: UserId): Map<BookId, Book> =>
+  memoizedPerRequest(`books:seen:${userId}`, () => new Map<BookId, Book>())
 
 // The library list, the series sections and the home screen all want the same
 // rows in one request. Memoizing the scan means they cost one query between
@@ -105,7 +116,10 @@ export const findById = async (userId: UserId, bookId: BookId): Promise<Book | n
   if (isInRequestCache(allCacheKey(userId)))
     return (await findAllByUser(userId)).find((book) => book.id === bookId) ?? null
   const book = (await books().doc(bookId).get()).data()
-  return book?.userId === userId ? asBook(book) : null
+  if (book?.userId !== userId) return null
+  const read = asBook(book)
+  seenCopies(userId).set(bookId, read)
+  return read
 }
 
 /** The reader's books among `ids`, in the order asked, by id: one document read
@@ -163,32 +177,81 @@ export const findInSeries = async (seriesId: SeriesId): Promise<Book[]> => {
 // Filed under the edition its own saga, format and language make, whatever the
 // caller built: a book whose language or format was corrected moves to the
 // series id of its new edition here, so no write can leave a stale id behind.
+//
+// Two writers never overwrite each other. The nightly Audible and Kindle passes
+// read a shelf once and write its books minutes later, and a reader's mutation
+// may land in between: a direct write of a book this request read is applied,
+// inside a transaction, to the record as it stands now, carrying only the fields
+// the writer changed from the copy it read. The pass's listening position and
+// the reader's rating both survive; the same field written by both keeps the
+// last. A book deleted meanwhile stays deleted. A book never read here — a new
+// one — and a batched write, which a transaction cannot join, are written whole.
 export const save = async (written: Book, batch?: WriteBatch): Promise<Book> => {
   const book = inItsEdition(written)
   const ref = books().doc(book.id)
-  const document = stored(book)
   if (batch) {
-    batch.set(ref, document)
+    batch.set(ref, stored(book))
+    seenCopies(book.userId).delete(book.id)
     evictFromRequestCache(allCacheKey(book.userId))
     return book
   }
-  await ref.set(document)
+  const base = await copyRead(book.userId, book.id)
+  const saved = base ? await savedOver(base, book) : await ref.set(stored(book)).then(() => book)
+  if (!saved) return book
+  seenCopies(book.userId).set(saved.id, saved)
   reviseLibrary(book.userId, (library) =>
-    library.some((other) => other.id === book.id)
-      ? library.map((other) => (other.id === book.id ? book : other))
-      : [...library, book],
+    library.some((other) => other.id === saved.id)
+      ? library.map((other) => (other.id === saved.id ? saved : other))
+      : [...library, saved],
   )
-  return book
+  return saved
+}
+
+/** The copy of a book this request last read or wrote: its library when it
+ *  holds it, else the book read alone. */
+const copyRead = async (userId: UserId, bookId: BookId): Promise<Book | undefined> => {
+  if (isInRequestCache(allCacheKey(userId))) {
+    const held = (await findAllByUser(userId)).find((book) => book.id === bookId)
+    if (held) return held
+  }
+  return seenCopies(userId).get(bookId)
+}
+
+/** The fields the writer changed from the copy it read, applied to the record
+ *  as it stands, in one transaction. Undefined when the book is gone. */
+const savedOver = (base: Book, written: Book): Promise<Book | undefined> =>
+  transactionally(async (transaction) => {
+    const ref = books().doc(written.id)
+    const current = (await transaction.get(ref)).data()
+    if (current?.userId !== written.userId) return undefined
+    const book = inItsEdition(withChangesOf(base, written, asBook(current)))
+    transaction.set(ref, stored(book))
+    return book
+  })
+
+/** `current` with every field `written` changed from `base`, removals included. */
+const withChangesOf = (base: Book, written: Book, current: Book): Book => {
+  const merged: Record<string, unknown> = { ...current }
+  const from = base as Record<string, unknown>
+  const to = written as Record<string, unknown>
+  for (const field of new Set([...Object.keys(from), ...Object.keys(to)])) {
+    if (JSON.stringify(from[field]) === JSON.stringify(to[field])) continue
+    if (to[field] === undefined) delete merged[field]
+    else merged[field] = to[field]
+  }
+  return merged as Book
 }
 
 export const remove = async (userId: UserId, bookId: BookId, batch?: WriteBatch): Promise<void> => {
   const ref = books().doc(bookId)
   if (batch) {
     batch.delete(ref)
+    seenCopies(userId).delete(bookId)
     evictFromRequestCache(allCacheKey(userId))
     return
   }
   await ref.delete()
+  seenCopies(userId).delete(bookId)
   reviseLibrary(userId, (library) => library.filter((book) => book.id !== bookId))
 }
 

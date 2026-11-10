@@ -271,7 +271,8 @@ describe('placing a book in a saga by hand', () => {
       kind: 'main',
     })
     expect(fake.data('books', missed.id)?.series).toEqual(placed.series)
-    expect(fake.docReads - before.docs).toBe(1)
+    // The book, then the book as it stands when written.
+    expect(fake.docReads - before.docs).toBe(2)
     expect(fake.queryReads - before.queries).toBe(1)
   })
 
@@ -311,7 +312,7 @@ describe('placing a book in a saga by hand', () => {
 
     if (typeof cleared === 'string') throw new Error('unreachable')
     expect(cleared.series).toBeUndefined()
-    expect(fake.docReads - before.docs).toBe(1)
+    expect(fake.docReads - before.docs).toBe(2)
     expect(fake.queryReads - before.queries).toBe(0)
     expect(Object.hasOwn(fake.data('books', book.id) as object, 'series')).toBe(false)
   })
@@ -686,13 +687,15 @@ describe('recording who recommended a book', () => {
     expect(replaced.recommendation).toEqual({ recommenderName: PersonName('Paul') })
   })
 
-  test('costs one document read and no query', async () => {
+  // The book, then the book as it stands when written, in the transaction that
+  // keeps whatever another writer changed in between.
+  test('costs two document reads and no query', async () => {
     const book = await add('Le Nom du vent')
     const before = { docs: fake.docReads, queries: fake.queryReads }
 
     await BookCommand.recommend(reader, book.id, { recommenderName: PersonName('Marie') }, NOW)
 
-    expect(fake.docReads - before.docs).toBe(1)
+    expect(fake.docReads - before.docs).toBe(2)
     expect(fake.queryReads - before.queries).toBe(0)
   })
 
@@ -944,7 +947,8 @@ describe('reading the library back within a request', () => {
       [second.id, 'to-read'],
     ])
     expect(fake.queryReads).toBe(before.queries)
-    expect(fake.docReads).toBe(before.docs)
+    // The book written, as it stands, inside its transaction.
+    expect(fake.docReads).toBe(before.docs + 1)
   })
 })
 

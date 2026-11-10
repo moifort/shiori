@@ -706,8 +706,9 @@ describe('the nightly sync', () => {
     expect(book?.finishedAt).toEqual(lastHeard)
   })
 
-  // The pass already holds the whole shelf: moving a book must not read it again,
-  // or a night that moves forty books pays for them twice.
+  // The pass already holds the whole shelf: moving a book must not scan it again.
+  // Each book moved is read once more, inside the transaction that writes it over
+  // whatever the reader changed since the shelf was read.
   test('reads the shelf once, however many books it moves', async () => {
     await connect()
     await AudibleCommand.recordImport(reader, NOW)
@@ -739,10 +740,11 @@ describe('the nightly sync', () => {
 
     expect(await AudibleUseCase.syncLibrary(reader, LATER)).toMatchObject({ moved: 3 })
 
-    // One scan of the shelf and one of its deletions; the one document is the
-    // Audible connection.
+    // One scan of the shelf and one of its deletions; the documents are the
+    // Audible connection and each book as it stands when written, twice a book
+    // here: finished, then its listening position.
     expect(fake.queryReads - before.queries).toBe(2)
-    expect(fake.docReads - before.docs).toBe(1)
+    expect(fake.docReads - before.docs).toBe(1 + 2 * titles.length)
   })
 
   test('moves the cutoff forward, so the next pass finds nothing to redo', async () => {
