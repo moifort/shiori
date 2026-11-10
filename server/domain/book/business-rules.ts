@@ -1,4 +1,4 @@
-import { MAX_NOTE_LENGTH, ReadingNote } from '~/domain/book/primitives'
+import { lettersApart, withoutAbsent } from '~/domain/book/copies'
 import type {
   Book,
   BookFormat,
@@ -24,7 +24,7 @@ import type {
   SyncedBookRemoval,
   TaggedSubgenre,
 } from '~/domain/book/types'
-import { BOOK_MEDIA, DRAWN_FORMATS, READING_STATUSES } from '~/domain/book/types'
+import { DRAWN_FORMATS, READING_STATUSES } from '~/domain/book/types'
 import { compareWithinSeries } from '~/domain/series/business-rules'
 import { isAudioSeries, sagaKeyFor, seriesIdOf, seriesKeyOf } from '~/domain/series/primitives'
 import type { SagaKey, SeriesName } from '~/domain/series/types'
@@ -34,6 +34,32 @@ import { ObjectPath } from '~/system/object-store/primitives'
 import type { ObjectPath as ObjectPathValue } from '~/system/object-store/types'
 import { isPresent } from '~/utils/input'
 import { slugify } from '~/utils/slug'
+
+export {
+  copyOf,
+  keepsCopyOf,
+  keepsStory,
+  mediaFor,
+  mergedCopies,
+  recordJoinedBy,
+  type Shelf,
+  type ShelfCopy,
+  sameAuthor,
+  sameStory,
+  shelfKeyOf,
+  shelfKeysOf,
+  shelfOf,
+  titleWithoutAuthor,
+} from '~/domain/book/copies'
+export {
+  datesAfterCorrection,
+  datesAfterStatusChange,
+  datesOnArrival,
+  statusChangedAtOf,
+  statusStampAfterChange,
+} from '~/domain/book/reading-dates'
+
+import { statusChangedAtOf } from '~/domain/book/reading-dates'
 
 /** Arrange a library into the sections the list renders. A book that belongs to a
  *  saga sits under that saga's heading, ordered along the spine; everything else
@@ -114,28 +140,6 @@ const statusTiers: readonly ReadingStatus[] = ['reading', 'to-read', 'read', 'dr
 /** The tier of a saga: that of its most active volume. */
 const tierOf = (section: LibrarySection): ReadingStatus =>
   statusTiers.find((status) => section.books.some((book) => book.status === status)) ?? 'read'
-
-/** When the book last changed status, for the ordering above. A record from
- *  before the stamp existed answers with the date its status implies — finished
- *  for a read book, started for one in progress, added for one on the pile —
- *  which is when that status was in fact set. */
-export const statusChangedAtOf = (
-  book: Pick<Book, 'status' | 'addedAt' | 'startedAt' | 'finishedAt' | 'statusChangedAt'>,
-): Date => {
-  if (book.statusChangedAt) return book.statusChangedAt
-  if (book.status === 'read') return book.finishedAt ?? book.addedAt
-  if (book.status === 'reading') return book.startedAt ?? book.addedAt
-  return book.addedAt
-}
-
-/** The stamp a status write leaves. Only a real move is stamped: choosing the
- *  status the book already has says nothing new, and must not lift its saga to
- *  the top of the library. */
-export const statusStampAfterChange = (
-  book: Pick<Book, 'status'>,
-  next: ReadingStatus,
-  now: Date,
-): { statusChangedAt?: Date } => (book.status === next ? {} : { statusChangedAt: now })
 
 /** A book paired with its membership, so the ordering below needs no non-null
  *  assertion: the pairing is what proves the book belongs to a saga. */
@@ -361,102 +365,6 @@ export const readVolumeNumbersOf = (books: readonly Book[]): Set<number> => {
   }
   return numbers
 }
-
-/** The dates a status change implies. Reading dates are a consequence of moving
- *  the book, never something the reader types: asking for them would mean asking
- *  twice for the same fact.
- *
- *  Going back to `to-read` clears both dates. It is the reader saying the
- *  reading did not happen, and keeping a finish date on an unread book would
- *  surface it in reading statistics forever. */
-export const datesAfterStatusChange = (
-  book: Pick<Book, 'status' | 'startedAt' | 'finishedAt'>,
-  next: ReadingStatus,
-  now: Date,
-): { startedAt?: Date; finishedAt?: Date } => {
-  if (next === 'to-read') return { startedAt: undefined, finishedAt: undefined }
-  if (next === 'reading' || next === 'dropped')
-    return { startedAt: book.startedAt ?? now, finishedAt: undefined }
-  // Finishing a book that was never marked as started still has a start: the
-  // reader read it, they just never told the app. Stamping both keeps the
-  // statistics honest rather than leaving a finished book with no beginning.
-  return { startedAt: book.startedAt ?? now, finishedAt: book.finishedAt ?? now }
-}
-
-/** How far ahead of the server a typed date may sit: the reader's phone picks
- *  "today" on its own clock, which can run ahead. */
-const CLOCK_DRIFT_MS = 86_400_000
-
-/** The reading dates in the order a book lives through them. */
-const READING_DATES = ['addedAt', 'startedAt', 'finishedAt'] as const
-
-/** The reading dates a reader corrected by hand, or `bad-dates` when they cannot
- *  be true: a date that does not parse, one in the future, two typed together
- *  out of order, or a date the status does not carry — a book on the pile was
- *  never opened, and only a read one was finished.
- *
- *  A typed date is never refused for contradicting one already stored: it is
- *  the reader's latest word, and the stored dates follow it. A start set before
- *  the arrival brings the arrival back to it; a start set after the finish
- *  carries the finish along; and so on down the line, added, started, finished.
- *
- *  Correcting the date that marks the current status — the finish of a read
- *  book, the start of one in progress, the arrival of one on the pile — also
- *  moves the status stamp the library is ordered on: the reader is saying when
- *  that move happened. A date carried along by another moves it the same way.
- *  A dropped book keeps its stamp, since no typed date says when it was
- *  dropped. */
-export const datesAfterCorrection = (
-  book: Pick<Book, 'status' | 'addedAt' | 'startedAt' | 'finishedAt'>,
-  typed: Partial<Pick<Book, 'addedAt' | 'startedAt' | 'finishedAt'>>,
-  now: Date,
-):
-  | Partial<Pick<Book, 'addedAt' | 'startedAt' | 'finishedAt' | 'statusChangedAt'>>
-  | 'bad-dates' => {
-  const latest = now.getTime() + CLOCK_DRIFT_MS
-  const unbelievable = (date?: Date) =>
-    date !== undefined && (Number.isNaN(date.getTime()) || date.getTime() > latest)
-  if (Object.values(typed).some(unbelievable)) return 'bad-dates'
-  if (typed.startedAt && book.status === 'to-read') return 'bad-dates'
-  if (typed.finishedAt && book.status !== 'read') return 'bad-dates'
-  const typedInOrder = READING_DATES.flatMap((field) => typed[field] ?? [])
-  if (typedInOrder.some((date, index) => index > 0 && date < typedInOrder[index - 1]))
-    return 'bad-dates'
-
-  const dates: Partial<Pick<Book, 'addedAt' | 'startedAt' | 'finishedAt'>> = {
-    addedAt: book.addedAt,
-    startedAt: book.startedAt,
-    finishedAt: book.finishedAt,
-    ...typed,
-  }
-  const moved: Partial<Pick<Book, 'addedAt' | 'startedAt' | 'finishedAt'>> = { ...typed }
-  READING_DATES.forEach((field, index) => {
-    const anchor = typed[field]
-    if (!anchor) return
-    READING_DATES.forEach((other, otherIndex) => {
-      const date = dates[other]
-      if (!date || typed[other]) return
-      const outOfOrder = otherIndex < index ? date > anchor : otherIndex > index && date < anchor
-      if (!outOfOrder) return
-      dates[other] = anchor
-      moved[other] = anchor
-    })
-  })
-
-  const marking = { read: moved.finishedAt, reading: moved.startedAt, 'to-read': moved.addedAt }
-  const stamp = book.status === 'dropped' ? undefined : marking[book.status]
-  return { ...moved, ...(stamp ? { statusChangedAt: stamp } : {}) }
-}
-
-/** The reading dates a reader set on a book before saving it — on the scan
- *  review — or `bad-dates` when they cannot be true, by the same measure as a
- *  correction of a book catalogued a moment ago in that status. */
-export const datesOnArrival = (
-  status: ReadingStatus,
-  typed: Partial<Pick<Book, 'startedAt' | 'finishedAt'>>,
-  now: Date,
-): Partial<Pick<Book, 'startedAt' | 'finishedAt'>> | 'bad-dates' =>
-  datesAfterCorrection({ status, addedAt: now }, typed, now) === 'bad-dates' ? 'bad-dates' : typed
 
 /** Rating a book means having read it. The app lets a reader rate from anywhere,
  *  and silently leaving such a book in `to-read` would be a lie the library then
@@ -724,260 +632,6 @@ export const inSagaOrder = <Volume extends Pick<Book, 'series' | 'title'>>(
       { kind: right.series?.kind ?? 'main', number: right.series?.volume, title: right.title },
     ),
   )
-
-/** The title and first author folded together: whether the reader already owns
- *  this story, loosely and across editions. A novel scanned from the printed
- *  edition is the same story as its Audible recording, and a friend's copy of
- *  it is one the reader already has.
- *
- *  Loose on purpose, and not an identity: the ASIN of an imported record is the
- *  precise answer to "which record is this exact Audible title", which is what
- *  the sync writes a status into. */
-export const shelfKeyOf = (title: string, author: string | undefined): string =>
-  `${slugify(title)}--${slugify(author ?? '')}`
-
-export const shelfKeysOf = (books: readonly Book[]): Set<string> =>
-  new Set(books.map((book) => shelfKeyOf(book.title, book.authors[0])))
-
-/** Whether two names say the same story, looser than the shelf key: the same
- *  title, by authors who agree (`sameAuthor`). A spine prints "Barjavel" where
- *  the record says "René Barjavel", and a photo misreads "WILLIAM GIBSON" as
- *  "ILLIAM GIBSON": keyed on the whole name, a shelf photo offered books the
- *  reader already kept, ticked, and added them twice. Only compared, never
- *  stored — the keys kept in Firestore (awaited editions, awards, suggestions)
- *  stay on `shelfKeyOf`. */
-export const sameStory = (
-  left: { title: string; author?: string },
-  right: { title: string; author?: string },
-): boolean => slugify(left.title) === slugify(right.title) && sameAuthor(left.author, right.author)
-
-/** Whether the reader already keeps this story, under any record. */
-export const keepsStory = (
-  books: readonly { title: string; authors: readonly string[] }[],
-  story: { title: string; author?: string },
-): boolean => books.some((book) => sameStory({ title: book.title, author: book.authors[0] }, story))
-
-/** Whether two spellings name one author: the same last name, and first names
- *  that agree where both are given — one letter apart at most, a misread
- *  initial. "Barjavel" is René Barjavel; Brian Herbert is not Frank Herbert. */
-export const sameAuthor = (left: string | undefined, right: string | undefined): boolean => {
-  const [a, b] = [namePartsOf(left), namePartsOf(right)]
-  if (a.length === 0 || b.length === 0) return a.length === b.length
-  if (a.at(-1) !== b.at(-1)) return false
-  const [givenA, givenB] = [a.slice(0, -1).join(''), b.slice(0, -1).join('')]
-  return givenA === '' || givenB === '' || lettersApart(givenA, givenB) <= 1
-}
-
-/** How a store, a pasted link or a picked candidate names the author beside a
- *  title: across a dash set apart by spaces, or in brackets at the end. A
- *  comma or a colon is no such mark — "Moi, Christiane F." is the title of
- *  Christiane F.'s book. */
-const AUTHOR_DASH = /\s+[-–—]\s+/gu
-const AUTHOR_IN_BRACKETS = /^(.+?)\s*\(([^()]+)\)$/u
-
-/** The title without one of its own authors named beside it, before or after:
- *  "La Horde du Contrevent — Alain Damasio", "Damasio - La Horde du
- *  Contrevent" and "La Horde du Contrevent (Alain Damasio)" by Alain Damasio
- *  are "La Horde du Contrevent". Unchanged when what stands beside the dash is
- *  no author of the book (`sameAuthor`): "Dune — Le Messie" keeps its dash.
- *  What it returns is a part of the title, never empty, so a checked title
- *  stays one. */
-export const titleWithoutAuthor = <Title extends string>(
-  title: Title,
-  authors: readonly string[],
-): Title => {
-  const byItsAuthor = (name: string) => authors.some((author) => sameAuthor(name, author))
-  const bracketed = title.match(AUTHOR_IN_BRACKETS)
-  if (bracketed && byItsAuthor(bracketed[2])) return bracketed[1].trim() as Title
-  return (dashSplitsOf(title).find(({ named }) => byItsAuthor(named))?.rest ?? title) as Title
-}
-
-/** Every way to read a title as a name across a dash from the rest: the name
- *  last, cut at the last dash, then the name first, cut at the first. */
-const dashSplitsOf = (title: string): { rest: string; named: string }[] => {
-  const dashes = [...title.matchAll(AUTHOR_DASH)]
-  const [first, last] = [dashes[0], dashes.at(-1)]
-  if (!first || !last) return []
-  const before = (dash: RegExpExecArray) => title.slice(0, dash.index).trim()
-  const after = (dash: RegExpExecArray) => title.slice(dash.index + dash[0].length).trim()
-  return [
-    { rest: before(last), named: after(last) },
-    { rest: after(first), named: before(first) },
-  ].filter(({ rest, named }) => rest !== '' && named !== '')
-}
-
-const namePartsOf = (name: string | undefined) =>
-  slugify(name ?? '')
-    .split('-')
-    .filter(Boolean)
-
-/** How many letters to change, add or drop to turn one word into the other. */
-const lettersApart = (left: string, right: string): number => {
-  let previous = Array.from({ length: right.length + 1 }, (_, index) => index)
-  for (let i = 1; i <= left.length; i++) {
-    const current = [i]
-    for (let j = 1; j <= right.length; j++)
-      current[j] = Math.min(
-        previous[j] + 1,
-        current[j - 1] + 1,
-        previous[j - 1] + (left[i - 1] === right[j - 1] ? 0 : 1),
-      )
-    previous = current
-  }
-  return previous[right.length]
-}
-
-/** One copy the reader keeps of a story: what tells it from another volume or
- *  another language under the same title. */
-export type ShelfCopy = { volume?: number; language?: BookLanguage }
-
-/** The reader's books by shelf key, as an import checks a title against them. */
-export type Shelf = ReadonlyMap<string, readonly ShelfCopy[]>
-
-export const shelfOf = (books: readonly Book[]): Shelf => {
-  const shelf = new Map<string, ShelfCopy[]>()
-  for (const book of books) {
-    const key = shelfKeyOf(book.title, book.authors[0])
-    shelf.set(key, [
-      ...(shelf.get(key) ?? []),
-      { volume: book.series?.volume, language: book.language },
-    ])
-  }
-  return shelf
-}
-
-/** Whether the reader already keeps this title, by its shelf key — except that
- *  a saga whose volumes share one title ("Primal Hunter" 4, 5 and 6 on Audible)
- *  is told apart by volume, and a recording in English from the French one by
- *  language. A side that does not say matches: the check stays as loose as the
- *  key wherever nothing tells two copies apart. */
-export const keepsCopyOf = (
-  shelf: Shelf,
-  candidate: { title: string; author?: string; volume?: number; language?: BookLanguage },
-): boolean =>
-  (shelf.get(shelfKeyOf(candidate.title, candidate.author)) ?? []).some(
-    (copy) => agrees(copy.volume, candidate.volume) && agrees(copy.language, candidate.language),
-  )
-
-const agrees = <T>(kept: T | undefined, candidate: T | undefined) =>
-  kept === undefined || candidate === undefined || kept === candidate
-
-/** The record the reader already keeps of a book about to be added: the same
- *  story by its shelf key, or the same edition by its ISBN, which still matches
- *  when the title was read differently off the cover. The earliest on the shelf
- *  wins — the copy the reader thinks of as theirs.
- *
- *  A warning, never a refusal: two editions of one story — the paperback and
- *  the recording — are a library some readers keep on purpose. */
-export const copyOf = <T extends Book>(
-  books: readonly T[],
-  candidate: { title: string; authors: readonly string[]; isbn13?: string },
-): T | undefined => {
-  const story = { title: candidate.title, author: candidate.authors[0] }
-  return books
-    .filter(
-      (book) =>
-        sameStory({ title: book.title, author: book.authors[0] }, story) ||
-        (candidate.isbn13 !== undefined && book.isbn13 === candidate.isbn13),
-    )
-    .toSorted((a, b) => a.addedAt.getTime() - b.addedAt.getTime())[0]
-}
-
-/** Where a book of this format is held, from what a source said of it: a
- *  recording is heard, so it is held on neither; a read book is on paper unless
- *  something said otherwise. Always in the order paper, screen, so two records
- *  held the same way compare equal. */
-export const mediaFor = (format: BookFormat, media: readonly BookMedium[] = []): BookMedium[] => {
-  if (format === 'audiobook') return []
-  const held = BOOK_MEDIA.filter((medium) => media.includes(medium))
-  return held.length > 0 ? held : ['print']
-}
-
-/** The record a book arriving on another medium joins, rather than doubling:
- *  the same story by `sameStory` or the same edition by its ISBN, read
- *  rather than heard, in the same volume and language wherever both say, and
- *  not yet held on every medium the arrival brings. The paperback scanned after
- *  the Kindle copy is one book, not two; a French paperback and an English
- *  Kindle copy are two editions, as their sagas are. The earliest on the shelf
- *  wins, as for `copyOf`. */
-export const recordJoinedBy = <T extends Book>(
-  books: readonly T[],
-  arriving: Pick<Book, 'title' | 'authors' | 'isbn13' | 'format' | 'media' | 'language'> & {
-    series?: Pick<SeriesMembership, 'volume'>
-  },
-): T | undefined => {
-  if (arriving.format === 'audiobook') return undefined
-  const story = { title: arriving.title, author: arriving.authors[0] }
-  return books
-    .filter(
-      (book) =>
-        book.format !== 'audiobook' &&
-        (sameStory({ title: book.title, author: book.authors[0] }, story) ||
-          (arriving.isbn13 !== undefined && book.isbn13 === arriving.isbn13)) &&
-        agrees(book.series?.volume, arriving.series?.volume) &&
-        agrees(book.language, arriving.language) &&
-        arriving.media.some((medium) => !book.media.includes(medium)),
-    )
-    .toSorted((a, b) => a.addedAt.getTime() - b.addedAt.getTime())[0]
-}
-
-/** How far along a reading each status is, for two copies of one book to keep
- *  the furthest: finished beats dropped, which beats begun, which beats the
- *  pile. */
-const PROGRESS: Record<ReadingStatus, number> = { 'to-read': 0, reading: 1, dropped: 2, read: 3 }
-
-const earliest = (...dates: (Date | undefined)[]): Date | undefined =>
-  dates.filter(isDefined).toSorted((a, b) => a.getTime() - b.getTime())[0]
-
-const latest = (...dates: (Date | undefined)[]): Date | undefined =>
-  dates.filter(isDefined).toSorted((a, b) => b.getTime() - a.getTime())[0]
-
-const isDefined = <T>(value: T | undefined): value is T => value !== undefined
-
-/** Two copies of one book — on paper and on a screen — as the one record the
- *  reader keeps of it.
- *
- *  `kept` names the record: its id, and every fact it already states. `other`
- *  fills what `kept` leaves blank, and lends a drawn format (manga, comic) over
- *  the plain `book` a Kindle title is always filed as. Where both said
- *  something about the reading, the furthest along wins: the furthest status,
- *  the earliest start and the latest finish, the higher rating, either heart,
- *  both notes one after the other. A book either copy hid stays hidden. */
-export const mergedCopies = (kept: Book, other: Book, now: Date): Book => {
-  const format = kept.format === 'book' ? other.format : kept.format
-  const status = PROGRESS[other.status] > PROGRESS[kept.status] ? other.status : kept.status
-  const finishing = [kept, other].filter((copy) => copy.status === 'read')
-  const hearted = [kept, other].filter((copy) => copy.favorite)
-  const notes = [kept.note, other.note].filter(isDefined)
-  const ratings = [kept.rating, other.rating].filter(isDefined)
-  return {
-    ...other,
-    ...withoutAbsent(kept),
-    format,
-    media: mediaFor(format, [...kept.media, ...other.media]),
-    authors: kept.authors.length > 0 ? kept.authors : other.authors,
-    subgenres: kept.subgenres.length > 0 ? kept.subgenres : other.subgenres,
-    narrators: kept.narrators.length > 0 ? kept.narrators : other.narrators,
-    status,
-    rating: ratings.toSorted((a, b) => b - a)[0],
-    favorite: hearted.length > 0 ? true : undefined,
-    favoritedAt: earliest(...hearted.map((copy) => copy.favoritedAt)),
-    note: notes.length > 0 ? ReadingNote(notes.join('\n\n').slice(0, MAX_NOTE_LENGTH)) : undefined,
-    hidden: kept.hidden || other.hidden,
-    // Described if either copy was: the record keeps the facts of the one that was.
-    awaitingDescription: kept.awaitingDescription && other.awaitingDescription ? true : undefined,
-    addedAt: earliest(kept.addedAt, other.addedAt) ?? kept.addedAt,
-    startedAt: status === 'to-read' ? undefined : earliest(kept.startedAt, other.startedAt),
-    finishedAt: latest(...finishing.map((copy) => copy.finishedAt)),
-    statusChangedAt: latest(kept.statusChangedAt, other.statusChangedAt),
-    updatedAt: now,
-  }
-}
-
-const withoutAbsent = <T extends object>(record: T): Partial<T> =>
-  Object.fromEntries(
-    Object.entries(record).filter(([, value]) => value !== undefined),
-  ) as Partial<T>
 
 /** The sources a book's cover is drawn from, folded into the two every drawing
  *  site reads: the cover the reader picked first, then the Kindle cover — it is
