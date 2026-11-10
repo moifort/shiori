@@ -142,7 +142,7 @@ object AwardsApi {
 
     suspend fun sections(format: ReleaseFormat): List<AwardSection> {
         if (Showcase.isOn) return emptyList()
-        return GraphQLClient.fetch(AwardSectionsQuery(format.graphQL)).awardSections.map { section ->
+        return GraphQLClient.fetch(AwardSectionsQuery(format.graphQL)).awardSections.map { it.awardSectionFields }.map { section ->
             AwardSection(section.genre.asDomain, section.winners.map { it.awardWinnerFields.asDomain }.latestFirst)
         }
     }

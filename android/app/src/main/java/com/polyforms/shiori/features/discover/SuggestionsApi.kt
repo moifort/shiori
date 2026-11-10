@@ -138,7 +138,7 @@ data class MonthlyDiscoveries(
 object SuggestionsApi {
     suspend fun monthly(format: ReleaseFormat, lookUp: Boolean): MonthlyDiscoveries {
         if (Showcase.isOn) return MonthlyDiscoveries("2026-10", suggestions = emptyList())
-        val data = GraphQLClient.fetch(MonthlyDiscoveriesQuery(format.graphQL, Optional.present(lookUp))).monthlyDiscoveries
+        val data = GraphQLClient.fetch(MonthlyDiscoveriesQuery(format.graphQL, Optional.present(lookUp))).monthlyDiscoveries.monthlyDiscoveriesFields
         return MonthlyDiscoveries(
             month = data.month,
             status = when (data.status) {

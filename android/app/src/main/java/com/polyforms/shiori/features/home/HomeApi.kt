@@ -17,7 +17,7 @@ import kotlin.math.roundToInt
 object HomeApi {
     suspend fun dashboard(): Dashboard {
         if (Showcase.isOn) return HomeFixtures.dashboard
-        val d = GraphQLClient.fetch(DashboardQuery(ZoneId.systemDefault().id)).dashboard
+        val d = GraphQLClient.fetch(DashboardQuery(ZoneId.systemDefault().id)).dashboard.dashboardFields
         return Dashboard(
             currentYear = d.currentYear,
             booksPerYear = d.booksPerYear.map { Dashboard.YearCount(it.year, it.count) },

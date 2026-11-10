@@ -18,7 +18,7 @@ import com.polyforms.shiori.shared.parseISO8601
 object NewsApi {
     suspend fun feed(after: String?, limit: Int): CursorPage<FeedEvent> {
         if (Showcase.isOn) return CursorPage(emptyList(), false, null)
-        val page = GraphQLClient.fetch(NewsFeedQuery(limit, Optional.presentIfNotNull(after))).newsFeed
+        val page = GraphQLClient.fetch(NewsFeedQuery(limit, Optional.presentIfNotNull(after))).newsFeed.newsFeedPage
         val events = page.events.mapNotNull { row ->
             val kind = FeedEventKind.entries.firstOrNull { it.name == row.kind.rawValue } ?: return@mapNotNull null
             val at = parseISO8601(row.at) ?: return@mapNotNull null
@@ -46,7 +46,7 @@ object NewsApi {
 
     suspend fun narratorNews(): List<NarratorNews> {
         if (Showcase.isOn) return emptyList()
-        return GraphQLClient.fetch(NarratorNewsQuery()).narratorNews.map {
+        return GraphQLClient.fetch(NarratorNewsQuery()).narratorNews.map { it.narratorNewsFields }.map {
             NarratorNews(it.id, it.narratorKey, it.narrator, it.title, it.authors, it.date, it.coverUrl, BookFormat.AUDIOBOOK, it.language?.asDomain)
         }
     }
