@@ -1,7 +1,11 @@
 import { seriesIdOf } from '~/domain/series/primitives'
 import type { SeriesEdition as Edition, Series, SeriesMiss } from '~/domain/series/types'
 import { db } from '~/system/firebase'
-import { evictFromRequestCache, isInRequestCache, memoizedPerRequest } from '~/system/request-cache'
+import {
+  evictFromRequestCache,
+  memoizedManyPerRequest,
+  memoizedPerRequest,
+} from '~/system/request-cache'
 import { genericDataConverter, withoutAbsentFields } from '~/utils/firestore'
 
 // A single global collection, separate from `books`. A catalogue entry is
@@ -26,27 +30,15 @@ export const findById = (edition: Edition): Promise<Series | null> =>
 // resolves every saga the reader follows in a single billed round trip. It
 // shares the per-saga memo with `findById` both ways — a saga already read in
 // this request is not fetched again, and one fetched here answers a later
-// lookup — so the tab and a saga screen in the same request read each once.
+// lookup — so the tab and a saga screen in the same request read each once,
+// and so do two resolvers asking the same sagas side by side.
 export const findManyByIds = async (editions: readonly Edition[]): Promise<Series[]> => {
-  const wanted = [...new Map(editions.map((edition) => [documentIdOf(edition), edition])).values()]
-  const missing = wanted.filter((edition) => !isInRequestCache(cacheKey(edition)))
-  const fetched = new Map<string, Series | null>()
-  if (missing.length > 0) {
+  const entries = await memoizedManyPerRequest(editions, cacheKey, async (missing) => {
     const snapshots = await db().getAll(
       ...missing.map((edition) => series().doc(documentIdOf(edition))),
     )
-    for (const [index, snapshot] of snapshots.entries()) {
-      const edition = missing[index]
-      const entry = (snapshot.data() as Series | undefined) ?? null
-      fetched.set(cacheKey(edition), entry)
-      memoizedPerRequest(cacheKey(edition), async () => entry)
-    }
-  }
-  const entries = await Promise.all(
-    wanted.map((edition) =>
-      fetched.has(cacheKey(edition)) ? (fetched.get(cacheKey(edition)) ?? null) : findById(edition),
-    ),
-  )
+    return snapshots.map((snapshot) => (snapshot.data() as Series | undefined) ?? null)
+  })
   return entries.filter((entry): entry is Series => entry !== null)
 }
 

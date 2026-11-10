@@ -98,6 +98,37 @@ export const isInRequestCache = (key: string): boolean => {
   return Boolean(cache && key in cache)
 }
 
+/** Documents read together, each memoized under its own key from the moment
+ *  the read is asked rather than once it answers: two resolvers of one request
+ *  asking the same documents side by side share one read, where a memo set on
+ *  the answer let both through. `read` answers the items it is given, in their
+ *  order; an item already memoized is not read again, and one read here
+ *  answers a later lookup under the same key. */
+export const memoizedManyPerRequest = <Item, T>(
+  items: readonly Item[],
+  keyOf: (item: Item) => string,
+  read: (missing: readonly Item[]) => Promise<readonly T[]>,
+): Promise<T[]> => {
+  const wanted = [...new Map(items.map((item) => [keyOf(item), item])).values()]
+  const missing = wanted.filter((item) => !isInRequestCache(keyOf(item)))
+  const asked = new Map<string, Promise<T>>()
+  if (missing.length > 0) {
+    const together = read(missing)
+    for (const [index, item] of missing.entries()) {
+      const one = together.then((answers) => answers[index] as T)
+      asked.set(keyOf(item), one)
+      memoizedPerRequest(keyOf(item), () => one)
+    }
+  }
+  return Promise.all(
+    wanted.map(
+      (item) =>
+        asked.get(keyOf(item)) ??
+        memoizedPerRequest(keyOf(item), () => read([item]).then(([answer]) => answer as T)),
+    ),
+  )
+}
+
 export const evictFromRequestCache = (key: string) => {
   markWritten(key)
   const context = contextOrUndefined()

@@ -9,6 +9,12 @@ import type {
 } from '~/domain/discovery/types'
 import type { UserId } from '~/domain/shared/types'
 import { db } from '~/system/firebase'
+import {
+  evictFromRequestCache,
+  memoizedManyPerRequest,
+  memoizedPerRequest,
+  rememberInRequestCache,
+} from '~/system/request-cache'
 import { genericDataConverter, withoutAbsentFields } from '~/utils/firestore'
 
 // Shared documents, holding no reference to any reader: keyed by the saga and
@@ -39,48 +45,62 @@ const descriptions = () =>
 const readers = () =>
   db().collection('discovery-readers').withConverter(genericDataConverter<DiscoveryReader>())
 
+// A watch is memoized for the request under its key, from the moment it is
+// asked: the tab's two formats, the year's releases and the calendar, resolved
+// side by side in one composed request, read each watch once between them. A
+// write forgets it.
 export const findWatches = async (keys: readonly string[]): Promise<SagaWatch[]> => {
-  const unique = [...new Set(keys)]
-  if (unique.length === 0) return []
-  const snapshots = await db().getAll(...unique.map((key) => watches().doc(key)))
-  // Typed loosely by getAll, though each ref carries the converter.
-  return snapshots.flatMap((snapshot) => {
-    const watch = snapshot.data() as SagaWatch | undefined
-    return watch ? [watch] : []
-  })
+  const found = await memoizedManyPerRequest(
+    keys,
+    (key) => `saga-watches:${key}`,
+    async (missing) => {
+      const snapshots = await db().getAll(...missing.map((key) => watches().doc(key)))
+      // Typed loosely by getAll, though each ref carries the converter.
+      return snapshots.map((snapshot) => snapshot.data() as SagaWatch | undefined)
+    },
+  )
+  return found.filter((watch): watch is SagaWatch => watch !== undefined)
 }
 
 export const saveWatch = async (watch: SagaWatch): Promise<void> => {
   await watches().doc(watch.key).set(withoutAbsentFields(watch))
+  evictFromRequestCache(`saga-watches:${watch.key}`)
 }
 
 export const findAuthorWatches = async (keys: readonly string[]): Promise<AuthorWatch[]> => {
-  const unique = [...new Set(keys)]
-  if (unique.length === 0) return []
-  const snapshots = await db().getAll(...unique.map((key) => authorWatches().doc(key)))
-  // Typed loosely by getAll, though each ref carries the converter.
-  return snapshots.flatMap((snapshot) => {
-    const watch = snapshot.data() as AuthorWatch | undefined
-    return watch ? [watch] : []
-  })
+  const found = await memoizedManyPerRequest(
+    keys,
+    (key) => `author-watches:${key}`,
+    async (missing) => {
+      const snapshots = await db().getAll(...missing.map((key) => authorWatches().doc(key)))
+      // Typed loosely by getAll, though each ref carries the converter.
+      return snapshots.map((snapshot) => snapshot.data() as AuthorWatch | undefined)
+    },
+  )
+  return found.filter((watch): watch is AuthorWatch => watch !== undefined)
 }
 
 export const saveAuthorWatch = async (watch: AuthorWatch): Promise<void> => {
   await authorWatches().doc(watch.key).set(withoutAbsentFields(watch))
+  evictFromRequestCache(`author-watches:${watch.key}`)
 }
 
 export const findNarratorWatches = async (keys: readonly string[]): Promise<NarratorWatch[]> => {
-  const unique = [...new Set(keys)]
-  if (unique.length === 0) return []
-  const snapshots = await db().getAll(...unique.map((key) => narratorWatches().doc(key)))
-  return snapshots.flatMap((snapshot) => {
-    const watch = snapshot.data() as NarratorWatch | undefined
-    return watch ? [watch] : []
-  })
+  const found = await memoizedManyPerRequest(
+    keys,
+    (key) => `narrator-watches:${key}`,
+    async (missing) => {
+      const snapshots = await db().getAll(...missing.map((key) => narratorWatches().doc(key)))
+      // Typed loosely by getAll, though each ref carries the converter.
+      return snapshots.map((snapshot) => snapshot.data() as NarratorWatch | undefined)
+    },
+  )
+  return found.filter((watch): watch is NarratorWatch => watch !== undefined)
 }
 
 export const saveNarratorWatch = async (watch: NarratorWatch): Promise<void> => {
   await narratorWatches().doc(watch.key).set(withoutAbsentFields(watch))
+  evictFromRequestCache(`narrator-watches:${watch.key}`)
 }
 
 // The watches looked up before `before` or after `after`, by two range queries
@@ -128,8 +148,11 @@ export const savePassState = async (state: DiscoveryPassState): Promise<void> =>
   await passState().set(state)
 }
 
-export const findReader = async (userId: UserId): Promise<DiscoveryReader | undefined> =>
-  (await readers().doc(userId).get()).data()
+const readerCacheKey = (userId: UserId) => `discovery-readers:${userId}`
+
+// Memoized for the request: every section of a composed request asks for it.
+export const findReader = (userId: UserId): Promise<DiscoveryReader | undefined> =>
+  memoizedPerRequest(readerCacheKey(userId), async () => (await readers().doc(userId).get()).data())
 
 /** Every reader, for the scheduled passes. One document per reader, read once
  *  per run. */
@@ -138,11 +161,13 @@ export const findAllReaders = async (): Promise<DiscoveryReader[]> =>
 
 export const saveReader = async (reader: DiscoveryReader): Promise<DiscoveryReader> => {
   await readers().doc(reader.userId).set(withoutAbsentFields(reader))
+  rememberInRequestCache(readerCacheKey(reader.userId), Promise.resolve(reader))
   return reader
 }
 
 export const removeReader = async (userId: UserId): Promise<void> => {
   await readers().doc(userId).delete()
+  evictFromRequestCache(readerCacheKey(userId))
 }
 
 export const findDescription = async (key: string): Promise<KeptReleaseDescription | undefined> =>
