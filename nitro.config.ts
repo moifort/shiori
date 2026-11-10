@@ -13,20 +13,21 @@ export default defineNitroConfig({
   firebase: {
     gen: 2,
     nodeVersion: '22',
+    // Only `firebase deploy` reads this block, and the deploy goes through
+    // Terraform: what runs is `service_config` in infra/function.tf. The values
+    // below mirror it so that neither misleads; change both together.
     httpsOptions: {
       region: 'europe-west3',
-      memory: '512MiB',
+      memory: '1GiB',
+      cpu: 1,
       // A scan is three grounded Gemini calls with thinking enabled, and a cold
       // one was measured at 55s end to end against the real API — under
       // Vinarium's 60s ceiling by five seconds, which is no margin at all. The
       // request that tips over does not degrade, it 504s after the models have
       // already been paid for.
-      //
-      // Only `firebase deploy` reads this block. The deploy goes through
-      // Terraform, so the ceiling that actually applies is `timeout_seconds` in
-      // infra/function.tf; the two are kept equal so that neither misleads.
       timeoutSeconds: 180,
-      concurrency: 80,
+      // Bounded by the memory: see `max_instance_request_concurrency`.
+      concurrency: 16,
     },
   },
   // Rollup minifies the whole backend into one file, so an unmapped stack trace

@@ -101,15 +101,25 @@ resource "google_cloudfunctions2_function" "server" {
 
   service_config {
     # Cloud Functions defaults to one request per instance on a third of a CPU,
-    # and Cloud Run refuses more on less than a whole one. The app asks a
-    # screen's queries at once, about eight: on 2026-10-15, 577 requests started
-    # 221 instances, each 4 to 8 s cold. They mostly wait on Firestore and the
-    # models, so one instance serves them together; the memory doubles for
-    # scans decoded side by side. The globals are per-instance on purpose and
-    # the request cache lives on the event, so nothing leaks between requests.
+    # and Cloud Run refuses more on less than a whole one. On 2026-10-15, 577
+    # requests started 221 instances, each 4 to 8 s cold. The requests mostly
+    # wait on Firestore and the models, so one instance serves them together.
+    # The globals are per-instance on purpose and the request cache lives on
+    # the event, so nothing leaks between requests.
+    #
+    # Sixteen at once, from eight until 2026-11-10: an opening used to send
+    # about nine requests, which spilled onto a second cold instance, and a
+    # return from the background still sends four or more per reader (the
+    # home's two, Actu's, the library's, Découvrir's when open). Sixteen is
+    # bounded by memory, not by the CPU: an idle instance holds about 170 MB
+    # (the built bundle, measured on a Mac), and the heaviest request, a scan,
+    # about 40 MB while its photo is decoded and re-encoded. Sixteen scans at
+    # once is 640 MB on top, which still leaves some 200 MB of the 1 Gi for the
+    # collector's slack: no mix of requests can push an instance out of memory.
+    # Raise it only with the memory.
     available_memory                 = "1Gi"
     available_cpu                    = "1"
-    max_instance_request_concurrency = 8
+    max_instance_request_concurrency = 16
     # A cold scan was measured at 55s end to end; the 60s Vinarium inherited
     # 504s the request after the models have already been paid for. Mirrors
     # `timeoutSeconds` in nitro.config.ts, which Terraform does not read, and
