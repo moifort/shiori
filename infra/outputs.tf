@@ -42,5 +42,5 @@ output "wif_provider" {
 
 output "attachments_bucket" {
   value       = google_storage_bucket.attachments.name
-  description = "Private bucket holding the files attached to wine sheets."
+  description = "Private bucket holding the cover and avatar photos."
 }

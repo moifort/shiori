@@ -4,8 +4,8 @@ import { Count } from '~/domain/shared/primitives'
 import type { Count as CountType, Plan, UserId } from '~/domain/shared/types'
 
 // What a free account gets each calendar month. The AI scan is the app's only
-// variable cost, so this one number is the whole free tier: bottles, cellar,
-// tastings and sharing stay unlimited, and a bottle can always be added by hand.
+// variable cost, so this one number is the whole free tier: books, series, notes
+// and sharing stay unlimited, and a book can always be added by hand.
 // Single source of truth — the GraphQL surface and the gate both read it here.
 export const FREE_MONTHLY_SCANS: CountType = Count(5)
 
@@ -13,13 +13,13 @@ export const FREE_MONTHLY_SCANS: CountType = Count(5)
 // past this, a month's scans are refused as abuse rather than served at a loss.
 // Sized so a month at the ceiling costs at most 70% of the cheapest plan's net
 // proceeds (the annual one, ~1.48 EUR/month) at the current ~0.01 EUR scan cost,
-// while staying far above real use: stocking a whole cellar is ~30 scans. To
+// while staying far above real use: a full shelf scanned book by book is ~30. To
 // recalibrate when the scan cost changes, see docs/freemium-economics.md.
 export const PREMIUM_MONTHLY_SCANS: CountType = Count(100)
 
 // What a new account is handed when it finishes onboarding, once and for good.
-// Books are catalogued in bursts: a new reader empties a shelf in one evening,
-// where a cellar is stocked a bottle at a time. Five a month would put the wall
+// Books are catalogued in bursts: a new reader empties a shelf in one evening
+// rather than adding a book at a time. Five a month would put the wall
 // in the middle of that first session, which is the worst possible moment — the
 // app has taken effort and returned nothing yet. Fifty covers a real shelf
 // without covering a whole library: the wall still arrives, but after the value

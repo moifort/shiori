@@ -17,7 +17,7 @@ export type Quota = {
 
 /** Scans granted outside the monthly allowance, as a balance that is drawn down
  *  and never refilled by the calendar. One grant per account, at the end of
- *  onboarding: stocking a cellar is the moment the app is judged, and metering
+ *  onboarding: cataloguing a first shelf is the moment the app is judged, and metering
  *  it at five would have made that judgement about the meter.
  *
  *  Absent storage means nothing left, the same way an absent quota reads zero.

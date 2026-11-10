@@ -1,11 +1,13 @@
-# Beverage attachments: the photos and PDFs hung on a wine sheet.
+# Photos: the covers a scan keeps of a reader's own copy of a book, and the
+# pictures readers choose for their avatar.
 #
 # The bucket is private and stays private. Nothing in it is ever public, and the
-# app holds no Storage SDK: every read and every write goes through a URL this
-# backend signed, for one object, for a few minutes. Visibility is a domain rule
-# (a household member sees the files of a bottle standing in the shared cellar),
-# and Storage Rules cannot read Firestore — so the arbitration has to happen in
-# the function, which is only possible if the bucket itself is unreachable.
+# app holds no Storage SDK: the backend writes the photos the app sends it, and
+# every read goes through a URL it signed, for one object, for one hour. Who may
+# see a cover is a domain rule (a book is its reader's, and a friend sees it
+# only on a book the reader shares), and Storage Rules cannot read Firestore —
+# so the arbitration has to happen in the function, which is only possible if
+# the bucket itself is unreachable.
 resource "google_storage_bucket" "attachments" {
   project                     = google_project.this.project_id
   name                        = "${google_project.this.project_id}-attachments"
@@ -14,7 +16,7 @@ resource "google_storage_bucket" "attachments" {
   uniform_bucket_level_access = true
   public_access_prevention    = "enforced"
 
-  # Deleting an attachment must stop the meter. The default 7-day soft delete
+  # Deleting a photo must stop the meter. The default 7-day soft delete
   # keeps billing for bytes the user believes are gone.
   soft_delete_policy {
     retention_duration_seconds = 0

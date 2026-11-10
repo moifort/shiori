@@ -45,7 +45,7 @@ export namespace QuotaCommand {
     )
   }
 
-  // Hand a brand-new account the scans it needs to stock its cellar. Called once,
+  // Hand a brand-new account the scans it needs for its first shelf. Called once,
   // from the onboarding that creates the profile, in that same batch.
   export const grantWelcomeCredit = (userId: UserId, batch?: WriteBatch): Promise<ScanCredit> =>
     repository.saveCredit(welcomeCredit(userId), batch)

@@ -4570,7 +4570,7 @@ type Query {
 """
 The scan allowance: what the month holds, what was granted on top, what has been spent and when the month renews.
 
-Only the AI scan is metered. Adding a bottle by hand, the cellar, tastings and sharing are unlimited on every plan, so a spent allowance never stops the app being used.
+Only the AI scan is metered. Adding a book by hand, the library, notes and sharing are unlimited on every plan, so a spent allowance never stops the app being used.
 """
 type Quota {
   """How many the plan allows in a month, e.g. `5`"""

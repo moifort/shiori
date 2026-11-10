@@ -4,8 +4,8 @@ import * as repository from '~/domain/user/infrastructure/repository'
 import type { Avatar, UserProfile } from '~/domain/user/types'
 
 export namespace UserCommand {
-  // Persist the profile that marks onboarding done. The cellar dimensions are
-  // written separately by UserUseCase.completeOnboarding, in the same batch.
+  // Persist the profile that marks onboarding done. The welcome scans are
+  // granted separately by UserUseCase.completeOnboarding, in the same batch.
   export const completeOnboarding = (userId: UserId, firstName: PersonName, batch?: WriteBatch) =>
     repository.saveProfile({ userId, firstName, onboardingCompletedAt: new Date() }, batch)
 

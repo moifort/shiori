@@ -147,7 +147,7 @@ resource "google_cloudfunctions2_function" "server" {
       # rides the secret_environment_variables block below.
       NITRO_APNS_KEY_ID  = var.apns_key_id
       NITRO_APNS_TEAM_ID = var.apns_key_id != "" ? var.apple_team_id : ""
-      # The private bucket holding wine attachments (see storage.tf).
+      # The private bucket holding the cover and avatar photos (see storage.tf).
       NITRO_ATTACHMENTS_BUCKET = google_storage_bucket.attachments.name
 
       # The App Links file lists the certificates the Android app is signed with.
