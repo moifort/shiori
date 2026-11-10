@@ -1,5 +1,7 @@
+import type { CollectionReference } from 'firebase-admin/firestore'
 import type {
   AuthorWatch,
+  DiscoveryPassState,
   DiscoveryReader,
   KeptReleaseDescription,
   NarratorWatch,
@@ -79,6 +81,51 @@ export const findNarratorWatches = async (keys: readonly string[]): Promise<Narr
 
 export const saveNarratorWatch = async (watch: NarratorWatch): Promise<void> => {
   await narratorWatches().doc(watch.key).set(withoutAbsentFields(watch))
+}
+
+// The watches looked up before `before` or after `after`, by two range queries
+// on `checkedAt`, which its automatic single-field index serves: the stale ones
+// and the ones looked up today, without reading the rest.
+const checkedOutside = async <T>(
+  collection: () => CollectionReference<T>,
+  before: Date,
+  after: Date,
+): Promise<T[]> => {
+  const [stale, recent] = await Promise.all([
+    collection().where('checkedAt', '<', before).get(),
+    collection().where('checkedAt', '>', after).get(),
+  ])
+  return [...stale.docs, ...recent.docs].map((doc) => doc.data())
+}
+
+export const findWatchesCheckedOutside = (before: Date, after: Date): Promise<SagaWatch[]> =>
+  checkedOutside(watches, before, after)
+
+export const findAuthorWatchesCheckedOutside = (
+  before: Date,
+  after: Date,
+): Promise<AuthorWatch[]> => checkedOutside(authorWatches, before, after)
+
+export const findNarratorWatchesCheckedOutside = (
+  before: Date,
+  after: Date,
+): Promise<NarratorWatch[]> => checkedOutside(narratorWatches, before, after)
+
+// One document, written by the hourly pass for the next one. A migration that
+// ever deletes watches must delete it too: it trusts that watches are never
+// deleted, and the next pass without it reads every watch followed, as it did
+// before it existed.
+const passState = () =>
+  db()
+    .collection('discovery-pass')
+    .withConverter(genericDataConverter<DiscoveryPassState>())
+    .doc('hourly')
+
+export const findPassState = async (): Promise<DiscoveryPassState | undefined> =>
+  (await passState().get()).data()
+
+export const savePassState = async (state: DiscoveryPassState): Promise<void> => {
+  await passState().set(state)
 }
 
 export const findReader = async (userId: UserId): Promise<DiscoveryReader | undefined> =>

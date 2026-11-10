@@ -9,6 +9,7 @@ import type { Book, BookLanguage } from '~/domain/book/types'
 import {
   type Announcement,
   AUTHOR_RECENT_DAYS,
+  AUTHOR_WATCH_EVERY_MS,
   alertOf,
   announcedEditionOf,
   announcedPreviewOf,
@@ -21,6 +22,8 @@ import {
   dueNarratorWatches,
   dueWatches,
   dueWorkAlertsOf,
+  followedKeysOf,
+  followingOnly,
   formatOf,
   inAnnouncementOrder,
   inDiscoveryOrder,
@@ -30,15 +33,18 @@ import {
   lastVolumeOutOf,
   likelyLanguageOf,
   looksLeftToday,
+  mayBeBehindOf,
   mergedNarratedWorks,
   mergedVolumes,
   mergedWorks,
   missingVolumesOf,
+  NARRATOR_WATCH_EVERY_MS,
   NO_WORK_CONTEXT,
   narratorWatchKeyOf,
   newAnnouncementsOf,
   newWorkAnnouncementsOf,
   onAudible,
+  possiblyUnwatchedOf,
   readerIsStale,
   recentReleasesOf,
   releaseDescriptionKeyOf,
@@ -49,6 +55,7 @@ import {
   sagasByAuthorOf,
   sagasToListOnAudible,
   todayOf,
+  WATCH_EVERY_MS,
   type WorkContext,
   watchedAuthorsOf,
   watchedNarratorsOf,
@@ -87,6 +94,7 @@ import type {
   AuthorReleases,
   AuthorWatch,
   Discovery,
+  DiscoveryPassState,
   DiscoveryReader,
   FoundVolume,
   FoundWork,
@@ -509,25 +517,17 @@ export namespace DiscoveryUseCase {
         logger.warn('discovery reader sync failed', { error, userId })
       }
     }
-    const everyone = [...readers.values()]
-    const [watches, authorWatches, narratorWatches] = await Promise.all([
-      DiscoveryQuery.watches(everyone.flatMap((reader) => reader.sagas.map(watchKeyOf))),
-      DiscoveryQuery.authorWatches(
-        everyone.flatMap((reader) => (reader.authors ?? []).map(authorWatchKeyOf)),
-      ),
-      DiscoveryQuery.narratorWatches(
-        everyone.flatMap((reader) => (reader.narrators ?? []).map(narratorWatchKeyOf)),
-      ),
-    ])
+    const pass = await watchesForThePass([...readers.values()], now)
+    const { watches, authorWatches, narratorWatches } = pass
     // The day's looks are shared: sagas first, then authors, then narrators,
     // whatever is left waiting for the next day.
     const left = looksLeftToday(
       [...watches.values(), ...authorWatches.values(), ...narratorWatches.values()],
       now,
     )
-    const dueSagas = dueWatches(everyone, watches, now)
+    const dueSagas = dueWatches(pass.readers, watches, now)
     const sagas = await lookUpAll(dueSagas.slice(0, left), watches, now, overBudget)
-    const dueAuthors = dueAuthorWatches(everyone, authorWatches, now)
+    const dueAuthors = dueAuthorWatches(pass.readers, authorWatches, now)
     const authorsLeft = Math.max(0, left - Math.min(left, dueSagas.length))
     // The credit the sagas found spent is spent for the authors too: they wait
     // for next hour, as on a spent budget.
@@ -537,7 +537,7 @@ export namespace DiscoveryUseCase {
       now,
       sagas.refused ? () => true : overBudget,
     )
-    const dueNarrators = dueNarratorWatches(everyone, narratorWatches, now)
+    const dueNarrators = dueNarratorWatches(pass.readers, narratorWatches, now)
     const narratorsLeft = Math.max(0, authorsLeft - Math.min(authorsLeft, dueAuthors.length))
     const narrators = await lookUpAllNarrators(
       dueNarrators.slice(0, narratorsLeft),
@@ -549,6 +549,10 @@ export namespace DiscoveryUseCase {
       Math.max(0, dueSagas.length - left) +
       Math.max(0, dueAuthors.length - authorsLeft) +
       Math.max(0, dueNarrators.length - narratorsLeft)
+    // Best effort: without it, the next pass reads every watch followed.
+    await DiscoveryCommand.savePassState(pass.stateAfter()).catch((error) =>
+      logger.warn('discovery pass state not saved', { error }),
+    )
     return {
       synced,
       watched: sagas.watched + authors.watched + narrators.watched,
@@ -959,6 +963,82 @@ const lookUpAll = async (
  *  pass that read an account just before it was deleted writes its reader back
  *  after the deletion erased it, and the reader's sagas would then be looked
  *  up every two weeks for nobody. One that cannot be forgotten now is next hour. */
+/** The watches the hourly pass decides on, read by what can be due rather than
+ *  whole: the stale ones and the ones looked up in the last day, by two range
+ *  queries each; the followed keys that may have no watch, by what the last
+ *  pass left; and the sagas a reader may hold further on than a fresh watch.
+ *  Any other followed key has a watch fresher than its interval that no reader
+ *  outgrew, looked up more than a day ago: due for no look and outside today's
+ *  count. The readers handed to the due rules follow only the keys read, so
+ *  the looks made, their order and the day's count are the ones a pass reading
+ *  every watch makes. */
+const watchesForThePass = async (everyone: readonly DiscoveryReader[], now: Date) => {
+  const followed = followedKeysOf(everyone)
+  const dayAgo = new Date(now.getTime() - 86_400_000)
+  const olderThan = (every: number) => new Date(now.getTime() - every)
+  const [state, sagaRows, authorRows, narratorRows] = await Promise.all([
+    DiscoveryQuery.passState(),
+    DiscoveryQuery.watchesCheckedOutside(olderThan(WATCH_EVERY_MS), dayAgo),
+    DiscoveryQuery.authorWatchesCheckedOutside(olderThan(AUTHOR_WATCH_EVERY_MS), dayAgo),
+    DiscoveryQuery.narratorWatchesCheckedOutside(olderThan(NARRATOR_WATCH_EVERY_MS), dayAgo),
+  ])
+  const unwatched = possiblyUnwatchedOf(followed, state)
+  const [sagas, authors, narrators] = await Promise.all([
+    withTheRestRead(
+      sagaRows,
+      followed.sagas,
+      [...unwatched.sagas, ...mayBeBehindOf(everyone, now)],
+      DiscoveryQuery.watches,
+    ),
+    withTheRestRead(authorRows, followed.authors, unwatched.authors, DiscoveryQuery.authorWatches),
+    withTheRestRead(
+      narratorRows,
+      followed.narrators,
+      unwatched.narrators,
+      DiscoveryQuery.narratorWatches,
+    ),
+  ])
+  const stillUnwatched = (keys: string[], watches: ReadonlyMap<string, unknown>) =>
+    keys.filter((key) => !watches.has(key))
+  return {
+    watches: sagas.watches,
+    authorWatches: authors.watches,
+    narratorWatches: narrators.watches,
+    readers: followingOnly(everyone, {
+      sagas: sagas.keys,
+      authors: authors.keys,
+      narrators: narrators.keys,
+    }),
+    /** What to leave for the next pass, once this one's looks are written. */
+    stateAfter: (): DiscoveryPassState => ({
+      followed,
+      unwatched: {
+        sagas: stillUnwatched(unwatched.sagas, sagas.watches),
+        authors: stillUnwatched(unwatched.authors, authors.watches),
+        narrators: stillUnwatched(unwatched.narrators, narrators.watches),
+      },
+      savedAt: now,
+    }),
+  }
+}
+
+/** The followed watches among the rows queried, with the keys still to read
+ *  read by key; and every key now known, watch or none. */
+const withTheRestRead = async <W extends { key: string }>(
+  rows: readonly W[],
+  followed: readonly string[],
+  toRead: readonly string[],
+  read: (keys: readonly string[]) => Promise<Map<string, W>>,
+): Promise<{ watches: Map<string, W>; keys: Set<string> }> => {
+  const following = new Set(followed)
+  const watches = new Map(
+    rows.filter((watch) => following.has(watch.key)).map((watch) => [watch.key, watch]),
+  )
+  const missing = [...new Set(toRead)].filter((key) => following.has(key) && !watches.has(key))
+  for (const [key, watch] of await read(missing)) watches.set(key, watch)
+  return { watches, keys: new Set([...watches.keys(), ...missing]) }
+}
+
 const withoutAccountsGone = async (
   stored: readonly DiscoveryReader[],
   userIds: readonly UserId[],

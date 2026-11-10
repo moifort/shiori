@@ -919,3 +919,105 @@ describe('the Sunday digest', () => {
     ])
   })
 })
+
+// The pass used to read every watch any reader follows, every hour: some
+// 1,100 documents in production on 2026-11-10, to look up a dozen a day.
+describe("the hourly pass's reads", () => {
+  const DAY = 86_400_000
+  const sagaOf = (index: number, furthest?: { number: number; addedAt: Date }) => ({
+    seriesId: seriesKeyOf(`Saga ${index}`, 'Matt Dinniman', 'book'),
+    language: 'fr',
+    name: `Saga ${index}`,
+    ...(furthest ? { furthest } : {}),
+  })
+  const keyOf = (index: number) => `${seriesKeyOf(`Saga ${index}`, 'Matt Dinniman', 'book')}--fr`
+  const watchOf = (index: number, checkedAt: Date) => ({
+    key: keyOf(index),
+    seriesId: seriesKeyOf(`Saga ${index}`, 'Matt Dinniman', 'book'),
+    name: `Saga ${index}`,
+    author: 'Matt Dinniman',
+    language: 'fr',
+    checkedAt,
+    volumes: [{ number: 1, title: `Saga ${index} 1`, date: '2024-05-02' }],
+  })
+  const following = (sagas: ReturnType<typeof sagaOf>[], syncedAt: Date) =>
+    fake.seed('discovery-readers', reader, {
+      userId: reader,
+      language: 'fr',
+      sagas,
+      syncedAt,
+      notified: [],
+    })
+  const readsOf = async (at: Date) => {
+    startFakeRequest()
+    const before = fake.docReads + fake.queriedDocs
+    const result = await DiscoveryUseCase.watchDueSagas(at)
+    return { result, reads: fake.docReads + fake.queriedDocs - before }
+  }
+
+  // Sixty sagas looked up ten days ago, one two months and more ago, and one
+  // never: the first pass reads them all, as there is nothing to go by yet.
+  const stocked = async () => {
+    fake.seed('users', reader, { userId: reader, firstName: 'Bob' })
+    following(
+      Array.from({ length: 62 }, (_, index) => sagaOf(index)),
+      now,
+    )
+    for (let index = 0; index < 60; index++)
+      fake.seed('saga-watches', keyOf(index), watchOf(index, new Date(now.getTime() - 10 * DAY)))
+    fake.seed('saga-watches', keyOf(60), watchOf(60, new Date(now.getTime() - 70 * DAY)))
+  }
+
+  test('reads only what can be due once a pass has run', async () => {
+    await stocked()
+    const first = await readsOf(now)
+    expect(calls.sort()).toEqual(['Saga 60', 'Saga 61'])
+    expect(first.reads).toBeGreaterThanOrEqual(62)
+    calls.length = 0
+
+    const next = await readsOf(new Date(now.getTime() + 3_600_000))
+
+    expect(calls).toEqual([])
+    expect(next.result).toEqual({ synced: 0, watched: 0, failed: 0, deferred: 0 })
+    // The account, the reader, the pass's state and the two watches looked up
+    // an hour ago, which count against the day's looks.
+    expect(next.reads).toBeLessThanOrEqual(6)
+  })
+
+  test('still looks up a saga newly followed, one gone stale and one a reader outgrew', async () => {
+    await stocked()
+    await readsOf(now)
+    calls.length = 0
+    const later = new Date(now.getTime() + 40 * DAY)
+    // Saga 0 is now stale, saga 5 has a volume added after its last look
+    // that the look did not find, saga 62 is new.
+    following(
+      [
+        ...Array.from({ length: 62 }, (_, index) =>
+          sagaOf(index, index === 5 ? { number: 2, addedAt: later } : undefined),
+        ),
+        sagaOf(62),
+      ],
+      later,
+    )
+    fake.seed('saga-watches', keyOf(0), watchOf(0, new Date(later.getTime() - 61 * DAY)))
+
+    const pass = await readsOf(new Date(later.getTime() + 3_600_000))
+
+    expect(calls.sort()).toEqual(['Saga 0', 'Saga 5', 'Saga 62'])
+    expect(pass.reads).toBeLessThan(20)
+  })
+
+  test('reads every watch again when no pass left its state', async () => {
+    await stocked()
+    await readsOf(now)
+    calls.length = 0
+    // Gone, as a migration that deletes watches must leave it.
+    await fakeDb().collection('discovery-pass').doc('hourly').delete()
+
+    const next = await readsOf(new Date(now.getTime() + 3_600_000))
+
+    expect(calls).toEqual([])
+    expect(next.reads).toBeGreaterThanOrEqual(62)
+  })
+})

@@ -1,6 +1,7 @@
 import * as repository from '~/domain/discovery/infrastructure/repository'
 import type {
   AuthorWatch,
+  DiscoveryPassState,
   DiscoveryReader,
   KeptReleaseDescription,
   NarratorWatch,
@@ -31,6 +32,22 @@ export namespace DiscoveryQuery {
   /** The author watches under these keys, in one getAll, keyed by theirs. */
   export const authorWatches = async (keys: readonly string[]): Promise<Map<string, AuthorWatch>> =>
     new Map((await repository.findAuthorWatches(keys)).map((watch) => [watch.key, watch]))
+
+  /** The saga watches looked up before `before` or after `after`: the stale
+   *  ones and the ones looked up lately, without the rest. */
+  export const watchesCheckedOutside = (before: Date, after: Date): Promise<SagaWatch[]> =>
+    repository.findWatchesCheckedOutside(before, after)
+
+  export const authorWatchesCheckedOutside = (before: Date, after: Date): Promise<AuthorWatch[]> =>
+    repository.findAuthorWatchesCheckedOutside(before, after)
+
+  export const narratorWatchesCheckedOutside = (
+    before: Date,
+    after: Date,
+  ): Promise<NarratorWatch[]> => repository.findNarratorWatchesCheckedOutside(before, after)
+
+  /** What the last hourly pass left for this one, if it left anything. */
+  export const passState = (): Promise<DiscoveryPassState | undefined> => repository.findPassState()
 
   /** The narrator watches under these keys, in one getAll, keyed by theirs. */
   export const narratorWatches = async (

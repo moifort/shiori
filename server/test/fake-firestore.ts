@@ -204,9 +204,10 @@ export const createFakeFirestore = () => {
     const held = valueAt(data, field)
     if (op === '==') return held === value
     if (op === '!=') return held !== undefined && held !== value
-    if (op === '>=')
-      // Firestore leaves out a document missing the field, as it does on order.
-      return held !== undefined && sortValue(held) >= sortValue(value)
+    // Firestore leaves out a document missing the field, as it does on order.
+    if (op === '>=') return held !== undefined && sortValue(held) >= sortValue(value)
+    if (op === '>') return held !== undefined && sortValue(held) > sortValue(value)
+    if (op === '<') return held !== undefined && sortValue(held) < sortValue(value)
     if (op === 'in') return Array.isArray(value) && value.includes(held)
     if (op === 'array-contains') return Array.isArray(held) && held.includes(value)
     if (op === 'array-contains-any')
@@ -214,7 +215,7 @@ export const createFakeFirestore = () => {
         Array.isArray(held) && Array.isArray(value) && value.some((wanted) => held.includes(wanted))
       )
     throw new Error(
-      `fake-firestore only supports '==', '!=', '>=', 'in', 'array-contains' and ` +
+      `fake-firestore only supports '==', '!=', '>=', '>', '<', 'in', 'array-contains' and ` +
         `'array-contains-any' queries, got '${op}'`,
     )
   }

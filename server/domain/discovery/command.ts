@@ -1,6 +1,7 @@
 import * as repository from '~/domain/discovery/infrastructure/repository'
 import type {
   AuthorWatch,
+  DiscoveryPassState,
   DiscoveryReader,
   KeptReleaseDescription,
   NarratorWatch,
@@ -54,4 +55,8 @@ export namespace DiscoveryCommand {
     repository.saveNarratorWatch(watch)
 
   export const deleteForUser = (userId: UserId): Promise<void> => repository.removeReader(userId)
+
+  /** What the hourly pass leaves for the next one. */
+  export const savePassState = (state: DiscoveryPassState): Promise<void> =>
+    repository.savePassState(state)
 }

@@ -21,6 +21,7 @@ import type {
   AnnouncedVolumePreview,
   AudibleRecording,
   AuthorWatch,
+  DiscoveryPassState,
   DiscoveryReader,
   FoundVolume,
   FoundWork,
@@ -36,6 +37,7 @@ import type {
   WatchedAuthor,
   WatchedNarrator,
   WatchedSaga,
+  WatchKeys,
 } from './types'
 
 /** How often the web is searched again for one saga, announced or not. A
@@ -340,6 +342,74 @@ export const dueNarratorWatches = (
     .filter((narrator) => narratorWatchIsStale(watches.get(narratorWatchKeyOf(narrator)), now))
     .sort((left, right) => checkedAt(left) - checkedAt(right))
 }
+
+// MARK: - What the hourly pass reads
+
+/** Every watch key the readers follow, each once, by kind. */
+export const followedKeysOf = (readers: readonly DiscoveryReader[]): WatchKeys => ({
+  sagas: [...new Set(readers.flatMap((reader) => reader.sagas.map(watchKeyOf)))],
+  authors: [...new Set(readers.flatMap((reader) => (reader.authors ?? []).map(authorWatchKeyOf)))],
+  narrators: [
+    ...new Set(readers.flatMap((reader) => (reader.narrators ?? []).map(narratorWatchKeyOf))),
+  ],
+})
+
+/** The followed keys that may have no watch: the ones the last pass found
+ *  without one, and the ones it did not know were followed. Every followed key
+ *  when no pass left anything. A watch is never deleted, so any other key had a
+ *  watch then and still has one. */
+export const possiblyUnwatchedOf = (
+  followed: WatchKeys,
+  state: DiscoveryPassState | undefined,
+): WatchKeys => {
+  if (!state) return followed
+  const among = (now: string[], then: string[], unwatched: string[]) => {
+    const known = new Set(then)
+    return [...new Set([...unwatched, ...now.filter((key) => !known.has(key))])]
+  }
+  return {
+    sagas: among(followed.sagas, state.followed.sagas, state.unwatched.sagas),
+    authors: among(followed.authors, state.followed.authors, state.unwatched.authors),
+    narrators: among(followed.narrators, state.followed.narrators, state.unwatched.narrators),
+  }
+}
+
+/** The sagas a fresh watch may be behind on: a reader added their furthest
+ *  volume within the watch interval. A watch older than that is stale, due
+ *  anyway; one looked up after the volume was added is not behind. */
+export const mayBeBehindOf = (readers: readonly DiscoveryReader[], now: Date): string[] => {
+  const since = now.getTime() - WATCH_EVERY_MS
+  return [
+    ...new Set(
+      readers.flatMap((reader) =>
+        reader.sagas
+          .filter((saga) => saga.furthest && saga.furthest.addedAt.getTime() > since)
+          .map(watchKeyOf),
+      ),
+    ),
+  ]
+}
+
+/** The readers following only these keys: what the due rules are handed, so
+ *  that a key whose watch was not read is never taken for one never looked
+ *  up. Each reader keeps its order, so a saga two readers follow is described
+ *  as the last of them describes it, as before. */
+export const followingOnly = (
+  readers: readonly DiscoveryReader[],
+  keys: {
+    sagas: ReadonlySet<string>
+    authors: ReadonlySet<string>
+    narrators: ReadonlySet<string>
+  },
+): DiscoveryReader[] =>
+  readers.map((reader) => ({
+    ...reader,
+    sagas: reader.sagas.filter((saga) => keys.sagas.has(watchKeyOf(saga))),
+    authors: reader.authors?.filter((author) => keys.authors.has(authorWatchKeyOf(author))),
+    narrators: reader.narrators?.filter((narrator) =>
+      keys.narrators.has(narratorWatchKeyOf(narrator)),
+    ),
+  }))
 
 /** The works of a narrator watch merged with the last look's, as an author's. */
 export const mergedNarratedWorks = (

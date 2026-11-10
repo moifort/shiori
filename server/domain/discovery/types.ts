@@ -291,3 +291,17 @@ export type KeptReleaseDescription = {
   description: ReleaseDescription
   describedAt: Date
 }
+
+/** The watch keys of each kind, as the hourly pass groups them. */
+export type WatchKeys = { sagas: string[]; authors: string[]; narrators: string[] }
+
+/** What the hourly pass leaves for the next one, so that it asks Firestore for
+ *  what can be due rather than for every watch: the keys every reader followed,
+ *  and among them the ones that had no watch yet. Watches are only ever
+ *  written, never deleted, so a key with no watch now either had none then or
+ *  was not followed then. */
+export type DiscoveryPassState = {
+  followed: WatchKeys
+  unwatched: WatchKeys
+  savedAt: Date
+}
