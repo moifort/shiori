@@ -740,11 +740,13 @@ const libraryOf = async (userId: UserId, known?: DiscoveryReader): Promise<Libra
   }
 }
 
-/** The watches the tab needs: every saga's, and the authors' of that format
- *  only — each in one getAll. */
+/** The watches the tab needs in one format: its sagas' and its authors', the
+ *  other format's left unread — each in one getAll. */
 const watchesOf = async (library: Library, format: ReleaseFormat) => {
   const [watches, authorWatches] = await Promise.all([
-    DiscoveryQuery.watches(library.sagas.map(watchKeyOf)),
+    DiscoveryQuery.watches(
+      library.sagas.filter((saga) => formatOf(saga.seriesId) === format).map(watchKeyOf),
+    ),
     DiscoveryQuery.authorWatches(
       library.authors.filter((author) => author.format === format).map(authorWatchKeyOf),
     ),

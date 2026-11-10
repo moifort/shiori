@@ -172,7 +172,23 @@ describe("the Actu tab's opening", () => {
 
     expect(opening.queriedDocs).toBeLessThan(2 * LIBRARY_SIZE)
     expect(opening.billed).toBeLessThan(total(separate) * 0.35)
-    expect(opening.billed).toBeLessThanOrEqual(200)
+    expect(opening.billed).toBeLessThanOrEqual(150)
+  })
+
+  test('reads each catalogue and each watch once, however many sections ask for it', async () => {
+    const byReference = ({ billed, queriedDocs }: { billed: number; queriedDocs: number }) =>
+      billed - queriedDocs
+    const upcoming = await request('UpcomingReleases')
+    const opening = await request('NewsOpening', { limit: 20 })
+    const releases = await request('HomeReleases')
+
+    // Twelve catalogues, twelve saga watches, sixteen author watches and the
+    // reader's record: the calendar resolves both formats side by side, and
+    // the composed openings add the year's releases, over the same documents.
+    expect(byReference(upcoming)).toBe(41)
+    expect(byReference(releases)).toBe(41)
+    // And the queue of the month's discoveries.
+    expect(byReference(opening)).toBe(42)
   })
 })
 

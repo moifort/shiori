@@ -3,6 +3,7 @@ import { AsyncLocalStorage } from 'node:async_hooks'
 import {
   evictFromRequestCache,
   isInRequestCache,
+  memoizedManyPerRequest,
   memoizedPerRequest,
   reviseInRequestCache,
   withRequestCacheScope,
@@ -63,6 +64,70 @@ describe('memoizedPerRequest', () => {
     memoizedPerRequest('k', () => ++calls)
     expect(calls).toBe(2)
     expect(isInRequestCache('k')).toBe(false)
+  })
+})
+
+describe('memoizedManyPerRequest', () => {
+  afterEach(() => {
+    delete (globalThis as unknown as { useEvent?: unknown }).useEvent
+  })
+
+  const reading = () => {
+    const batches: string[][] = []
+    const read = async (missing: readonly string[]) => {
+      batches.push([...missing])
+      await Promise.resolve()
+      return missing.map((key) => key.toUpperCase())
+    }
+    return { batches, read }
+  }
+  const keyOf = (key: string) => `doc:${key}`
+
+  test('two callers asking the same documents side by side share one read', async () => {
+    withRequest()
+    const { batches, read } = reading()
+
+    const [first, second] = await Promise.all([
+      memoizedManyPerRequest(['a', 'b'], keyOf, read),
+      memoizedManyPerRequest(['b', 'a', 'c'], keyOf, read),
+    ])
+
+    expect(first).toEqual(['A', 'B'])
+    expect(second).toEqual(['B', 'A', 'C'])
+    expect(batches).toEqual([['a', 'b'], ['c']])
+  })
+
+  test('reads a document asked twice in one call once', async () => {
+    withRequest()
+    const { batches, read } = reading()
+
+    expect(await memoizedManyPerRequest(['a', 'a'], keyOf, read)).toEqual(['A'])
+    expect(batches).toEqual([['a']])
+  })
+
+  test('shares its memo with a single lookup, both ways, until a write', async () => {
+    withRequest()
+    const { batches, read } = reading()
+    await memoizedPerRequest(keyOf('a'), async () => 'A')
+
+    await memoizedManyPerRequest(['a', 'b'], keyOf, read)
+    expect(batches).toEqual([['b']])
+    expect(await memoizedPerRequest(keyOf('b'), async () => 'read again')).toBe('B')
+
+    evictFromRequestCache(keyOf('b'))
+    await memoizedManyPerRequest(['a', 'b'], keyOf, read)
+    expect(batches).toEqual([['b'], ['b']])
+  })
+
+  test('reads everything in one batch, uncached, without a request context', async () => {
+    const { batches, read } = reading()
+
+    expect(await memoizedManyPerRequest(['a', 'b'], keyOf, read)).toEqual(['A', 'B'])
+    await memoizedManyPerRequest(['a', 'b'], keyOf, read)
+    expect(batches).toEqual([
+      ['a', 'b'],
+      ['a', 'b'],
+    ])
   })
 })
 
