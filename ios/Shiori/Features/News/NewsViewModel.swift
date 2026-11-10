@@ -89,10 +89,10 @@ final class NewsViewModel {
         }
     }
 
-    /// The Découvrir page: the latest news as stories, then the friends, the
-    /// releases and discoveries, the prizes.
-    func discoverLayout(now: Date = .now) -> NewsDiscoverLayout {
-        NewsDiscoverLayout(
+    /// The Découvrir page: the week's agenda, what each day brought, the days
+    /// to come.
+    func agenda(now: Date = .now) -> NewsAgenda {
+        NewsAgenda(
             released: NewsFeedLayout.released(releases: yearReleases, narrator: narratorNews, format: nil, now: now),
             events: shownEvents,
             upcoming: calendar(now: now).dated,

@@ -17,13 +17,14 @@ enum NewsAction {
     case refresh
 }
 
-/// The Découvrir tab, pure. The latest news first, as stories filling the
-/// screen, one cover each; then the friends' books and the releases and
-/// discoveries as walls of large covers; then the prizes as a carousel whose
-/// cover tints the band. The cover carries the book: no title or author is
-/// written under it, only who or what brought it.
+/// The Découvrir tab, pure: an agenda of what the book world brought the
+/// reader. The week in seven days at the top, each with a dot per piece of
+/// news; under it the day picked, its first news as a large card over its
+/// cover's colours, the rest as rows; then the days to come with a release
+/// announced, each a rail of covers. Swiping the week goes back to the weeks
+/// before, or on to the next ones.
 struct NewsPage: View {
-    let layout: NewsDiscoverLayout
+    let agenda: NewsAgenda
     /// The cards' books just wished for, by `NewsCard.key`.
     var wished: Set<String> = []
     let isLoading: Bool
@@ -31,8 +32,17 @@ struct NewsPage: View {
     let alertsSilenced: Bool
     let onAction: (NewsAction) async -> Void
 
+    @State private var week: Int?
+    @State private var picked: Date?
+
     private func act(_ action: NewsAction) {
         Task { await onAction(action) }
+    }
+
+    private var shownWeek: Int { min(week ?? agenda.currentWeek, max(agenda.weeks.count - 1, 0)) }
+    private var day: NewsAgendaDay? {
+        let wanted = picked ?? agenda.today
+        return agenda.weeks.lazy.flatMap { $0 }.first { $0.day == wanted }
     }
 
     var body: some View {
@@ -40,7 +50,7 @@ struct NewsPage: View {
             .navigationTitle("Découvrir")
             .toolbarTitleDisplayMode(.inlineLarge)
             .toolbarBackground(.hidden, for: .navigationBar)
-            // The title sits on the first story's cover colours, white in
+            // The title sits on the day's first cover colours, white in
             // either appearance, as the home's hero carries it.
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
@@ -52,13 +62,13 @@ struct NewsPage: View {
 
     @ViewBuilder
     private var content: some View {
-        if let errorMessage, layout.isEmpty, !isLoading {
+        if let errorMessage, agenda.isEmpty, !isLoading {
             EmptyState.failure("Découvrir indisponible", message: errorMessage) {
                 await onAction(.refresh)
             }
-        } else if isLoading, layout.isEmpty {
+        } else if isLoading, agenda.isEmpty {
             ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
-        } else if layout.isEmpty {
+        } else if agenda.isEmpty {
             EmptyState(
                 systemImage: "sparkles",
                 title: "Rien de neuf pour l'instant",
@@ -68,170 +78,393 @@ struct NewsPage: View {
         } else {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
-                    if !layout.today.isEmpty {
-                        NewsTodayStories(cards: layout.today, wished: wished, onAction: onAction)
+                    VStack(alignment: .leading, spacing: 0) {
+                        if !agenda.weeks.isEmpty {
+                            NewsWeekStrip(
+                                weeks: agenda.weeks,
+                                today: agenda.today,
+                                week: Binding(get: { shownWeek }, set: { week = $0 }),
+                                picked: Binding(get: { picked ?? agenda.today }, set: { picked = $0 })
+                            )
+                        }
+                        if let day {
+                            NewsDaySection(day: day, today: agenda.today, wished: wished, onAction: onAction)
+                                .padding(.top, 22)
+                        }
                     }
-                    friends
-                    if !layout.releases.isEmpty {
-                        NewsCoverWall(
-                            title: "Sorties et découvertes",
-                            cards: layout.releases,
-                            wished: wished,
-                            onOpenAll: { act(.openUpcoming) },
-                            onAction: onAction
+                    .environment(\.colorScheme, .dark)
+                    // The first cover's colours run up under the title and
+                    // fade into the page.
+                    .background(alignment: .top) {
+                        CoverBackdrop(
+                            url: day?.cards.first?.cover.coverURL,
+                            fadeHeight: 160,
+                            ground: Color(.systemBackground)
                         )
+                        .frame(height: 760)
+                        .offset(y: -300)
+                        .animation(.smooth, value: day?.id)
                     }
-                    if !layout.awards.isEmpty {
-                        NewsAwardsCarousel(cards: layout.awards, wished: wished, onAction: onAction)
-                            .padding(.top, 26)
+                    if !agenda.coming.isEmpty {
+                        NewsComingDays(days: agenda.coming, wished: wished, onAction: onAction)
+                            .padding(.top, 30)
+                    }
+                    if !agenda.hasFriends {
+                        invitation.padding(.top, 30)
                     }
                 }
                 .padding(.bottom, 32)
             }
             .refreshable { await onAction(.refresh) }
+            .onChange(of: week) { _, newWeek in
+                // A week swiped to opens on its first day with news, today's
+                // week on today.
+                guard let newWeek, agenda.weeks.indices.contains(newWeek) else { return }
+                let days = agenda.weeks[newWeek]
+                guard !days.contains(where: { $0.day == picked }) else { return }
+                picked = days.first { $0.day == agenda.today }?.day
+                    ?? days.first { !$0.cards.isEmpty }?.day
+                    ?? days.first?.day
+            }
         }
     }
 
-    /// The friends' books; with no friend yet, the invitation in their place.
-    @ViewBuilder
-    private var friends: some View {
-        if !layout.friends.isEmpty {
-            NewsCoverWall(title: "Vos amis", cards: layout.friends, wished: wished, onAction: onAction)
-        } else {
-            VStack(alignment: .leading, spacing: 10) {
-                Text("Vos amis")
-                    .font(.title2.weight(.bold))
-                Button {
-                    act(.invite)
-                } label: {
-                    Label("Inviter un ami", systemImage: "person.badge.plus")
-                        .font(.subheadline.weight(.semibold))
-                        .padding(.horizontal, 16)
-                        .frame(height: 40)
-                        .glassEffect(.regular.interactive(), in: .capsule)
-                }
-                .buttonStyle(.plain)
-                Text("Ce que lisent et aiment vos amis s'affichera ici.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
+    /// With no friend yet, the invitation in their place.
+    private var invitation: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Vos amis")
+                .font(.title2.weight(.bold))
+            Button {
+                act(.invite)
+            } label: {
+                Label("Inviter un ami", systemImage: "person.badge.plus")
+                    .font(.subheadline.weight(.semibold))
+                    .padding(.horizontal, 16)
+                    .frame(height: 40)
+                    .glassEffect(.regular.interactive(), in: .capsule)
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 26)
+            .buttonStyle(.plain)
+            Text("Ce que lisent et aiment vos amis s'affichera ici.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
         }
+        .padding(.horizontal, 20)
     }
 }
 
-// MARK: - Aujourd'hui
+// MARK: - La semaine
 
-/// The latest news as stories, one cover each over its own colours, filling
-/// the screen under the title: bars at the top count them, a touch on the
-/// right half moves on, a swipe too.
-struct NewsTodayStories: View {
-    let cards: [NewsCard]
+/// The week in seven leaves, Monday to Sunday, drawn as a release's calendar
+/// leaf: the day picked in white, today ringed, a day with nothing dimmed, a
+/// dot under each for its news. A swipe moves a week.
+struct NewsWeekStrip: View {
+    let weeks: [[NewsAgendaDay]]
+    let today: Date
+    @Binding var week: Int
+    @Binding var picked: Date
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(Self.title(weeks[week], today: today))
+                    .font(.title2.weight(.bold))
+                Spacer()
+                Text(Self.range(weeks[week]))
+                    .font(.subheadline)
+                    .foregroundStyle(.white.opacity(0.7))
+            }
+            .padding(.horizontal, 20)
+            .foregroundStyle(.white)
+            TabView(selection: $week) {
+                ForEach(weeks.indices, id: \.self) { index in
+                    HStack(spacing: 0) {
+                        ForEach(weeks[index]) { day in
+                            NewsDayLeaf(
+                                day: day,
+                                isToday: day.day == today,
+                                isPicked: day.day == picked
+                            ) { picked = day.day }
+                            .frame(maxWidth: .infinity)
+                        }
+                    }
+                    .padding(.horizontal, 14)
+                    .tag(index)
+                }
+            }
+            .tabViewStyle(.page(indexDisplayMode: .never))
+            .frame(height: 72)
+        }
+    }
+
+    /// "Cette semaine", "La semaine dernière", "La semaine prochaine", else
+    /// "Semaine du 2 nov.".
+    static func title(_ days: [NewsAgendaDay], today: Date, calendar: Calendar = .current) -> String {
+        guard let monday = days.first?.day else { return "" }
+        let weeks = calendar.dateComponents([.day], from: monday, to: today).day.map { Int(floor(Double($0) / 7)) } ?? 0
+        switch weeks {
+        case 0: return String(localized: "Cette semaine")
+        case 1: return String(localized: "La semaine dernière")
+        case -1: return String(localized: "La semaine prochaine")
+        default: return String(localized: "Semaine du \(monday.formatted(.dateTime.day().month(.abbreviated)))")
+        }
+    }
+
+    /// "9 – 15 novembre", "27 oct. – 2 nov.".
+    static func range(_ days: [NewsAgendaDay], calendar: Calendar = .current) -> String {
+        guard let first = days.first?.day, let last = days.last?.day else { return "" }
+        if calendar.isDate(first, equalTo: last, toGranularity: .month) {
+            return "\(first.formatted(.dateTime.day())) – \(last.formatted(.dateTime.day().month(.wide)))"
+        }
+        return "\(first.formatted(.dateTime.day().month(.abbreviated))) – \(last.formatted(.dateTime.day().month(.abbreviated)))"
+    }
+}
+
+/// One day of the strip: its weekday over its number on a light blur ringed
+/// in white, and under it a dot for each piece of news, three at most.
+private struct NewsDayLeaf: View {
+    let day: NewsAgendaDay
+    let isToday: Bool
+    let isPicked: Bool
+    let onPick: () -> Void
+
+    var body: some View {
+        Button(action: onPick) {
+            VStack(spacing: 6) {
+                VStack(spacing: 1) {
+                    Text(day.day.formatted(.dateTime.weekday(.abbreviated)).replacingOccurrences(of: ".", with: "").localizedUppercase)
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(isPicked ? AnyShapeStyle(.black.opacity(0.6)) : AnyShapeStyle(.white.opacity(0.8)))
+                    Text(day.day.formatted(.dateTime.day()))
+                        .font(.headline.weight(.bold))
+                        .monospacedDigit()
+                }
+                .foregroundStyle(isPicked ? .black : .white)
+                .frame(width: 45, height: 58)
+                .background {
+                    if isPicked {
+                        RoundedRectangle(cornerRadius: 12).fill(.white)
+                    } else {
+                        RoundedRectangle(cornerRadius: 12).fill(.ultraThinMaterial).opacity(0.5)
+                    }
+                }
+                .overlay {
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(.white.opacity(isPicked ? 0 : isToday ? 1 : 0.34), lineWidth: isToday ? 1.5 : 1)
+                }
+                HStack(spacing: 3) {
+                    ForEach(0..<min(day.cards.count, 3), id: \.self) { _ in
+                        Circle().fill(.white).frame(width: 5, height: 5)
+                    }
+                }
+                .frame(height: 5)
+            }
+            .opacity(day.cards.isEmpty && !isPicked ? 0.42 : 1)
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text(day.day.formatted(.dateTime.weekday(.wide).day().month(.wide))))
+        .accessibilityValue(Text(NewsDaySection.count(day, isFuture: false)))
+        .accessibilityAddTraits(isPicked ? .isSelected : [])
+    }
+}
+
+// MARK: - Le jour
+
+/// The day picked: its name and how much it holds, its first news as a large
+/// card, the rest as rows; a quiet day says so.
+struct NewsDaySection: View {
+    let day: NewsAgendaDay
+    let today: Date
     var wished: Set<String> = []
     let onAction: (NewsAction) async -> Void
 
-    @State private var index = 0
-
-    private var current: NewsCard { cards[min(index, cards.count - 1)] }
-
     var body: some View {
-        TabView(selection: $index) {
-            ForEach(Array(cards.enumerated()), id: \.element.id) { offset, card in
-                NewsStoryPage(
-                    card: card,
-                    isWished: wished.contains(card.key),
-                    onAction: onAction
-                )
-                .tag(offset)
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(Self.title(day.day, today: today))
+                    .font(.title2.weight(.bold))
+                Spacer()
+                if !day.cards.isEmpty {
+                    Text(Self.count(day, isFuture: day.day > today))
+                        .font(.subheadline)
+                        .foregroundStyle(.white.opacity(0.7))
+                }
+            }
+            .foregroundStyle(.white)
+            .padding(.bottom, 2)
+            if let first = day.cards.first {
+                NewsAgendaLead(card: first, isWished: wished.contains(first.key), onAction: onAction)
+                ForEach(day.cards.dropFirst()) { card in
+                    NewsAgendaRow(card: card, isWished: wished.contains(card.key), onAction: onAction)
+                }
+            } else {
+                Text(day.day > today ? "Rien d'annoncé ce jour-là." : "Rien de neuf ce jour-là.")
+                    .font(.subheadline)
+                    .foregroundStyle(.white.opacity(0.7))
             }
         }
-        .tabViewStyle(.page(indexDisplayMode: .never))
-        .environment(\.colorScheme, .dark)
-        .overlay(alignment: .top) { header }
-        .frame(height: 330)
-        // The cover's colours run up under the title and fade into the page.
-        .background(alignment: .bottom) {
-            CoverBackdrop(url: current.cover.coverURL, fadeHeight: 44, ground: Color(.systemBackground))
-                .frame(height: 1100)
-                .animation(.smooth, value: index)
+        .padding(.horizontal, 20)
+    }
+
+    /// "Aujourd'hui", "Hier", "Demain", else "Jeudi 12 novembre".
+    static func title(_ day: Date, today: Date, calendar: Calendar = .current) -> String {
+        let offset = calendar.dateComponents([.day], from: today, to: day).day ?? 0
+        switch offset {
+        case 0: return String(localized: "Aujourd'hui")
+        case -1: return String(localized: "Hier")
+        case 1: return String(localized: "Demain")
+        default: return day.formatted(.dateTime.weekday(.wide).day().month(.wide)).capitalizedFirst
         }
     }
 
-    private var header: some View {
-        VStack(spacing: 10) {
-            HStack(spacing: 4) {
-                ForEach(cards.indices, id: \.self) { bar in
-                    Capsule()
-                        .fill(.white.opacity(bar <= index ? 1 : 0.3))
-                        .frame(height: 3)
-                }
-            }
-            HStack {
-                Text(NewsCardText.when(current))
-                    .font(.subheadline.weight(.semibold))
-                Spacer()
-                Text("\(index + 1) sur \(cards.count)")
-                    .font(.subheadline)
-                    .foregroundStyle(.white.opacity(0.75))
-                    .monospacedDigit()
-            }
-        }
-        .foregroundStyle(.white)
-        .padding(.horizontal, 20)
-        .padding(.top, 6)
-        .accessibilityElement(children: .combine)
+    /// "3 nouvelles", "1 sortie"; nothing for a day with nothing.
+    static func count(_ day: NewsAgendaDay, isFuture: Bool) -> String {
+        let count = day.cards.count
+        if isFuture { return count == 1 ? String(localized: "1 sortie") : String(localized: "\(count) sorties") }
+        return count == 1 ? String(localized: "1 nouvelle") : String(localized: "\(count) nouvelles")
     }
 }
 
-/// One story: the cover at the home hero's size, and beside it the card's
-/// side — the emblem of what brought it, its title, its author, why — then
-/// "Ajouter".
-private struct NewsStoryPage: View {
+private extension String {
+    /// The weekday's capital a French date leaves out: "jeudi" → "Jeudi".
+    var capitalizedFirst: String {
+        guard let head = first else { return self }
+        return String(head).localizedUppercase + dropFirst()
+    }
+}
+
+/// A day's first news, large: its cover edge to edge on the leading side,
+/// over the cover's own colours the emblem of what brought it — the prize
+/// between its laurels, the friend, the follow — the title, the author, and
+/// at the foot "Ajouter", as the series page draws its next volume.
+private struct NewsAgendaLead: View {
     let card: NewsCard
     let isWished: Bool
     let onAction: (NewsAction) async -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            Button {
-                Task { await onAction(.open(card)) }
-            } label: {
-                HStack(alignment: .top, spacing: 18) {
-                    BookCover(book: card.cover, width: 124, showsFormatBadge: false, isBound: true)
-                        .shadow(color: .black.opacity(0.5), radius: 16, y: 10)
-                    VStack(alignment: .leading, spacing: 0) {
-                        NewsCardEmblem(card: card)
-                        Text(card.cover.title)
-                            .font(.title2.weight(.bold))
-                            .lineLimit(3)
-                            .minimumScaleFactor(0.8)
-                            .padding(.top, 8)
-                        Text(card.cover.authors.joined(separator: ", "))
-                            .font(.subheadline)
-                            .foregroundStyle(.white.opacity(0.85))
-                            .lineLimit(1)
-                            .padding(.top, 4)
-                        if let reason = NewsCardText.reason(card) {
-                            Text(reason)
-                                .font(.subheadline)
-                                .foregroundStyle(.white.opacity(0.72))
-                                .lineLimit(3)
-                                .fixedSize(horizontal: false, vertical: true)
-                                .padding(.top, 8)
-                        }
+        HStack(alignment: .top, spacing: 14) {
+            NewsAgendaCover(book: card.cover, width: 100)
+            VStack(alignment: .leading, spacing: 0) {
+                NewsCardEmblem(card: card)
+                Text(card.cover.title)
+                    .font(.headline)
+                    .lineLimit(2)
+                    .padding(.top, 7)
+                Text(card.cover.authors.joined(separator: ", "))
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.75))
+                    .lineLimit(1)
+                    .padding(.top, 1)
+                Spacer(minLength: 8)
+                HStack(spacing: 8) {
+                    Button {
+                        Task { await onAction(.wish(card)) }
+                    } label: {
+                        Label(isWished ? "Dans vos envies" : "Ajouter", systemImage: isWished ? "checkmark" : "plus")
+                            .font(.footnote.weight(.semibold))
+                            .foregroundStyle(.black)
+                            .padding(.horizontal, 13)
+                            .frame(height: 30)
+                            .background(.white, in: .capsule)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .buttonStyle(.plain)
+                    .disabled(isWished)
+                    if card.isDismissable {
+                        Button {
+                            Task { await onAction(.dismiss(card)) }
+                        } label: {
+                            Image(systemName: "hand.thumbsdown")
+                                .font(.footnote.weight(.semibold))
+                                .foregroundStyle(.white)
+                                .frame(width: 30, height: 30)
+                                .glassEffect(.regular.interactive(), in: .circle)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Pas intéressé")
+                    }
                 }
-                .foregroundStyle(.white)
-                .contentShape(.rect)
             }
-            .buttonStyle(.plain)
-            NewsCardButtons(card: card, isWished: isWished, fills: true, onAction: onAction)
+            .foregroundStyle(.white)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.vertical, 12)
+            .padding(.trailing, 12)
         }
-        .padding(.horizontal, 20)
-        .padding(.top, 54)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .frame(minHeight: 150)
+        .fixedSize(horizontal: false, vertical: true)
+        .modifier(NewsAgendaCard(card: card, onAction: onAction))
+    }
+}
+
+/// The day's other news, a row each: the cover on the leading side, what
+/// brought it, the title, the author, the "+" at the trailing end.
+private struct NewsAgendaRow: View {
+    let card: NewsCard
+    let isWished: Bool
+    let onAction: (NewsAction) async -> Void
+
+    var body: some View {
+        HStack(spacing: 14) {
+            NewsAgendaCover(book: card.cover, width: 61)
+            VStack(alignment: .leading, spacing: 0) {
+                NewsCardKicker(card: card, style: .fiche)
+                Text(card.cover.title)
+                    .font(.headline)
+                    .lineLimit(1)
+                    .padding(.top, 4)
+                Text(card.cover.authors.joined(separator: ", "))
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.75))
+                    .lineLimit(1)
+                    .padding(.top, 1)
+            }
+            .foregroundStyle(.white)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.vertical, 10)
+            NewsWishButton(card: card, isWished: isWished, size: 34, onAction: onAction)
+                .padding(.trailing, 12)
+        }
+        .frame(minHeight: 92)
+        .fixedSize(horizontal: false, vertical: true)
+        .modifier(NewsAgendaCard(card: card, onAction: onAction))
+    }
+}
+
+/// A cover filling its card's height on the leading side, cropped at its
+/// foot rather than letterboxed.
+private struct NewsAgendaCover: View {
+    let book: Book
+    let width: CGFloat
+
+    var body: some View {
+        Color.clear
+            .frame(width: width)
+            .frame(maxHeight: .infinity)
+            .overlay(alignment: .top) {
+                BookCover(book: book, width: width, showsFormatBadge: false, minHeight: width * 1.5, cornerRadius: 0)
+            }
+            .clipped()
+            .accessibilityHidden(true)
+    }
+}
+
+/// What every card of the day shares: the cover's colours behind it, the
+/// rounded corners, a tap anywhere but its buttons opening the book.
+private struct NewsAgendaCard: ViewModifier {
+    let card: NewsCard
+    let onAction: (NewsAction) async -> Void
+
+    func body(content: Content) -> some View {
+        content
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(.rect)
+            .onTapGesture { Task { await onAction(.open(card)) } }
+            .background { CoverBackdrop(url: card.cover.coverURL, ground: .clear) }
+            .clipShape(.rect(cornerRadius: 18))
+            .overlay(RoundedRectangle(cornerRadius: 18).stroke(.white.opacity(0.18), lineWidth: 1))
+            .accessibilityElement(children: .contain)
+            .accessibilityLabel(Text(card.cover.title))
+            .accessibilityAddTraits(.isButton)
     }
 }
 
@@ -255,52 +488,67 @@ private struct NewsCardEmblem: View {
     }
 }
 
-// MARK: - The walls
+// MARK: - À venir
 
-/// A section of covers three by three, each wearing on its foot who or what
-/// brought it, and a "+" in its corner.
-struct NewsCoverWall: View {
-    let title: LocalizedStringKey
-    let cards: [NewsCard]
+/// The days to come with a release announced: "À venir ›" opens them all,
+/// then a day each, its calendar leaf beside its name, a rail of covers under.
+struct NewsComingDays: View {
+    let days: [NewsAgendaDay]
     var wished: Set<String> = []
-    var onOpenAll: (() -> Void)?
     let onAction: (NewsAction) async -> Void
 
-    @State private var width: CGFloat = 353
-
-    private static let spacing: CGFloat = 10
-    private var columns: Int { NewsDiscoverLayout.wallColumns }
-    private var tileWidth: CGFloat { max(90, (width - Self.spacing * CGFloat(columns - 1)) / CGFloat(columns)) }
-
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            if let onOpenAll {
-                Button(action: onOpenAll) {
-                    HStack(spacing: 6) {
-                        Text(title)
-                        Image(systemName: "chevron.right")
-                            .font(.title3.weight(.semibold))
-                            .foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 22) {
+            Button {
+                Task { await onAction(.openUpcoming) }
+            } label: {
+                HStack(spacing: 6) {
+                    Text("À venir")
+                    Image(systemName: "chevron.right")
+                        .font(.title3.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                }
+                .font(.title2.weight(.bold))
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, 20)
+            ForEach(days) { day in
+                HStack(alignment: .top, spacing: 14) {
+                    ReleaseDateBadge(date: Self.isoDay(day.day))
+                    VStack(alignment: .leading, spacing: 10) {
+                        HStack(alignment: .firstTextBaseline, spacing: 8) {
+                            Text(day.day.formatted(.dateTime.weekday(.wide)).capitalizedFirst)
+                                .font(.headline)
+                            Text(NewsDaySection.count(day, isFuture: true))
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        }
+                        ScrollView(.horizontal) {
+                            HStack(spacing: 10) {
+                                ForEach(day.cards) { card in
+                                    NewsCoverTile(
+                                        card: card,
+                                        width: 100,
+                                        isWished: wished.contains(card.key),
+                                        label: NewsCardText.follow(card),
+                                        onAction: onAction
+                                    )
+                                }
+                            }
+                        }
+                        .scrollIndicators(.hidden)
+                        .contentMargins(.trailing, 20, for: .scrollContent)
                     }
-                    .font(.title2.weight(.bold))
                 }
-                .buttonStyle(.plain)
-            } else {
-                Text(title)
-                    .font(.title2.weight(.bold))
+                .padding(.leading, 20)
             }
-            LazyVGrid(
-                columns: Array(repeating: GridItem(.flexible(), spacing: Self.spacing), count: columns),
-                spacing: 12
-            ) {
-                ForEach(cards) { card in
-                    NewsCoverTile(card: card, width: tileWidth, isWished: wished.contains(card.key), onAction: onAction)
-                }
-            }
-            .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
         }
-        .padding(.horizontal, 20)
-        .padding(.top, 24)
+    }
+
+    /// The `YYYY-MM-DD` a calendar leaf reads.
+    private static func isoDay(_ day: Date, calendar: Calendar = .current) -> String {
+        let parts = calendar.dateComponents([.year, .month, .day], from: day)
+        return String(format: "%04d-%02d-%02d", parts.year ?? 0, parts.month ?? 0, parts.day ?? 0)
     }
 }
 
@@ -310,6 +558,9 @@ private struct NewsCoverTile: View {
     let card: NewsCard
     let width: CGFloat
     let isWished: Bool
+    /// The line on its foot in place of the card's own: on a day to come,
+    /// which follow brought it rather than the day it is already under.
+    var label: (symbol: String, text: String)?
     let onAction: (NewsAction) async -> Void
 
     var body: some View {
@@ -324,7 +575,20 @@ private struct NewsCoverTile: View {
         .buttonStyle(.plain)
         .accessibilityLabel(card.cover.title)
         .overlay(alignment: .bottom) {
-            NewsCardKicker(card: card, style: .tile)
+            Group {
+                if let label {
+                    HStack(spacing: 4) {
+                        Image(systemName: label.symbol).font(.caption2)
+                        Text(label.text)
+                    }
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .shadow(color: .black.opacity(0.45), radius: 4)
+                } else {
+                    NewsCardKicker(card: card, style: .tile)
+                }
+            }
                 .padding(.horizontal, 6)
                 .padding(.bottom, 7)
                 .allowsHitTesting(false)
@@ -336,132 +600,7 @@ private struct NewsCoverTile: View {
     }
 }
 
-// MARK: - Prix littéraires
-
-/// The prizes as a carousel: the winner in the middle large, its neighbours
-/// smaller on either side, the band tinted by the cover in the middle.
-struct NewsAwardsCarousel: View {
-    let cards: [NewsCard]
-    var wished: Set<String> = []
-    let onAction: (NewsAction) async -> Void
-
-    @State private var selected: String?
-
-    private var current: NewsCard {
-        cards.first { $0.id == selected } ?? cards[0]
-    }
-
-    var body: some View {
-        VStack(spacing: 14) {
-            Button {
-                Task { await onAction(.openDiscover) }
-            } label: {
-                HStack(spacing: 6) {
-                    Text("Prix littéraires")
-                    Image(systemName: "chevron.right")
-                        .font(.title3.weight(.semibold))
-                        .foregroundStyle(.white.opacity(0.7))
-                }
-                .font(.title2.weight(.bold))
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 20)
-            }
-            .buttonStyle(.plain)
-            ScrollView(.horizontal) {
-                LazyHStack(alignment: .bottom, spacing: 14) {
-                    ForEach(cards) { card in
-                        Button {
-                            Task { await onAction(.open(card)) }
-                        } label: {
-                            BookCover(book: card.cover, width: 150, showsFormatBadge: false, isBound: true)
-                                .shadow(color: .black.opacity(0.5), radius: 20, y: 12)
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel(card.cover.title)
-                        .scrollTransition(axis: .horizontal) { view, phase in
-                            view.scaleEffect(phase.isIdentity ? 1 : 0.72, anchor: .bottom)
-                                .opacity(phase.isIdentity ? 1 : 0.85)
-                        }
-                    }
-                }
-                .scrollTargetLayout()
-            }
-            .contentMargins(.horizontal, 121, for: .scrollContent)
-            .scrollTargetBehavior(.viewAligned)
-            .scrollIndicators(.hidden)
-            .scrollPosition(id: $selected)
-            .frame(height: 235)
-            NewsCardKicker(card: current, style: .story)
-            NewsCardButtons(card: current, isWished: wished.contains(current.key), onAction: onAction)
-            if cards.count > 1 {
-                HStack(spacing: 7) {
-                    ForEach(cards) { card in
-                        Capsule()
-                            .fill(.white.opacity(card.id == current.id ? 1 : 0.35))
-                            .frame(width: card.id == current.id ? 22 : 7, height: 7)
-                    }
-                }
-                .accessibilityHidden(true)
-            }
-        }
-        .padding(.vertical, 22)
-        .background {
-            CoverBackdrop(url: current.cover.coverURL, fadeHeight: 90, ground: Color(.systemBackground))
-                .mask {
-                    LinearGradient(
-                        stops: [.init(color: .clear, location: 0), .init(color: .black, location: 0.18)],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                }
-                .animation(.smooth, value: current.id)
-        }
-        .environment(\.colorScheme, .dark)
-    }
-}
-
 // MARK: - The parts every card shares
-
-/// "Ajouter" in white, and the thumb of "Pas intéressé" where the server
-/// keeps one.
-private struct NewsCardButtons: View {
-    let card: NewsCard
-    let isWished: Bool
-    /// "Ajouter" takes the width the thumb leaves, under a story's side.
-    var fills = false
-    let onAction: (NewsAction) async -> Void
-
-    var body: some View {
-        HStack(spacing: 10) {
-            Button {
-                Task { await onAction(.wish(card)) }
-            } label: {
-                Label(isWished ? "Dans vos envies" : "Ajouter", systemImage: isWished ? "checkmark" : "plus")
-                    .font(.body.weight(.semibold))
-                    .foregroundStyle(.black)
-                    .frame(width: fills ? nil : 210, height: 46)
-                    .frame(maxWidth: fills ? .infinity : nil)
-                    .background(.white, in: .capsule)
-            }
-            .buttonStyle(.plain)
-            .disabled(isWished)
-            if card.isDismissable {
-                Button {
-                    Task { await onAction(.dismiss(card)) }
-                } label: {
-                    Image(systemName: "hand.thumbsdown")
-                        .font(.body.weight(.semibold))
-                        .foregroundStyle(.white)
-                        .frame(width: 46, height: 46)
-                        .glassEffect(.regular.interactive(), in: .circle)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Pas intéressé")
-            }
-        }
-    }
-}
 
 /// The "+" on a tile's foot, a tick once the book is wished for.
 private struct NewsWishButton: View {
@@ -626,6 +765,19 @@ enum NewsCardText {
         }
     }
 
+    /// Which follow brought a release to come, on its cover's foot: "votre
+    /// série", "votre auteur", "guetté", the narrator.
+    static func follow(_ card: NewsCard) -> (symbol: String, text: String)? {
+        guard case let .upcoming(release) = card else { return nil }
+        let text = switch release.source {
+        case .saga: String(localized: "votre série")
+        case .author: String(localized: "votre auteur")
+        case .awaited: String(localized: "guetté")
+        case .narrator: release.narrator ?? String(localized: "votre voix")
+        }
+        return (symbol(card), text)
+    }
+
     /// The sentence under a story's cover, when the card has one to say.
     static func reason(_ card: NewsCard) -> String? {
         switch card {
@@ -669,9 +821,9 @@ private struct NewsPagePreview: View {
     var errorMessage: String?
     var empty = false
 
-    private var layout: NewsDiscoverLayout {
-        guard !empty else { return NewsDiscoverLayout(today: [], friends: [], releases: [], awards: []) }
-        return NewsDiscoverLayout(
+    private var agenda: NewsAgenda {
+        guard !empty else { return .empty() }
+        return NewsAgenda(
             released: NewsFeedLayout.released(
                 releases: released ? UpcomingRelease.releasedPreviews : [],
                 narrator: released ? [.preview] : [],
@@ -687,7 +839,7 @@ private struct NewsPagePreview: View {
     var body: some View {
         NavigationStack {
             NewsPage(
-                layout: layout,
+                agenda: agenda,
                 isLoading: isLoading,
                 errorMessage: errorMessage,
                 alertsSilenced: false,

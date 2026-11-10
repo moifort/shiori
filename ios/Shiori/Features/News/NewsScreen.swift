@@ -33,7 +33,7 @@ struct NewsScreen: View {
     var body: some View {
         DetailSplit(item: $detail) {
             NewsPage(
-                layout: viewModel.discoverLayout(),
+                agenda: viewModel.agenda(),
                 wished: viewModel.wished,
                 isLoading: viewModel.isLoading,
                 errorMessage: viewModel.errorMessage,
