@@ -28,6 +28,10 @@ struct NewsClient: Sendable {
     /// The month's discoveries already chosen: read, never asked for, so
     /// opening the tab never sets the model to work.
     var discoveries: @Sendable () async throws -> [Suggestion] = { [] }
+    /// The first page and every section beside it in one request, so the
+    /// server reads the library once for all of them. Nil, or a field in
+    /// error, and each section is asked alone through the closures above.
+    var opening: (@Sendable (_ limit: Int) async throws -> NewsOpening)? = nil
     /// A discovery or a prize onto the wish list.
     var wishDiscovery: @Sendable (BookDraft, Wish.Origin) async throws -> Void = { _, _ in }
     /// "Pas intéressé" on the month's discovery.
@@ -58,6 +62,7 @@ extension NewsClient {
         invite: { try await FriendsAPI.invite() },
         awards: { try await AwardsAPI.sections(format: .book) },
         discoveries: { try await SuggestionsAPI.monthly(format: .book, lookUp: false).suggestions },
+        opening: { try await NewsAPI.opening(limit: $0) },
         wishDiscovery: { draft, origin in _ = try await WishlistAPI.wish(draft, origin: origin) },
         dismissSuggestion: { try await SuggestionsAPI.dismiss(id: $0, reason: .notInterested) },
         dismissWinner: { try await AwardsAPI.dismiss(key: $0) }

@@ -4,12 +4,16 @@
 # selection is read.
 query MonthlyDiscoveries($format: ReleaseFormat!, $lookUp: Boolean) {
   monthlyDiscoveries(format: $format, lookUp: $lookUp) {
-    month
-    status
-    needsRatings
-    suggestions {
-      ...SuggestionFields
-    }
+    ...MonthlyDiscoveriesFields
+  }
+}
+
+fragment MonthlyDiscoveriesFields on MonthlyDiscoveries {
+  month
+  status
+  needsRatings
+  suggestions {
+    ...SuggestionFields
   }
 }
 

@@ -233,19 +233,7 @@ enum SuggestionsAPI {
             query: ShioriGraphQL.MonthlyDiscoveriesQuery(format: .case(format.graphQL), lookUp: .some(lookUp)),
             requestTimeout: requestTimeout
         )
-        let status: MonthlyDiscoveries.Status = switch data.monthlyDiscoveries.status.value {
-        case .ready: .ready
-        case .searching: .searching
-        case .none?, nil: .none
-        }
-        return MonthlyDiscoveries(
-            month: data.monthlyDiscoveries.month,
-            status: status,
-            suggestions: data.monthlyDiscoveries.suggestions.map {
-                Suggestion(fields: $0.fragments.suggestionFields)
-            },
-            needsRatings: data.monthlyDiscoveries.needsRatings
-        )
+        return MonthlyDiscoveries(fields: data.monthlyDiscoveries.fragments.monthlyDiscoveriesFields)
     }
 
     /// "Pas intéressé" or "Je n'aime pas": never suggested again.
@@ -267,6 +255,22 @@ enum SuggestionsAPI {
             GraphQLClient.shared.apollo,
             mutation: ShioriGraphQL.ReconsiderSuggestionMutation(id: id),
             changesLibrary: false
+        )
+    }
+}
+
+extension MonthlyDiscoveries {
+    init(fields: ShioriGraphQL.MonthlyDiscoveriesFields) {
+        let status: MonthlyDiscoveries.Status = switch fields.status.value {
+        case .ready: .ready
+        case .searching: .searching
+        case .none?, nil: .none
+        }
+        self.init(
+            month: fields.month,
+            status: status,
+            suggestions: fields.suggestions.map { Suggestion(fields: $0.fragments.suggestionFields) },
+            needsRatings: fields.needsRatings
         )
     }
 }

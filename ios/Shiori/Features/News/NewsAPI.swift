@@ -10,7 +10,37 @@ enum NewsAPI {
             GraphQLClient.shared.apollo,
             query: ShioriGraphQL.NewsFeedQuery(limit: Int32(limit), after: GraphQLHelpers.graphQLNullable(after))
         )
-        let page = data.newsFeed
+        return page(from: data.newsFeed.fragments.newsFeedPage)
+    }
+
+    /// The tab's opening in one request: the friends' first page and every
+    /// section beside it, so the server reads the library once for all.
+    static func opening(limit: Int) async throws -> NewsOpening {
+        #if DEBUG
+        if Showcase.isOn {
+            return NewsOpening(
+                feed: CursorPage(items: [], hasMore: false, endCursor: nil),
+                upcoming: [], yearReleases: [], narratorNews: [], awards: [],
+                discoveries: Showcase.monthlyDiscoveries.suggestions
+            )
+        }
+        #endif
+        let data = try await GraphQLHelpers.fetch(
+            GraphQLClient.shared.apollo,
+            query: ShioriGraphQL.NewsOpeningQuery(limit: Int32(limit))
+        )
+        return NewsOpening(
+            feed: page(from: data.newsFeed.fragments.newsFeedPage),
+            upcoming: data.upcomingReleases.compactMap { release(from: $0.fragments.upcomingReleaseFields) },
+            yearReleases: data.yearReleases.compactMap { release(from: $0.fragments.upcomingReleaseFields) },
+            narratorNews: data.narratorNews.map { news(from: $0.fragments.narratorNewsFields) },
+            awards: data.awardSections.map { AwardSection(fields: $0.fragments.awardSectionFields) },
+            discoveries: MonthlyDiscoveries(fields: data.monthlyDiscoveries.fragments.monthlyDiscoveriesFields)
+                .suggestions
+        )
+    }
+
+    private static func page(from page: ShioriGraphQL.NewsFeedPage) -> CursorPage<FeedEvent> {
         let events = page.events.compactMap { row -> FeedEvent? in
             guard let kind = row.kind.value.flatMap({ FeedEventKind(rawValue: $0.rawValue.lowercased()) }),
                 let at = GraphQLHelpers.parseISO8601(row.at)
@@ -46,19 +76,21 @@ enum NewsAPI {
             GraphQLClient.shared.apollo,
             query: ShioriGraphQL.NarratorNewsQuery()
         )
-        return data.narratorNews.map {
-            NarratorNews(
-                id: $0.id,
-                narratorKey: $0.narratorKey,
-                narrator: $0.narrator,
-                title: $0.title,
-                authors: $0.authors,
-                date: $0.date,
-                coverURL: $0.coverUrl.flatMap(URL.init(string:)),
-                format: .audiobook,
-                language: $0.language?.asDomain
-            )
-        }
+        return data.narratorNews.map { news(from: $0.fragments.narratorNewsFields) }
+    }
+
+    private static func news(from row: ShioriGraphQL.NarratorNewsFields) -> NarratorNews {
+        NarratorNews(
+            id: row.id,
+            narratorKey: row.narratorKey,
+            narrator: row.narrator,
+            title: row.title,
+            authors: row.authors,
+            date: row.date,
+            coverURL: row.coverUrl.flatMap(URL.init(string:)),
+            format: .audiobook,
+            language: row.language?.asDomain
+        )
     }
 
     /// Everything announced across the reader's follows.

@@ -106,6 +106,18 @@ enum GraphQLHelpers {
         return data
     }
 
+    /// The server answered, with a field in error. An operation composed of
+    /// several sections loses them all with that one, so its caller asks each
+    /// alone: the one that fails keeps what it last showed, and the others are
+    /// still brought up to date. A network failure is not one: asking again
+    /// section by section would only fail as many times.
+    static func answeredWithErrors(_ error: Error) -> Bool {
+        switch error as? APIError {
+        case .graphQL?, .domain?: true
+        default: false
+        }
+    }
+
     /// Decode an ISO-8601 date string from a GraphQL DateTime scalar.
     static func parseISO8601(_ string: String) -> Date? {
         let withFraction = ISO8601DateFormatter()

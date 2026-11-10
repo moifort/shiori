@@ -1,53 +1,88 @@
 # The home dashboard: reading statistics and the shelves worth a glance, counted
-# in the device time zone.
+# in the device time zone. Asked alone only when the home's opening below came
+# back with a field in error.
 query Dashboard($timeZone: TimeZone!) {
   dashboard(timeZone: $timeZone) {
-    currentYear
-    booksPerYear {
-      year
-      count
-    }
-    pagesPerMonth {
-      month
-      pages
-    }
-    hoursPerMonth {
-      month
-      hours
-    }
-    reading {
-      ...DashboardBookCard
-    }
-    toRead {
-      ...DashboardBookCard
-    }
-    lastFinished {
-      ...DashboardBookCard
-    }
-    toReadCount
-    readCount
-    pagesRead
-    hoursListened
-    genres {
-      genre
-      count
-    }
-    series {
-      id
-      name
-      audio
-      language
-      readCount
-      totalCount
-      rating
-      favorite
-      coverUrl
-    }
-    favoriteCount
-    hasAudiobooks
-    hasPrintedBooks
-    libraryIsEmpty
+    ...DashboardFields
   }
+}
+
+# The top of the home in one request, so the reader's library is read once for
+# both rather than once each: the dashboard, and the month's discoveries as they
+# stand — read, never made here.
+query HomeOpening($timeZone: TimeZone!) {
+  dashboard(timeZone: $timeZone) {
+    ...DashboardFields
+  }
+  monthlyDiscoveries(format: BOOK, lookUp: false) {
+    ...MonthlyDiscoveriesFields
+  }
+}
+
+# The home's releases, in a second request so the figures above never wait on
+# them: Découvrir's rows and the editions awaited, in both formats, reading the
+# library once for the four.
+query HomeReleases {
+  books: discovery(format: BOOK) {
+    ...DiscoveryFields
+  }
+  audiobooks: discovery(format: AUDIOBOOK) {
+    ...DiscoveryFields
+  }
+  awaitedBooks: awaitedEditions(format: BOOK) {
+    ...AwaitedEditionFields
+  }
+  awaitedAudiobooks: awaitedEditions(format: AUDIOBOOK) {
+    ...AwaitedEditionFields
+  }
+}
+
+fragment DashboardFields on Dashboard {
+  currentYear
+  booksPerYear {
+    year
+    count
+  }
+  pagesPerMonth {
+    month
+    pages
+  }
+  hoursPerMonth {
+    month
+    hours
+  }
+  reading {
+    ...DashboardBookCard
+  }
+  toRead {
+    ...DashboardBookCard
+  }
+  lastFinished {
+    ...DashboardBookCard
+  }
+  toReadCount
+  readCount
+  pagesRead
+  hoursListened
+  genres {
+    genre
+    count
+  }
+  series {
+    id
+    name
+    audio
+    language
+    readCount
+    totalCount
+    rating
+    favorite
+    coverUrl
+  }
+  favoriteCount
+  hasAudiobooks
+  hasPrintedBooks
+  libraryIsEmpty
 }
 
 fragment DashboardBookCard on DashboardBook {

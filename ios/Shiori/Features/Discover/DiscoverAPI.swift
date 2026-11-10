@@ -297,7 +297,7 @@ enum DiscoverAPI {
     }
 }
 
-private extension DiscoveryPage {
+extension DiscoveryPage {
     init(fields: ShioriGraphQL.DiscoveryFields) {
         let rows = fields.sagas.map { row in
                 SagaDiscovery(

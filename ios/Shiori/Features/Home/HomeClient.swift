@@ -18,6 +18,13 @@ struct HomeClient: Sendable {
     /// A dismissal taken back from the carousel's red thumb.
     var reconsiderSuggestion: @Sendable (_ id: String) async throws -> Void = { _ in }
     var genreInsights: @Sendable () async throws -> GenreInsights
+    /// The dashboard and the month's discoveries in one request, so the
+    /// server reads the library once for both. Nil, or a field in error, and
+    /// each is asked alone through `dashboard` and `discoveries`.
+    var opening: (@Sendable () async throws -> HomeOpening)? = nil
+    /// Both formats' rows and editions awaited in one request, for the same
+    /// reason. Nil, or a field in error, and they are asked one by one.
+    var releaseSources: (@Sendable () async throws -> HomeReleaseSources)? = nil
     /// A discovery put on the shelf from the carousel: the book's id.
     var addBook: @Sendable (BookDraft) async throws -> String = { _ in "" }
     /// A discovery put on the wishlist from the carousel.
@@ -46,6 +53,8 @@ extension HomeClient {
         stopAwaiting: { try await AwaitedAPI.stop(id: $0) },
         reconsiderSuggestion: { try await SuggestionsAPI.reconsider(id: $0) },
         genreInsights: { try await HomeAPI.genreInsights() },
+        opening: { try await HomeAPI.opening() },
+        releaseSources: { try await HomeAPI.releaseSources() },
         addBook: { try await BookAddition.add($0, source: .discover).id },
         wish: { try await WishlistAPI.wish($0, origin: .discovery) },
         deleteBook: { try await BookAPI.delete(id: $0) },

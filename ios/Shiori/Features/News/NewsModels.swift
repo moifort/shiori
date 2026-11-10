@@ -182,3 +182,14 @@ extension BookFormat {
         }
     }
 }
+
+/// The Actu tab's opening, asked in one request so the server reads the
+/// library once for every section rather than once each.
+struct NewsOpening: Sendable {
+    let feed: CursorPage<FeedEvent>
+    let upcoming: [UpcomingRelease]
+    let yearReleases: [UpcomingRelease]
+    let narratorNews: [NarratorNews]
+    let awards: [AwardSection]
+    let discoveries: [Suggestion]
+}

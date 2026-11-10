@@ -106,6 +106,45 @@ struct NewsViewModelTests {
         #expect(viewModel.events.count == FeedEvent.previews.count)
     }
 
+    /// The opening is one request for every section, none asked alone.
+    @Test func openingIsOneComposedRequest() async {
+        var client = NewsClient.preview
+        client.feed = { _, _ in throw Boom() }
+        client.narratorNews = { throw Boom() }
+        client.opening = { limit in
+            NewsOpening(
+                feed: CursorPage(FeedEvent.previews, limit: limit, after: nil, cursor: \.id),
+                upcoming: UpcomingRelease.previews,
+                yearReleases: UpcomingRelease.previews,
+                narratorNews: [.preview],
+                awards: AwardSection.previews,
+                discoveries: MonthlyDiscoveries.preview.suggestions
+            )
+        }
+        let viewModel = NewsViewModel(client: client, caching: false)
+
+        await viewModel.load()
+
+        #expect(viewModel.events.count == FeedEvent.previews.count)
+        #expect(viewModel.narratorNews.count == 1)
+        #expect(viewModel.errorMessage == nil)
+    }
+
+    /// A field in error in the composed request: each section is asked alone,
+    /// and only the one that fails keeps what it showed.
+    @Test func composedFieldInErrorAsksEachSectionAlone() async {
+        var client = NewsClient.preview
+        client.opening = { _ in throw APIError.graphQL(messages: ["narratorNews failed"]) }
+        client.narratorNews = { throw Boom() }
+        let viewModel = NewsViewModel(client: client, caching: false)
+
+        await viewModel.load()
+
+        #expect(viewModel.narratorNews.isEmpty)
+        #expect(viewModel.events.count == FeedEvent.previews.count)
+        #expect(viewModel.releases.count == UpcomingRelease.previews.count)
+    }
+
     @Test func takingABookGreysItOutAtOnce() async {
         let viewModel = NewsViewModel(client: .preview, caching: false)
         await viewModel.load()

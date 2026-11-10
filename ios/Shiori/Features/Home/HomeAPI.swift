@@ -13,8 +13,53 @@ enum HomeAPI {
             GraphQLClient.shared.apollo,
             query: ShioriGraphQL.DashboardQuery(timeZone: TimeZone.current.identifier)
         )
-        let dashboard = data.dashboard
-        return Dashboard(
+        return Dashboard(fields: data.dashboard.fragments.dashboardFields)
+    }
+
+    /// The top of the home in one request — the dashboard and the month's
+    /// discoveries as they stand — so the server reads the library once for
+    /// both.
+    static func opening() async throws -> HomeOpening {
+        #if DEBUG
+        if Showcase.isOn {
+            return HomeOpening(dashboard: Showcase.dashboard, discoveries: Showcase.monthlyDiscoveries)
+        }
+        #endif
+        let data = try await GraphQLHelpers.fetch(
+            GraphQLClient.shared.apollo,
+            query: ShioriGraphQL.HomeOpeningQuery(timeZone: TimeZone.current.identifier)
+        )
+        return HomeOpening(
+            dashboard: Dashboard(fields: data.dashboard.fragments.dashboardFields),
+            discoveries: MonthlyDiscoveries(fields: data.monthlyDiscoveries.fragments.monthlyDiscoveriesFields)
+        )
+    }
+
+    /// What the home's releases are drawn from, in one request: Découvrir's
+    /// rows and the editions awaited, in both formats.
+    static func releaseSources() async throws -> HomeReleaseSources {
+        #if DEBUG
+        if Showcase.isOn {
+            return HomeReleaseSources(
+                books: Showcase.discovery(format: .book),
+                audiobooks: Showcase.discovery(format: .audiobook),
+                awaited: []
+            )
+        }
+        #endif
+        let data = try await GraphQLHelpers.fetch(GraphQLClient.shared.apollo, query: ShioriGraphQL.HomeReleasesQuery())
+        return HomeReleaseSources(
+            books: DiscoveryPage(fields: data.books.fragments.discoveryFields),
+            audiobooks: DiscoveryPage(fields: data.audiobooks.fragments.discoveryFields),
+            awaited: data.awaitedAudiobooks.map { AwaitedEdition(fields: $0.fragments.awaitedEditionFields) }
+                + data.awaitedBooks.map { AwaitedEdition(fields: $0.fragments.awaitedEditionFields) }
+        )
+    }
+}
+
+extension Dashboard {
+    init(fields dashboard: ShioriGraphQL.DashboardFields) {
+        self.init(
             currentYear: dashboard.currentYear,
             booksPerYear: dashboard.booksPerYear.map { .init(year: $0.year, count: $0.count) },
             pagesPerMonth: dashboard.pagesPerMonth.map { .init(month: $0.month, pages: $0.pages) },
@@ -46,7 +91,9 @@ enum HomeAPI {
             libraryIsEmpty: dashboard.libraryIsEmpty
         )
     }
+}
 
+extension HomeAPI {
     static func genreInsights() async throws -> GenreInsights {
         #if DEBUG
         if Showcase.isOn {

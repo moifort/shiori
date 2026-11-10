@@ -224,14 +224,18 @@ enum AwardsAPI {
             GraphQLClient.shared.apollo,
             query: ShioriGraphQL.AwardSectionsQuery(format: .case(format.graphQL))
         )
-        return data.awardSections.map { section in
-            AwardSection(
-                genre: section.genre.asDomain,
-                winners: section.winners
-                    .map { AwardWinner(fields: $0.fragments.awardWinnerFields) }
-                    .latestFirst
-            )
-        }
+        return data.awardSections.map { AwardSection(fields: $0.fragments.awardSectionFields) }
+    }
+}
+
+extension AwardSection {
+    init(fields section: ShioriGraphQL.AwardSectionFields) {
+        self.init(
+            genre: section.genre.asDomain,
+            winners: section.winners
+                .map { AwardWinner(fields: $0.fragments.awardWinnerFields) }
+                .latestFirst
+        )
     }
 }
 

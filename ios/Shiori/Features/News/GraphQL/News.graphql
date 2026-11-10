@@ -1,25 +1,54 @@
+# The Actu tab's opening in one request, so the reader's library is read once
+# for all of it rather than once a section: the friends' first page, what is
+# announced, what came out this year, the narrators', the prizes' winners in
+# print and the month's discoveries as they stand — read, never made here.
+query NewsOpening($limit: Int!) {
+  newsFeed(limit: $limit) {
+    ...NewsFeedPage
+  }
+  upcomingReleases {
+    ...UpcomingReleaseFields
+  }
+  yearReleases {
+    ...UpcomingReleaseFields
+  }
+  narratorNews {
+    ...NarratorNewsFields
+  }
+  awardSections(format: BOOK) {
+    ...AwardSectionFields
+  }
+  monthlyDiscoveries(format: BOOK, lookUp: false) {
+    ...MonthlyDiscoveriesFields
+  }
+}
+
 # What the reader's friends did lately, newest first, one page at a time.
 query NewsFeed($limit: Int!, $after: String) {
   newsFeed(limit: $limit, after: $after) {
-    nextCursor
-    events {
-      id
-      kind
-      at
-      friendId
-      friendFirstName
-      friendAvatarHero
-      friendAvatarColor
-      bookId
-      title
-      authors
-      format
-      language
-      coverUrl
-      rating
-      alsoStartedBy
-      inLibrary
-    }
+    ...NewsFeedPage
+  }
+}
+
+fragment NewsFeedPage on FeedPage {
+  nextCursor
+  events {
+    id
+    kind
+    at
+    friendId
+    friendFirstName
+    friendAvatarHero
+    friendAvatarColor
+    bookId
+    title
+    authors
+    format
+    language
+    coverUrl
+    rating
+    alsoStartedBy
+    inLibrary
   }
 }
 
@@ -64,13 +93,17 @@ fragment UpcomingReleaseFields on UpcomingRelease {
 # The recordings the narrators the reader follows lent their voice to lately.
 query NarratorNews {
   narratorNews {
-    id
-    narratorKey
-    narrator
-    title
-    authors
-    date
-    coverUrl
-    language
+    ...NarratorNewsFields
   }
+}
+
+fragment NarratorNewsFields on NarratorNews {
+  id
+  narratorKey
+  narrator
+  title
+  authors
+  date
+  coverUrl
+  language
 }

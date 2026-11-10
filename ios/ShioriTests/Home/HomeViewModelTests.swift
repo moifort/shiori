@@ -120,6 +120,83 @@ struct HomeViewModelTests {
         #expect(viewModel.dashboard != nil)
     }
 
+    /// The opening asks the dashboard and the discoveries in one request, and
+    /// the releases' four sections in another: none of them alone.
+    @Test func openingAsksTwoComposedRequests() async {
+        let calls = Calls()
+        var client = HomeClient.preview
+        client.dashboard = { calls.record("dashboard"); return .preview }
+        client.discoveries = { calls.record("discoveries"); return .preview }
+        client.discovery = { _ in calls.record("discovery"); throw Boom() }
+        client.awaited = { _ in calls.record("awaited"); return [] }
+        client.opening = { HomeOpening(dashboard: .preview, discoveries: .preview) }
+        let edition = Self.editionOutToday
+        client.releaseSources = {
+            HomeReleaseSources(
+                books: DiscoveryPage(rows: [.preview], authors: [], unwatched: 0, followed: 1),
+                audiobooks: DiscoveryPage(rows: [], authors: [], unwatched: 0, followed: 0),
+                awaited: [edition]
+            )
+        }
+        let viewModel = HomeViewModel(client: client, caching: false)
+
+        await viewModel.load()
+
+        #expect(calls.all.isEmpty)
+        #expect(viewModel.dashboard != nil)
+        #expect(viewModel.discoveries == .preview)
+        #expect(viewModel.releases.contains { $0.id == HomeRelease.awaited(edition).id })
+    }
+
+    /// A field in error loses the whole composed answer: each section is then
+    /// asked alone, and the ones that answer are still drawn.
+    @Test func composedFieldInErrorAsksEachSectionAlone() async {
+        var client = HomeClient.preview
+        client.opening = { throw APIError.graphQL(messages: ["monthlyDiscoveries failed"]) }
+        client.releaseSources = { throw APIError.graphQL(messages: ["awaitedEditions failed"]) }
+        let edition = Self.editionOutToday
+        client.awaited = { format in
+            guard format == .audiobook else { throw Boom() }
+            return [edition]
+        }
+        let viewModel = HomeViewModel(client: client, caching: false)
+
+        await viewModel.load()
+
+        #expect(viewModel.dashboard != nil)
+        #expect(viewModel.errorMessage == nil)
+        #expect(viewModel.releases.contains { $0.id == HomeRelease.awaited(edition).id })
+    }
+
+    /// An edition awaited out today, which always leads the line.
+    private static var editionOutToday: AwaitedEdition {
+        let today = Date.now.formatted(Date.ISO8601FormatStyle(timeZone: .current).year().month().day())
+        let base = AwaitedEdition.preview
+        return AwaitedEdition(
+            id: base.id, format: base.format, state: .announced, title: base.title,
+            originalTitle: base.originalTitle, originalLanguage: base.originalLanguage,
+            authors: base.authors, date: today, coverURL: nil, storeURL: base.storeURL,
+            awaitedAt: base.awaitedAt, bookId: base.bookId, ownerId: base.ownerId
+        )
+    }
+
+    /// Offline, the sections are not asked one by one: they would only fail
+    /// as many times.
+    @Test func composedNetworkFailureIsNotAskedAgainBySection() async {
+        let calls = Calls()
+        var client = HomeClient.preview
+        client.dashboard = { calls.record("dashboard"); return .preview }
+        client.discovery = { _ in calls.record("discovery"); throw Boom() }
+        client.opening = { throw URLError(.notConnectedToInternet) }
+        client.releaseSources = { throw URLError(.notConnectedToInternet) }
+        let viewModel = HomeViewModel(client: client, caching: false)
+
+        await viewModel.load()
+
+        #expect(calls.all.isEmpty)
+        #expect(viewModel.dashboard == nil)
+    }
+
     @Test func monthWithoutItsSelectionGetsOneMadeOnceTheShelfIsKnown() async {
         let calls = Calls()
         let month = MonthlyDiscoveries.month(of: .now)

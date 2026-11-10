@@ -3,10 +3,14 @@
 # when the reader reads no genre with awards enough.
 query AwardSections($format: ReleaseFormat!) {
   awardSections(format: $format) {
-    genre
-    winners {
-      ...AwardWinnerFields
-    }
+    ...AwardSectionFields
+  }
+}
+
+fragment AwardSectionFields on AwardSection {
+  genre
+  winners {
+    ...AwardWinnerFields
   }
 }
 

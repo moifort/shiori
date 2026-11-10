@@ -117,15 +117,12 @@ final class HomeViewModel {
 
     private func refresh() async {
         errorMessage = nil
-        // Apart from the rest: the first look of a month waits for the model,
-        // and the figures must not wait with it.
-        Task { await loadDiscoveries() }
         // Side by side with the figures, and never in their way: a section
         // that could not be brought up to date keeps what it last showed.
         let client = client
         async let releases = Self.fetchReleases(client)
         do {
-            let fetched = try await client.dashboard()
+            let fetched = try await fetchTop()
             // Over figures already on screen, the cards change in place rather
             // than the whole page redrawing at once.
             withAnimation(dashboard == nil ? nil : .smooth) { dashboard = fetched }
@@ -143,6 +140,25 @@ final class HomeViewModel {
             return
         }
         keep(releases: await releases)
+    }
+
+    /// The dashboard, with the month's discoveries as they stand in the same
+    /// request: the server reads the library once for both. Should a field
+    /// come back in error, each is asked alone, as they were before: the
+    /// discoveries apart, never in the figures' way.
+    private func fetchTop() async throws -> Dashboard {
+        if let opening = client.opening {
+            do {
+                let top = try await opening()
+                discoveriesRead = true
+                show(top.discoveries)
+                return top.dashboard
+            } catch where GraphQLHelpers.answeredWithErrors(error) {
+                // Asked again section by section below.
+            }
+        }
+        Task { await loadDiscoveries() }
+        return try await client.dashboard()
     }
 
     /// The releases, when they came back, replace the ones on screen and are
@@ -261,13 +277,9 @@ final class HomeViewModel {
     /// the rows could not be read; the editions awaited are left out when they
     /// could not.
     private static func fetchReleases(_ client: HomeClient) async -> [HomeRelease]? {
-        async let books = try? client.discovery(.book)
-        async let audiobooks = try? client.discovery(.audiobook)
-        async let awaitedRecordings = try? client.awaited(.audiobook)
-        async let awaitedTranslations = try? client.awaited(.book)
-        guard let books = await books, let audiobooks = await audiobooks else { return nil }
-        let rows = books.rows + audiobooks.rows
-        let awaited = (await awaitedRecordings ?? []) + (await awaitedTranslations ?? [])
+        guard let sources = await fetchReleaseSources(client) else { return nil }
+        let rows = sources.books.rows + sources.audiobooks.rows
+        let awaited = sources.awaited
         let recentVolumes = rows
             .flatMap { saga in saga.recent.map { DiscoveryVolume(saga: saga, volume: $0) } }
             .map(HomeRelease.volume)
@@ -302,6 +314,30 @@ final class HomeViewModel {
             .sorted { $0.1 != $1.1 ? $0.1 < $1.1 : $0.0.name.localizedStandardCompare($1.0.name) == .orderedAscending }
             .map(\.0)
         return Array((recent + upcoming).prefix(releasesShown))
+    }
+
+    /// The four sections in one request, which reads the library once for
+    /// them. Should a field come back in error, they are asked one by one:
+    /// nil when either format of the rows could not be read, the editions
+    /// awaited left out when they could not.
+    private static func fetchReleaseSources(_ client: HomeClient) async -> HomeReleaseSources? {
+        if let releaseSources = client.releaseSources {
+            do {
+                return try await releaseSources()
+            } catch {
+                guard GraphQLHelpers.answeredWithErrors(error) else { return nil }
+            }
+        }
+        async let books = try? client.discovery(.book)
+        async let audiobooks = try? client.discovery(.audiobook)
+        async let awaitedRecordings = try? client.awaited(.audiobook)
+        async let awaitedTranslations = try? client.awaited(.book)
+        guard let books = await books, let audiobooks = await audiobooks else { return nil }
+        return HomeReleaseSources(
+            books: books,
+            audiobooks: audiobooks,
+            awaited: (await awaitedRecordings ?? []) + (await awaitedTranslations ?? [])
+        )
     }
 
     /// How long a volume or an edition awaited counts as just out, in days:

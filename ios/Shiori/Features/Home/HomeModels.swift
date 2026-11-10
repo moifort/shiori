@@ -110,3 +110,18 @@ extension Date {
         return max(0, days)
     }
 }
+
+/// The top of the home, asked in one request: the dashboard and the month's
+/// discoveries as they stand.
+struct HomeOpening: Sendable {
+    let dashboard: Dashboard
+    let discoveries: MonthlyDiscoveries
+}
+
+/// What the home's releases are drawn from, asked in one request: Découvrir's
+/// rows in both formats and the editions awaited in both.
+struct HomeReleaseSources: Sendable {
+    let books: DiscoveryPage
+    let audiobooks: DiscoveryPage
+    let awaited: [AwaitedEdition]
+}

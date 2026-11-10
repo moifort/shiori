@@ -168,14 +168,7 @@ final class NewsViewModel {
         let token = generation
         isLoading = !hasLoaded
         defer { if token == generation { isLoading = false } }
-        async let page = capture { try await client.feed(nil, Self.pageSize) }
-        async let upcoming = capture { try await client.upcoming() }
-        async let narrated = capture { try await client.narratorNews() }
-        async let released = capture { try await client.yearReleases() }
-        async let prizes = capture { try await client.awards() }
-        async let picks = capture { try await client.discoveries() }
-        let (first, dated, voices, year) = await (page, upcoming, narrated, released)
-        let (winners, discoveries) = await (prizes, picks)
+        let (first, dated, voices, year, winners, discoveries) = await fetchOpening()
         guard token == generation else { return }
         // Over news already on screen, what changed slides into place rather
         // than the whole page redrawing at once.
@@ -368,6 +361,43 @@ final class NewsViewModel {
             suggestions: suggestions
         )
         Task.detached { cache.write(snapshot) }
+    }
+
+    /// Every section of the opening, each told apart as answered or failed.
+    private typealias Opening = (
+        feed: Result<CursorPage<FeedEvent>, Error>,
+        upcoming: Result<[UpcomingRelease], Error>,
+        narratorNews: Result<[NarratorNews], Error>,
+        yearReleases: Result<[UpcomingRelease], Error>,
+        awards: Result<[AwardSection], Error>,
+        discoveries: Result<[Suggestion], Error>
+    )
+
+    /// The opening in one request, which reads the library once for every
+    /// section. Should a field come back in error, each section is asked
+    /// alone, as before: the one that fails keeps what it last showed.
+    private func fetchOpening() async -> Opening {
+        let client = client
+        if let opening = client.opening {
+            switch await capture({ try await opening(Self.pageSize) }) {
+            case let .success(found):
+                return (
+                    .success(found.feed), .success(found.upcoming), .success(found.narratorNews),
+                    .success(found.yearReleases), .success(found.awards), .success(found.discoveries)
+                )
+            case let .failure(error) where !GraphQLHelpers.answeredWithErrors(error):
+                return (.failure(error), .failure(error), .failure(error), .failure(error), .failure(error), .failure(error))
+            case .failure:
+                break
+            }
+        }
+        async let page = capture { try await client.feed(nil, Self.pageSize) }
+        async let upcoming = capture { try await client.upcoming() }
+        async let narrated = capture { try await client.narratorNews() }
+        async let released = capture { try await client.yearReleases() }
+        async let prizes = capture { try await client.awards() }
+        async let picks = capture { try await client.discoveries() }
+        return await (page, upcoming, narrated, released, prizes, picks)
     }
 
     private func capture<T: Sendable>(_ work: @Sendable () async throws -> T) async -> Result<T, Error> {
