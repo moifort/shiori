@@ -175,3 +175,77 @@ describe("the Actu tab's opening", () => {
     expect(opening.billed).toBeLessThanOrEqual(200)
   })
 })
+
+describe("Découvrir's opening", () => {
+  const friend = 'friend' as UserId
+  const as = (userId: UserId) => (source: string, variableValues?: Record<string, unknown>) =>
+    graphql({ schema, source, variableValues, contextValue: { event: french, userId } })
+
+  // A friend with a heart on a book the reader lacks, and two editions of
+  // Wind and Truth awaited, already found by the hourly pass: the strips then
+  // read the library, as they do in production.
+  beforeEach(async () => {
+    const { code } = (
+      (await as(friend)('mutation { inviteFriend { code } }')).data as {
+        inviteFriend: { code: string }
+      }
+    ).inviteFriend
+    await as(reader)(
+      'mutation ($code: String!) { acceptFriendInvitation(code: $code) { userId } }',
+      {
+        code,
+      },
+    )
+    const loved = await BookUseCase.add(friend, {
+      title: BookTitle('Le Nom du vent'),
+      authors: [AuthorName('Patrick Rothfuss')],
+      status: 'read',
+      language: 'fr',
+    })
+    if (typeof loved === 'object' && 'id' in loved)
+      await as(friend)(`mutation { setBookFavorite(id: "${loved.id}", favorite: true) { id } }`)
+    for (const format of ['book', 'audiobook'] as const) {
+      const key = `wind-and-truth--brandon-sanderson--${format}--fr`
+      fake.seed('edition-watches', key, {
+        key,
+        title: 'Wind and Truth',
+        author: 'Brandon Sanderson',
+        originalLanguage: 'en',
+        format,
+        language: 'fr',
+        checkedAt: new Date(),
+        found: { title: 'Vent et vérité', date: '2026-09-20' },
+      })
+    }
+    const source = await BookUseCase.add(reader, {
+      title: BookTitle('Wind and Truth'),
+      authors: [AuthorName('Brandon Sanderson')],
+      status: 'to-read',
+      language: 'en',
+    })
+    if (typeof source === 'object' && 'id' in source)
+      for (const format of ['BOOK', 'AUDIOBOOK'])
+        await as(reader)(
+          `mutation ($bookId: BookId!) { awaitBookEdition(bookId: $bookId, format: ${format}) { id } }`,
+          { bookId: source.id },
+        )
+  })
+
+  test('reads the library once for its side strips, its rows apart as before', async () => {
+    const separate = [
+      await request('FriendRecommendations'),
+      await request('AwaitedEditions', { format: 'BOOK' }),
+      await request('AwaitedEditions', { format: 'AUDIOBOOK' }),
+      await request('AwardSections', { format: 'BOOK' }),
+    ]
+    const sides = await request('DiscoverSides', { withAwards: true, awardsFormat: 'BOOK' })
+    const withoutAwards = await request('DiscoverSides', {
+      withAwards: false,
+      awardsFormat: 'BOOK',
+    })
+
+    expect(sides.queriedDocs).toBeLessThan(2 * LIBRARY_SIZE)
+    expect(sides.billed).toBeLessThan(total(separate) * 0.35)
+    expect(withoutAwards.billed).toBeLessThanOrEqual(sides.billed)
+  })
+})

@@ -72,7 +72,7 @@ object FriendsApi {
 
     suspend fun picks(): FriendPicks {
         if (Showcase.isOn) return FriendPicks()
-        val found = GraphQLClient.fetch(FriendRecommendationsQuery()).friendRecommendations
+        val found = GraphQLClient.fetch(FriendRecommendationsQuery()).friendRecommendations.friendRecommendationsFields
         fun lovers(friends: List<Pair<String, String?>>, many: Boolean) = FriendLovers(friends.map { FriendLovers.Lover(it.first, it.second) }, many)
         return FriendPicks(
             books = found.books.map { row ->

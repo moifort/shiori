@@ -46,6 +46,10 @@ struct DiscoverClient: Sendable {
     var setSagaFollowed: @Sendable (_ seriesId: String, Bool) async throws -> Void = { _, _ in }
     /// The reader's own copy an edition is awaited of, for its saga.
     var book: @Sendable (_ bookId: String) async throws -> Book? = { _ in nil }
+    /// The friends' hearts, the editions awaited and, when a format is named,
+    /// its award winners, in one request that reads the library once. Nil, or
+    /// a field in error, and each is asked alone through the closures above.
+    var sides: (@Sendable (_ awards: ReleaseFormat?) async throws -> DiscoverSides)? = nil
 }
 
 extension DiscoverClient {
@@ -79,7 +83,8 @@ extension DiscoverClient {
         requestAlerts: { _ = await PushRegistrar.shared.requestPermission() },
         sagaVolumes: { try await BookAPI.sagaVolumes(seriesId: $0, language: $1) },
         setSagaFollowed: { _ = try await SeriesAPI.setFollowed(seriesId: $0, followed: $1) },
-        book: { try await BookAPI.book(id: $0) }
+        book: { try await BookAPI.book(id: $0) },
+        sides: { try await DiscoverAPI.sides(awards: $0) }
     )
 
     static let preview = DiscoverClient(

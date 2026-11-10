@@ -181,6 +181,61 @@ struct DiscoverViewModelTests {
         #expect(requests.mostAtOnce <= 1)
     }
 
+    /// The friends' hearts and the editions awaited go in one request; the
+    /// rows of each format keep theirs, one after the other.
+    @Test func anAppearanceAsksTheSideStripsTogether() async {
+        let requests = Requests()
+        var client = DiscoverClient.counting(requests)
+        let preview = DiscoverClient.preview
+        client.sides = { format in
+            try await requests.record("sides \(format.map { "\($0)" } ?? "-")") {
+                DiscoverSides(
+                    picks: try await preview.picks(),
+                    awaited: [.book: try await preview.awaited(.book), .audiobook: try await preview.awaited(.audiobook)],
+                    awards: nil
+                )
+            }
+        }
+        let viewModel = DiscoverViewModel(client: client, snapshots: .none)
+
+        await viewModel.loadOnAppear()
+
+        #expect(requests.counts == [
+            "alerts": 1, "sides -": 1, "awards book": 1,
+            "discoveries book": 1, "discovery book": 1, "discovery audiobook": 1,
+        ])
+        #expect(viewModel.picks.books.count == DiscoveryFeed.preview.picks.books.count)
+        #expect(viewModel.feed.awaited[.book]?.count == (DiscoveryFeed.preview.awaited[.book] ?? []).count)
+    }
+
+    /// A field in error loses the whole answer: each strip is asked alone.
+    @Test func sideStripsInErrorAreAskedAlone() async {
+        let requests = Requests()
+        var client = DiscoverClient.counting(requests)
+        client.sides = { _ in throw APIError.graphQL(messages: ["friendRecommendations failed"]) }
+        let viewModel = DiscoverViewModel(client: client, snapshots: .none)
+
+        await viewModel.loadOnAppear()
+
+        #expect(requests.counts["picks"] == 1)
+        #expect(requests.counts["awaited book"] == 1)
+        #expect(requests.counts["awaited audiobook"] == 1)
+    }
+
+    /// Offline, the strips are not asked one by one: they would only fail as
+    /// many times.
+    @Test func sideStripsOfflineAreNotAskedAgain() async {
+        let requests = Requests()
+        var client = DiscoverClient.counting(requests)
+        client.sides = { _ in throw URLError(.notConnectedToInternet) }
+        let viewModel = DiscoverViewModel(client: client, snapshots: .none)
+
+        await viewModel.loadOnAppear()
+
+        #expect(requests.counts["picks"] == nil)
+        #expect(requests.counts["awaited book"] == nil)
+    }
+
     @Test func comingBackAsksOnlyTheBell() async {
         let requests = Requests()
         let viewModel = DiscoverViewModel(client: .counting(requests), snapshots: .none)

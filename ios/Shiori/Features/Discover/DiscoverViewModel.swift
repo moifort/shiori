@@ -68,13 +68,16 @@ final class DiscoverViewModel {
 
     private func fetchPicks() async {
         do {
-            let found = try await client.picks()
-            withAnimation(.smooth) { feed.picks = found }
-            markAnswered(.picks)
-            saveSnapshot()
+            show(picks: try await client.picks())
         } catch {
             _ = reportError(error)
         }
+    }
+
+    private func show(picks found: FriendPicks) {
+        withAnimation(.smooth) { feed.picks = found }
+        markAnswered(.picks)
+        saveSnapshot()
     }
 
     /// "Bientôt disponible": the editions awaited in both formats — last
@@ -129,14 +132,17 @@ final class DiscoverViewModel {
 
     private func fetchAwaited(_ format: ReleaseFormat) async {
         do {
-            let found = try await client.awaited(format)
-            withAnimation(.smooth) { feed.awaited[format] = found }
-            markAnswered(.awaited(format))
-            saveSnapshot()
+            show(awaited: try await client.awaited(format), in: format)
         } catch {
             guard !isCancellation(error) else { return }
             _ = reportError(error)
         }
+    }
+
+    private func show(awaited found: [AwaitedEdition], in format: ReleaseFormat) {
+        withAnimation(.smooth) { feed.awaited[format] = found }
+        markAnswered(.awaited(format))
+        saveSnapshot()
     }
 
     /// The award winners in each format, one section per genre the reader
@@ -157,16 +163,19 @@ final class DiscoverViewModel {
 
     private func fetchAwards(_ format: ReleaseFormat) async {
         do {
-            let found = try await client.awards(format)
-            withAnimation(.smooth) { awards[format] = found }
-            markAnswered(.awards(format))
-            if let cache = snapshots.awards {
-                let kept = awards
-                Task.detached { cache.write(kept) }
-            }
+            show(awards: try await client.awards(format), in: format)
         } catch {
             guard !isCancellation(error) else { return }
             _ = reportError(error)
+        }
+    }
+
+    private func show(awards found: [AwardSection], in format: ReleaseFormat) {
+        withAnimation(.smooth) { awards[format] = found }
+        markAnswered(.awards(format))
+        if let cache = snapshots.awards {
+            let kept = awards
+            Task.detached { cache.write(kept) }
         }
     }
 
@@ -324,18 +333,74 @@ final class DiscoverViewModel {
     /// setting being changed outside the app.
     func loadOnAppear() async {
         async let alerts: Void = loadAlerts()
-        async let picks: Void = loadIfMissing(.picks)
-        async let printed: Void = loadIfMissing(.awaited(.book))
-        async let recorded: Void = loadIfMissing(.awaited(.audiobook))
-        // Over last session's rows the format shown is known at once; over
-        // nothing, it waits for the rows to say which one the reader holds.
+        // Over last session's rows the format shown is known at once, and its
+        // award winners go with the side strips; over nothing, they wait for
+        // the rows to say which format the reader holds.
         let overSnapshot = feed.sagas != nil
-        async let shown: Void = overSnapshot ? loadShownIfMissing() : ()
+        let shownFormat = awardsFormat
+        async let sides: Void = loadSidesIfMissing(awards: overSnapshot ? shownFormat : nil)
+        async let shown: Void = overSnapshot ? loadIfMissing(.discoveries(shownFormat)) : ()
         for format in ReleaseFormat.allCases { await loadIfMissing(.rows(format)) }
         await shown
         // The rows may have moved the format shown.
         await loadShownIfMissing()
-        _ = await (alerts, picks, printed, recorded)
+        _ = await (alerts, sides)
+    }
+
+    /// The friends' hearts, the editions awaited and, when named, a format's
+    /// award winners — the strips the tab asks for at once on appearing — in
+    /// one request, which reads the library once for them. The ones already
+    /// answered, or already on their way, are left out; should the request
+    /// come back with a field in error, each is asked alone, as before.
+    private func loadSidesIfMissing(awards format: ReleaseFormat?) async {
+        var sections: [Section] = [.picks, .awaited(.book), .awaited(.audiobook)]
+        if let format { sections.append(.awards(format)) }
+        let missing = sections.filter { !answered.contains($0) }
+        if let sides = client.sides, missing.count > 1,
+            let behind = await gate.runTogether(missing, { await fetchSides(sides, missing) })
+        {
+            // A write landed while the answer was on its way: those again, alone.
+            await loadEach(missing.filter { behind.contains($0) })
+            return
+        }
+        await loadEach(missing)
+    }
+
+    private func fetchSides(
+        _ sides: @Sendable (ReleaseFormat?) async throws -> DiscoverSides,
+        _ sections: [Section]
+    ) async {
+        let format = sections.lazy.compactMap { section -> ReleaseFormat? in
+            if case let .awards(format) = section { format } else { nil }
+        }.first
+        do {
+            let found = try await sides(format)
+            if sections.contains(.picks) { show(picks: found.picks) }
+            for awaited in ReleaseFormat.allCases where sections.contains(.awaited(awaited)) {
+                show(awaited: found.awaited[awaited] ?? [], in: awaited)
+            }
+            if let format, let winners = found.awards { show(awards: winners, in: format) }
+        } catch {
+            guard !isCancellation(error) else { return }
+            guard GraphQLHelpers.answeredWithErrors(error) else {
+                _ = reportError(error)
+                return
+            }
+            await withTaskGroup(of: Void.self) { group in
+                for section in sections {
+                    group.addTask { await self.fetch(section) }
+                }
+            }
+        }
+    }
+
+    /// Each section loaded alone, side by side.
+    private func loadEach(_ sections: [Section]) async {
+        await withTaskGroup(of: Void.self) { group in
+            for section in sections {
+                group.addTask { await self.loadIfMissing(section) }
+            }
+        }
     }
 
     /// A pull: the rows of both formats and the friends' picks are asked
@@ -400,14 +465,16 @@ final class DiscoverViewModel {
     /// it is already on its way.
     private func loadIfMissing(_ section: Section) async {
         guard !answered.contains(section) else { return }
-        await gate.run(section, again: false) {
-            switch section {
-            case let .rows(format): await fetchRows(format)
-            case .picks: await fetchPicks()
-            case let .awaited(format): await fetchAwaited(format)
-            case let .awards(format): await fetchAwards(format)
-            case let .discoveries(format): await fetchDiscoveries(format)
-            }
+        await gate.run(section, again: false) { await fetch(section) }
+    }
+
+    private func fetch(_ section: Section) async {
+        switch section {
+        case let .rows(format): await fetchRows(format)
+        case .picks: await fetchPicks()
+        case let .awaited(format): await fetchAwaited(format)
+        case let .awards(format): await fetchAwards(format)
+        case let .discoveries(format): await fetchDiscoveries(format)
         }
     }
 

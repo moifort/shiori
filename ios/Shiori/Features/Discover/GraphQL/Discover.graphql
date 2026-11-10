@@ -130,26 +130,49 @@ fragment DiscoveredWorkFields on DiscoveredWork {
 # copy of the friend who hearted them last, the sagas their first volume only.
 query FriendRecommendations {
   friendRecommendations {
-    books {
-      book {
-        ...FriendBookRow
-      }
-      ...FriendLovedBookLovers
+    ...FriendRecommendationsFields
+  }
+}
+
+# Découvrir's side strips in one request, so the reader's library is read once
+# for them: the friends' hearts, the editions awaited in both formats, and the
+# award winners of the format shown when it is known. The rows of the two
+# formats keep their own requests, one after the other, as the tab fills in.
+query DiscoverSides($withAwards: Boolean!, $awardsFormat: ReleaseFormat!) {
+  friendRecommendations {
+    ...FriendRecommendationsFields
+  }
+  awaitedBooks: awaitedEditions(format: BOOK) {
+    ...AwaitedEditionFields
+  }
+  awaitedAudiobooks: awaitedEditions(format: AUDIOBOOK) {
+    ...AwaitedEditionFields
+  }
+  awardSections(format: $awardsFormat) @include(if: $withAwards) {
+    ...AwardSectionFields
+  }
+}
+
+fragment FriendRecommendationsFields on FriendRecommendations {
+  books {
+    book {
+      ...FriendBookRow
     }
-    sagas {
-      saga {
-        ...FriendSagaRow
-      }
-      ...FriendLovedSagaLovers
+    ...FriendLovedBookLovers
+  }
+  sagas {
+    saga {
+      ...FriendSagaRow
     }
-    authors {
-      author {
-        key
-        name
-        portraitUrl
-      }
-      ...FriendLovedAuthorLovers
+    ...FriendLovedSagaLovers
+  }
+  authors {
+    author {
+      key
+      name
+      portraitUrl
     }
+    ...FriendLovedAuthorLovers
   }
 }
 

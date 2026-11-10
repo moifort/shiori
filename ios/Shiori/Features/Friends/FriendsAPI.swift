@@ -389,41 +389,7 @@ enum FriendsAPI {
             GraphQLClient.shared.apollo,
             query: ShioriGraphQL.FriendRecommendationsQuery()
         )
-        let found = data.friendRecommendations
-        return FriendPicks(
-            books: found.books.map { row in
-                let lovers = row.fragments.friendLovedBookLovers
-                return LovedBook(
-                    book: FriendBook(row: row.book.fragments.friendBookRow),
-                    lovers: FriendLovers(
-                        friends: lovers.friends.map { .init(userId: $0.userId, firstName: $0.firstName) },
-                        lovedByMany: lovers.lovedByMany
-                    )
-                )
-            },
-            sagas: found.sagas.map { row in
-                let lovers = row.fragments.friendLovedSagaLovers
-                return LovedSaga(
-                    saga: FriendSaga(row: row.saga.fragments.friendSagaRow),
-                    lovers: FriendLovers(
-                        friends: lovers.friends.map { .init(userId: $0.userId, firstName: $0.firstName) },
-                        lovedByMany: lovers.lovedByMany
-                    )
-                )
-            },
-            authors: found.authors.map { row in
-                let lovers = row.fragments.friendLovedAuthorLovers
-                return LovedAuthor(
-                    key: row.author.key,
-                    name: row.author.name,
-                    portraitURL: row.author.portraitUrl.flatMap(URL.init(string:)),
-                    lovers: FriendLovers(
-                        friends: lovers.friends.map { .init(userId: $0.userId, firstName: $0.firstName) },
-                        lovedByMany: lovers.lovedByMany
-                    )
-                )
-            }
-        )
+        return FriendPicks(fields: data.friendRecommendations.fragments.friendRecommendationsFields)
     }
 
     /// Whether the reader may take a friend's book as an audiobook. Nil for a
@@ -654,6 +620,45 @@ private extension Book {
             startedAt: row.startedAt.flatMap(GraphQLHelpers.parseISO8601),
             finishedAt: row.finishedAt.flatMap(GraphQLHelpers.parseISO8601),
             shelvedAt: GraphQLHelpers.parseISO8601(row.shelvedAt)
+        )
+    }
+}
+
+extension FriendPicks {
+    init(fields found: ShioriGraphQL.FriendRecommendationsFields) {
+        self.init(
+            books: found.books.map { row in
+                let lovers = row.fragments.friendLovedBookLovers
+                return LovedBook(
+                    book: FriendBook(row: row.book.fragments.friendBookRow),
+                    lovers: FriendLovers(
+                        friends: lovers.friends.map { .init(userId: $0.userId, firstName: $0.firstName) },
+                        lovedByMany: lovers.lovedByMany
+                    )
+                )
+            },
+            sagas: found.sagas.map { row in
+                let lovers = row.fragments.friendLovedSagaLovers
+                return LovedSaga(
+                    saga: FriendSaga(row: row.saga.fragments.friendSagaRow),
+                    lovers: FriendLovers(
+                        friends: lovers.friends.map { .init(userId: $0.userId, firstName: $0.firstName) },
+                        lovedByMany: lovers.lovedByMany
+                    )
+                )
+            },
+            authors: found.authors.map { row in
+                let lovers = row.fragments.friendLovedAuthorLovers
+                return LovedAuthor(
+                    key: row.author.key,
+                    name: row.author.name,
+                    portraitURL: row.author.portraitUrl.flatMap(URL.init(string:)),
+                    lovers: FriendLovers(
+                        friends: lovers.friends.map { .init(userId: $0.userId, firstName: $0.firstName) },
+                        lovedByMany: lovers.lovedByMany
+                    )
+                )
+            }
         )
     }
 }

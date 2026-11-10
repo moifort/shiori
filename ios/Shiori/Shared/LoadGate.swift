@@ -27,4 +27,20 @@ final class LoadGate<Kind: Hashable> {
             await load()
         } while stale.contains(kind) && !Task.isCancelled
     }
+
+    /// Several kinds brought by one request: run only when none of them is on
+    /// its way already, else answers nil and the caller loads them one by
+    /// one. The kinds a write made stale meanwhile are answered back, for the
+    /// caller to load again on their own.
+    func runTogether(_ kinds: [Kind], _ load: () async -> Void) async -> Set<Kind>? {
+        let together = Set(kinds)
+        guard running.isDisjoint(with: together) else { return nil }
+        running.formUnion(together)
+        stale.subtract(together)
+        await load()
+        running.subtract(together)
+        let behind = stale.intersection(together)
+        stale.subtract(behind)
+        return behind
+    }
 }

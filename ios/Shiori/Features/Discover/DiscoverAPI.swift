@@ -226,6 +226,14 @@ struct DiscoveryPage: Sendable {
     let followed: Int
 }
 
+/// Découvrir's side strips, asked together: the award winners only when the
+/// request named the format shown.
+struct DiscoverSides: Sendable {
+    let picks: FriendPicks
+    let awaited: [ReleaseFormat: [AwaitedEdition]]
+    let awards: [AwardSection]?
+}
+
 enum DiscoverAPI {
     /// A first look runs grounded model calls, a few side by side, for up to a
     /// minute and a half: the request is given that and a margin.
@@ -242,6 +250,32 @@ enum DiscoverAPI {
             query: ShioriGraphQL.DiscoveryQuery(format: .case(format.graphQL))
         )
         return DiscoveryPage(fields: data.discovery.fragments.discoveryFields)
+    }
+
+    /// Découvrir's side strips in one request, which reads the library once
+    /// for them: the friends' hearts, the editions awaited in both formats,
+    /// and the award winners of `awards` when the format shown is known.
+    static func sides(awards: ReleaseFormat?) async throws -> DiscoverSides {
+        #if DEBUG
+        if Showcase.isOn {
+            return DiscoverSides(picks: Showcase.picks, awaited: [.book: [], .audiobook: []], awards: awards.map { _ in [] })
+        }
+        #endif
+        let data = try await GraphQLHelpers.fetch(
+            GraphQLClient.shared.apollo,
+            query: ShioriGraphQL.DiscoverSidesQuery(
+                withAwards: awards != nil,
+                awardsFormat: .case((awards ?? .book).graphQL)
+            )
+        )
+        return DiscoverSides(
+            picks: FriendPicks(fields: data.friendRecommendations.fragments.friendRecommendationsFields),
+            awaited: [
+                .book: data.awaitedBooks.map { AwaitedEdition(fields: $0.fragments.awaitedEditionFields) },
+                .audiobook: data.awaitedAudiobooks.map { AwaitedEdition(fields: $0.fragments.awaitedEditionFields) },
+            ],
+            awards: data.awardSections?.map { AwardSection(fields: $0.fragments.awardSectionFields) }
+        )
     }
 
     /// Look up now the sagas of that format nobody ever looked up. What was
