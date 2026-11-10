@@ -18,11 +18,11 @@ enum NewsAction {
 }
 
 /// The Découvrir tab, pure: an agenda of what the book world brought the
-/// reader. The week in seven days at the top, each with a dot per piece of
-/// news; under it the day picked, its first news as a large card over its
-/// cover's colours, the rest as rows; then the days to come with a release
-/// announced, each a rail of covers. Swiping the week goes back to the weeks
-/// before, or on to the next ones.
+/// reader. At the top a strip of the days that bring something, a month back
+/// and a month ahead, each with a dot per piece of news; under it the day
+/// picked, its first news as a large card over its cover's colours, the rest
+/// as rows; then the days to come with a release announced, each a rail of
+/// covers.
 struct NewsPage: View {
     let agenda: NewsAgenda
     /// The cards' books just wished for, by `NewsCard.key`.
@@ -32,17 +32,17 @@ struct NewsPage: View {
     let alertsSilenced: Bool
     let onAction: (NewsAction) async -> Void
 
-    @State private var week: Int?
     @State private var picked: Date?
 
     private func act(_ action: NewsAction) {
         Task { await onAction(action) }
     }
 
-    private var shownWeek: Int { min(week ?? agenda.currentWeek, max(agenda.weeks.count - 1, 0)) }
+    private var pickedDay: Date? {
+        agenda.days.contains { $0.day == picked } ? picked : agenda.openingDay
+    }
     private var day: NewsAgendaDay? {
-        let wanted = picked ?? agenda.today
-        return agenda.weeks.lazy.flatMap { $0 }.first { $0.day == wanted }
+        agenda.days.first { $0.day == pickedDay }
     }
 
     var body: some View {
@@ -79,12 +79,11 @@ struct NewsPage: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
                     VStack(alignment: .leading, spacing: 0) {
-                        if !agenda.weeks.isEmpty {
-                            NewsWeekStrip(
-                                weeks: agenda.weeks,
+                        if let pickedDay {
+                            NewsDayStrip(
+                                days: agenda.days,
                                 today: agenda.today,
-                                week: Binding(get: { shownWeek }, set: { week = $0 }),
-                                picked: Binding(get: { picked ?? agenda.today }, set: { picked = $0 })
+                                picked: Binding(get: { pickedDay }, set: { picked = $0 })
                             )
                         }
                         if let day {
@@ -116,16 +115,6 @@ struct NewsPage: View {
                 .padding(.bottom, 32)
             }
             .refreshable { await onAction(.refresh) }
-            .onChange(of: week) { _, newWeek in
-                // A week swiped to opens on its first day with news, today's
-                // week on today.
-                guard let newWeek, agenda.weeks.indices.contains(newWeek) else { return }
-                let days = agenda.weeks[newWeek]
-                guard !days.contains(where: { $0.day == picked }) else { return }
-                picked = days.first { $0.day == agenda.today }?.day
-                    ?? days.first { !$0.cards.isEmpty }?.day
-                    ?? days.first?.day
-            }
         }
     }
 
@@ -152,70 +141,74 @@ struct NewsPage: View {
     }
 }
 
-// MARK: - La semaine
+// MARK: - L'agenda
 
-/// The week in seven leaves, Monday to Sunday, drawn as a release's calendar
-/// leaf: the day picked in white, today ringed, a day with nothing dimmed, a
-/// dot under each for its news. A swipe moves a week.
-struct NewsWeekStrip: View {
-    let weeks: [[NewsAgendaDay]]
+/// The days that bring something, oldest first, drawn as a release's calendar
+/// leaf: the day picked in white, today ringed, a dot under each for its news,
+/// the month over the first leaf of each. It scrolls sideways and opens on the
+/// day picked.
+struct NewsDayStrip: View {
+    let days: [NewsAgendaDay]
     let today: Date
-    @Binding var week: Int
     @Binding var picked: Date
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .firstTextBaseline) {
-                Text(Self.title(weeks[week], today: today))
+                Text("L'agenda")
                     .font(.title2.weight(.bold))
                 Spacer()
-                Text(Self.range(weeks[week]))
+                Text(Self.range(days))
                     .font(.subheadline)
                     .foregroundStyle(.white.opacity(0.7))
             }
             .padding(.horizontal, 20)
             .foregroundStyle(.white)
-            TabView(selection: $week) {
-                ForEach(weeks.indices, id: \.self) { index in
-                    HStack(spacing: 0) {
-                        ForEach(weeks[index]) { day in
-                            NewsDayLeaf(
-                                day: day,
-                                isToday: day.day == today,
-                                isPicked: day.day == picked
-                            ) { picked = day.day }
-                            .frame(maxWidth: .infinity)
+            ScrollViewReader { proxy in
+                ScrollView(.horizontal) {
+                    HStack(alignment: .top, spacing: 10) {
+                        ForEach(Array(days.enumerated()), id: \.element.id) { index, day in
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text(Self.opensMonth(index, in: days) ? Self.month(day.day) : " ")
+                                    .font(.system(size: 11, weight: .bold))
+                                    .tracking(0.6)
+                                    .foregroundStyle(.white.opacity(0.6))
+                                    .fixedSize()
+                                    .frame(width: 45, alignment: .leading)
+                                    .accessibilityHidden(true)
+                                NewsDayLeaf(
+                                    day: day,
+                                    isToday: day.day == today,
+                                    isPicked: day.day == picked
+                                ) { picked = day.day }
+                            }
+                            .id(day.day)
                         }
                     }
-                    .padding(.horizontal, 14)
-                    .tag(index)
+                    .padding(.horizontal, 20)
+                    .scrollTargetLayout()
                 }
+                .scrollIndicators(.hidden)
+                .onAppear { proxy.scrollTo(picked, anchor: .center) }
             }
-            .tabViewStyle(.page(indexDisplayMode: .never))
-            .frame(height: 72)
         }
     }
 
-    /// "Cette semaine", "La semaine dernière", "La semaine prochaine", else
-    /// "Semaine du 2 nov.".
-    static func title(_ days: [NewsAgendaDay], today: Date, calendar: Calendar = .current) -> String {
-        guard let monday = days.first?.day else { return "" }
-        let weeks = calendar.dateComponents([.day], from: monday, to: today).day.map { Int(floor(Double($0) / 7)) } ?? 0
-        switch weeks {
-        case 0: return String(localized: "Cette semaine")
-        case 1: return String(localized: "La semaine dernière")
-        case -1: return String(localized: "La semaine prochaine")
-        default: return String(localized: "Semaine du \(monday.formatted(.dateTime.day().month(.abbreviated)))")
-        }
+    /// Whether the leaf at `index` is the first of its month.
+    static func opensMonth(_ index: Int, in days: [NewsAgendaDay], calendar: Calendar = .current) -> Bool {
+        index == 0 || !calendar.isDate(days[index].day, equalTo: days[index - 1].day, toGranularity: .month)
     }
 
-    /// "9 – 15 novembre", "27 oct. – 2 nov.".
+    /// "NOV.", over the month's first leaf.
+    static func month(_ day: Date) -> String {
+        day.formatted(.dateTime.month(.abbreviated)).localizedUppercase
+    }
+
+    /// "novembre", "octobre – décembre": the months the strip spans.
     static func range(_ days: [NewsAgendaDay], calendar: Calendar = .current) -> String {
         guard let first = days.first?.day, let last = days.last?.day else { return "" }
-        if calendar.isDate(first, equalTo: last, toGranularity: .month) {
-            return "\(first.formatted(.dateTime.day())) – \(last.formatted(.dateTime.day().month(.wide)))"
-        }
-        return "\(first.formatted(.dateTime.day().month(.abbreviated))) – \(last.formatted(.dateTime.day().month(.abbreviated)))"
+        let wide = { (day: Date) in day.formatted(.dateTime.month(.wide)) }
+        return calendar.isDate(first, equalTo: last, toGranularity: .month) ? wide(first) : "\(wide(first)) – \(wide(last))"
     }
 }
 
@@ -258,7 +251,6 @@ private struct NewsDayLeaf: View {
                 }
                 .frame(height: 5)
             }
-            .opacity(day.cards.isEmpty && !isPicked ? 0.42 : 1)
             .contentShape(.rect)
         }
         .buttonStyle(.plain)

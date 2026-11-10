@@ -48,13 +48,13 @@ struct NewsAgendaTests {
         )
     }
 
-    @Test func theWeekRunsMondayToSundayAndOpensOnToday() {
-        let agenda = agenda(released: [release("today", "2026-11-10")])
+    @Test func onlyTheDaysWithNewsAreInTheStripAndItOpensOnToday() {
+        let agenda = agenda(released: [release("today", "2026-11-10"), release("old", "2026-10-28")])
 
-        let week = agenda.weeks[agenda.currentWeek]
-        #expect(week.map(\.day) == (9...15).map { day("2026-11-\($0)") })
+        #expect(agenda.days.map(\.day) == [day("2026-10-28"), day("2026-11-10")])
         #expect(agenda.today == day("2026-11-10"))
-        #expect(week[1].cards.map(\.id) == ["release-today"])
+        #expect(agenda.openingDay == day("2026-11-10"))
+        #expect(agenda.days.last?.cards.map(\.id) == ["release-today"])
     }
 
     @Test func eachDayHoldsItsOwnNewsNewestFirst() {
@@ -66,27 +66,28 @@ struct NewsAgendaTests {
             ]
         )
 
-        let monday = agenda.weeks[agenda.currentWeek][0]
-        #expect(monday.cards.map(\.id) == ["friend-late", "friend-early", "release-monday"])
+        #expect(agenda.days.first?.cards.map(\.id) == ["friend-late", "friend-early", "release-monday"])
     }
 
-    @Test func theWeeksGoBackToTheOldestNews() {
-        let agenda = agenda(released: [release("old", "2026-10-28")])
+    @Test func aQuietTodayOpensOnTheNearestDayTheOneToComeOnATie() {
+        let agenda = agenda(
+            released: [release("before", "2026-11-07")],
+            upcoming: [release("after", "2026-11-13")]
+        )
 
-        #expect(agenda.weeks.count == 3)
-        #expect(agenda.currentWeek == 2)
-        #expect(agenda.weeks[0].first?.day == day("2026-10-26"))
+        #expect(!agenda.days.contains { $0.day == day("2026-11-10") })
+        #expect(agenda.openingDay == day("2026-11-13"))
     }
 
-    @Test func daysToComeHoldWhatIsAnnouncedForThem() {
+    @Test func daysToComeHoldWhatIsAnnouncedForThemAMonthAhead() {
         let agenda = agenda(upcoming: [
             release("thursday", "2026-11-12"), release("nextWeek", "2026-11-18"),
-            release("month", "2026-12"), release("past", "2026-11-08"),
+            release("month", "2026-12"), release("past", "2026-11-08"), release("far", "2027-01-20"),
         ])
 
-        #expect(agenda.coming.map(\.day) == [day("2026-11-12"), day("2026-11-18")])
-        #expect(agenda.weeks[agenda.currentWeek][3].cards.map(\.id) == ["upcoming-thursday"])
-        #expect(agenda.weeks.count == 2)
+        #expect(agenda.coming.map(\.day) == [day("2026-11-12"), day("2026-11-18"), day("2027-01-20")])
+        #expect(agenda.days.map(\.day) == [day("2026-11-12"), day("2026-11-18")])
+        #expect(agenda.days.first?.cards.map(\.id) == ["upcoming-thursday"])
     }
 
     @Test func nothingAtAllIsEmpty() {

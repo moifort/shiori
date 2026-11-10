@@ -68,15 +68,14 @@ struct NewsAgendaDay: Identifiable, Hashable, Sendable {
     var id: Date { day }
 }
 
-/// The Découvrir page as an agenda: the week in seven days, what each one
-/// brought or will bring, and the days to come with a release on them. Pure:
-/// the same loads and the same day always give the same agenda.
+/// The Découvrir page as an agenda: only the days that bring something, a
+/// month back and a month ahead, then the days to come with a release on
+/// them. A quiet week leaves no empty leaf. Pure: the same loads and the same
+/// day always give the same agenda.
 struct NewsAgenda: Hashable, Sendable {
-    /// The weeks a reader can page through, oldest first, Monday to Sunday:
-    /// back to the oldest news loaded, on to the last day announced.
-    let weeks: [[NewsAgendaDay]]
-    /// Where the current week sits in `weeks`.
-    let currentWeek: Int
+    /// The days with news, oldest first: back to the oldest news loaded, on
+    /// to the last day announced within `futureDays`.
+    let days: [NewsAgendaDay]
     let today: Date
     /// After today, the days with a release announced for them, soonest first.
     let coming: [NewsAgendaDay]
@@ -88,16 +87,22 @@ struct NewsAgenda: Hashable, Sendable {
     static let comingCount = 4
     /// How far back the agenda reaches.
     static let pastDays = 30
-    /// How far ahead the weeks run.
-    static let futureWeeks = 4
+    /// How far ahead the agenda reaches.
+    static let futureDays = 31
 
-    var isEmpty: Bool {
-        weeks.allSatisfy { $0.allSatisfy(\.cards.isEmpty) } && coming.isEmpty
+    var isEmpty: Bool { days.isEmpty && coming.isEmpty }
+
+    /// The day the page opens on: today when it holds news, else the nearest
+    /// day that does, the one to come on a tie.
+    var openingDay: Date? {
+        days.min { lhs, rhs in
+            let left = abs(lhs.day.timeIntervalSince(today)), right = abs(rhs.day.timeIntervalSince(today))
+            return left == right ? lhs.day > rhs.day : left < right
+        }?.day
     }
 
-    init(weeks: [[NewsAgendaDay]], currentWeek: Int, today: Date, coming: [NewsAgendaDay], hasFriends: Bool) {
-        self.weeks = weeks
-        self.currentWeek = currentWeek
+    init(days: [NewsAgendaDay], today: Date, coming: [NewsAgendaDay], hasFriends: Bool) {
+        self.days = days
         self.today = today
         self.coming = coming
         self.hasFriends = hasFriends
@@ -119,11 +124,9 @@ struct NewsAgenda: Hashable, Sendable {
         now: Date = .now,
         calendar: Calendar = .current
     ) {
-        var calendar = calendar
-        // The week opens on Monday, as a French agenda does.
-        calendar.firstWeekday = 2
         let today = calendar.startOfDay(for: now)
         let since = calendar.date(byAdding: .day, value: -Self.pastDays, to: today) ?? today
+        let until = calendar.date(byAdding: .day, value: Self.futureDays, to: today) ?? today
         let moves = NewsFeedLayout.friendSections(events: events, now: now, calendar: calendar)
             .flatMap(\.moves)
         var byDay: [Date: [NewsCard]] = [:]
@@ -148,36 +151,12 @@ struct NewsAgenda: Hashable, Sendable {
         let picks = suggestions.map(NewsCard.suggestion).filter { !dismissed.contains($0.key) }
         byDay[today] = Array(prizes.prefix(2)) + (byDay[today] ?? []) + Array(picks.prefix(1))
 
-        let monday = calendar.dateInterval(of: .weekOfYear, for: today)?.start ?? today
-        let oldest = byDay.filter { !$0.value.isEmpty }.keys.min() ?? today
-        let latest = ahead.keys.filter {
-            $0 < (calendar.date(byAdding: .weekOfYear, value: Self.futureWeeks, to: monday) ?? today)
-        }.max() ?? today
-        let firstMonday = calendar.dateInterval(of: .weekOfYear, for: oldest)?.start ?? monday
-        let lastMonday = calendar.dateInterval(of: .weekOfYear, for: latest)?.start ?? monday
-        var weeks: [[NewsAgendaDay]] = []
-        var start = firstMonday
-        while start <= lastMonday {
-            weeks.append((0..<7).compactMap { offset in
-                guard let day = calendar.date(byAdding: .day, value: offset, to: start) else { return nil }
-                return NewsAgendaDay(day: day, cards: day > today ? ahead[day] ?? [] : byDay[day] ?? [])
-            })
-            guard let next = calendar.date(byAdding: .weekOfYear, value: 1, to: start) else { break }
-            start = next
-        }
-        self.weeks = weeks
-        currentWeek = weeks.firstIndex { $0.first?.day == monday } ?? 0
+        let past = byDay.filter { !$0.value.isEmpty }.map { NewsAgendaDay(day: $0.key, cards: $0.value) }
+        let future = ahead.filter { $0.key <= until }.map { NewsAgendaDay(day: $0.key, cards: $0.value) }
+        days = (past + future).sorted { $0.day < $1.day }
         self.today = today
         coming = ahead.keys.sorted().prefix(Self.comingCount).map { NewsAgendaDay(day: $0, cards: ahead[$0] ?? []) }
         hasFriends = !moves.isEmpty
-    }
-
-    /// A day's place in the weeks, today's by default.
-    func position(of day: Date) -> (week: Int, day: Int)? {
-        for (week, days) in weeks.enumerated() {
-            if let index = days.firstIndex(where: { $0.day == day }) { return (week, index) }
-        }
-        return nil
     }
 
     /// The day of a `YYYY-MM-DD` date; nil for a month or a year alone.

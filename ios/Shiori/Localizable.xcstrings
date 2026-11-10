@@ -8025,6 +8025,22 @@
         }
       }
     },
+    "L'agenda" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Agenda"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'agenda"
+          }
+        }
+      }
+    },
     "L'analyse n'a pas abouti" : {
       "localizations" : {
         "en" : {
@@ -8197,22 +8213,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "La semaine dernière"
-          }
-        }
-      }
-    },
-    "La semaine prochaine" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Next week"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "La semaine prochaine"
           }
         }
       }
@@ -13345,22 +13345,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Se poursuit en arrière-plan"
-          }
-        }
-      }
-    },
-    "Semaine du %@" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Week of %@"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Semaine du %@"
           }
         }
       }
