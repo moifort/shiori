@@ -14,6 +14,7 @@ import type {
   AwaitedEditionView,
   AwaitedSource,
   AwaitedState,
+  EditionPassEntry,
   EditionWatch,
   FoundEdition,
 } from './types'
@@ -150,6 +151,51 @@ export const dueWatchesOf = (
         (watches.get(right.watchKey)?.checkedAt.getTime() ?? 0),
   )
 }
+
+// MARK: - What the hourly pass reads
+
+/** How long the pass trusts the state it left before reading every edition
+ *  again: a day, so entries of editions no longer awaited do not pile up and a
+ *  state gone wrong mends itself. */
+export const PASS_REBUILT_EVERY_MS = 86_400_000
+
+/** How far before the last pass an edition awaited since is looked for: the
+ *  instances' clocks are a few milliseconds apart, this is minutes. */
+export const PASS_CLOCK_MARGIN_MS = 10 * 60_000
+
+/** Where a key stands for the next pass, from its watch as read now. */
+export const passEntryOf = (
+  key: string,
+  watch: EditionWatch | undefined,
+  today: string,
+): EditionPassEntry => {
+  if (!watch) return { key }
+  if (
+    stateOf(watch.found, watch.format, today) === 'available' &&
+    isConfirmed(watch.found, watch.format)
+  )
+    return { key, done: true }
+  return { key, dueFrom: new Date(watch.checkedAt.getTime() + EDITION_WATCH_EVERY_MS) }
+}
+
+/** The keys that may be due now: no watch at the last pass, or one whose two
+ *  weeks are up, and every key an edition was awaited under since. A key
+ *  `done`, or not due before a later moment, cannot have become due: its
+ *  watch is only ever made younger. */
+export const passCandidatesOf = (
+  entries: readonly EditionPassEntry[],
+  awaitedSince: readonly Pick<AwaitedEdition, 'watchKey'>[],
+  now: Date,
+): string[] => [
+  ...new Set([
+    ...entries
+      .filter(
+        (entry) => !entry.done && (!entry.dueFrom || entry.dueFrom.getTime() <= now.getTime()),
+      )
+      .map((entry) => entry.key),
+    ...awaitedSince.map((awaited) => awaited.watchKey),
+  ]),
+]
 
 /** Whether the alert for an edition out is due: never sent, confirmed by its
  *  store, and out on a known day in the last three weeks. An edition out

@@ -384,3 +384,108 @@ describe('the editions awaited', () => {
     expect(fake.snapshot('awaited-editions').size).toBe(0)
   })
 })
+
+// The pass used to read every edition awaited and every watch behind them,
+// every hour, to look up a handful a week.
+describe("the hourly pass's reads", () => {
+  const DAY = 86_400_000
+  const HOUR = 3_600_000
+  const keyOf = (index: number) => `book-${index}--audiobook--fr`
+  const awaitedOf = (index: number, awaitedAt: Date) => {
+    const id = `${reader}--book-${index}--audiobook--fr`
+    fake.seed('awaited-editions', id, {
+      id,
+      userId: reader,
+      format: 'audiobook',
+      language: 'fr',
+      source: {
+        bookId: `book-${index}`,
+        ownerId: reader,
+        title: `Book ${index}`,
+        authors: ['Brandon Sanderson'],
+        language: 'en',
+      },
+      watchKey: keyOf(index),
+      awaitedAt,
+    })
+    return id
+  }
+  const watchOf = (index: number, checkedAt: Date) =>
+    fake.seed('edition-watches', keyOf(index), {
+      key: keyOf(index),
+      title: `Book ${index}`,
+      author: 'Brandon Sanderson',
+      originalLanguage: 'en',
+      format: 'audiobook',
+      language: 'fr',
+      checkedAt,
+    })
+  const pass = async (at: Date) => {
+    startFakeRequest()
+    asked.length = 0
+    const before = fake.docReads + fake.queriedDocs
+    const result = await AwaitedEditionUseCase.watchDue(at)
+    return { result, reads: fake.docReads + fake.queriedDocs - before, asked: [...asked].sort() }
+  }
+
+  // Forty editions looked up three days ago, one three weeks ago, one never.
+  const stocked = () => {
+    for (let index = 0; index < 40; index++) {
+      awaitedOf(index, new Date(now.getTime() - 30 * DAY))
+      watchOf(index, new Date(now.getTime() - 3 * DAY))
+    }
+    awaitedOf(40, new Date(now.getTime() - 30 * DAY))
+    watchOf(40, new Date(now.getTime() - 21 * DAY))
+    awaitedOf(41, new Date(now.getTime() - 30 * DAY))
+  }
+
+  test('reads only the editions that can be due once a pass has run', async () => {
+    stocked()
+    const first = await pass(now)
+    expect(first.asked).toEqual(['Book 40 (audio)', 'Book 41 (audio)'])
+    expect(first.reads).toBeGreaterThanOrEqual(84)
+
+    const next = await pass(new Date(now.getTime() + HOUR))
+
+    expect(next.asked).toEqual([])
+    expect(next.result).toEqual({ watched: 0, failed: 0, deferred: 0 })
+    // The state the last pass left; nothing awaited since, nothing due.
+    expect(next.reads).toBeLessThanOrEqual(2)
+  })
+
+  test('still looks up an edition awaited since, and every one whose two weeks are up', async () => {
+    stocked()
+    await pass(now)
+    awaitedOf(42, new Date(now.getTime() + 2 * HOUR))
+
+    const awaitedSince = await pass(new Date(now.getTime() + 3 * HOUR))
+    expect(awaitedSince.asked).toEqual(['Book 42 (audio)'])
+
+    // Eleven days on, the forty looked up three days before the first pass are
+    // due, as a pass reading everything finds them.
+    const due = await pass(new Date(now.getTime() + 11 * DAY + HOUR))
+    expect(due.asked).toHaveLength(40)
+  })
+
+  test('never looks up an edition nobody awaits any more', async () => {
+    stocked()
+    await pass(now)
+    const gone = awaitedOf(43, new Date(now.getTime() + HOUR))
+    watchOf(43, new Date(now.getTime() - 20 * DAY))
+    await fakeDb().collection('awaited-editions').doc(gone).delete()
+
+    const next = await pass(new Date(now.getTime() + 2 * HOUR))
+
+    expect(next.asked).toEqual([])
+  })
+
+  test('reads every edition again once a day', async () => {
+    stocked()
+    await pass(now)
+
+    const nextDay = await pass(new Date(now.getTime() + DAY + HOUR))
+
+    expect(nextDay.reads).toBeGreaterThanOrEqual(42)
+    expect(nextDay.asked).toEqual([])
+  })
+})

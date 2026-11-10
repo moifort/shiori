@@ -112,3 +112,18 @@ export type EditionOffer = {
   formats: ReleaseFormat[]
   awaited: AwaitedEditionView[]
 }
+
+/** Where one watch key stood when the hourly pass last read it: `done` once
+ *  its edition is out and confirmed, else the moment it may be due again; no
+ *  moment while it has no watch, or is due. */
+export type EditionPassEntry = { key: string; dueFrom?: Date; done?: boolean }
+
+/** What the hourly pass leaves for the next one, so that it reads only the
+ *  editions that can be due. Only that pass, and an edition's very first
+ *  await when its key has no watch yet, ever write a watch: a key's entry can
+ *  only be early, never late. Rebuilt from every edition once a day. */
+export type EditionPassState = {
+  entries: EditionPassEntry[]
+  savedAt: Date
+  rebuiltAt: Date
+}

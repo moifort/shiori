@@ -1,5 +1,10 @@
 import * as repository from '~/domain/awaited-edition/infrastructure/repository'
-import type { AwaitedEdition, AwaitedEditionId, EditionWatch } from '~/domain/awaited-edition/types'
+import type {
+  AwaitedEdition,
+  AwaitedEditionId,
+  EditionPassState,
+  EditionWatch,
+} from '~/domain/awaited-edition/types'
 import type { UserId } from '~/domain/shared/types'
 
 export namespace AwaitedEditionCommand {
@@ -18,4 +23,8 @@ export namespace AwaitedEditionCommand {
 
   export const deleteAllForUser = (userId: UserId): Promise<void> =>
     repository.removeAllByUser(userId)
+
+  /** What the hourly pass leaves for the next one. */
+  export const savePassState = (state: EditionPassState): Promise<void> =>
+    repository.savePassState(state)
 }

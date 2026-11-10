@@ -9,6 +9,10 @@ import {
   inShelfOrder,
   isNoLongerAwaited,
   MAX_AWAITED,
+  PASS_CLOCK_MARGIN_MS,
+  PASS_REBUILT_EVERY_MS,
+  passCandidatesOf,
+  passEntryOf,
   viewOf,
 } from '~/domain/awaited-edition/business-rules'
 import { AwaitedEditionCommand } from '~/domain/awaited-edition/command'
@@ -22,6 +26,7 @@ import type {
   AwaitedEditionView,
   AwaitedSource,
   EditionOffer,
+  EditionPassState,
   EditionWatch,
   ScannedBook,
 } from '~/domain/awaited-edition/types'
@@ -231,32 +236,40 @@ export namespace AwaitedEditionUseCase {
     startedAt = Date.now(),
   ): Promise<{ watched: number; failed: number; deferred: number }> => {
     const overBudget = () => Date.now() - startedAt > budgetMs
-    const all = await AwaitedEditionQuery.all()
-    const watches = await AwaitedEditionQuery.watches(all.map((awaited) => awaited.watchKey))
+    const { all, watches, stateAfter } = await editionsForThePass(now)
     const due = dueWatchesOf(all, watches, now, todayOf(now))
     let watched = 0
     let failed = 0
     let refusal: unknown
-    for (let start = 0; start < due.length; start += CALLS_AT_ONCE) {
-      if (refusal || overBudget()) {
-        if (refusal) logger.warn('edition watch stopped, AI credit spent', { error: refusal })
-        return { watched, failed, deferred: due.length - start }
+    const lookUpDue = async (): Promise<{ watched: number; failed: number; deferred: number }> => {
+      for (let start = 0; start < due.length; start += CALLS_AT_ONCE) {
+        if (refusal || overBudget()) {
+          if (refusal) logger.warn('edition watch stopped, AI credit spent', { error: refusal })
+          return { watched, failed, deferred: due.length - start }
+        }
+        await Promise.all(
+          due.slice(start, start + CALLS_AT_ONCE).map(async (awaited) => {
+            try {
+              const watch = await lookUp(seedOf(awaited), watches.get(awaited.watchKey), now)
+              watches.set(watch.key, watch)
+              watched += 1
+            } catch (error) {
+              failed += 1
+              if (isSpendCapReached(error)) refusal = error
+              else logger.warn('edition lookup failed', { error, watchKey: awaited.watchKey })
+            }
+          }),
+        )
       }
-      await Promise.all(
-        due.slice(start, start + CALLS_AT_ONCE).map(async (awaited) => {
-          try {
-            await lookUp(seedOf(awaited), watches.get(awaited.watchKey), now)
-            watched += 1
-          } catch (error) {
-            failed += 1
-            if (isSpendCapReached(error)) refusal = error
-            else logger.warn('edition lookup failed', { error, watchKey: awaited.watchKey })
-          }
-        }),
-      )
+      if (refusal) logger.warn('edition watch stopped, AI credit spent', { error: refusal })
+      return { watched, failed, deferred: 0 }
     }
-    if (refusal) logger.warn('edition watch stopped, AI credit spent', { error: refusal })
-    return { watched, failed, deferred: 0 }
+    const result = await lookUpDue()
+    // Best effort: without it, the next pass reads every edition awaited.
+    await AwaitedEditionCommand.savePassState(stateAfter()).catch((error) =>
+      logger.warn('edition pass state not saved', { error }),
+    )
+    return result
   }
 
   /** The morning pass's share: every edition awaited that came out, pushed to
@@ -287,6 +300,65 @@ export namespace AwaitedEditionUseCase {
       }
     }
     return { readers: reached.size }
+  }
+}
+
+/** The editions the hourly pass decides on, read by what can be due rather
+ *  than whole. The state the last pass left says, for each key awaited, when
+ *  its watch may be due again, or that its edition is out and confirmed; a
+ *  watch is only ever written by that pass, and by an edition's first await
+ *  when its key has none, so a key can only become due later than it says,
+ *  never sooner. This pass reads the keys that may be due now and the ones
+ *  awaited since the last pass, a range on `awaitedAt`, and every edition
+ *  awaited under them: `dueWatchesOf` then decides exactly as it would over
+ *  every edition, in the same order. Without a state, or once a day, every
+ *  edition is read and the state rebuilt. */
+const editionsForThePass = async (now: Date) => {
+  const today = todayOf(now)
+  const state = await AwaitedEditionQuery.passState()
+  const entriesOf = (keys: Iterable<string>, watches: ReadonlyMap<string, EditionWatch>) =>
+    [...new Set(keys)].map((key) => passEntryOf(key, watches.get(key), today))
+  if (!state || now.getTime() - state.rebuiltAt.getTime() > PASS_REBUILT_EVERY_MS) {
+    const all = await AwaitedEditionQuery.all()
+    const watches = await AwaitedEditionQuery.watches(all.map((awaited) => awaited.watchKey))
+    return {
+      all,
+      watches,
+      stateAfter: (): EditionPassState => ({
+        entries: entriesOf(
+          all.map((awaited) => awaited.watchKey),
+          watches,
+        ),
+        savedAt: now,
+        rebuiltAt: now,
+      }),
+    }
+  }
+  const since = await AwaitedEditionQuery.awaitedSince(
+    new Date(state.savedAt.getTime() - PASS_CLOCK_MARGIN_MS),
+  )
+  const candidates = passCandidatesOf(state.entries, since, now)
+  const [all, watches] = await Promise.all([
+    AwaitedEditionQuery.byWatchKeys(candidates),
+    AwaitedEditionQuery.watches(candidates),
+  ])
+  const read = new Set(candidates)
+  return {
+    all,
+    watches,
+    // A key read and awaited by nobody now leaves the state; one not read
+    // keeps what the last pass knew of it.
+    stateAfter: (): EditionPassState => ({
+      entries: [
+        ...state.entries.filter((entry) => !read.has(entry.key)),
+        ...entriesOf(
+          all.map((awaited) => awaited.watchKey),
+          watches,
+        ),
+      ],
+      savedAt: now,
+      rebuiltAt: state.rebuiltAt,
+    }),
   }
 }
 
