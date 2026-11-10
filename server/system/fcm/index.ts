@@ -1,4 +1,3 @@
-import { getMessaging } from 'firebase-admin/messaging'
 import type { PushMessage, PushOutcome } from '~/system/apns'
 import { createLogger } from '~/system/logger'
 
@@ -16,6 +15,10 @@ export namespace Fcm {
    *  runtime's own credentials sign the request, so nothing needs deploying. */
   export const send = async (token: string, message: PushMessage): Promise<PushOutcome> => {
     try {
+      // Loaded on the first push rather than with the bundle: the Messaging
+      // client is some 50 ms of a cold start on a Mac, and only the morning
+      // passes and a few writes send one.
+      const { getMessaging } = await import('firebase-admin/messaging')
       await getMessaging().send({
         token,
         notification: { title: message.title, body: message.body },

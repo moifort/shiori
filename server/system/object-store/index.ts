@@ -1,6 +1,5 @@
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
-import { getStorage } from 'firebase-admin/storage'
 import { config } from '~/system/config'
 // Side-effect import: the admin app must be initialized before getStorage().
 import '~/system/firebase'
@@ -33,9 +32,13 @@ export type ObjectStore = {
   removeByPrefix: (prefix: ObjectPathValue) => Promise<void>
 }
 
-const bucket = () => {
+// Loaded on the first object touched rather than with the bundle: the Storage
+// client is some 45 ms of a cold start on a Mac (several times that on Cloud
+// Run), and most requests sign no cover at all.
+const bucket = async () => {
   const name = config().attachmentsBucket
   if (!name) throw new Error('NITRO_ATTACHMENTS_BUCKET is unset — covers have nowhere to go')
+  const { getStorage } = await import('firebase-admin/storage')
   return getStorage().bucket(name)
 }
 
@@ -45,21 +48,19 @@ const bucket = () => {
 // while local credentials keep working — the failure mode this comment exists for.
 const gcs: ObjectStore = {
   write: async (path, body, contentType) => {
-    await bucket().file(path).save(body, { contentType, resumable: false })
+    await (await bucket()).file(path).save(body, { contentType, resumable: false })
     return { contentType, size: ByteSize(body.byteLength) }
   },
   downloadUrl: reusingSignatures(async (path) => {
-    const [url] = await bucket()
-      .file(path)
-      .getSignedUrl({
-        version: 'v4',
-        action: 'read',
-        expires: Date.now() + DOWNLOAD_WINDOW_MS,
-      })
+    const [url] = await (await bucket()).file(path).getSignedUrl({
+      version: 'v4',
+      action: 'read',
+      expires: Date.now() + DOWNLOAD_WINDOW_MS,
+    })
     return SignedUrl(url)
   }),
   stat: async (path) => {
-    const file = bucket().file(path)
+    const file = (await bucket()).file(path)
     const [exists] = await file.exists()
     if (!exists) return null
     const [metadata] = await file.getMetadata()
@@ -69,10 +70,10 @@ const gcs: ObjectStore = {
     }
   },
   remove: async (path) => {
-    await bucket().file(path).delete({ ignoreNotFound: true })
+    await (await bucket()).file(path).delete({ ignoreNotFound: true })
   },
   removeByPrefix: async (prefix) => {
-    await bucket().deleteFiles({ prefix, force: true })
+    await (await bucket()).deleteFiles({ prefix, force: true })
   },
 }
 
