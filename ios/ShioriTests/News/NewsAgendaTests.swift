@@ -85,9 +85,50 @@ struct NewsAgendaTests {
             release("month", "2026-12"), release("past", "2026-11-08"), release("far", "2027-01-20"),
         ])
 
-        #expect(agenda.coming.map(\.day) == [day("2026-11-12"), day("2026-11-18"), day("2027-01-20")])
         #expect(agenda.days.map(\.day) == [day("2026-11-12"), day("2026-11-18")])
         #expect(agenda.days.first?.cards.map(\.id) == ["upcoming-thursday"])
+    }
+
+    @Test func theTempsFortsAreTheNearestReleasesEitherSideOfTodayOpeningOnTheNextOne() {
+        let agenda = agenda(
+            released: (1...6).map { release("out\($0)", String(format: "2026-11-%02d", $0)) },
+            events: [event("friend", at: day("2026-11-09"))],
+            upcoming: [
+                release("soon", "2026-11-12"), release("month", "2026-12"), release("far", "2027-01-20"),
+            ]
+        )
+
+        #expect(agenda.highlights.map(\.id) == [
+            "release-out3", "release-out4", "release-out5", "release-out6", "upcoming-soon",
+        ])
+        #expect(agenda.highlights.last?.day == day("2026-11-12"))
+        #expect(agenda.openingHighlight == "upcoming-soon")
+    }
+
+    @Test func theYearsPrizesAreOnlyThisYearsWinnersBarTheDismissed() {
+        func winner(_ id: String, _ year: Int) -> AwardWinner {
+            let base = AwardWinner.preview
+            return AwardWinner(
+                id: id, format: base.format, title: id, originalTitle: id, originalLanguage: nil, authors: [],
+                mentions: [AwardMention(award: .hugo, year: year)], state: base.state, watched: false,
+                date: nil, coverURL: nil, storeURL: nil, awaitableFormats: base.awaitableFormats,
+                awaitedEditionId: nil, key: id
+            )
+        }
+        let sections = [
+            AwardSection(genre: .fantasy, winners: [winner("now", 2026), winner("old", 2025), winner("gone", 2026)]),
+        ]
+        let agenda = NewsAgenda(
+            released: [], events: [], upcoming: [], suggestions: [], awards: sections,
+            dismissed: ["award-gone"], now: now, calendar: calendar
+        )
+        let none = NewsAgenda(
+            released: [], events: [], upcoming: [], suggestions: [],
+            awards: [AwardSection(genre: .fantasy, winners: [winner("old", 2025)])], now: now, calendar: calendar
+        )
+
+        #expect(agenda.prizes.map(\.id) == ["award-now"])
+        #expect(none.prizes.isEmpty)
     }
 
     @Test func nothingAtAllIsEmpty() {

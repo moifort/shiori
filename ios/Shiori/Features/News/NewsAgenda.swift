@@ -68,29 +68,43 @@ struct NewsAgendaDay: Identifiable, Hashable, Sendable {
     var id: Date { day }
 }
 
-/// The Découvrir page as an agenda: only the days that bring something, a
-/// month back and a month ahead, then the days to come with a release on
-/// them. A quiet week leaves no empty leaf. Pure: the same loads and the same
-/// day always give the same agenda.
+/// One of the page's temps forts: a release among what the reader follows,
+/// out lately or announced for a day soon, and that day.
+struct NewsHighlight: Identifiable, Hashable, Sendable {
+    let day: Date
+    let card: NewsCard
+
+    var id: String { card.id }
+}
+
+/// The Découvrir page as an agenda: the temps forts first, the releases of
+/// what the reader follows a few days back and ahead; then only the days that
+/// bring something, a month back and a month ahead — a quiet week leaves no
+/// empty leaf; then the year's prizes. Pure: the same loads and the same day
+/// always give the same agenda.
 struct NewsAgenda: Hashable, Sendable {
     /// The days with news, oldest first: back to the oldest news loaded, on
     /// to the last day announced within `futureDays`.
     let days: [NewsAgendaDay]
     let today: Date
-    /// After today, the days with a release announced for them, soonest first.
-    let coming: [NewsAgendaDay]
+    /// The releases of what the reader follows nearest today, out lately then
+    /// announced, oldest first.
+    let highlights: [NewsHighlight]
+    /// The winners crowned this year, the latest prize first; none hides the
+    /// section.
+    let prizes: [NewsCard]
     /// Whether the reader has any friend's move to show: without one, the
     /// page invites a friend.
     let hasFriends: Bool
 
-    /// How many days to come the page lists under the agenda.
-    static let comingCount = 4
+    /// How many temps forts the page shows on either side of today.
+    static let highlightsEachSide = 4
     /// How far back the agenda reaches.
     static let pastDays = 30
     /// How far ahead the agenda reaches.
     static let futureDays = 31
 
-    var isEmpty: Bool { days.isEmpty && coming.isEmpty }
+    var isEmpty: Bool { days.isEmpty && highlights.isEmpty && prizes.isEmpty }
 
     /// The day the page opens on: today when it holds news, else the nearest
     /// day that does, the one to come on a tie.
@@ -101,10 +115,17 @@ struct NewsAgenda: Hashable, Sendable {
         }?.day
     }
 
-    init(days: [NewsAgendaDay], today: Date, coming: [NewsAgendaDay], hasFriends: Bool) {
+    /// The temps fort the rail opens on: the nearest to come, else the last
+    /// one out.
+    var openingHighlight: String? {
+        (highlights.first { $0.day > today } ?? highlights.last)?.id
+    }
+
+    init(days: [NewsAgendaDay], today: Date, highlights: [NewsHighlight], prizes: [NewsCard], hasFriends: Bool) {
         self.days = days
         self.today = today
-        self.coming = coming
+        self.highlights = highlights
+        self.prizes = prizes
         self.hasFriends = hasFriends
     }
 
@@ -155,7 +176,23 @@ struct NewsAgenda: Hashable, Sendable {
         let future = ahead.filter { $0.key <= until }.map { NewsAgendaDay(day: $0.key, cards: $0.value) }
         days = (past + future).sorted { $0.day < $1.day }
         self.today = today
-        coming = ahead.keys.sorted().prefix(Self.comingCount).map { NewsAgendaDay(day: $0, cards: ahead[$0] ?? []) }
+        var out: [NewsHighlight] = []
+        for item in released {
+            let day = calendar.startOfDay(for: item.day)
+            if day >= since, day <= today { out.append(NewsHighlight(day: day, card: .released(item))) }
+        }
+        out.sort { $0.day < $1.day }
+        var announced: [NewsHighlight] = []
+        for (day, cards) in ahead where day <= until {
+            announced += cards.map { NewsHighlight(day: day, card: $0) }
+        }
+        announced.sort { $0.day == $1.day ? $0.id < $1.id : $0.day < $1.day }
+        highlights = Array(out.suffix(Self.highlightsEachSide)) + Array(announced.prefix(Self.highlightsEachSide))
+        let year = calendar.component(.year, from: now)
+        self.prizes = NewsDiscoverPicks.winners(awards)
+            .filter { $0.mentions.first?.year == year }
+            .map(NewsCard.award)
+            .filter { !dismissed.contains($0.key) }
         hasFriends = !moves.isEmpty
     }
 

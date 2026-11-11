@@ -561,6 +561,22 @@
         }
       }
     },
+    "%@ · %lld prix" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ · %2$lld awards"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ · %2$lld prix"
+          }
+        }
+      }
+    },
     "%@ · %lld sur la pile" : {
       "localizations" : {
         "en" : {
@@ -573,6 +589,22 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "%1$@ · %2$lld sur la pile"
+          }
+        }
+      }
+    },
+    "%@ · 1 prix" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ · 1 award"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ · 1 prix"
           }
         }
       }
@@ -5317,6 +5349,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dans %@"
+          }
+        }
+      }
+    },
+    "Dans %lld jours" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In %lld days"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dans %lld jours"
           }
         }
       }
@@ -11781,6 +11829,22 @@
         }
       }
     },
+    "Prix de l'année" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This year's awards"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prix de l'année"
+          }
+        }
+      }
+    },
     "Prix littéraires" : {
       "localizations" : {
         "en" : {
@@ -14373,6 +14437,22 @@
         }
       }
     },
+    "Temps forts" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Highlights"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Temps forts"
+          }
+        }
+      }
+    },
     "Tendances" : {
       "localizations" : {
         "en" : {
@@ -16801,6 +16881,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "pages en %@"
+          }
+        }
+      }
+    },
+    "passés et à venir" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "past and upcoming"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "passés et à venir"
           }
         }
       }
