@@ -41,6 +41,10 @@ import com.polyforms.shiori.shared.components.molecules.RowHeader
 import com.polyforms.shiori.shared.components.molecules.RowHeaderStyle
 import com.polyforms.shiori.shared.platform.LargeTitle
 import kotlinx.coroutines.launch
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.foundation.layout.Row
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 sealed interface PileAction {
     data class OpenBook(val book: Book) : PileAction
@@ -122,4 +126,18 @@ private fun Rail(section: PileSection, send: (PileAction) -> Unit) {
             onMenu = { book, action -> send(PileAction.Menu(book, action)) },
         ) { send(PileAction.OpenBook(it)) }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun PilePagePreview() = PreviewSurface {
+    PilePage(
+        pile = com.polyforms.shiori.features.library.Pile(),
+        wished = emptyList(),
+        upNext = listOf(DebugFixtures.followedSeries[0] to com.polyforms.shiori.features.series.NextVolume.Owned(DebugFixtures.reading[2])),
+        genres = emptyList(),
+        selectedGenre = null,
+        isLoading = false,
+        errorMessage = null,
+    ) {}
 }

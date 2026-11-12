@@ -25,6 +25,11 @@ import androidx.compose.ui.unit.dp
 import com.polyforms.shiori.shared.L
 import com.polyforms.shiori.shared.components.styles.Shiori
 import com.polyforms.shiori.shared.components.styles.plainClickable
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 /** A person's biography: three lines ending on PLUS, the whole text at a tap. */
 @Composable
@@ -64,4 +69,13 @@ fun personOrigin(nationality: String?, birthYear: Int?, deathYear: Int?): String
     }
     val parts = listOfNotNull(nationality, years)
     return if (parts.isEmpty()) null else parts.joinToString(" · ")
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun PersonBiographyPreview() = PreviewSurface {
+    PersonBiography(
+        "Auteur américain de fantasy, connu pour la Chronique du tueur de roi, dont le premier tome a paru en 2007.",
+        Modifier.padding(16.dp),
+    )
 }

@@ -71,6 +71,9 @@ import com.polyforms.shiori.shared.components.styles.ShioriDivider
 import com.polyforms.shiori.shared.components.styles.Symbol
 import com.polyforms.shiori.shared.components.styles.color
 import com.polyforms.shiori.shared.components.styles.plainClickable
+import androidx.compose.ui.tooling.preview.Preview
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 @Composable
 fun AwaitedEditionTile(edition: AwaitedEdition, width: Dp = 84.dp, onTap: () -> Unit) =
@@ -297,5 +300,32 @@ fun FirstLookProgress() {
                 textAlign = TextAlign.Center,
             )
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun DiscoverTilesPreview() = PreviewSurface {
+    Column(Modifier.padding(vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Row(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            AwaitedEditionTile(DebugFixtures.discoverAwaited[0]) {}
+            AwardWinnerTile(com.polyforms.shiori.features.discover.AwardWinner(
+        id = "w1", format = com.polyforms.shiori.features.discover.ReleaseFormat.BOOK, title = "Les Dépossédés", originalTitle = "The Dispossessed",
+        originalLanguage = com.polyforms.shiori.shared.BookLanguage.EN, authors = listOf("Ursula K. Le Guin"),
+        mentions = listOf(com.polyforms.shiori.features.discover.AwardMention(com.polyforms.shiori.features.discover.LiteraryAward.HUGO, 1975)), state = com.polyforms.shiori.features.discover.AwaitedState.AVAILABLE,
+        watched = false, date = "1975", coverURL = null, storeURL = null, awaitableFormats = emptyList(), awaitedEditionId = null,
+    )) {}
+            LovedBookTile(DebugFixtures.discoverFeed.picks.books[0]) {}
+        }
+        SeriesNewsStrip(listOf(com.polyforms.shiori.features.discover.DiscoveryVolume(DebugFixtures.sagas[0], DebugFixtures.announcedVolume))) {}
+        LovedSagasStrip(listOf(com.polyforms.shiori.features.friends.LovedSaga(com.polyforms.shiori.features.friends.FriendSaga(
+        id = "frieren", seriesId = "frieren", name = "Frieren", author = "Kanehito Yamada",
+        language = com.polyforms.shiori.shared.BookLanguage.FR, ownedCount = 5, favorite = true,
+        genre = com.polyforms.shiori.shared.BookGenre.FANTASY, subgenre = null, volumes = listOf(DebugFixtures.reading[2]),
+    ), com.polyforms.shiori.features.friends.FriendLovers(listOf(com.polyforms.shiori.features.friends.FriendLovers.Lover("lea", "Léa")), lovedByMany = false)))) {}
+        LovedAuthorsStrip(listOf(com.polyforms.shiori.features.friends.LovedAuthor("ursula-k-le-guin", "Ursula K. Le Guin", null, com.polyforms.shiori.features.friends.FriendLovers(listOf(com.polyforms.shiori.features.friends.FriendLovers.Lover("lea", "Léa")), lovedByMany = false)))) {}
+        DiscoverySuggestionRow(DebugFixtures.discoveries.suggestions[0]) {}
+        SagaReleasesSummary(DebugFixtures.sagas[0], com.polyforms.shiori.features.discover.ReleaseSection.UPCOMING)
+        FirstLookProgress()
     }
 }

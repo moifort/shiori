@@ -56,6 +56,9 @@ import com.polyforms.shiori.shared.platform.ConfirmationSheet
 import com.polyforms.shiori.shared.platform.SheetBar
 import com.polyforms.shiori.shared.platform.ShioriSheet
 import kotlinx.coroutines.delay
+import androidx.compose.ui.tooling.preview.Preview
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 @Composable
 private fun SettingsColumn(content: @Composable () -> Unit) {
@@ -333,4 +336,10 @@ fun FeedbackSheet(onDismiss: () -> Unit, onSend: (FeedbackKind, String) -> Unit)
             }
         }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun SettingsPagesPreview() = PreviewSurface {
+    SettingsHomePage("Camille", isPremium = false, notificationsBlocked = false, appVersion = "1.2", buildNumber = "412") {}
 }

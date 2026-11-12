@@ -51,6 +51,9 @@ import com.polyforms.shiori.shared.components.organisms.BookCover
 import com.polyforms.shiori.shared.components.styles.Shiori
 import com.polyforms.shiori.shared.components.styles.glass
 import com.polyforms.shiori.shared.components.styles.plainClickable
+import androidx.compose.ui.tooling.preview.Preview
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 /** One poster of a row: a book, its label, and where tapping it leads when not to the book. */
 data class PosterRowItem(val book: Book, val label: PosterLabel, val open: (() -> Unit)? = null) {
@@ -226,3 +229,18 @@ fun SeriesShowCard(
 /** A spacer the width of a row's inset, for rows that scroll edge to edge. */
 @Composable
 fun RowInset(width: Dp = 20.dp) = Spacer(Modifier.size(width, 0.dp))
+
+@Preview(showBackground = true)
+@Composable
+private fun HomeRowsPreview() = PreviewSurface {
+    Column(Modifier.padding(vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        PosterRow(
+            DebugFixtures.reading.map {
+                PosterRowItem(it, com.polyforms.shiori.shared.book.PosterLabel.of(it, com.polyforms.shiori.shared.book.PosterLabel.Context.RECENT))
+            },
+            onOpen = {},
+        )
+        CoverRow(DebugFixtures.toRead.map { CoverRowItem(it, it.authorLine) }, onOpen = {})
+        SeriesShowCard(DebugFixtures.dashboard.series[0], Modifier.padding(horizontal = 16.dp)) {}
+    }
+}

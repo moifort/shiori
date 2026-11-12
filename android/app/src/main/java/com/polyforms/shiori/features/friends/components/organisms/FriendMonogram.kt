@@ -16,6 +16,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 private val palettes = listOf(
     Color(0.36f, 0.85f, 0.45f) to Color(0.07f, 0.55f, 0.24f),
@@ -36,5 +43,14 @@ fun FriendMonogram(name: String, size: Dp = 44.dp, modifier: Modifier = Modifier
         contentAlignment = Alignment.Center,
     ) {
         Text(initials, style = TextStyle(fontSize = (size.value * 0.4f).sp, fontWeight = FontWeight.SemiBold), color = Color.White)
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun FriendMonogramPreview() = PreviewSurface {
+    Row(Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        FriendMonogram("Léa")
+        FriendMonogram("Hugo")
     }
 }

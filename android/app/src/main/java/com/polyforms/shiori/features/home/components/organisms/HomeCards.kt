@@ -67,6 +67,9 @@ import com.polyforms.shiori.shared.components.styles.Shiori
 import com.polyforms.shiori.shared.components.styles.Symbol
 import com.polyforms.shiori.shared.components.styles.plainClickable
 import java.text.NumberFormat
+import androidx.compose.ui.tooling.preview.Preview
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 /** The year's figures under the Home's hero: read, loved, to read, pages, hours. */
 @Composable
@@ -329,3 +332,17 @@ fun FriendsInviteCard(onInvite: () -> Unit, onEnterInvitation: () -> Unit) {
     }
 }
 
+@Preview(showBackground = true)
+@Composable
+private fun HomeCardsPreview() = PreviewSurface {
+    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        HomeFiguresLine(2026, 18, 15, 27, 41_230, 212, showsPagesAtZero = false) {}
+        ReadingFeatureCard(DebugFixtures.reading[0], "Commencé il y a 12 jours", onOpen = {}, onFinish = {}, onProgress = {}, onOpenSeries = {})
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            CardProminentButton("Terminé", "checkmark") {}
+            CardGlassButton("Page") {}
+        }
+        FriendsInviteCard(onInvite = {}, onEnterInvitation = {})
+        ImportSourcesRow {}
+    }
+}

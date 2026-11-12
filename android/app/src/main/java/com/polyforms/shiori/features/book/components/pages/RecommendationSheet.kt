@@ -34,6 +34,9 @@ import com.polyforms.shiori.shared.platform.ShioriAlert
 import com.polyforms.shiori.shared.platform.ShioriSheet
 import com.polyforms.shiori.shared.platform.rememberContactPicker
 import kotlinx.coroutines.launch
+import androidx.compose.ui.tooling.preview.Preview
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 /** "Conseillé par un ami": who, picked from the contacts or typed, and what they said. */
 @Composable
@@ -88,4 +91,10 @@ fun RecommendationSheet(current: BookRecommendation?, onDismiss: () -> Unit, onS
         }
     }
     error?.let { ShioriAlert(L("Une erreur est survenue"), it, onDismiss = { error = null }) }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun RecommendationSheetPreview() = PreviewSurface {
+    RecommendationSheet(com.polyforms.shiori.shared.BookRecommendation("Léa", "Lis-le !"), onDismiss = {}) { null }
 }

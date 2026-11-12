@@ -46,6 +46,10 @@ import com.polyforms.shiori.shared.platform.SheetBar
 import com.polyforms.shiori.shared.platform.ShioriAlert
 import com.polyforms.shiori.shared.platform.ShioriSheet
 import java.net.URI
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.foundation.layout.Row
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 fun CoverChoice.Source.label(): String = when (this) {
     CoverChoice.Source.KINDLE -> L("Kindle")
@@ -149,4 +153,17 @@ fun CoverPickerSheet(
         }
     }
     error?.let { ShioriAlert(L("Une erreur est survenue"), it, onDismiss = { error = null }) }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun CoverPickerSheetPreview() = PreviewSurface {
+    CoverPickerSheet(
+        DebugFixtures.reading[0],
+        choices = listOfNotNull(DebugFixtures.reading[0].coverURL, DebugFixtures.toRead[0].coverURL).mapIndexed { i, url ->
+            com.polyforms.shiori.features.book.CoverChoice(com.polyforms.shiori.features.book.CoverChoice.Source.OPEN_LIBRARY, url, isCurrent = i == 0)
+        },
+        loadFailed = null,
+        onDismiss = {},
+    ) { null }
 }

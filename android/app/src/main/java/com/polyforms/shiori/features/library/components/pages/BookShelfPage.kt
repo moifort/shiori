@@ -65,6 +65,10 @@ import com.polyforms.shiori.shared.components.styles.Shiori
 import com.polyforms.shiori.shared.components.styles.Symbol
 import com.polyforms.shiori.shared.platform.LargeTitle
 import kotlinx.coroutines.launch
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.foundation.layout.Row
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 private val INSET = 20.dp
 
@@ -322,4 +326,24 @@ private fun MosaicCover(book: Book, isDimmed: Boolean, onOpen: () -> Unit, onMen
             }
         }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun BookShelfPagePreview() = PreviewSurface {
+    BookShelfPage(
+        shelf = com.polyforms.shiori.features.library.BookShelf.TO_READ,
+        sections = listOf(com.polyforms.shiori.shared.ListSection("now", "Ce mois-ci", DebugFixtures.toRead)),
+        lovedSeries = emptyList(),
+        statuses = emptyList(),
+        selectedStatus = null,
+        genres = listOf(com.polyforms.shiori.shared.BookGenre.SCIENCE_FICTION, com.polyforms.shiori.shared.BookGenre.FANTASY),
+        selectedGenre = null,
+        formats = listOf(com.polyforms.shiori.shared.BookFormat.BOOK, com.polyforms.shiori.shared.BookFormat.MANGA),
+        selectedFormat = null,
+        isLoading = false,
+        errorMessage = null,
+        hasMore = false,
+        loadMoreFailed = false,
+    ) {}
 }

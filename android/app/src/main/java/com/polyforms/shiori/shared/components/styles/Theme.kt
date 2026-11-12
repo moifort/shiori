@@ -14,6 +14,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import com.polyforms.shiori.PreviewSurface
 
 /**
  * The iOS system palette the app is drawn in: Shiori uses Apple's semantic colours and
@@ -162,5 +170,17 @@ fun ShioriTheme(dark: Boolean = isSystemInDarkTheme(), content: @Composable () -
     val colors = if (dark) DarkColors else LightColors
     CompositionLocalProvider(LocalShioriColors provides colors, LocalShioriType provides ShioriType()) {
         MaterialTheme(colorScheme = materialScheme(colors), content = content)
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun ShioriThemePreview() = PreviewSurface {
+    Row(Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        with(Shiori.colors) { listOf(accent, blue, green, red, orange, yellow, pink, purple, gray) }.forEach {
+            androidx.compose.material3.Surface(color = it) {
+                androidx.compose.foundation.layout.Spacer(Modifier.padding(12.dp))
+            }
+        }
     }
 }

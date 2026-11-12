@@ -17,6 +17,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.polyforms.shiori.shared.ReleaseDateText
 import com.polyforms.shiori.shared.components.styles.Shiori
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 /** A release date as a calendar leaf: day over month, month over year, or the year alone. */
 @Composable
@@ -61,4 +66,10 @@ fun ReleaseDateBadge(date: String, onGlass: Boolean = false) {
             )
         }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun ReleaseDateBadgePreview() = PreviewSurface {
+    Row(Modifier.padding(16.dp)) { ReleaseDateBadge(java.time.LocalDate.now().plusDays(4).toString()) }
 }

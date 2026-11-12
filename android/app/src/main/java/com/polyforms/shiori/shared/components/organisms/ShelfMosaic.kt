@@ -39,6 +39,10 @@ import java.time.Instant
 import java.time.format.TextStyle
 import java.util.Locale
 import kotlin.math.max
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.foundation.layout.Column
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 enum class ShelfLayout { LIST, MOSAIC }
 
@@ -167,5 +171,14 @@ fun BoxScope.MosaicGlyphs(leading: @Composable RowScope.() -> Unit = {}, trailin
                 trailing()
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun MosaicDateTagPreview() = PreviewSurface {
+    Row(Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        MosaicDateTag(java.time.Instant.now())
+        MosaicDateTag(java.time.Instant.now(), isCompact = true)
     }
 }

@@ -28,6 +28,10 @@ import com.polyforms.shiori.shared.components.organisms.BookCover
 import com.polyforms.shiori.shared.components.styles.Shiori
 import com.polyforms.shiori.shared.platform.SheetBar
 import com.polyforms.shiori.shared.platform.ShioriSheet
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.foundation.layout.Row
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 /** "Lecture terminée": the cover, and the stars to give before marking it read. */
 @Composable
@@ -50,3 +54,8 @@ fun FinishedBookSheet(book: Book, onDone: (Double?) -> Unit, onCancel: () -> Uni
     }
 }
 
+@Preview(showBackground = true)
+@Composable
+private fun FinishedBookSheetPreview() = PreviewSurface {
+    FinishedBookSheet(DebugFixtures.reading[0], onDone = {}, onCancel = {})
+}

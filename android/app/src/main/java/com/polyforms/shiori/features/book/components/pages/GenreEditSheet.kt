@@ -33,6 +33,9 @@ import com.polyforms.shiori.shared.components.styles.Symbol
 import com.polyforms.shiori.shared.platform.SheetBar
 import com.polyforms.shiori.shared.platform.ShioriAlert
 import com.polyforms.shiori.shared.platform.ShioriSheet
+import androidx.compose.ui.tooling.preview.Preview
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 /** The genre from the closed list, and up to three subgenres. */
 @Composable
@@ -83,4 +86,10 @@ fun GenreEditSheet(book: Book, loadSubgenres: suspend () -> List<String>, onDism
         }
     }
     error?.let { ShioriAlert(L("Une erreur est survenue"), it, onDismiss = { error = null }) }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun GenreEditSheetPreview() = PreviewSurface {
+    GenreEditSheet(DebugFixtures.reading[0], loadSubgenres = { listOf("Aventure") }, onDismiss = {}) { null }
 }

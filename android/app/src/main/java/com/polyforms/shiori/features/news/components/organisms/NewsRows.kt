@@ -70,6 +70,9 @@ import com.polyforms.shiori.shared.components.styles.Symbol
 import com.polyforms.shiori.shared.components.styles.plainClickable
 import androidx.compose.foundation.Canvas
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.tooling.preview.Preview
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 private val coverHeight = 92.dp
 
@@ -319,5 +322,23 @@ private fun UpcomingReleaseRow(release: UpcomingRelease, onOpen: () -> Unit) {
             }
             Text(subtitle, style = Shiori.type.caption, color = colors.secondaryLabel, maxLines = 1)
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun NewsRowsPreview() = PreviewSurface {
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        FeedEventRow(DebugFixtures.newsEvents[0], emptyList(), wished = false, awaited = false, onOpen = {}, onAdd = { _, _ -> }, onWish = {}, onAwait = {})
+        UpcomingRail(DebugFixtures.upcoming, onOpenList = {}, onOpen = {})
+        FriendStoriesRail(
+            DebugFixtures.friends.map {
+                com.polyforms.shiori.features.news.FriendStory(it.id, it.firstName ?: "", com.polyforms.shiori.shared.account.AccountAvatar.Initials, isNew = true)
+            },
+            selected = null,
+            onSelect = {},
+            onInvite = {},
+        )
+        ReleaseList(com.polyforms.shiori.features.news.ReleaseCalendar(DebugFixtures.upcoming).sections) {}
     }
 }

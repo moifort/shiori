@@ -24,6 +24,13 @@ import androidx.compose.ui.unit.dp
 import com.polyforms.shiori.shared.components.styles.Symbol
 import kotlin.math.cos
 import kotlin.math.sin
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 private data class Bud(val diameter: Float, val speed: Float, val phase: Float)
 
@@ -59,4 +66,10 @@ fun AIGlassDrops(size: Dp = 220.dp) {
         }
         Icon(Symbol("sparkles"), null, Modifier.size(size * 0.14f), tint = Color.White.copy(alpha = 0.92f))
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun AIGlassDropsPreview() = PreviewSurface {
+    Row(Modifier.padding(16.dp)) { AIGlassDrops() }
 }

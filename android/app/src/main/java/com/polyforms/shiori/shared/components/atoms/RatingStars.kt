@@ -32,6 +32,10 @@ import com.polyforms.shiori.shared.components.styles.Shiori
 import com.polyforms.shiori.shared.components.styles.Symbol
 import kotlin.math.ceil
 import java.text.NumberFormat
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.foundation.layout.Column
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 enum class StarSymbol(val symbol: String) {
     FULL("star.fill"), HALF("star.leadinghalf.filled"), EMPTY("star");
@@ -147,5 +151,16 @@ fun OpinionMark(rating: Double?, isFavorite: Boolean, size: Dp = 11.dp, ratingIs
         ratingIsInherited && rating == 5.0 ->
             Icon(Symbol("heart.fill"), L("Série favorite"), Modifier.size(size), tint = Shiori.colors.secondaryLabel)
         rating != null -> RatingStars(rating, size = size, inherited = ratingIsInherited)
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun RatingStarsPreview() = PreviewSurface {
+    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        RatingStars(4.5)
+        RatingStars(3.0, inherited = true)
+        InteractiveStarRating(3.5, onChange = {})
+        OpinionMark(5.0, isFavorite = true)
     }
 }

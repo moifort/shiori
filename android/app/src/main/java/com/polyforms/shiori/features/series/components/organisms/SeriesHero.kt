@@ -32,6 +32,9 @@ import com.polyforms.shiori.shared.components.organisms.BookCover
 import com.polyforms.shiori.shared.components.styles.Shiori
 import com.polyforms.shiori.shared.components.styles.Symbol
 import com.polyforms.shiori.shared.components.styles.plainClickable
+import androidx.compose.ui.tooling.preview.Preview
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 /** Three covers of a saga, fanned: the one in the middle, and its neighbours tilted behind. */
 data class SeriesFan(val leading: Book? = null, val middle: Book? = null, val trailing: Book? = null) {
@@ -107,4 +110,16 @@ private fun Dimmed(book: Book, width: androidx.compose.ui.unit.Dp, darkness: Flo
         BookCover(book, width, showsFormatBadge = false)
         androidx.compose.foundation.Canvas(Modifier.matchParentSize()) { drawRect(Color.Black.copy(alpha = 1f - darkness)) }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun SeriesHeroPreview() = PreviewSurface {
+    SeriesHero(
+        name = "Frieren",
+        author = "Kanehito Yamada",
+        fan = SeriesFan(DebugFixtures.reading[2], DebugFixtures.reading[0], DebugFixtures.reading[1]),
+        language = com.polyforms.shiori.shared.BookLanguage.FR,
+        onOpenAuthor = {},
+    )
 }

@@ -22,6 +22,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.polyforms.shiori.shared.components.styles.Shiori
 import com.polyforms.shiori.shared.components.styles.Symbol
+import androidx.compose.ui.tooling.preview.Preview
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 /** A cover a strip scrolls to, by its place in the strip. */
 data class CoverFocus(val id: String, val place: Int)
@@ -67,4 +70,10 @@ fun DiscoverSummaryRow(
             )
         }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun DiscoverSummaryRowPreview() = PreviewSurface {
+    DiscoverSummaryRow("Sorties", "Frieren 16 dans quatre jours", symbol = "calendar")
 }

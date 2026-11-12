@@ -38,6 +38,13 @@ import com.polyforms.shiori.shared.platform.MenuEntry
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 /** What the reader does with a discovery. */
 sealed interface DiscoveryChoice {
@@ -192,3 +199,12 @@ fun Modifier.heroGlass(tint: Color? = null, shape: androidx.compose.ui.graphics.
     } else {
         background(Color.White.copy(alpha = 0.16f), shape).border(0.5.dp, Color.White.copy(alpha = 0.28f), shape)
     }
+
+@Preview(showBackground = true)
+@Composable
+private fun RoundGlassPreview() = PreviewSurface {
+    Row(Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        RoundGlass("Guetter", onClick = {}) { Text("🔔") }
+        RoundGlass("Ajouter", tint = Shiori.colors.accent, onClick = {}) { Text("+") }
+    }
+}

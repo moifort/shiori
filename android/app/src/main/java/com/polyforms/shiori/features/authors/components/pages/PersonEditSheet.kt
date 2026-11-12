@@ -30,6 +30,10 @@ import com.polyforms.shiori.shared.platform.SheetBar
 import com.polyforms.shiori.shared.platform.ShioriAlert
 import com.polyforms.shiori.shared.platform.ShioriSheet
 import java.time.LocalDate
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.foundation.layout.Row
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 /** Corrects what the catalogue says of a person: nationality, years, biography. */
 @Composable
@@ -98,4 +102,10 @@ private fun <T> change(old: T?, new: T?): Change<T>? = when {
     old == new -> null
     new == null -> Change.Clear
     else -> Change.Set(new)
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun PersonEditSheetPreview() = PreviewSurface {
+    PersonEditSheet(DebugFixtures.authorPage.facts, onDismiss = {}) { null }
 }

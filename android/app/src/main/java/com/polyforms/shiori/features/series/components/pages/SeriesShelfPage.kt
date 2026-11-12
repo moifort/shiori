@@ -55,6 +55,9 @@ import com.polyforms.shiori.shared.platform.LargeTitle
 import com.polyforms.shiori.shared.platform.MenuEntries
 import com.polyforms.shiori.shared.platform.MenuEntry
 import kotlinx.coroutines.launch
+import androidx.compose.ui.tooling.preview.Preview
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 sealed interface SeriesShelfAction {
     data class OpenSeries(val series: FollowedSeries) : SeriesShelfAction
@@ -191,4 +194,18 @@ private fun ReleaseRail(releases: List<Pair<FollowedSeries, DiscoveredVolume>>, 
             }
         }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun SeriesShelfPagePreview() = PreviewSurface {
+    SeriesShelfPage(
+        upNext = listOf(DebugFixtures.followedSeries[0] to com.polyforms.shiori.features.series.NextVolume.Owned(DebugFixtures.reading[2])),
+        releases = listOf(DebugFixtures.followedSeries[0] to DebugFixtures.announcedVolume),
+        filters = com.polyforms.shiori.features.series.SeriesShelfFilter.entries,
+        filter = com.polyforms.shiori.features.series.SeriesShelfFilter.ALL,
+        series = DebugFixtures.followedSeries,
+        isLoading = false,
+        errorMessage = null,
+    ) {}
 }

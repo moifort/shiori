@@ -51,6 +51,9 @@ import com.polyforms.shiori.shared.components.styles.Shiori
 import com.polyforms.shiori.shared.platform.ConfirmationChoice
 import com.polyforms.shiori.shared.platform.ConfirmationSheet
 import kotlinx.coroutines.launch
+import androidx.compose.ui.tooling.preview.Preview
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 /** Where a book to come is sold: Audible for a recording, Amazon otherwise. */
 data class UpcomingStore(val url: String, val isAudible: Boolean) {
@@ -145,4 +148,17 @@ fun UpcomingBookPage(
             bellConfirmation.message,
         ) { confirmsSilence = false }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun UpcomingBookPagePreview() = PreviewSurface {
+    UpcomingBookPage(
+        DebugFixtures.reading[2].copy(title = "Frieren 16"),
+        releaseDate = DebugFixtures.announcedVolume.date,
+        store = null,
+        isAlerted = true,
+        onToggleBell = {},
+        sagaName = "Frieren",
+    )
 }

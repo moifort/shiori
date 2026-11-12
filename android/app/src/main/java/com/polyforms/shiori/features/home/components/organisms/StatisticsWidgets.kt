@@ -56,6 +56,9 @@ import java.time.Month
 import java.time.format.TextStyle as DateStyle
 import java.time.temporal.ChronoUnit
 import java.util.Locale
+import androidx.compose.ui.tooling.preview.Preview
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 /** The dashboard's colours, one per measure. */
 object DashboardPalette {
@@ -224,3 +227,14 @@ fun LastFinishedCard(book: Book?, onTap: (Book) -> Unit) {
     }
 }
 
+@Preview(showBackground = true)
+@Composable
+private fun StatisticsWidgetsPreview() = PreviewSurface {
+    val dashboard = DebugFixtures.dashboard
+    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        StatTilesRow(dashboard.readCount, dashboard.favoriteCount, dashboard.toReadCount, {}, {}, {})
+        GenresWidget(dashboard.genres) {}
+        ReadingChartWidget(dashboard.currentYear, dashboard.booksPerYear, dashboard.pagesPerMonth, dashboard.hoursPerMonth, hasAudiobooks = true, hasPrintedBooks = true)
+        LastFinishedCard(dashboard.lastFinished) {}
+    }
+}

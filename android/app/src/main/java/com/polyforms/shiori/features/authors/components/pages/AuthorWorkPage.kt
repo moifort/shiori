@@ -31,6 +31,10 @@ import com.polyforms.shiori.shared.components.styles.ButtonKind
 import com.polyforms.shiori.shared.components.styles.Shiori
 import com.polyforms.shiori.shared.components.styles.ShioriButton
 import com.polyforms.shiori.shared.platform.ScreenBar
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.foundation.layout.Row
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 /** A book of an author's the reader does not hold: its cover, and a button to pile it. */
 @Composable
@@ -65,4 +69,10 @@ fun AuthorWorkPage(work: AuthorWork, author: String, isAdding: Boolean, onAdd: s
         }
         ScreenBar()
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun AuthorWorkPagePreview() = PreviewSurface {
+    AuthorWorkPage(DebugFixtures.authorPage.booksNotHeld[0], "Patrick Rothfuss", isAdding = false) {}
 }

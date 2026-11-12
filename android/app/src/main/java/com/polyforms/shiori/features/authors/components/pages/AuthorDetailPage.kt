@@ -53,6 +53,9 @@ import com.polyforms.shiori.shared.components.molecules.personOrigin
 import com.polyforms.shiori.shared.components.styles.Shiori
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
+import androidx.compose.ui.tooling.preview.Preview
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 /** What the author page asks of its screen. */
 sealed interface AuthorAction {
@@ -218,4 +221,10 @@ private fun discoveries(page: AuthorPage, send: (AuthorAction) -> Unit): List<Po
         PosterRowItem(book, PosterLabel(work.publishedIn?.toString() ?: "", dimming = dimming)) { send(AuthorAction.OpenWork(work)) }
     }
     return announced + sagas + works
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun AuthorDetailPagePreview() = PreviewSurface {
+    AuthorDetailPage(DebugFixtures.authorPage, isLoading = false, errorMessage = null) {}
 }

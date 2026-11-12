@@ -40,6 +40,9 @@ import com.polyforms.shiori.shared.components.molecules.ReleaseDateBadge
 import com.polyforms.shiori.shared.components.styles.Shiori
 import com.polyforms.shiori.shared.components.styles.Symbol
 import com.polyforms.shiori.shared.components.styles.color
+import androidx.compose.ui.tooling.preview.Preview
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 /**
  * A book in a list: its cover at the height of its text, the title, the authors, the saga
@@ -186,3 +189,12 @@ fun BookRow(book: Book, modifier: Modifier = Modifier, statusTag: ReadingStatus?
         isHidden = book.hidden,
         listeningProgress = book.unfinishedListeningProgress?.let { "$it%" },
     )
+
+@Preview(showBackground = true)
+@Composable
+private fun BookRowPreview() = PreviewSurface {
+    Column {
+        BookRow(DebugFixtures.reading[0])
+        BookRow(DebugFixtures.reading[1], statusTag = com.polyforms.shiori.shared.ReadingStatus.READING)
+    }
+}

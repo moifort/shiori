@@ -12,6 +12,11 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.polyforms.shiori.shared.Book
 import com.polyforms.shiori.shared.components.styles.Shiori
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 /** A cover with one line under it: a date, a progress, an author. */
 @Composable
@@ -35,4 +40,10 @@ fun CoverTile(
             )
         }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun CoverTilePreview() = PreviewSurface {
+    Row(Modifier.padding(16.dp)) { CoverTile(DebugFixtures.reading[2], "Tome 5") }
 }

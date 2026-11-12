@@ -52,6 +52,9 @@ import com.polyforms.shiori.shared.platform.ShioriAlert
 import com.polyforms.shiori.shared.platform.ShioriSheet
 import com.polyforms.shiori.shared.reportError
 import kotlinx.coroutines.launch
+import androidx.compose.ui.tooling.preview.Preview
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 /** A saga's name, format and description, as the shared catalogue holds them. */
 @Composable
@@ -224,3 +227,8 @@ fun MergeSeriesSheet(
     error?.let { ShioriAlert(L("Fusion impossible"), it, onDismiss = { error = null }) }
 }
 
+@Preview(showBackground = true)
+@Composable
+private fun SeriesSheetsPreview() = PreviewSurface {
+    VolumeCountSheet("Frieren", count = 15, onDismiss = {}) { null }
+}

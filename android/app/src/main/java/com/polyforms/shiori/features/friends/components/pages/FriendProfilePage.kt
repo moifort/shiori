@@ -43,6 +43,10 @@ import com.polyforms.shiori.shared.components.styles.ShioriDivider
 import com.polyforms.shiori.shared.components.styles.Symbol
 import com.polyforms.shiori.shared.components.styles.plainClickable
 import kotlinx.coroutines.launch
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.foundation.layout.Column
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 /** Everything a friend's page can ask for. */
 sealed interface FriendProfileAction {
@@ -133,4 +137,16 @@ private fun LazyListScope.covers(books: List<FriendBook>, onOpen: (FriendBook) -
     items(books, key = { it.id }) { entry ->
         Box(Modifier.plainClickable { onOpen(entry) }) { BookCover(entry.book, SummaryCoverWidth, formatBadgeSize = 22.dp) }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun FriendProfilePagePreview() = PreviewSurface {
+    FriendProfilePage(
+        DebugFixtures.friends[0],
+        DebugFixtures.myShelf.copy(firstName = "Léa"),
+        isPreview = false,
+        isLoading = false,
+        errorMessage = null,
+    ) {}
 }

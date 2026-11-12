@@ -17,6 +17,9 @@ import com.polyforms.shiori.shared.components.molecules.ReleaseDateBadge
 import com.polyforms.shiori.shared.components.organisms.BookCover
 import com.polyforms.shiori.shared.components.styles.Shiori
 import com.polyforms.shiori.shared.components.styles.color
+import androidx.compose.ui.tooling.preview.Preview
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 /** An edition awaited: its cover, what it is, where it stands, the leaf of a day to come. */
 @Composable
@@ -37,4 +40,10 @@ fun AwaitedEditionReleaseRow(edition: AwaitedEdition) {
         }
         edition.announcedDate?.let { ReleaseDateBadge(it) }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun AwaitedEditionReleaseRowPreview() = PreviewSurface {
+    Column { DebugFixtures.discoverAwaited.forEach { AwaitedEditionReleaseRow(it) } }
 }

@@ -261,4 +261,35 @@ object DebugFixtures {
 
     val coverSlugs = (reading + toRead).mapNotNull { it.coverURL?.substringAfterLast('/')?.removeSuffix(".jpg") } +
         listOf("one-piece-107", "frieren-05", "blacksad-04", "hyperion-audio-01", "blue-lock-20", "depossedes", "neuromancien")
+
+    /** The sagas the reader follows, as the shelves and pages hold them. */
+    val followedSeries: List<com.polyforms.shiori.shared.FollowedSeries>
+        get() = discoverFeed.rows.values.flatten().map { it.series }
+
+    val sagas: List<com.polyforms.shiori.features.discover.SagaDiscovery>
+        get() = discoverFeed.rows.values.flatten()
+
+    val announcedVolume = volume(16, "Frieren 16", 4, "frieren-05")
+
+    val seriesCatalogue = com.polyforms.shiori.shared.BookSeries(
+        id = "frieren", language = BookLanguage.FR, name = "Frieren", author = "Kanehito Yamada",
+        description = "Après la défaite du roi démon, l'elfe Frieren voit vieillir ses compagnons.",
+    )
+
+    val author = com.polyforms.shiori.features.authors.FollowedAuthor(
+        key = "patrick-rothfuss", name = "Patrick Rothfuss", indexLetter = "R", bookCount = 2, seriesCount = 1,
+        favoriteCount = 1, averageRating = 4.5, shelvedAt = ago(30), books = listOf(reading[0]),
+    )
+
+    val authorPage = com.polyforms.shiori.features.authors.AuthorPage(
+        author = author, readCount = 1, nationality = "Américain", birthYear = 1973, deathYear = null,
+        biography = "Auteur de fantasy, connu pour la Chronique du tueur de roi.",
+        sagas = followedSeries.take(1), sagasNotHeld = emptyList(), books = listOf(reading[0]),
+        booksNotHeld = listOf(com.polyforms.shiori.features.authors.AuthorWork("The Slow Regard of Silent Things", 2014, null)),
+    )
+
+    val narratorPage = com.polyforms.shiori.features.narrators.NarratorPage(
+        key = "jean-pierre-michael", name = "Jean-Pierre Michaël", portraitURL = null, favorite = false, bookCount = 3,
+        readCount = 1, seriesCount = 1, averageRating = 4.0, sagas = emptyList(), books = listOf(reading[1]),
+    )
 }

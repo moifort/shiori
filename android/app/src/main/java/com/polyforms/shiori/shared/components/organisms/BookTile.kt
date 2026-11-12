@@ -14,6 +14,13 @@ import com.polyforms.shiori.shared.Book
 import com.polyforms.shiori.shared.LocalCoverMaxPixelSize
 import com.polyforms.shiori.shared.ReadingStatus
 import com.polyforms.shiori.shared.components.styles.Symbol
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 /** A mosaic tile: the cover edge to edge, a heart and the status along its foot. */
 @Composable
@@ -38,5 +45,14 @@ fun BookTile(book: Book, width: Dp, modifier: Modifier = Modifier, showsStatus: 
                 )
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun BookTilePreview() = PreviewSurface {
+    Row(Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        BookTile(DebugFixtures.reading[0], 110.dp)
+        BookTile(DebugFixtures.toRead[0], 110.dp, showsStatus = true)
     }
 }

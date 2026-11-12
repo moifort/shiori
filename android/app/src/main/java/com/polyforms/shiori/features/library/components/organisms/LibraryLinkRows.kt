@@ -21,6 +21,9 @@ import com.polyforms.shiori.shared.components.styles.ShioriDivider
 import com.polyforms.shiori.shared.components.styles.Shiori
 import com.polyforms.shiori.shared.components.styles.Symbol
 import com.polyforms.shiori.shared.components.styles.plainClickable
+import androidx.compose.ui.tooling.preview.Preview
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 enum class LibraryLink { BOOKS, SERIES, AUTHORS, NARRATORS, WISHLIST }
 
@@ -48,4 +51,10 @@ private fun LinkRow(symbol: String, title: String, onClick: () -> Unit) {
         }
         ShioriDivider(Modifier.align(Alignment.BottomStart).padding(start = 44.dp))
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun LibraryLinkRowsPreview() = PreviewSurface {
+    LibraryLinkRows(showsSeries = true, showsAuthors = true, showsNarrators = true) {}
 }

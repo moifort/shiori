@@ -33,6 +33,11 @@ import com.polyforms.shiori.shared.components.styles.Shiori
 import com.polyforms.shiori.shared.components.styles.Symbol
 import com.polyforms.shiori.shared.components.styles.glass
 import kotlinx.coroutines.launch
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.foundation.layout.Column
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
+import androidx.compose.material3.Text
 
 /**
  * A round glass button holding one icon, as iOS 26 draws toolbar buttons: close, confirm,
@@ -117,5 +122,16 @@ fun HeroProminentButton(onClick: () -> Unit, modifier: Modifier = Modifier, cont
         verticalAlignment = Alignment.CenterVertically,
     ) {
         CompositionLocalProvider(LocalContentColor provides Color.Black) { content() }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun ButtonsPreview() = PreviewSurface {
+    Row(Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        ToolbarIconButton("Modifier", "pencil") {}
+        ToolbarIconButton("Supprimer", "trash", destructive = true) {}
+        AsyncToolbarButton("Valider", "checkmark", prominent = true) {}
+        HeroProminentButton({}) { Text("Découvrir") }
     }
 }

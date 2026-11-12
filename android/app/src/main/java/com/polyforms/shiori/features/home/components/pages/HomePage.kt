@@ -71,6 +71,9 @@ import com.polyforms.shiori.shared.components.styles.Shiori
 import com.polyforms.shiori.shared.components.styles.ShioriTheme
 import kotlinx.coroutines.launch
 import java.time.Instant
+import androidx.compose.ui.tooling.preview.Preview
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 sealed interface HomeAction {
     data class ShowLibrary(val request: LibraryRequest) : HomeAction
@@ -289,3 +292,18 @@ fun HomeHeader(isAdmin: Boolean, avatar: @Composable () -> Unit, onAdmin: () -> 
     }
 }
 
+@Preview(showBackground = true)
+@Composable
+private fun HomePagePreview() = PreviewSurface {
+    HomePage(
+        DebugFixtures.dashboard,
+        releases = emptyList(),
+        seenReleases = emptySet(),
+        discoveries = DebugFixtures.discoveries,
+        isSearchingDiscoveries = false,
+        discoveryChoices = androidx.compose.runtime.remember { com.polyforms.shiori.features.discover.components.organisms.DiscoveryChoices() },
+        onDiscoveryChoice = { _, _ -> true },
+        onRefresh = {},
+        header = { HomeHeader(isAdmin = false, avatar = {}) {} },
+    ) {}
+}

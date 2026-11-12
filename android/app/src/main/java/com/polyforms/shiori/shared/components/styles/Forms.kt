@@ -33,6 +33,9 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.tooling.preview.Preview
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 /** A section of an inset grouped form: a small caps header, white rows, a footer. */
 @Composable
@@ -150,4 +153,19 @@ fun ShioriSwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit, enabled: 
         ),
         thumbContent = null,
     )
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun FormsPreview() = PreviewSurface {
+    Column(Modifier.padding(vertical = 16.dp)) {
+        FormSection(header = "Livre", footer = "Corrigé pour vous seul.") {
+            FormRow { PlainTextField("Dune", {}, "Titre") }
+            FormRow(divider = false) {
+                Text("Coup de cœur", Modifier.weight(1f))
+                ShioriSwitch(true, {})
+            }
+        }
+        RoundedTextField("", {}, "Rechercher", Modifier.padding(16.dp), leadingSymbol = "magnifyingglass")
+    }
 }

@@ -48,6 +48,10 @@ import com.polyforms.shiori.shared.components.molecules.RowHeader
 import com.polyforms.shiori.shared.components.molecules.RowHeaderStyle
 import com.polyforms.shiori.shared.platform.LargeTitle
 import kotlinx.coroutines.launch
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.foundation.layout.Row
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 sealed interface LibraryShelvesAction {
     data class OpenBook(val book: Book) : LibraryShelvesAction
@@ -184,4 +188,25 @@ private fun BookRail(shelf: BookShelf, books: List<Book>, context: PosterLabel.C
             onMenu = { book, action -> send(LibraryShelvesAction.Menu(book, action)) },
         ) { send(LibraryShelvesAction.OpenBook(it)) }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun LibraryShelvesPagePreview() = PreviewSurface {
+    LibraryShelvesPage(
+        shelves = com.polyforms.shiori.features.library.LibraryShelves(
+            formats = listOf(com.polyforms.shiori.shared.BookFormat.BOOK, com.polyforms.shiori.shared.BookFormat.MANGA),
+            recent = DebugFixtures.reading,
+            toRead = DebugFixtures.toRead,
+            series = DebugFixtures.followedSeries,
+            authors = listOf(DebugFixtures.author),
+        ),
+        formats = listOf(com.polyforms.shiori.shared.BookFormat.BOOK, com.polyforms.shiori.shared.BookFormat.MANGA),
+        selectedFormat = null,
+        genre = null,
+        subgenres = emptyList(),
+        selectedSubgenre = null,
+        isLoading = false,
+        errorMessage = null,
+    ) {}
 }

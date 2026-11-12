@@ -74,6 +74,9 @@ import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.ZoneId
 import java.time.ZoneOffset
+import androidx.compose.ui.tooling.preview.Preview
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 sealed interface ScanReviewAction {
     data class Save(val draft: BookDraft, val series: SeriesPlacement?) : ScanReviewAction
@@ -416,3 +419,15 @@ fun ScanIdentitySheet(book: Book, onDismiss: () -> Unit, onSave: (BookCorrection
     }
 }
 
+@Preview(showBackground = true)
+@Composable
+private fun ScanReviewPagePreview() = PreviewSurface {
+    ScanReviewPage(
+        DebugFixtures.reviewDraft,
+        ownedCopy = null,
+        isSaving = false,
+        awaitable = emptyList(),
+        loadSubgenres = { emptyList() },
+        loadVocabulary = { null },
+    ) {}
+}

@@ -37,6 +37,9 @@ import com.polyforms.shiori.shared.components.styles.Symbol
 import com.polyforms.shiori.shared.platform.SheetBar
 import com.polyforms.shiori.shared.platform.ShioriAlert
 import com.polyforms.shiori.shared.platform.ShioriSheet
+import androidx.compose.ui.tooling.preview.Preview
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 /** File a standalone book in a saga: one of the reader's, or a new one. */
 @Composable
@@ -86,4 +89,10 @@ fun SeriesJoinSheet(book: Book, loadVocabulary: suspend () -> BookVocabulary?, o
         }
     }
     error?.let { ShioriAlert(L("Une erreur est survenue"), it, onDismiss = { error = null }) }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun SeriesJoinSheetPreview() = PreviewSurface {
+    SeriesJoinSheet(DebugFixtures.toRead[0], loadVocabulary = { null }, onDismiss = {}) { null }
 }

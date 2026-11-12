@@ -56,6 +56,9 @@ import com.polyforms.shiori.shared.components.styles.color
 import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlin.math.sin
+import androidx.compose.ui.tooling.preview.Preview
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 private val genreCount = BookGenre.entries.size - 1
 
@@ -365,3 +368,15 @@ fun UnexploredGenresCard(unexplored: List<GenreInsights.Unexplored>) {
     }
 }
 
+@Preview(showBackground = true)
+@Composable
+private fun GenreInsightsCardsPreview() = PreviewSurface {
+    val insights = DebugFixtures.genreInsights
+    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        GenreSignatureCard(insights.readCount, insights.shares)
+        FormatsCard(insights.formats)
+        TasteMap(insights.tastes, insights.averageRating ?: 0.0, insights.gem)
+        GenreRecordsCard(insights.longest, insights.fastest, insights.mostDropped)
+        UnexploredGenresCard(insights.unexplored)
+    }
+}

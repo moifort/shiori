@@ -46,6 +46,9 @@ import com.polyforms.shiori.shared.components.styles.Shiori
 import com.polyforms.shiori.shared.components.styles.Symbol
 import com.polyforms.shiori.shared.components.styles.plainClickable
 import java.net.URLEncoder
+import androidx.compose.ui.tooling.preview.Preview
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 /** Where a volume to come is pre-ordered on amazon.fr, with Shiori's Associates tag. */
 fun DiscoveredVolume.amazonURL(author: String): String {
@@ -109,4 +112,10 @@ fun SeriesReleaseCard(
         }
         volume.date?.let { Box(Modifier.align(Alignment.TopEnd).padding(10.dp)) { ReleaseDateBadge(it, onGlass = true) } }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun SeriesReleaseCardPreview() = PreviewSurface {
+    SeriesReleaseCard(DebugFixtures.announcedVolume, "Kanehito Yamada", isAudio = false, onOpen = {}, modifier = Modifier.padding(16.dp))
 }

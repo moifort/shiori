@@ -4,6 +4,15 @@ import androidx.compose.runtime.Composable
 import com.polyforms.shiori.shared.L
 import com.polyforms.shiori.shared.platform.MenuEntry
 import com.polyforms.shiori.shared.platform.ToolbarMenuButton
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 enum class PersonMenuAction { EDIT, PORTRAIT }
 
@@ -18,4 +27,10 @@ fun PersonActionsMenu(onAction: (PersonMenuAction) -> Unit) {
             MenuEntry.Item(L("Portrait"), "person.crop.circle") { onAction(PersonMenuAction.PORTRAIT) },
         ),
     )
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun PersonActionsMenuPreview() = PreviewSurface {
+    Row(Modifier.padding(16.dp)) { PersonActionsMenu {} }
 }

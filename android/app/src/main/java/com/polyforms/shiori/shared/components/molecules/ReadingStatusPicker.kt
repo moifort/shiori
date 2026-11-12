@@ -25,6 +25,10 @@ import com.polyforms.shiori.shared.ReadingStatus
 import com.polyforms.shiori.shared.components.styles.Shiori
 import com.polyforms.shiori.shared.components.styles.Symbol
 import com.polyforms.shiori.shared.components.styles.plainClickable
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.foundation.layout.Column
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 /** To read, reading, read: a capsule picker, the chosen one lifted on white. */
 @Composable
@@ -50,4 +54,10 @@ fun ReadingStatusPicker(status: ReadingStatus, modifier: Modifier = Modifier, on
             }
         }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun ReadingStatusPickerPreview() = PreviewSurface {
+    ReadingStatusPicker(com.polyforms.shiori.shared.ReadingStatus.READING, Modifier.padding(16.dp)) {}
 }

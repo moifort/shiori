@@ -32,6 +32,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.polyforms.shiori.shared.L
 import com.polyforms.shiori.shared.components.styles.Shiori
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 /** "L'IA prépare la fiche" on a turning field of colours, while the AI writes a book's record. */
 @Composable
@@ -69,4 +75,10 @@ fun BoxScope.GeneratingPillHost(isGenerating: Boolean) {
         enter = fadeIn() + scaleIn(initialScale = 0.6f),
         exit = fadeOut() + scaleOut(targetScale = 0.9f),
     ) { GeneratingPill() }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun GeneratingPillPreview() = PreviewSurface {
+    Row(Modifier.padding(16.dp)) { GeneratingPill() }
 }

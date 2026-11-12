@@ -46,6 +46,10 @@ import com.polyforms.shiori.shared.platform.MenuEntries
 import com.polyforms.shiori.shared.platform.MenuEntry
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.foundation.layout.Row
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 /** Everything the Partagé page can ask for. */
 sealed interface SharedAction {
@@ -171,4 +175,10 @@ private fun ActionRow(symbol: String, title: String, enabled: Boolean = true, di
         Icon(Symbol(symbol), null, Modifier.size(20.dp), tint = Shiori.colors.accent)
         Text(title, style = Shiori.type.body, color = Shiori.colors.accent)
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun SharedPagePreview() = PreviewSurface {
+    SharedPage(DebugFixtures.myShelf, DebugFixtures.friends, isWaiting = false, loadFailed = null, isInviting = false) {}
 }

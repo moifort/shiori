@@ -44,6 +44,9 @@ import com.polyforms.shiori.shared.platform.ShioriSheet
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import androidx.compose.ui.tooling.preview.Preview
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 /** The faces a reader may take: a photo, initials, a colour, a hero of the classics. */
 @Composable
@@ -112,4 +115,10 @@ private fun Shelf(title: String, choices: List<Pair<Triple<String, Boolean, @Com
             }
         }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun AvatarPickerSheetPreview() = PreviewSurface {
+    AvatarPickerSheet(com.polyforms.shiori.shared.account.AccountAvatar.Initials, "Camille", onDismiss = {}, onPick = {})
 }

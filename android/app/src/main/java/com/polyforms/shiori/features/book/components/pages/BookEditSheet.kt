@@ -64,6 +64,9 @@ import com.polyforms.shiori.shared.platform.ShioriSheet
 import java.time.Instant
 import java.time.ZoneId
 import java.time.ZoneOffset
+import androidx.compose.ui.tooling.preview.Preview
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 object BookEditRules {
     /** "14h30", "14 h", "45 min", or bare minutes. */
@@ -328,4 +331,10 @@ private fun DateRow(title: String, symbol: String, date: Instant, latest: Instan
             dismissButton = { TextButton(onClick = { open = false }) { Text(L("Annuler"), color = colors.accent) } },
         ) { DatePicker(state, showModeToggle = false) }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun BookEditSheetPreview() = PreviewSurface {
+    BookEditSheet(DebugFixtures.reading[0], loadVocabulary = { null }, onDismiss = {}) { _, _ -> null }
 }

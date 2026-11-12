@@ -42,6 +42,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.foundation.layout.Column
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 /** How a button is drawn, as SwiftUI's `.borderedProminent`, `.bordered` and `.plain`. */
 enum class ButtonKind { PROMINENT, BORDERED, PLAIN }
@@ -194,4 +198,17 @@ fun GroupedRow(modifier: Modifier = Modifier, onClick: (() -> Unit)? = null, con
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         content = content,
     )
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun ControlsPreview() = PreviewSurface {
+    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        ShioriButton("Ajouter", symbol = "plus") {}
+        ShioriButton("Plus tard", kind = ButtonKind.BORDERED) {}
+        ShioriButton("Supprimer", destructive = true, kind = ButtonKind.PLAIN) {}
+        ShioriDivider()
+        GroupedRow(onClick = {}) { Text("Une ligne de réglage") }
+        Tinted(Shiori.colors.red) { Text("Teinté") }
+    }
 }

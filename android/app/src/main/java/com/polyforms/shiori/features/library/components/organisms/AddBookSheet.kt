@@ -41,6 +41,9 @@ import com.polyforms.shiori.shared.components.styles.plainClickable
 import com.polyforms.shiori.shared.platform.ShioriSheet
 import com.polyforms.shiori.shared.reportError
 import kotlinx.coroutines.launch
+import androidx.compose.ui.tooling.preview.Preview
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 /** Where a book is added from. */
 sealed interface AddBookSource {
@@ -189,3 +192,8 @@ private fun Tile(symbol: String, title: String, badge: String? = null, onClick: 
     }
 }
 
+@Preview(showBackground = true)
+@Composable
+private fun AddBookSheetPreview() = PreviewSurface {
+    AddBookSheet(isPremium = false, searchTitle = { emptyList() }, onDismiss = {}, onChoose = {})
+}

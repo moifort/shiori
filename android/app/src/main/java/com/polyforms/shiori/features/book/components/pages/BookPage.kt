@@ -66,6 +66,9 @@ import com.polyforms.shiori.shared.components.styles.Symbol
 import com.polyforms.shiori.shared.platform.MenuEntries
 import com.polyforms.shiori.shared.platform.MenuEntry
 import java.time.Instant
+import androidx.compose.ui.tooling.preview.Preview
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 /** The fields a date or number tile edits on its own. */
 enum class BookField {
@@ -311,3 +314,19 @@ fun HeroButton(
     }
 }
 
+@Preview(showBackground = true)
+@Composable
+private fun BookPagePreview() = PreviewSurface {
+    BookPage(
+        com.polyforms.shiori.features.book.BookFixtures.previewPaper,
+        isSaving = false,
+        onSetStatus = {},
+        onRate = {},
+        onOpenSeries = {},
+        onEdit = {},
+        onEditGenre = {},
+        onEditRecommendation = {},
+        onEditNote = {},
+        onEditField = {},
+    )
+}

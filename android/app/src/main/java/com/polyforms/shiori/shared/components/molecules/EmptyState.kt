@@ -18,6 +18,10 @@ import com.polyforms.shiori.shared.components.styles.ButtonKind
 import com.polyforms.shiori.shared.components.styles.Shiori
 import com.polyforms.shiori.shared.components.styles.ShioriButton
 import com.polyforms.shiori.shared.components.styles.Symbol
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.foundation.layout.Row
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 /** One button of an empty state. */
 data class EmptyStateAction(val title: String, val symbol: String? = null, val run: suspend () -> Unit)
@@ -74,3 +78,17 @@ fun FailureState(title: String, message: String, modifier: Modifier = Modifier, 
         modifier,
         primary = EmptyStateAction(L("Réessayer"), "arrow.clockwise", retry),
     )
+
+@Preview(showBackground = true)
+@Composable
+private fun EmptyStatePreview() = PreviewSurface {
+    Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
+        EmptyState(
+            symbol = "books.vertical",
+            title = "Aucun livre",
+            message = "Scannez une couverture pour commencer.",
+            primary = EmptyStateAction("Scanner", "camera") {},
+        )
+        FailureState("Chargement impossible", "Vérifiez la connexion.") {}
+    }
+}

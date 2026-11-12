@@ -25,6 +25,9 @@ import androidx.compose.ui.unit.dp
 import com.polyforms.shiori.features.friends.ReadingChallenge
 import com.polyforms.shiori.shared.components.styles.Shiori
 import com.polyforms.shiori.shared.components.styles.Symbol
+import androidx.compose.ui.tooling.preview.Preview
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 /** The challenge as the Partagé tab draws it: the verdict on top, then the podium as bars. */
 @Composable
@@ -79,4 +82,13 @@ private fun medal(rank: Int) = when (rank) {
     2 -> "🥈"
     3 -> "🥉"
     else -> "$rank."
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun ReadingChallengeCardPreview() = PreviewSurface {
+    ReadingChallengeCard(
+        com.polyforms.shiori.features.friends.ReadingChallenge(DebugFixtures.friends[1], DebugFixtures.friends),
+        Modifier.padding(16.dp),
+    )
 }

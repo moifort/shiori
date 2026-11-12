@@ -26,6 +26,10 @@ import com.polyforms.shiori.shared.ReadingStatus
 import com.polyforms.shiori.shared.components.styles.Shiori
 import com.polyforms.shiori.shared.components.styles.Symbol
 import com.polyforms.shiori.shared.components.styles.ultraThinDark
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.foundation.layout.Column
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 /** A headphones disc on a cover: the book is a recording. */
 @Composable
@@ -157,5 +161,25 @@ fun ShelfFilterLabel(symbol: String, title: String) {
     ) {
         Icon(Symbol(symbol), null, Modifier.size(16.dp))
         Text(title, style = Shiori.type.subheadline.copy(fontWeight = FontWeight.Medium))
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun TagsPreview() = PreviewSurface {
+    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            AudiobookBadge()
+            AwaitedMark()
+            OutlinedTag("EN")
+            LanguageTag(com.polyforms.shiori.shared.BookLanguage.EN)
+            CoverBadge("heart.fill", Shiori.colors.red)
+        }
+        CoverTags(DebugFixtures.reading[1])
+        ProgressBar(0.4)
+        ReadingStatusBadge(com.polyforms.shiori.shared.ReadingStatus.READING)
+        RowChip("Fantasy", Shiori.colors.purple, symbol = "sparkles")
+        SagaName("Les Cantos d'Hypérion", isAudio = true)
+        ShelfFilterLabel("books.vertical", "Livres")
     }
 }

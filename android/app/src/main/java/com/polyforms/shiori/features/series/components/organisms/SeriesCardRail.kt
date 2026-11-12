@@ -16,6 +16,12 @@ import com.polyforms.shiori.features.home.components.organisms.SeriesShowCard
 import com.polyforms.shiori.features.series.progress
 import com.polyforms.shiori.features.series.releaseTag
 import com.polyforms.shiori.shared.FollowedSeries
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 /** One card of a [SeriesCardRail]. */
 data class SeriesRailCard(val progress: Dashboard.SeriesProgress, val tag: String? = null, val open: () -> Unit) {
@@ -46,3 +52,12 @@ fun SeriesCardRail(cards: List<SeriesRailCard>, modifier: Modifier = Modifier, i
 @Composable
 fun SeriesCardRail(series: List<FollowedSeries>, modifier: Modifier = Modifier, onOpen: (FollowedSeries) -> Unit) =
     SeriesCardRail(series.map { saga -> SeriesRailCard(saga.progress, saga.releaseTag) { onOpen(saga) } }, modifier)
+
+@Preview(showBackground = true)
+@Composable
+private fun SeriesCardRailPreview() = PreviewSurface {
+    Column(Modifier.padding(vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        SeriesCardRail(DebugFixtures.dashboard.series.map { SeriesRailCard(it) {} })
+        SeriesCardRail(DebugFixtures.followedSeries, onOpen = {})
+    }
+}

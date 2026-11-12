@@ -29,6 +29,13 @@ import com.polyforms.shiori.shared.account.AccountAvatar
 import com.polyforms.shiori.shared.account.initials
 import com.polyforms.shiori.shared.components.styles.Symbol
 import com.polyforms.shiori.shared.components.styles.color
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 /** A reader's face, round: their initials, a colour, a hero, or their photo. */
 @Composable
@@ -78,5 +85,15 @@ private fun Monogram(firstName: String?, size: Dp, tint: Color?) {
         } else {
             Text(letters, style = TextStyle(fontSize = sp, fontWeight = FontWeight.SemiBold, color = Color.White))
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun AccountAvatarViewPreview() = PreviewSurface {
+    Row(Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        AccountAvatarView(com.polyforms.shiori.shared.account.AccountAvatar.Initials, "Camille")
+        AccountAvatarView(com.polyforms.shiori.shared.account.AccountAvatar.Tinted(com.polyforms.shiori.shared.account.AvatarColor.PINK), "Léa")
+        AccountAvatarView(com.polyforms.shiori.shared.account.AccountAvatar.Initials, null)
     }
 }

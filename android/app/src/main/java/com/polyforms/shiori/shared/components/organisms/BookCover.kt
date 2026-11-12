@@ -37,6 +37,10 @@ import com.polyforms.shiori.shared.components.atoms.AudiobookBadge
 import com.polyforms.shiori.shared.components.styles.Shiori
 import kotlin.math.max
 import kotlin.math.min
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.foundation.layout.Row
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 /** A hue drawn from the title, stable across launches: the placeholder's colour. */
 private val Book.coverHue: Float
@@ -172,4 +176,14 @@ private fun BindingRelief() {
             ),
         ),
     )
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun BookCoverPreview() = PreviewSurface {
+    Row(Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        BookCover(DebugFixtures.reading[0])
+        BookCover(DebugFixtures.reading[1])
+        BookCover(DebugFixtures.reading[0].copy(coverURL = null))
+    }
 }

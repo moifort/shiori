@@ -53,6 +53,9 @@ import com.polyforms.shiori.shared.components.styles.ShioriDivider
 import com.polyforms.shiori.shared.components.styles.plainClickable
 import com.polyforms.shiori.shared.lovedRank
 import kotlinx.coroutines.launch
+import androidx.compose.ui.tooling.preview.Preview
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 /** Everything a friend's shelf page can ask for, its rows a book or a saga. */
 sealed interface FriendShelfAction<out Row> {
@@ -230,4 +233,20 @@ private fun <Row> ShelfList(
             }
         }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun FriendShelfPagesPreview() = PreviewSurface {
+    FriendLibraryPage(
+        books = DebugFixtures.myShelf.pile,
+        mode = com.polyforms.shiori.features.library.LibraryMode.ALL,
+        status = null,
+        isWaiting = false,
+        loadFailed = null,
+        hasMore = false,
+        loadMoreFailed = false,
+        adding = emptySet(),
+        isPreview = false,
+    ) {}
 }

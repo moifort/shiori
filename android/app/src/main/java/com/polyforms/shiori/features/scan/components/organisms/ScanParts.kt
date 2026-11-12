@@ -35,6 +35,9 @@ import com.polyforms.shiori.shared.components.molecules.EmptyStateAction
 import com.polyforms.shiori.shared.components.organisms.AIGlassDrops
 import com.polyforms.shiori.shared.components.styles.Shiori
 import com.polyforms.shiori.shared.components.styles.plainClickable
+import androidx.compose.ui.tooling.preview.Preview
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 /** A darkened veil over the camera with a cover-shaped hole and its white rim. */
 @Composable
@@ -120,5 +123,14 @@ fun CameraControls(title: String, hint: String, modifier: Modifier = Modifier, a
             Shutter(84.dp, onShutter)
             Box(Modifier.size(52.dp))
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun ScanPartsPreview() = PreviewSurface {
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        ScanFailedPage("Le serveur ne répond pas.", onRetry = {}, onRetake = {})
+        CameraControls("Couverture", "Cadrez la couverture entière.") {}
     }
 }

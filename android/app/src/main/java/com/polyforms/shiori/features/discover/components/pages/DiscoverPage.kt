@@ -87,6 +87,9 @@ import com.polyforms.shiori.shared.components.styles.color
 import com.polyforms.shiori.shared.components.styles.plainClickable
 import com.polyforms.shiori.shared.platform.LargeTitle
 import kotlinx.coroutines.launch
+import androidx.compose.ui.tooling.preview.Preview
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 /** Everything Découvrir's page can ask for. */
 sealed interface DiscoverAction {
@@ -321,4 +324,20 @@ private fun AuthorHeading(author: FollowedAuthor, modifier: Modifier = Modifier)
             Text(if (author.bookCount == 1) L("1 livre") else L("%lld livres", author.bookCount), style = Shiori.type.subheadline, color = Shiori.colors.secondaryLabel)
         }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun DiscoverPagePreview() = PreviewSurface {
+    DiscoverPage(
+        com.polyforms.shiori.shared.components.molecules.LibraryShelf.BOOKS,
+        DebugFixtures.discoverFeed,
+        DebugFixtures.discoverAwaited,
+        focusedAwaited = null,
+        awards = emptyList(),
+        discoveries = com.polyforms.shiori.features.discover.DiscoveriesLine.Shown(DebugFixtures.discoveries),
+        isLookingUp = false,
+        isLoading = false,
+        errorMessage = null,
+    ) {}
 }

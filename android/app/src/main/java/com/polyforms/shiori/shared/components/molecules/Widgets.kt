@@ -39,6 +39,9 @@ import com.polyforms.shiori.shared.components.styles.ShioriVerticalDivider
 import com.polyforms.shiori.shared.components.styles.Symbol
 import com.polyforms.shiori.shared.components.styles.plainClickable
 import java.text.NumberFormat
+import androidx.compose.ui.tooling.preview.Preview
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 /** A dashboard card: a headline, an optional accessory and chevron, then its content. */
 @Composable
@@ -253,5 +256,26 @@ fun FilterPills(pills: List<FilterPill>, selected: String?, onSelect: (String?) 
     ) {
         if (allLabel != null) pill(allLabel, selected == null) { onSelect(null) }
         pills.forEach { item -> pill(item.label, selected == item.id) { onSelect(item.id) } }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun WidgetsPreview() = PreviewSurface {
+    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        WidgetCard("Genres", action = {}) {
+            FiguresLine(listOf(Figure("142", "lus"), Figure("27", "à lire"), Figure("15", "coups de cœur")))
+            SegmentedBar(
+                listOf(
+                    Segment("sf", "Science-fiction", 48, Shiori.colors.blue),
+                    Segment("fantasy", "Fantasy", 39, Shiori.colors.purple),
+                    Segment("crime", "Polar", 17, Shiori.colors.orange),
+                ),
+            )
+            TagList(listOf("Aventure", "Space opera"), symbol = "tag")
+        }
+        WidgetCard("Lectures") { WidgetEmptyMessage("Rien de lu cette année.", WidgetPlaceholder.COVERS) }
+        Pill("Nouveau", symbol = "sparkles")
+        FilterPills(listOf(FilterPill("book", "Livres"), FilterPill("manga", "Mangas")), selected = null, onSelect = {}, allLabel = "Tout")
     }
 }

@@ -52,6 +52,9 @@ import com.polyforms.shiori.shared.components.styles.ShioriDivider
 import com.polyforms.shiori.shared.components.styles.Symbol
 import com.polyforms.shiori.shared.components.styles.plainClickable
 import kotlinx.coroutines.launch
+import androidx.compose.ui.tooling.preview.Preview
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 sealed interface SearchAction {
     data class OpenBook(val book: Book) : SearchAction
@@ -272,4 +275,21 @@ private fun highlighted(title: String, query: String): AnnotatedString? {
         append(title.substring(last))
     }
     return if (found) marked else null
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun LibrarySearchPagePreview() = PreviewSurface {
+    LibrarySearchPage(
+        query = "fon",
+        onQuery = {},
+        filter = com.polyforms.shiori.features.search.SearchFilter(),
+        results = com.polyforms.shiori.features.search.SearchResults(books = listOf(DebugFixtures.toRead[3])),
+        recentSearches = listOf("Dune"),
+        recentlyViewed = DebugFixtures.reading,
+        covers = emptyMap(),
+        isPreparing = false,
+        failed = false,
+        isSearching = false,
+    ) {}
 }

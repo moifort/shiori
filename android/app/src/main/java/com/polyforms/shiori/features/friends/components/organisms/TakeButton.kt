@@ -26,6 +26,13 @@ import com.polyforms.shiori.shared.components.styles.Symbol
 import com.polyforms.shiori.shared.components.styles.plainClickable
 import com.polyforms.shiori.shared.platform.MenuEntries
 import com.polyforms.shiori.shared.platform.MenuEntry
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 /**
  * "+" that puts a friend's book — or the first volume of their saga — on the reader's pile: a
@@ -64,3 +71,12 @@ fun TakeButton(
 /** What its first volume is, which is the one a "+" takes. */
 val FriendSaga.takenFormat: BookFormat
     get() = volumes.firstOrNull()?.format ?: if (isAudio) BookFormat.AUDIOBOOK else BookFormat.BOOK
+
+@Preview(showBackground = true)
+@Composable
+private fun TakeButtonPreview() = PreviewSurface {
+    Row(Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        TakeButton(owned = false, isAdding = false, format = com.polyforms.shiori.shared.BookFormat.BOOK, onTake = {})
+        TakeButton(owned = true, isAdding = false, format = com.polyforms.shiori.shared.BookFormat.BOOK, onTake = {})
+    }
+}

@@ -43,6 +43,9 @@ import com.polyforms.shiori.shared.platform.SheetBar
 import com.polyforms.shiori.shared.platform.ShioriAlert
 import com.polyforms.shiori.shared.platform.ShioriSheet
 import java.net.URI
+import androidx.compose.ui.tooling.preview.Preview
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 private val portraitSize = 92.dp
 
@@ -182,4 +185,16 @@ private fun pastedChoice(pasted: String, choices: List<PortraitChoice>?): Portra
     val host = runCatching { URI(typed).host }.getOrNull() ?: return null
     if (host.isEmpty()) return null
     return choices?.firstOrNull { it.url == typed } ?: PortraitChoice(PortraitChoice.Source.WEB, typed, false)
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun PortraitPickerSheetPreview() = PreviewSurface {
+    PortraitPickerSheet(
+        initials = "PR",
+        choices = emptyList(),
+        loadFailed = null,
+        onLoad = {},
+        onDismiss = {},
+    ) { null }
 }

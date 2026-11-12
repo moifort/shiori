@@ -55,6 +55,9 @@ import com.polyforms.shiori.shared.components.styles.Symbol
 import com.polyforms.shiori.shared.components.styles.plainClickable
 import com.polyforms.shiori.shared.platform.LargeTitle
 import kotlinx.coroutines.launch
+import androidx.compose.ui.tooling.preview.Preview
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 /** What a person shelf asks of its screen. */
 sealed interface PersonShelfAction<out Person> {
@@ -207,4 +210,21 @@ private fun <Person : ShelvedPerson> ShelfRow(person: Person, showsHeart: Boolea
             onMenu = { book, action -> send(PersonShelfAction.Menu(book, action)) },
         ) { send(PersonShelfAction.OpenBook(it)) }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun PersonShelfPagePreview() = PreviewSurface {
+    PersonShelfPage(
+        title = "Auteurs",
+        failureTitle = "Auteurs indisponibles",
+        noFavoritesTitle = "Aucun auteur préféré",
+        noFavoritesMessage = "Un cœur sur un auteur le place ici.",
+        people = listOf(DebugFixtures.author),
+        order = com.polyforms.shiori.features.authors.AuthorListOrder.RECENT,
+        isLoading = false,
+        errorMessage = null,
+        hasMore = false,
+        loadMoreFailed = false,
+    ) {}
 }

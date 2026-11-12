@@ -23,6 +23,10 @@ import com.polyforms.shiori.shared.components.styles.Shiori
 import com.polyforms.shiori.shared.components.styles.ShioriButton
 import com.polyforms.shiori.shared.platform.SheetBar
 import com.polyforms.shiori.shared.platform.ShioriSheet
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.foundation.layout.Row
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 enum class RatingSubject { BOOK, SERIES }
 
@@ -60,4 +64,10 @@ fun RatingPromptSheet(
             }
         }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun RatingPromptSheetPreview() = PreviewSurface {
+    RatingPromptSheet(current = 4.0, onDismiss = {}) {}
 }

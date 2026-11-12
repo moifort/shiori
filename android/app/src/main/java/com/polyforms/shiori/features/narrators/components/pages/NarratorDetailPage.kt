@@ -39,6 +39,10 @@ import com.polyforms.shiori.shared.components.molecules.personOrigin
 import com.polyforms.shiori.shared.components.styles.Shiori
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.foundation.layout.Row
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 sealed interface NarratorAction {
     data class OpenBook(val book: Book) : NarratorAction
@@ -121,4 +125,10 @@ private fun figures(page: NarratorPage): List<Pair<String, String>> {
         page.averageRating?.let { add("★ ${String.format("%.1f", it)}" to L("moyenne")) }
         add(number.format(page.seriesCount) to if (page.seriesCount > 1) L("séries") else L("série"))
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun NarratorDetailPagePreview() = PreviewSurface {
+    NarratorDetailPage(DebugFixtures.narratorPage, isLoading = false, errorMessage = null) {}
 }

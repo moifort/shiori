@@ -14,6 +14,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
+import androidx.compose.material3.Text
 
 /**
  * A button whose action is a request: it shows a spinner in place of its label until the
@@ -43,5 +51,13 @@ fun AsyncAction(
             Box(Modifier.alpha(if (inProgress) 0f else 1f)) { inner() }
             if (inProgress) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun AsyncActionPreview() = PreviewSurface {
+    AsyncAction(action = {}) { onClick, _, label ->
+        androidx.compose.material3.TextButton(onClick = onClick) { label { Text("Envoyer") } }
     }
 }

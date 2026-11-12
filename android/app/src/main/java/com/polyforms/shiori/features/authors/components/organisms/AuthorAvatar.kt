@@ -19,6 +19,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.polyforms.shiori.features.authors.FollowedAuthor
 import com.polyforms.shiori.shared.CoverImage
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 /** A person's portrait in a circle, or their initials on a slate gradient. */
 @Composable
@@ -51,3 +58,12 @@ private fun Monogram(initials: String, size: Dp) {
 
 @Composable
 fun FollowedAuthor.Avatar(modifier: Modifier = Modifier, size: Dp = 40.dp) = AuthorAvatar(initials, portraitURL, modifier, size)
+
+@Preview(showBackground = true)
+@Composable
+private fun AuthorAvatarPreview() = PreviewSurface {
+    Row(Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        AuthorAvatar("PR", null)
+        AuthorAvatar("UL", null, size = 93.dp)
+    }
+}

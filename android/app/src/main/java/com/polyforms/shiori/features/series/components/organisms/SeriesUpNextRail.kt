@@ -17,6 +17,10 @@ import com.polyforms.shiori.shared.ReadingStatus
 import com.polyforms.shiori.shared.book.PosterLabel
 import com.polyforms.shiori.shared.components.molecules.RowHeader
 import com.polyforms.shiori.shared.components.molecules.RowHeaderStyle
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.foundation.layout.Row
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 /** "À suivre": the volume to read next of every saga under way. */
 @Composable
@@ -45,4 +49,13 @@ private fun item(series: FollowedSeries, volume: NextVolume, open: () -> Unit): 
         )
         PosterRowItem(book, volume.number?.let { L("Tome %lld", it) } ?: volume.title, open)
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun SeriesUpNextRailPreview() = PreviewSurface {
+    SeriesUpNextRail(
+        listOf(DebugFixtures.followedSeries[0] to com.polyforms.shiori.features.series.NextVolume.Owned(DebugFixtures.reading[2])),
+        onOpen = {},
+    )
 }

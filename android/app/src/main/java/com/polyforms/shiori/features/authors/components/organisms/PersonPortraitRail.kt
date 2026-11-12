@@ -16,6 +16,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.polyforms.shiori.shared.components.styles.Shiori
 import com.polyforms.shiori.shared.components.styles.plainClickable
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 /** A face for a rail of people: who, and their portrait. */
 data class PortraitPerson(val id: String, val name: String, val initials: String, val portraitURL: String?)
@@ -49,4 +54,14 @@ fun <Person> PersonPortraitRail(people: List<Person>, face: (Person) -> Portrait
             }
         }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun PersonPortraitRailPreview() = PreviewSurface {
+    PersonPortraitRail(
+        people = listOf("Patrick Rothfuss", "Ursula K. Le Guin", "Alain Damasio"),
+        face = { PortraitPerson(it, it, com.polyforms.shiori.features.authors.personInitials(it), null) },
+        onOpen = {},
+    )
 }

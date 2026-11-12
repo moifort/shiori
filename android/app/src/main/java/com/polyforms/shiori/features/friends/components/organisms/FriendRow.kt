@@ -30,6 +30,9 @@ import com.polyforms.shiori.shared.components.organisms.CoverTile
 import com.polyforms.shiori.shared.components.styles.Shiori
 import com.polyforms.shiori.shared.components.styles.Symbol
 import com.polyforms.shiori.shared.components.styles.plainClickable
+import androidx.compose.ui.tooling.preview.Preview
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 /**
  * A friend as the Partagé list draws them: the initials, the name, their shelf in figures in the
@@ -109,5 +112,14 @@ fun SharedSummary(friend: Friend, heading: String? = L("Ce que vous partagez")) 
         Box(Modifier.fillMaxWidth().background(Shiori.colors.tertiaryFill, RoundedCornerShape(14.dp)).padding(vertical = 12.dp)) {
             FriendRow(friend)
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun FriendRowPreview() = PreviewSurface {
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        FriendRow(DebugFixtures.friends[0])
+        SharedSummary(DebugFixtures.friends[1], heading = "Hugo")
     }
 }

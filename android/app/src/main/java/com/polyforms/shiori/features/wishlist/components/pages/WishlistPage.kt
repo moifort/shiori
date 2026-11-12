@@ -52,6 +52,9 @@ import com.polyforms.shiori.shared.components.molecules.RowHeaderStyle
 import com.polyforms.shiori.shared.components.styles.Shiori
 import com.polyforms.shiori.shared.platform.LargeTitle
 import kotlinx.coroutines.launch
+import androidx.compose.ui.tooling.preview.Preview
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 sealed interface WishlistAction {
     data class OpenEdition(val edition: AwaitedEdition) : WishlistAction
@@ -159,4 +162,16 @@ private fun ReleaseRail(editions: List<AwaitedEdition>, onOpen: (AwaitedEdition)
             }
         }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun WishlistPagePreview() = PreviewSurface {
+    WishlistPage(
+        wishlist = com.polyforms.shiori.features.wishlist.Wishlist(awaited = DebugFixtures.discoverAwaited),
+        formats = emptyList(),
+        selectedFormat = null,
+        isLoading = false,
+        errorMessage = null,
+    ) {}
 }

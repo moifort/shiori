@@ -48,6 +48,9 @@ import com.polyforms.shiori.shared.platform.ShioriAlert
 import com.polyforms.shiori.shared.platform.ShioriSheet
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import androidx.compose.ui.tooling.preview.Preview
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 /** "Où en êtes-vous ?": a big page figure typed on a keypad, the bar, and Lu / Abandonné. */
 @Composable
@@ -171,3 +174,8 @@ fun ReadingProgressSheet(
     error?.let { ShioriAlert(L("Une erreur est survenue"), it, onDismiss = { error = null }) }
 }
 
+@Preview(showBackground = true)
+@Composable
+private fun ReadingProgressSheetPreview() = PreviewSurface {
+    ReadingProgressSheet(current = 214, pageCount = 662, onDismiss = {}) { _, _ -> null }
+}

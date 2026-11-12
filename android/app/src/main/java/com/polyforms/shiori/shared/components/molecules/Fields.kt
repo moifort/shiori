@@ -30,6 +30,9 @@ import com.polyforms.shiori.shared.components.styles.Symbol
 import com.polyforms.shiori.shared.components.styles.plainClickable
 import com.polyforms.shiori.shared.platform.MenuEntries
 import com.polyforms.shiori.shared.platform.MenuEntry
+import androidx.compose.ui.tooling.preview.Preview
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 @Composable
 private fun Proposals(proposals: List<String>, onPick: (String) -> Unit) {
@@ -125,4 +128,13 @@ fun <T> MenuPicker(
 fun RowScope.RowLabel(title: String, symbol: String) {
     Icon(Symbol(symbol), null, Modifier.size(22.dp), tint = Shiori.colors.secondaryLabel)
     Text(title, style = Shiori.type.body, color = Shiori.colors.label)
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun FieldsPreview() = PreviewSurface {
+    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        SubgenreField("Aven", {}, listOf("Aventure", "Avant-garde"))
+        SeriesNameField("", {}, listOf("Frieren", "One Piece"))
+    }
 }

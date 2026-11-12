@@ -58,6 +58,10 @@ import com.polyforms.shiori.shared.components.styles.Shiori
 import com.polyforms.shiori.shared.components.styles.Symbol
 import com.polyforms.shiori.shared.platform.LargeTitle
 import kotlinx.coroutines.launch
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.foundation.layout.Row
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 sealed interface NewsAction {
     data class SelectFormat(val format: BookFormat?) : NewsAction
@@ -220,3 +224,23 @@ fun UpcomingReleasesPage(releases: List<UpcomingRelease>, onOpen: (UpcomingRelea
     }
 }
 
+@Preview(showBackground = true)
+@Composable
+private fun NewsPagePreview() = PreviewSurface {
+    val feed = com.polyforms.shiori.features.news.NewsFeedLayout.feedSections(emptyList(), DebugFixtures.newsEvents, null, null)
+    NewsPage(
+        feed = feed,
+        taken = emptySet(),
+        wished = emptySet(),
+        awaited = emptySet(),
+        calendar = com.polyforms.shiori.features.news.ReleaseCalendar(DebugFixtures.upcoming),
+        format = null,
+        pillFormats = com.polyforms.shiori.features.news.NewsFeedLayout.pillFormats(feed, null),
+        stories = com.polyforms.shiori.features.news.NewsFeedLayout.stories(DebugFixtures.newsEvents, null),
+        friendId = null,
+        hasMore = false,
+        pageFailed = false,
+        isLoading = false,
+        errorMessage = null,
+    ) {}
+}

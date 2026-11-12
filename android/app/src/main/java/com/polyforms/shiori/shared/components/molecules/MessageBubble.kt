@@ -38,6 +38,9 @@ import com.polyforms.shiori.shared.components.styles.Shiori
 import com.polyforms.shiori.shared.components.styles.Symbol
 import com.polyforms.shiori.shared.components.styles.glass
 import com.polyforms.shiori.shared.components.styles.plainClickable
+import androidx.compose.ui.tooling.preview.Preview
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 /** An iMessage bubble with its tail: blue on the right for the reader's own words. */
 private fun bubbleShape(tailTrailing: Boolean) = GenericShape { size, _ ->
@@ -140,3 +143,12 @@ fun MessageComposer(
     }
 }
 
+@Preview(showBackground = true)
+@Composable
+private fun MessageBubblePreview() = PreviewSurface {
+    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        MessageBubble("Le meilleur space opera que j'aie lu. Lis-le !", sender = "Léa")
+        MessageBubble("Je le commence ce soir.", isMine = true)
+        MessageComposer(current = null, onCancel = {}, onSend = {})
+    }
+}

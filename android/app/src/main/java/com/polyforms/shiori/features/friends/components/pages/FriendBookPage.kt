@@ -63,6 +63,9 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 import java.util.Locale
+import androidx.compose.ui.tooling.preview.Preview
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 /** Everything a friend's book page can ask for. */
 sealed interface FriendBookAction {
@@ -248,4 +251,16 @@ private fun friendState(book: Book, name: String, now: Instant = Instant.now()):
         ReadingStatus.DROPPED -> L("%@ l'a abandonné", name) to SystemTint.RED
     }
     return BookState(text, tint)
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun FriendBookPagePreview() = PreviewSurface {
+    FriendBookPage(
+        DebugFixtures.friendBook,
+        "Léa",
+        added = null,
+        awaited = emptyList(),
+        formats = listOf(com.polyforms.shiori.shared.BookFormat.BOOK, com.polyforms.shiori.shared.BookFormat.AUDIOBOOK),
+    ) {}
 }

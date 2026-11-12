@@ -31,6 +31,9 @@ import com.polyforms.shiori.shared.L
 import com.polyforms.shiori.shared.components.styles.Shiori
 import com.polyforms.shiori.shared.components.styles.color
 import com.polyforms.shiori.shared.components.styles.plainClickable
+import androidx.compose.ui.tooling.preview.Preview
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 /** The genres the reader holds, two to a row, each tinted with a cover tilted at its corner. */
 @Composable
@@ -74,4 +77,17 @@ private fun Tile(shelf: GenreShelf, modifier: Modifier, onClick: () -> Unit) {
             )
         }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun GenreTileGridPreview() = PreviewSurface {
+    GenreTileGrid(
+        listOf(
+            com.polyforms.shiori.features.library.GenreShelf(com.polyforms.shiori.shared.BookGenre.SCIENCE_FICTION, 48, DebugFixtures.toRead[1].coverURL),
+            com.polyforms.shiori.features.library.GenreShelf(com.polyforms.shiori.shared.BookGenre.FANTASY, 39, DebugFixtures.reading[0].coverURL),
+            com.polyforms.shiori.features.library.GenreShelf(com.polyforms.shiori.shared.BookGenre.CRIME, 17),
+        ),
+        onOpen = {},
+    )
 }

@@ -56,6 +56,9 @@ import com.polyforms.shiori.shared.platform.ShioriSheet
 import com.polyforms.shiori.shared.track
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
+import androidx.compose.ui.tooling.preview.Preview
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 enum class PremiumTrigger(val analyticsName: String) {
     SCAN_ALLOWANCE_SPENT("scan_allowance_spent"), DISCOVER("discover"), SHELF_IMPORT("shelf_import");
@@ -252,4 +255,10 @@ private fun OfferButton(offer: PremiumOffer, savings: Double?, isPurchasing: Boo
         Spacer(Modifier.width(8.dp))
         if (buying) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp) else Text(offer.displayPrice, style = Shiori.type.headline, color = colors.label)
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun PremiumSheetPreview() = PreviewSurface {
+    PremiumSheet(PremiumTrigger.DISCOVER, onDismiss = {})
 }

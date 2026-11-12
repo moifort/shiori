@@ -79,6 +79,9 @@ import java.text.Normalizer
 import java.text.NumberFormat
 import java.time.Instant
 import java.time.LocalDate
+import androidx.compose.ui.tooling.preview.Preview
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 sealed interface SeriesAction {
     data class OpenBook(val book: Book) : SeriesAction
@@ -415,4 +418,23 @@ private fun factTiles(series: BookSeries, owned: List<Book>, friend: SeriesFrien
         FactTile("pageCount", L("Pages"), if (pages > 0) NumberFormat.getIntegerInstance().format(pages) else null)
     }
     return tiles
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun SeriesPagePreview() = PreviewSurface {
+    SeriesPage(
+        series = DebugFixtures.seriesCatalogue,
+        owned = listOf(DebugFixtures.reading[2]),
+        opinion = null,
+        isLoading = false,
+        errorMessage = null,
+        language = com.polyforms.shiori.shared.BookLanguage.FR,
+        friend = null,
+        isFollowed = true,
+        addingTitle = null,
+        releases = null,
+        takenFormat = com.polyforms.shiori.shared.BookFormat.MANGA,
+        announcedVolume = { null },
+    ) {}
 }

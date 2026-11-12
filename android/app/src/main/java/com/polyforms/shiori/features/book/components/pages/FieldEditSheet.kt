@@ -36,6 +36,10 @@ import com.polyforms.shiori.shared.platform.ShioriSheet
 import java.time.Instant
 import java.time.ZoneId
 import java.time.ZoneOffset
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.foundation.layout.Row
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 /** One field edited on its own: a number typed, or a day picked on a calendar. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -136,3 +140,8 @@ fun FieldEditSheet(book: Book, field: BookField, onDismiss: () -> Unit, onSave: 
     error?.let { ShioriAlert(L("Impossible d'enregistrer"), it, onDismiss = { error = null }) }
 }
 
+@Preview(showBackground = true)
+@Composable
+private fun FieldEditSheetPreview() = PreviewSurface {
+    FieldEditSheet(DebugFixtures.reading[0], BookField.PAGE_COUNT, onDismiss = {}) { null }
+}

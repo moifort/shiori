@@ -23,6 +23,9 @@ import com.polyforms.shiori.shared.L
 import com.polyforms.shiori.shared.components.styles.Shiori
 import com.polyforms.shiori.shared.components.styles.Symbol
 import java.time.Instant
+import androidx.compose.ui.tooling.preview.Preview
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 /** The month's scans used against the allowance, the welcome credits beside it. */
 @Composable
@@ -59,5 +62,13 @@ fun QuotaGauge(used: Int, limit: Int, renewsOn: Instant?, welcomeRemaining: Int 
                 color = colors.secondaryLabel,
             )
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun QuotaGaugePreview() = PreviewSurface {
+    Column(Modifier.padding(16.dp)) {
+        QuotaGauge(used = 3, limit = 5, renewsOn = DebugFixtures.dashboard.lastFinished?.finishedAt, welcomeRemaining = 10)
     }
 }

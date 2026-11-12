@@ -39,6 +39,10 @@ import com.polyforms.shiori.shared.platform.ShioriAlert
 import com.polyforms.shiori.shared.platform.ShioriSheet
 import com.polyforms.shiori.shared.reportError
 import com.polyforms.shiori.shared.track
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.foundation.layout.Row
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 /** A book typed by hand: title, author, format, media and status; the rest comes from a scan. */
 @Composable
@@ -95,4 +99,10 @@ fun ManualAddScreen(onDismiss: () -> Unit, onAdded: (Book) -> Unit) {
             reportError(failure)
         }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun ManualAddSheetPreview() = PreviewSurface {
+    ManualAddSheet(onDismiss = {}) { null }
 }

@@ -69,6 +69,9 @@ import java.time.format.TextStyle
 import java.time.temporal.ChronoUnit
 import java.time.temporal.WeekFields
 import java.util.Locale
+import androidx.compose.ui.tooling.preview.Preview
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 /** One page of the Home hero: a release, a discovery, or the month's closing word. */
 sealed interface HomeHeroItem {
@@ -378,4 +381,25 @@ fun DoneStack(symbol: String, modifier: Modifier = Modifier, scale: Float = 0.84
             Icon(Symbol(symbol), null, Modifier.size(40.dp * scale), tint = Color.White.copy(alpha = 0.92f))
         }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun HomeHeroCarouselPreview() = PreviewSurface {
+    HomeHeroCarousel(
+        items = listOf(
+            HomeHeroItem.Release(com.polyforms.shiori.features.home.HomeRelease.Volume(com.polyforms.shiori.features.discover.DiscoveryVolume(DebugFixtures.sagas[0], DebugFixtures.announcedVolume))),
+            HomeHeroItem.Discovery(DebugFixtures.discoveries.suggestions[0]),
+        ),
+        onOpenRelease = {},
+        onOpen = {},
+        onChoice = { _, _ -> true },
+        choices = androidx.compose.runtime.remember { com.polyforms.shiori.features.discover.components.organisms.DiscoveryChoices() },
+        onSeeRelease = {},
+        onUnseeRelease = {},
+        onShowDiscover = {},
+        onRate = {},
+        backdropCover = null,
+        discoveryMonth = DebugFixtures.discoveries.month,
+    )
 }

@@ -12,6 +12,13 @@ import androidx.compose.foundation.shape.GenericShape
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 private val Notched = GenericShape { size, _ ->
     val notch = size.width * 0.45f
@@ -46,4 +53,10 @@ fun BookmarkRibbon(width: Dp = 14.dp) {
         )
         drawLine(Color.Transparent, Offset.Zero, Offset.Zero)
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun BookmarkRibbonPreview() = PreviewSurface {
+    Row(Modifier.padding(16.dp)) { BookmarkRibbon() }
 }

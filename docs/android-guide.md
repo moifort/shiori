@@ -36,6 +36,18 @@ The one rule of the iOS guide holds: a composable is pure (renders from values) 
 (the `…Screen` that owns its view model). Porting a diff is reading the Swift file and editing
 the Kotlin file of the same name.
 
+## Components
+
+Atomic design, as on iOS: `shared/components/{atoms,molecules,organisms,styles}` and, in each
+feature, `components/{molecules,organisms,pages}`. Everything under a `components/` folder is
+pure: it never calls `GraphQLClient` or a client's `live`, holds no view model, never touches
+`DataChanges`, `AppContext` or `PushRegistrar`; the `…Screen` beside the folder does.
+
+Every file declaring a composable ends with a `@Preview` drawn inside `PreviewSurface` (the
+theme, a navigator, the grouped background) from `DebugFixtures`, never from the server.
+`bun scripts/check-android-components.ts` enforces both rules, and the Build Android workflow
+runs it.
+
 ## Copy
 
 Strings come from the iOS catalogue: `bun scripts/android-strings.ts` writes

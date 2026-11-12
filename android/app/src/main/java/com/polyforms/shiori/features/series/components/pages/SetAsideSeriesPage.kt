@@ -15,6 +15,10 @@ import androidx.compose.ui.unit.dp
 import com.polyforms.shiori.shared.FollowedSeries
 import com.polyforms.shiori.shared.L
 import com.polyforms.shiori.shared.platform.LargeTitle
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.foundation.layout.Row
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 /** The sagas the reader stopped following, with a way back. */
 @Composable
@@ -27,4 +31,10 @@ fun SetAsideSeriesPage(series: List<FollowedSeries>, isLoading: Boolean, onOpen:
         }
         if (series.isEmpty() && isLoading) CircularProgressIndicator(Modifier.align(Alignment.Center))
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun SetAsideSeriesPagePreview() = PreviewSurface {
+    SetAsideSeriesPage(DebugFixtures.followedSeries, isLoading = false, onOpen = {}, onFollow = {})
 }

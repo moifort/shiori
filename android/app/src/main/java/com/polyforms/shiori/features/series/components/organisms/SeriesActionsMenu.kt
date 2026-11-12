@@ -9,6 +9,15 @@ import com.polyforms.shiori.shared.L
 import com.polyforms.shiori.shared.platform.MenuEntry
 import com.polyforms.shiori.shared.platform.ShioriAlert
 import com.polyforms.shiori.shared.platform.ToolbarMenuButton
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 enum class SeriesMenuAction { EDIT, DECLARE_VOLUME_COUNT, MERGE, DELETE }
 
@@ -38,4 +47,10 @@ fun SeriesActionsMenu(isProvisional: Boolean, ownedCount: Int, onAction: (Series
             },
         )
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun SeriesActionsMenuPreview() = PreviewSurface {
+    Row(Modifier.padding(16.dp)) { SeriesActionsMenu(isProvisional = false, ownedCount = 5) {} }
 }

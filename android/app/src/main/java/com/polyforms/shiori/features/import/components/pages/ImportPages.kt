@@ -49,6 +49,9 @@ import com.polyforms.shiori.shared.components.styles.Symbol
 import com.polyforms.shiori.shared.components.styles.plainClickable
 import com.polyforms.shiori.shared.platform.MenuEntry
 import com.polyforms.shiori.shared.platform.ToolbarMenuButton
+import androidx.compose.ui.tooling.preview.Preview
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 private val ImportSource.pageSymbol: String get() = if (this == ImportSource.AUDIBLE) "headphones" else "book.closed"
 
@@ -248,3 +251,13 @@ fun <Item : ImportItem> ImportLibraryPage(
     }
 }
 
+@Preview(showBackground = true)
+@Composable
+private fun ImportPagesPreview() = PreviewSurface {
+    ImportConnectPage(
+        com.polyforms.shiori.features.import.ImportSource.AUDIBLE,
+        com.polyforms.shiori.features.import.AmazonMarketplace.FR,
+        onMarketplace = {},
+        isWorking = false,
+    ) {}
+}

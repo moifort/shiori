@@ -35,6 +35,9 @@ import com.polyforms.shiori.shared.components.styles.ShioriButton
 import com.polyforms.shiori.shared.components.styles.Symbol
 import com.polyforms.shiori.shared.components.styles.plainClickable
 import kotlinx.coroutines.launch
+import androidx.compose.ui.tooling.preview.Preview
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 /** A row of a link list: an icon, a title, a chevron, 50 high. */
 @Composable
@@ -148,5 +151,19 @@ fun RowHeader(
                 Text(detail, style = Shiori.type.subheadline, color = colors.secondaryLabel)
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun RowsPreview() = PreviewSurface {
+    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        RowHeader("À lire", detail = "27", action = {})
+        LinkRowGroup {
+            LinkRow("person.2", "Auteurs") {}
+            SeriesLinkRow("Frieren") {}
+        }
+        LabeledInfoRow("Éditeur", "Folio", "building.columns")
+        LoadMoreRow(failed = true, loadingLabel = "Chargement…") {}
     }
 }

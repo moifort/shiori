@@ -39,6 +39,12 @@ import com.polyforms.shiori.shared.platform.MenuEntries
 import com.polyforms.shiori.shared.platform.MenuEntry
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 /** The add menu of a News line: each format to read or already read, the wishlist, awaiting. */
 fun newsRowMenu(
@@ -126,5 +132,16 @@ fun SwipeMenuBox(menu: List<MenuEntry>?, onTap: (() -> Unit)?, modifier: Modifie
                 ),
         ) { content() }
         if (menu != null) Box(Modifier.align(Alignment.CenterEnd).padding(end = 24.dp)) { MenuEntries(menu, open) { open = false } }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun SwipeMenuBoxPreview() = PreviewSurface {
+    SwipeMenuBox(
+        menu = listOf(com.polyforms.shiori.shared.platform.MenuEntry.Item("Supprimer", "trash", destructive = true) {}),
+        onTap = {},
+    ) {
+        com.polyforms.shiori.shared.components.organisms.BookRow(DebugFixtures.reading[0])
     }
 }

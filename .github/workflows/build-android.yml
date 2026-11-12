@@ -3,9 +3,9 @@ name: Build Android
 on:
   push:
     branches: [main]
-    paths: ['android/**', 'shared/schema.graphql', 'ios/Shiori/**/*.graphql', '.github/workflows/build-android.yml']
+    paths: ['android/**', 'shared/schema.graphql', 'ios/Shiori/**/*.graphql', 'scripts/check-android-components.ts', '.github/workflows/build-android.yml']
   pull_request:
-    paths: ['android/**', 'shared/schema.graphql', 'ios/Shiori/**/*.graphql', '.github/workflows/build-android.yml']
+    paths: ['android/**', 'shared/schema.graphql', 'ios/Shiori/**/*.graphql', 'scripts/check-android-components.ts', '.github/workflows/build-android.yml']
 
 permissions:
   contents: read
@@ -21,6 +21,12 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
+      - uses: oven-sh/setup-bun@v2
+      - name: Components stay pure and previewed
+        # docs/android-guide.md: nothing under components/ or shared/components
+        # calls the server, holds a ViewModel or reads a singleton, and every file
+        # declaring a composable has a @Preview.
+        run: bun scripts/check-android-components.ts
       - uses: gradle/actions/setup-gradle@v4
       - name: Unit tests
         working-directory: android

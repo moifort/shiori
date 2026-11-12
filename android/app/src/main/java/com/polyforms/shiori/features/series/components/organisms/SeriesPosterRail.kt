@@ -16,6 +16,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.polyforms.shiori.shared.components.molecules.RowHeader
 import com.polyforms.shiori.shared.components.styles.Shiori
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.foundation.layout.Row
+import com.polyforms.shiori.DebugFixtures
+import com.polyforms.shiori.PreviewSurface
 
 /** A titled row of posters, the volume to read next ringed and scrolled into view. */
 @Composable
@@ -34,5 +38,13 @@ fun <Item> SeriesPosterRail(title: String, items: List<Item>, id: (Item) -> Stri
                 ) { poster(item) }
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun SeriesPosterRailPreview() = PreviewSurface {
+    SeriesPosterRail("À lire", DebugFixtures.toRead, id = { it.id }, ringedId = DebugFixtures.toRead[0].id) {
+        com.polyforms.shiori.shared.components.organisms.BookCover(it, width = 100.dp)
     }
 }
