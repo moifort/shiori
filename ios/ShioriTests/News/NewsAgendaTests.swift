@@ -89,7 +89,7 @@ struct NewsAgendaTests {
         #expect(agenda.days.first?.cards.map(\.id) == ["upcoming-thursday"])
     }
 
-    @Test func theTempsFortsAreTheNearestReleasesEitherSideOfTodayOpeningOnTheNextOne() {
+    @Test func theHeadlinesAreTheNearestReleasesEitherSideOfTodayAndTheFriendsLatestOpeningOnTheNextOne() {
         let agenda = agenda(
             released: (1...6).map { release("out\($0)", String(format: "2026-11-%02d", $0)) },
             events: [event("friend", at: day("2026-11-09"))],
@@ -99,7 +99,7 @@ struct NewsAgendaTests {
         )
 
         #expect(agenda.highlights.map(\.id) == [
-            "release-out3", "release-out4", "release-out5", "release-out6", "upcoming-soon",
+            "release-out3", "release-out4", "release-out5", "release-out6", "friend-friend", "upcoming-soon",
         ])
         #expect(agenda.highlights.last?.day == day("2026-11-12"))
         #expect(agenda.openingHighlight == "upcoming-soon")
@@ -129,6 +129,82 @@ struct NewsAgendaTests {
 
         #expect(agenda.prizes.map(\.id) == ["award-now"])
         #expect(none.prizes.isEmpty)
+    }
+
+    @Test func onlyTwoOfTheFriendsLatestFavouritesOrFinishedBooksMakeTheHeadlines() {
+        var started = event("started", at: day("2026-11-10"))
+        started = FeedEvent(
+            id: started.id, kind: .started, at: started.at, friendId: "lea", friendName: "Léa", bookId: "started",
+            title: "started", authors: [], format: .book, coverURL: nil, rating: nil, alsoStartedBy: 0, inLibrary: false
+        )
+        let agenda = agenda(events: [
+            started,
+            event("new", at: day("2026-11-09")), event("mid", at: day("2026-11-08")), event("old", at: day("2026-11-07")),
+        ])
+
+        #expect(agenda.highlights.map(\.id) == ["friend-mid", "friend-new"])
+    }
+
+    private func followed(
+        _ id: String, _ source: ReleaseSource, _ date: String?, series: String? = nil, volume: Int? = nil,
+        favorite: Bool = true, narrator: String? = nil
+    ) -> UpcomingRelease {
+        UpcomingRelease(
+            id: id, source: source, format: .book, title: id, authors: ["Martha Wells"], date: date, coverURL: nil,
+            seriesName: series, volume: volume,
+            author: .init(key: "wells", name: "Martha Wells", favorite: favorite, portraitURL: nil),
+            sagaRating: nil, sagaFavorite: false, narrator: narrator
+        )
+    }
+
+    @Test func theShelvesSortEachFollowOutFirstThenToCome() {
+        let out = [
+            followed("witcherOut", .saga, "2026-11-02", series: "Le Sorceleur", volume: 8),
+            followed("authorOut", .author, "2026-10-28"),
+            followed("shyAuthor", .author, "2026-11-01", favorite: false),
+            followed("wishOut", .awaited, "2026-11-05"),
+        ]
+        let ahead = [
+            followed("witcherNext", .saga, "2026-11-14", series: "Le Sorceleur", volume: 9),
+            followed("frierenNext", .saga, "2026-12", series: "Frieren", volume: 15),
+            followed("authorNext", .author, "2027-03"),
+            followed("voice", .narrator, "2026-11-20", narrator: "Bernard Gabay"),
+            followed("wishNext", .awaited, nil),
+            followed("gone", .awaited, "2026-11-08"),
+        ]
+        let agenda = agenda(released: out, upcoming: ahead)
+        let shelves = NewsAgenda(
+            released: NewsFeedLayout.released(releases: out, narrator: [], format: nil, now: now, calendar: calendar),
+            events: [], upcoming: [], announced: ahead, suggestions: [], awards: [], now: now, calendar: calendar
+        ).shelves
+
+        #expect(agenda.shelves.series.isEmpty == false)
+        #expect(shelves.series.map(\.id) == ["release-witcherOut", "upcoming-frierenNext"])
+        #expect(shelves.series.first?.caption == String(localized: "Tome \(8) · \(String(localized: "sorti"))"))
+        #expect(shelves.authors.map(\.id) == ["release-authorOut", "upcoming-authorNext"])
+        #expect(shelves.authors.first?.person == "Martha Wells")
+        #expect(shelves.narrators.map(\.id) == ["upcoming-voice"])
+        #expect(shelves.narrators.first?.person == "Bernard Gabay")
+        #expect(shelves.wishes.map(\.id) == ["release-wishOut", "upcoming-wishNext"])
+        #expect(shelves.wishes.last?.caption == String(localized: "En vue"))
+    }
+
+    @Test func theFriendsShelfHoldsTheirRecentFavouritesOnly() {
+        var finished = event("finished", at: day("2026-11-09"))
+        finished = FeedEvent(
+            id: finished.id, kind: .finished, at: finished.at, friendId: "sophie", friendName: "Sophie",
+            bookId: "finished", title: "finished", authors: [], format: .book, coverURL: nil, rating: 4,
+            alsoStartedBy: 0, inLibrary: false
+        )
+        let agenda = agenda(events: [event("loved", at: day("2026-11-08")), finished])
+
+        #expect(agenda.shelves.loves.map(\.lead.id) == ["loved"])
+    }
+
+    @Test func aPersonsNameShortensToItsInitialAndLastName() {
+        #expect(NewsPersonTile.shortName("Martha Wells") == "M. Wells")
+        #expect(NewsPersonTile.shortName("Adrian Tchaikovsky") == "A. Tchaikovsky")
+        #expect(NewsPersonTile.shortName("Moebius") == "Moebius")
     }
 
     @Test func nothingAtAllIsEmpty() {

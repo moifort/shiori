@@ -350,7 +350,8 @@ struct SeriesShowCard: View {
                     .font(isCompact ? .subheadline.weight(.semibold) : .headline)
                     .lineLimit(isCompact ? 2 : 1)
                     .multilineTextAlignment(.leading)
-                progressLine
+                // No count where it is not known: Découvrir's followed series.
+                if series.totalCount > 0 { progressLine }
             }
             .foregroundStyle(.white)
             // Lifts the white text off a pale cover, now the card is no longer

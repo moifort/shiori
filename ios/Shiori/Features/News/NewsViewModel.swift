@@ -96,6 +96,7 @@ final class NewsViewModel {
             released: NewsFeedLayout.released(releases: yearReleases, narrator: narratorNews, format: nil, now: now),
             events: shownEvents,
             upcoming: calendar(now: now).dated,
+            announced: releases,
             suggestions: suggestions,
             awards: awardSections,
             dismissed: dismissed,

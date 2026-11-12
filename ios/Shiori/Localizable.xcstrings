@@ -561,22 +561,6 @@
         }
       }
     },
-    "%@ · %lld prix" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ · %2$lld awards"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ · %2$lld prix"
-          }
-        }
-      }
-    },
     "%@ · %lld sur la pile" : {
       "localizations" : {
         "en" : {
@@ -589,22 +573,6 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "%1$@ · %2$lld sur la pile"
-          }
-        }
-      }
-    },
-    "%@ · 1 prix" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ · 1 award"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ · 1 prix"
           }
         }
       }
@@ -669,6 +637,22 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "%1$@, %2$@"
+          }
+        }
+      }
+    },
+    "%@, %@, %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@, %2$@, %3$@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, %2$@, %3$@"
           }
         }
       }
@@ -2661,6 +2645,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Annoncé"
+          }
+        }
+      }
+    },
+    "Annoncé · %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Announced · %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Annoncé · %@"
           }
         }
       }
@@ -5241,6 +5241,22 @@
         }
       }
     },
+    "Coups de cœur des amis" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Friends' favorites"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Coups de cœur des amis"
+          }
+        }
+      }
+    },
     "Couverture" : {
       "localizations" : {
         "en" : {
@@ -6197,6 +6213,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "En cours"
+          }
+        }
+      }
+    },
+    "En vue" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In sight"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En vue"
           }
         }
       }
@@ -14437,18 +14469,18 @@
         }
       }
     },
-    "Temps forts" : {
+    "Séries suivies" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Highlights"
+            "value" : "Followed series"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Temps forts"
+            "value" : "Séries suivies"
           }
         }
       }
@@ -15553,6 +15585,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vos coups de cœur d'abord"
+          }
+        }
+      }
+    },
+    "Vos envies" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your wish list"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vos envies"
           }
         }
       }
@@ -16885,22 +16933,6 @@
         }
       }
     },
-    "passés et à venir" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "past and upcoming"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "passés et à venir"
-          }
-        }
-      }
-    },
     "sans titre" : {
       "localizations" : {
         "en" : {
@@ -16913,6 +16945,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "sans titre"
+          }
+        }
+      }
+    },
+    "sorti" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "out"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "sorti"
           }
         }
       }
