@@ -2,6 +2,7 @@ import * as repository from '~/domain/discovery/infrastructure/repository'
 import type {
   AuthorWatch,
   DiscoveryPassState,
+  DiscoveryProjection,
   DiscoveryReader,
   KeptReleaseDescription,
   NarratorWatch,
@@ -59,4 +60,15 @@ export namespace DiscoveryCommand {
   /** What the hourly pass leaves for the next one. */
   export const savePassState = (state: DiscoveryPassState): Promise<void> =>
     repository.savePassState(state)
+
+  /** Keeps the reader's tab as worked out; false when too large to keep. */
+  export const saveProjection = (projection: DiscoveryProjection): Promise<boolean> =>
+    repository.saveProjection(projection)
+
+  /** Something these readers' tabs are drawn from changed just now: their
+   *  projections are worked out again before they are read. */
+  export const recordLibraryChange = (
+    userIds: readonly UserId[],
+    changedAt = new Date(),
+  ): Promise<void> => repository.saveLibraryChanges(userIds, changedAt)
 }

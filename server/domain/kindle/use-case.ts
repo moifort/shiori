@@ -6,6 +6,7 @@ import { BookCommand } from '~/domain/book/command'
 import { KindlePosition } from '~/domain/book/primitives'
 import { BookQuery } from '~/domain/book/query'
 import type { Book, BookLanguage, KindlePosition as KindlePositionValue } from '~/domain/book/types'
+import { DiscoveryCommand } from '~/domain/discovery/command'
 import {
   bookFrom,
   drawnBooksOf,
@@ -217,7 +218,12 @@ export namespace KindleUseCase {
   ): Promise<KindleSyncRun> => {
     const readers = await KindleQuery.readersToSync()
     const run = await passOverReaders(readers, {
-      syncOne: async (userId) => typeof (await syncLibrary(userId)) === 'object',
+      syncOne: async (userId) => {
+        const synced = typeof (await syncLibrary(userId)) === 'object'
+        // Outside any request: their Découvrir projections are told here.
+        if (synced) await DiscoveryCommand.recordLibraryChange([userId])
+        return synced
+      },
       onFailure: async (userId, error) => {
         logger.warn('nightly Kindle sync failed', { error, userId })
         await KindleCommand.recordFailure(userId).catch((recordError) =>

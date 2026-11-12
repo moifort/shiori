@@ -234,7 +234,7 @@ describe('the scheduled passes', () => {
     const result = await AwaitedEditionUseCase.watchDue(now)
 
     expect(asked).toHaveLength(5)
-    expect(result).toEqual({ watched: 0, failed: 5, deferred: 2 })
+    expect(result).toEqual({ watched: 0, failed: 5, deferred: 2, changedReaders: [] })
   })
 
   test('keep an edition out for the morning a device can hear it', async () => {
@@ -448,7 +448,7 @@ describe("the hourly pass's reads", () => {
     const next = await pass(new Date(now.getTime() + HOUR))
 
     expect(next.asked).toEqual([])
-    expect(next.result).toEqual({ watched: 0, failed: 0, deferred: 0 })
+    expect(next.result).toEqual({ watched: 0, failed: 0, deferred: 0, changedReaders: [] })
     // The state the last pass left; nothing awaited since, nothing due.
     expect(next.reads).toBeLessThanOrEqual(2)
   })

@@ -6,14 +6,29 @@ import { DiscoveryUseCase } from '~/domain/discovery/use-case'
  *  reader's sagas worked out again once a day, then every saga anybody follows
  *  looked up on the web once a week, the ones never looked up first, until the
  *  budget is spent — one budget for both, from the start of the run. What is
- *  found is written into the sagas' catalogues.
+ *  found is written into the sagas' catalogues. Last, the Découvrir tabs it
+ *  changed, and the ones the new day made stale, are worked out again.
  *
  *  Always answers 200 with the counts, like the Audible sync: one failure is
  *  logged, and a retry would re-run everybody for it. */
 export default defineEventHandler(async () => {
   const now = new Date()
   const startedAt = Date.now()
-  const editions = await AwaitedEditionUseCase.watchDue(now, undefined, startedAt)
-  const sagas = await DiscoveryUseCase.watchDueSagas(now, undefined, startedAt)
-  return { ...sagas, editions }
+  const { changedReaders: awaiting, ...editions } = await AwaitedEditionUseCase.watchDue(
+    now,
+    undefined,
+    startedAt,
+  )
+  const { changedReaders: following, ...sagas } = await DiscoveryUseCase.watchDueSagas(
+    now,
+    undefined,
+    startedAt,
+  )
+  const projections = await DiscoveryUseCase.refreshProjections(
+    [...awaiting, ...following],
+    now,
+    undefined,
+    startedAt,
+  )
+  return { ...sagas, editions, projections }
 })

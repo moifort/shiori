@@ -1,10 +1,14 @@
 import * as repository from '~/domain/discovery/infrastructure/repository'
 import type {
   AuthorWatch,
+  DiscoveryLibraryChange,
   DiscoveryPassState,
+  DiscoveryProjection,
+  DiscoveryProjectionState,
   DiscoveryReader,
   KeptReleaseDescription,
   NarratorWatch,
+  ReleaseFormat,
   SagaWatch,
 } from '~/domain/discovery/types'
 import type { UserId } from '~/domain/shared/types'
@@ -54,4 +58,24 @@ export namespace DiscoveryQuery {
     keys: readonly string[],
   ): Promise<Map<string, NarratorWatch>> =>
     new Map((await repository.findNarratorWatches(keys)).map((watch) => [watch.key, watch]))
+
+  /** The reader's tab in that format as last worked out, if it was. */
+  export const projection = (
+    userId: UserId,
+    format: ReleaseFormat,
+  ): Promise<DiscoveryProjection | undefined> => repository.findProjection(userId, format)
+
+  /** Every projection without its rows: what the hourly pass tells the stale by. */
+  export const projectionStates = (): Promise<DiscoveryProjectionState[]> =>
+    repository.findProjectionStates()
+
+  /** The last change to what the reader's projections are drawn from, if any. */
+  export const libraryChange = (userId: UserId): Promise<DiscoveryLibraryChange | undefined> =>
+    repository.findLibraryChange(userId)
+
+  /** The last changes of these readers, in one getAll, keyed by reader. */
+  export const libraryChanges = async (
+    userIds: readonly UserId[],
+  ): Promise<Map<UserId, DiscoveryLibraryChange>> =>
+    new Map((await repository.findLibraryChanges(userIds)).map((change) => [change.userId, change]))
 }

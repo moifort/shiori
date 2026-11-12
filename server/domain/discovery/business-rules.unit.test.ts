@@ -27,6 +27,7 @@ import {
   inAnnouncementOrder,
   inDiscoveryOrder,
   isFollowedAuthor,
+  isProjectionFresh,
   lastVolumeOutOf,
   likelyLanguageOf,
   looksLeftToday,
@@ -38,6 +39,8 @@ import {
   newAnnouncementsOf,
   newWorkAnnouncementsOf,
   onAudible,
+  projectionsToRefreshOf,
+  readersFollowingOf,
   recentReleasesOf,
   releasesOf,
   sagasByAuthorOf,
@@ -52,6 +55,7 @@ import {
 import { releasesPrompt } from './prompts'
 import type {
   AuthorWatch,
+  DiscoveryProjectionState,
   DiscoveryReader,
   FoundVolume,
   FoundWork,
@@ -1231,5 +1235,80 @@ describe('the releases of authors and narrators', () => {
       'Coming, Matt Dinniman, en décembre',
       'La Voix, lu par Léo Audouy, le 15 janvier 2027',
     ])
+  })
+})
+
+describe('the Découvrir projection', () => {
+  const builtAt = new Date('2026-09-26T08:00:00Z')
+  const state = (overrides: Partial<DiscoveryProjectionState> = {}): DiscoveryProjectionState => ({
+    userId: 'bob' as UserId,
+    format: 'book',
+    language: 'fr',
+    day: '2026-09-26',
+    builtAt,
+    ...overrides,
+  })
+  const changedAt = (at: string) => ({ userId: 'bob' as UserId, changedAt: new Date(at) })
+
+  test('is fresh the day it was worked out, in its language, with nothing changed since', () => {
+    expect(isProjectionFresh(state(), undefined, 'fr', '2026-09-26')).toBe(true)
+    expect(isProjectionFresh(state(), changedAt('2026-09-26T07:00:00Z'), 'fr', '2026-09-26')).toBe(
+      true,
+    )
+    // Stamped in the very millisecond the work started: taken as read.
+    expect(isProjectionFresh(state(), changedAt('2026-09-26T08:00:00Z'), 'fr', '2026-09-26')).toBe(
+      true,
+    )
+  })
+
+  test('is stale after a change, on another day and in another language', () => {
+    expect(isProjectionFresh(state(), changedAt('2026-09-26T08:00:01Z'), 'fr', '2026-09-26')).toBe(
+      false,
+    )
+    expect(isProjectionFresh(state(), undefined, 'fr', '2026-09-27')).toBe(false)
+    expect(isProjectionFresh(state(), undefined, 'en', '2026-09-26')).toBe(false)
+  })
+
+  test('has the pass rewrite the stale ones of readers who opened the tab lately', () => {
+    const now = new Date('2026-09-27T01:00:00Z')
+    const stale = state()
+    const fresh = state({ userId: 'ann' as UserId, day: '2026-09-27', builtAt: now })
+    const changed = state({ userId: 'cid' as UserId, day: '2026-09-27', builtAt: now })
+    const gone = state({ userId: 'dan' as UserId, builtAt: new Date('2026-09-01T08:00:00Z') })
+    const changes = new Map([
+      ['cid' as UserId, { userId: 'cid' as UserId, changedAt: new Date('2026-09-27T02:00:00Z') }],
+    ])
+
+    expect(projectionsToRefreshOf([stale, fresh, changed, gone], changes, now)).toEqual([
+      stale,
+      changed,
+    ])
+  })
+
+  test('changes with the sagas and the authors a reader follows', () => {
+    const reader = (userId: string, authors?: DiscoveryReader['authors']): DiscoveryReader => ({
+      userId: userId as UserId,
+      language: 'fr',
+      sagas: [{ seriesId: 'carl' as SagaKey, language: 'fr', name: 'Carl' as SeriesName }],
+      syncedAt: new Date(),
+      notified: [],
+      ...(authors ? { authors } : {}),
+    })
+    const author = {
+      authorKey: 'matt' as AuthorKey,
+      name: 'Matt' as AuthorName,
+      format: 'book' as const,
+      language: 'fr' as const,
+    }
+    const readers = [reader('bob'), reader('ann', [author])]
+
+    expect(readersFollowingOf(readers, new Set(['carl--fr']), new Set())).toEqual([
+      'bob' as UserId,
+      'ann' as UserId,
+    ])
+    expect(readersFollowingOf(readers, new Set(), new Set(['matt--book--fr']))).toEqual([
+      'ann' as UserId,
+    ])
+    expect(readersFollowingOf(readers, new Set(['other--fr']), new Set())).toEqual([])
   })
 })

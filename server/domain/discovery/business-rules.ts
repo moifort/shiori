@@ -15,13 +15,15 @@ import type { SagaKey, Series, SeriesId, VolumeNumber } from '~/domain/series/ty
 import type { FollowedSeries } from '~/domain/series/use-case'
 import { type Language, SUPPORTED_LANGUAGES } from '~/domain/shared/language'
 import { Year } from '~/domain/shared/primitives'
-import type { AuthorName, BookTitle } from '~/domain/shared/types'
+import type { AuthorName, BookTitle, UserId } from '~/domain/shared/types'
 import { slugify } from '~/utils/slug'
 import type {
   AnnouncedVolumePreview,
   AudibleRecording,
   AuthorWatch,
+  DiscoveryLibraryChange,
   DiscoveryPassState,
+  DiscoveryProjectionState,
   DiscoveryReader,
   FoundVolume,
   FoundWork,
@@ -1266,3 +1268,49 @@ export const releaseDescriptionOf = (
     ...(recording?.durationMinutes ? { durationMinutes: recording.durationMinutes } : {}),
   }
 }
+
+/** How long a projection nobody opens is still rewritten by the hourly pass:
+ *  past that the reader has left the tab, and their next opening works it out. */
+export const PROJECTION_KEPT_FRESH_MS = 14 * 86_400_000
+
+/** A projection still says what the tab would: worked out today, in the app's
+ *  language, and after the last change to anything it is drawn from. */
+export const isProjectionFresh = (
+  projection: DiscoveryProjectionState,
+  change: DiscoveryLibraryChange | undefined,
+  language: Language,
+  today: string,
+) =>
+  projection.day === today &&
+  projection.language === language &&
+  // A change stamped in the very millisecond the work started is taken as read
+  // by it: the stamp is written once the change is committed.
+  (change === undefined || projection.builtAt.getTime() >= change.changedAt.getTime())
+
+/** The projections the hourly pass rewrites: the stale ones of readers who
+ *  opened the tab lately. */
+export const projectionsToRefreshOf = (
+  states: readonly DiscoveryProjectionState[],
+  changes: ReadonlyMap<UserId, DiscoveryLibraryChange>,
+  now: Date,
+) =>
+  states.filter(
+    (state) =>
+      now.getTime() - state.builtAt.getTime() < PROJECTION_KEPT_FRESH_MS &&
+      !isProjectionFresh(state, changes.get(state.userId), state.language, todayOf(now)),
+  )
+
+/** The readers who follow a saga or an author among the watches looked up:
+ *  their tab changed with them. */
+export const readersFollowingOf = (
+  readers: readonly DiscoveryReader[],
+  sagaKeys: ReadonlySet<string>,
+  authorKeys: ReadonlySet<string>,
+): UserId[] =>
+  readers
+    .filter(
+      (reader) =>
+        reader.sagas.some((saga) => sagaKeys.has(watchKeyOf(saga))) ||
+        (reader.authors ?? []).some((author) => authorKeys.has(authorWatchKeyOf(author))),
+    )
+    .map((reader) => reader.userId)

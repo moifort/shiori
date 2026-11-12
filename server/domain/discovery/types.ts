@@ -305,3 +305,28 @@ export type DiscoveryPassState = {
   unwatched: WatchKeys
   savedAt: Date
 }
+
+/** The read model of the Découvrir tab: one reader's tab in one format, worked
+ *  out once and read back whole, so opening the tab reads one document rather
+ *  than the whole library, every catalogue and every watch it is drawn from.
+ *  The projection writes it when the tab is opened while it is not fresh, and
+ *  the hourly pass rewrites the ones its lookups or the new day made stale. */
+export type DiscoveryProjection = DiscoveryProjectionState & { discovery: Discovery }
+
+/** A projection without its rows: what says whether it is still fresh. */
+export type DiscoveryProjectionState = {
+  userId: UserId
+  format: ReleaseFormat
+  /** The app's language it was worked out in: another one works it out again. */
+  language: Language
+  /** The day its rows were dated against (`todayOf`): what is announced and
+   *  what is out are told apart by it, so a new day works them out again. */
+  day: string
+  /** When the work started: whatever changed after it is not in the rows. */
+  builtAt: Date
+}
+
+/** The last time something one reader's projections are drawn from changed:
+ *  a mutation of theirs, a nightly sync of their library, or a watch of theirs
+ *  looked up by the hourly pass. A projection built before it is stale. */
+export type DiscoveryLibraryChange = { userId: UserId; changedAt: Date }

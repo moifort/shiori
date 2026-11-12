@@ -1,12 +1,23 @@
-import type { CollectionReference } from 'firebase-admin/firestore'
+import { gunzipSync, gzipSync } from 'node:zlib'
+import type {
+  CollectionReference,
+  DocumentData,
+  QueryDocumentSnapshot,
+} from 'firebase-admin/firestore'
 import type {
   AuthorWatch,
+  Discovery,
+  DiscoveryLibraryChange,
   DiscoveryPassState,
+  DiscoveryProjection,
+  DiscoveryProjectionState,
   DiscoveryReader,
   KeptReleaseDescription,
   NarratorWatch,
+  ReleaseFormat,
   SagaWatch,
 } from '~/domain/discovery/types'
+import { RELEASE_FORMATS } from '~/domain/discovery/types'
 import type { UserId } from '~/domain/shared/types'
 import { db } from '~/system/firebase'
 import {
@@ -166,8 +177,118 @@ export const saveReader = async (reader: DiscoveryReader): Promise<DiscoveryRead
 }
 
 export const removeReader = async (userId: UserId): Promise<void> => {
-  await readers().doc(userId).delete()
+  await Promise.all([
+    readers().doc(userId).delete(),
+    // The projections hold the reader's books: they go with the account.
+    ...RELEASE_FORMATS.map((format) => projections().doc(projectionIdOf(userId, format)).delete()),
+    libraryChanges().doc(userId).delete(),
+  ])
   evictFromRequestCache(readerCacheKey(userId))
+  evictFromRequestCache(libraryChangeCacheKey(userId))
+}
+
+// The read model of the tab, one document per reader and format. The rows are
+// stored as one gzipped JSON string rather than as a map: a tab holds every
+// volume of every saga it shows, which as fields would be indexed one by one
+// and could pass Firestore's 1 MiB a document; compressed it is a tenth of it.
+type StoredProjection = DiscoveryProjectionState & { rows?: string }
+
+const projections = () =>
+  db()
+    .collection('discovery-projections')
+    .withConverter({
+      toFirestore: (projection: StoredProjection) => projection,
+      fromFirestore: (snapshot: QueryDocumentSnapshot) => storedProjectionOf(snapshot.data()),
+    })
+
+// Not the generic converter: it would walk the rows character by character.
+const storedProjectionOf = ({ builtAt, ...rest }: DocumentData): StoredProjection =>
+  ({ ...rest, builtAt: builtAt instanceof Date ? builtAt : builtAt.toDate() }) as StoredProjection
+
+const projectionIdOf = (userId: UserId, format: ReleaseFormat) => `${userId}~${format}`
+
+/** A projection larger than this is not kept: the tab is worked out on each
+ *  opening, as before the projection existed. */
+const MAX_STORED_ROWS = 900_000
+
+// An instant, as JSON writes a Date: read back as one.
+const INSTANT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/
+
+const encodedRows = (discovery: Discovery) => gzipSync(JSON.stringify(discovery)).toString('base64')
+
+const decodedRows = (rows: string): Discovery =>
+  JSON.parse(gunzipSync(Buffer.from(rows, 'base64')).toString('utf8'), (_key, value) =>
+    typeof value === 'string' && INSTANT.test(value) ? new Date(value) : value,
+  )
+
+export const findProjection = async (
+  userId: UserId,
+  format: ReleaseFormat,
+): Promise<DiscoveryProjection | undefined> => {
+  const stored = (await projections().doc(projectionIdOf(userId, format)).get()).data()
+  if (!stored?.rows) return undefined
+  const { rows, ...state } = stored
+  return { ...state, discovery: decodedRows(rows) }
+}
+
+/** Every projection without its rows, for the hourly pass to tell the stale. */
+export const findProjectionStates = async (): Promise<DiscoveryProjectionState[]> =>
+  (await projections().select('userId', 'format', 'language', 'day', 'builtAt').get()).docs.map(
+    (doc) => storedProjectionOf(doc.data()),
+  )
+
+/** Keeps the projection; false when it is too large to keep. */
+export const saveProjection = async ({
+  discovery,
+  ...state
+}: DiscoveryProjection): Promise<boolean> => {
+  const rows = encodedRows(discovery)
+  if (rows.length > MAX_STORED_ROWS) return false
+  await projections()
+    .doc(projectionIdOf(state.userId, state.format))
+    .set({ ...state, rows })
+  return true
+}
+
+// One document per reader, keyed by the reader.
+const libraryChanges = () =>
+  db()
+    .collection('discovery-library-changes')
+    .withConverter(genericDataConverter<DiscoveryLibraryChange>())
+
+const libraryChangeCacheKey = (userId: UserId) => `discovery-library-changes:${userId}`
+
+// Memoized for the request: the tab's two formats ask for it side by side.
+export const findLibraryChange = (userId: UserId): Promise<DiscoveryLibraryChange | undefined> =>
+  memoizedPerRequest(libraryChangeCacheKey(userId), async () =>
+    (await libraryChanges().doc(userId).get()).data(),
+  )
+
+export const findLibraryChanges = async (
+  userIds: readonly UserId[],
+): Promise<DiscoveryLibraryChange[]> => {
+  const unique = [...new Set(userIds)]
+  if (unique.length === 0) return []
+  const snapshots = await db().getAll(...unique.map((userId) => libraryChanges().doc(userId)))
+  // Typed loosely by getAll, though each ref carries the converter.
+  return snapshots.flatMap((snapshot) => {
+    const change = snapshot.data() as DiscoveryLibraryChange | undefined
+    return change ? [change] : []
+  })
+}
+
+export const saveLibraryChanges = async (
+  userIds: readonly UserId[],
+  changedAt: Date,
+): Promise<void> => {
+  const unique = [...new Set(userIds)]
+  for (let start = 0; start < unique.length; start += 500) {
+    const batch = db().batch()
+    for (const userId of unique.slice(start, start + 500))
+      batch.set(libraryChanges().doc(userId), { userId, changedAt })
+    await batch.commit()
+  }
+  for (const userId of unique) evictFromRequestCache(libraryChangeCacheKey(userId))
 }
 
 export const findDescription = async (key: string): Promise<KeptReleaseDescription | undefined> =>

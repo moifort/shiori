@@ -127,6 +127,7 @@ mock.module('~/domain/scan/published-cover', () => ({
 const { BookUseCase } = await import('~/domain/book/use-case')
 const { DiscoveryUseCase } = await import('~/domain/discovery/use-case')
 const { DiscoveryQuery } = await import('~/domain/discovery/query')
+const { DiscoveryCommand } = await import('~/domain/discovery/command')
 const { NotificationCommand } = await import('~/domain/notification/command')
 const { DeviceToken } = await import('~/domain/notification/primitives')
 const { SeriesCommand } = await import('~/domain/series/command')
@@ -224,7 +225,13 @@ describe('the hourly pass', () => {
     const result = await DiscoveryUseCase.watchDueSagas(now)
 
     // The saga, and its author.
-    expect(result).toEqual({ synced: 2, watched: 2, failed: 0, deferred: 0 })
+    expect(result).toEqual({
+      synced: 2,
+      watched: 2,
+      failed: 0,
+      deferred: 0,
+      changedReaders: [reader, other],
+    })
     expect(calls).toEqual(['Dungeon Crawler Carl'])
     expect(authorCalls).toEqual(['Matt Dinniman (livre)'])
   })
@@ -684,20 +691,121 @@ describe('the Découvrir tab', () => {
     ])
   })
 
-  test('reads the tab with a handful of documents', async () => {
+  test('works the tab out with a handful of documents when nothing is projected', async () => {
     await stock(reader)
     await DiscoveryUseCase.watchDueSagas(now)
-    await DiscoveryUseCase.discover(reader, 'fr', 'book', now)
     startFakeRequest()
     const before = { docs: fake.docReads, queries: fake.queryReads }
 
     await DiscoveryUseCase.discover(reader, 'fr', 'book', now)
 
-    // The library, the saga opinions and the editions awaited; the reader's
-    // record, the saga's catalogue, its watch, the author's watch and their
-    // catalogue for the portrait.
+    // The library, the saga opinions and the editions awaited; the projection
+    // and the last change, the reader's record, the saga's catalogue, its
+    // watch, the author's watch and their catalogue for the portrait.
     expect(fake.queryReads - before.queries).toBe(4)
-    expect(fake.docReads - before.docs).toBe(5)
+    expect(fake.docReads - before.docs).toBe(7)
+  })
+})
+
+describe('the Découvrir projection', () => {
+  const opened = () => DiscoveryUseCase.discover(reader, 'fr', 'book', now)
+
+  test('reads the tab back in two documents, as it was worked out', async () => {
+    await stock(reader)
+    await DiscoveryUseCase.watchDueSagas(now)
+    const worked = await opened()
+    startFakeRequest()
+    const before = { docs: fake.docReads, queries: fake.queryReads }
+
+    const read = await opened()
+
+    expect(read).toEqual(worked)
+    expect(read.sagas[0]?.series.shelvedAt).toBeInstanceOf(Date)
+    expect(fake.queryReads - before.queries).toBe(0)
+    expect(fake.docReads - before.docs).toBe(2)
+  })
+
+  test('works the tab out again once the reader changed their library', async () => {
+    await stock(reader)
+    await DiscoveryUseCase.watchDueSagas(now)
+    await opened()
+    await SeriesOpinionCommand.setFollowed(reader, carl, false, undefined, ['fr'])
+    // As the GraphQL plugin does once the mutation answered.
+    await DiscoveryCommand.recordLibraryChange([reader], new Date(now.getTime() + 1_000))
+
+    expect((await opened()).sagas).toEqual([])
+  })
+
+  test('keeps the rows it read while the library has not changed', async () => {
+    await stock(reader)
+    await DiscoveryUseCase.watchDueSagas(now)
+    await opened()
+    await SeriesOpinionCommand.setFollowed(reader, carl, false, undefined, ['fr'])
+
+    expect((await opened()).sagas).toHaveLength(1)
+  })
+
+  test('works the tab out again on a new day and in another language', async () => {
+    await stock(reader)
+    await DiscoveryUseCase.watchDueSagas(now)
+    await opened()
+    startFakeRequest()
+    const before = fake.queryReads
+
+    await DiscoveryUseCase.discover(reader, 'fr', 'book', new Date('2026-09-27T08:00:00Z'))
+    await DiscoveryUseCase.discover(reader, 'en', 'book', new Date('2026-09-27T08:00:00Z'))
+
+    expect(fake.queryReads - before).toBeGreaterThan(0)
+    const projection = await DiscoveryQuery.projection(reader, 'book')
+    expect(projection).toMatchObject({ day: '2026-09-27', language: 'en' })
+  })
+
+  test('has the hourly pass rewrite the tabs its lookups changed', async () => {
+    await stock(reader)
+    await stock(other)
+    await opened()
+    await DiscoveryUseCase.discover(other, 'fr', 'book', now)
+    const before = await DiscoveryQuery.projection(reader, 'book')
+    expect(before?.discovery.sagas).toEqual([])
+
+    const passAt = new Date(now.getTime() + 3_600_000)
+    const { changedReaders } = await DiscoveryUseCase.watchDueSagas(passAt)
+    const refreshed = await DiscoveryUseCase.refreshProjections(changedReaders, passAt)
+
+    expect(refreshed).toEqual({ refreshed: 2, failed: 0, deferred: 0 })
+    const after = await DiscoveryQuery.projection(reader, 'book')
+    expect(after?.discovery.sagas).toHaveLength(1)
+    // Fresh now: nothing left for the next pass.
+    expect(await DiscoveryUseCase.refreshProjections([], passAt)).toEqual({
+      refreshed: 0,
+      failed: 0,
+      deferred: 0,
+    })
+  })
+
+  test('has the hourly pass work the tab out for the new day, not for a reader long gone', async () => {
+    await stock(reader)
+    await stock(other)
+    await DiscoveryUseCase.watchDueSagas(now)
+    await opened()
+    await DiscoveryUseCase.discover(other, 'fr', 'book', new Date('2026-08-01T08:00:00Z'))
+
+    const tomorrow = new Date('2026-09-27T08:00:00Z')
+    const refreshed = await DiscoveryUseCase.refreshProjections([], tomorrow)
+
+    expect(refreshed).toEqual({ refreshed: 1, failed: 0, deferred: 0 })
+    expect(await DiscoveryQuery.projection(reader, 'book')).toMatchObject({ day: '2026-09-27' })
+  })
+
+  test('forgets the projections with the reader', async () => {
+    await stock(reader)
+    await opened()
+    await DiscoveryCommand.recordLibraryChange([reader])
+
+    await DiscoveryCommand.deleteForUser(reader)
+
+    expect(await DiscoveryQuery.projection(reader, 'book')).toBeUndefined()
+    expect(await DiscoveryQuery.libraryChange(reader)).toBeUndefined()
   })
 })
 
@@ -978,7 +1086,13 @@ describe("the hourly pass's reads", () => {
     const next = await readsOf(new Date(now.getTime() + 3_600_000))
 
     expect(calls).toEqual([])
-    expect(next.result).toEqual({ synced: 0, watched: 0, failed: 0, deferred: 0 })
+    expect(next.result).toEqual({
+      synced: 0,
+      watched: 0,
+      failed: 0,
+      deferred: 0,
+      changedReaders: [],
+    })
     // The account, the reader, the pass's state and the two watches looked up
     // an hour ago, which count against the day's looks.
     expect(next.reads).toBeLessThanOrEqual(6)

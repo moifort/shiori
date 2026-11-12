@@ -155,6 +155,12 @@ describe("the home's opening", () => {
     expect(releases.queriedDocs).toBeLessThan(2 * LIBRARY_SIZE)
     expect(total([top, releases])).toBeLessThan(total(separate) * 0.6)
     expect(total([top, releases])).toBeLessThanOrEqual(280)
+
+    // Opened again: the two Découvrir projections and the last change, nothing
+    // else.
+    const again = await request('HomeReleases')
+    expect(again.queriedDocs).toBe(0)
+    expect(again.billed).toBeLessThanOrEqual(3)
   })
 })
 
@@ -183,12 +189,14 @@ describe("the Actu tab's opening", () => {
     const releases = await request('HomeReleases')
 
     // Twelve catalogues, twelve saga watches, sixteen author watches and the
-    // reader's record: the calendar resolves both formats side by side, and
-    // the composed openings add the year's releases, over the same documents.
-    expect(byReference(upcoming)).toBe(41)
-    expect(byReference(releases)).toBe(41)
-    // And the queue of the month's discoveries.
-    expect(byReference(opening)).toBe(42)
+    // reader's record: the calendar resolves both formats side by side; and
+    // the two Découvrir projections and the last change, nothing projected yet.
+    expect(byReference(upcoming)).toBe(44)
+    // The composed openings read both tabs back from their projections: the
+    // Actu tab adds the year's releases and the queue of the month's
+    // discoveries over the catalogues and watches, the home nothing more.
+    expect(byReference(opening)).toBe(29)
+    expect(byReference(releases)).toBe(3)
   })
 })
 

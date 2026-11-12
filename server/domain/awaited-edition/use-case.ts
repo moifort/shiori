@@ -234,9 +234,16 @@ export namespace AwaitedEditionUseCase {
     now = new Date(),
     budgetMs = SCHEDULED_BUDGET_MS,
     startedAt = Date.now(),
-  ): Promise<{ watched: number; failed: number; deferred: number }> => {
+  ): Promise<{
+    watched: number
+    failed: number
+    deferred: number
+    /** The readers awaiting an edition looked up: what they await changed. */
+    changedReaders: UserId[]
+  }> => {
     const overBudget = () => Date.now() - startedAt > budgetMs
     const { all, watches, stateAfter } = await editionsForThePass(now)
+    const lookedUp = new Set<string>()
     const due = dueWatchesOf(all, watches, now, todayOf(now))
     let watched = 0
     let failed = 0
@@ -252,6 +259,7 @@ export namespace AwaitedEditionUseCase {
             try {
               const watch = await lookUp(seedOf(awaited), watches.get(awaited.watchKey), now)
               watches.set(watch.key, watch)
+              lookedUp.add(watch.key)
               watched += 1
             } catch (error) {
               failed += 1
@@ -269,7 +277,12 @@ export namespace AwaitedEditionUseCase {
     await AwaitedEditionCommand.savePassState(stateAfter()).catch((error) =>
       logger.warn('edition pass state not saved', { error }),
     )
-    return result
+    const changedReaders = [
+      ...new Set(
+        all.filter((awaited) => lookedUp.has(awaited.watchKey)).map((awaited) => awaited.userId),
+      ),
+    ]
+    return { ...result, changedReaders }
   }
 
   /** The morning pass's share: every edition awaited that came out, pushed to

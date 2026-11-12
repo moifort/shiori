@@ -2,6 +2,7 @@ import { ApolloServer, type ApolloServerPlugin } from '@apollo/server'
 import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin/landingPage/default'
 import * as Sentry from '@sentry/node'
 import { GraphQLError } from 'graphql'
+import { discoveryProjectionInvalidation } from '~/domain/discovery/infrastructure/graphql/projection-invalidation'
 import type { GraphQLContext } from '~/domain/shared/graphql/builder'
 import { schema } from '~/domain/shared/graphql/schema'
 import { logBootSteps, markBootStep } from '~/system/boot-marks'
@@ -53,7 +54,11 @@ const operationMetrics: ApolloServerPlugin<GraphQLContext> = {
 }
 
 export default defineNitroPlugin(async () => {
-  const plugins: ApolloServerPlugin<GraphQLContext>[] = [sentryErrorCapture, operationMetrics]
+  const plugins: ApolloServerPlugin<GraphQLContext>[] = [
+    sentryErrorCapture,
+    operationMetrics,
+    discoveryProjectionInvalidation,
+  ]
   // Dev-only: serve the embedded Apollo Sandbox on GET /graphql (Accept: text/html).
   if (import.meta.dev) plugins.push(ApolloServerPluginLandingPageLocalDefault({ embed: true }))
   const apollo = new ApolloServer<GraphQLContext>({

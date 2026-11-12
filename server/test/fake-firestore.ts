@@ -54,6 +54,7 @@ type FakeQuery = {
   limit: (count: number) => FakeQuery
   offset: (count: number) => FakeQuery
   startAfter: (cursor: FakeSnapshot) => FakeQuery
+  select: (...fields: string[]) => FakeQuery
   get: () => Promise<{ docs: Array<{ data: () => Doc; ref: FakeRef }> }>
   count: () => { get: () => Promise<{ data: () => { count: number } }> }
 }
@@ -65,6 +66,7 @@ type FakeCollection = {
   where: FakeQuery['where']
   orderBy: FakeQuery['orderBy']
   limit: FakeQuery['limit']
+  select: FakeQuery['select']
   get: FakeQuery['get']
   count: FakeQuery['count']
 }
@@ -175,6 +177,10 @@ export const createFakeFirestore = () => {
     },
   })
 
+  // A `select` returns only the fields it names, as Firestore's projection does.
+  const selected = (data: Doc, fields: readonly string[]): Doc =>
+    Object.fromEntries(Object.entries(data).filter(([key]) => fields.includes(key)))
+
   const sortValue = (value: unknown) =>
     value instanceof Date ? value.getTime() : (value as number | string)
 
@@ -185,6 +191,8 @@ export const createFakeFirestore = () => {
     limit?: number
     offset?: number
     startAfter?: { id: string; data: Doc | undefined }
+    /** The fields a `select` keeps; every field without one. */
+    fields?: string[]
   }
 
   // A dotted field reaches into a map, as `where('series.id', ...)` does in Firestore.
@@ -229,6 +237,7 @@ export const createFakeFirestore = () => {
     offset: (count) => makeQuery(collection, { ...state, offset: count }),
     startAfter: (cursor) =>
       makeQuery(collection, { ...state, startAfter: { id: cursor.id, data: cursor.data() } }),
+    select: (...fields) => makeQuery(collection, { ...state, fields }),
     get: async () => {
       if (queryError) {
         const error = queryError
@@ -274,7 +283,10 @@ export const createFakeFirestore = () => {
       queriedDocs += matching.length
       if (queryMsPerDocument > 0) await Bun.sleep(queryMsPerDocument * matching.length)
       return {
-        docs: matching.map(([id, data]) => ({ data: () => data, ref: makeRef(collection, id) })),
+        docs: matching.map(([id, data]) => ({
+          data: () => (state.fields ? selected(data, state.fields) : data),
+          ref: makeRef(collection, id),
+        })),
       }
     },
     // Aggregation count: like Firestore, one billed query round-trip, no documents.
@@ -301,6 +313,7 @@ export const createFakeFirestore = () => {
     orderBy: (field, direction) =>
       makeQuery(name, { filters: [], orders: [] }).orderBy(field, direction),
     limit: (count) => makeQuery(name, { filters: [], orders: [] }).limit(count),
+    select: (...fields) => makeQuery(name, { filters: [], orders: [] }).select(...fields),
     get: () => makeQuery(name, { filters: [], orders: [] }).get(),
     count: () => makeQuery(name, { filters: [], orders: [] }).count(),
   })

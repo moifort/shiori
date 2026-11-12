@@ -28,6 +28,7 @@ import {
   isDescriptionFresh,
   isDiscoverable,
   isFollowedAuthor,
+  isProjectionFresh,
   likelyLanguageOf,
   looksLeftToday,
   mayBeBehindOf,
@@ -38,7 +39,9 @@ import {
   newAnnouncementsOf,
   newWorkAnnouncementsOf,
   possiblyUnwatchedOf,
+  projectionsToRefreshOf,
   readerIsStale,
+  readersFollowingOf,
   recentReleasesOf,
   releaseDescriptionKeyOf,
   releaseDescriptionOf,
@@ -71,6 +74,7 @@ import type {
   AuthorWatch,
   Discovery,
   DiscoveryPassState,
+  DiscoveryProjection,
   DiscoveryReader,
   FoundVolume,
   ReleaseDescription,
@@ -174,10 +178,13 @@ export namespace DiscoveryUseCase {
     format: ReleaseFormat,
     now = new Date(),
   ): Promise<Discovery> => {
-    const [library, awaited] = await Promise.all([libraryOf(userId), awaitedOf(userId, now)])
-    await rememberReader(userId, library, language, now)
-    const { watches, authorWatches } = await watchesOf(library, format)
-    return discoveryOf(library, watches, authorWatches, awaited, format, now)
+    const [projection, change] = await Promise.all([
+      DiscoveryQuery.projection(userId, format),
+      DiscoveryQuery.libraryChange(userId),
+    ])
+    if (projection && isProjectionFresh(projection, change, language, todayOf(now)))
+      return projection.discovery
+    return projectDiscovery(userId, language, format, now)
   }
 
   /** What came out since the start of the year for the reader: the volumes of
@@ -225,7 +232,9 @@ export namespace DiscoveryUseCase {
       (author) => author.format === format && !authorWatches.has(authorWatchKeyOf(author)),
     )
     await lookUpAllAuthors(unwatchedAuthors, authorWatches, now, overBudget)
-    return discoveryOf(library, watches, authorWatches, awaited, format, now)
+    const discovery = await discoveryOf(library, watches, authorWatches, awaited, format, now)
+    await keepProjection({ userId, format, language, day: todayOf(now), builtAt: now, discovery })
+    return discovery
   }
 
   /** What the saga screen shows under its introduction: the next volume
@@ -473,7 +482,14 @@ export namespace DiscoveryUseCase {
     now = new Date(),
     budgetMs = SCHEDULED_BUDGET_MS,
     startedAt = Date.now(),
-  ): Promise<{ synced: number; watched: number; failed: number; deferred: number }> => {
+  ): Promise<{
+    synced: number
+    watched: number
+    failed: number
+    deferred: number
+    /** The readers following a saga or an author looked up: their tab changed. */
+    changedReaders: UserId[]
+  }> => {
     const overBudget = () => Date.now() - startedAt > budgetMs
     const [userIds, stored] = await Promise.all([UserQuery.allIds(), DiscoveryQuery.allReaders()])
     const readers = new Map(await withoutAccountsGone(stored, userIds))
@@ -495,6 +511,10 @@ export namespace DiscoveryUseCase {
     }
     const pass = await watchesForThePass([...readers.values()], now)
     const { watches, authorWatches, narratorWatches } = pass
+    // The lookups replace the watches they write in these maps: what differs
+    // from this copy afterwards is what changed.
+    const sagasBefore = new Map(watches)
+    const authorsBefore = new Map(authorWatches)
     // The day's looks are shared: sagas first, then authors, then narrators,
     // whatever is left waiting for the next day.
     const left = looksLeftToday(
@@ -529,12 +549,53 @@ export namespace DiscoveryUseCase {
     await DiscoveryCommand.savePassState(pass.stateAfter()).catch((error) =>
       logger.warn('discovery pass state not saved', { error }),
     )
+    const changedOf = <T>(after: ReadonlyMap<string, T>, before: ReadonlyMap<string, T>) =>
+      new Set([...after].filter(([key, watch]) => before.get(key) !== watch).map(([key]) => key))
     return {
       synced,
       watched: sagas.watched + authors.watched + narrators.watched,
       failed: failed + sagas.failed + authors.failed + narrators.failed,
       deferred: sagas.deferred + authors.deferred + narrators.deferred + capped,
+      changedReaders: readersFollowingOf(
+        pass.readers,
+        changedOf(watches, sagasBefore),
+        changedOf(authorWatches, authorsBefore),
+      ),
     }
+  }
+
+  /** The hourly pass's last step: the projections of the readers whose tab
+   *  changed are marked stale, then every stale projection of a reader who
+   *  opened the tab lately is worked out again, the new day's included, so
+   *  their next opening reads it at once. What the budget leaves is worked out
+   *  at the opening. */
+  export const refreshProjections = async (
+    changedReaders: readonly UserId[],
+    now = new Date(),
+    budgetMs = SCHEDULED_BUDGET_MS,
+    startedAt = Date.now(),
+  ): Promise<{ refreshed: number; failed: number; deferred: number }> => {
+    // Dated like the rewrites below, which start no earlier: they make it fresh.
+    if (changedReaders.length > 0) await DiscoveryCommand.recordLibraryChange(changedReaders, now)
+    const states = await DiscoveryQuery.projectionStates()
+    const changes = await DiscoveryQuery.libraryChanges(states.map((state) => state.userId))
+    const due = projectionsToRefreshOf(states, changes, now)
+    let refreshed = 0
+    let failed = 0
+    for (const [index, state] of due.entries()) {
+      if (Date.now() - startedAt > budgetMs)
+        return { refreshed, failed, deferred: due.length - index }
+      try {
+        await withRequestCacheScope(() =>
+          projectDiscovery(state.userId, state.language, state.format, now),
+        )
+        refreshed += 1
+      } catch (error) {
+        failed += 1
+        logger.warn('discovery projection not refreshed', { error, userId: state.userId })
+      }
+    }
+    return { refreshed, failed, deferred: 0 }
   }
 
   /** The morning pass: every volume that came out, pushed to the readers who
@@ -714,6 +775,38 @@ type Library = {
   authors: WatchedAuthor[]
   narrators: WatchedNarrator[]
   known: DiscoveryReader | undefined
+}
+
+/** The tab in one format worked out from the library and the watches, and
+ *  kept as the reader's projection for the next openings. */
+const projectDiscovery = async (
+  userId: UserId,
+  language: Language,
+  format: ReleaseFormat,
+  now: Date,
+): Promise<Discovery> => {
+  // `now` is taken before the first read: a change made while the tab is
+  // worked out leaves the projection stale.
+  const [library, awaited] = await Promise.all([libraryOf(userId), awaitedOf(userId, now)])
+  await rememberReader(userId, library, language, now)
+  const { watches, authorWatches } = await watchesOf(library, format)
+  const discovery = await discoveryOf(library, watches, authorWatches, awaited, format, now)
+  await keepProjection({ userId, format, language, day: todayOf(now), builtAt: now, discovery })
+  return discovery
+}
+
+/** Best effort: a projection not kept is worked out again at the next opening. */
+const keepProjection = async (projection: DiscoveryProjection) => {
+  try {
+    const kept = await DiscoveryCommand.saveProjection(projection)
+    if (!kept)
+      logger.warn('discovery projection too large to keep', {
+        userId: projection.userId,
+        format: projection.format,
+      })
+  } catch (error) {
+    logger.warn('discovery projection not kept', { error, userId: projection.userId })
+  }
 }
 
 /** The reader's sagas and authors, and what the passes know of them. The

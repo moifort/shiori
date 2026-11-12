@@ -34,6 +34,7 @@ import { BookQuery } from '~/domain/book/query'
 import type { Book, BookLanguage } from '~/domain/book/types'
 import { BookUseCase } from '~/domain/book/use-case'
 import { watchKeyOf } from '~/domain/discovery/business-rules'
+import { DiscoveryCommand } from '~/domain/discovery/command'
 import { DiscoveryQuery } from '~/domain/discovery/query'
 import { DiscoveryUseCase } from '~/domain/discovery/use-case'
 import { SeriesQuery } from '~/domain/series/query'
@@ -305,7 +306,12 @@ export namespace AudibleUseCase {
   ): Promise<SyncRun> => {
     const readers = await AudibleQuery.readersToSync()
     const run = await passOverReaders(readers, {
-      syncOne: async (userId) => typeof (await syncLibrary(userId)) === 'object',
+      syncOne: async (userId) => {
+        const synced = typeof (await syncLibrary(userId)) === 'object'
+        // Outside any request: their Découvrir projections are told here.
+        if (synced) await DiscoveryCommand.recordLibraryChange([userId])
+        return synced
+      },
       onFailure: (userId, error) => logger.warn('nightly Audible sync failed', { error, userId }),
       budgetMs,
       startedAt,
