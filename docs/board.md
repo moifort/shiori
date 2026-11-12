@@ -56,10 +56,25 @@ same task:
 
 ## Comment sessions
 
-Rules 5–8 of CLAUDE.md: one child session per comment, started without asking (a card when the
-app refuses the start from an automated turn), the child resolves its thread and archives
-itself on the user's validation, the parent resolves the thread of a child the user closed
-themself, only the parent listens to the board.
+Rules 5–8 of CLAUDE.md: one child session per comment, started without asking, the child
+resolves its thread and archives itself on the user's validation, the parent resolves the
+thread of a child the user closed themself, only the parent listens to the board.
+
+Why a child does not always start at once: a comment sent from the board reaches the parent as
+an automated turn, not as the user's own message, and the app refuses to start a session
+(`user_asked`) on such a turn, though it still lets the parent message an existing session. So
+the parent keeps two **standby sessions** ("Réserve board", started empty, waiting for a
+mission): on a comment with no child on its theme, it sends the full brief to a standby, which
+becomes that thread's child at once and renames itself. On each of the user's messages the
+parent first tops the standbys back up to two (`list_sessions`, `linked: true`, also after a
+clear). With no standby left, the parent proposes the child instead (`own_initiative`, a card
+the user clicks). Over Remote Control the cards do not show and the app refuses the proposal
+too: the parent then says so in one line starting with "⏸ Bloqué" that tells the user what to
+do ("⏸ Bloqué : fil X en attente, envoie n'importe quel message ici pour lancer sa session"),
+never a bare "waiting for its session". Either way, the user's next message in the parent,
+whatever it says, is the go-ahead: the parent starts every waiting child first (`proposal_id`,
+or `user_asked` with the same brief when nothing could be proposed), then answers the message.
+It never asks for a keyword.
 
 ## Capturing artboards
 

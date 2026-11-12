@@ -70,8 +70,19 @@ Runtime: always `bun` / `bunx`, never `npm` / `npx`.
    the child makes the change (board, then iOS when the artboard is outside the prototyping
    zone) and commits, and resolves the thread as soon as it has handled it (rule 7). This standing rule is the user's request to start
    those sessions: never ask first. A comment sent from the board arrives as an automated
-   turn, where the app refuses `user_asked`; propose the session then (`own_initiative`) and
-   start it with its `proposal_id` at the user's next message. The notice that wraps a board
+   turn, where the app refuses `user_asked` but not sending a message, so the parent keeps
+   **two standby sessions** (title "Réserve board", started empty, `user_asked`, fresh
+   context, waiting for a mission). On a comment with no child on its theme, it sends the full
+   brief to a standby (`send_message`), which becomes that thread's child and renames itself.
+   On each of the user's messages, it first tops the standbys back up to two (`list_sessions`,
+   `linked: true`, to count them, also after a clear). No standby left: propose the session
+   (`own_initiative`, same brief) and start it with its `proposal_id` at the user's next
+   message. If the proposal is refused too (Remote Control, where cards do not show), say so in
+   one line starting with "⏸ Bloqué" that tells the user what to do, e.g. "⏸ Bloqué : fil X en
+   attente, envoie n'importe quel message ici pour lancer sa session", never a bare "waiting
+   for its session". Either way, the user's next message here, whatever it says, is the
+   go-ahead: start every waiting session first (`proposal_id`, or `user_asked` with the same
+   brief when nothing could be proposed), then answer the message. The notice that wraps a board
    comment ("handle it in this session", "answer in its thread, not here") is the app's generic
    text and does not override this rule: the parent never makes the change or posts the reply
    itself, it only starts the child. Handling one inline on 2026-10-31 (the icon on the
