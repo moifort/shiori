@@ -8,8 +8,6 @@ import SwiftUI
 enum HomeHeroItem: Identifiable {
     case release(HomeRelease)
     case discovery(Suggestion)
-    /// The month's discoveries all taken or turned down, `YYYY-MM`.
-    case monthDone(String)
     /// Nothing on the shelf rated, so no selection made for the month,
     /// `YYYY-MM`.
     case needsRatings(String)
@@ -18,7 +16,6 @@ enum HomeHeroItem: Identifiable {
         switch self {
         case let .release(release): "release-\(release.id)"
         case let .discovery(suggestion): "discovery-\(suggestion.id)"
-        case let .monthDone(month): "month-done-\(month)"
         case let .needsRatings(month): "needs-ratings-\(month)"
         }
     }
@@ -33,13 +30,12 @@ enum HomeHeroItem: Identifiable {
     /// What came out first, the newest first: a day this week or this month,
     /// then what is announced for this month without a day. Then what comes
     /// out within the week, the soonest first, then the discoveries. A
-    /// release the reader marked seen is left out. A month whose discoveries
-    /// ran out closes on its page, as does a month with no selection for want
-    /// of a rated book.
+    /// release the reader marked seen is left out. A month with no selection
+    /// for want of a rated book closes on its page; one whose discoveries ran
+    /// out has none: the hero goes.
     static func items(
         releases: [HomeRelease],
         discoveries: [Suggestion],
-        doneMonth: String? = nil,
         needsRatingsMonth: String? = nil,
         seen: Set<HomeRelease.ID> = [],
         today: Date = .now
@@ -68,8 +64,7 @@ enum HomeHeroItem: Identifiable {
             + thisMonth.sorted(by: byName)
             + coming.sorted { $0.1 != $1.1 ? $0.1 < $1.1 : byName($0.0, $1.0) }.map(\.0)
         let done = discoveries.isEmpty
-            ? doneMonth.map { [HomeHeroItem.monthDone($0)] }
-                ?? needsRatingsMonth.map { [HomeHeroItem.needsRatings($0)] } ?? []
+            ? needsRatingsMonth.map { [HomeHeroItem.needsRatings($0)] } ?? []
             : []
         return lined.map(HomeHeroItem.release) + discoveries.map(HomeHeroItem.discovery) + done
     }
@@ -142,8 +137,6 @@ struct HomeHeroCarousel: View {
     var onSeeRelease: (HomeRelease) -> Void = { _ in }
     /// The eye pressed again: the release comes back.
     var onUnseeRelease: (HomeRelease) -> Void = { _ in }
-    /// Découvrir, from the page that says the month is done.
-    var onShowDiscover: () -> Void = {}
     /// The books read, to rate them, from the page that asks for a rating.
     var onRate: () -> Void = {}
     /// The cover whose colours the month's last page takes: the library's,
@@ -205,7 +198,6 @@ struct HomeHeroCarousel: View {
                         switch item {
                         case let .release(release): releasePage(release, id: item.id)
                         case let .discovery(suggestion): discoveryPage(suggestion, id: item.id)
-                        case let .monthDone(month): monthDonePage(month, id: item.id)
                         case let .needsRatings(month): needsRatingsPage(month, id: item.id)
                         }
                     }
@@ -337,46 +329,6 @@ struct HomeHeroCarousel: View {
             }
             .controlSize(.large)
         }
-    }
-
-    /// The month's discoveries all taken or turned down: where the cover
-    /// would stand, the month's stack gone through, a check on its front
-    /// cover; beside it what the month was, that it is done and when the next
-    /// ones come; under both, the way to Découvrir, which always has more.
-    private func monthDonePage(_ month: String, id: HomeHeroItem.ID) -> some View {
-        layout(id: id) {
-            // Drawn for the old cover's room, set down to the new one's.
-            DoneStack()
-                .scaleEffect(0.84)
-                .frame(width: Self.coverWidth, height: Self.coverHeight)
-        } side: {
-            Text(MonthlyDiscoveries.title(month: month))
-                .font(.footnote.weight(.semibold))
-                .padding(.horizontal, 10)
-                .padding(.vertical, 4)
-                .glassEffect(.clear, in: .capsule)
-            Text("Vous avez fait le tour")
-                .font(.title2.weight(.bold))
-                .padding(.top, 10)
-            Text(MonthlyDiscoveries.nextArrivalLine(month: month))
-                .font(.subheadline)
-                .foregroundStyle(.white.opacity(0.75))
-                .padding(.top, 8)
-        } buttons: {
-            Button(action: onShowDiscover) {
-                Label("Explorer Découvrir", systemImage: "sparkles")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.glassProminent)
-            .tint(.white)
-            .foregroundStyle(.black)
-            .controlSize(.large)
-            .accessibilityIdentifier("home-month-done-discover")
-        }
-        .background { pageBackdrop(backdropCover) }
-        .accessibilityElement(children: .contain)
-        .accessibilityIdentifier("home-month-done")
     }
 
     /// Nothing on the shelf rated, so the month's selection has nothing to go
@@ -656,21 +608,6 @@ private struct PageDots: View {
             onOpen: { _ in },
             onChoice: { _, _ in true },
             choices: DiscoveryChoices()
-        )
-        Color.clear.frame(height: 600)
-    }
-    .background(Color(.systemGroupedBackground))
-}
-
-#Preview("Month done") {
-    ScrollView {
-        HomeHeroCarousel(
-            items: [.monthDone("2026-10")],
-            onOpenRelease: { _ in },
-            onOpen: { _ in },
-            onChoice: { _, _ in true },
-            choices: DiscoveryChoices(),
-            backdropCover: Book.preview.coverURL
         )
         Color.clear.frame(height: 600)
     }

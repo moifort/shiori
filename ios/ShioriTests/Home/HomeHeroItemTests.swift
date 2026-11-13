@@ -51,13 +51,24 @@ struct HomeHeroItemTests {
         let items = HomeHeroItem.items(
             releases: [release(1, "2026-10-26")],
             discoveries: unrated.shownOnHome,
-            doneMonth: unrated.doneMonth(today: today),
             needsRatingsMonth: unrated.needsRatingsMonth,
             today: today
         )
         #expect(items.map(\.id).last == "needs-ratings-2026-10")
         let rated = MonthlyDiscoveries(month: "2026-10", status: .none, suggestions: [])
         #expect(rated.needsRatingsMonth == nil)
+    }
+
+    @Test func aMonthAllAnsweredHasNoHeroPage() {
+        let done = MonthlyDiscoveries(month: "2026-10", status: .ready, suggestions: [])
+        let items = HomeHeroItem.items(
+            releases: [],
+            discoveries: done.shownOnHome,
+            needsRatingsMonth: done.needsRatingsMonth,
+            today: today
+        )
+        #expect(items.isEmpty)
+        #expect(done.doneMonth(today: today) == "2026-10")
     }
 
     @Test func keepsLastWeekAcrossTheTurnOfTheMonth() {

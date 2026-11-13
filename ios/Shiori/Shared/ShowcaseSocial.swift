@@ -317,7 +317,13 @@ extension Showcase {
     /// rated, so the month's selection asks for a rating instead.
     static let isUnrated = ProcessInfo.processInfo.arguments.contains("-showcase-unrated")
 
+    /// On with `-showcase-month-done`: every discovery of the month answered.
+    static let isMonthDone = ProcessInfo.processInfo.arguments.contains("-showcase-month-done")
+
     static var monthlyDiscoveries: MonthlyDiscoveries {
+        if isMonthDone {
+            return MonthlyDiscoveries(month: MonthlyDiscoveries.month(of: .now), status: .ready, suggestions: [])
+        }
         if isUnrated {
             return MonthlyDiscoveries(
                 month: MonthlyDiscoveries.month(of: .now), status: .none, suggestions: [], needsRatings: true

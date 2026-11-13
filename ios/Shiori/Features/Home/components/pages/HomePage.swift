@@ -93,6 +93,8 @@ struct HomePage: View {
     /// above it, the bar would land over the figures.
     private static let figuresClearance: CGFloat = 70
 
+    @Environment(\.colorScheme) private var colorScheme
+
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
@@ -119,7 +121,6 @@ struct HomePage: View {
                         choices: discoveryChoices,
                         onSeeRelease: { onAction(.seeRelease($0)) },
                         onUnseeRelease: { onAction(.unseeRelease($0)) },
-                        onShowDiscover: { onAction(.showDiscover) },
                         onRate: { onAction(.showLibrary(LibraryRequest(filter: .status(.read)))) },
                         backdropCover: dashboard.leadCoverURL,
                         discoveryMonth: discoveries?.month ?? MonthlyDiscoveries.month(of: today),
@@ -141,6 +142,7 @@ struct HomePage: View {
                         onOpen: { onAction(.openDiscovery($0)) },
                         onShowAll: { onAction(.showDiscover) }
                     )
+                    .environment(\.colorScheme, opensOnBareBackdrop ? .dark : colorScheme)
                 }
                 VStack(alignment: .leading, spacing: 30) {
                     if dashboard.libraryIsEmpty {
@@ -151,6 +153,7 @@ struct HomePage: View {
                         }
                     } else if !opensOnHero {
                         figures
+                            .environment(\.colorScheme, opensOnBareBackdrop ? .dark : colorScheme)
                     }
                     if isSideBySide {
                         HStack(alignment: .top, spacing: 36) {
@@ -172,6 +175,14 @@ struct HomePage: View {
                 .padding(.horizontal, 20)
                 .padding(.top, opensOnHero ? 16 : 14)
                 .padding(.bottom, 32)
+            }
+            .background(alignment: .top) {
+                if opensOnBareBackdrop {
+                    CoverBackdrop(url: dashboard.leadCoverURL, fadeHeight: Self.bareFadeHeight)
+                        // Up under the bar and the status bar, as a hero's.
+                        .frame(height: Self.bareBackdropHeight + 400)
+                        .offset(y: -400)
+                }
             }
         }
         .scrollPosition($position)
@@ -217,7 +228,6 @@ struct HomePage: View {
         HomeHeroItem.items(
             releases: releases,
             discoveries: shownDiscoveries,
-            doneMonth: discoveries?.doneMonth(today: today),
             needsRatingsMonth: discoveries?.needsRatingsMonth,
             seen: seenReleases,
             today: today
@@ -227,6 +237,19 @@ struct HomePage: View {
     private var showsCarousel: Bool {
         isCompact && !heroItems.isEmpty
     }
+
+    /// The month's discoveries all answered and nothing else to put forward
+    /// on a phone: no hero, the page's own head and its figures over the
+    /// colours of the book read now, melting into the rows.
+    private var opensOnBareBackdrop: Bool {
+        isCompact && !opensOnHero && !dashboard.libraryIsEmpty
+            && discoveries?.doneMonth(today: today) != nil
+    }
+
+    /// How far down the bare backdrop reaches: the head and the figures.
+    private static let bareBackdropHeight: CGFloat = 250
+    /// How tall its fade into the page is, down to the first row.
+    private static let bareFadeHeight: CGFloat = 110
 
     /// Whether the page opens on a hero that runs up under the bar: the
     /// carousel, the empty shelf's prompt before the first book, or the wait
@@ -261,7 +284,6 @@ struct HomePage: View {
         let items = HomeHeroItem.items(
             releases: releases,
             discoveries: discoveries?.shownOnHome ?? [],
-            doneMonth: discoveries?.doneMonth(today: today),
             needsRatingsMonth: discoveries?.needsRatingsMonth,
             seen: seenReleases,
             today: today
@@ -617,8 +639,9 @@ extension MonthlyDiscoveries {
     }
 
     /// The month, once its selection is made and the reader took or turned
-    /// down every discovery in it: the carousel closes on the page that says
-    /// so. Nil while any is left, and for another month's line.
+    /// down every discovery in it: the hero goes, the figures stay over the
+    /// colours of the book read now. Nil while any is left, and for another
+    /// month's line.
     func doneMonth(today: Date = .now) -> String? {
         status == .ready && suggestions.isEmpty && month == Self.month(of: today) ? month : nil
     }
@@ -756,6 +779,16 @@ extension Dashboard {
 #Preview("Searching, phone") {
     NavigationStack {
         HomePage(dashboard: .preview, isSearchingDiscoveries: true, isCompact: true) { _ in }
+    }
+}
+
+#Preview("Month done, phone") {
+    NavigationStack {
+        HomePage(
+            dashboard: .preview,
+            discoveries: MonthlyDiscoveries(month: MonthlyDiscoveries.month(of: .now), status: .ready, suggestions: []),
+            isCompact: true
+        ) { _ in }
     }
 }
 
