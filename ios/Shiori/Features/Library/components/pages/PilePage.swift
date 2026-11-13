@@ -46,7 +46,6 @@ struct PilePage: View {
         }
         .background(Color(.systemGroupedBackground))
         .navigationTitle(BookShelf.toRead.title)
-        .navigationBarTitleDisplayMode(.large)
         .refreshable { onAction(.refresh) }
     }
 

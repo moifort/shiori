@@ -30,6 +30,7 @@ struct WishlistScreen: View {
             case .refresh: Task { await viewModel.load() }
             }
         }
+        .scrollAwayBar(String(localized: "Liste d'envies"))
         .confirmationDialog(
             chosen?.title ?? "",
             isPresented: Binding(get: { chosen != nil }, set: { if !$0 { chosen = nil } }),

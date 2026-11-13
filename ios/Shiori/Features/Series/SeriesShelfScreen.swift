@@ -58,6 +58,7 @@ struct SetAsideSeriesScreen: View {
             onOpen: { openSeries = SeriesDestinationID(id: $0.seriesId) },
             onFollow: { saga in Task { await viewModel.follow(saga) } }
         )
+        .scrollAwayBar(String(localized: "Non suivies"))
         .pushesDetail(item: $openSeries) { SeriesScreen(seriesId: $0.id) }
         .task { await viewModel.loadOnAppear() }
     }

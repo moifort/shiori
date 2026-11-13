@@ -46,7 +46,6 @@ struct PersonShelfPage<Person: ShelvedPerson>: View {
         }
         .background(Color(.systemGroupedBackground))
         .navigationTitle(title)
-        .navigationBarTitleDisplayMode(.large)
         .refreshable { onAction(.refresh) }
         .overlay {
             if people.isEmpty {

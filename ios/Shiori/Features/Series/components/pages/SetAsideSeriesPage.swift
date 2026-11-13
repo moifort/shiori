@@ -33,7 +33,6 @@ struct SetAsideSeriesPage: View {
         }
         .background(Color(.systemGroupedBackground))
         .navigationTitle("Non suivies")
-        .navigationBarTitleDisplayMode(.large)
         .overlay {
             if series.isEmpty, isLoading { ProgressView() }
         }
