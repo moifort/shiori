@@ -178,14 +178,20 @@ struct SeriesPage: View {
         }
     }
 
-    /// The only way to follow the saga or set it aside: a tap swings the
-    /// crossed-out eye, then fills it in or clears it.
+    /// The eye says where the saga stands: open while it is followed,
+    /// crossed out once set aside, as the "Non suivies" filter draws it.
+    static func followSymbol(isFollowed: Bool) -> String {
+        isFollowed ? "eye" : SeriesState.unfollowed.symbol
+    }
+
+    /// The only way to follow the saga or set it aside: a tap swings the eye
+    /// and opens or crosses it out.
     private var followButton: some View {
         Button {
             taps += 1
             Task { await onAction(.setFollowed(!isFollowed)) }
         } label: {
-            Image(systemName: isFollowed ? "eye.slash" : "eye.slash.fill")
+            Image(systemName: Self.followSymbol(isFollowed: isFollowed))
                 .font(.title3.weight(.medium))
                 .foregroundStyle(.white)
                 .symbolEffect(.wiggle, value: taps)
@@ -670,6 +676,17 @@ private struct FriendSubtitle: ViewModifier {
             addingTitle: nil,
             releases: Showcase.sagaReleases(seriesId: SeriesFixtures.followed[0].seriesId),
             takenFormat: .book, announcedVolume: { _ in nil }
+        ) { _ in }
+    }
+}
+
+#Preview("Saga set aside") {
+    let screen = SeriesFixtures.screen
+    NavigationStack {
+        SeriesPage(
+            series: screen.series, owned: screen.owned, opinion: screen.opinion,
+            isLoading: false, errorMessage: nil, language: .fr, friend: nil, isFollowed: false,
+            addingTitle: nil, releases: nil, takenFormat: .book, announcedVolume: { _ in nil }
         ) { _ in }
     }
 }
