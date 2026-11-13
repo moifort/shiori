@@ -73,7 +73,8 @@ Runtime: always `bun` / `bunx`, never `npm` / `npx`.
    turn, where the app refuses `user_asked` but not sending a message, so the parent keeps
    **two standby sessions** (title "Réserve board", started empty, `user_asked`, fresh
    context, waiting for a mission). On a comment with no child on its theme, it sends the full
-   brief to a standby (`send_message`), which becomes that thread's child and renames itself.
+   brief to a standby (`send_message`), which becomes that thread's child; the parent renames it
+   "Réserve board N · <theme>".
    On each of the user's messages, it first tops the standbys back up to two (`list_sessions`,
    `linked: true`, to count them, also after a clear). No standby left: propose the session
    (`own_initiative`, same brief) and start it with its `proposal_id` at the user's next
@@ -92,8 +93,11 @@ Runtime: always `bun` / `bunx`, never `npm` / `npx`.
    "Valider" button), never leaving that to the parent. Each comment it handles, its own thread
    or a later one on its theme (rule 8), is resolved as soon as the change is made
    (`ArtifactComments`, `resolve`, no reply), without waiting for the validation. On the user's
-   yes it archives itself (`archive_session` on its own id); if they ask for changes, it makes
-   them and asks again.
+   yes a child that was a standby is recycled, never archived: it sends the parent
+   "Réserve libérée : <title>" and stops, and the parent clears its context (`clear_session`),
+   renames it "Réserve board N · libre" (`set_session_title`) and re-sends the standby brief, so
+   it waits again (archiving drains the pool). Any other child archives itself
+   (`archive_session` on its own id). If they ask for changes, it makes them and asks again.
    Every child brief says so. When the user archives or deletes a child themself, that closes
    the ticket: the parent resolves its thread (`resolve`, no reply), unasked, if that is not
    already done.

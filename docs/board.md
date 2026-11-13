@@ -57,7 +57,8 @@ same task:
 ## Comment sessions
 
 Rules 5–8 of CLAUDE.md: one child session per comment, started without asking, the child
-resolves its thread and archives itself on the user's validation, the parent resolves the
+resolves its thread and, on the user's validation, is cleared and re-briefed by the parent
+if it was a standby (archived otherwise), the parent resolves the
 thread of a child the user closed themself, only the parent listens to the board.
 
 Why a child does not always start at once: a comment sent from the board reaches the parent as
@@ -65,7 +66,10 @@ an automated turn, not as the user's own message, and the app refuses to start a
 (`user_asked`) on such a turn, though it still lets the parent message an existing session. So
 the parent keeps two **standby sessions** ("Réserve board", started empty, waiting for a
 mission): on a comment with no child on its theme, it sends the full brief to a standby, which
-becomes that thread's child at once and renames itself. On each of the user's messages the
+becomes that thread's child at once (the parent renames it "Réserve board N · <theme>"). Once
+the user validates its work, the standby sends "Réserve libérée : <title>"; the parent clears
+its context (`clear_session`), renames it "Réserve board N · libre" and re-sends the standby
+brief. A standby is never archived. On each of the user's messages the
 parent first tops the standbys back up to two (`list_sessions`, `linked: true`, also after a
 clear). With no standby left, the parent proposes the child instead (`own_initiative`, a card
 the user clicks). Over Remote Control the cards do not show and the app refuses the proposal
