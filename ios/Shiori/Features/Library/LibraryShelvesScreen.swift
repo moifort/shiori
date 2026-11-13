@@ -36,7 +36,7 @@ struct LibraryShelvesScreen: View {
     var body: some View {
         if genre == nil {
             DetailSplit(item: $destination) {
-                page.accountSettingsButton()
+                page
             } detail: { opened in
                 LibraryDestinationScreen(destination: opened, client: client)
             }

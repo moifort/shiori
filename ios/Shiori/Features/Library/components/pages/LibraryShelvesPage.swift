@@ -58,7 +58,11 @@ struct LibraryShelvesPage: View {
         }
         .background(Color(.systemGroupedBackground))
         .navigationTitle(genre?.label ?? String(localized: "Bibliothèque"))
-        .scrollAwayBar(genre?.label ?? String(localized: "Bibliothèque"))
+        .scrollAwayBar(genre?.label ?? String(localized: "Bibliothèque")) {
+            // The tab's root carries the avatar, as the home does; a genre
+            // page, pushed, keeps only its name.
+            if genre == nil { AccountSettingsButton() }
+        }
         .refreshable { onAction(.refresh) }
         .overlay(alignment: .top) {
             if isLoading, shelves.isEmpty { ProgressView().padding(.top, 120) }

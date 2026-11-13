@@ -2,19 +2,30 @@ import SwiftUI
 
 extension View {
     /// The bar the home draws, on a page that scrolls: the page's name on the
-    /// left, sent away while the reader scrolls down and called back by
-    /// scrolling up, as Safari brings its bar back. The search lives in its
-    /// own tab. Applied over the page's scroll view, which it watches.
+    /// left, the page's buttons on the right, each on its own glass, all sent
+    /// away together while the reader scrolls down and called back by
+    /// scrolling up, as Safari brings its bar back. The bar has no ground of
+    /// its own: the page runs under it. Applied over the page, whose scroll
+    /// view it watches.
     ///
     /// The page keeps its own `navigationTitle`, for VoiceOver and the Back
     /// button; the bar draws the name itself and none in its middle.
     func scrollAwayBar(_ title: String) -> some View {
-        modifier(ScrollAwayBar(title: title))
+        modifier(ScrollAwayBar(title: title, trailing: EmptyView()))
+    }
+
+    /// The same bar with the page's buttons on the right, the avatar last.
+    func scrollAwayBar<Trailing: View>(
+        _ title: String,
+        @ViewBuilder trailing: () -> Trailing
+    ) -> some View {
+        modifier(ScrollAwayBar(title: title, trailing: trailing()))
     }
 }
 
-private struct ScrollAwayBar: ViewModifier {
+private struct ScrollAwayBar<Trailing: View>: ViewModifier {
     let title: String
+    let trailing: Trailing
 
     @State private var bar = ScrollBarState()
 
@@ -46,6 +57,14 @@ private struct ScrollAwayBar: ViewModifier {
                     }
                 }
                 .sharedBackgroundVisibility(.hidden)
+                if Trailing.self != EmptyView.self {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        ScrollBarItem(bar: bar) {
+                            HStack(spacing: 10) { trailing }
+                        }
+                    }
+                    .sharedBackgroundVisibility(.hidden)
+                }
             }
     }
 }

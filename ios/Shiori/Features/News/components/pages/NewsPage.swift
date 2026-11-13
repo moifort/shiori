@@ -52,18 +52,19 @@ struct NewsPage: View {
     var body: some View {
         content
             .navigationTitle("Découvrir")
-            .toolbarTitleDisplayMode(.inlineLarge)
-            .toolbarBackground(.hidden, for: .navigationBar)
+            // The home's bar: the name on the left, the buttons on the right,
+            // sent away together by scrolling down.
+            .scrollAwayBar(String(localized: "Découvrir")) {
+                ScrollBarButton(
+                    title: "Notifications",
+                    systemImage: alertsSilenced ? "bell.slash" : "bell"
+                ) { act(.openAlerts) }
+                .accessibilityIdentifier("discover-alerts")
+                AccountSettingsButton()
+            }
             // The title sits on the day's first cover colours, white in
             // either appearance, as the home's hero carries it.
             .toolbarColorScheme(.dark, for: .navigationBar)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    DiscoverAlertsButton(isSilenced: alertsSilenced) { act(.openAlerts) }
-                }
-                ToolbarItem(placement: .topBarTrailing) { AccountSettingsButton() }
-                    .sharedBackgroundVisibility(.hidden)
-            }
     }
 
     @ViewBuilder
