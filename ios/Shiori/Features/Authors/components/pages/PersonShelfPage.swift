@@ -32,6 +32,13 @@ struct PersonShelfPage<Person: ShelvedPerson>: View {
     let errorMessage: String?
     let hasMore: Bool
     let loadMoreFailed: Bool
+    /// "Prochaines sorties" over the pills: what the hearted people
+    /// announced. Empty, the section is left out.
+    var releases: [UpcomingRelease] = []
+    var onOpenRelease: (UpcomingRelease) -> Void = { _ in }
+    /// The heading over the pills, as "Toutes les séries" heads the series';
+    /// nil leaves the pills alone.
+    var allTitle: LocalizedStringKey?
     let onAction: (PersonShelfAction<Person>) -> Void
 
     private static var orders: [AuthorListOrder] { [.loved, .recent, .name] }
@@ -70,6 +77,18 @@ struct PersonShelfPage<Person: ShelvedPerson>: View {
         }
     }
 
+    /// What sits over the people: the announced releases, then the heading
+    /// over the pills.
+    @ViewBuilder private var lead: some View {
+        if !releases.isEmpty {
+            FavoriteAuthorReleasesRail(releases: releases, onOpen: onOpenRelease)
+                .padding(.bottom, allTitle == nil ? 0 : 18)
+        }
+        if let allTitle {
+            RowHeader(title: allTitle, style: .inline).padding(.horizontal, 20)
+        }
+    }
+
     @ViewBuilder private var loadMore: some View {
         if hasMore {
             LoadMoreRow(
@@ -84,7 +103,10 @@ struct PersonShelfPage<Person: ShelvedPerson>: View {
     private var shelves: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 26) {
-                pills
+                VStack(alignment: .leading, spacing: 12) {
+                    lead
+                    pills
+                }
                 ForEach(people) { person in
                     row(person)
                         .onAppear { onAction(.reached(person.id)) }
@@ -100,7 +122,10 @@ struct PersonShelfPage<Person: ShelvedPerson>: View {
     /// letter, one line each, the letters on the trailing edge to jump by.
     private var alphabetical: some View {
         List {
-            pills
+            VStack(alignment: .leading, spacing: 12) {
+                lead
+                pills
+            }
                 .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
                 .listRowSeparator(.hidden)
                 .listRowBackground(Color.clear)
@@ -245,7 +270,9 @@ extension AuthorListOrder {
             isLoading: false,
             errorMessage: nil,
             hasMore: false,
-            loadMoreFailed: false
+            loadMoreFailed: false,
+            releases: FavoriteAuthorReleases.of(UpcomingRelease.previews, favorites: ["Pierce Brown", "Kentaro Miura"]),
+            allTitle: "Tous les auteurs"
         ) { _ in }
     }
 }

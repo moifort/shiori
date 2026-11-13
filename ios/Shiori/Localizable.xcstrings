@@ -14917,6 +14917,22 @@
         }
       }
     },
+    "Tous les auteurs" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All authors"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tous les auteurs"
+          }
+        }
+      }
+    },
     "Tous les livres" : {
       "localizations" : {
         "en" : {
