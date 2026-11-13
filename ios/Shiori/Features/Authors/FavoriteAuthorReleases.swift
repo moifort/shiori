@@ -25,6 +25,17 @@ enum FavoriteAuthorReleases {
         }
     }
 
+    /// A snapshot's releases still ahead today: one written days ago may hold
+    /// a date that has since gone by.
+    static func stillAhead(
+        _ releases: [UpcomingRelease],
+        today: Date = .now,
+        calendar: Calendar = .current
+    ) -> [UpcomingRelease] {
+        let day = isoDay(today, calendar: calendar)
+        return releases.filter { !isPast($0.date, today: day) }
+    }
+
     /// A date announced before today: `YYYY-MM-DD`, `YYYY-MM` or `YYYY`,
     /// each compared at its own precision, so this month or this year still
     /// counts as ahead.

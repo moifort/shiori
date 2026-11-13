@@ -279,10 +279,11 @@ Screens on snapshots today: Home (dashboard, releases, friends' favourites, disc
 Actualités (feed, releases, the year's counts), the Library's entry screen and its series screen,
 every shelf opened from a Library rail (Récemment, the pile and Toute la pile, the books read, the
 favourites, the books given up on, Tous les livres — one file per shelf, view and pill), the
-Authors list, Discover (feed, awards, discoveries), Shared, a friend's profile, the wishlist and
-the pile's wishlist rail (one `SnapshotCache.wishlist` file, written by whichever loaded last), and
-the detail pages — a book, a saga (one file per shelf: the reader's or a friend's), an author, a
-narrator, a friend's book — one file per key, dropped with `forget()` when the thing is deleted.
+Authors list and its Prochaines sorties, Discover (feed, awards, discoveries), Shared, a friend's
+profile, the wishlist and the pile's wishlist rail (one `SnapshotCache.wishlist` file, written by
+whichever loaded last), and the detail pages — a book, a saga (one file per shelf: the reader's or a
+friend's), an author, a narrator, a friend's book — one file per key, dropped with `forget()` when
+the thing is deleted.
 A refresh that fails over a snapshot on screen is reported, never shown.
 
 ## Covers

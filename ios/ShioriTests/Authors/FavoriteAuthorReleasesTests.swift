@@ -69,4 +69,14 @@ struct FavoriteAuthorReleasesTests {
     @Test func showsNothingWithoutAHeartedAuthor() {
         #expect(ids([release("a", by: "Pierce Brown", on: "2027")], favorites: []).isEmpty)
     }
+
+    @Test func aSnapshotOpensOnWhatIsStillAhead() {
+        let cached = [
+            release("gone-by", by: "Pierce Brown", on: "2026-11-04"),
+            release("ahead", by: "Pierce Brown", on: "2026-12"),
+            release("undated", by: "Pierce Brown", on: nil),
+        ]
+        let kept = FavoriteAuthorReleases.stillAhead(cached, today: now, calendar: calendar)
+        #expect(kept.map(\.id) == ["ahead", "undated"])
+    }
 }

@@ -10,8 +10,9 @@ struct AuthorShelfScreen: View {
     @State private var viewModel: AuthorListViewModel
     @State private var destination: LibraryDestination?
     @State private var quick: BookQuickRequest?
-    /// What the hearted authors announced: "Prochaines sorties".
-    @State private var releases: [UpcomingRelease] = []
+    /// What the hearted authors announced: "Prochaines sorties", opened on
+    /// last session's snapshot and brought up to date underneath.
+    @State private var releases: [UpcomingRelease]
     @State private var announced: DiscoveryVolume?
     @State private var awaited: AwaitedEdition?
     var news: NewsClient = .live
@@ -21,7 +22,13 @@ struct AuthorShelfScreen: View {
         self.library = library
         self.news = news
         _viewModel = State(initialValue: AuthorListViewModel(client: client))
+        let cached = Self.releasesCache.read() ?? []
+        _releases = State(initialValue: FavoriteAuthorReleases.stillAhead(cached))
     }
+
+    /// The section's last rows on disk, so the shelf opens on them. Bump the
+    /// version whenever `UpcomingRelease` changes shape.
+    private static let releasesCache = SnapshotCache<[UpcomingRelease]>("author-releases", version: 1)
 
     var body: some View {
         PersonShelfPage(
@@ -71,7 +78,11 @@ struct AuthorShelfScreen: View {
         async let loved = client.list(200, nil, .loved)
         guard let upcoming = try? await upcoming, let loved = try? await loved else { return }
         let favorites = loved.items.filter(\.favorite).map(\.name)
-        withAnimation { releases = FavoriteAuthorReleases.of(upcoming, favorites: favorites) }
+        let fresh = FavoriteAuthorReleases.of(upcoming, favorites: favorites)
+        guard fresh != releases else { return }
+        withAnimation(releases.isEmpty ? nil : .smooth) { releases = fresh }
+        let cache = Self.releasesCache
+        Task.detached { cache.write(fresh) }
     }
 
     /// Opens what the release opens in Actualités: the announced volume, the
