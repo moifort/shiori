@@ -20,6 +20,9 @@ struct PosterLabel: Hashable, Sendable {
     var dimming: Double = 0.12
     /// Drawn in black and white, as a saga no longer followed: a book given up on.
     var isGreyed = false
+    /// An outlined word in the top corner in place of "Audio": a release's
+    /// date, its own line then free for the person it is announced for.
+    var cornerTag: String?
 
     /// The dimming of a book given up on, or of a saga set aside.
     static let setAsideDimming = 0.5

@@ -27,6 +27,9 @@ struct PosterCover: View {
     var rating: Double?
     /// The cover in black and white: a book given up on.
     var isGreyed = false
+    /// An outlined word drawn in the corner in place of "Audio": a
+    /// release's date.
+    var cornerTag: String?
 
     static let cornerRadius: CGFloat = 8
 
@@ -40,7 +43,10 @@ struct PosterCover: View {
             }
             .overlay { footBlur }
             .overlay(alignment: .topTrailing) {
-                if showsEditionTags {
+                if let cornerTag {
+                    OutlinedTag(text: cornerTag)
+                        .padding(6)
+                } else if showsEditionTags {
                     CoverTags(book: book)
                         .padding(6)
                 }
@@ -90,6 +96,7 @@ struct PosterCover: View {
         progress = label.progress
         rating = label.rating
         isGreyed = label.isGreyed
+        cornerTag = label.cornerTag
     }
 
     init(

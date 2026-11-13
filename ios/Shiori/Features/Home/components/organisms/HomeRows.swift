@@ -235,7 +235,7 @@ struct PosterRow: View {
             }
             .buttonStyle(.plain)
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel(Text("\(item.book.title), \(item.caption)"))
+            .accessibilityLabel(Text([item.book.title, item.caption, item.label.cornerTag].compactMap { $0 }.joined(separator: ", ")))
             .accessibilityAddTraits(.isButton)
             .accessibilityIdentifier("book-tile")
             .bookContextMenu(item.book, onAction: onMenu.map { menu in { menu(item.book, $0) } })
