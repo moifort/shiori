@@ -14949,6 +14949,22 @@
         }
       }
     },
+    "Tous les narrateurs" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All narrators"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tous les narrateurs"
+          }
+        }
+      }
+    },
     "Tous vos livres,\nau même endroit" : {
       "localizations" : {
         "en" : {
