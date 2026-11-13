@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// One shelf of the Library tab, connected: owns its view model, pushes the
-/// books it opens, and carries out the long press. "Tous les livres" draws as
+/// books it opens, and carries out the long press. "Livres" draws as
 /// a mosaic, every other shelf as a grid of posters.
 struct BookShelfScreen: View {
     let shelf: BookShelf
@@ -102,7 +102,7 @@ private struct SharedText: Identifiable {
     let text: String
 }
 
-/// "Tous les livres", connected.
+/// "Livres", connected.
 struct BookMosaicScreen: View {
     var view = ShelvesView()
     var formats: [BookFormat] = []

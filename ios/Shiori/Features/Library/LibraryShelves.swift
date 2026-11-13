@@ -61,7 +61,7 @@ enum BookShelf: String, Hashable, Codable, Sendable, Identifiable {
         case .read: String(localized: "Lus récemment")
         case .loved: String(localized: "Coups de cœur")
         case .dropped: String(localized: "Abandonnés")
-        case .all: String(localized: "Tous les livres")
+        case .all: String(localized: "Livres")
         }
     }
 

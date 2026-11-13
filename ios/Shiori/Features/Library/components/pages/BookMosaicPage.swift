@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// "Tous les livres", as Photos lays out a library: the covers alone, five by
+/// "Livres", as Photos lays out a library: the covers alone, five by
 /// row, edge to edge, under the month each was shelved in — the whole library
 /// at a glance. No title: each cover's foot carries its stars, a white heart
 /// for a favourite, and a tap opens the book. A menu in the toolbar narrows

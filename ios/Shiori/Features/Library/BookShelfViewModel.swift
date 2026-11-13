@@ -55,7 +55,7 @@ final class BookShelfViewModel {
     var shelf: BookShelf { query.shelf }
 
     /// "Récemment" shows six months, the rest of the library is a tap away
-    /// in "Tous les livres".
+    /// in "Livres".
     private static let recentMonths = 6
     /// Never fewer than the rail it was opened from drew, the server's
     /// `RAIL_LIMIT`: a format whose last book is older would open empty.
