@@ -20,6 +20,35 @@ struct AccountAvatarButton: View {
     }
 }
 
+/// The reader's avatar, opening the settings: the last button on the right of
+/// every tab's root bar, as on the home, so the account is one tap away
+/// wherever the reader is. Pushed pages keep their own bar.
+struct AccountSettingsButton: View {
+    @Environment(\.accountAvatar) private var avatar
+    @Environment(\.accountFirstName) private var firstName
+    @State private var showsSettings = false
+
+    var body: some View {
+        AccountAvatarButton(avatar: avatar, firstName: firstName) {
+            showsSettings = true
+        }
+        .sheet(isPresented: $showsSettings) {
+            SettingsHomeScreen()
+        }
+    }
+}
+
+extension View {
+    /// The reader's avatar at the right end of the bar, for a page whose bar
+    /// holds nothing else on that side.
+    func accountSettingsButton() -> some View {
+        toolbar {
+            ToolbarItem(placement: .topBarTrailing) { AccountSettingsButton() }
+                .sharedBackgroundVisibility(.hidden)
+        }
+    }
+}
+
 #Preview {
     NavigationStack {
         List { Text(verbatim: "Shiori") }

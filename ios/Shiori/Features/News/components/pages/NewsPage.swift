@@ -61,6 +61,8 @@ struct NewsPage: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     DiscoverAlertsButton(isSilenced: alertsSilenced) { act(.openAlerts) }
                 }
+                ToolbarItem(placement: .topBarTrailing) { AccountSettingsButton() }
+                    .sharedBackgroundVisibility(.hidden)
             }
     }
 

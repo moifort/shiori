@@ -40,6 +40,7 @@ struct LibrarySearchScreen: View {
                 case .retry: await viewModel.retry()
                 }
             }
+            .accountSettingsButton()
             .navigationDestination(for: SeriesHit.self) { hit in
                 SeriesScreen(seriesId: hit.id)
                     .closesAsPushed()
