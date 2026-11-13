@@ -93,8 +93,6 @@ struct HomePage: View {
     /// above it, the bar would land over the figures.
     private static let figuresClearance: CGFloat = 70
 
-    @Environment(\.colorScheme) private var colorScheme
-
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
@@ -128,6 +126,9 @@ struct HomePage: View {
                     )
                 } else if dashboard.libraryIsEmpty, opensOnHero {
                     HomeEmptyHero { onAction(.scan) }
+                } else if opensOnBareBackdrop {
+                    // No hero: the figures above lead straight into the rows.
+                    EmptyView()
                 } else if opensOnHero {
                     HomeSearchingHero(
                         month: discoveries?.month ?? MonthlyDiscoveries.month(of: today),
@@ -142,7 +143,6 @@ struct HomePage: View {
                         onOpen: { onAction(.openDiscovery($0)) },
                         onShowAll: { onAction(.showDiscover) }
                     )
-                    .environment(\.colorScheme, opensOnBareBackdrop ? .dark : colorScheme)
                 }
                 VStack(alignment: .leading, spacing: 30) {
                     if dashboard.libraryIsEmpty {
@@ -153,7 +153,6 @@ struct HomePage: View {
                         }
                     } else if !opensOnHero {
                         figures
-                            .environment(\.colorScheme, opensOnBareBackdrop ? .dark : colorScheme)
                     }
                     if isSideBySide {
                         HStack(alignment: .top, spacing: 36) {
@@ -187,7 +186,8 @@ struct HomePage: View {
         }
         .scrollPosition($position)
         .onChange(of: opensOnHero, initial: true) { _, shows in
-            guard shows, !openedUnderBar else { return }
+            // With no hero the bar keeps its title in view, as the board draws it.
+            guard shows, !openedUnderBar, !opensOnBareBackdrop else { return }
             openedUnderBar = true
             position.scrollTo(y: Self.openingOffset)
         }
@@ -239,10 +239,10 @@ struct HomePage: View {
     }
 
     /// The month's discoveries all answered and nothing else to put forward
-    /// on a phone: no hero, the page's own head and its figures over the
-    /// colours of the book read now, melting into the rows.
+    /// on a phone: no hero, the bar's title and the figures over the colours
+    /// of the book read now, melting into the rows.
     private var opensOnBareBackdrop: Bool {
-        isCompact && !opensOnHero && !dashboard.libraryIsEmpty
+        opensOnHero && !showsCarousel && !dashboard.libraryIsEmpty && !isSearchingDiscoveries
             && discoveries?.doneMonth(today: today) != nil
     }
 
@@ -252,8 +252,8 @@ struct HomePage: View {
     private static let bareFadeHeight: CGFloat = 110
 
     /// Whether the page opens on a hero that runs up under the bar: the
-    /// carousel, the empty shelf's prompt before the first book, or the wait
-    /// on the month's selection.
+    /// carousel, the empty shelf's prompt before the first book, the wait
+    /// on the month's selection, or the bare backdrop once it is all answered.
     private var opensOnHero: Bool {
         Self.opensOnHero(
             dashboard: dashboard,
@@ -288,7 +288,7 @@ struct HomePage: View {
             seen: seenReleases,
             today: today
         )
-        return !items.isEmpty || isSearchingDiscoveries
+        return !items.isEmpty || isSearchingDiscoveries || discoveries?.doneMonth(today: today) != nil
     }
 
     /// A phone heads its rows as the TV app does, the chevron after the title.
