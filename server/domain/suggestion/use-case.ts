@@ -17,6 +17,8 @@ import { SeriesOpinionQuery } from '~/domain/series-opinion/query'
 import type { SeriesOpinion } from '~/domain/series-opinion/types'
 import type { Language } from '~/domain/shared/language'
 import type { UserId } from '~/domain/shared/types'
+import { WishQuery } from '~/domain/wish/query'
+import type { Wish } from '~/domain/wish/types'
 import { createLogger } from '~/system/logger'
 import {
   discoveriesAlertOf,
@@ -51,7 +53,7 @@ const LOOKUPS_AT_ONCE = 5
 
 export namespace SuggestionUseCase {
   /** The month's discoveries: every suggestion of the month's selection the
-   *  reader neither holds, dismissed nor awaits, in one format and the app's
+   *  reader neither holds, wished for, dismissed nor awaits, in one format and the app's
    *  language, and where the selection stands. Only Découvrir asks for a
    *  selection to be made — `lookUp` — when the reader has none for this
    *  month, or one in another language, never twice a day: that takes about a
@@ -202,29 +204,32 @@ type Library = {
   opinions: SeriesOpinion[]
   dismissals: Dismissal[]
   awaited: Awaited<ReturnType<typeof AwaitedEditionQuery.byUser>>
+  wishes: Wish[]
 }
 
 /** What the selection is made from and checked against. */
 const libraryOf = async (userId: UserId): Promise<Library> => {
-  const [books, opinions, dismissals, awaited] = await Promise.all([
+  const [books, opinions, dismissals, awaited, wishes] = await Promise.all([
     BookQuery.all(userId),
     SeriesOpinionQuery.all(userId),
     SuggestionQuery.dismissals(userId),
     AwaitedEditionQuery.byUser(userId),
+    WishQuery.byUser(userId),
   ])
-  return { books, opinions, dismissals, awaited }
+  return { books, opinions, dismissals, awaited, wishes }
 }
 
 /** The suggestions the reader neither holds, dismissed nor awaits in any
  *  format. */
 const keptOf = (
   candidates: readonly Suggestion[],
-  { books, dismissals, awaited }: Library,
+  { books, dismissals, awaited, wishes }: Library,
   language: Language,
 ): Suggestion[] => {
   const dismissed = new Set(dismissals.map((dismissal) => dismissal.key))
   const awaitedKeys = new Set(awaited.map((edition) => edition.watchKey))
-  return shownOf(candidates, books, dismissed).filter(
+  // A book on the wishlist has had its answer, as one on the shelf has.
+  return shownOf(candidates, [...books, ...wishes], dismissed).filter(
     (suggestion) =>
       !RELEASE_FORMATS.some((candidate) =>
         awaitedKeys.has(watchKeyOf(suggestion, candidate, language)),

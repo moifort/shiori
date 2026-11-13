@@ -187,9 +187,10 @@ describe('the month’s discoveries', () => {
     const before = fake.queryReads
     expect(titles(await read('2026-10-20T09:00:00Z'))).toHaveLength(6)
     expect(prompts).toHaveLength(1)
-    // The library, the sagas' opinions, the dismissals and the awaited editions
-    // are four queries; the queue one get, the watches and descriptions getAlls.
-    expect(fake.queryReads - before).toBe(4)
+    // The library, the sagas' opinions, the dismissals, the awaited editions and
+    // the wishes are five queries; the queue one get, the watches and
+    // descriptions getAlls.
+    expect(fake.queryReads - before).toBe(5)
   })
 
   test('a dismissal lets the next one in and is told to the model next month', async () => {
@@ -256,6 +257,28 @@ describe('the month’s discoveries', () => {
     })
 
     expect(titles(await look())).toEqual(['Hypérion', 'Ilium', 'Seveneves', 'Expiration'])
+  })
+
+  test('a book put on the wishlist leaves the line', async () => {
+    await look()
+    startFakeRequest()
+    fake.seed('wishes', 'wish-silo', {
+      id: 'wish-silo',
+      userId: reader,
+      title: 'Silo',
+      authors: ['Hugh Howey'],
+      format: 'book',
+      origin: 'discovery',
+      wishedAt: october,
+    })
+
+    expect(titles(await look())).toEqual([
+      'La Sanction',
+      'Hypérion',
+      'Ilium',
+      'Seveneves',
+      'Expiration',
+    ])
   })
 
   test('a month whose selection ran out stays empty until the next', async () => {
