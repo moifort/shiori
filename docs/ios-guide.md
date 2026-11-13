@@ -388,6 +388,10 @@ Previews check how a view looks; unit tests check what the app decides. They do 
   blue unless coloured.
 - **A rail holding one card draws it full width**: the screen's width less its 20 pt margins,
   with no page dots. From two cards on, each is 10 pt narrower so the next one peeks in.
+- **Sections stay simple** (base rules, for now): a section's header is its title alone, with
+  no subtitle under it; a rail of covers shows the covers alone, with no title or author under
+  them (what a cover must say, a date for instance, sits in its foot); and a section with
+  nothing to show is not drawn at all — no empty card in its place.
 - **Icons beside a title and description sit at the top** (`HStack(alignment: .top)`), never
   centred.
 - **No hint text under sections** — no `footer:` caption explaining a picker. A message that
