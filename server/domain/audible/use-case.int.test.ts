@@ -654,6 +654,49 @@ describe('the nightly sync', () => {
     expect(await AudibleUseCase.syncLibrary(reader, LATER)).toMatchObject({ genred: 0 })
   })
 
+  // The genre a reader chose on one volume of a saga stays theirs: the pass
+  // files the recording it finds without one, not the saga around it.
+  test('files a recording without a genre and leaves the other volumes of its saga', async () => {
+    await connect()
+    await AudibleCommand.recordImport(reader, NOW)
+    const saga = {
+      saga: SagaKey('chronique-du-tueur-de-roi--patrick-rothfuss'),
+      name: SeriesName('Chronique du tueur de roi'),
+      kind: 'main' as const,
+    }
+    const heard = await BookCommand.add(
+      reader,
+      {
+        title: BookTitle('Le Nom du vent'),
+        authors: [AuthorName('Patrick Rothfuss')],
+        format: 'audiobook',
+        audibleAsin: asin('B002V1OF70'),
+        series: { ...saga, volume: VolumeNumber(1) },
+      },
+      NOW,
+    )
+    const chosen = await BookCommand.add(
+      reader,
+      {
+        title: BookTitle('La Peur du sage'),
+        authors: [AuthorName('Patrick Rothfuss')],
+        format: 'audiobook',
+        genre: 'fantasy',
+        series: { ...saga, volume: VolumeNumber(2) },
+      },
+      NOW,
+    )
+    items = [
+      anItem({
+        categories: [{ root: 'Genres', categories: [{ id: '21228893031', name: 'Romance' }] }],
+      }),
+    ]
+
+    expect(await AudibleUseCase.syncLibrary(reader, LATER)).toMatchObject({ genred: 1 })
+    expect(fake.data('books', heard.id)?.genre).toBe('romance')
+    expect(fake.data('books', chosen.id)?.genre).toBe('fantasy')
+  })
+
   // A book the old rule left on the pile, and one the reader started since:
   // both move on the position, dated on the day the player last heard them.
   test('starts a book on the pile once the player has stopped well into it', async () => {

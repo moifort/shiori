@@ -270,6 +270,23 @@ export namespace BookCommand {
     return repository.save({ ...book, ...dates, updatedAt: now }, batch)
   }
 
+  /** File a book with no genre under the one a store's shelves give it — the
+   *  nightly Audible pass, for a recording imported before its shelves were
+   *  known. That book alone: unlike a reader's edit, the genre is not carried
+   *  to the other volumes of its saga, whose genre may be the reader's own
+   *  choice. A genre set since the pass read the shelf is left as it is. */
+  export const fillGenre = async (
+    userId: UserId,
+    bookId: BookId,
+    genre: Genre,
+    now = new Date(),
+  ): Promise<Book | 'not-found'> => {
+    const book = await repository.findById(userId, bookId)
+    if (!book) return 'not-found'
+    if (book.genre !== undefined) return book
+    return repository.save({ ...book, genre, updatedAt: now })
+  }
+
   export const edit = async (
     userId: UserId,
     bookId: BookId,

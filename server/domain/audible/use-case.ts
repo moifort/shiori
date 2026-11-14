@@ -213,9 +213,10 @@ export namespace AudibleUseCase {
         BookCommand.edit(userId, bookId, { editionYear }, now),
       )
       // Audiobooks imported from a store whose shelves were not yet known carry
-      // no genre; this is what files them once it is.
+      // no genre; this is what files them once it is, each on its own: the
+      // other volumes of its saga keep the genre they have.
       await bulkSave(genres, async ({ bookId, genre }) =>
-        BookCommand.edit(userId, bookId, { genre }, now),
+        BookCommand.fillGenre(userId, bookId, genre, now),
       )
       await bulkSave(
         await SeriesUseCase.filedAfterCatalogues(bought.map(bookFrom)),
