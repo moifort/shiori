@@ -1,5 +1,9 @@
 import { describe, expect, test } from 'bun:test'
-import { releaseDescriptionKeyOf } from '~/domain/discovery/business-rules'
+import {
+  DESCRIPTION_KEPT_DAYS,
+  isDescriptionFresh,
+  releaseDescriptionKeyOf,
+} from '~/domain/discovery/business-rules'
 
 const seed = {
   title: 'Carl 4',
@@ -23,5 +27,35 @@ describe('releaseDescriptionKeyOf', () => {
     ] as never[]
     for (const variant of variants) expect(releaseDescriptionKeyOf(variant, 'fr')).not.toBe(key)
     expect(releaseDescriptionKeyOf(seed, 'en')).not.toBe(key)
+  })
+})
+
+describe('isDescriptionFresh', () => {
+  const day = 86_400_000
+  const describedAt = new Date('2026-03-10T12:00:00Z')
+  const kept = { key: 'k', description: {} as never, describedAt }
+  const later = new Date(describedAt.getTime() + (DESCRIPTION_KEPT_DAYS + 1) * day)
+
+  test('keeps a description made after the book came out for good', () => {
+    expect(isDescriptionFresh(kept, later, '2026-03-09' as never)).toBe(true)
+    expect(isDescriptionFresh(kept, later, '2025' as never)).toBe(true)
+  })
+
+  test('asks again for one made before the book was out, once it is old', () => {
+    expect(isDescriptionFresh(kept, later, '2026-03-20' as never)).toBe(false)
+    expect(
+      isDescriptionFresh(kept, new Date(describedAt.getTime() + day), '2026-03-20' as never),
+    ).toBe(true)
+  })
+
+  test('counts a month or a year from its last day, and a book out that very day as not yet out', () => {
+    expect(isDescriptionFresh(kept, later, '2026-03' as never)).toBe(false)
+    expect(isDescriptionFresh(kept, later, '2026' as never)).toBe(false)
+    expect(isDescriptionFresh(kept, later, '2026-03-10' as never)).toBe(false)
+  })
+
+  test('keeps the sixty days for a book with no date', () => {
+    expect(isDescriptionFresh(kept, later)).toBe(false)
+    expect(isDescriptionFresh(kept, new Date(describedAt.getTime() + day))).toBe(true)
   })
 })

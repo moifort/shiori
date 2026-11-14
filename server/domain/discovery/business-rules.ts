@@ -1197,8 +1197,9 @@ export const announcedPreviewOf = (
   }
 }
 
-/** How long a book's description serves before it is asked again: an
- *  announced book is described thinly, and grows a summary once it is out. */
+/** How long a description made before the book was out serves before it is
+ *  asked again: an announced book is described thinly, and grows a summary
+ *  once it is out. One made after it came out is kept for good. */
 export const DESCRIPTION_KEPT_DAYS = 60
 
 /** The key a book's description is kept under: the title, the first author,
@@ -1215,8 +1216,18 @@ export const releaseDescriptionKeyOf = (seed: ReleaseSeed, language: Language): 
     language,
   ].join('~')
 
-/** Whether a kept description still serves. */
-export const isDescriptionFresh = (kept: KeptReleaseDescription, now: Date): boolean =>
+/** Whether a kept description still serves: for good once it was made
+ *  after the book came out, since nothing about a book out changes; for
+ *  `DESCRIPTION_KEPT_DAYS` otherwise, so that an announced book is described
+ *  again once it is out. A date known only to the month or the year counts
+ *  from its last day. */
+export const isDescriptionFresh = (
+  kept: KeptReleaseDescription,
+  now: Date,
+  releasedOn?: ReleaseDate,
+): boolean =>
+  (releasedOn !== undefined &&
+    kept.describedAt.toISOString().slice(0, 10) > lastDayOf(releasedOn)) ||
   now.getTime() - kept.describedAt.getTime() < DESCRIPTION_KEPT_DAYS * 86_400_000
 
 /** What the model is told of a book Découvrir shows: what the app already

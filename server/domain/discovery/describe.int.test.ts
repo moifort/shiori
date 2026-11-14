@@ -36,6 +36,7 @@ mock.module('~/domain/scan/published-cover', () => ({
   shelfCoverOf: async () => undefined,
   publishedCoverOf: async () => undefined,
   isCoverGone: async () => false,
+  isImageAt: async () => true,
 }))
 
 /** Audible sells the recording, read by Jeff Hays. */

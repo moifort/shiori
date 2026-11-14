@@ -445,7 +445,7 @@ export namespace DiscoveryUseCase {
   ): Promise<ReleaseDescription | Exclude<ScanOutcome, ScanResult>> => {
     const key = releaseDescriptionKeyOf(seed, appLanguage)
     const kept = await DiscoveryQuery.description(key)
-    if (kept && isDescriptionFresh(kept, now)) return kept.description
+    if (kept && isDescriptionFresh(kept, now, seed.releasedOn)) return kept.description
     const edition = seed.language
     const [described, heard] = await Promise.all([
       ScanUseCase.describeShown(userId, releaseEditionOf(seed), appLanguage, {
