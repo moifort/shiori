@@ -6,7 +6,7 @@ import {
   memoizedPerRequest,
   rememberInRequestCache,
 } from '~/system/request-cache'
-import { genericDataConverter, withoutAbsentFields } from '~/utils/firestore'
+import { findDocuments, genericDataConverter, withoutAbsentFields } from '~/utils/firestore'
 
 // One document per reader, whose id IS the userId: a reader has one Kindle
 // library, so there is nothing else to key it on and nothing to query.
@@ -46,16 +46,8 @@ export const remove = async (userId: UserId): Promise<void> => {
 const readTitles = () =>
   db().collection('kindle-titles').withConverter(genericDataConverter<ReadKindleTitle>())
 
-export const findReadTitles = async (asins: readonly string[]): Promise<ReadKindleTitle[]> => {
-  const unique = [...new Set(asins)]
-  if (unique.length === 0) return []
-  const snapshots = await db().getAll(...unique.map((asin) => readTitles().doc(asin)))
-  // Typed loosely by getAll, though each ref carries the converter.
-  return snapshots.flatMap((snapshot) => {
-    const read = snapshot.data() as ReadKindleTitle | undefined
-    return read ? [read] : []
-  })
-}
+export const findReadTitles = (asins: readonly string[]): Promise<ReadKindleTitle[]> =>
+  findDocuments(readTitles(), asins)
 
 export const saveReadTitle = async (read: ReadKindleTitle): Promise<void> => {
   await readTitles().doc(read.asin).set(withoutAbsentFields(read))

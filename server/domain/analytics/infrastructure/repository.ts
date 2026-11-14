@@ -2,7 +2,7 @@ import type { WriteBatch } from 'firebase-admin/firestore'
 import type { AnalyticsView } from '~/domain/analytics/types'
 import type { UserId } from '~/domain/shared/types'
 import { db } from '~/system/firebase'
-import { genericDataConverter, withoutAbsentFields } from '~/utils/firestore'
+import { findDocuments, genericDataConverter, withoutAbsentFields } from '~/utils/firestore'
 
 // One document per reader, keyed by the reader, in a flat top-level collection.
 // It is derived data: deleting it loses nothing, the next dashboard read rebuilds it.
@@ -14,15 +14,8 @@ export const findByUser = async (userId: UserId): Promise<AnalyticsView | undefi
 
 /** Several readers' views in one round trip, for the friends list. Absent
  *  views are simply missing from the map. */
-export const findByUsers = async (userIds: readonly UserId[]): Promise<AnalyticsView[]> => {
-  if (userIds.length === 0) return []
-  const snapshots = await db().getAll(...[...new Set(userIds)].map((userId) => views().doc(userId)))
-  return snapshots.flatMap((snapshot) => {
-    // Typed loosely by getAll, though each ref carries the converter.
-    const view = snapshot.data() as AnalyticsView | undefined
-    return view ? [view] : []
-  })
-}
+export const findByUsers = (userIds: readonly UserId[]): Promise<AnalyticsView[]> =>
+  findDocuments(views(), userIds)
 
 export const save = async (view: AnalyticsView): Promise<AnalyticsView> => {
   await views().doc(view.userId).set(withoutAbsentFields(view))

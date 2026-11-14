@@ -8,6 +8,7 @@ import type { UserId } from '~/domain/shared/types'
 import { db } from '~/system/firebase'
 import { evictFromRequestCache, memoizedPerRequest } from '~/system/request-cache'
 import {
+  deleteAllOwnedBy,
   deleteInBatches,
   genericDataConverter,
   transactionally,
@@ -103,7 +104,6 @@ export const remove = async (userId: UserId, ids: readonly AwaitedEditionId[]): 
 }
 
 export const removeAllByUser = async (userId: UserId): Promise<void> => {
-  const snapshot = await awaitedEditions().where('userId', '==', userId).get()
-  await deleteInBatches(snapshot.docs.map((doc) => doc.ref))
+  await deleteAllOwnedBy(awaitedEditions(), userId)
   evictFromRequestCache(allCacheKey(userId))
 }

@@ -1,11 +1,12 @@
 import type { Author, AuthorKey, AuthorMiss } from '~/domain/author/types'
 import { db } from '~/system/firebase'
+import { evictFromRequestCache, memoizedPerRequest } from '~/system/request-cache'
 import {
-  evictFromRequestCache,
-  memoizedManyPerRequest,
-  memoizedPerRequest,
-} from '~/system/request-cache'
-import { genericDataConverter, transactionally, withoutAbsentFields } from '~/utils/firestore'
+  findDocumentsPerRequest,
+  genericDataConverter,
+  transactionally,
+  withoutAbsentFields,
+} from '~/utils/firestore'
 
 // A single global collection, as `series` is. An author catalogue is a fact
 // about the world with no reference to any reader, so one document serves
@@ -13,7 +14,7 @@ import { genericDataConverter, transactionally, withoutAbsentFields } from '~/ut
 // exposed through library sharing.
 const authors = () => db().collection('authors').withConverter(genericDataConverter<Author>())
 
-const cacheKey = (key: AuthorKey) => `authors:${key}`
+const cacheKey = (key: string) => `authors:${key}`
 
 export const findByKey = (key: AuthorKey): Promise<Author | undefined> =>
   memoizedPerRequest(cacheKey(key), async () => {
@@ -23,13 +24,8 @@ export const findByKey = (key: AuthorKey): Promise<Author | undefined> =>
 
 // One getAll for a page of the Authors tab rather than a lookup per row, sharing
 // the per-author memo with `findByKey` both ways.
-export const findManyByKeys = async (keys: readonly AuthorKey[]): Promise<Author[]> => {
-  const entries = await memoizedManyPerRequest(keys, cacheKey, async (missing) => {
-    const snapshots = await db().getAll(...missing.map((key) => authors().doc(key)))
-    return snapshots.map((snapshot) => snapshot.data() as Author | undefined)
-  })
-  return entries.filter((entry): entry is Author => entry !== undefined)
-}
+export const findManyByKeys = (keys: readonly AuthorKey[]): Promise<Author[]> =>
+  findDocumentsPerRequest(authors(), keys, cacheKey)
 
 // Drops the memoized absence, so the page that built the catalogue reads it
 // back in the same request.

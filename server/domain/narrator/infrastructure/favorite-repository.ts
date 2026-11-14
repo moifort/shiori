@@ -2,7 +2,7 @@ import type { NarratorFavorite, NarratorKey } from '~/domain/narrator/types'
 import type { UserId } from '~/domain/shared/types'
 import { db } from '~/system/firebase'
 import { evictFromRequestCache, memoizedPerRequest } from '~/system/request-cache'
-import { deleteInBatches, genericDataConverter, withoutAbsentFields } from '~/utils/firestore'
+import { deleteAllOwnedBy, genericDataConverter, withoutAbsentFields } from '~/utils/firestore'
 
 // Flat and keyed by the pair, as the author hearts are: a narrator not hearted
 // has no document at all.
@@ -36,7 +36,6 @@ export const remove = async (userId: UserId, key: NarratorKey): Promise<void> =>
 }
 
 export const removeAllByUser = async (userId: UserId): Promise<void> => {
-  const snapshot = await favorites().where('userId', '==', userId).get()
-  await deleteInBatches(snapshot.docs.map((doc) => doc.ref))
+  await deleteAllOwnedBy(favorites(), userId)
   evictFromRequestCache(allCacheKey(userId))
 }

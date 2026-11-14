@@ -4,7 +4,12 @@ import type { UserProfile } from '~/domain/user/types'
 import { db } from '~/system/firebase'
 import { deleteAuthUser } from '~/system/identity'
 import { evictFromRequestCache, memoizedPerRequest } from '~/system/request-cache'
-import { genericDataConverter, transactionally, withoutAbsentFields } from '~/utils/firestore'
+import {
+  findDocuments,
+  genericDataConverter,
+  transactionally,
+  withoutAbsentFields,
+} from '~/utils/firestore'
 
 const profiles = () => db().collection('users').withConverter(genericDataConverter<UserProfile>())
 
@@ -20,15 +25,8 @@ export const findProfile = (userId: UserId): Promise<UserProfile | undefined> =>
 
 // The names behind a list of ids, in one getAll rather than a lookup per row:
 // a friends list of forty would otherwise pay forty reads to write forty names.
-export const findProfiles = async (userIds: readonly UserId[]): Promise<UserProfile[]> => {
-  if (userIds.length === 0) return []
-  const refs = [...new Set(userIds)].map((userId) => profiles().doc(userId))
-  const docs = await db().getAll(...refs)
-  return docs.flatMap((doc) => {
-    const profile = doc.data() as UserProfile | undefined
-    return profile ? [profile] : []
-  })
-}
+export const findProfiles = (userIds: readonly UserId[]): Promise<UserProfile[]> =>
+  findDocuments(profiles(), userIds)
 
 // Every profile, for the scheduled passes: a scan, read once per run.
 export const findAllProfiles = async (): Promise<UserProfile[]> =>

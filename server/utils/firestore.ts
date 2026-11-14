@@ -1,4 +1,5 @@
 import type {
+  CollectionReference,
   DocumentData,
   DocumentReference,
   FirestoreDataConverter,
@@ -8,6 +9,7 @@ import type {
 } from 'firebase-admin/firestore'
 import { chunk } from 'lodash-es'
 import { db } from '~/system/firebase'
+import { memoizedManyPerRequest } from '~/system/request-cache'
 
 // Generic Firestore converter that preserves type information when reading
 // documents and recursively turns Timestamp instances back into JS Date.
@@ -70,6 +72,72 @@ export const deleteInBatches = async (refs: DocumentReference[]): Promise<void> 
     await batch.commit()
   }
 }
+
+/** Many documents written whole, a few hundred to a batch: one batch accepts
+ *  500 writes at most, and a pass over every reader easily runs past them.
+ *  Each batch lands whole or not at all; the batches one after another. */
+export const setInBatches = async <T extends DocumentData>(
+  writes: readonly { ref: DocumentReference<T>; data: T }[],
+): Promise<void> => {
+  for (const slice of chunk(writes, BATCH_LIMIT)) {
+    const batch = db().batch()
+    for (const { ref, data } of slice) batch.set(ref, withoutAbsentFields(data))
+    await batch.commit()
+  }
+}
+
+/** Every document of `collection` naming the reader in `userId`, and the
+ *  documents in `also`, deleted in batches: what an account deletion takes. */
+export const deleteAllOwnedBy = async <T extends DocumentData>(
+  collection: CollectionReference<T>,
+  userId: string,
+  also: readonly DocumentReference[] = [],
+): Promise<void> => {
+  const snapshot = await collection.where('userId', '==', userId).get()
+  await deleteInBatches([...also, ...snapshot.docs.map((doc) => doc.ref)])
+}
+
+// The separator of a document id made of several parts — a reader and what
+// they hold, an image and its language. No part can carry it: user ids, ASINs,
+// image hashes and months are alphanumeric, and a slug folds every character
+// but a-z, 0-9 and `-`. Only `/` is forbidden in a Firestore id.
+const ID_SEPARATOR = '~'
+
+/** The id of a document identified by several parts, in a fixed order. */
+export const compositeId = (...parts: readonly string[]): string => parts.join(ID_SEPARATOR)
+
+/** The documents under `ids`, in the order asked, undefined where none is
+ *  stored: one round trip, and none for no id. */
+export const readDocuments = async <T extends DocumentData>(
+  collection: CollectionReference<T>,
+  ids: readonly string[],
+): Promise<(T | undefined)[]> => {
+  if (ids.length === 0) return []
+  const snapshots = await db().getAll(...ids.map((id) => collection.doc(id)))
+  // Typed loosely by getAll, though each ref carries the converter.
+  return snapshots.map((snapshot) => snapshot.data() as T | undefined)
+}
+
+const isStored = <T>(document: T | undefined): document is T => document !== undefined
+
+/** The documents stored under `ids`, each asked once, in the order asked,
+ *  those that do not exist left out. */
+export const findDocuments = async <T extends DocumentData>(
+  collection: CollectionReference<T>,
+  ids: readonly string[],
+): Promise<T[]> => (await readDocuments(collection, [...new Set(ids)])).filter(isStored)
+
+/** `findDocuments`, each document memoized for the request under
+ *  `cacheKeyOf(id)` from the moment it is asked: a document read here, or by
+ *  a lookup of one under the same key, is not read again in the request. */
+export const findDocumentsPerRequest = async <T extends DocumentData>(
+  collection: CollectionReference<T>,
+  ids: readonly string[],
+  cacheKeyOf: (id: string) => string,
+): Promise<T[]> =>
+  (
+    await memoizedManyPerRequest(ids, cacheKeyOf, (missing) => readDocuments(collection, missing))
+  ).filter(isStored)
 
 // Runs `enlist` against a fresh WriteBatch and commits it once: either every
 // enlisted write lands or none does. Reads inside `enlist` see pre-batch state —

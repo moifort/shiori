@@ -2,7 +2,7 @@ import type { AuthorFavorite, AuthorKey } from '~/domain/author/types'
 import type { UserId } from '~/domain/shared/types'
 import { db } from '~/system/firebase'
 import { evictFromRequestCache, memoizedPerRequest } from '~/system/request-cache'
-import { deleteInBatches, genericDataConverter, withoutAbsentFields } from '~/utils/firestore'
+import { deleteAllOwnedBy, genericDataConverter, withoutAbsentFields } from '~/utils/firestore'
 
 // Flat, as every collection is, and keyed by the pair: one reader hearts one
 // author once, so the pair is the identity. An author not hearted has no
@@ -39,7 +39,6 @@ export const remove = async (userId: UserId, key: AuthorKey): Promise<void> => {
 }
 
 export const removeAllByUser = async (userId: UserId): Promise<void> => {
-  const snapshot = await favorites().where('userId', '==', userId).get()
-  await deleteInBatches(snapshot.docs.map((doc) => doc.ref))
+  await deleteAllOwnedBy(favorites(), userId)
   evictFromRequestCache(allCacheKey(userId))
 }

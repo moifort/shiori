@@ -5,7 +5,7 @@ import type { UserId } from '~/domain/shared/types'
 import { db } from '~/system/firebase'
 import { evictFromRequestCache, memoizedPerRequest } from '~/system/request-cache'
 import {
-  deleteInBatches,
+  deleteAllOwnedBy,
   genericDataConverter,
   transactionally,
   withoutAbsentFields,
@@ -121,7 +121,6 @@ export const saveCredit = async (credit: ScanCredit, batch?: WriteBatch): Promis
 // balance (account deletion). One doc per month, so the quotas are queried by
 // userId rather than reconstructing keys; the balance is a single known key.
 export const removeAllByUser = async (userId: UserId): Promise<void> => {
-  const snap = await quotas().where('userId', '==', userId).get()
-  await deleteInBatches([...snap.docs.map((doc) => doc.ref), credits().doc(userId)])
+  await deleteAllOwnedBy(quotas(), userId, [credits().doc(userId)])
   evictFromRequestCache(creditCacheKey(userId))
 }

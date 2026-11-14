@@ -25,7 +25,14 @@ import {
   memoizedPerRequest,
   rememberInRequestCache,
 } from '~/system/request-cache'
-import { genericDataConverter, transactionally, withoutAbsentFields } from '~/utils/firestore'
+import {
+  compositeId,
+  findDocuments,
+  genericDataConverter,
+  setInBatches,
+  transactionally,
+  withoutAbsentFields,
+} from '~/utils/firestore'
 
 // Shared documents, holding no reference to any reader: keyed by the saga and
 // the language, so every reader who follows the same saga converges on one
@@ -229,7 +236,7 @@ const projections = () =>
 const storedProjectionOf = ({ builtAt, ...rest }: DocumentData): StoredProjection =>
   ({ ...rest, builtAt: builtAt instanceof Date ? builtAt : builtAt.toDate() }) as StoredProjection
 
-const projectionIdOf = (userId: UserId, format: ReleaseFormat) => `${userId}~${format}`
+const projectionIdOf = (userId: UserId, format: ReleaseFormat) => compositeId(userId, format)
 
 /** A projection larger than this is not kept: the tab is worked out on each
  *  opening, as before the projection existed. */
@@ -288,29 +295,16 @@ export const findLibraryChange = (userId: UserId): Promise<DiscoveryLibraryChang
     (await libraryChanges().doc(userId).get()).data(),
   )
 
-export const findLibraryChanges = async (
-  userIds: readonly UserId[],
-): Promise<DiscoveryLibraryChange[]> => {
-  const unique = [...new Set(userIds)]
-  if (unique.length === 0) return []
-  const snapshots = await db().getAll(...unique.map((userId) => libraryChanges().doc(userId)))
-  // Typed loosely by getAll, though each ref carries the converter.
-  return snapshots.flatMap((snapshot) => {
-    const change = snapshot.data() as DiscoveryLibraryChange | undefined
-    return change ? [change] : []
-  })
-}
+export const findLibraryChanges = (userIds: readonly UserId[]): Promise<DiscoveryLibraryChange[]> =>
+  findDocuments(libraryChanges(), userIds)
 
 export const saveLibraryChanges = async (
   userIds: readonly UserId[],
   changedAt: Date,
 ): Promise<void> => {
   const unique = [...new Set(userIds)]
-  for (let start = 0; start < unique.length; start += 500) {
-    const batch = db().batch()
-    for (const userId of unique.slice(start, start + 500))
-      batch.set(libraryChanges().doc(userId), { userId, changedAt })
-    await batch.commit()
-  }
+  await setInBatches(
+    unique.map((userId) => ({ ref: libraryChanges().doc(userId), data: { userId, changedAt } })),
+  )
   for (const userId of unique) evictFromRequestCache(libraryChangeCacheKey(userId))
 }

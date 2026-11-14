@@ -1,7 +1,7 @@
 import type { CatalogueCorrection } from '~/domain/catalogue-correction/types'
 import type { UserId } from '~/domain/shared/types'
 import { db } from '~/system/firebase'
-import { deleteInBatches, genericDataConverter, withoutAbsentFields } from '~/utils/firestore'
+import { deleteAllOwnedBy, genericDataConverter, setInBatches } from '~/utils/firestore'
 
 // Flat, beside the catalogues it describes rather than inside them: a catalogue
 // names no reader, and this log is nothing but who did what. Random ids, since
@@ -11,19 +11,13 @@ const corrections = () =>
     .collection('catalogue-corrections')
     .withConverter(genericDataConverter<CatalogueCorrection>())
 
-export const saveAll = async (entries: readonly CatalogueCorrection[]): Promise<void> => {
-  if (entries.length === 0) return
-  const batch = db().batch()
-  for (const entry of entries) batch.set(corrections().doc(), withoutAbsentFields(entry))
-  await batch.commit()
-}
+export const saveAll = (entries: readonly CatalogueCorrection[]): Promise<void> =>
+  setInBatches(entries.map((entry) => ({ ref: corrections().doc(), data: entry })))
 
 export const findAllByUser = async (userId: UserId): Promise<CatalogueCorrection[]> => {
   const snapshot = await corrections().where('userId', '==', userId).get()
   return snapshot.docs.map((doc) => doc.data())
 }
 
-export const removeAllByUser = async (userId: UserId): Promise<void> => {
-  const snapshot = await corrections().where('userId', '==', userId).get()
-  await deleteInBatches(snapshot.docs.map((doc) => doc.ref))
-}
+export const removeAllByUser = (userId: UserId): Promise<void> =>
+  deleteAllOwnedBy(corrections(), userId)

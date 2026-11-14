@@ -2,7 +2,7 @@ import type { Language } from '~/domain/shared/language'
 import type { UserId } from '~/domain/shared/types'
 import { db } from '~/system/firebase'
 import {
-  deleteInBatches,
+  deleteAllOwnedBy,
   genericDataConverter,
   transactionally,
   withoutAbsentFields,
@@ -130,7 +130,5 @@ export const deleteDismissal = async (userId: UserId, key: string): Promise<void
 }
 
 /** The reader's selection and every "Pas intéressé" they said (account deletion). */
-export const removeAllByUser = async (userId: UserId): Promise<void> => {
-  const snapshot = await dismissals().where('userId', '==', userId).get()
-  await deleteInBatches([queues().doc(userId), ...snapshot.docs.map((doc) => doc.ref)])
-}
+export const removeAllByUser = (userId: UserId): Promise<void> =>
+  deleteAllOwnedBy(dismissals(), userId, [queues().doc(userId)])

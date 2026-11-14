@@ -19,7 +19,10 @@ import {
   reviseInRequestCache,
 } from '~/system/request-cache'
 import {
+  compositeId,
+  deleteAllOwnedBy,
   deleteInBatches,
+  findDocuments,
   genericDataConverter,
   transactionally,
   withoutAbsentFields,
@@ -133,16 +136,8 @@ export const findById = async (userId: UserId, bookId: BookId): Promise<Book | u
 
 /** The reader's books among `ids`, in the order asked, by id: one document read
  *  each. A book owned by someone else, or gone, is left out. */
-export const findByIds = async (userId: UserId, ids: readonly BookId[]): Promise<Book[]> => {
-  if (ids.length === 0) return []
-  const snapshots = await db().getAll(...ids.map((id) => books().doc(id)))
-  return seen(
-    snapshots.flatMap((snapshot) => {
-      const book = snapshot.data() as StoredBook | undefined
-      return book?.userId === userId ? [asBook(book)] : []
-    }),
-  )
-}
+export const findByIds = async (userId: UserId, ids: readonly BookId[]): Promise<Book[]> =>
+  seen((await findDocuments(books(), ids)).filter((book) => book.userId === userId).map(asBook))
 
 // One edition's volumes alone, by a query on its series id: the saga screen
 // used to load the whole library to keep a handful of rows. Taken from the
@@ -272,8 +267,7 @@ const reviseLibrary = (userId: UserId, revise: (library: Book[]) => Book[]) =>
 // In batches of a few hundred: a library imported from Audible easily runs past
 // the 500 writes one batch accepts.
 export const removeAllByUser = async (userId: UserId): Promise<void> => {
-  const snapshot = await ownedBy(userId).get()
-  await deleteInBatches(snapshot.docs.map((doc) => doc.ref))
+  await deleteAllOwnedBy(books(), userId)
   evictFromRequestCache(allCacheKey(userId))
 }
 
@@ -283,7 +277,7 @@ const syncRemovals = () =>
   db().collection('book-sync-removals').withConverter(genericDataConverter<SyncedBookRemoval>())
 
 const removalId = (userId: UserId, source: SyncSource, asin: string) =>
-  `${userId}~${source}~${asin}`
+  compositeId(userId, source, asin)
 
 export const saveSyncRemovals = async (
   removals: readonly SyncedBookRemoval[],
@@ -313,7 +307,5 @@ export const forgetSyncRemovals = async (
   await deleteInBatches(asins.map((asin) => syncRemovals().doc(removalId(userId, source, asin))))
 }
 
-export const removeAllSyncRemovalsByUser = async (userId: UserId): Promise<void> => {
-  const snapshot = await syncRemovals().where('userId', '==', userId).get()
-  await deleteInBatches(snapshot.docs.map((doc) => doc.ref))
-}
+export const removeAllSyncRemovalsByUser = (userId: UserId): Promise<void> =>
+  deleteAllOwnedBy(syncRemovals(), userId)
