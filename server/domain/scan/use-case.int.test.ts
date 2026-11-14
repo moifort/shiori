@@ -24,7 +24,7 @@ mock.module('~/system/gemini', () => ({
     return { value, usage: { promptTokens: 10, outputTokens: 5, thinkingTokens: 0, searches: 0 } }
   },
 }))
-mock.module('~/domain/scan/published-cover', () => ({
+mock.module('~/domain/book/infrastructure/published-cover', () => ({
   shelfCoverOf: async () => undefined,
   publishedCoverOf: async () => undefined,
   isCoverGone: async () => false,

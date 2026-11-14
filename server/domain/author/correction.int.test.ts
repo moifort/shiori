@@ -13,7 +13,7 @@ mock.module('~/system/gemini', () => ({
     return { value, usage: { promptTokens: 1, outputTokens: 1, thinkingTokens: 1, searches: 1 } }
   },
 }))
-mock.module('~/domain/scan/open-library', () => ({
+mock.module('~/domain/book/infrastructure/open-library', () => ({
   openLibraryIsbnsOf: async () => [],
   openLibraryCoverOf: async () => undefined,
   openLibraryCoverByTitle: async () => undefined,
@@ -29,8 +29,8 @@ mock.module('~/domain/author/infrastructure/open-library', () => ({
 }))
 /** The addresses that serve no image. */
 const notImages = new Set<string>()
-const publishedCover = await import('~/domain/scan/published-cover')
-mock.module('~/domain/scan/published-cover', () => ({
+const publishedCover = await import('~/domain/book/infrastructure/published-cover')
+mock.module('~/domain/book/infrastructure/published-cover', () => ({
   ...publishedCover,
   isImageAt: async (url: string) => !notImages.has(url),
 }))

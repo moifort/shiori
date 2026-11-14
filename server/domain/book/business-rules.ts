@@ -264,7 +264,9 @@ export const amazonUrlOf = (
   return `https://www.amazon.fr/s?${search}`
 }
 
-const isbn10Of = (isbn13: string): string | undefined => {
+/** The ISBN-10 a 978 ISBN-13 was minted from, which is also the ASIN Amazon files
+ *  a printed book under. A 979 ISBN never had an ISBN-10, so it has no such ASIN. */
+export const isbn10Of = (isbn13: string): string | undefined => {
   if (!isbn13.startsWith('978')) return undefined
   const body = isbn13.slice(3, 12)
   const sum = [...body].reduce((total, digit, index) => total + Number(digit) * (10 - index), 0)

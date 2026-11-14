@@ -29,7 +29,6 @@ import { CoverUrl } from '~/domain/book/primitives'
 import { BookQuery } from '~/domain/book/query'
 import type { Book } from '~/domain/book/types'
 import { CatalogueCorrectionCommand } from '~/domain/catalogue-correction/command'
-import { isImageAt } from '~/domain/scan/published-cover'
 import { type FollowedSeries, SeriesUseCase } from '~/domain/series/use-case'
 import { SeriesOpinionQuery } from '~/domain/series-opinion/query'
 import type { Language } from '~/domain/shared/language'
@@ -196,7 +195,7 @@ export namespace AuthorUseCase {
   ): Promise<AuthorPage | undefined | 'not-an-image'> => {
     const shelved = (await shelvedAuthors(userId)).find((author) => author.key === key)
     if (!shelved) return undefined
-    if (correction.portraitUrl && !(await isImageAt(CoverUrl(correction.portraitUrl))))
+    if (correction.portraitUrl && !(await BookQuery.isImageAt(CoverUrl(correction.portraitUrl))))
       return 'not-an-image'
     const known = await AuthorQuery.byKey(key)
     await AuthorCommand.correct(known, key, shelved.name, correction)

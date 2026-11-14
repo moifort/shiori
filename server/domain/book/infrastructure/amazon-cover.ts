@@ -1,3 +1,4 @@
+import { isbn10Of } from '~/domain/book/business-rules'
 import { CoverUrl } from '~/domain/book/primitives'
 import type { CoverUrl as CoverUrlType, Isbn13 } from '~/domain/book/types'
 import { createLogger } from '~/system/logger'
@@ -6,16 +7,6 @@ const logger = createLogger('amazon-cover')
 
 /** A slow answer costs the reader a longer scan for a cosmetic field. */
 const LOOKUP_TIMEOUT_MS = 3000
-
-/** The ISBN-10 a 978 ISBN-13 was minted from, which is also the ASIN Amazon files
- *  a printed book under. A 979 ISBN never had an ISBN-10, so it has no such ASIN. */
-export const isbn10Of = (isbn13: Isbn13): string | undefined => {
-  if (!isbn13.startsWith('978')) return undefined
-  const body = isbn13.slice(3, 12)
-  const sum = [...body].reduce((total, digit, index) => total + Number(digit) * (10 - index), 0)
-  const check = (11 - (sum % 11)) % 11
-  return `${body}${check === 10 ? 'X' : check}`
-}
 
 /** 500 px tall and around 20 KB, the weight of Open Library's medium cover. The
  *  usual `_SL500_` size suffix is ignored on this path, which then serves a

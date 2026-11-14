@@ -40,7 +40,7 @@ mock.module('~/system/gemini', () => ({
 let covers: Record<string, string> = {}
 const coverLookups: string[] = []
 
-mock.module('~/domain/scan/open-library', () => ({
+mock.module('~/domain/book/infrastructure/open-library', () => ({
   openLibraryIsbnsOf: async () => [],
   openLibraryCoverOf: async () => undefined,
   openLibraryCoverByTitle: async () => undefined,
@@ -66,7 +66,7 @@ mock.module('~/domain/scan/bnf', () => ({
   },
 }))
 
-mock.module('~/domain/scan/published-cover', () => ({
+mock.module('~/domain/book/infrastructure/published-cover', () => ({
   shelfCoverOf: async () => undefined,
   publishedCoverOf: async (isbn13: string) => {
     coverLookups.push(isbn13)

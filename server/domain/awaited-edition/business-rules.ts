@@ -10,13 +10,12 @@ import type {
   EditionWatch,
   FoundEdition,
 } from '~/domain/awaited-edition/types'
-import { shelfKeyOf } from '~/domain/book/business-rules'
+import { isbn10Of, shelfKeyOf } from '~/domain/book/business-rules'
 import type { Book, BookFormat, BookLanguage } from '~/domain/book/types'
 import { lastDayOf, releaseFormatOf } from '~/domain/discovery/business-rules'
 import type { ReleaseFormat } from '~/domain/discovery/types'
 import { releaseKeyOf } from '~/domain/release/business-rules'
 import type { Release, ReleaseShown } from '~/domain/release/types'
-import { isbn10Of } from '~/domain/scan/amazon-cover'
 import { AMAZON_STORES } from '~/domain/shared/amazon-stores'
 import type { Language } from '~/domain/shared/language'
 import type { UserId } from '~/domain/shared/types'

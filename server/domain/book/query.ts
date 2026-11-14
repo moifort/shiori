@@ -18,12 +18,19 @@ import {
   subgenresOf,
   vocabularyOf,
 } from '~/domain/book/business-rules'
+import { openLibraryCoverByTitle } from '~/domain/book/infrastructure/open-library'
+import {
+  publishedCoverOf as publishedCover,
+  isImageAt as servesImage,
+} from '~/domain/book/infrastructure/published-cover'
 import * as repository from '~/domain/book/infrastructure/repository'
 import type {
   Book,
   BookId,
   BookLanguage,
   BookView,
+  CoverUrl,
+  Isbn13,
   LibrarySection,
   LibraryView,
   ReadingStatus,
@@ -176,6 +183,19 @@ export namespace BookQuery {
     (await withCovers(await repository.findByIds(userId, ids))).map(({ id, coverUrl }) =>
       coverUrl ? { id, coverUrl } : { id },
     )
+
+  /** The published cover of an edition, from Amazon, Open Library or ePagine,
+   *  for any domain that names a book by its ISBN. Never throws. */
+  export const publishedCoverOf = (isbn13: Isbn13): Promise<CoverUrl | undefined> =>
+    publishedCover(isbn13)
+
+  /** The cover Open Library files under a work's title and author: the
+   *  original edition's, for a bibliography. Throws when Open Library fails. */
+  export const coverByTitle = (title: string, author: string): Promise<CoverUrl | undefined> =>
+    openLibraryCoverByTitle(title, author)
+
+  /** Whether an address a reader pasted serves an image. Never throws. */
+  export const isImageAt = (url: CoverUrl): Promise<boolean> => servesImage(url)
 
   /** The reader's volumes of a saga, every edition of it. */
   export const bySeries = async (userId: UserId, saga: SagaKey): Promise<Book[]> =>

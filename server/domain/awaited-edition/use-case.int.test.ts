@@ -57,7 +57,7 @@ mock.module('~/domain/discovery/infrastructure/audible-catalogue', () => ({
 mock.module('~/domain/discovery/infrastructure/amazon-catalogue', () => ({
   amazonEditionOf: async () => ({ releaseDate: '2027-03-12' }),
 }))
-mock.module('~/domain/scan/published-cover', () => ({
+mock.module('~/domain/book/infrastructure/published-cover', () => ({
   shelfCoverOf: async () => undefined,
   publishedCoverOf: async () => 'https://covers.example/vent.jpg',
   isbnCoversOf: async () => ({}),

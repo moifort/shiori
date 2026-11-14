@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, spyOn, test } from 'bun:test'
+import { epagineCoverOf } from '~/domain/book/infrastructure/epagine-cover'
 import { Isbn13 } from '~/domain/book/primitives'
-import { epagineCoverOf } from '~/domain/scan/epagine-cover'
 
 /** Haut et court, which neither Amazon nor Open Library has a cover for. */
 const isbn = Isbn13('9782374343273')

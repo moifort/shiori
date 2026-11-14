@@ -1,8 +1,8 @@
+import { amazonCoverOf } from '~/domain/book/infrastructure/amazon-cover'
+import { epagineCoverOf } from '~/domain/book/infrastructure/epagine-cover'
+import { openLibraryCoverOf, openLibraryIsbnsOf } from '~/domain/book/infrastructure/open-library'
 import { Isbn13 as Isbn13Of } from '~/domain/book/primitives'
 import type { BookLanguage, CoverUrl, Isbn13 } from '~/domain/book/types'
-import { amazonCoverOf } from '~/domain/scan/amazon-cover'
-import { epagineCoverOf } from '~/domain/scan/epagine-cover'
-import { openLibraryCoverOf, openLibraryIsbnsOf } from '~/domain/scan/open-library'
 import { createLogger } from '~/system/logger'
 import { isPresent, optionally } from '~/utils/input'
 

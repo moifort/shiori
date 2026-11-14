@@ -8,6 +8,14 @@ import {
   refreshedFacts,
 } from '~/domain/book/business-rules'
 import { BookCommand, type BookEdit, type NewBook } from '~/domain/book/command'
+import {
+  isbnCoversOf,
+  isCoverGone,
+  isImageAt,
+  otherEditionCoversOf,
+  publishedCoverOf,
+  shelfCoverOf,
+} from '~/domain/book/infrastructure/published-cover'
 import { BookQuery } from '~/domain/book/query'
 import type {
   Book,
@@ -28,14 +36,6 @@ import { DEFAULT_BOOK_LANGUAGE } from '~/domain/book/types'
 import { exhausted } from '~/domain/quota/business-rules'
 import { QuotaCommand } from '~/domain/quota/command'
 import { QuotaQuery } from '~/domain/quota/query'
-import {
-  isbnCoversOf,
-  isCoverGone,
-  isImageAt,
-  otherEditionCoversOf,
-  publishedCoverOf,
-  shelfCoverOf,
-} from '~/domain/scan/published-cover'
 import type { ScanResult } from '~/domain/scan/types'
 import { ScanUseCase } from '~/domain/scan/use-case'
 import { seriesKeyOf } from '~/domain/series/primitives'

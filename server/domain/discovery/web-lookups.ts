@@ -4,6 +4,7 @@
 // which decides what to look up and when.
 
 import { AdminCommand } from '~/domain/admin/command'
+import { BookQuery } from '~/domain/book/query'
 import type { BookLanguage } from '~/domain/book/types'
 import {
   AUTHOR_RECENT_DAYS,
@@ -50,7 +51,6 @@ import type {
   WatchedNarrator,
   WatchedSaga,
 } from '~/domain/discovery/types'
-import { publishedCoverOf } from '~/domain/scan/published-cover'
 import { SeriesCommand } from '~/domain/series/command'
 import { generate } from '~/system/gemini'
 import { isSpendCapReached } from '~/system/gemini/spend-cap'
@@ -139,7 +139,7 @@ export const withCover = async <Found extends Pick<FoundVolume, 'coverUrl' | 'is
   if (known?.coverUrl && known.isbn13 === volume.isbn13)
     return { ...volume, coverUrl: known.coverUrl }
   try {
-    const coverUrl = await publishedCoverOf(volume.isbn13)
+    const coverUrl = await BookQuery.publishedCoverOf(volume.isbn13)
     return coverUrl ? { ...volume, coverUrl } : volume
   } catch (error) {
     logger.warn('release cover lookup failed', { error, isbn13: volume.isbn13 })

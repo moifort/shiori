@@ -11,6 +11,7 @@ import {
   formatSettledBySubgenres,
   groupedBySeries,
   inSagaOrder,
+  isbn10Of,
   KINDLE_POSITIONS_PER_PAGE,
   keepsStory,
   kindleLinkUnder,
@@ -1677,5 +1678,19 @@ describe('a Kindle position', () => {
     expect(kindleMoveOf(pile, atPage(50))).toEqual({ status: 'to-read' })
     const known = { status: 'to-read', pageCount: 500, kindlePosition: atPage(50) } as never
     expect(kindleMoveOf(known, atPage(60))).toEqual({ status: 'reading', page: 60 })
+  })
+})
+
+describe('isbn10Of', () => {
+  test('drops the 978 prefix and recomputes the check digit', () => {
+    expect(isbn10Of(Isbn13('9782070612758'))).toBe('2070612759')
+  })
+
+  test('writes a check digit of ten as X', () => {
+    expect(isbn10Of(Isbn13('9781000000016'))).toBe('100000001X')
+  })
+
+  test('has nothing for a 979 ISBN, which never had an ISBN-10', () => {
+    expect(isbn10Of(Isbn13('9791032705278'))).toBeUndefined()
   })
 })

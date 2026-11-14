@@ -24,7 +24,7 @@ const apply = process.argv.includes('--apply')
 const PAUSE_MS = 250
 
 const { db } = await import('~/system/firebase')
-const { publishedCoverOf } = await import('~/domain/scan/published-cover')
+const { publishedCoverOf } = await import('~/domain/book/infrastructure/published-cover')
 
 const snapshot = await db().collection('books').get()
 const coverless = snapshot.docs

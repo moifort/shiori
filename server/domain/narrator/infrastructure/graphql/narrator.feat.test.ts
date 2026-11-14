@@ -27,7 +27,7 @@ mock.module('~/system/gemini', () => ({
     return { value: modelAnswer, usage: undefined }
   },
 }))
-mock.module('~/domain/scan/open-library', () => ({
+mock.module('~/domain/book/infrastructure/open-library', () => ({
   openLibraryIsbnsOf: async () => [],
   openLibraryCoverOf: async () => undefined,
   openLibraryCoverByTitle: async () => undefined,

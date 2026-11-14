@@ -33,7 +33,7 @@ const shelfSearches: { title: string; author: string; volume?: number; language:
 const isbnCovers: Record<string, { amazon?: string; openLibrary?: string }> = {}
 const otherEditionCovers: Record<string, string[]> = {}
 const editionSearches: { title: string; isbn13?: string }[] = []
-mock.module('~/domain/scan/published-cover', () => ({
+mock.module('~/domain/book/infrastructure/published-cover', () => ({
   publishedCoverOf: async (isbn13: string) => publishedCovers[isbn13],
   isbnCoversOf: async (isbn13: string) => isbnCovers[isbn13] ?? {},
   otherEditionCoversOf: async (book: { title: string; isbn13?: string }) => {

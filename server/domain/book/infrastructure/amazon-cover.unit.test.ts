@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, spyOn, test } from 'bun:test'
+import { amazonCoverOf } from '~/domain/book/infrastructure/amazon-cover'
 import { Isbn13 } from '~/domain/book/primitives'
-import { amazonCoverOf, isbn10Of } from '~/domain/scan/amazon-cover'
 
 const isbn = Isbn13('9782070612758')
 
@@ -18,20 +18,6 @@ const amazonAnswers = (answer: string | number | Error) => {
 
 afterEach(() => {
   ;(globalThis.fetch as unknown as { mockRestore?: () => void }).mockRestore?.()
-})
-
-describe('isbn10Of', () => {
-  test('drops the 978 prefix and recomputes the check digit', () => {
-    expect(isbn10Of(isbn)).toBe('2070612759')
-  })
-
-  test('writes a check digit of ten as X', () => {
-    expect(isbn10Of(Isbn13('9781000000016'))).toBe('100000001X')
-  })
-
-  test('has nothing for a 979 ISBN, which never had an ISBN-10', () => {
-    expect(isbn10Of(Isbn13('9791032705278'))).toBeUndefined()
-  })
 })
 
 describe('amazonCoverOf', () => {

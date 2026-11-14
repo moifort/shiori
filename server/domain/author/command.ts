@@ -15,8 +15,8 @@ import type {
   AuthorSeries,
   AuthorWork,
 } from '~/domain/author/types'
+import { BookQuery } from '~/domain/book/query'
 import type { BookLanguage, CoverUrl } from '~/domain/book/types'
-import { openLibraryCoverByTitle } from '~/domain/scan/open-library'
 import { SeriesName, VolumeNumber } from '~/domain/series/primitives'
 import type { Language } from '~/domain/shared/language'
 import { AuthorName, BookTitle, Year } from '~/domain/shared/primitives'
@@ -222,7 +222,7 @@ export namespace AuthorCommand {
         ? []
         : await Promise.allSettled(
             slice.map(({ originalTitle }) =>
-              originalTitle ? openLibraryCoverByTitle(originalTitle, lookup.author) : undefined,
+              originalTitle ? BookQuery.coverByTitle(originalTitle, lookup.author) : undefined,
             ),
           )
       const failure = found.find((result) => result.status === 'rejected')

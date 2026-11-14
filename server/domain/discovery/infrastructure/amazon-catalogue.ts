@@ -1,6 +1,6 @@
+import { isbn10Of } from '~/domain/book/business-rules'
 import type { BookLanguage, Isbn13 } from '~/domain/book/types'
 import { amazonEditionFrom } from '~/domain/discovery/parsing'
-import { isbn10Of } from '~/domain/scan/amazon-cover'
 import type { ReleaseDate } from '~/domain/series/types'
 import { AMAZON_STORES } from '~/domain/shared/amazon-stores'
 import { createLogger } from '~/system/logger'

@@ -1,12 +1,12 @@
 import { afterEach, describe, expect, spyOn, test } from 'bun:test'
-import { CoverUrl, Isbn13 } from '~/domain/book/primitives'
 import {
   isbnsInLanguage,
   isCoverGone,
   isImageAt,
   publishedCoverOf,
   shelfCoverOf,
-} from '~/domain/scan/published-cover'
+} from '~/domain/book/infrastructure/published-cover'
+import { CoverUrl, Isbn13 } from '~/domain/book/primitives'
 
 const isbn = Isbn13('9782070612758')
 /** A 979 ISBN has no ISBN-10, so Amazon cannot be asked for it at all. */

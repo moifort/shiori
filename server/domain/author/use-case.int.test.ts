@@ -23,7 +23,7 @@ const covers: Record<string, string> = {}
 const coverSearches: string[] = []
 /** Set, every Open Library search fails with it. */
 let openLibraryFailure: Error | undefined
-mock.module('~/domain/scan/open-library', () => ({
+mock.module('~/domain/book/infrastructure/open-library', () => ({
   openLibraryIsbnsOf: async () => [],
   openLibraryCoverOf: async () => undefined,
   openLibraryCoverByTitle: async (title: string) => {

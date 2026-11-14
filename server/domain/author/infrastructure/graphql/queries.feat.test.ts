@@ -19,7 +19,7 @@ mock.module('~/system/gemini', () => ({
     return { value, usage: { promptTokens: 10, outputTokens: 5, thinkingTokens: 20, searches: 1 } }
   },
 }))
-mock.module('~/domain/scan/open-library', () => ({
+mock.module('~/domain/book/infrastructure/open-library', () => ({
   openLibraryIsbnsOf: async () => [],
   openLibraryCoverOf: async () => undefined,
   openLibraryCoverByTitle: async () => undefined,

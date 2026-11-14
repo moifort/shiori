@@ -1,11 +1,11 @@
 import { afterEach, describe, expect, spyOn, test } from 'bun:test'
 import * as Sentry from '@sentry/node'
-import { Isbn13 } from '~/domain/book/primitives'
 import {
   openLibraryCoverByTitle,
   openLibraryCoverOf,
   openLibraryIsbnsOf,
-} from '~/domain/scan/open-library'
+} from '~/domain/book/infrastructure/open-library'
+import { Isbn13 } from '~/domain/book/primitives'
 
 const isbn = Isbn13('9780756404741')
 

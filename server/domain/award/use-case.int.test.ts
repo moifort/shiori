@@ -40,7 +40,7 @@ mock.module('~/domain/award/infrastructure/wikidata', () => ({
 mock.module('~/domain/discovery/infrastructure/amazon-catalogue', () => ({
   amazonEditionOf: async () => ({ releaseDate: '1991-06-01' }),
 }))
-mock.module('~/domain/scan/published-cover', () => ({
+mock.module('~/domain/book/infrastructure/published-cover', () => ({
   shelfCoverOf: async () => undefined,
   publishedCoverOf: async () => 'https://covers.example/hyperion.jpg',
   isCoverGone: async () => false,

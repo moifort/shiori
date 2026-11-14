@@ -29,7 +29,6 @@ import type {
   NarratorKey,
   ShelvedNarrator,
 } from '~/domain/narrator/types'
-import { isImageAt } from '~/domain/scan/published-cover'
 import { type FollowedSeries, SeriesUseCase } from '~/domain/series/use-case'
 import { SeriesOpinionQuery } from '~/domain/series-opinion/query'
 import type { Language } from '~/domain/shared/language'
@@ -176,7 +175,7 @@ export namespace NarratorUseCase {
   ): Promise<NarratorPage | undefined | 'not-an-image'> => {
     const shelved = await shelvedNarrator(userId, key)
     if (!shelved) return undefined
-    if (correction.portraitUrl && !(await isImageAt(CoverUrl(correction.portraitUrl))))
+    if (correction.portraitUrl && !(await BookQuery.isImageAt(CoverUrl(correction.portraitUrl))))
       return 'not-an-image'
     const known = await NarratorQuery.byKey(key)
     await NarratorCommand.correct(known, key, shelved.name, correction)

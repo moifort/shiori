@@ -15,6 +15,7 @@ import {
   Subgenre,
   Synopsis,
 } from '~/domain/book/primitives'
+import { BookQuery } from '~/domain/book/query'
 import type {
   BookLanguage,
   Isbn13 as Isbn13Type,
@@ -42,7 +43,6 @@ import {
   shelfPrompt,
   visionPrompt,
 } from '~/domain/scan/prompts'
-import { publishedCoverOf } from '~/domain/scan/published-cover'
 import {
   CANDIDATES_SCHEMA,
   CATALOGUE_SCHEMA,
@@ -617,10 +617,10 @@ export namespace ScanCommand {
     regularEdition: Isbn13Type | undefined,
   ) => {
     if (regularEdition && regularEdition !== isbn13) {
-      const regularCover = await publishedCoverOf(regularEdition)
+      const regularCover = await BookQuery.publishedCoverOf(regularEdition)
       if (regularCover) return regularCover
     }
-    return isbn13 ? await publishedCoverOf(isbn13) : undefined
+    return isbn13 ? await BookQuery.publishedCoverOf(isbn13) : undefined
   }
 
   /** A described book with its published cover: see `coverOf`. */

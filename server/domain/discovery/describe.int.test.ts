@@ -32,7 +32,7 @@ mock.module('~/system/gemini', () => ({
     }
   },
 }))
-mock.module('~/domain/scan/published-cover', () => ({
+mock.module('~/domain/book/infrastructure/published-cover', () => ({
   shelfCoverOf: async () => undefined,
   publishedCoverOf: async () => undefined,
   isbnCoversOf: async () => ({}),
