@@ -117,3 +117,15 @@ export const datesOnArrival = (
   now: Date,
 ): Partial<Pick<Book, 'startedAt' | 'finishedAt'>> | 'bad-dates' =>
   datesAfterCorrection({ status, addedAt: now }, typed, now) === 'bad-dates' ? 'bad-dates' : typed
+
+/** Everything a move to `next` writes on the book: the status, the reading
+ *  dates it implies and, for a real move, the stamp that lifts its saga. */
+export const statusMoveOf = (
+  book: Pick<Book, 'status' | 'startedAt' | 'finishedAt'>,
+  next: ReadingStatus,
+  now: Date,
+): { status: ReadingStatus; startedAt?: Date; finishedAt?: Date; statusChangedAt?: Date } => ({
+  status: next,
+  ...datesAfterStatusChange(book, next, now),
+  ...statusStampAfterChange(book, next, now),
+})

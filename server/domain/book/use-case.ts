@@ -263,7 +263,7 @@ export namespace BookUseCase {
     )
 
   export const remove = (userId: UserId, bookId: BookId) =>
-    withAnalytics(userId, (batch) => BookCommand.remove(userId, bookId, batch))
+    withAnalytics(userId, (batch) => BookCommand.remove(userId, bookId, new Date(), batch))
 }
 
 /** What names a book, to look it up again. */

@@ -34,6 +34,7 @@ import {
   shownRatingOf,
   statusAfterRating,
   statusChangedAtOf,
+  statusMoveOf,
   statusStampAfterChange,
   storedRecommendation,
   subgenresOf,
@@ -287,6 +288,24 @@ describe('statusStampAfterChange', () => {
       statusChangedAt: NOW,
     })
     expect(statusStampAfterChange({ status: 'reading' }, 'reading', NOW)).toEqual({})
+  })
+})
+
+describe('statusMoveOf', () => {
+  test('a real move writes the status, its dates and the stamp', () => {
+    expect(statusMoveOf({ status: 'to-read' }, 'read', NOW)).toEqual({
+      status: 'read',
+      startedAt: NOW,
+      finishedAt: NOW,
+      statusChangedAt: NOW,
+    })
+  })
+
+  // Choosing the status the book already has keeps its dates and lifts nothing.
+  test('the status chosen again keeps its dates and leaves no stamp', () => {
+    const move = statusMoveOf({ status: 'reading', startedAt: EARLIER }, 'reading', NOW)
+    expect(move).toEqual({ status: 'reading', startedAt: EARLIER, finishedAt: undefined })
+    expect('statusChangedAt' in move).toBe(false)
   })
 })
 

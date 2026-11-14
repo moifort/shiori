@@ -56,6 +56,7 @@ export {
   datesAfterStatusChange,
   datesOnArrival,
   statusChangedAtOf,
+  statusMoveOf,
   statusStampAfterChange,
 } from '~/domain/book/reading-dates'
 

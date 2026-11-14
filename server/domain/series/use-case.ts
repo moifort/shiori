@@ -294,6 +294,7 @@ export namespace SeriesUseCase {
           userId,
           seriesId,
           edition,
+          new Date(),
           batch,
         )
         if (remaining === 0) await SeriesOpinionCommand.forget(userId, seriesId, batch)
@@ -339,6 +340,7 @@ export namespace SeriesUseCase {
           seriesId,
           edition,
           { saga: targetId, name: named.name },
+          new Date(),
           batch,
         )
         if (moved > 0 && remaining === 0) await SeriesOpinionCommand.forget(userId, seriesId, batch)

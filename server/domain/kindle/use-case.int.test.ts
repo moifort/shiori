@@ -634,7 +634,7 @@ describe('a book the reader deleted', () => {
     await KindleUseCase.importBooks(reader, [KindleAsin('B0TESTAAA1')], NOW)
     await KindleUseCase.syncLibrary(reader, NOW)
     const [book] = await BookQuery.all(reader)
-    await BookCommand.remove(reader, book.id, undefined, NOW)
+    await BookCommand.remove(reader, book.id, NOW)
     startFakeRequest()
   }
 

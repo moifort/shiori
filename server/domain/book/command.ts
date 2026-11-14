@@ -12,7 +12,7 @@ import {
   mergedCopies,
   retaggedAfterEdit,
   statusAfterRating,
-  statusStampAfterChange,
+  statusMoveOf,
   storedRecommendation,
   syncRemovalsOf,
   titleWithoutAuthor,
@@ -228,6 +228,25 @@ const recordOf = (userId: UserId, input: NewBook, now: Date): Book => {
   return book
 }
 
+/** Rewrite one of the reader's books: `change` reads the record and answers the
+ *  fields that move, a refusal, or nothing when there is nothing to write — the
+ *  book then comes back as it is. Every write stamps `updatedAt`. A command that
+ *  may refuse names its refusals as the type argument. */
+const rewrite = async <Refusal extends string = never>(
+  userId: UserId,
+  bookId: BookId,
+  now: Date,
+  batch: WriteBatch | undefined,
+  change: (book: Book) => Partial<Book> | NoInfer<Refusal> | undefined,
+): Promise<Book | 'not-found' | NoInfer<Refusal>> => {
+  const book = await repository.findById(userId, bookId)
+  if (!book) return 'not-found'
+  const changes = change(book)
+  if (changes === undefined) return book
+  if (typeof changes === 'string') return changes
+  return repository.save({ ...book, ...changes, updatedAt: now }, batch)
+}
+
 export namespace BookCommand {
   export const add = async (
     userId: UserId,
@@ -258,34 +277,29 @@ export namespace BookCommand {
    *  these dates, and the only thing that moves them is a machine learning,
    *  after the fact, when a title it imported was bought. `updatedAt` moves to
    *  now like any write; the reading dates are what is being corrected. */
-  export const backdate = async (
+  export const backdate = (
     userId: UserId,
     bookId: BookId,
     dates: { addedAt: Date; startedAt?: Date; statusChangedAt?: Date },
     now = new Date(),
     batch?: WriteBatch,
-  ): Promise<Book | 'not-found'> => {
-    const book = await repository.findById(userId, bookId)
-    if (!book) return 'not-found'
-    return repository.save({ ...book, ...dates, updatedAt: now }, batch)
-  }
+  ): Promise<Book | 'not-found'> => rewrite(userId, bookId, now, batch, () => dates)
 
   /** File a book with no genre under the one a store's shelves give it — the
    *  nightly Audible pass, for a recording imported before its shelves were
    *  known. That book alone: unlike a reader's edit, the genre is not carried
    *  to the other volumes of its saga, whose genre may be the reader's own
    *  choice. A genre set since the pass read the shelf is left as it is. */
-  export const fillGenre = async (
+  export const fillGenre = (
     userId: UserId,
     bookId: BookId,
     genre: Genre,
     now = new Date(),
-  ): Promise<Book | 'not-found'> => {
-    const book = await repository.findById(userId, bookId)
-    if (!book) return 'not-found'
-    if (book.genre !== undefined) return book
-    return repository.save({ ...book, genre, updatedAt: now })
-  }
+    batch?: WriteBatch,
+  ): Promise<Book | 'not-found'> =>
+    rewrite(userId, bookId, now, batch, (book) =>
+      book.genre === undefined ? { genre } : undefined,
+    )
 
   export const edit = async (
     userId: UserId,
@@ -375,17 +389,13 @@ export namespace BookCommand {
    *  Its own command rather than a field of `BookEdit`: the reader never types an
    *  ASIN, and the only thing that fills it is a machine recognizing a book it
    *  imported before the link existed. */
-  export const linkToAudible = async (
+  export const linkToAudible = (
     userId: UserId,
     bookId: BookId,
     audibleAsin: AudibleAsin,
     now = new Date(),
     batch?: WriteBatch,
-  ): Promise<Book | 'not-found'> => {
-    const book = await repository.findById(userId, bookId)
-    if (!book) return 'not-found'
-    return repository.save({ ...book, audibleAsin, updatedAt: now }, batch)
-  }
+  ): Promise<Book | 'not-found'> => rewrite(userId, bookId, now, batch, () => ({ audibleAsin }))
 
   /** Record which Kindle title a book stands for, and so that the reader holds
    *  it on a screen — a paperback whose Kindle copy the sync just found is now
@@ -394,61 +404,49 @@ export namespace BookCommand {
    *  Its own command, as `linkToAudible` is: the reader never types an ASIN, and
    *  the only thing that fills it is the sync recognizing a book catalogued
    *  before the link existed — from a scan, the data export, or by hand. */
-  export const linkToKindle = async (
+  export const linkToKindle = (
     userId: UserId,
     bookId: BookId,
     kindle: { asin: KindleAsin; coverUrl?: CoverUrl },
     now = new Date(),
     batch?: WriteBatch,
-  ): Promise<Book | 'not-found'> => {
-    const book = await repository.findById(userId, bookId)
-    if (!book) return 'not-found'
-    return repository.save(
-      {
-        ...book,
-        media: mediaFor(book.format, [...book.media, 'digital']),
-        kindleAsin: kindle.asin,
-        kindleCoverUrl: kindle.coverUrl ?? book.kindleCoverUrl,
-        updatedAt: now,
-      },
-      batch,
-    )
-  }
+  ): Promise<Book | 'not-found'> =>
+    rewrite(userId, bookId, now, batch, (book) => ({
+      media: mediaFor(book.format, [...book.media, 'digital']),
+      kindleAsin: kindle.asin,
+      kindleCoverUrl: kindle.coverUrl ?? book.kindleCoverUrl,
+    }))
 
   /** Give a book its rank in the saga it is already filed under.
    *
    *  Its own command rather than a field of `BookEdit`: an edit names the saga
    *  as the reader types it and keys it afresh, where this only fills the rank
    *  a machine learned after the fact — the volume an imported part was cut
-   *  from. The saga itself is left exactly as it is. */
-  export const numberInSeries = async (
+   *  from. The saga itself is left exactly as it is. A book in no saga is
+   *  `not-found`, as one that is gone. */
+  export const numberInSeries = (
     userId: UserId,
     bookId: BookId,
     volume: VolumeNumber,
     now = new Date(),
     batch?: WriteBatch,
-  ): Promise<Book | 'not-found'> => {
-    const book = await repository.findById(userId, bookId)
-    if (!book?.series) return 'not-found'
-    return repository.save({ ...book, series: { ...book.series, volume }, updatedAt: now }, batch)
-  }
+  ): Promise<Book | 'not-found'> =>
+    rewrite<'not-found'>(userId, bookId, now, batch, (book) =>
+      book.series ? { series: { ...book.series, volume } } : 'not-found',
+    )
 
   /** Record where the Audible player last stopped in a recording, and when.
    *
    *  Its own command rather than a field of `BookEdit`: the reader never types
    *  a position, and the only thing that moves it is the sync reading the
    *  player's own. */
-  export const recordListening = async (
+  export const recordListening = (
     userId: UserId,
     bookId: BookId,
     position: { listenedMinutes: ListeningMinutes; listenedAt: Date },
     now = new Date(),
     batch?: WriteBatch,
-  ): Promise<Book | 'not-found'> => {
-    const book = await repository.findById(userId, bookId)
-    if (!book) return 'not-found'
-    return repository.save({ ...book, ...position, updatedAt: now }, batch)
-  }
+  ): Promise<Book | 'not-found'> => rewrite(userId, bookId, now, batch, () => position)
 
   /** Record the page the reader says they reached in a book, and so that they
    *  are reading it: a book on the pile is opened by it, with its start stamped
@@ -457,155 +455,114 @@ export namespace BookCommand {
    *
    *  Refused on an audiobook, whose progress is the player's, and past the last
    *  page when the book has a page count. */
-  export const recordPage = async (
+  export const recordPage = (
     userId: UserId,
     bookId: BookId,
     page: PageCount,
     now = new Date(),
     batch?: WriteBatch,
-  ): Promise<Book | 'not-found' | 'audiobook' | 'past-the-end'> => {
-    const book = await repository.findById(userId, bookId)
-    if (!book) return 'not-found'
-    if (book.format === 'audiobook') return 'audiobook'
-    if (book.pageCount !== undefined && page > book.pageCount) return 'past-the-end'
-    const status = book.status === 'to-read' ? 'reading' : book.status
-    return repository.save(
-      {
-        ...book,
+  ): Promise<Book | 'not-found' | 'audiobook' | 'past-the-end'> =>
+    rewrite<'audiobook' | 'past-the-end'>(userId, bookId, now, batch, (book) => {
+      if (book.format === 'audiobook') return 'audiobook'
+      if (book.pageCount !== undefined && page > book.pageCount) return 'past-the-end'
+      return {
         currentPage: page,
         currentPageAt: now,
-        status,
-        ...datesAfterStatusChange(book, status, now),
-        ...statusStampAfterChange(book, status, now),
-        updatedAt: now,
-      },
-      batch,
-    )
-  }
+        ...statusMoveOf(book, book.status === 'to-read' ? 'reading' : book.status, now),
+      }
+    })
 
   /** Keep where the Kindle found the reader, and what that moves: see
    *  `kindleMoveOf`. A position that changes nothing writes nothing. */
-  export const recordKindlePosition = async (
+  export const recordKindlePosition = (
     userId: UserId,
     bookId: BookId,
     position: KindlePosition,
     now = new Date(),
-  ): Promise<Book | 'not-found'> => {
-    const book = await repository.findById(userId, bookId)
-    if (!book) return 'not-found'
-    const move = kindleMoveOf(book, position)
-    if (!move) return book
-    return repository.save({
-      ...book,
-      kindlePosition: position,
-      ...(move.page === undefined
-        ? {}
-        : { currentPage: PageCountOf(move.page), currentPageAt: now }),
-      status: move.status,
-      ...datesAfterStatusChange(book, move.status, now),
-      ...statusStampAfterChange(book, move.status, now),
-      updatedAt: now,
+    batch?: WriteBatch,
+  ): Promise<Book | 'not-found'> =>
+    rewrite(userId, bookId, now, batch, (book) => {
+      const move = kindleMoveOf(book, position)
+      if (!move) return undefined
+      return {
+        kindlePosition: position,
+        ...(move.page === undefined
+          ? {}
+          : { currentPage: PageCountOf(move.page), currentPageAt: now }),
+        ...statusMoveOf(book, move.status, now),
+      }
     })
-  }
 
   /** Going back to the pile clears the page reached with the reading dates:
    *  the book was never opened, as far as the record says. */
-  export const setStatus = async (
+  export const setStatus = (
     userId: UserId,
     bookId: BookId,
     status: ReadingStatus,
     now = new Date(),
     batch?: WriteBatch,
-  ): Promise<Book | 'not-found'> => {
-    const book = await repository.findById(userId, bookId)
-    if (!book) return 'not-found'
-    return repository.save(
-      {
-        ...book,
-        status,
-        ...(status === 'to-read' ? { currentPage: undefined, currentPageAt: undefined } : {}),
-        ...datesAfterStatusChange(book, status, now),
-        ...statusStampAfterChange(book, status, now),
-        updatedAt: now,
-      },
-      batch,
-    )
-  }
+  ): Promise<Book | 'not-found'> =>
+    rewrite(userId, bookId, now, batch, (book) => ({
+      ...(status === 'to-read' ? { currentPage: undefined, currentPageAt: undefined } : {}),
+      ...statusMoveOf(book, status, now),
+    }))
 
   /** Rating a book marks it read: the reader is telling us they finished it, and
    *  leaving it on the "to read" pile would make every filter lie. */
-  export const rate = async (
+  export const rate = (
     userId: UserId,
     bookId: BookId,
     rating: StarRating,
     now = new Date(),
     batch?: WriteBatch,
-  ): Promise<Book | 'not-found'> => {
-    const book = await repository.findById(userId, bookId)
-    if (!book) return 'not-found'
-    const status = statusAfterRating(book.status)
-    return repository.save(
-      {
-        ...book,
+  ): Promise<Book | 'not-found'> =>
+    rewrite(userId, bookId, now, batch, (book) => {
+      const favorite = favoriteAfterRating(book.favorite, rating)
+      return {
         rating,
-        favorite: favoriteAfterRating(book.favorite, rating),
-        favoritedAt: favoriteAfterRating(book.favorite, rating) ? book.favoritedAt : undefined,
-        status,
-        ...datesAfterStatusChange(book, status, now),
-        ...statusStampAfterChange(book, status, now),
-        updatedAt: now,
-      },
-      batch,
-    )
-  }
+        favorite,
+        favoritedAt: favorite ? book.favoritedAt : undefined,
+        ...statusMoveOf(book, statusAfterRating(book.status), now),
+      }
+    })
 
   /** Taking the stars back leaves the book read, with its dates: the reader is
    *  withdrawing a judgment, not saying the reading never happened. The heart
    *  goes with the stars it stood for. */
-  export const unrate = async (
+  export const unrate = (
     userId: UserId,
     bookId: BookId,
     now = new Date(),
     batch?: WriteBatch,
-  ): Promise<Book | 'not-found'> => {
-    const book = await repository.findById(userId, bookId)
-    if (!book) return 'not-found'
-    return repository.save(
-      { ...book, rating: undefined, favorite: undefined, favoritedAt: undefined, updatedAt: now },
-      batch,
-    )
-  }
+  ): Promise<Book | 'not-found'> =>
+    rewrite(userId, bookId, now, batch, () => ({
+      rating: undefined,
+      favorite: undefined,
+      favoritedAt: undefined,
+    }))
 
   /** Passing no note clears it. An emptied note is a deletion, not an empty
    *  string to store and later render as a blank block. */
-  export const annotate = async (
+  export const annotate = (
     userId: UserId,
     bookId: BookId,
     note: ReadingNote | undefined,
     now = new Date(),
     batch?: WriteBatch,
-  ): Promise<Book | 'not-found'> => {
-    const book = await repository.findById(userId, bookId)
-    if (!book) return 'not-found'
-    return repository.save({ ...book, note, updatedAt: now }, batch)
-  }
+  ): Promise<Book | 'not-found'> => rewrite(userId, bookId, now, batch, () => ({ note }))
 
   /** Record who recommended the book, or forget it: passing none — or one that
    *  names nobody and says nothing — clears it. */
-  export const recommend = async (
+  export const recommend = (
     userId: UserId,
     bookId: BookId,
     recommendation: Recommendation | undefined,
     now = new Date(),
     batch?: WriteBatch,
-  ): Promise<Book | 'not-found'> => {
-    const book = await repository.findById(userId, bookId)
-    if (!book) return 'not-found'
-    return repository.save(
-      { ...book, recommendation: storedRecommendation(recommendation), updatedAt: now },
-      batch,
-    )
-  }
+  ): Promise<Book | 'not-found'> =>
+    rewrite(userId, bookId, now, batch, () => ({
+      recommendation: storedRecommendation(recommendation),
+    }))
 
   /** A heart sits on three stars or more: giving it keeps the reader's rating
    *  when it can hold one, else rates the book five — which marks it read, as
@@ -613,68 +570,54 @@ export namespace BookCommand {
    *  judgement before the heart and stay it after. Stored
    *  only when true: a `false` on every record would be a field that means "the
    *  reader once looked at this and moved on". */
-  export const setFavorite = async (
+  export const setFavorite = (
     userId: UserId,
     bookId: BookId,
     favorite: boolean,
     now = new Date(),
     batch?: WriteBatch,
-  ): Promise<Book | 'not-found'> => {
-    const book = await repository.findById(userId, bookId)
-    if (!book) return 'not-found'
-    if (!favorite)
-      return repository.save(
-        {
-          ...book,
-          favorite: undefined,
-          favoritedAt: undefined,
-          updatedAt: now,
-        },
-        batch,
-      )
-    const status = statusAfterRating(book.status)
-    return repository.save(
-      {
-        ...book,
-        favorite: true,
-        // Hearting it again is not news: the date stays that of the first heart.
-        favoritedAt: book.favorite === true ? book.favoritedAt : now,
-        rating: ratingUnderHeart(book.rating),
-        status,
-        ...datesAfterStatusChange(book, status, now),
-        ...statusStampAfterChange(book, status, now),
-        updatedAt: now,
-      },
-      batch,
+  ): Promise<Book | 'not-found'> =>
+    rewrite(userId, bookId, now, batch, (book) =>
+      favorite
+        ? {
+            favorite: true,
+            // Hearting it again is not news: the date stays that of the first heart.
+            favoritedAt: book.favorite === true ? book.favoritedAt : now,
+            rating: ratingUnderHeart(book.rating),
+            ...statusMoveOf(book, statusAfterRating(book.status), now),
+          }
+        : { favorite: undefined, favoritedAt: undefined },
     )
-  }
 
-  export const setHidden = async (
+  export const setHidden = (
     userId: UserId,
     bookId: BookId,
     hidden: boolean,
     now = new Date(),
     batch?: WriteBatch,
-  ): Promise<Book | 'not-found'> => {
-    const book = await repository.findById(userId, bookId)
-    if (!book) return 'not-found'
-    return repository.save({ ...book, hidden, updatedAt: now }, batch)
-  }
+  ): Promise<Book | 'not-found'> => rewrite(userId, bookId, now, batch, () => ({ hidden }))
 
   /** Draw the book with the cover the reader picked, before any other source.
    *  The others stay on the record, so the reader can pick one of them back. */
-  export const chooseCover = async (
+  export const chooseCover = (
     userId: UserId,
     bookId: BookId,
     chosenCover: ChosenCover,
     now = new Date(),
     batch?: WriteBatch,
-  ): Promise<Book | 'not-found' | 'no-photo'> => {
-    const book = await repository.findById(userId, bookId)
-    if (!book) return 'not-found'
-    if (chosenCover.source === 'photo' && !book.coverPath) return 'no-photo'
-    return repository.save({ ...book, chosenCover, updatedAt: now }, batch)
-  }
+  ): Promise<Book | 'not-found' | 'no-photo'> =>
+    rewrite<'no-photo'>(userId, bookId, now, batch, (book) =>
+      chosenCover.source === 'photo' && !book.coverPath ? 'no-photo' : { chosenCover },
+    )
+
+  /** File a book as a drawn story: same saga, same media. */
+  export const fileAsDrawn = (
+    userId: UserId,
+    bookId: BookId,
+    format: DrawnFormat,
+    now = new Date(),
+    batch?: WriteBatch,
+  ): Promise<Book | 'not-found'> => rewrite(userId, bookId, now, batch, () => ({ format }))
 
   /** Delete a book the reader no longer wants. One a Kindle or Audible title
    *  stands for leaves a removal behind, so the nightly pass does not bring it
@@ -682,14 +625,22 @@ export namespace BookCommand {
   export const remove = async (
     userId: UserId,
     bookId: BookId,
-    batch?: WriteBatch,
     now = new Date(),
+    batch?: WriteBatch,
   ): Promise<Book | 'not-found'> => {
     const book = await repository.findById(userId, bookId)
     if (!book) return 'not-found'
     await repository.remove(userId, bookId, batch)
     await repository.saveSyncRemovals(syncRemovalsOf(book, now), batch)
     return book
+  }
+
+  /** The reader's volumes of one saga — only those of one edition when
+   *  `edition` names a language — and how many of the saga's stay behind. */
+  const editionOf = async (userId: UserId, saga: SagaKey, edition: BookLanguage | undefined) => {
+    const volumes = await repository.findBySaga(userId, saga)
+    const going = edition ? volumes.filter((volume) => volume.language === edition) : volumes
+    return { going, remaining: volumes.length - going.length }
   }
 
   /** Remove every volume of one saga from the reader's library, in one batch —
@@ -700,16 +651,15 @@ export namespace BookCommand {
     userId: UserId,
     saga: SagaKey,
     edition: BookLanguage | undefined,
-    batch?: WriteBatch,
     now = new Date(),
+    batch?: WriteBatch,
   ): Promise<{ removed: number; remaining: number }> => {
-    const volumes = await repository.findBySaga(userId, saga)
-    const going = edition ? volumes.filter((volume) => volume.language === edition) : volumes
+    const { going, remaining } = await editionOf(userId, saga, edition)
     for (const volume of going) {
       await repository.remove(userId, volume.id, batch)
       await repository.saveSyncRemovals(syncRemovalsOf(volume, now), batch)
     }
-    return { removed: going.length, remaining: volumes.length - going.length }
+    return { removed: going.length, remaining }
   }
 
   /** File the reader's volumes of one saga under another — only those of one
@@ -721,15 +671,18 @@ export namespace BookCommand {
     from: SagaKey,
     edition: BookLanguage | undefined,
     to: Pick<SeriesMembership, 'saga' | 'name'>,
+    now = new Date(),
     batch?: WriteBatch,
   ): Promise<{ moved: number; remaining: number }> => {
     // The series id follows the saga as the book is written.
-    const volumes = await repository.findBySaga(userId, from)
-    const going = edition ? volumes.filter((volume) => volume.language === edition) : volumes
+    const { going, remaining } = await editionOf(userId, from, edition)
     for (const volume of going)
       if (volume.series)
-        await repository.save({ ...volume, series: { ...volume.series, ...to } }, batch)
-    return { moved: going.length, remaining: volumes.length - going.length }
+        await repository.save(
+          { ...volume, series: { ...volume.series, ...to }, updatedAt: now },
+          batch,
+        )
+    return { moved: going.length, remaining }
   }
 
   /** Correct the reader's volumes of one saga all at once — only those of one
@@ -746,12 +699,11 @@ export namespace BookCommand {
     now = new Date(),
     batch?: WriteBatch,
   ): Promise<number> => {
-    const volumes = await repository.findBySaga(userId, saga)
-    const changing = volumes.filter(
+    const { going } = await editionOf(userId, saga, edition)
+    const changing = going.filter(
       (volume) =>
-        (!edition || volume.language === edition) &&
-        ((format && volume.format !== format) ||
-          (name && volume.series && volume.series.name !== name)),
+        (format && volume.format !== format) ||
+        (name && volume.series && volume.series.name !== name),
     )
     for (const volume of changing)
       await repository.save(
@@ -766,23 +718,14 @@ export namespace BookCommand {
     return changing.length
   }
 
-  /** File a book as a drawn story: same saga, same media. */
-  export const fileAsDrawn = async (
-    userId: UserId,
-    bookId: BookId,
-    format: DrawnFormat,
-    now = new Date(),
-  ): Promise<void> => {
-    const book = await repository.findById(userId, bookId)
-    if (book) await repository.save({ ...book, format, updatedAt: now })
-  }
-
   /** Give every reader's volumes of a saga in one edition the name that
    *  edition's catalogue gives it: a book carries whatever a scan or an import
    *  wrote — "Red Rising [French Edition]" — where the saga screen shows the
    *  catalogue's "Red Rising". Volumes in another language keep theirs, as
    *  their own catalogue names the saga. Only the name moves; the book is
-   *  otherwise untouched, `updatedAt` too. Answers how many books were renamed. */
+   *  otherwise untouched, `updatedAt` too: every reader's books are rewritten
+   *  at once, and none of them did anything. Answers how many books were
+   *  renamed. */
   export const nameSeries = async (seriesId: SeriesId, name: SeriesName): Promise<number> => {
     const renamed = (await repository.findInSeries(seriesId)).filter(
       (book) => book.series && book.series.name !== name,
@@ -792,7 +735,6 @@ export namespace BookCommand {
     return renamed.length
   }
 
-  /** Erase the reader's whole library — an account deletion wipes it outright. */
   /** The removals a sync has to honour are forgotten once it brings the title
    *  back, or once the reader imports it themselves. */
   export const forgetSyncRemovals = async (
@@ -801,6 +743,7 @@ export namespace BookCommand {
     asins: readonly string[],
   ): Promise<void> => repository.removeSyncRemovals(userId, source, asins)
 
+  /** Erase the reader's whole library — an account deletion wipes it outright. */
   export const deleteAllForUser = async (userId: UserId): Promise<void> => {
     await repository.removeAllByUser(userId)
     await repository.removeAllSyncRemovalsByUser(userId)

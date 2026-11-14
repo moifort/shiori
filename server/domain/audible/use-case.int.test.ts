@@ -1099,7 +1099,7 @@ describe('a book the reader deleted', () => {
     items = [anItem({ purchaseDate: new Date('2026-09-01T00:00:00.000Z') })]
     await AudibleUseCase.importBooks(reader, [asin('B002V1OF70')])
     const [book] = await BookQuery.all(reader)
-    await BookCommand.remove(reader, book.id, undefined, DELETED)
+    await BookCommand.remove(reader, book.id, DELETED)
     startFakeRequest()
   }
 
