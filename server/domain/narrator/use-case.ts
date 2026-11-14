@@ -52,7 +52,7 @@ export type NarratorPage = {
   narrator: FollowedNarrator
   /** What the world knows of them. Null when nobody has described them yet,
    *  or the model could not: the page still shows the reader's recordings. */
-  catalogue: Narrator | null
+  catalogue: Narrator | undefined
   /** Nobody has described the narrator yet, and the page would not wait for
    *  the model: it draws the reader's recordings, and asks again. */
   awaitingCatalogue: boolean
@@ -135,25 +135,25 @@ export namespace NarratorUseCase {
     language: Language,
     offered?: NarratorName,
     { waitForCatalogue = true }: { waitForCatalogue?: boolean } = {},
-  ): Promise<NarratorPage | null> => {
+  ): Promise<NarratorPage | undefined> => {
     const [books, opinions] = await Promise.all([
       BookQuery.all(userId),
       SeriesOpinionQuery.all(userId),
     ])
     const shelved =
       shelvedNarratorsOf(books, opinions).find((narrator) => narrator.key === key) ??
-      (offered ? unshelvedNarratorOf<Book>(key, offered, new Date()) : null)
-    if (!shelved) return null
+      (offered ? unshelvedNarratorOf<Book>(key, offered, new Date()) : undefined)
+    if (!shelved) return undefined
     const [found, sagas, hearted] = await Promise.all([
       waitForCatalogue ? catalogueOf(shelved, language) : storedCatalogueOf(shelved),
       SeriesUseCase.followedAmong(userId, new Set(shelved.seriesIds)),
       NarratorQuery.favoriteKeys(userId),
     ])
     const awaitingCatalogue = found === 'unasked'
-    const entry = found === 'unasked' ? null : found
+    const entry = found === 'unasked' ? undefined : found
     return {
       narrator: { ...shelved, portraitUrl: entry?.portraitUrl, favorite: hearted.has(key) },
-      catalogue: isDescribed(entry) ? entry : null,
+      catalogue: isDescribed(entry) ? entry : undefined,
       awaitingCatalogue,
       sagas: inPageOrder(sagas),
       books: standaloneBooksOf(shelved.books),
@@ -173,9 +173,9 @@ export namespace NarratorUseCase {
     key: NarratorKey,
     language: Language,
     correction: NarratorCorrection,
-  ): Promise<NarratorPage | null | 'not-an-image'> => {
+  ): Promise<NarratorPage | undefined | 'not-an-image'> => {
     const shelved = await shelvedNarrator(userId, key)
-    if (!shelved) return null
+    if (!shelved) return undefined
     if (correction.portraitUrl && !(await isImageAt(CoverUrl(correction.portraitUrl))))
       return 'not-an-image'
     const known = await NarratorQuery.byKey(key)
@@ -199,9 +199,9 @@ export namespace NarratorUseCase {
   export const portraitChoices = async (
     userId: UserId,
     key: NarratorKey,
-  ): Promise<PortraitChoice[] | null> => {
+  ): Promise<PortraitChoice[] | undefined> => {
     const shelved = await shelvedNarrator(userId, key)
-    if (!shelved) return null
+    if (!shelved) return undefined
     const known = await NarratorQuery.byKey(key)
     const found = await NarratorQuery.portraitFor(known?.name ?? shelved.name)
     const current = known?.portraitUrl
@@ -232,7 +232,7 @@ export namespace NarratorUseCase {
   const catalogueOf = async (
     shelved: ShelvedNarrator<Book>,
     language: Language,
-  ): Promise<Narrator | null> => {
+  ): Promise<Narrator | undefined> => {
     const known = await NarratorQuery.byKey(shelved.key)
     if (isWorthDescribing(known, new Date())) return askTheWeb(known, shelved, language)
     return known && isPortraitWorthSeeking(known, new Date())
@@ -244,7 +244,7 @@ export namespace NarratorUseCase {
    *  `unasked` when describing them is what would come next. */
   const storedCatalogueOf = async (
     shelved: ShelvedNarrator<Book>,
-  ): Promise<Narrator | null | 'unasked'> => {
+  ): Promise<Narrator | undefined | 'unasked'> => {
     const known = await NarratorQuery.byKey(shelved.key)
     if (isWorthDescribing(known, new Date())) return 'unasked'
     return known && isPortraitWorthSeeking(known, new Date())
@@ -253,7 +253,7 @@ export namespace NarratorUseCase {
   }
 
   const askTheWeb = async (
-    known: Narrator | null,
+    known: Narrator | undefined,
     shelved: ShelvedNarrator<Book>,
     language: Language,
   ): Promise<Narrator> => {

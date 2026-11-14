@@ -54,8 +54,10 @@ describe('release dates written into the catalogue', () => {
       await SeriesCommand.recordReleases(SagaKey('nobody--nobody'), 'fr', [
         { volume: VolumeNumber(1), title: BookTitle('Un') },
       ]),
-    ).toBeNull()
-    expect(await SeriesQuery.byId({ saga: SagaKey('nobody--nobody'), language: 'fr' })).toBeNull()
+    ).toBeUndefined()
+    expect(
+      await SeriesQuery.byId({ saga: SagaKey('nobody--nobody'), language: 'fr' }),
+    ).toBeUndefined()
   })
 
   test('building the catalogue again keeps the dates', async () => {
@@ -99,7 +101,7 @@ describe('release dates written into the catalogue', () => {
           { volume: VolumeNumber(5), title: BookTitle('Five'), date: ReleaseDate('2026-10-08') },
         ]),
       ),
-    ).toBeNull()
+    ).toBeUndefined()
     const french = await withRequestCacheScope(() => SeriesQuery.byId({ saga: id, language: 'fr' }))
     expect(french?.volumes).toHaveLength(1)
   })

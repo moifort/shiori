@@ -996,7 +996,7 @@ describe('deleting', () => {
     const book = await add('Le Nom du vent')
 
     expect(await BookCommand.remove(reader, book.id)).toMatchObject({ id: book.id })
-    expect(await BookQuery.byId(reader, book.id)).toBeNull()
+    expect(await BookQuery.byId(reader, book.id)).toBeUndefined()
   })
 
   test('wipes the whole library on account deletion', async () => {

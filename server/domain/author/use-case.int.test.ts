@@ -262,7 +262,7 @@ describe('an author’s page', () => {
     })
 
     expect(calls).toEqual([])
-    expect(drawn?.catalogue).toBeNull()
+    expect(drawn?.catalogue).toBeUndefined()
     expect(drawn?.awaitingCatalogue).toBe(true)
     expect(drawn?.books.map((book) => String(book.title))).toEqual(['Elantris'])
 
@@ -450,9 +450,9 @@ describe('an author’s page', () => {
     const failed = await AuthorUseCase.page(reader, authorKeyOf('Brandon Sanderson'), 'fr')
     const reopened = await AuthorUseCase.page(reader, authorKeyOf('Brandon Sanderson'), 'fr')
 
-    expect(failed?.catalogue).toBeNull()
+    expect(failed?.catalogue).toBeUndefined()
     expect(failed?.books).toHaveLength(1)
-    expect(reopened?.catalogue).toBeNull()
+    expect(reopened?.catalogue).toBeUndefined()
     expect(calls).toEqual(['author'])
   })
 
@@ -464,7 +464,7 @@ describe('an author’s page', () => {
 
     const page = await AuthorUseCase.page(reader, authorKeyOf('Brandon Sanderson'), 'fr')
 
-    expect(page?.catalogue).toBeNull()
+    expect(page?.catalogue).toBeUndefined()
     expect(fake.snapshot('authors').size).toBe(0)
   })
 
@@ -506,7 +506,7 @@ describe('an author’s page', () => {
     )
     const page = await AuthorUseCase.page(reader, authorKeyOf('Brandon Sanderson'), 'fr')
 
-    expect(refreshed).toBeNull()
+    expect(refreshed).toBeUndefined()
     expect(page?.catalogue?.biography).toBe(built?.catalogue?.biography)
   })
 
@@ -555,12 +555,12 @@ describe('an author’s page', () => {
   })
 
   test('refreshes nothing for an author the reader holds no book of', async () => {
-    expect(await AuthorUseCase.recatalogue(reader, authorKeyOf('Nobody'), 'fr')).toBeNull()
+    expect(await AuthorUseCase.recatalogue(reader, authorKeyOf('Nobody'), 'fr')).toBeUndefined()
     expect(calls).toEqual([])
   })
 
   test('answers nothing for an author the reader holds no book of', async () => {
-    expect(await AuthorUseCase.page(reader, authorKeyOf('Nobody'), 'fr')).toBeNull()
+    expect(await AuthorUseCase.page(reader, authorKeyOf('Nobody'), 'fr')).toBeUndefined()
     expect(calls).toEqual([])
   })
 
@@ -587,7 +587,7 @@ describe('an author’s page', () => {
   test('answers nothing when the name offered is another author’s', async () => {
     expect(
       await AuthorUseCase.page(reader, authorKeyOf('Nobody'), 'fr', AuthorName('Somebody')),
-    ).toBeNull()
+    ).toBeUndefined()
     expect(calls).toEqual([])
   })
 

@@ -14,10 +14,10 @@ const narrators = () => db().collection('narrators').withConverter(genericDataCo
 
 const cacheKey = (key: NarratorKey) => `narrators:${key}`
 
-export const findByKey = (key: NarratorKey): Promise<Narrator | null> =>
+export const findByKey = (key: NarratorKey): Promise<Narrator | undefined> =>
   memoizedPerRequest(cacheKey(key), async () => {
     const doc = await narrators().doc(key).get()
-    return doc.data() ?? null
+    return doc.data()
   })
 
 // One getAll for the Library tab's rail rather than a lookup per face, sharing
@@ -25,9 +25,9 @@ export const findByKey = (key: NarratorKey): Promise<Narrator | null> =>
 export const findManyByKeys = async (keys: readonly NarratorKey[]): Promise<Narrator[]> => {
   const entries = await memoizedManyPerRequest(keys, cacheKey, async (missing) => {
     const snapshots = await db().getAll(...missing.map((key) => narrators().doc(key)))
-    return snapshots.map((snapshot) => (snapshot.data() as Narrator | undefined) ?? null)
+    return snapshots.map((snapshot) => snapshot.data() as Narrator | undefined)
   })
-  return entries.filter((entry): entry is Narrator => entry !== null)
+  return entries.filter((entry): entry is Narrator => entry !== undefined)
 }
 
 // A read-modify-write on the entry as it stands when the transaction runs:
@@ -37,11 +37,11 @@ export const findManyByKeys = async (keys: readonly NarratorKey[]): Promise<Narr
 // then what comes back. The memo is dropped either way.
 export const revise = async (
   key: NarratorKey,
-  revise: (current: Narrator | null) => Narrator | undefined,
-): Promise<Narrator | null> => {
+  revise: (current: Narrator | undefined) => Narrator | undefined,
+): Promise<Narrator | undefined> => {
   const result = await transactionally(async (tx) => {
     const ref = narrators().doc(key)
-    const current = (await tx.get(ref)).data() ?? null
+    const current = (await tx.get(ref)).data()
     const revised = revise(current)
     if (!revised) return current
     tx.set(ref, withoutAbsentFields(revised))

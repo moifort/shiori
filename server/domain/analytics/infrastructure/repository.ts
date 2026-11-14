@@ -9,8 +9,8 @@ import { genericDataConverter, withoutAbsentFields } from '~/utils/firestore'
 const views = () =>
   db().collection('analytics').withConverter(genericDataConverter<AnalyticsView>())
 
-export const findByUser = async (userId: UserId): Promise<AnalyticsView | null> =>
-  (await views().doc(userId).get()).data() ?? null
+export const findByUser = async (userId: UserId): Promise<AnalyticsView | undefined> =>
+  (await views().doc(userId).get()).data()
 
 /** Several readers' views in one round trip, for the friends list. Absent
  *  views are simply missing from the map. */

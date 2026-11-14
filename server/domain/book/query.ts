@@ -52,9 +52,9 @@ export namespace BookQuery {
   export const syncRemovals = (userId: UserId, source: SyncSource): Promise<SyncedBookRemoval[]> =>
     repository.findSyncRemovals(userId, source)
 
-  export const byId = async (userId: UserId, bookId: BookId): Promise<BookView | null> => {
+  export const byId = async (userId: UserId, bookId: BookId): Promise<BookView | undefined> => {
     const book = await repository.findById(userId, bookId)
-    return book ? await withCover(book) : null
+    return book ? await withCover(book) : undefined
   }
 
   /** The library, optionally narrowed to one reading status, grouped into series
@@ -217,9 +217,12 @@ export namespace BookQuery {
   /** One of a reader's books as somebody else may see it: null when it is not
    *  theirs, does not exist, or is marked "do not share" — three answers a
    *  friend must not be able to tell apart. */
-  export const sharedById = async (userId: UserId, bookId: BookId): Promise<BookView | null> => {
+  export const sharedById = async (
+    userId: UserId,
+    bookId: BookId,
+  ): Promise<BookView | undefined> => {
     const book = await repository.findById(userId, bookId)
-    return book && !book.hidden ? await withCover(book) : null
+    return book && !book.hidden ? await withCover(book) : undefined
   }
 
   /** The stories the reader already owns, as shelf keys: whether a book seen
@@ -232,9 +235,9 @@ export namespace BookQuery {
   export const copyOf = async (
     userId: UserId,
     candidate: { title: string; authors: readonly string[]; isbn13?: string },
-  ): Promise<BookView | null> => {
+  ): Promise<BookView | undefined> => {
     const copy = copyOfBook(await repository.findAllByUser(userId), candidate)
-    return copy ? await withCover(copy) : null
+    return copy ? await withCover(copy) : undefined
   }
 
   /** Sign the covers of the books that are about to be drawn. */

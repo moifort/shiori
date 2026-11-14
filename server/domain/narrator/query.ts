@@ -7,7 +7,8 @@ import type { Narrator, NarratorKey } from '~/domain/narrator/types'
 import type { AuthorName, UserId } from '~/domain/shared/types'
 
 export namespace NarratorQuery {
-  export const byKey = (key: NarratorKey): Promise<Narrator | null> => repository.findByKey(key)
+  export const byKey = (key: NarratorKey): Promise<Narrator | undefined> =>
+    repository.findByKey(key)
 
   /** Several narrators at once, in one getAll: those absent are left out. */
   export const byKeys = (keys: readonly NarratorKey[]): Promise<Narrator[]> =>

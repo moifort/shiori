@@ -34,7 +34,7 @@ describe('reading catalogues in one request', () => {
     const before = fake.docReads
 
     expect(await SeriesQuery.byId(dune)).toMatchObject({ name: 'Dune' })
-    expect(await SeriesQuery.byId(missing)).toBeNull()
+    expect(await SeriesQuery.byId(missing)).toBeUndefined()
     expect(fake.docReads).toBe(before)
   })
 
@@ -54,7 +54,7 @@ describe('reading catalogues in one request', () => {
 
 describe('one catalogue per edition', () => {
   test('the same saga in another language is another catalogue', async () => {
-    expect(await SeriesQuery.byId({ ...dune, language: 'en' })).toBeNull()
+    expect(await SeriesQuery.byId({ ...dune, language: 'en' })).toBeUndefined()
     expect(await SeriesQuery.byId(dune)).toMatchObject({ name: 'Dune', language: 'fr' })
   })
 })

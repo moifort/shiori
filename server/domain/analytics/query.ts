@@ -3,7 +3,7 @@ import type { AnalyticsView } from '~/domain/analytics/types'
 import type { UserId } from '~/domain/shared/types'
 
 export namespace AnalyticsQuery {
-  export const view = async (userId: UserId): Promise<AnalyticsView | null> =>
+  export const view = async (userId: UserId): Promise<AnalyticsView | undefined> =>
     repository.findByUser(userId)
 
   /** Several readers' views, one batched read. */

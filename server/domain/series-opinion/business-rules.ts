@@ -7,7 +7,7 @@ type Following = Pick<SeriesOpinion, 'unfollowed' | 'unfollowedLanguages'>
  *  saga set aside as a whole sets aside every edition; otherwise only the
  *  languages named are, and the edition that names no language never is. */
 export const editionUnfollowed = (
-  opinion: Following | null | undefined,
+  opinion: Following | undefined,
   language: BookLanguage | undefined,
 ): boolean =>
   opinion?.unfollowed === true ||

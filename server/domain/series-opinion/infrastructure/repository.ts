@@ -32,10 +32,13 @@ export const findAllByUser = (userId: UserId): Promise<SeriesOpinion[]> =>
 
 // One document, read by its id: the saga screen used to read every opinion of
 // the reader to keep one. Taken from the scan when this request already holds it.
-export const findBy = async (userId: UserId, seriesId: SagaKey): Promise<SeriesOpinion | null> => {
+export const findBy = async (
+  userId: UserId,
+  seriesId: SagaKey,
+): Promise<SeriesOpinion | undefined> => {
   if (isInRequestCache(allCacheKey(userId)))
-    return (await findAllByUser(userId)).find((opinion) => opinion.seriesId === seriesId) ?? null
-  return (await opinions().doc(documentId(userId, seriesId)).get()).data() ?? null
+    return (await findAllByUser(userId)).find((opinion) => opinion.seriesId === seriesId)
+  return (await opinions().doc(documentId(userId, seriesId)).get()).data()
 }
 
 export const save = async (opinion: SeriesOpinion, batch?: WriteBatch): Promise<SeriesOpinion> => {

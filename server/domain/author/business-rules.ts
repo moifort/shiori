@@ -112,10 +112,10 @@ export const unshelvedAuthorOf = <Book>(
   key: AuthorKey,
   name: AuthorName,
   now: Date,
-): ShelvedAuthor<Book> | null =>
+): ShelvedAuthor<Book> | undefined =>
   authorKeyOf(name) === key
     ? { key, name, books: [], seriesIds: [], shelvedAt: now, favoriteCount: Count(0) }
-    : null
+    : undefined
 
 /** The Authors tab's order: the authors the reader loves first. Hearts first,
  *  since a heart is the one mark given on purpose; then the stars' mean; then
@@ -391,7 +391,7 @@ type Correctable<Field extends string> = { corrected?: Field[]; portraitSoughtAt
  *  once, and its next answer is no better source. */
 export const keepingCorrectionsOf = <Field extends string, Entry extends Correctable<Field>>(
   fresh: Entry,
-  previous: Entry | null,
+  previous: Entry | undefined,
 ): Entry => {
   const corrected = previous?.corrected
   if (!previous || !corrected?.length) return fresh
@@ -428,7 +428,7 @@ export const withCorrectionOf = <Field extends string, Entry extends Correctable
 
 /** An author's catalogue asked of the world again, keeping what readers
  *  corrected by hand on the stored one. */
-export const keepingCorrections = (fresh: Author, previous: Author | null): Author =>
+export const keepingCorrections = (fresh: Author, previous: Author | undefined): Author =>
   keepingCorrectionsOf<AuthorCorrectableField, Author>(fresh, previous)
 
 /** An author's catalogue with a reader's correction written in, each field it

@@ -180,7 +180,7 @@ describe('the award shelf', () => {
 
   test('is absent for a reader of no genre with awards', async () => {
     shelve('Le Mystère de la chambre jaune', 'Gaston Leroux', 'crime')
-    expect(await AwardUseCase.shelf(reader, 'book', 'fr', undefined, now)).toBeNull()
+    expect(await AwardUseCase.shelf(reader, 'book', 'fr', undefined, now)).toBeUndefined()
   })
 
   test('leaves out what the reader holds in the format, by the edition found', async () => {

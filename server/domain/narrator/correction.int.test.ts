@@ -43,7 +43,9 @@ beforeEach(() => {
 describe('writers of one narrator crossing', () => {
   test('a catalogue call keeps a correction made since the page read the narrator', async () => {
     const known = await NarratorQuery.byKey(key)
-    await NarratorCommand.correct(null, key, name, { biography: NarratorBiography('Corrigée.') })
+    await NarratorCommand.correct(undefined, key, name, {
+      biography: NarratorBiography('Corrigée.'),
+    })
     answers = [described]
 
     await NarratorCommand.catalogueFromWeb(known, key, name, 'fr')
@@ -53,7 +55,7 @@ describe('writers of one narrator crossing', () => {
 
   test('a portrait lookup keeps a correction made since the page read the narrator', async () => {
     answers = [described]
-    const { narrator } = await NarratorCommand.catalogueFromWeb(null, key, name, 'fr')
+    const { narrator } = await NarratorCommand.catalogueFromWeb(undefined, key, name, 'fr')
     const stale = { ...narrator, portraitUrl: undefined }
     await NarratorCommand.correct(narrator, key, name, {
       biography: NarratorBiography('Corrigée.'),

@@ -81,7 +81,7 @@ describe('what a reader makes of a saga', () => {
     await SeriesOpinionCommand.setFavorite(reader, dune, true)
     await SeriesOpinionCommand.rate(reader, dune, undefined)
 
-    expect(await SeriesOpinionQuery.of(reader, dune)).toBeNull()
+    expect(await SeriesOpinionQuery.of(reader, dune)).toBeUndefined()
   })
 
   // How many volumes the reader says the saga has, when nobody has catalogued
@@ -97,7 +97,7 @@ describe('what a reader makes of a saga', () => {
     await SeriesOpinionCommand.setFollowed(reader, dune, false, undefined, [])
     await SeriesOpinionCommand.setFollowed(reader, dune, true, undefined, [])
 
-    expect(await SeriesOpinionQuery.of(reader, dune)).toBeNull()
+    expect(await SeriesOpinionQuery.of(reader, dune)).toBeUndefined()
   })
 
   test('keeps the number of volumes the reader declared', async () => {
@@ -125,13 +125,13 @@ describe('what a reader makes of a saga', () => {
     await SeriesOpinionCommand.setFavorite(reader, dune, false)
     await SeriesOpinionCommand.rate(reader, dune, undefined)
 
-    expect(await SeriesOpinionQuery.of(reader, dune)).toBeNull()
+    expect(await SeriesOpinionQuery.of(reader, dune)).toBeUndefined()
   })
 
   test("never answers with another reader's opinion", async () => {
     await SeriesOpinionCommand.rate('reader-2' as UserId, dune, StarRating(1))
 
-    expect(await SeriesOpinionQuery.of(reader, dune)).toBeNull()
+    expect(await SeriesOpinionQuery.of(reader, dune)).toBeUndefined()
   })
 
   // The series tab reads every opinion, then the saga screen reads one of them.

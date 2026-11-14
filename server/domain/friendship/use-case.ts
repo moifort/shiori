@@ -254,13 +254,13 @@ export namespace FriendshipUseCase {
     userId: UserId,
     friendId: UserId,
     bookId: BookId,
-  ): Promise<FriendBook | null> => {
-    if (!(await canRead(userId, friendId))) return null
+  ): Promise<FriendBook | undefined> => {
+    if (!(await canRead(userId, friendId))) return undefined
     const [book, owned] = await Promise.all([
       BookQuery.sharedById(friendId, bookId),
       BookQuery.shelfKeys(userId),
     ])
-    return book ? { ...book, inLibrary: ownsStory(owned, book) } : null
+    return book ? { ...book, inLibrary: ownsStory(owned, book) } : undefined
   }
 
   /** One page of a friend's library — or of the reader's own, previewed —
@@ -275,8 +275,8 @@ export namespace FriendshipUseCase {
     ownerId: UserId,
     page: { limit: number; after?: BookId },
     view: { status?: ReadingStatus; favorite?: boolean; loved?: boolean },
-  ): Promise<FriendLibraryPage | null> => {
-    if (!(await canRead(viewerId, ownerId))) return null
+  ): Promise<FriendLibraryPage | undefined> => {
+    if (!(await canRead(viewerId, ownerId))) return undefined
     const [books, owned] = await Promise.all([
       BookQuery.shared(ownerId),
       BookQuery.shelfKeys(viewerId),
@@ -315,8 +315,8 @@ export namespace FriendshipUseCase {
     ownerId: UserId,
     page: { limit: number; after?: string },
     view: { state?: SeriesState; favorite?: boolean; loved?: boolean } = {},
-  ): Promise<FriendSagaPage | null> => {
-    if (!(await canRead(viewerId, ownerId))) return null
+  ): Promise<FriendSagaPage | undefined> => {
+    if (!(await canRead(viewerId, ownerId))) return undefined
     const [books, favoriteSagas, ratings, owned] = await Promise.all([
       BookQuery.shared(ownerId),
       favoriteSagasOf(ownerId),
@@ -374,8 +374,8 @@ export namespace FriendshipUseCase {
     ownerId: UserId,
     seriesId: SagaKey,
     edition?: BookLanguage,
-  ): Promise<FriendSaga | null> => {
-    if (!(await canRead(viewerId, ownerId))) return null
+  ): Promise<FriendSaga | undefined> => {
+    if (!(await canRead(viewerId, ownerId))) return undefined
     const [held, opinion, viewerVolumes] = await Promise.all([
       BookQuery.sharedInSaga(ownerId, seriesId),
       SeriesOpinionQuery.of(ownerId, seriesId),
@@ -384,7 +384,7 @@ export namespace FriendshipUseCase {
     const [saga] = followedSagasOf(
       edition ? held.filter((book) => book.language === edition) : held,
     )
-    if (!saga) return null
+    if (!saga) return undefined
     const owned = shelfKeysOf(viewerVolumes)
     const favorites = new Map<SagaKey, Date | undefined>(
       opinion?.favorite ? [[seriesId, opinion.favoritedAt]] : [],
@@ -531,9 +531,9 @@ export namespace FriendshipUseCase {
     userId: UserId,
     friendId: UserId,
     bookId: BookId,
-  ): Promise<AudioAvailability | null> => {
+  ): Promise<AudioAvailability | undefined> => {
     const source = await book(userId, friendId, bookId)
-    if (!source) return null
+    if (!source) return undefined
     if (source.format === 'audiobook') return 'available'
     if (!source.language) return 'unknown'
     const recording = await DiscoveryUseCase.audioEditionOf(
@@ -558,9 +558,9 @@ export namespace FriendshipUseCase {
     friendId: UserId,
     bookId: BookId,
     appLanguage: Language,
-  ): Promise<EditionOffer | null> => {
+  ): Promise<EditionOffer | undefined> => {
     const source = await book(userId, friendId, bookId)
-    if (!source) return null
+    if (!source) return undefined
     return AwaitedEditionUseCase.offerFor(userId, source, friendId, appLanguage)
   }
 

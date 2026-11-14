@@ -13,7 +13,7 @@ const entry = (fields: Partial<Narrator>): Narrator => ({
 
 describe('isWorthDescribing', () => {
   test('asks about a narrator nobody described', () => {
-    expect(isWorthDescribing(null, now)).toBe(true)
+    expect(isWorthDescribing(undefined, now)).toBe(true)
     // A face stored before narrators were described.
     expect(isWorthDescribing(entry({ portraitSoughtAt: daysAgo(2) }), now)).toBe(true)
   })

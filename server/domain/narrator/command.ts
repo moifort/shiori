@@ -53,7 +53,7 @@ export namespace NarratorCommand {
    *  lookup writes over them. A narrator nobody described gets an entry
    *  holding the correction alone, and the model is not asked about them. */
   export const correct = (
-    current: Narrator | null,
+    current: Narrator | undefined,
     key: NarratorKey,
     name: NarratorName,
     correction: NarratorCorrection,
@@ -95,7 +95,7 @@ export namespace NarratorCommand {
    *  answered, stored or not. A portrait found before is kept when this
    *  lookup comes back empty. */
   export const catalogueFromWeb = async (
-    known: Narrator | null,
+    known: Narrator | undefined,
     key: NarratorKey,
     name: NarratorName,
     language: Language,
@@ -110,7 +110,7 @@ export namespace NarratorCommand {
       })
       const biography = optionally(value.biography, NarratorBiography)
       const foundPortrait = await faceOf(name, value.wikipediaTitle ?? undefined)
-      const narratorFrom = (previous: Narrator | null): Narrator => {
+      const narratorFrom = (previous: Narrator | undefined): Narrator => {
         const portraitUrl = foundPortrait ?? previous?.portraitUrl
         const face = portraitUrl ? { portraitUrl } : { portraitSoughtAt: at }
         return biography
@@ -130,7 +130,7 @@ export namespace NarratorCommand {
     } catch (error) {
       logger.error('narrator catalogue generation failed', { error, key })
       const portraitUrl = known?.portraitUrl ?? (await faceOf(name))
-      const missedFrom = (previous: Narrator | null): Narrator => {
+      const missedFrom = (previous: Narrator | undefined): Narrator => {
         const face = previous?.portraitUrl ?? portraitUrl
         return {
           ...(previous ?? { key, name }),
@@ -147,8 +147,8 @@ export namespace NarratorCommand {
    *  still sees what was found. */
   const save = async (
     key: NarratorKey,
-    entryFrom: (previous: Narrator | null) => Narrator,
-    known: Narrator | null,
+    entryFrom: (previous: Narrator | undefined) => Narrator,
+    known: Narrator | undefined,
   ): Promise<Narrator> => {
     try {
       return await revised(key, (previous) =>
@@ -164,7 +164,7 @@ export namespace NarratorCommand {
 /** The entry as `revise` left it, written on the one stored. */
 const revised = async (
   key: NarratorKey,
-  revise: (current: Narrator | null) => Narrator | undefined,
+  revise: (current: Narrator | undefined) => Narrator | undefined,
 ): Promise<Narrator> => {
   const narrator = await repository.revise(key, revise)
   if (!narrator) throw new Error('a narrator just written is missing')

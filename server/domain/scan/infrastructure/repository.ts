@@ -16,10 +16,10 @@ const docId = (imageHash: ImageHash, language: ScanLanguage) => `${imageHash}_${
 export const findBy = async (
   imageHash: ImageHash,
   language: ScanLanguage,
-): Promise<CachedScan | null> => {
+): Promise<CachedScan | undefined> => {
   const doc = await cache().doc(docId(imageHash, language)).get()
   const entry = doc.data()
-  if (!entry) return null
+  if (!entry) return undefined
   // A scan cached when `ebook` was still a format reads as a book on a screen.
   const { format, ...result } = entry.result
   return { ...entry, result: { ...result, ...heldFormatOf(format) } }

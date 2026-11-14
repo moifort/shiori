@@ -15,8 +15,8 @@ const invitations = () =>
 const friendships = () =>
   db().collection('friendships').withConverter(genericDataConverter<Friendship>())
 
-export const findInvitation = async (code: InvitationCode): Promise<Invitation | null> =>
-  (await invitations().doc(code).get()).data() ?? null
+export const findInvitation = async (code: InvitationCode): Promise<Invitation | undefined> =>
+  (await invitations().doc(code).get()).data()
 
 export const findInvitationsBy = async (userId: UserId): Promise<Invitation[]> =>
   (await invitations().where('userId', '==', userId).get()).docs.map((doc) => doc.data())

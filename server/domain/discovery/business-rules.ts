@@ -494,11 +494,7 @@ type Candidate = { volume: FoundVolume; upcoming: boolean }
  *  catalogue does not hold yet. A volume in the catalogue is out or not by the
  *  catalogue's rule, the one its strip is drawn by, so the two tabs count the
  *  same volumes; a volume only the watch knows, by the watch's date. */
-const candidatesOf = (
-  watch: SagaWatch,
-  stored: Series | null | undefined,
-  today: string,
-): Candidate[] => {
+const candidatesOf = (watch: SagaWatch, stored: Series | undefined, today: string): Candidate[] => {
   const found = new Map(watch.volumes.map((volume) => [Number(volume.number), volume]))
   // The catalogue as the watch leaves it once written in: one created after
   // the watch last looked has none of its dates yet, and would take a volume
@@ -565,7 +561,7 @@ export const withoutRepeatedEditions = <
 export const releasesOf = (
   books: readonly Pick<Book, 'series'>[],
   watch: SagaWatch | undefined,
-  catalogue: Series | null | undefined,
+  catalogue: Series | undefined,
   today: string,
 ): SagaReleases => {
   if (!watch) return { watched: false }
@@ -658,7 +654,7 @@ export const volumeIdentityOf = (volume: ShownVolume): ReleaseIdentity => ({
 export const missingVolumesOf = (
   books: readonly Pick<Book, 'series'>[],
   watch: SagaWatch | undefined,
-  catalogue: Series | null | undefined,
+  catalogue: Series | undefined,
   today: string,
 ): VolumeNumber[] => {
   if (!watch) return []
@@ -686,7 +682,7 @@ const isAvailable = (
 export const recentReleasesOf = (
   books: readonly Pick<Book, 'series'>[],
   watch: SagaWatch | undefined,
-  catalogue: Series | null | undefined,
+  catalogue: Series | undefined,
   today: string,
 ): ShownVolume[] => {
   if (!watch) return []
@@ -715,7 +711,7 @@ export const recentReleasesOf = (
  *  a known day, or in a month that is over. A year alone does not say it. */
 export const yearVolumesOf = (
   watch: SagaWatch,
-  catalogue: Series | null | undefined,
+  catalogue: Series | undefined,
   today: string,
 ): FoundVolume[] =>
   candidatesOf(watch, catalogue, today)

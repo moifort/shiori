@@ -55,7 +55,7 @@ export type AuthorPage = {
   author: FollowedAuthor
   /** Null when the model could not describe the author: the page still shows
    *  the reader's own books, and only a refresh asks again. */
-  catalogue: Author | null
+  catalogue: Author | undefined
   /** Nobody has described the author yet, and the page would not wait for the
    *  model: it draws the reader's books, and asks again for the catalogue. */
   awaitingCatalogue: boolean
@@ -126,17 +126,17 @@ export namespace AuthorUseCase {
     language: Language,
     offered?: AuthorName,
     { waitForCatalogue = true }: { waitForCatalogue?: boolean } = {},
-  ): Promise<AuthorPage | null> => {
+  ): Promise<AuthorPage | undefined> => {
     const shelved =
       (await shelvedAuthors(userId)).find((author) => author.key === key) ??
-      (offered ? unshelvedAuthorOf<Book>(key, offered, new Date()) : null)
-    if (!shelved) return null
+      (offered ? unshelvedAuthorOf<Book>(key, offered, new Date()) : undefined)
+    if (!shelved) return undefined
     const [found, sagas] = await Promise.all([
       waitForCatalogue ? catalogueOf(shelved, language) : storedCatalogueOf(shelved),
       SeriesUseCase.followedAmong(userId, new Set(shelved.seriesIds)),
     ])
     const awaitingCatalogue = found === 'unasked'
-    const catalogue = found === 'unasked' ? null : found
+    const catalogue = found === 'unasked' ? undefined : found
     const hearted = await AuthorQuery.favoriteKeys(userId)
     return {
       author: { ...shelved, portraitUrl: catalogue?.portraitUrl, favorite: hearted.has(key) },
@@ -193,9 +193,9 @@ export namespace AuthorUseCase {
     key: AuthorKey,
     language: Language,
     correction: AuthorCorrection,
-  ): Promise<AuthorPage | null | 'not-an-image'> => {
+  ): Promise<AuthorPage | undefined | 'not-an-image'> => {
     const shelved = (await shelvedAuthors(userId)).find((author) => author.key === key)
-    if (!shelved) return null
+    if (!shelved) return undefined
     if (correction.portraitUrl && !(await isImageAt(CoverUrl(correction.portraitUrl))))
       return 'not-an-image'
     const known = await AuthorQuery.byKey(key)
@@ -219,9 +219,9 @@ export namespace AuthorUseCase {
   export const portraitChoices = async (
     userId: UserId,
     key: AuthorKey,
-  ): Promise<PortraitChoice[] | null> => {
+  ): Promise<PortraitChoice[] | undefined> => {
     const shelved = (await shelvedAuthors(userId)).find((author) => author.key === key)
-    if (!shelved) return null
+    if (!shelved) return undefined
     const known = await AuthorQuery.byKey(key)
     const found = await AuthorQuery.portraitsFor(known?.name ?? shelved.name)
     const current = known?.portraitUrl
@@ -241,9 +241,9 @@ export namespace AuthorUseCase {
     userId: UserId,
     key: AuthorKey,
     language: Language,
-  ): Promise<Author | null> => {
+  ): Promise<Author | undefined> => {
     const shelved = (await shelvedAuthors(userId)).find((author) => author.key === key)
-    return shelved ? askTheWeb(shelved, language) : null
+    return shelved ? askTheWeb(shelved, language) : undefined
   }
 
   /** The stored catalogue, else one built now — unless the model already
@@ -253,11 +253,11 @@ export namespace AuthorUseCase {
   const catalogueOf = async (
     shelved: ShelvedAuthor<Book>,
     language: Language,
-  ): Promise<Author | null> => {
+  ): Promise<Author | undefined> => {
     const known = await AuthorQuery.byKey(shelved.key)
     if (known)
       return isPortraitWorthSeeking(known, new Date()) ? AuthorCommand.seekPortrait(known) : known
-    if (await AuthorQuery.lastMiss(shelved.key)) return null
+    if (await AuthorQuery.lastMiss(shelved.key)) return undefined
     return askTheWeb(shelved, language)
   }
 
@@ -265,18 +265,18 @@ export namespace AuthorUseCase {
    *  model: `unasked` when building one is what would come next. */
   const storedCatalogueOf = async (
     shelved: ShelvedAuthor<Book>,
-  ): Promise<Author | null | 'unasked'> => {
+  ): Promise<Author | undefined | 'unasked'> => {
     const known = await AuthorQuery.byKey(shelved.key)
     if (known)
       return isPortraitWorthSeeking(known, new Date()) ? AuthorCommand.seekPortrait(known) : known
-    if (await AuthorQuery.lastMiss(shelved.key)) return null
+    if (await AuthorQuery.lastMiss(shelved.key)) return undefined
     return 'unasked'
   }
 
   const askTheWeb = async (
     shelved: ShelvedAuthor<Book>,
     language: Language,
-  ): Promise<Author | null> => {
+  ): Promise<Author | undefined> => {
     const { author, usage } = await AuthorCommand.catalogueFromWeb(
       shelved.key,
       shelved.name,
@@ -289,6 +289,6 @@ export namespace AuthorUseCase {
       await AdminCommand.recordCatalogueUsage(usage).catch((error) =>
         logger.warn('AI usage not recorded', { error }),
       )
-    return author ?? null
+    return author
   }
 }

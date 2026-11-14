@@ -216,13 +216,13 @@ describe('one row of the Series tab', () => {
     expect(fake.docReads - before).toBe(2)
 
     const all = await SeriesUseCase.followed(reader)
-    expect(row).toEqual(all.find((saga) => String(saga.saga) === 'saga-3') ?? null)
+    expect(row).toEqual(all.find((saga) => String(saga.saga) === 'saga-3'))
   })
 
   test('answers nothing for a saga the reader no longer holds', async () => {
     await followSagas(1)
 
-    expect(await SeriesUseCase.followedOne(reader, SagaKey('saga-9'))).toBeNull()
+    expect(await SeriesUseCase.followedOne(reader, SagaKey('saga-9'))).toBeUndefined()
   })
 
   // A saga held in two languages is two rows: the one asked for, not the other.
@@ -230,7 +230,7 @@ describe('one row of the Series tab', () => {
     await followSagas(1)
     const id = SagaKey('saga-0')
 
-    expect(await SeriesUseCase.followedOne(reader, id, 'en')).toBeNull()
+    expect(await SeriesUseCase.followedOne(reader, id, 'en')).toBeUndefined()
     expect((await SeriesUseCase.followedOne(reader, id, 'fr'))?.language).toBe('fr')
   })
 })
@@ -517,7 +517,7 @@ describe('merging a duplicate saga', () => {
 
     await SeriesUseCase.mergeInto(reader, duplicate, undefined, kept)
 
-    expect(await SeriesOpinionQuery.of(reader, duplicate)).toBeNull()
+    expect(await SeriesOpinionQuery.of(reader, duplicate)).toBeUndefined()
     expect((await SeriesOpinionQuery.of(reader, kept))?.favorite).toBe(true)
   })
 

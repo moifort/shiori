@@ -67,9 +67,9 @@ export namespace AwaitedEditionUseCase {
     bookId: BookId,
     appLanguage: Language,
     now = new Date(),
-  ): Promise<EditionOffer | null> => {
+  ): Promise<EditionOffer | undefined> => {
     const book = await BookQuery.byId(userId, bookId)
-    return book ? offerFor(userId, book, book.userId, appLanguage, now) : null
+    return book ? offerFor(userId, book, book.userId, appLanguage, now) : undefined
   }
 
   /** The formats a book not added yet — the one a scan proposes — may be

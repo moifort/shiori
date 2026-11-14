@@ -110,7 +110,7 @@ describe('correcting an author', () => {
 
   test('gives an author nobody could describe a catalogue of the correction alone', async () => {
     await AuthorCommand.catalogueFromWeb(key, name, 'fr')
-    expect(await AuthorQuery.byKey(key)).toBeNull()
+    expect(await AuthorQuery.byKey(key)).toBeUndefined()
 
     await AuthorUseCase.correct(reader, key, 'fr', {
       portraitUrl: PortraitUrl('https://example.com/sanderson.jpg'),
@@ -132,7 +132,7 @@ describe('correcting an author', () => {
         portraitUrl: PortraitUrl('https://example.com/page'),
       }),
     ).toBe('not-an-image')
-    expect(await AuthorQuery.byKey(key)).toBeNull()
+    expect(await AuthorQuery.byKey(key)).toBeUndefined()
   })
 
   test('is not found for an author the reader holds nothing of', async () => {
@@ -140,7 +140,7 @@ describe('correcting an author', () => {
       await AuthorUseCase.correct(reader, authorKeyOf('Robin Hobb'), 'fr', {
         biography: AuthorBiography('Autrice.'),
       }),
-    ).toBeNull()
+    ).toBeUndefined()
   })
 })
 
@@ -182,7 +182,7 @@ describe('the portraits offered for an author', () => {
 // meanwhile: each writer builds on the entry as it stands when it writes.
 describe('writers of one author crossing', () => {
   test('a correction keeps the catalogue written since the page read the author', async () => {
-    const stale = null
+    const stale = undefined
     answers = [sanderson]
     await AuthorCommand.catalogueFromWeb(key, name, 'fr')
 

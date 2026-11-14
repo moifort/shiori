@@ -4,7 +4,7 @@ import type { SeriesOpinion } from '~/domain/series-opinion/types'
 import type { UserId } from '~/domain/shared/types'
 
 export namespace SeriesOpinionQuery {
-  export const of = async (userId: UserId, seriesId: SagaKey): Promise<SeriesOpinion | null> =>
+  export const of = async (userId: UserId, seriesId: SagaKey): Promise<SeriesOpinion | undefined> =>
     repository.findBy(userId, seriesId)
 
   export const all = async (userId: UserId): Promise<SeriesOpinion[]> =>

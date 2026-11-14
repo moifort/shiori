@@ -20,10 +20,10 @@ const series = () => db().collection('series').withConverter(genericDataConverte
 const documentIdOf = ({ saga, language }: Edition) => seriesIdOf(saga, language)
 const cacheKey = (edition: Edition) => `series:${documentIdOf(edition)}`
 
-export const findById = (edition: Edition): Promise<Series | null> =>
+export const findById = (edition: Edition): Promise<Series | undefined> =>
   memoizedPerRequest(cacheKey(edition), async () => {
     const doc = await series().doc(documentIdOf(edition)).get()
-    return doc.data() ?? null
+    return doc.data()
   })
 
 // One getAll for a page of sagas rather than a lookup per row: the series tab
@@ -37,9 +37,9 @@ export const findManyByIds = async (editions: readonly Edition[]): Promise<Serie
     const snapshots = await db().getAll(
       ...missing.map((edition) => series().doc(documentIdOf(edition))),
     )
-    return snapshots.map((snapshot) => (snapshot.data() as Series | undefined) ?? null)
+    return snapshots.map((snapshot) => snapshot.data() as Series | undefined)
   })
-  return entries.filter((entry): entry is Series => entry !== null)
+  return entries.filter((entry): entry is Series => entry !== undefined)
 }
 
 // A read-modify-write on the catalogue as it stands when the transaction runs:
@@ -51,11 +51,11 @@ export const findManyByIds = async (editions: readonly Edition[]): Promise<Serie
 // in the same request — it must not read the absence from before the write.
 export const revise = async (
   edition: Edition,
-  revise: (current: Series | null) => Series | undefined,
-): Promise<Series | null> => {
+  revise: (current: Series | undefined) => Series | undefined,
+): Promise<Series | undefined> => {
   const result = await transactionally(async (tx) => {
     const ref = series().doc(documentIdOf(edition))
-    const current = (await tx.get(ref)).data() ?? null
+    const current = (await tx.get(ref)).data()
     const revised = revise(current)
     if (!revised) return current
     tx.set(ref, withoutAbsentFields(revised))
@@ -71,8 +71,8 @@ export const revise = async (
 const misses = () =>
   db().collection('series-misses').withConverter(genericDataConverter<SeriesMiss>())
 
-export const findMiss = async (edition: Edition): Promise<SeriesMiss | null> =>
-  (await misses().doc(documentIdOf(edition)).get()).data() ?? null
+export const findMiss = async (edition: Edition): Promise<SeriesMiss | undefined> =>
+  (await misses().doc(documentIdOf(edition)).get()).data()
 
 export const saveMiss = async (miss: SeriesMiss): Promise<void> => {
   await misses().doc(miss.id).set(withoutAbsentFields(miss))

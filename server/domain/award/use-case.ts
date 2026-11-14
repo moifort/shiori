@@ -52,14 +52,14 @@ export namespace AwardUseCase {
     appLanguage: Language,
     asked: Genre | undefined,
     now = new Date(),
-  ): Promise<AwardShelf | null> => {
+  ): Promise<AwardShelf | undefined> => {
     const [books, dismissed] = await Promise.all([
       BookQuery.all(userId),
       AwardQuery.dismissedKeys(userId),
     ])
     const genres = genresOf(books)
     const genre = asked && genres.includes(asked) ? asked : genres[0]
-    if (!genre) return null
+    if (!genre) return undefined
     const awards = AWARDS_BY_GENRE[genre] ?? []
     const works = await latestWorksOf(awards)
     const editions = await editionsOf(works, userId, appLanguage)

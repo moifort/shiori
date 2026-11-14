@@ -49,7 +49,7 @@ export namespace SeriesCommand {
     saga: SagaKey,
     language: BookLanguage,
     found: readonly FoundVolume[],
-  ): Promise<Series | null> => {
+  ): Promise<Series | undefined> => {
     // Decided first on the catalogue as this request read it, which costs
     // nothing when nothing moved; written on the one stored, in a transaction.
     const known = await repository.findById({ saga, language })

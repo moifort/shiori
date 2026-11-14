@@ -139,7 +139,7 @@ describe('correcting an edition nobody catalogued', () => {
     expect((await BookQuery.bySeries(other, saga))[0].series?.name).toBe(
       SeriesName('Naruto (French Edition)'),
     )
-    expect(await SeriesQuery.byId({ saga, language: 'fr' })).toBeNull()
+    expect(await SeriesQuery.byId({ saga, language: 'fr' })).toBeUndefined()
   })
 
   test('takes no description, which would mark it catalogued', async () => {
@@ -150,6 +150,6 @@ describe('correcting an edition nobody catalogued', () => {
         description: SeriesDescription('Un ninja.'),
       }),
     ).toBe('not-catalogued')
-    expect(await SeriesQuery.byId({ saga, language: 'fr' })).toBeNull()
+    expect(await SeriesQuery.byId({ saga, language: 'fr' })).toBeUndefined()
   })
 })

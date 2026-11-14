@@ -121,11 +121,11 @@ export const findShelfPage = async (
 //
 // Taken from the library when this request already holds it: a sync that loaded
 // the shelf and then moves forty books would otherwise read each of them twice.
-export const findById = async (userId: UserId, bookId: BookId): Promise<Book | null> => {
+export const findById = async (userId: UserId, bookId: BookId): Promise<Book | undefined> => {
   if (isInRequestCache(allCacheKey(userId)))
-    return (await findAllByUser(userId)).find((book) => book.id === bookId) ?? null
+    return (await findAllByUser(userId)).find((book) => book.id === bookId)
   const book = (await books().doc(bookId).get()).data()
-  if (book?.userId !== userId) return null
+  if (book?.userId !== userId) return undefined
   const read = asBook(book)
   seenCopies(userId).set(bookId, read)
   return read

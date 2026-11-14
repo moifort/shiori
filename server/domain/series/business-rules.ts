@@ -194,8 +194,8 @@ export const stateOf = (
 const MISS_REMEMBERED_MS = 30 * 24 * 60 * 60 * 1000
 
 /** Whether an empty answer still stands in for asking the model again. */
-export const isRecentMiss = (miss: SeriesMiss | null, now: Date): boolean =>
-  miss !== null && now.getTime() - miss.missedAt.getTime() < MISS_REMEMBERED_MS
+export const isRecentMiss = (miss: SeriesMiss | undefined, now: Date): boolean =>
+  miss !== undefined && now.getTime() - miss.missedAt.getTime() < MISS_REMEMBERED_MS
 
 /** How far the reader is into a saga, measured on its published spine — the
  *  same yardstick as its state and the home screen's progress bars.
@@ -408,7 +408,7 @@ export const genreOf = (books: readonly { genre?: Genre }[]): Genre | undefined 
  *  volumes exist is exactly what is unknown then, and null says so. */
 export const followedStateOf = (
   statuses: readonly ReadingStatus[],
-  catalogue: Series | null,
+  catalogue: Series | undefined,
   readVolumeNumbers: ReadonlySet<number>,
   currentYear: YearValue,
   unfollowed = false,
@@ -437,7 +437,10 @@ export const inTabOrder = <Saga extends { shelvedAt: Date }>(sagas: readonly Sag
  *  then five stars down to one, each rank the saga shelved last first. A saga
  *  borrows nothing from its volumes: its stars are a judgement of the whole. */
 export const inLovedOrder = <
-  Saga extends { shelvedAt: Date; opinion: { favorite?: boolean; rating?: StarRating } | null },
+  Saga extends {
+    shelvedAt: Date
+    opinion: { favorite?: boolean; rating?: StarRating } | undefined
+  },
 >(
   sagas: readonly Saga[],
 ): Saga[] =>
@@ -733,7 +736,7 @@ export const withBareTitles = (series: Series): Series => ({
  *  volumes already out in its edition, so a volume the watch found announced
  *  is kept too, or a refresh would undo the watch until its next pass. A volume the watch never dated is the
  *  old catalogue's alone, and goes with it. */
-export const keepingReleases = (fresh: Series, previous: Series | null): Series => {
+export const keepingReleases = (fresh: Series, previous: Series | undefined): Series => {
   if (!previous) return fresh
   const sameVolume = (left: Volume, right: Volume) =>
     left.kind === right.kind &&
@@ -760,7 +763,7 @@ export const keepingReleases = (fresh: Series, previous: Series | null): Series 
 /** A catalogue asked again of the world, keeping what readers corrected by
  *  hand on the stored one — the name, the description, even cleared: the model
  *  was wrong on them once, and its next answer is no better source. */
-export const keepingCorrections = (fresh: Series, previous: Series | null): Series => {
+export const keepingCorrections = (fresh: Series, previous: Series | undefined): Series => {
   const corrected = previous?.corrected
   if (!previous || !corrected?.length) return fresh
   const kept: Series = { ...fresh, corrected }

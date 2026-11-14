@@ -12,10 +12,10 @@ const cacheKey = (userId: UserId) => `user:profile:${userId}`
 
 // A user's profile — at most one, since the doc id IS the userId. Memoized: the
 // auth gate reads it on every launch, so it must cost a single read per request.
-export const findProfile = (userId: UserId): Promise<UserProfile | null> =>
+export const findProfile = (userId: UserId): Promise<UserProfile | undefined> =>
   memoizedPerRequest(cacheKey(userId), async () => {
     const doc = await profiles().doc(userId).get()
-    return doc.data() ?? null
+    return doc.data()
   })
 
 // The names behind a list of ids, in one getAll rather than a lookup per row:

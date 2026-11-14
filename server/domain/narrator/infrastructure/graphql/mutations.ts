@@ -38,7 +38,7 @@ builder.mutationFields((t) => ({
           .map(([field, value]) => [field, value ?? undefined]),
       ) as NarratorCorrection
       return match(await NarratorUseCase.correct(userId, key, languageOf(event), correction))
-        .with(null, () => notFound('Narrator not found'))
+        .with(undefined, () => notFound('Narrator not found'))
         .with('not-an-image', () =>
           domainError('PORTRAIT_NOT_AN_IMAGE', 'This address does not lead to an image'),
         )

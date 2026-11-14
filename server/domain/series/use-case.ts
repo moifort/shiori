@@ -83,8 +83,8 @@ export type FollowedSeries = {
   author?: AuthorName
   language?: BookLanguage
   genre?: Genre
-  catalogue: Series | null
-  opinion: SeriesOpinion | null
+  catalogue: Series | undefined
+  opinion: SeriesOpinion | undefined
   state: SeriesState | null
   progress: SagaProgress | null
   ownedCount: CountValue
@@ -182,10 +182,10 @@ export namespace SeriesUseCase {
     userId: UserId,
     saga: SagaKey,
     language?: BookLanguage,
-  ): Promise<FollowedSeries | null> => {
+  ): Promise<FollowedSeries | undefined> => {
     const shelf = await shelfOf(userId)
     const held = shelf.sagas.find((row) => row.saga === saga && row.language === language)
-    if (!held) return null
+    if (!held) return undefined
     const [row] = await described(shelf, [held], { withReleases: true })
     return row ?? null
   }
@@ -372,7 +372,7 @@ export namespace SeriesUseCase {
     language: ScanLanguage,
     edition: BookLanguage | undefined,
     { format, ...correction }: SeriesCorrection & { format?: BookFormat },
-  ): Promise<Series | null | 'not-found' | 'audio-format' | 'not-catalogued'> => {
+  ): Promise<Series | undefined | 'not-found' | 'audio-format' | 'not-catalogued'> => {
     const shelf = await BookQuery.bySeries(userId, seriesId)
     const opened = { saga: seriesId, language: editionOpened(shelf, language, edition) }
     if (!shelf.some((book) => book.language === opened.language)) return 'not-found'
@@ -454,7 +454,7 @@ export namespace SeriesUseCase {
     edition?: BookLanguage,
     proposed?: ProposedSaga,
     { waitForCatalogue = true }: { waitForCatalogue?: boolean } = {},
-  ): Promise<Series | null> => {
+  ): Promise<Series | undefined> => {
     const shelf = await BookQuery.bySeries(userId, seriesId)
     const opened = { saga: seriesId, language: editionOpened(shelf, language, edition) }
     const held = shelf.filter((book) => book.language === opened.language)
@@ -473,7 +473,7 @@ export namespace SeriesUseCase {
     // The model found nothing on this saga lately — a saga heard that Audible
     // lists no recording of: asking again would make every opening wait on the
     // same empty answer. `recatalogue` asks regardless.
-    if (isRecentMiss(await SeriesQuery.lastMiss(opened), new Date())) return null
+    if (isRecentMiss(await SeriesQuery.lastMiss(opened), new Date())) return undefined
     if (!waitForCatalogue) return awaitingCatalogue(seriesId, held, opened.language, proposed)
     return catalogueFromLibrary(userId, seriesId, held, language, opened.language, proposed)
   }
@@ -489,14 +489,14 @@ export namespace SeriesUseCase {
     held: readonly Book[],
     edition: BookLanguage | undefined,
     proposed?: ProposedSaga,
-  ): Series | null => {
+  ): Series | undefined => {
     const volume = held.find((book) => book.series && book.authors.length > 0)
     const source = volume?.series
       ? { name: volume.series.name, author: volume.authors[0] }
       : proposed && namesSaga(proposed, seriesId)
         ? proposed
         : undefined
-    if (!source) return null
+    if (!source) return undefined
     const { provisional: _, ...drawn } = provisionalCatalogueOf(
       {
         id: seriesIdOf(seriesId, edition),
@@ -538,7 +538,7 @@ export namespace SeriesUseCase {
     seriesId: SagaKey,
     language: ScanLanguage,
     edition?: BookLanguage,
-  ): Promise<Series | null> => {
+  ): Promise<Series | undefined> => {
     const shelf = await BookQuery.bySeries(userId, seriesId)
     const opened = editionOpened(shelf, language, edition)
     return catalogueFromLibrary(
@@ -560,14 +560,14 @@ export namespace SeriesUseCase {
     language: ScanLanguage,
     edition: BookLanguage | undefined,
     proposed?: ProposedSaga,
-  ): Promise<Series | null> => {
+  ): Promise<Series | undefined> => {
     const volume = held.find((book) => book.series && book.authors.length > 0)
     const source = volume?.series
       ? { name: volume.series.name, author: volume.authors[0] }
       : proposed && namesSaga(proposed, seriesId)
         ? proposed
         : undefined
-    if (!source) return null
+    if (!source) return undefined
 
     const { series: catalogued, usage } = await ScanCommand.catalogueSeries(
       seriesId,
@@ -588,7 +588,7 @@ export namespace SeriesUseCase {
     // none until now: flagged here, or the progress bar would wait for the next
     // unrelated book write to appear.
     if (series) await AnalyticsUseCase.markStale(userId)
-    return series ? withShelvedVolumes(series, held) : null
+    return series ? withShelvedVolumes(series, held) : undefined
   }
 }
 
@@ -639,7 +639,7 @@ const namesSaga = (proposed: ProposedSaga, seriesId: SagaKey): boolean =>
 /** A saga as the books and the opinions describe it, before any catalogue is
  *  read: enough to filter and order the Series tab. */
 type ShelvedSaga = FollowedSaga<Book> & {
-  opinion: SeriesOpinion | null
+  opinion: SeriesOpinion | undefined
   favorite: boolean
   unfollowed: boolean
   shelvedAt: Date
@@ -654,7 +654,7 @@ const shelfOf = async (userId: UserId): Promise<Shelf> => {
   ])
   const bySaga = new Map(opinions.map((opinion) => [opinion.seriesId, opinion]))
   const sagas = followedSagasOf(books).map((saga) => {
-    const opinion = bySaga.get(saga.saga) ?? null
+    const opinion = bySaga.get(saga.saga)
     return {
       ...saga,
       opinion,
@@ -688,7 +688,7 @@ const described = async (
   )
   const currentYear = Year(new Date().getUTCFullYear())
   const rows = sagas.map((saga): FollowedSeries => {
-    const catalogue = catalogued.get(saga.id) ?? null
+    const catalogue = catalogued.get(saga.id)
     const read = readVolumeNumbersOf(saga.books)
     return {
       id: saga.id,

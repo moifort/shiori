@@ -66,7 +66,7 @@ export namespace AuthorCommand {
    *  catalogue holding the correction alone: the model is never asked about a
    *  miss again, so nothing is lost. */
   export const correct = (
-    current: Author | null,
+    current: Author | undefined,
     key: AuthorKey,
     name: AuthorNameValue,
     correction: AuthorCorrection,
@@ -252,7 +252,7 @@ export namespace AuthorCommand {
 /** The entry as `revise` left it, written on the one stored. */
 const revised = async (
   key: AuthorKey,
-  revise: (current: Author | null) => Author | undefined,
+  revise: (current: Author | undefined) => Author | undefined,
 ): Promise<Author> => {
   const author = await repository.revise(key, revise)
   if (!author) throw new Error('an author just written is missing')

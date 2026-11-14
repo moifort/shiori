@@ -41,15 +41,15 @@ export const unshelvedNarratorOf = <Book>(
   key: NarratorKey,
   name: NarratorName,
   now: Date,
-): ShelvedNarrator<Book> | null =>
+): ShelvedNarrator<Book> | undefined =>
   narratorKeyOf(name) === key
     ? { key, name, books: [], seriesIds: [], shelvedAt: now, favoriteCount: Count(0) }
-    : null
+    : undefined
 
 /** Whether the model is to be asked who a narrator is: never once described
  *  or corrected by a reader, and not a month after it failed on them — every
  *  opening would otherwise wait on the same grounded call. */
-export const isWorthDescribing = (known: Narrator | null, now: Date): boolean => {
+export const isWorthDescribing = (known: Narrator | undefined, now: Date): boolean => {
   if (!known) return true
   if (known.cataloguedAt || known.corrected?.length) return false
   if (!known.missedAt) return true
@@ -58,5 +58,5 @@ export const isWorthDescribing = (known: Narrator | null, now: Date): boolean =>
 
 /** Whether the page has anything to say of who the narrator is: described by
  *  the model, or by a reader's hand. */
-export const isDescribed = (known: Narrator | null): known is Narrator =>
+export const isDescribed = (known: Narrator | undefined): known is Narrator =>
   Boolean(known?.cataloguedAt || known?.corrected?.length)

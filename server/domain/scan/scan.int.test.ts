@@ -169,8 +169,8 @@ describe('scanning a cover', () => {
         saga: seriesKeyOf('Chronique du tueur de roi', 'Patrick Rothfuss', 'book'),
         language: 'fr',
       }),
-    ).toBeNull()
-    expect(await AuthorQuery.byKey(authorKeyOf('Patrick Rothfuss'))).toBeNull()
+    ).toBeUndefined()
+    expect(await AuthorQuery.byKey(authorKeyOf('Patrick Rothfuss'))).toBeUndefined()
   })
 
   // A photo of a table is an ordinary thing for a camera to capture. It must come
@@ -856,7 +856,7 @@ describe('cataloguing a saga', () => {
     answers = [new Error('grounding is down')]
 
     expect(await catalogued()).toEqual({})
-    expect(await SeriesQuery.byId({ saga: kingkiller, language: 'fr' })).toBeNull()
+    expect(await SeriesQuery.byId({ saga: kingkiller, language: 'fr' })).toBeUndefined()
   })
 
   // Storing an empty catalogue would mark the saga as known and stop any later
@@ -866,6 +866,6 @@ describe('cataloguing a saga', () => {
 
     await catalogued()
 
-    expect(await SeriesQuery.byId({ saga: kingkiller, language: 'fr' })).toBeNull()
+    expect(await SeriesQuery.byId({ saga: kingkiller, language: 'fr' })).toBeUndefined()
   })
 })

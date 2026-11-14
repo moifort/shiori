@@ -236,7 +236,9 @@ describe('followedStateOf', () => {
 
   test('is not started while no volume has been opened, catalogue or not', () => {
     expect(followedStateOf(['to-read'], series, new Set(), THIS_YEAR)).toBe('not-started')
-    expect(followedStateOf(['to-read', 'to-read'], null, new Set(), THIS_YEAR)).toBe('not-started')
+    expect(followedStateOf(['to-read', 'to-read'], undefined, new Set(), THIS_YEAR)).toBe(
+      'not-started',
+    )
   })
 
   // A saga the reader stopped following is out of every other state, whatever
@@ -244,7 +246,7 @@ describe('followedStateOf', () => {
   test('is unfollowed once the reader stopped following it, whatever was read', () => {
     expect(followedStateOf(['reading'], series, new Set(), THIS_YEAR, true)).toBe('unfollowed')
     expect(followedStateOf(['read'], series, new Set([1]), THIS_YEAR, true)).toBe('unfollowed')
-    expect(followedStateOf(['to-read'], null, new Set(), THIS_YEAR, true)).toBe('unfollowed')
+    expect(followedStateOf(['to-read'], undefined, new Set(), THIS_YEAR, true)).toBe('unfollowed')
   })
 
   test('lets the catalogue decide once a volume has been opened', () => {
@@ -253,11 +255,13 @@ describe('followedStateOf', () => {
   })
 
   test('is in progress without a catalogue while an owned volume is unread', () => {
-    expect(followedStateOf(['read', 'to-read'], null, new Set([1]), THIS_YEAR)).toBe('in-progress')
+    expect(followedStateOf(['read', 'to-read'], undefined, new Set([1]), THIS_YEAR)).toBe(
+      'in-progress',
+    )
   })
 
   test('is unknown without a catalogue once every owned volume is read', () => {
-    expect(followedStateOf(['read'], null, new Set([1]), THIS_YEAR)).toBeNull()
+    expect(followedStateOf(['read'], undefined, new Set([1]), THIS_YEAR)).toBeNull()
   })
 })
 
@@ -938,7 +942,7 @@ describe('an empty catalogue answer', () => {
 
   test('lets the model be asked again after a month, or when there is none', () => {
     expect(isRecentMiss(missed(30), now)).toBe(false)
-    expect(isRecentMiss(null, now)).toBe(false)
+    expect(isRecentMiss(undefined, now)).toBe(false)
   })
 })
 

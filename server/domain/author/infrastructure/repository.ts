@@ -15,10 +15,10 @@ const authors = () => db().collection('authors').withConverter(genericDataConver
 
 const cacheKey = (key: AuthorKey) => `authors:${key}`
 
-export const findByKey = (key: AuthorKey): Promise<Author | null> =>
+export const findByKey = (key: AuthorKey): Promise<Author | undefined> =>
   memoizedPerRequest(cacheKey(key), async () => {
     const doc = await authors().doc(key).get()
-    return doc.data() ?? null
+    return doc.data()
   })
 
 // One getAll for a page of the Authors tab rather than a lookup per row, sharing
@@ -26,9 +26,9 @@ export const findByKey = (key: AuthorKey): Promise<Author | null> =>
 export const findManyByKeys = async (keys: readonly AuthorKey[]): Promise<Author[]> => {
   const entries = await memoizedManyPerRequest(keys, cacheKey, async (missing) => {
     const snapshots = await db().getAll(...missing.map((key) => authors().doc(key)))
-    return snapshots.map((snapshot) => (snapshot.data() as Author | undefined) ?? null)
+    return snapshots.map((snapshot) => snapshot.data() as Author | undefined)
   })
-  return entries.filter((entry): entry is Author => entry !== null)
+  return entries.filter((entry): entry is Author => entry !== undefined)
 }
 
 // Drops the memoized absence, so the page that built the catalogue reads it
@@ -40,11 +40,11 @@ export const findManyByKeys = async (keys: readonly AuthorKey[]): Promise<Author
 // then what comes back. The memo is dropped either way.
 export const revise = async (
   key: AuthorKey,
-  revise: (current: Author | null) => Author | undefined,
-): Promise<Author | null> => {
+  revise: (current: Author | undefined) => Author | undefined,
+): Promise<Author | undefined> => {
   const result = await transactionally(async (tx) => {
     const ref = authors().doc(key)
-    const current = (await tx.get(ref)).data() ?? null
+    const current = (await tx.get(ref)).data()
     const revised = revise(current)
     if (!revised) return current
     tx.set(ref, withoutAbsentFields(revised))
@@ -57,8 +57,8 @@ export const revise = async (
 const misses = () =>
   db().collection('author-misses').withConverter(genericDataConverter<AuthorMiss>())
 
-export const findMiss = async (key: AuthorKey): Promise<AuthorMiss | null> =>
-  (await misses().doc(key).get()).data() ?? null
+export const findMiss = async (key: AuthorKey): Promise<AuthorMiss | undefined> =>
+  (await misses().doc(key).get()).data()
 
 export const saveMiss = async (miss: AuthorMiss): Promise<void> => {
   await misses().doc(miss.key).set(withoutAbsentFields(miss))
