@@ -1,6 +1,16 @@
 import { BookQuery } from '~/domain/book/query'
+import type { ReleaseView } from '~/domain/release/types'
+import { type DescribeRefusal, ReleaseUseCase } from '~/domain/release/use-case'
+import type { Language } from '~/domain/shared/language'
 import type { UserId } from '~/domain/shared/types'
-import { isHeld, MAX_WISHES, newestFirst, wishIdOf } from '~/domain/wish/business-rules'
+import {
+  isHeld,
+  MAX_WISHES,
+  newestFirst,
+  releaseIdentityOf,
+  releaseShownOf,
+  wishIdOf,
+} from '~/domain/wish/business-rules'
 import { WishCommand } from '~/domain/wish/command'
 import { WishQuery } from '~/domain/wish/query'
 import type { Wish, WishedBook, WishId, WishOrigin } from '~/domain/wish/types'
@@ -46,5 +56,25 @@ export namespace WishUseCase {
     if (all.length === 0) return []
     const shelfKeys = await BookQuery.shelfKeys(userId)
     return newestFirst(all.filter((wish) => !isHeld(wish, shelfKeys)))
+  }
+
+  /** Describe a wish for its page, as a discovery is: the shared release of
+   *  its edition, paid once for every reader. Not found for a wish the
+   *  reader does not have. */
+  export const describe = async (
+    userId: UserId,
+    id: WishId,
+    appLanguage: Language,
+    now = new Date(),
+  ): Promise<ReleaseView | DescribeRefusal | 'not-found'> => {
+    const wish = (await WishQuery.byUser(userId)).find((candidate) => candidate.id === id)
+    if (!wish) return 'not-found'
+    return ReleaseUseCase.describeShown(
+      userId,
+      releaseIdentityOf(wish, appLanguage),
+      releaseShownOf(wish, appLanguage),
+      appLanguage,
+      now,
+    )
   }
 }

@@ -159,6 +159,7 @@ enum ReleaseItem: Hashable, Sendable {
     case awardWinner(key: String, format: ReleaseFormat)
     case suggestion(id: String, format: ReleaseFormat)
     case sagaVolume(seriesId: String, number: Int)
+    case wish(id: String)
 }
 
 enum ReleaseAPI {
@@ -199,6 +200,8 @@ private extension ReleaseItem {
             ShioriGraphQL.ReleaseItemInput(
                 sagaVolume: .some(ShioriGraphQL.SagaVolumeReleaseInput(number: number, seriesId: seriesId))
             )
+        case let .wish(id):
+            ShioriGraphQL.ReleaseItemInput(wishId: .some(id))
         }
     }
 }

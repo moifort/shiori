@@ -9,6 +9,9 @@ enum PileAction {
     case selectGenre(BookGenre?)
     case menu(Book, BookQuickAction)
     case openWishlist
+    /// A cover of the wishlist's rail: the book wished for, or the edition
+    /// awaited, on its own page.
+    case openWished(Book)
     case refresh
 }
 
@@ -92,7 +95,7 @@ struct PilePage: View {
             VStack(alignment: .leading, spacing: 12) {
                 RowHeader(title: "Liste d'envies", style: .inline) { onAction(.openWishlist) }
                     .padding(.horizontal, 20)
-                PosterRow(items: wished) { _ in onAction(.openWishlist) }
+                PosterRow(items: wished) { onAction(.openWished($0)) }
                     .contentMargins(.horizontal, 20, for: .scrollContent)
             }
             .accessibilityIdentifier("pile-section-wishlist")

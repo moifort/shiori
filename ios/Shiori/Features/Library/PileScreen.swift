@@ -12,6 +12,8 @@ struct PileScreen: View {
     @State private var destination: LibraryDestination?
     @State private var quick: BookQuickRequest?
     @State private var volume: DiscoveryVolume?
+    @State private var wish: Wish?
+    @State private var edition: AwaitedEdition?
 
     init(view: ShelvesView = ShelvesView(), client: LibraryClient = .live, seriesClient: SeriesClient = .live) {
         self.client = client
@@ -34,6 +36,10 @@ struct PileScreen: View {
         .pushesDetail(item: $destination) { LibraryDestinationScreen(destination: $0, client: client) }
         .performsBookQuickActions($quick, client: client) { destination = $0 }
         .pushesDetail(item: $volume) { AnnouncedVolumeScreen(saga: $0.saga, volume: $0.volume) }
+        .pushesDetail(item: $wish) { WishScreen(wish: $0) }
+        .pushesDetail(item: $edition) { edition in
+            AwaitedEditionScreen(edition: edition) { Task { await viewModel.load() } }
+        }
         .task { await viewModel.loadOnAppear() }
         .task { await series.loadOnAppear() }
         .onReceive(NotificationCenter.default.publisher(for: .shioriDataDidChange)) { _ in
@@ -53,6 +59,12 @@ struct PileScreen: View {
         case let .selectGenre(genre): Task { await viewModel.select(genre: genre) }
         case let .menu(book, action): quick = BookQuickRequest(book: book, action: action)
         case .openWishlist: destination = .wishlist
+        case let .openWished(book):
+            if let wished = viewModel.wishlist.wish(for: book) {
+                wish = wished
+            } else if let awaited = viewModel.wishlist.edition(for: book) {
+                edition = awaited
+            }
         case .refresh:
             Task { await viewModel.load() }
             Task { await series.load() }

@@ -8965,6 +8965,38 @@
         }
       }
     },
+    "Liste d'envies · %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wishlist · %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Liste d'envies · %@"
+          }
+        }
+      }
+    },
+    "Liste d'envies · conseillé par %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wishlist · recommended by %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Liste d'envies · conseillé par %@"
+          }
+        }
+      }
+    },
     "Littérature" : {
       "localizations" : {
         "en" : {

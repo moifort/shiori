@@ -103,3 +103,12 @@ describe('a story the library comes to hold', () => {
     expect(fake.snapshot('wishes').size).toBe(1)
   })
 })
+
+describe('a wish described for its page', () => {
+  test('is not found among another reader’s wishes', async () => {
+    const own = await wish('Piranesi', new Date('2026-11-01'))
+    if (typeof own === 'string') throw new Error('expected a wish')
+
+    expect(await WishUseCase.describe('alice' as UserId, own.id, 'fr')).toBe('not-found')
+  })
+})

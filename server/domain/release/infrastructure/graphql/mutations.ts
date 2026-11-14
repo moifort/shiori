@@ -11,6 +11,7 @@ import { builder } from '~/domain/shared/graphql/builder'
 import { aiUnavailable, badUserInput, domainError, notFound } from '~/domain/shared/graphql/errors'
 import { languageOf } from '~/domain/shared/language'
 import { SuggestionUseCase } from '~/domain/suggestion/use-case'
+import { WishUseCase } from '~/domain/wish/use-case'
 
 const AwardWinnerReleaseInput = builder.inputType('AwardWinnerReleaseInput', {
   description: 'An award winner’s edition in one format.',
@@ -39,13 +40,14 @@ const SagaVolumeReleaseInput = builder.inputType('SagaVolumeReleaseInput', {
 const ReleaseItemInput = builder.inputType('ReleaseItemInput', {
   description:
     'What a list showed the release as, exactly one of: an edition the reader awaits, an ' +
-    'award winner, a discovery, a saga’s volume. The server knows the release from it; the ' +
+    'award winner, a discovery, a saga’s volume, a book wished for. The server knows the release from it; the ' +
     'device sends nothing of the book.',
   fields: (t) => ({
     awaitedEditionId: t.field({ type: 'AwaitedEditionId', required: false }),
     awardWinner: t.field({ type: AwardWinnerReleaseInput, required: false }),
     suggestion: t.field({ type: SuggestionReleaseInput, required: false }),
     sagaVolume: t.field({ type: SagaVolumeReleaseInput, required: false }),
+    wishId: t.field({ type: 'WishId', required: false }),
   }),
 })
 
@@ -63,7 +65,7 @@ builder.mutationFields((t) => ({
     type: ReleaseType,
     description:
       'Describe for its page a book a list shows — an edition awaited, an award winner, a ' +
-      'discovery, a saga’s volume — as a scan describes one: the web-grounded model fills in ' +
+      'discovery, a saga’s volume, a book wished for — as a scan describes one: the web-grounded model fills in ' +
       'its summary, genre, pages and publisher, and Audible the narrators and running time ' +
       'of a recording. About ten seconds the first time. Answers the release as every list ' +
       'and its page now draw it.\n\n' +
@@ -75,7 +77,13 @@ builder.mutationFields((t) => ({
     args: { item: t.arg({ type: ReleaseItemInput, required: true }) },
     resolve: async (_root, { item }, context) => {
       const language = languageOf(context.event)
-      const named = [item.awaitedEditionId, item.awardWinner, item.suggestion, item.sagaVolume]
+      const named = [
+        item.awaitedEditionId,
+        item.awardWinner,
+        item.suggestion,
+        item.sagaVolume,
+        item.wishId,
+      ]
       if (named.filter((one) => one != null).length !== 1)
         return badUserInput('Name exactly one item')
       if (item.awaitedEditionId)
@@ -100,6 +108,8 @@ builder.mutationFields((t) => ({
             language,
           ),
         )
+      if (item.wishId)
+        return answered(await WishUseCase.describe(context.userId, item.wishId, language))
       const volume = item.sagaVolume
       if (!volume) return badUserInput('Name exactly one item')
       const { saga, language: edition } = seriesReferenceOf(volume.seriesId)

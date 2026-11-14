@@ -81,6 +81,9 @@ struct UnownedBookPage: View {
     let onToggleBell: () -> Void
     var onOpenSaga: () -> Void = {}
     var onOpenVolume: (Book) -> Void = { _ in }
+    /// The bar's "…": a book wished for is taken off the list there. Nil
+    /// draws no menu.
+    var onRemove: (() async -> Void)? = nil
 
     /// Bumped on each tap of the bell, which swings as a bell rings.
     @State private var rings = 0
@@ -114,6 +117,20 @@ struct UnownedBookPage: View {
             if showsClose {
                 ToolbarItem(placement: .cancellationAction) {
                     ToolbarIconButton(title: "Fermer", systemImage: "xmark", role: .cancel, action: onClose)
+                }
+            }
+            if let onRemove {
+                ToolbarItem(placement: .primaryAction) {
+                    Menu {
+                        Button("Retirer", systemImage: "trash", role: .destructive) {
+                            Task { await onRemove() }
+                        }
+                        .accessibilityIdentifier("unowned-remove")
+                    } label: {
+                        Label("Plus d'actions", systemImage: "ellipsis")
+                            .labelStyle(.iconOnly)
+                    }
+                    .accessibilityIdentifier("unowned-more")
                 }
             }
             // The hero's "+" again, within reach once it has scrolled away.

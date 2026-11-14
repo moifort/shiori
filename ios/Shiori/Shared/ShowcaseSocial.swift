@@ -332,6 +332,17 @@ extension Showcase {
     /// What a suggestion's page tells once described: its release as the
     /// server would answer it. Nil for anything but a discovery of the month.
     static func release(of item: ReleaseItem) -> Release? {
+        if case let .wish(id) = item, let wish = Wish.previews.first(where: { $0.id == id }) {
+            var release = wish.release
+            release.synopsis = "Sur la planète Hypérion, sept pèlerins partent à la rencontre du Gritche, une créature qui exauce un vœu et tue les autres. En chemin, chacun raconte pourquoi il est venu."
+            release.genre = .scienceFiction
+            release.publisher = "Pocket"
+            release.firstPublishedIn = 1989
+            release.pageCount = 602
+            release.storeURL = URL(string: "https://www.amazon.fr/dp/2266111566")
+            release.described = true
+            return release
+        }
         guard case let .suggestion(id, _) = item,
               let suggestion = monthlyDiscoveries.suggestions.first(where: { $0.id == id }),
               let pick = discoveryPicks.first(where: { $0.slug == id })

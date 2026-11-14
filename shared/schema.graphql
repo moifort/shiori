@@ -3243,7 +3243,7 @@ type Mutation {
   describeRelease(book: ReleaseInput!): ReleaseDescription! @deprecated(reason: "Use `describeReleaseOf`, which names the item and answers the release every list draws.")
 
   """
-  Describe for its page a book a list shows — an edition awaited, an award winner, a discovery, a saga’s volume — as a scan describes one: the web-grounded model fills in its summary, genre, pages and publisher, and Audible the narrators and running time of a recording. About ten seconds the first time. Answers the release as every list and its page now draw it.
+  Describe for its page a book a list shows — an edition awaited, an award winner, a discovery, a saga’s volume, a book wished for — as a scan describes one: the web-grounded model fills in its summary, genre, pages and publisher, and Audible the narrators and running time of a recording. About ten seconds the first time. Answers the release as every list and its page now draw it.
   
   Kept in the release for every reader, for sixty days: the call is paid once and spends nobody’s scan. Refused with `QUOTA_EXHAUSTED` when the reader’s allowance is used up and nobody described it yet, `SCAN_FAILED` (`AI_UNAVAILABLE` while the AI is out of credit) when the model call errors, `NOT_FOUND` for a release the reader is not shown.
   """
@@ -4876,13 +4876,14 @@ input ReleaseInput {
 }
 
 """
-What a list showed the release as, exactly one of: an edition the reader awaits, an award winner, a discovery, a saga’s volume. The server knows the release from it; the device sends nothing of the book.
+What a list showed the release as, exactly one of: an edition the reader awaits, an award winner, a discovery, a saga’s volume, a book wished for. The server knows the release from it; the device sends nothing of the book.
 """
 input ReleaseItemInput {
   awaitedEditionId: AwaitedEditionId
   awardWinner: AwardWinnerReleaseInput
   sagaVolume: SagaVolumeReleaseInput
   suggestion: SuggestionReleaseInput
+  wishId: WishId
 }
 
 """The saga a release is a volume of."""
