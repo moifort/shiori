@@ -34,6 +34,16 @@ const ReleaseSeriesType = builder
     }),
   })
 
+/** The cover a release is drawn with, in a list and on its page alike: the
+ *  edition's own once found, else the book shown's, else the one its page's
+ *  description found. */
+export const releaseCoverUrlOf = async (view: ReleaseView) =>
+  view.coverUrl ??
+  (view.coverPath ? await objectStore().downloadUrl(view.coverPath) : null) ??
+  view.describedCoverUrl ??
+  view.fallbackCoverUrl ??
+  null
+
 export const ReleaseType = builder.objectRef<ReleaseView>('Release').implement({
   description:
     'A book the reader does not hold — an edition awaited, an award winner, a discovery, a ' +
@@ -84,12 +94,7 @@ export const ReleaseType = builder.objectRef<ReleaseView>('Release').implement({
       description:
         'The edition’s own cover once found, else the cover of the book shown, else the ' +
         'one its page’s description found.',
-      resolve: async (view) =>
-        view.coverUrl ??
-        (view.coverPath ? await objectStore().downloadUrl(view.coverPath) : null) ??
-        view.describedCoverUrl ??
-        view.fallbackCoverUrl ??
-        null,
+      resolve: releaseCoverUrlOf,
     }),
     storeUrl: t.string({
       nullable: true,

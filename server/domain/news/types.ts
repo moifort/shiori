@@ -2,6 +2,7 @@ import type { SharedFavorite } from '~/domain/analytics/types'
 import type { AuthorKey, PortraitUrl } from '~/domain/author/types'
 import type { BookFormat, BookLanguage, CoverUrl, NarratorName } from '~/domain/book/types'
 import type { NarratorKey } from '~/domain/narrator/types'
+import type { ReleaseShown, ReleaseView } from '~/domain/release/types'
 import type { ReleaseDate, SeriesName, VolumeNumber } from '~/domain/series/types'
 import type { AuthorName, BookTitle, StarRating, UserId } from '~/domain/shared/types'
 import type { Avatar } from '~/domain/user/types'
@@ -63,6 +64,12 @@ export type UpcomingRelease = {
   narrator?: NarratorName
   /** The edition's language, when the watch that announced it knows it. */
   language?: BookLanguage
+  /** What the server knows of a saga's volume or an awaited edition before
+   *  its description: the key of its shared release. */
+  shown?: ReleaseShown
+  /** That release as its page shows it, read once per request: the list draws
+   *  the cover its page draws. */
+  release?: ReleaseView
 }
 
 /** A narrator the reader follows lending their voice to a recording out

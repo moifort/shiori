@@ -1,6 +1,7 @@
 import { BookFormatEnum, BookLanguageEnum } from '~/domain/book/infrastructure/graphql/enums'
 import { FeedEventKindEnum, ReleaseSourceEnum } from '~/domain/news/infrastructure/graphql/enums'
 import type { FeedEvent, FeedPage, NarratorNews, UpcomingRelease } from '~/domain/news/types'
+import { releaseCoverUrlOf } from '~/domain/release/infrastructure/graphql/types'
 import { builder } from '~/domain/shared/graphql/builder'
 import { AvatarColorEnum, AvatarHeroEnum } from '~/domain/user/infrastructure/graphql/enums'
 import { objectStore } from '~/system/object-store'
@@ -137,7 +138,12 @@ export const UpcomingReleaseType = builder.objectRef<UpcomingRelease>('UpcomingR
     coverUrl: t.field({
       type: 'CoverUrl',
       nullable: true,
-      resolve: (release) => release.coverUrl ?? null,
+      description:
+        'The cover the release’s page draws, for a saga’s volume or an awaited edition: ' +
+        'the edition’s own once found, else the book’s, else the one the page’s ' +
+        'description found.',
+      resolve: async (release) =>
+        release.release ? await releaseCoverUrlOf(release.release) : (release.coverUrl ?? null),
     }),
     series: t.field({
       type: UpcomingSeriesType,

@@ -249,6 +249,47 @@ describe('awaiting a friend’s book', () => {
 })
 
 describe('an awaited edition’s release', () => {
+  test('draws in the calendar the cover its page’s description found', async () => {
+    // Watched and found nowhere yet, as "La ragazza nella nebbia" on
+    // 2026-11-14: the only cover is the one its page's description found.
+    const key = 'wind-and-truth--brandon-sanderson--audiobook--fr'
+    fake.seed('releases', key, {
+      key,
+      title: 'Wind and Truth',
+      author: 'Brandon Sanderson',
+      originalLanguage: 'en',
+      format: 'audiobook',
+      language: 'fr',
+      checkedAt: new Date(),
+      descriptions: {
+        fr: {
+          description: {
+            book: { title: 'Wind and Truth', coverUrl: 'https://covers.test/wind.jpg' },
+            narrators: [],
+          },
+          describedAt: new Date(),
+          describedFrom: describedFromOf({ title: 'Wind and Truth', language: 'en' } as never),
+        },
+      },
+    })
+    const bookId = await shelve(bob, 'Wind and Truth', 'en')
+    await as(bob)(
+      'mutation ($bookId: BookId!) { awaitBookEdition(bookId: $bookId, format: AUDIOBOOK) { id } }',
+      { bookId },
+    )
+
+    const { data, errors } = await as(bob)(`{
+      wishlist { awaited { release { coverUrl } } }
+      upcomingReleases { source coverUrl }
+    }`)
+
+    expect(errors).toBeUndefined()
+    expect(data).toEqual({
+      wishlist: { awaited: [{ release: { coverUrl: 'https://covers.test/wind.jpg' } }] },
+      upcomingReleases: [{ source: 'AWAITED', coverUrl: 'https://covers.test/wind.jpg' }],
+    })
+  })
+
   test('is drawn the same in the wishlist and on its page, described once', async () => {
     const key = 'wind-and-truth--brandon-sanderson--audiobook--fr'
     fake.seed('releases', key, {

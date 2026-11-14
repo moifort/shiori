@@ -1,17 +1,22 @@
 import type { SharedActivity, SharedActivityKind } from '~/domain/analytics/types'
+import { releaseShownOf } from '~/domain/awaited-edition/business-rules'
 import type { AwaitedEditionView } from '~/domain/awaited-edition/types'
 import { drawnFormatOf, shelfKeyOf } from '~/domain/book/business-rules'
 import type { Book, BookFormat } from '~/domain/book/types'
+import { todayOf, volumeShownOf } from '~/domain/discovery/business-rules'
 import type {
   AuthorDiscovery,
   Discovery,
-  FoundVolume,
   NarratorWatch,
   ReleaseFormat,
+  ShownVolume,
 } from '~/domain/discovery/types'
 import type { Friend } from '~/domain/friendship/types'
 import type { FeedEvent, FeedEventKind, NarratorNews, UpcomingRelease } from '~/domain/news/types'
+import { releaseViewOf } from '~/domain/release/business-rules'
+import type { Release } from '~/domain/release/types'
 import type { FollowedSeries } from '~/domain/series/use-case'
+import type { Language } from '~/domain/shared/language'
 import { slugify } from '~/utils/slug'
 
 const KINDS: Partial<Record<SharedActivityKind, FeedEventKind>> = {
@@ -112,8 +117,9 @@ export const feedPageOf = (
 
 const sagaRelease = (
   series: FollowedSeries,
-  volume: FoundVolume,
+  volume: ShownVolume,
   format: ReleaseFormat,
+  today: string,
 ): UpcomingRelease => ({
   id: `saga~${series.saga}~${volume.number}~${format}`,
   source: 'saga',
@@ -126,6 +132,7 @@ const sagaRelease = (
   ...(series.opinion?.rating ? { sagaRating: series.opinion.rating } : {}),
   sagaFavorite: series.opinion?.favorite === true,
   ...(series.language ? { language: series.language } : {}),
+  shown: volumeShownOf(volume, today),
 })
 
 /** A saga is one kind of object: one volume known as drawn tells for all, the
@@ -190,6 +197,7 @@ const awaitedRelease = (view: AwaitedEditionView, format: ReleaseFormat): Upcomi
   ...(view.source.series ? { series: view.source.series } : {}),
   sagaFavorite: false,
   language: view.language,
+  shown: releaseShownOf(view),
 })
 
 /** What is announced across the release watches, one entry per story and
@@ -202,11 +210,12 @@ export const upcomingOf = (
   discoveries: readonly { format: ReleaseFormat; discovery: Discovery }[],
   narrated: readonly UpcomingRelease[] = [],
   awaited: readonly AwaitedEditionView[] = [],
+  today: string = todayOf(new Date()),
 ): UpcomingRelease[] => {
   const all = [
     ...discoveries.flatMap(({ format, discovery }) => [
       ...discovery.sagas.flatMap((row) =>
-        row.next ? [sagaRelease(row.series, row.next, format)] : [],
+        row.next ? [sagaRelease(row.series, row.next, format, today)] : [],
       ),
       ...discovery.authors.flatMap((row) => authorRelease(row, format)),
     ]),
@@ -229,6 +238,30 @@ export const upcomingOf = (
     .sort(soonestFirst)
 }
 
+/** Each release a page opens on — a saga's volume, an awaited edition — as
+ *  that page shows it, so its cover in a list is the one its page draws: a
+ *  cover only the page's description found included. `kept` holds the shared
+ *  releases under their keys. */
+export const withReleaseViewsOf = (
+  releases: readonly UpcomingRelease[],
+  kept: ReadonlyMap<string, Release>,
+  appLanguage: Language,
+  now: Date,
+): UpcomingRelease[] =>
+  releases.map((release) =>
+    release.shown
+      ? {
+          ...release,
+          release: releaseViewOf(release.shown, kept.get(release.shown.key), appLanguage, now),
+        }
+      : release,
+  )
+
+/** The keys of the shared releases a list's entries are kept under. */
+export const releaseKeysOf = (releases: readonly UpcomingRelease[]): string[] => [
+  ...new Set(releases.flatMap(({ shown }) => (shown ? [shown.key] : []))),
+]
+
 /** `YYYY`, `YYYY-MM` and `YYYY-MM-DD` compare as text; a year or a month sorts
  *  before the days it contains. */
 const soonestFirst = (left: UpcomingRelease, right: UpcomingRelease): number => {
@@ -240,12 +273,12 @@ const soonestFirst = (left: UpcomingRelease, right: UpcomingRelease): number => 
 /** What came out since the start of the year, the newest first: the volumes of
  *  the sagas followed, and the awaited editions out in that year. */
 export const yearReleasesOf = (
-  volumes: readonly { series: FollowedSeries; volume: FoundVolume; format: ReleaseFormat }[],
+  volumes: readonly { series: FollowedSeries; volume: ShownVolume; format: ReleaseFormat }[],
   awaited: readonly AwaitedEditionView[],
   today: string,
 ): UpcomingRelease[] =>
   [
-    ...volumes.map(({ series, volume, format }) => sagaRelease(series, volume, format)),
+    ...volumes.map(({ series, volume, format }) => sagaRelease(series, volume, format, today)),
     ...awaited
       .filter(
         (view) =>

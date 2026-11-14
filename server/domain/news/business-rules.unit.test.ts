@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import type { SharedActivity, SharedShelfToday } from '~/domain/analytics/types'
 import type { AwaitedEditionView } from '~/domain/awaited-edition/types'
-import type { Discovery, FoundVolume } from '~/domain/discovery/types'
+import type { Discovery, ShownVolume } from '~/domain/discovery/types'
 import type { Friend } from '~/domain/friendship/types'
 import { feedEventsOf, feedPageOf, upcomingOf, yearReleasesOf } from '~/domain/news/business-rules'
 import type { FollowedSeries } from '~/domain/series/use-case'
@@ -127,7 +127,12 @@ describe('upcomingOf', () => {
           books: [{ format: 'book' }],
           opinion: { rating: 5, favorite: true },
         },
-        next: { number: 6, title: 'Light Bringer', date: '2026-12-18' },
+        next: {
+          number: 6,
+          title: 'Light Bringer',
+          date: '2026-12-18',
+          saga: { seriesId: 'red-rising', name: 'Red Rising', language: 'en' },
+        },
         missing: [],
         recent: [],
         watched: true,
@@ -179,7 +184,12 @@ describe('upcomingOf', () => {
 describe('the format of an upcoming release', () => {
   const sagaRow = (books: object[]) => ({
     series: { saga: 'nausicaa', name: 'Nausicaä', books },
-    next: { number: 8, title: 'Tome 8', date: '2026-12-18' },
+    next: {
+      number: 8,
+      title: 'Tome 8',
+      date: '2026-12-18',
+      saga: { seriesId: 'nausicaa', name: 'Nausicaä', language: 'fr' },
+    },
     missing: [],
     recent: [],
     watched: true,
@@ -302,7 +312,12 @@ describe('yearReleasesOf', () => {
       [
         {
           series,
-          volume: { number: 2, title: 'Two', date: '2026-02-01' } as unknown as FoundVolume,
+          volume: {
+            number: 2,
+            title: 'Two',
+            date: '2026-02-01',
+            saga: { seriesId: 'two', name: 'Two', language: 'fr' },
+          } as unknown as ShownVolume,
           format: 'book',
         },
       ],

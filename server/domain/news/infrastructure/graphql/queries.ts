@@ -44,7 +44,8 @@ builder.queryFields((t) => ({
       'What came out since the start of the year: the volumes of the sagas the reader ' +
       'follows, held or not, and the editions they await. The newest first. Read off the ' +
       'release watches: no web lookup.',
-    resolve: (_root, _args, context) => NewsUseCase.yearReleases(context.userId),
+    resolve: (_root, _args, context) =>
+      NewsUseCase.yearReleases(context.userId, languageOf(context.event)),
   }),
 
   upcomingReleases: t.field({

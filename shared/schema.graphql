@@ -5447,6 +5447,10 @@ type UpcomingRelease {
   """Set on a work of an author the reader holds."""
   author: UpcomingReleaseAuthor
   authors: [AuthorName!]!
+
+  """
+  The cover the release’s page draws, for a saga’s volume or an awaited edition: the edition’s own once found, else the book’s, else the one the page’s description found.
+  """
   coverUrl: CoverUrl
 
   """

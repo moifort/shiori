@@ -3,7 +3,7 @@ import { AwaitedEditionUseCase } from '~/domain/awaited-edition/use-case'
 import { shelfKeysOf } from '~/domain/book/business-rules'
 import { BookQuery } from '~/domain/book/query'
 import type { BookFormat } from '~/domain/book/types'
-import { narratorWatchKeyOf } from '~/domain/discovery/business-rules'
+import { narratorWatchKeyOf, todayOf } from '~/domain/discovery/business-rules'
 import { DiscoveryQuery } from '~/domain/discovery/query'
 import { RELEASE_FORMATS } from '~/domain/discovery/types'
 import { DiscoveryUseCase } from '~/domain/discovery/use-case'
@@ -13,10 +13,13 @@ import {
   feedEventsOf,
   feedPageOf,
   narratedWorksOf,
+  releaseKeysOf,
   upcomingOf,
+  withReleaseViewsOf,
   yearReleasesOf,
 } from '~/domain/news/business-rules'
 import type { FeedPage, NarratorNews, UpcomingRelease } from '~/domain/news/types'
+import { ReleaseQuery } from '~/domain/release/query'
 import type { Language } from '~/domain/shared/language'
 import type { UserId } from '~/domain/shared/types'
 
@@ -56,17 +59,19 @@ export namespace NewsUseCase {
     const waiting = awaited.filter(
       (view) => view.state !== 'available' && !isHeld(view, view.found, library),
     )
-    const releases = upcomingOf(discoveries, narrated, waiting)
-    return format ? releases.filter((release) => release.format === format) : releases
+    const all = upcomingOf(discoveries, narrated, waiting, todayOf(now))
+    const releases = format ? all.filter((release) => release.format === format) : all
+    return withReleaseViews(releases, language, now)
   }
 
   /** What came out since the start of the year, for the year's counts. */
   export const yearReleases = async (
     userId: UserId,
+    language: Language,
     now = new Date(),
   ): Promise<UpcomingRelease[]> => {
     const { volumes, awaited, today } = await DiscoveryUseCase.yearReleases(userId, now)
-    return yearReleasesOf(volumes, awaited, today)
+    return withReleaseViews(yearReleasesOf(volumes, awaited, today), language, now)
   }
 
   /** The recordings the narrators the reader hearted lent their voice to
@@ -75,6 +80,15 @@ export namespace NewsUseCase {
   export const narratorNews = async (userId: UserId, now = new Date()): Promise<NarratorNews[]> =>
     (await narratedOf(userId, now)).recent
 }
+
+/** The shared releases the entries are kept under, in one getAll — the ones
+ *  the awaited editions already read this request come from its cache. */
+const withReleaseViews = async (
+  releases: UpcomingRelease[],
+  language: Language,
+  now: Date,
+): Promise<UpcomingRelease[]> =>
+  withReleaseViewsOf(releases, await ReleaseQuery.byKeys(releaseKeysOf(releases)), language, now)
 
 const narratedOf = async (userId: UserId, now: Date) => {
   const [reader, library, hearted] = await Promise.all([

@@ -203,7 +203,7 @@ export namespace DiscoveryUseCase {
       const format = formatOf(series.saga)
       return yearVolumesOf(watch, series.catalogue, today).map((volume) => ({
         series,
-        volume,
+        volume: shownVolumeOf(watch, volume),
         format,
       }))
     })
