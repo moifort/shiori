@@ -42,6 +42,7 @@ import { SeriesUseCase } from '~/domain/series/use-case'
 import type { UserId } from '~/domain/shared/types'
 import { config } from '~/system/config'
 import { createLogger } from '~/system/logger'
+import { eachWithAtMostInFlight } from '~/utils/concurrency'
 import { bulkSave } from '~/utils/firestore'
 import { isPresent } from '~/utils/input'
 import { passOverReaders } from '~/utils/nightly-pass'
@@ -334,6 +335,11 @@ const catalogue = async (
   return imported
 }
 
+/** How many reading positions one reader's pass asks Amazon for at once, with
+ *  up to SYNC_CONCURRENCY readers side by side: a handful, never a burst, for
+ *  the firewall that already refuses some Kindle endpoints. */
+const POSITIONS_IN_FLIGHT = 3
+
 /** The positions that change something on their book, read from Amazon. A title
  *  Amazon will not answer for costs that book its night, not the pass. */
 const positionMovesOf = async (
@@ -341,7 +347,7 @@ const positionMovesOf = async (
   books: ReadonlyArray<Book & { kindleAsin: KindleAsin }>,
 ) => {
   const found: { bookId: Book['id']; position: KindlePositionValue }[] = []
-  await bulkSave([...books], async (book) => {
+  await eachWithAtMostInFlight(books, POSITIONS_IN_FLIGHT, async (book) => {
     try {
       const position = await api.readingPosition(credentials, book.kindleAsin)
       if (position === undefined || !kindleMoveOf(book, position)) return
