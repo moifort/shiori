@@ -1,8 +1,13 @@
 import type { Language } from '~/domain/shared/language'
 import type { UserId } from '~/domain/shared/types'
 import { db } from '~/system/firebase'
-import { deleteInBatches, genericDataConverter, transactionally } from '~/utils/firestore'
-import type { Dismissal, SuggestionQueue } from '../types'
+import {
+  deleteInBatches,
+  genericDataConverter,
+  transactionally,
+  withoutAbsentFields,
+} from '~/utils/firestore'
+import type { Dismissal, Suggestion, SuggestionQueue } from '../types'
 
 // One document per reader, whose id IS the userId: the month's selection.
 const queues = () =>
@@ -20,9 +25,46 @@ export const findQueue = async (userId: UserId): Promise<SuggestionQueue | undef
 export const allQueues = async (): Promise<SuggestionQueue[]> =>
   (await queues().get()).docs.map((doc) => doc.data())
 
-export const saveQueue = async (queue: SuggestionQueue): Promise<void> => {
-  await queues().doc(queue.userId).set(queue)
-}
+/** Rewrite the reader's selection from what is stored when the transaction
+ *  runs, never from a copy read earlier: a selection made, a reader told or a
+ *  suggestion dismissed meanwhile is kept. `revise` answers undefined to write
+ *  nothing. */
+export const reviseQueue = async (
+  userId: UserId,
+  revise: (queue: SuggestionQueue | undefined) => SuggestionQueue | undefined,
+): Promise<SuggestionQueue | undefined> =>
+  transactionally(async (tx) => {
+    const ref = queues().doc(userId)
+    const revised = revise((await tx.get(ref)).data())
+    if (revised) tx.set(ref, withoutAbsentFields(revised))
+    return revised
+  })
+
+/** Take a suggestion out of the selection as it stands and keep the dismissal
+ *  that can put it back, in one transaction. Undefined when the selection
+ *  holds no such suggestion. */
+export const dismissFromQueue = async (
+  userId: UserId,
+  key: string,
+  dismissalOf: (suggestion: Suggestion, position: number) => Dismissal,
+): Promise<Dismissal | undefined> =>
+  transactionally(async (tx) => {
+    const ref = queues().doc(userId)
+    const queue = (await tx.get(ref)).data()
+    const position = queue?.suggestions.findIndex((candidate) => candidate.key === key) ?? -1
+    const suggestion = queue?.suggestions[position]
+    if (!queue || !suggestion) return undefined
+    const dismissal = dismissalOf(suggestion, position)
+    tx.set(dismissals().doc(`${userId}~${key}`), withoutAbsentFields(dismissal))
+    tx.set(
+      ref,
+      withoutAbsentFields({
+        ...queue,
+        suggestions: queue.suggestions.filter((candidate) => candidate.key !== key),
+      }),
+    )
+    return dismissal
+  })
 
 /** Claims the day's generation: true when this caller may ask the model, the
  *  queue's date stamped in the same transaction so a second caller — the home

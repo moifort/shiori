@@ -7,7 +7,12 @@ import type {
 import type { UserId } from '~/domain/shared/types'
 import { db } from '~/system/firebase'
 import { evictFromRequestCache, memoizedPerRequest } from '~/system/request-cache'
-import { deleteInBatches, genericDataConverter, withoutAbsentFields } from '~/utils/firestore'
+import {
+  deleteInBatches,
+  genericDataConverter,
+  transactionally,
+  withoutAbsentFields,
+} from '~/utils/firestore'
 
 // Private: one document per reader, book and format, naming its reader.
 const awaitedEditions = () =>
@@ -71,6 +76,25 @@ export const save = async (awaited: AwaitedEdition): Promise<AwaitedEdition> => 
   await awaitedEditions().doc(awaited.id).set(withoutAbsentFields(awaited))
   evictFromRequestCache(allCacheKey(awaited.userId))
   return awaited
+}
+
+/** Stamp the edition's alert on what is stored when the transaction runs, not
+ *  on the pass's copy: an edition the reader stopped awaiting meanwhile stays
+ *  gone. Undefined when it is. */
+export const markNotified = async (
+  id: AwaitedEditionId,
+  notifiedAt: Date,
+): Promise<AwaitedEdition | undefined> => {
+  const marked = await transactionally(async (tx) => {
+    const ref = awaitedEditions().doc(id)
+    const stored = (await tx.get(ref)).data()
+    if (!stored) return undefined
+    const next = { ...stored, notifiedAt }
+    tx.set(ref, withoutAbsentFields(next))
+    return next
+  })
+  if (marked) evictFromRequestCache(allCacheKey(marked.userId))
+  return marked
 }
 
 export const remove = async (userId: UserId, ids: readonly AwaitedEditionId[]): Promise<void> => {

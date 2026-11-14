@@ -5,7 +5,13 @@ import * as repository from './infrastructure/repository'
 import type { Dismissal, DismissalReason, SuggestionQueue } from './types'
 
 export namespace SuggestionCommand {
-  export const saveQueue = (queue: SuggestionQueue) => repository.saveQueue(queue)
+  /** Keep the selection just made, over the one stored: the month the reader
+   *  was last told of stays, or the first-of-the-month alert would go twice. */
+  export const saveQueue = async (queue: SuggestionQueue): Promise<void> => {
+    await repository.reviseQueue(queue.userId, (stored) =>
+      stored?.toldMonth && !queue.toldMonth ? { ...queue, toldMonth: stored.toldMonth } : queue,
+    )
+  }
 
   export const claimGeneration = (
     userId: UserId,
@@ -25,28 +31,21 @@ export namespace SuggestionCommand {
     key: string,
     reason: DismissalReason,
     now = new Date(),
-  ) => {
-    const queue = await repository.findQueue(userId)
-    const position = queue?.suggestions.findIndex((candidate) => candidate.key === key) ?? -1
-    const suggestion = queue?.suggestions[position]
-    if (!queue || !suggestion) return 'not-found' as const
-    const dismissal: Dismissal = {
+  ) =>
+    (await repository.dismissFromQueue(
       userId,
       key,
-      title: suggestion.title,
-      authors: suggestion.authors,
-      reason,
-      dismissedAt: now,
-      suggestion,
-      position,
-    }
-    await repository.saveDismissal(dismissal)
-    await repository.saveQueue({
-      ...queue,
-      suggestions: queue.suggestions.filter((candidate) => candidate.key !== key),
-    })
-    return dismissal
-  }
+      (suggestion, position): Dismissal => ({
+        userId,
+        key,
+        title: suggestion.title,
+        authors: suggestion.authors,
+        reason,
+        dismissedAt: now,
+        suggestion,
+        position,
+      }),
+    )) ?? ('not-found' as const)
 
   /** A dismissal taken back: the book may be suggested again, the model no
    *  longer told of it, and, turned down this month, it returns to the line
@@ -55,22 +54,23 @@ export namespace SuggestionCommand {
     const dismissal = await repository.findDismissal(userId, key)
     if (!dismissal) return 'not-found' as const
     await repository.deleteDismissal(userId, key)
-    const queue = await repository.findQueue(userId)
     const { suggestion, position } = dismissal
-    if (
-      queue &&
-      suggestion &&
-      queue.month === monthOf(dismissal.dismissedAt) &&
-      !queue.suggestions.some((candidate) => candidate.key === key)
-    ) {
-      const suggestions = [...queue.suggestions]
-      suggestions.splice(
-        Math.min(position ?? suggestions.length, suggestions.length),
-        0,
-        suggestion,
-      )
-      await repository.saveQueue({ ...queue, suggestions })
-    }
+    if (suggestion)
+      await repository.reviseQueue(userId, (queue) => {
+        if (
+          !queue ||
+          queue.month !== monthOf(dismissal.dismissedAt) ||
+          queue.suggestions.some((candidate) => candidate.key === key)
+        )
+          return undefined
+        const suggestions = [...queue.suggestions]
+        suggestions.splice(
+          Math.min(position ?? suggestions.length, suggestions.length),
+          0,
+          suggestion,
+        )
+        return { ...queue, suggestions }
+      })
     return 'reconsidered' as const
   }
 

@@ -681,7 +681,7 @@ export namespace DiscoveryUseCase {
           if (delivery !== 'undelivered') settled.push(key)
         }
         if (settled.length === 0) continue
-        await DiscoveryCommand.markNotified(reader, settled)
+        await DiscoveryCommand.markNotified(reader.userId, settled)
         reached += 1
       } catch (error) {
         logger.warn('release alerts failed', { error, userId: reader.userId })
@@ -731,7 +731,7 @@ export namespace DiscoveryUseCase {
         // Named to no device, the volumes wait for next Sunday's digest.
         if (delivery === 'undelivered') continue
         await DiscoveryCommand.markAnnounced(
-          reader,
+          reader.userId,
           due.map((announcement) => announcement.key),
         )
         reached += 1
@@ -1125,14 +1125,8 @@ const rememberReader = async (
     JSON.stringify(known.narrators ?? []) === JSON.stringify(narrators) &&
     !readerIsStale(known, now)
   if (unchanged && !force) return known
-  return DiscoveryCommand.saveReader({
-    userId,
-    language,
-    sagas,
-    authors,
-    narrators,
-    syncedAt: now,
-    notified: known?.notified ?? [],
-    ...(known?.announced ? { announced: known.announced } : {}),
-  })
+  return DiscoveryCommand.rememberLibrary(
+    { userId, language, sagas, authors, narrators, syncedAt: now },
+    known,
+  )
 }

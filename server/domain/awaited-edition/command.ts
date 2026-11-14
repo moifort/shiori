@@ -16,9 +16,12 @@ export namespace AwaitedEditionCommand {
   export const remove = (userId: UserId, ids: readonly AwaitedEditionId[]): Promise<void> =>
     repository.remove(userId, ids)
 
-  /** The alert went out, or was passed over: either way, never again. */
-  export const markNotified = (awaited: AwaitedEdition, now: Date): Promise<AwaitedEdition> =>
-    repository.save({ ...awaited, notifiedAt: now })
+  /** The alert went out, or was passed over: either way, never again.
+   *  Undefined when the reader stopped awaiting it meanwhile. */
+  export const markNotified = (
+    awaited: AwaitedEdition,
+    now: Date,
+  ): Promise<AwaitedEdition | undefined> => repository.markNotified(awaited.id, now)
 
   /** What the web says of an edition, beside the descriptions its release
    *  keeps. */

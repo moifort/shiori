@@ -13,34 +13,35 @@ import type { UserId } from '~/domain/shared/types'
 const REMEMBERED = 500
 
 export namespace DiscoveryCommand {
-  export const saveReader = (reader: DiscoveryReader): Promise<DiscoveryReader> =>
-    repository.saveReader(reader)
+  /** What the passes need to know of the reader's library, worked out from it
+   *  just now. The alerts and digests already sent are kept as they stand. */
+  export const rememberLibrary = (
+    library: Pick<
+      DiscoveryReader,
+      'userId' | 'language' | 'sagas' | 'authors' | 'narrators' | 'syncedAt'
+    >,
+    known: DiscoveryReader | undefined,
+  ): Promise<DiscoveryReader> => repository.saveReaderLibrary(library, known)
 
   /** These volumes were pushed, or were due while the alert was off: either
-   *  way, never again. */
+   *  way, never again. Added to what is stored, not to the pass's copy. */
   export const markNotified = (
-    reader: DiscoveryReader,
+    userId: UserId,
     keys: readonly string[],
-  ): Promise<DiscoveryReader> =>
-    repository.saveReader({
-      ...reader,
-      notified: [...reader.notified.filter((key) => !keys.includes(key)), ...keys].slice(
-        -REMEMBERED,
-      ),
-    })
+  ): Promise<DiscoveryReader | undefined> =>
+    repository.reviseReader(userId, (stored) =>
+      stored ? { ...stored, notified: remembered(stored.notified, keys) } : undefined,
+    )
 
   /** These volumes were named in a weekly digest, or were new while the alert
    *  was off: either way, never named again. */
   export const markAnnounced = (
-    reader: DiscoveryReader,
+    userId: UserId,
     keys: readonly string[],
-  ): Promise<DiscoveryReader> => {
-    const known = reader.announced ?? []
-    return repository.saveReader({
-      ...reader,
-      announced: [...known.filter((key) => !keys.includes(key)), ...keys].slice(-REMEMBERED),
-    })
-  }
+  ): Promise<DiscoveryReader | undefined> =>
+    repository.reviseReader(userId, (stored) =>
+      stored ? { ...stored, announced: remembered(stored.announced ?? [], keys) } : undefined,
+    )
 
   export const saveWatch = (watch: SagaWatch): Promise<void> => repository.saveWatch(watch)
 
@@ -67,3 +68,7 @@ export namespace DiscoveryCommand {
     changedAt = new Date(),
   ): Promise<void> => repository.saveLibraryChanges(userIds, changedAt)
 }
+
+/** The keys known with these added last, the oldest dropped past the limit. */
+const remembered = (known: readonly string[], keys: readonly string[]): string[] =>
+  [...known.filter((key) => !keys.includes(key)), ...keys].slice(-REMEMBERED)

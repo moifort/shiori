@@ -155,6 +155,35 @@ describe('the month’s discoveries', () => {
     )
   })
 
+  // The first-of-the-month alert goes once: a selection made again in the
+  // month, in another language, must not forget the reader was told.
+  test('a selection made again in the month keeps the month the reader was told of', async () => {
+    await look()
+    fake.seed('suggestion-queues', reader, {
+      ...fake.data('suggestion-queues', reader),
+      toldMonth: '2026-10',
+    })
+
+    await look('2026-10-17T09:00:00Z', 'en')
+
+    expect(prompts).toHaveLength(2)
+    expect(fake.data('suggestion-queues', reader)?.language).toBe('en')
+    expect(fake.data('suggestion-queues', reader)?.toldMonth).toBe('2026-10')
+  })
+
+  test('a dismissal takes the suggestion out and keeps what puts it back, in one transaction', async () => {
+    await look()
+    const before = fake.transactions.length
+
+    await SuggestionUseCase.dismiss(reader, 'silo--hugh-howey', 'not-interested')
+
+    expect(fake.transactions.slice(before)).toHaveLength(1)
+    expect(fake.transactions.at(-1)?.map((op) => op.ref.collectionPath).sort()).toEqual([
+      'suggestion-dismissals',
+      'suggestion-queues',
+    ])
+  })
+
   test('a look while another is making the selection says it is on its way', async () => {
     fake.seed('suggestion-queues', reader, {
       userId: reader,

@@ -25,7 +25,7 @@ import {
   memoizedPerRequest,
   rememberInRequestCache,
 } from '~/system/request-cache'
-import { genericDataConverter, withoutAbsentFields } from '~/utils/firestore'
+import { genericDataConverter, transactionally, withoutAbsentFields } from '~/utils/firestore'
 
 // Shared documents, holding no reference to any reader: keyed by the saga and
 // the language, so every reader who follows the same saga converges on one
@@ -161,10 +161,43 @@ export const findReader = (userId: UserId): Promise<DiscoveryReader | undefined>
 export const findAllReaders = async (): Promise<DiscoveryReader[]> =>
   (await readers().get()).docs.map((doc) => doc.data())
 
-export const saveReader = async (reader: DiscoveryReader): Promise<DiscoveryReader> => {
-  await readers().doc(reader.userId).set(withoutAbsentFields(reader))
-  rememberInRequestCache(readerCacheKey(reader.userId), Promise.resolve(reader))
+/** Write what the passes need to know of the reader's library, those fields
+ *  alone: the alerts and digests a pass recorded meanwhile stay as stored, at
+ *  no read. A reader stored for the first time starts with none sent. */
+export const saveReaderLibrary = async (
+  library: Pick<
+    DiscoveryReader,
+    'userId' | 'language' | 'sagas' | 'authors' | 'narrators' | 'syncedAt'
+  >,
+  known: DiscoveryReader | undefined,
+): Promise<DiscoveryReader> => {
+  const fields = known ? library : { ...library, notified: [] }
+  await readers().doc(library.userId).set(withoutAbsentFields(fields), { merge: true })
+  const reader: DiscoveryReader = { notified: [], ...known, ...fields }
+  rememberInRequestCache(readerCacheKey(library.userId), Promise.resolve(reader))
   return reader
+}
+
+/** Rewrite the reader from what is stored when the transaction runs, never
+ *  from a copy a pass read earlier: two passes crossing each keep what the
+ *  other wrote. `revise` answers undefined to write nothing — a reader deleted
+ *  meanwhile is not brought back — and the stored reader is then returned. */
+export const reviseReader = async (
+  userId: UserId,
+  revise: (stored: DiscoveryReader | undefined) => DiscoveryReader | undefined,
+): Promise<DiscoveryReader | undefined> => {
+  const written = await transactionally(async (tx) => {
+    const ref = readers().doc(userId)
+    const stored = (await tx.get(ref)).data()
+    const revised = revise(stored)
+    if (!revised) return stored
+    const document = withoutAbsentFields(revised)
+    tx.set(ref, document)
+    return document
+  })
+  if (written) rememberInRequestCache(readerCacheKey(userId), Promise.resolve(written))
+  else evictFromRequestCache(readerCacheKey(userId))
+  return written
 }
 
 export const removeReader = async (userId: UserId): Promise<void> => {
