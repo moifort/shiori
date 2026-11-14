@@ -4,6 +4,8 @@ import SwiftUI
 enum PileAction {
     case openBook(Book)
     case openSeries(FollowedSeries)
+    /// A volume the reader lacks, on its own page.
+    case openVolume(DiscoveryVolume)
     case selectGenre(BookGenre?)
     case menu(Book, BookQuickAction)
     case openWishlist
@@ -12,14 +14,14 @@ enum PileAction {
 
 /// "Pile à lire", for choosing the next book: a rail per reason to read one —
 /// what was begun, the next volume of each saga in progress as the series
-/// screen's "À suivre" draws it, what someone recommended, the favourite
+/// screen's "Séries à continuer" draws it, what someone recommended, the favourite
 /// authors and narrators, the award winners, the authors never read. The pills narrow every rail to a genre.
 struct PilePage: View {
     let pile: Pile
     /// What can be had now from the wishlist, each cover labelled with where it
     /// came from: a rail after the books begun, opening the list.
     var wished: [PosterRow.Item] = []
-    /// The series screen's "À suivre", narrowed to the pills: a rail after
+    /// The series screen's "Séries à continuer", narrowed to the pills: a rail after
     /// the books begun, above the wishlist's.
     var upNext: [(series: FollowedSeries, volume: FollowedSeries.NextVolume)] = []
     var genres: [BookGenre] = []
@@ -49,15 +51,15 @@ struct PilePage: View {
         .refreshable { onAction(.refresh) }
     }
 
-    /// The server's sections but its "La suite", which "À suivre" replaces.
+    /// The server's sections but its "La suite", which "Séries à continuer" replaces.
     private var sections: [PileSection] {
         pile.sections.filter { $0.kind != .nextVolume }
     }
 
-    /// What comes after the books begun: "À suivre", then the wishlist.
+    /// What comes after the books begun: "Séries à continuer", then the wishlist.
     @ViewBuilder private var followOn: some View {
         if !upNext.isEmpty {
-            SeriesUpNextRail(upNext: upNext) { onAction(.openSeries($0)) }
+            SeriesUpNextRail(upNext: upNext) { onAction(.open($0)) }
         }
         wishRail
     }

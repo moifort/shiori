@@ -90,7 +90,7 @@ final class SeriesShelfViewModel {
         isLoading = false
     }
 
-    /// Follows a saga set aside again: it goes back to "À suivre" and the
+    /// Follows a saga set aside again: it goes back to "Séries à continuer" and the
     /// releases.
     func follow(_ saga: FollowedSeries) async {
         do {

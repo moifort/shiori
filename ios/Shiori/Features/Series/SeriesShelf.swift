@@ -43,8 +43,8 @@ extension FollowedSeries {
             return .owned(open)
         }
         for item in strip {
-            if case let .missing(_, number, title, forthcoming, _, coverURL) = item, !forthcoming {
-                return .missing(number: number, title: title, coverURL: coverURL)
+            if case let .missing(_, number, title, forthcoming, date, coverURL) = item, !forthcoming {
+                return .missing(number: number, title: title, date: date, coverURL: coverURL)
             }
         }
         return nil
@@ -82,7 +82,7 @@ extension FollowedSeries {
         )
     }
 
-    /// Set aside by the reader: out of "À suivre", the releases and the home.
+    /// Set aside by the reader: out of "Séries à continuer", the releases and the home.
     var isSetAside: Bool { state == .unfollowed }
 
     /// The tag in the card's corner: the next volume's date, "Tome 15 · 12 déc." —
@@ -99,7 +99,28 @@ extension FollowedSeries {
 
     enum NextVolume: Hashable {
         case owned(Book)
-        case missing(number: Int?, title: String, coverURL: URL?)
+        case missing(number: Int?, title: String, date: String?, coverURL: URL?)
+    }
+
+    /// What a tap on the next volume opens: the reader's own volume, else the
+    /// page of the volume they lack, as the saga screen opens it; the saga
+    /// only for a volume with no number to file it at.
+    enum UpNextTarget {
+        case book(Book)
+        case volume(DiscoveryVolume)
+        case series(FollowedSeries)
+    }
+
+    func target(of volume: NextVolume) -> UpNextTarget {
+        switch volume {
+        case let .owned(book): return .book(book)
+        case let .missing(number, title, date, coverURL):
+            guard let number else { return .series(self) }
+            return .volume(DiscoveryVolume(
+                saga: SagaDiscovery(series: self, releases: SagaReleases(watched: true, next: nil)),
+                volume: DiscoveredVolume(number: number, title: title, date: date, isbn13: nil, coverURL: coverURL)
+            ))
+        }
     }
 
     struct Release: Hashable {
@@ -111,7 +132,7 @@ extension FollowedSeries {
 }
 
 extension [FollowedSeries] {
-    /// "À suivre": the sagas being read, the next volume of each. A saga
+    /// "Séries à continuer": the sagas being read, the next volume of each. A saga
     /// with a volume open is left out: that volume is already in "À finir".
     var upNext: [(series: FollowedSeries, volume: FollowedSeries.NextVolume)] {
         filter { $0.state == .inProgress }
@@ -176,5 +197,27 @@ enum SeriesShelfFilter: String, CaseIterable, Identifiable, Sendable {
     /// The filters that hold a saga, "Toutes" first and always.
     static func offered(for series: [FollowedSeries]) -> [SeriesShelfFilter] {
         allCases.filter { $0 == .all || series.contains(where: $0.keeps) }
+    }
+}
+
+extension PileAction {
+    /// The action a cover of "Séries à continuer" asks for.
+    static func open(_ target: FollowedSeries.UpNextTarget) -> PileAction {
+        switch target {
+        case let .book(book): .openBook(book)
+        case let .volume(volume): .openVolume(volume)
+        case let .series(saga): .openSeries(saga)
+        }
+    }
+}
+
+extension SeriesShelfAction {
+    /// The action a cover of "Séries à continuer" asks for.
+    static func open(_ target: FollowedSeries.UpNextTarget) -> SeriesShelfAction {
+        switch target {
+        case let .book(book): .openBook(book)
+        case let .volume(volume): .openVolume(volume)
+        case let .series(saga): .openSeries(saga)
+        }
     }
 }

@@ -6,11 +6,12 @@ struct PileScreen: View {
     var client: LibraryClient = .live
 
     @State private var viewModel: PileViewModel
-    /// The series screen's own model, for its "À suivre": opened on the
+    /// The series screen's own model, for its "Séries à continuer": opened on the
     /// same snapshot, refreshed with the pile.
     @State private var series: SeriesShelfViewModel
     @State private var destination: LibraryDestination?
     @State private var quick: BookQuickRequest?
+    @State private var volume: DiscoveryVolume?
 
     init(view: ShelvesView = ShelvesView(), client: LibraryClient = .live, seriesClient: SeriesClient = .live) {
         self.client = client
@@ -32,6 +33,7 @@ struct PileScreen: View {
         .scrollAwayBar(BookShelf.toRead.title)
         .pushesDetail(item: $destination) { LibraryDestinationScreen(destination: $0, client: client) }
         .performsBookQuickActions($quick, client: client) { destination = $0 }
+        .pushesDetail(item: $volume) { AnnouncedVolumeScreen(saga: $0.saga, volume: $0.volume) }
         .task { await viewModel.loadOnAppear() }
         .task { await series.loadOnAppear() }
         .onReceive(NotificationCenter.default.publisher(for: .shioriDataDidChange)) { _ in
@@ -47,6 +49,7 @@ struct PileScreen: View {
         switch action {
         case let .openBook(book): destination = .book(book)
         case let .openSeries(saga): destination = .series(saga.seriesId)
+        case let .openVolume(volume): self.volume = volume
         case let .selectGenre(genre): Task { await viewModel.select(genre: genre) }
         case let .menu(book, action): quick = BookQuickRequest(book: book, action: action)
         case .openWishlist: destination = .wishlist

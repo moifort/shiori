@@ -1,14 +1,14 @@
 import SwiftUI
 
-/// "À suivre": the next volume of each saga in progress, held or not, as the
-/// series screen and the pile both draw it. A cover opens its saga.
+/// "Séries à continuer": the next volume of each saga in progress, held or not, as the
+/// series screen and the pile both draw it. A cover opens its volume.
 struct SeriesUpNextRail: View {
     let upNext: [(series: FollowedSeries, volume: FollowedSeries.NextVolume)]
-    let onOpen: (FollowedSeries) -> Void
+    let onOpen: (FollowedSeries.UpNextTarget) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            RowHeader(title: "À suivre", style: .inline).padding(.horizontal, 20)
+            RowHeader(title: "Séries à continuer", style: .inline).padding(.horizontal, 20)
             PosterRow(items: upNext.map(item)) { _ in }
                 .contentMargins(.horizontal, 20, for: .scrollContent)
         }
@@ -16,7 +16,7 @@ struct SeriesUpNextRail: View {
     }
 
     private func item(_ entry: (series: FollowedSeries, volume: FollowedSeries.NextVolume)) -> PosterRow.Item {
-        let open = { onOpen(entry.series) }
+        let open = { onOpen(entry.series.target(of: entry.volume)) }
         switch entry.volume {
         case let .owned(book):
             let caption = book.series?.volume.map { String(localized: "Tome \($0)") } ?? book.title
@@ -25,7 +25,7 @@ struct SeriesUpNextRail: View {
                 label: PosterLabel(caption: caption, marksReading: book.status == .reading),
                 open: open
             )
-        case let .missing(number, title, coverURL):
+        case let .missing(number, title, _, coverURL):
             let book = Book(
                 id: "next-\(entry.series.id)",
                 title: title,

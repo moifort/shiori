@@ -3,12 +3,15 @@ import SwiftUI
 /// Everything the series screen of the Library tab can ask for.
 enum SeriesShelfAction {
     case openSeries(FollowedSeries)
+    case openBook(Book)
+    /// A volume the reader lacks, on its own page.
+    case openVolume(DiscoveryVolume)
     case selectFilter(SeriesShelfFilter)
     case follow(FollowedSeries)
     case refresh
 }
 
-/// The series, as the TV app sets out the shows one follows: "À suivre", the
+/// The series, as the TV app sets out the shows one follows: "Séries à continuer", the
 /// next volume of each saga in progress; "Prochaines sorties", the volumes
 /// announced, each drawn as the saga screen's release card, in a rail; then every saga as the home's cards, two by
 /// row, under their filters, the last of which, "Non suivies", lists the
@@ -31,7 +34,7 @@ struct SeriesShelfPage: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 30) {
                 if !upNext.isEmpty {
-                    SeriesUpNextRail(upNext: upNext) { onAction(.openSeries($0)) }
+                    SeriesUpNextRail(upNext: upNext) { onAction(.open($0)) }
                 }
                 if !releases.isEmpty {
                     VStack(alignment: .leading, spacing: SeriesReleaseCard.headerSpacing) {
@@ -110,7 +113,7 @@ struct SeriesShelfPage: View {
                     ) { id in onAction(.selectFilter(id.flatMap(SeriesShelfFilter.init(rawValue:)) ?? .all)) }
                 }
                 if filter == .notFollowed {
-                    Text("Ces séries ne sont plus suivies : elles n'apparaissent ni dans « À suivre », ni dans les sorties, ni sur l'accueil. Leurs tomes restent dans la bibliothèque.")
+                    Text("Ces séries ne sont plus suivies : elles n'apparaissent ni dans « Séries à continuer », ni dans les sorties, ni sur l'accueil. Leurs tomes restent dans la bibliothèque.")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .padding(.horizontal, 20)

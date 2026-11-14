@@ -4201,18 +4201,18 @@
         }
       }
     },
-    "Ces séries ne sont plus suivies : elles n'apparaissent ni dans « À suivre », ni dans les sorties, ni sur l'accueil. Leurs tomes restent dans la bibliothèque." : {
+    "Ces séries ne sont plus suivies : elles n'apparaissent ni dans « Séries à continuer », ni dans les sorties, ni sur l'accueil. Leurs tomes restent dans la bibliothèque." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "These series are no longer followed: they appear neither in “Up Next”, nor in the releases, nor on the home screen. Their volumes stay in the library."
+            "value" : "These series are no longer followed: they appear neither in “Series to Continue”, nor in the releases, nor on the home screen. Their volumes stay in the library."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ces séries ne sont plus suivies : elles n'apparaissent ni dans « À suivre », ni dans les sorties, ni sur l'accueil. Leurs tomes restent dans la bibliothèque."
+            "value" : "Ces séries ne sont plus suivies : elles n'apparaissent ni dans « Séries à continuer », ni dans les sorties, ni sur l'accueil. Leurs tomes restent dans la bibliothèque."
           }
         }
       }
@@ -14645,6 +14645,22 @@
         }
       }
     },
+    "Séries à continuer" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Series to Continue"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Séries à continuer"
+          }
+        }
+      }
+    },
     "Tendances" : {
       "localizations" : {
         "en" : {
@@ -17409,22 +17425,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "À lire"
-          }
-        }
-      }
-    },
-    "À suivre" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Up Next"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "À suivre"
           }
         }
       }

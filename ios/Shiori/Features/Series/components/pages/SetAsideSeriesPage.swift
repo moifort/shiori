@@ -14,7 +14,7 @@ struct SetAsideSeriesPage: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                Text("Ces séries ne sont plus suivies : elles n'apparaissent ni dans « À suivre », ni dans les sorties, ni sur l'accueil. Leurs tomes restent dans la bibliothèque.")
+                Text("Ces séries ne sont plus suivies : elles n'apparaissent ni dans « Séries à continuer », ni dans les sorties, ni sur l'accueil. Leurs tomes restent dans la bibliothèque.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 20)

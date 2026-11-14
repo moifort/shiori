@@ -152,7 +152,7 @@ struct SeriesShelfTests {
 
     @Test func theNextVolumeIsTheOneOpenElseTheFirstLacking() {
         #expect(saga(owned: [.read, .reading, .toRead], published: 3).nextVolume == .owned(saga(owned: [.read, .reading, .toRead], published: 3).volumes[1]))
-        if case let .missing(number, _, _) = saga(owned: [.read, .read], published: 4).nextVolume {
+        if case let .missing(number, _, _, _) = saga(owned: [.read, .read], published: 4).nextVolume {
             #expect(number == 3)
         } else {
             Issue.record("expected the first volume lacking")

@@ -7,6 +7,8 @@ struct SeriesShelfScreen: View {
 
     @State private var viewModel: SeriesShelfViewModel
     @State private var openSeries: SeriesDestinationID?
+    @State private var openBook: Book?
+    @State private var openVolume: DiscoveryVolume?
 
     init(filter: SeriesShelfFilter = .all, client: SeriesClient = .live) {
         self.client = client
@@ -25,6 +27,8 @@ struct SeriesShelfScreen: View {
         ) { action in
             switch action {
             case let .openSeries(saga): openSeries = SeriesDestinationID(id: saga.seriesId)
+            case let .openBook(book): openBook = book
+            case let .openVolume(volume): openVolume = volume
             case let .selectFilter(filter): withAnimation(.smooth) { viewModel.filter = filter }
             case let .follow(saga): Task { await viewModel.follow(saga) }
             case .refresh: Task { await viewModel.load() }
@@ -32,6 +36,8 @@ struct SeriesShelfScreen: View {
         }
         .scrollAwayBar(String(localized: "Séries"))
         .pushesDetail(item: $openSeries) { SeriesScreen(seriesId: $0.id) }
+        .pushesDetail(item: $openBook) { BookScreen(bookId: $0.id) }
+        .pushesDetail(item: $openVolume) { AnnouncedVolumeScreen(saga: $0.saga, volume: $0.volume) }
         .task { await viewModel.loadOnAppear() }
         .onReceive(NotificationCenter.default.publisher(for: .shioriDataDidChange)) { _ in
             Task { await viewModel.load() }
