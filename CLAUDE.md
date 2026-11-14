@@ -71,11 +71,11 @@ Runtime: always `bun` / `bunx`, never `npm` / `npx`.
    zone) and commits, and resolves the thread as soon as it has handled it (rule 7). This standing rule is the user's request to start
    those sessions: never ask first. A comment sent from the board arrives as an automated
    turn, where the app refuses `user_asked` but not sending a message, so the parent keeps
-   **two standby sessions** (title "Réserve board", started empty, `user_asked`, fresh
-   context, waiting for a mission). On a comment with no child on its theme, it sends the full
+   **standby sessions**, at least three free at any time, titled `B1`, `B2`… (started empty,
+   `user_asked`, fresh context, waiting for a mission). On a comment with no child on its theme, it sends the full
    brief to a standby (`send_message`), which becomes that thread's child; the parent renames it
-   "Réserve board N · <theme>".
-   On each of the user's messages, it first tops the standbys back up to two (`list_sessions`,
+   "BN · <theme>" (short, so the theme stays readable in the sidebar).
+   On each of the user's messages, it first tops the free standbys back up to three (`list_sessions`,
    `linked: true`, to count them, also after a clear). No standby left: propose the session
    (`own_initiative`, same brief) and start it with its `proposal_id` at the user's next
    message. If the proposal is refused too (Remote Control, where cards do not show), say so in
@@ -95,7 +95,7 @@ Runtime: always `bun` / `bunx`, never `npm` / `npx`.
    (`ArtifactComments`, `resolve`, no reply), without waiting for the validation. On the user's
    yes a child that was a standby is recycled, never archived: it sends the parent
    "Réserve libérée : <title>" and stops, and the parent clears its context (`clear_session`),
-   renames it "Réserve board N · libre" (`set_session_title`) and re-sends the standby brief, so
+   renames it "BN · libre" (`set_session_title`) and re-sends the standby brief, so
    it waits again (archiving drains the pool). Any other child archives itself
    (`archive_session` on its own id). If they ask for changes, it makes them and asks again.
    Every child brief says so. When the user archives or deletes a child themself, that closes

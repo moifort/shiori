@@ -64,13 +64,13 @@ thread of a child the user closed themself, only the parent listens to the board
 Why a child does not always start at once: a comment sent from the board reaches the parent as
 an automated turn, not as the user's own message, and the app refuses to start a session
 (`user_asked`) on such a turn, though it still lets the parent message an existing session. So
-the parent keeps two **standby sessions** ("Réserve board", started empty, waiting for a
+the parent keeps **standby sessions**, at least three free, titled `B1`, `B2`… (started empty, waiting for a
 mission): on a comment with no child on its theme, it sends the full brief to a standby, which
-becomes that thread's child at once (the parent renames it "Réserve board N · <theme>"). Once
+becomes that thread's child at once (the parent renames it "BN · <theme>"). Once
 the user validates its work, the standby sends "Réserve libérée : <title>"; the parent clears
-its context (`clear_session`), renames it "Réserve board N · libre" and re-sends the standby
+its context (`clear_session`), renames it "BN · libre" and re-sends the standby
 brief. A standby is never archived. On each of the user's messages the
-parent first tops the standbys back up to two (`list_sessions`, `linked: true`, also after a
+parent first tops the free standbys back up to three (`list_sessions`, `linked: true`, also after a
 clear). With no standby left, the parent proposes the child instead (`own_initiative`, a card
 the user clicks). Over Remote Control the cards do not show and the app refuses the proposal
 too: the parent then says so in one line starting with "⏸ Bloqué" that tells the user what to
