@@ -1,7 +1,12 @@
 import type { KindleCredentials, KindleTitle } from 'kindle-api-ts'
 import { AdminCommand } from '~/domain/admin/command'
 import { AnalyticsUseCase } from '~/domain/analytics/use-case'
-import { kindleMoveOf, mediaFor, shelfOf } from '~/domain/book/business-rules'
+import {
+  kindleMoveOf,
+  markedRemovedByReader,
+  mediaFor,
+  shelfOf,
+} from '~/domain/book/business-rules'
 import { BookCommand } from '~/domain/book/command'
 import { KindlePosition } from '~/domain/book/primitives'
 import { BookQuery } from '~/domain/book/query'
@@ -24,12 +29,11 @@ import {
 } from '~/domain/kindle/business-rules'
 import { KindleCommand } from '~/domain/kindle/command'
 import { bookFrom as exportedBookFrom, importablesFrom } from '~/domain/kindle/export-rules'
-import { openCredentials } from '~/domain/kindle/infrastructure/credentials-vault'
+import { openReadableCredentials } from '~/domain/kindle/infrastructure/credentials-vault'
 import * as api from '~/domain/kindle/infrastructure/kindle-api'
 import { readTitles, TITLES_PER_CALL } from '~/domain/kindle/infrastructure/title-reader'
 import { KindleQuery } from '~/domain/kindle/query'
 import type {
-  ConnectedKindleAccount,
   ExportedKindleBook,
   ImportableKindleBook,
   KindleAsin,
@@ -42,21 +46,13 @@ import { SeriesUseCase } from '~/domain/series/use-case'
 import type { UserId } from '~/domain/shared/types'
 import { config } from '~/system/config'
 import { createLogger } from '~/system/logger'
+import { openedConnection } from '~/utils/amazon-connection'
 import { eachWithAtMostInFlight } from '~/utils/concurrency'
 import { bulkSave } from '~/utils/firestore'
 import { isPresent } from '~/utils/input'
-import { passOverReaders } from '~/utils/nightly-pass'
+import { NIGHTLY_BUDGET_MS, syncEveryConnectedReader } from '~/utils/nightly-pass'
 
 const logger = createLogger('kindle')
-
-/** How long a nightly run may spend before it leaves the rest for tomorrow: two
- *  thirds of the function's 180s ceiling, checked between readers. */
-const SYNC_BUDGET_MS = 120_000
-
-/** How many readers a nightly run passes over side by side: a pass mostly waits
- *  on Amazon. Kept low because every call leaves from the same few Google
- *  addresses, and Amazon's firewall already refuses some Kindle endpoints. */
-const SYNC_CONCURRENCY = 4
 
 export namespace KindleUseCase {
   /** The reader's Kindle library, as books they could catalogue. Nothing is
@@ -72,7 +68,7 @@ export namespace KindleUseCase {
       await BookQuery.all(userId),
       await readingsOf(titles),
       store,
-      await removedAsinsOf(userId),
+      await BookQuery.removedAsins(userId, 'kindle'),
     )
   }
 
@@ -97,9 +93,13 @@ export namespace KindleUseCase {
     // one the reader ticked, not a second answer of the model.
     const owned = await BookQuery.all(userId)
     const reads = await readingsOf(titles, now)
-    const chosen = toImportable(titles, owned, reads, store, await removedAsinsOf(userId)).filter(
-      (importable) => wanted.has(importable.asin) && !importable.alreadyInLibrary,
-    )
+    const chosen = toImportable(
+      titles,
+      owned,
+      reads,
+      store,
+      await BookQuery.removedAsins(userId, 'kindle'),
+    ).filter((importable) => wanted.has(importable.asin) && !importable.alreadyInLibrary)
     // A title the reader already holds on paper was shown "already there": it
     // joins that record here, as the nightly pass would join it.
     const links = kindleLinksFor(owned, titles, reads, store)
@@ -214,34 +214,22 @@ export namespace KindleUseCase {
    *  logged, and stepped over: Amazon refusing one account must not cost every
    *  other reader their night. */
   export const syncEveryReader = async (
-    budgetMs = SYNC_BUDGET_MS,
+    budgetMs = NIGHTLY_BUDGET_MS,
     startedAt = Date.now(),
-  ): Promise<KindleSyncRun> => {
-    const readers = await KindleQuery.readersToSync()
-    const run = await passOverReaders(readers, {
-      syncOne: async (userId) => {
-        const synced = typeof (await syncLibrary(userId)) === 'object'
-        // Outside any request: their Découvrir projections are told here.
-        if (synced) await DiscoveryCommand.recordLibraryChange([userId])
-        return synced
-      },
-      onFailure: async (userId, error) => {
-        logger.warn('nightly Kindle sync failed', { error, userId })
-        await KindleCommand.recordFailure(userId).catch((recordError) =>
-          logger.warn('Kindle sync failure could not be recorded', { error: recordError, userId }),
-        )
-      },
+  ): Promise<KindleSyncRun> =>
+    syncEveryConnectedReader(await KindleQuery.readersToSync(), {
+      syncLibrary: (userId) => syncLibrary(userId),
+      // Outside any request: their Découvrir projections are told here.
+      afterSync: (userId) => DiscoveryCommand.recordLibraryChange([userId]),
+      // Kept for the app, which offers to connect again.
+      afterFailure: (userId) =>
+        KindleCommand.recordFailure(userId).catch((error) =>
+          logger.warn('Kindle sync failure could not be recorded', { error, userId }),
+        ),
+      logger,
       budgetMs,
       startedAt,
-      concurrency: SYNC_CONCURRENCY,
     })
-    if (run.deferred > 0)
-      logger.warn('nightly Kindle sync budget spent, readers left for tomorrow', {
-        synced: run.synced,
-        deferred: run.deferred,
-      })
-    return run
-  }
 
   /** What an Amazon data export holds, ticked against the library it would join.
    *  Saves nothing. Kept for the deprecated export import. */
@@ -376,31 +364,14 @@ const fetchLibrary = async (
   }
 }
 
-/** The reader's account and its credentials, opened.
- *
- *  Credentials sealed with a key that no longer exists cannot be opened again,
- *  and never will be. That is a connection in name only, so it is dropped rather
- *  than reported as an Amazon failure the reader could retry forever: the app
- *  then offers to connect again, which is the one thing that works. */
-const connectedCredentials = async (userId: UserId) => {
-  const account = await KindleQuery.accountOf(userId)
-  if (!account) return 'not-connected' as const
-  const credentials = opened(account.credentials)
-  if (!credentials) {
-    logger.warn('unreadable Kindle credentials, connection dropped', { userId })
-    await KindleCommand.disconnect(userId)
-    return 'not-connected' as const
-  }
-  return { account, credentials }
-}
-
-const opened = (sealed: ConnectedKindleAccount['credentials']) => {
-  try {
-    return openCredentials(sealed)
-  } catch {
-    return undefined
-  }
-}
+/** The reader's account and its credentials, opened: see `openedConnection`. */
+const connectedCredentials = (userId: UserId) =>
+  openedConnection(userId, {
+    accountOf: KindleQuery.accountOf,
+    openIfReadable: openReadableCredentials,
+    disconnect: KindleCommand.disconnect,
+    logger,
+  })
 
 const toImportable = (
   titles: readonly KindleTitle[],
@@ -410,17 +381,11 @@ const toImportable = (
   removed: ReadonlySet<string> = new Set(),
 ): ImportableKindleBook[] => {
   const shelf = shelfOf(owned)
-  return titles
-    .map((title) => importableFrom(title, shelf, reads, store))
-    .filter(isPresent)
-    .map((importable) =>
-      removed.has(importable.asin) ? { ...importable, removedByReader: true } : importable,
-    )
+  return markedRemovedByReader(
+    titles.map((title) => importableFrom(title, shelf, reads, store)).filter(isPresent),
+    removed,
+  )
 }
-
-/** The Kindle titles whose book the reader deleted from Shiori. */
-const removedAsinsOf = async (userId: UserId): Promise<Set<string>> =>
-  new Set((await BookQuery.syncRemovals(userId, 'kindle')).map(({ asin }) => asin))
 
 /** The Kindle books filed as prose whose title was read before the format was
  *  asked: read again, once, and the drawn ones among them. */

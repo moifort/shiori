@@ -47,3 +47,54 @@ export const unseal = (sealed: string, key: Buffer): string => {
     decipher.final(),
   ]).toString('utf8')
 }
+
+/** What one integration keeps its device credentials in: sealed with its own
+ *  key, so each integration can rotate or lose its key without the other. */
+export type CredentialsVault<Credentials, Sealed extends string> = {
+  seal: (credentials: Credentials) => Sealed
+  open: (sealed: Sealed) => Credentials
+  /** The credentials, or nothing when they cannot be opened — sealed with a key
+   *  that no longer exists, which no retry will ever open. */
+  openIfReadable: (sealed: Sealed) => Credentials | undefined
+}
+
+/** A vault for one integration's credentials, stored as JSON.
+ *
+ *  The key is read per call rather than at import time: `config()` reads
+ *  Nitro's runtime config, which is not available while modules are still
+ *  loading. `revived` puts back what JSON loses — a date, say. */
+export const credentialsVault = <Credentials, Sealed extends string>({
+  integration,
+  keyName,
+  keyOf,
+  sealedOf,
+  revived = (credentials) => credentials,
+}: {
+  /** Named in the error a missing key throws: "Audible". */
+  integration: string
+  /** The environment variable the key comes from: "NITRO_AUDIBLE_KEY". */
+  keyName: string
+  keyOf: () => string | undefined
+  sealedOf: (sealed: string) => Sealed
+  revived?: (credentials: Credentials) => Credentials
+}): CredentialsVault<Credentials, Sealed> => {
+  const key = () => {
+    const configured = keyOf()
+    if (!configured)
+      throw new Error(`${keyName} is not set: ${integration} connections cannot be stored`)
+    return encryptionKeyOf(configured)
+  }
+  const open = (sealed: Sealed): Credentials =>
+    revived(JSON.parse(unseal(sealed, key())) as Credentials)
+  return {
+    seal: (credentials) => sealedOf(seal(JSON.stringify(credentials), key())),
+    open,
+    openIfReadable: (sealed) => {
+      try {
+        return open(sealed)
+      } catch {
+        return undefined
+      }
+    },
+  }
+}

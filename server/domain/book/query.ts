@@ -52,6 +52,10 @@ export namespace BookQuery {
   export const syncRemovals = (userId: UserId, source: SyncSource): Promise<SyncedBookRemoval[]> =>
     repository.findSyncRemovals(userId, source)
 
+  /** The titles of one library whose book the reader deleted, by ASIN. */
+  export const removedAsins = async (userId: UserId, source: SyncSource): Promise<Set<string>> =>
+    new Set((await repository.findSyncRemovals(userId, source)).map(({ asin }) => asin))
+
   export const byId = async (userId: UserId, bookId: BookId): Promise<BookView | undefined> => {
     const book = await repository.findById(userId, bookId)
     return book ? await withCover(book) : undefined

@@ -906,3 +906,15 @@ export const syncRemovalsOf = (book: Book, now: Date): SyncedBookRemoval[] => [
     ? [{ userId: book.userId, source: 'audible' as const, asin: book.audibleAsin, removedAt: now }]
     : []),
 ]
+
+/** The titles a sync offers, those whose book the reader deleted marked so: the
+ *  import screen shows them apart, and ticking one takes the deletion back. */
+export const markedRemovedByReader = <
+  Importable extends { asin: string; removedByReader?: boolean },
+>(
+  importables: readonly Importable[],
+  removed: ReadonlySet<string>,
+): Importable[] =>
+  importables.map((importable) =>
+    removed.has(importable.asin) ? { ...importable, removedByReader: true } : importable,
+  )

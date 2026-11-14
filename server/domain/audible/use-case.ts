@@ -19,16 +19,16 @@ import {
 } from '~/domain/audible/business-rules'
 import { AudibleCommand } from '~/domain/audible/command'
 import * as api from '~/domain/audible/infrastructure/audible-api'
-import { openCredentials } from '~/domain/audible/infrastructure/credentials-vault'
+import { openReadableCredentials } from '~/domain/audible/infrastructure/credentials-vault'
 import { AudibleQuery } from '~/domain/audible/query'
 import type {
   AudibleAsin,
   AudibleMarketplace,
-  ConnectedAccount,
   ImportableBook,
   LibrarySync,
   SyncRun,
 } from '~/domain/audible/types'
+import { markedRemovedByReader } from '~/domain/book/business-rules'
 import { BookCommand } from '~/domain/book/command'
 import { BookQuery } from '~/domain/book/query'
 import type { Book, BookLanguage } from '~/domain/book/types'
@@ -42,9 +42,10 @@ import type { SagaKey, SeriesName, VolumeNumber } from '~/domain/series/types'
 import { SeriesUseCase } from '~/domain/series/use-case'
 import type { AuthorName, BookTitle, UserId } from '~/domain/shared/types'
 import { createLogger } from '~/system/logger'
+import { openedConnection } from '~/utils/amazon-connection'
 import { bulkSave } from '~/utils/firestore'
 import { isPresent } from '~/utils/input'
-import { passOverReaders } from '~/utils/nightly-pass'
+import { NIGHTLY_BUDGET_MS, syncEveryConnectedReader } from '~/utils/nightly-pass'
 
 const logger = createLogger('audible')
 
@@ -65,7 +66,7 @@ export namespace AudibleUseCase {
     const fetched = await fetchLibrary(userId)
     if (fetched === 'not-connected') return fetched
     const owned = await BookQuery.all(userId)
-    return toImportable(fetched, owned, await removedAsinsOf(userId))
+    return toImportable(fetched, owned, await BookQuery.removedAsins(userId, 'audible'))
   }
 
   /** Catalogue the titles the reader ticked.
@@ -88,9 +89,11 @@ export namespace AudibleUseCase {
 
     const wanted = new Set<string>(asins)
     const owned = await BookQuery.all(userId)
-    const chosen = toImportable(fetched, owned, await removedAsinsOf(userId)).filter(
-      (importable) => wanted.has(importable.asin) && !importable.alreadyInLibrary,
-    )
+    const chosen = toImportable(
+      fetched,
+      owned,
+      await BookQuery.removedAsins(userId, 'audible'),
+    ).filter((importable) => wanted.has(importable.asin) && !importable.alreadyInLibrary)
 
     const imported: Book[] = []
     if (chosen.length > 0) {
@@ -291,55 +294,21 @@ export namespace AudibleUseCase {
     return BookUseCase.add(userId, volumeBookFrom(recording, membership, language))
   }
 
-  /** The nightly job: every reader who left the sync on, staleest first.
-   *
-   *  Bounded by time rather than by a count, because what the run is really
-   *  racing is the function's own ceiling — a 500-title library and a 5-title one
-   *  cost nothing alike. Whoever is not reached tonight sorts to the front
-   *  tomorrow, so the queue drains instead of starving anyone.
-   *
-   *  One reader's failure is logged and stepped over. Amazon refusing one
-   *  account — a revoked device, a changed password — must not cost every other
-   *  reader their night, and there is no one awake to retry for. */
+  /** The nightly job: every reader who left the sync on, stalest first. See
+   *  `syncEveryConnectedReader`. */
   export const syncEveryReader = async (
-    budgetMs = SYNC_BUDGET_MS,
+    budgetMs = NIGHTLY_BUDGET_MS,
     startedAt = Date.now(),
-  ): Promise<SyncRun> => {
-    const readers = await AudibleQuery.readersToSync()
-    const run = await passOverReaders(readers, {
-      syncOne: async (userId) => {
-        const synced = typeof (await syncLibrary(userId)) === 'object'
-        // Outside any request: their Découvrir projections are told here.
-        if (synced) await DiscoveryCommand.recordLibraryChange([userId])
-        return synced
-      },
-      onFailure: (userId, error) => logger.warn('nightly Audible sync failed', { error, userId }),
+  ): Promise<SyncRun> =>
+    syncEveryConnectedReader(await AudibleQuery.readersToSync(), {
+      syncLibrary: (userId) => syncLibrary(userId),
+      // Outside any request: their Découvrir projections are told here.
+      afterSync: (userId) => DiscoveryCommand.recordLibraryChange([userId]),
+      logger,
       budgetMs,
       startedAt,
-      concurrency: SYNC_CONCURRENCY,
     })
-    if (run.deferred > 0)
-      logger.warn('nightly sync budget spent, readers left for tomorrow', {
-        synced: run.synced,
-        deferred: run.deferred,
-      })
-    return run
-  }
 }
-
-/** How long a run may spend before it stops and leaves the rest for tomorrow.
- *
- *  Two thirds of the function's 180s ceiling, which leaves a whole reader's pass
- *  of margin: the budget is only checked between readers, so the run overshoots
- *  by however long the last one takes. A 504 in the middle of a pass would leave
- *  a library half-written with nothing recording where it stopped. */
-const SYNC_BUDGET_MS = 120_000
-
-/** How many readers a nightly run passes over side by side. A pass mostly waits
- *  on Amazon, so four multiply what a night reaches (about a dozen readers one at
- *  a time, measured 2026-11-08) without four times the load on one account; kept
- *  low because every call leaves from the same few Google addresses. */
-const SYNC_CONCURRENCY = 4
 
 /** One trip to Amazon, with the rotated access token written back.
  *
@@ -363,31 +332,14 @@ const fetchLibrary = async (userId: UserId) => {
   return { items, positions, account }
 }
 
-/** The reader's account and its credentials, opened.
- *
- *  Credentials sealed with a key that no longer exists cannot be opened again,
- *  and never will be. That is a connection in name only, so it is dropped here
- *  rather than reported as an Amazon failure the reader could retry forever:
- *  the app then offers to connect again, which is the one thing that works. */
-const connectedCredentials = async (userId: UserId) => {
-  const account = await AudibleQuery.accountOf(userId)
-  if (!account) return 'not-connected' as const
-  const credentials = opened(account.credentials)
-  if (!credentials) {
-    logger.warn('unreadable Audible credentials, connection dropped', { userId })
-    await AudibleCommand.disconnect(userId)
-    return 'not-connected' as const
-  }
-  return { account, credentials }
-}
-
-const opened = (sealed: ConnectedAccount['credentials']) => {
-  try {
-    return openCredentials(sealed)
-  } catch {
-    return undefined
-  }
-}
+/** The reader's account and its credentials, opened: see `openedConnection`. */
+const connectedCredentials = (userId: UserId) =>
+  openedConnection(userId, {
+    accountOf: AudibleQuery.accountOf,
+    openIfReadable: openReadableCredentials,
+    disconnect: AudibleCommand.disconnect,
+    logger,
+  })
 
 const toImportable = (
   fetched: {
@@ -399,17 +351,13 @@ const toImportable = (
 ): ImportableBook[] => {
   const shelf = shelfOf(owned)
   const heard = heardByAsin(fetched.positions)
-  return fetched.items
-    .map((item) => importableFrom(item, shelf, heard.get(item.asin)))
-    .filter(isPresent)
-    .map((importable) =>
-      removed.has(importable.asin) ? { ...importable, removedByReader: true } : importable,
-    )
+  return markedRemovedByReader(
+    fetched.items
+      .map((item) => importableFrom(item, shelf, heard.get(item.asin)))
+      .filter(isPresent),
+    removed,
+  )
 }
-
-/** The Audible titles whose book the reader deleted from Shiori. */
-const removedAsinsOf = async (userId: UserId): Promise<Set<string>> =>
-  new Set((await BookQuery.syncRemovals(userId, 'audible')).map(({ asin }) => asin))
 
 type Credentials = Parameters<typeof api.search>[0]
 
