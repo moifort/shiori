@@ -6,8 +6,20 @@ import type { Avatar, UserProfile } from '~/domain/user/types'
 export namespace UserCommand {
   // Persist the profile that marks onboarding done. The welcome scans are
   // granted separately by UserUseCase.completeOnboarding, in the same batch.
-  export const completeOnboarding = (userId: UserId, firstName: PersonName, batch?: WriteBatch) =>
-    repository.saveProfile({ userId, firstName, onboardingCompletedAt: new Date() }, batch)
+  // Called again on a finished profile it changes the first name alone: the
+  // avatar, the admin flag and the date onboarding was completed stay.
+  export const completeOnboarding = async (
+    userId: UserId,
+    firstName: PersonName,
+    batch?: WriteBatch,
+  ): Promise<UserProfile> => {
+    // Memoized per request: the auth gate already read it.
+    const profile = await repository.findProfile(userId)
+    if (!profile)
+      return repository.saveProfile({ userId, firstName, onboardingCompletedAt: new Date() }, batch)
+    await repository.renameProfile(userId, firstName, batch)
+    return { ...profile, firstName }
+  }
 
   // Put an avatar on the profile, or take it off for the initials. The profile
   // must already exist: an avatar alone is not an account that finished
@@ -16,10 +28,10 @@ export namespace UserCommand {
     userId: UserId,
     avatar: Avatar | undefined,
   ): Promise<UserProfile | 'no-profile'> => {
-    const profile = await repository.findProfile(userId)
-    if (!profile) return 'no-profile' as const
-    const { avatar: _previous, ...rest } = profile
-    return repository.saveProfile(avatar ? { ...rest, avatar } : rest)
+    const revised = await repository.reviseProfile(userId, ({ avatar: _previous, ...rest }) =>
+      avatar ? { ...rest, avatar } : rest,
+    )
+    return revised ?? ('no-profile' as const)
   }
 
   // Erase the account's profile (account deletion).

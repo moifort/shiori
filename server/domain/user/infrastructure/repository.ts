@@ -4,7 +4,7 @@ import type { UserProfile } from '~/domain/user/types'
 import { db } from '~/system/firebase'
 import { deleteAuthUser } from '~/system/identity'
 import { evictFromRequestCache, memoizedPerRequest } from '~/system/request-cache'
-import { genericDataConverter } from '~/utils/firestore'
+import { genericDataConverter, transactionally } from '~/utils/firestore'
 
 const profiles = () => db().collection('users').withConverter(genericDataConverter<UserProfile>())
 
@@ -60,6 +60,38 @@ export const saveProfile = async (
   // absence it saw on the way in must not be what the caller reads back.
   evictFromRequestCache(cacheKey(profile.userId))
   return profile
+}
+
+// Change the first name alone, on the profile as it stands: the avatar, the
+// admin flag and the onboarding date are left as they are.
+export const renameProfile = async (
+  userId: UserId,
+  firstName: UserProfile['firstName'],
+  batch?: WriteBatch,
+): Promise<void> => {
+  const ref = profiles().doc(userId)
+  if (batch) batch.update(ref, { firstName })
+  else await ref.update({ firstName })
+  evictFromRequestCache(cacheKey(userId))
+}
+
+// Rewrite the profile from what is stored when the transaction runs, never from
+// a copy read earlier in the request: a concurrent rename is kept. Undefined
+// when there is no profile to revise.
+export const reviseProfile = async (
+  userId: UserId,
+  revise: (profile: UserProfile) => UserProfile,
+): Promise<UserProfile | undefined> => {
+  const revised = await transactionally(async (tx) => {
+    const ref = profiles().doc(userId)
+    const profile = (await tx.get(ref)).data()
+    if (!profile) return undefined
+    const next = revise(profile)
+    tx.set(ref, next)
+    return next
+  })
+  evictFromRequestCache(cacheKey(userId))
+  return revised
 }
 
 // Delete the account's profile (account deletion). Idempotent: an already-absent

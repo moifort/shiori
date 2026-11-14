@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, mock, test } from 'bun:test'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { UserId } from '~/domain/shared/types'
-import { fakeDb, resetFakeFirestore } from '~/test/fake-firestore'
+import { fakeDb, resetFakeFirestore, startFakeRequest } from '~/test/fake-firestore'
 
 mock.module('~/system/firebase', () => ({ db: fakeDb }))
 mock.module('~/system/object-store', () => ({
@@ -11,6 +11,8 @@ mock.module('~/system/object-store', () => ({
 mock.module('~/system/identity', () => ({ deleteAuthUser: async () => undefined }))
 
 const { UserUseCase } = await import('~/domain/user/use-case')
+const { PersonName } = await import('~/domain/shared/primitives')
+const { UserQuery } = await import('~/domain/user/query')
 
 const reader = 'reader-1' as UserId
 const neighbour = 'reader-2' as UserId
@@ -59,6 +61,7 @@ const shared = new Set([
   'narrator-watches',
   'narrators',
   'release-descriptions',
+  'releases',
   'saga-watches',
   'scan-cache',
   'series',
@@ -117,5 +120,53 @@ describe('deleting an account', () => {
     expect(lost).toEqual([])
     expect(fake.data('friendships', 'friendship-1')).toBeNull()
     expect(fake.data('friendships', 'friendship-2')).not.toBeNull()
+  })
+})
+
+describe('completing onboarding again', () => {
+  test('changes the first name alone, keeping the avatar, the admin flag and the date', async () => {
+    const completedAt = new Date('2026-10-01T08:00:00.000Z')
+    fake.seed('users', reader, {
+      userId: reader,
+      firstName: 'Alice',
+      onboardingCompletedAt: completedAt,
+      admin: true,
+      avatar: { kind: 'hero', hero: 'merlin' },
+    })
+
+    const profile = await UserUseCase.completeOnboarding(reader, { firstName: PersonName('Alix') })
+
+    const stored = fake.data('users', reader)
+    expect(stored?.firstName).toBe('Alix')
+    expect(stored?.admin).toBe(true)
+    expect(stored?.avatar).toEqual({ kind: 'hero', hero: 'merlin' })
+    expect(stored?.onboardingCompletedAt).toEqual(completedAt)
+    expect(profile.avatar).toEqual({ kind: 'hero', hero: 'merlin' })
+  })
+
+  test('writes the whole profile the first time', async () => {
+    await UserUseCase.completeOnboarding(reader, { firstName: PersonName('Alice') })
+
+    expect(fake.data('users', reader)?.firstName).toBe('Alice')
+    expect(fake.data('users', reader)?.onboardingCompletedAt).toBeInstanceOf(Date)
+  })
+})
+
+describe('changing the avatar', () => {
+  test('keeps a first name changed after the request read the profile', async () => {
+    fake.seed('users', reader, {
+      userId: reader,
+      firstName: 'Alice',
+      onboardingCompletedAt: new Date('2026-10-01T08:00:00.000Z'),
+    })
+    startFakeRequest()
+    // The request has the profile in hand when another one renames the reader.
+    await UserQuery.me(reader)
+    fake.seed('users', reader, { ...fake.data('users', reader), firstName: 'Alix' })
+
+    await UserUseCase.changeAvatar(reader, { hero: 'merlin' })
+
+    expect(fake.data('users', reader)?.firstName).toBe('Alix')
+    expect(fake.data('users', reader)?.avatar).toEqual({ kind: 'hero', hero: 'merlin' })
   })
 })
