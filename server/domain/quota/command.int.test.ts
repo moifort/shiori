@@ -104,9 +104,7 @@ describe('reading the allowance', () => {
     await QuotaQuery.creditOf(user('u1'))
     await QuotaQuery.creditOf(user('u1'))
 
-    // An empty month also reads the id its quota had before migration 037:
-    // back to 2 once that fallback goes.
-    expect(fake.docReads).toBe(3)
+    expect(fake.docReads).toBe(2)
     expect(fake.queryReads).toBe(0)
   })
 

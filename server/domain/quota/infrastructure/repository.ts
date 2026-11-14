@@ -22,13 +22,6 @@ const credits = () =>
 // read again — no purge, no scheduled job.
 const quotaDocId = (userId: UserId, month: QuotaMonth) => compositeId(userId, month)
 
-// The id the month's quota had before ids took one separator, read when the
-// current one holds nothing: migration 037 moves the documents, and this covers
-// the minutes between a deploy and its migration, where an unread quota would
-// hand out free scans. Remove it, and the fallback reads, once 037 has run in
-// production.
-const legacyQuotaDocId = (userId: UserId, month: QuotaMonth) => `${userId}_${month}`
-
 const cacheKey = (userId: UserId, month: QuotaMonth) => `quota:${userId}:${month}`
 
 // One document per account, whose id IS the userId: a balance has no period, so
@@ -42,11 +35,7 @@ export const findBy = (userId: UserId, month: QuotaMonth): Promise<Quota> =>
     const doc = await quotas().doc(quotaDocId(userId, month)).get()
     // An absent document is a month nobody has spent anything in — the storage
     // boundary defaults it rather than making every caller handle absence.
-    return (
-      doc.data() ??
-      (await quotas().doc(legacyQuotaDocId(userId, month)).get()).data() ??
-      freshQuota(userId, month)
-    )
+    return doc.data() ?? freshQuota(userId, month)
   })
 
 // Spend against the month's counter, atomically. The read has to happen inside
@@ -62,11 +51,7 @@ export const consume = async (
   const spent = await transactionally(async (tx) => {
     const doc = await tx.get(ref)
     // Same storage boundary as `findBy`: an absent document is a fresh month.
-    const held =
-      doc.data() ??
-      (await tx.get(quotas().doc(legacyQuotaDocId(userId, month)))).data() ??
-      freshQuota(userId, month)
-    const spent = spend(held)
+    const spent = spend(doc.data() ?? freshQuota(userId, month))
     tx.set(ref, withoutAbsentFields(spent))
     return spent
   })

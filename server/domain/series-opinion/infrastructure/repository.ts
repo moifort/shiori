@@ -20,8 +20,6 @@ const opinions = oneDocumentPerUserAndKey({
     db().collection('series-opinions').withConverter(genericDataConverter<SeriesOpinion>()),
   keyOf: (opinion) => opinion.seriesId,
   cacheTag: 'series-opinions',
-  // Until migration 037 has run in production.
-  legacyIdOf: (userId, seriesId) => `${userId}--${seriesId}`,
 })
 
 export const { findAllByUser, save, remove, removeAllByUser } = opinions

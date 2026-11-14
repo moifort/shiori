@@ -7,10 +7,6 @@ const { idsTakeOneSeparator } = await import(
   '~/system/migration/migrations/037-ids-take-one-separator'
 )
 
-const quotas = await import('~/domain/quota/infrastructure/repository')
-const scans = await import('~/domain/scan/infrastructure/repository')
-const opinions = await import('~/domain/series-opinion/infrastructure/repository')
-
 let fake = resetFakeFirestore()
 
 beforeEach(() => {
@@ -86,51 +82,5 @@ describe('ids take one separator', () => {
 
     expect(await migrate()).toEqual({ ok: true, transformed: 0 })
     expect(fake.data('series-opinions', 'u1--orphan')?.rating).toBe(3)
-  })
-})
-
-// The minutes between the deploy and the migration: the new code reads what
-// is still stored under the legacy ids.
-describe('before migration 037 has run', () => {
-  const month = '2026-11' as never
-  const reader = 'u1' as never
-
-  test('a quota spent under its legacy id is not fresh, and the next scan counts on', async () => {
-    fake.seed('ai-quotas', 'u1_2026-11', { userId: 'u1', month: '2026-11', scans: 4 })
-
-    expect((await quotas.findBy(reader, month)).scans as number).toBe(4)
-    await quotas.consume(reader, month, (quota) => ({
-      ...quota,
-      scans: (quota.scans + 1) as never,
-    }))
-
-    expect(fake.data('ai-quotas', 'u1~2026-11')?.scans).toBe(5)
-    await migrate()
-    expect(fake.data('ai-quotas', 'u1~2026-11')?.scans).toBe(5)
-  })
-
-  test('a cover cached under its legacy id is a hit, not a paid scan', async () => {
-    fake.seed('scan-cache', `${hash}_fr`, {
-      imageHash: hash,
-      language: 'fr',
-      cachedAt,
-      result: { title: 'Dune', format: 'book' },
-    })
-
-    expect((await scans.findBy(hash as never, 'fr'))?.result.title as string).toBe('Dune')
-  })
-
-  test('an opinion stored under its legacy id is read, answered once, and removed whole', async () => {
-    fake.seed('series-opinions', 'u1--dune', { userId: 'u1', seriesId: 'dune', rating: 2 })
-
-    expect((await opinions.findBy(reader, 'dune'))?.rating as number).toBe(2)
-    await opinions.save({ userId: reader, seriesId: 'dune' as never, rating: 5 as never })
-    expect((await opinions.findAllByUser(reader)).map((opinion) => Number(opinion.rating))).toEqual(
-      [5],
-    )
-
-    await opinions.remove(reader, 'dune')
-    expect(await opinions.findAllByUser(reader)).toHaveLength(0)
-    expect(fake.snapshot('series-opinions').size).toBe(0)
   })
 })
