@@ -16,6 +16,7 @@ import { SeriesStateEnum } from '~/domain/series/infrastructure/graphql/enums'
 import { DEPRECATED_EDITION_LANGUAGE } from '~/domain/series/infrastructure/graphql/types'
 import { seriesReferenceOf } from '~/domain/series/primitives'
 import { builder } from '~/domain/shared/graphql/builder'
+import { pageSizeOf } from '~/domain/shared/graphql/pagination'
 import { languageOf } from '~/domain/shared/language'
 
 builder.queryFields((t) => ({
@@ -170,7 +171,10 @@ builder.queryFields((t) => ({
       FriendshipUseCase.libraryPage(
         context.userId,
         args.userId,
-        { limit: Math.max(1, Math.min(args.limit ?? 60, 200)), after: args.after ?? undefined },
+        {
+          limit: pageSizeOf(args.limit, { fallback: 60, ceiling: 200 }),
+          after: args.after ?? undefined,
+        },
         {
           status: args.status ?? undefined,
           favorite: args.favorite ?? undefined,
@@ -214,7 +218,10 @@ builder.queryFields((t) => ({
       FriendshipUseCase.sagaPage(
         context.userId,
         args.userId,
-        { limit: Math.max(1, Math.min(args.limit ?? 30, 100)), after: args.after ?? undefined },
+        {
+          limit: pageSizeOf(args.limit, { fallback: 30, ceiling: 100 }),
+          after: args.after ?? undefined,
+        },
         {
           state: args.state ?? undefined,
           favorite: args.favorite ?? undefined,

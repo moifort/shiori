@@ -102,6 +102,15 @@ export namespace BookQuery {
     view: LibraryView,
   ): Promise<{ books: BookView[]; hasMore: boolean }> => {
     const statuses = shownStatusesOf(view)
+    const shown = (book: Book) => inLibraryView(book, view) && statuses.includes(book.status)
+    /** One page of books already in shelf order, with their covers signed. */
+    const pageOf = async (ordered: readonly Book[]) => {
+      const { books, hasMore } = shelfPageOf(ordered, page.limit, page.after)
+      return { books: await withCovers(books), hasMore }
+    }
+    /** The view filtered and shelved in memory, from the whole library. */
+    const shelvedInMemory = async () =>
+      pageOf(shelvedOf((await repository.findAllByUser(userId)).filter(shown)))
     // "Coups de cœur": no index knows the stars a volume inherits from its
     // saga, and a page filtered after the cursor could come back empty with
     // more to come. The favourites are a small part of the library. An
@@ -117,35 +126,23 @@ export namespace BookQuery {
       const kept = books.filter(
         (book) =>
           isLovedBook(book, sagas) &&
-          inLibraryView(book, view) &&
-          (!view.excludeLovedSeries || outsideHeartedSagas(book, hearted)) &&
-          statuses.includes(book.status),
+          shown(book) &&
+          (!view.excludeLovedSeries || outsideHeartedSagas(book, hearted)),
       )
-      const { books: shown, hasMore } = shelfPageOf(shelvedOf(kept), page.limit, page.after)
-      return { books: await withCovers(shown), hasMore }
+      return pageOf(shelvedOf(kept))
     }
     // A genre or a subgenre has no index: one shelf of a genre is a small part
     // of a library the request scans once, kept in memory for its next page.
-    if ((view.genre || view.subgenre) && !view.loved) {
-      const kept = (await repository.findAllByUser(userId)).filter(
-        (book) => inLibraryView(book, view) && statuses.includes(book.status),
-      )
-      const { books, hasMore } = shelfPageOf(shelvedOf(kept), page.limit, page.after)
-      return { books: await withCovers(books), hasMore }
-    }
+    if ((view.genre || view.subgenre) && !view.loved) return shelvedInMemory()
     if (view.loved) {
       const [books, opinions] = await Promise.all([
         repository.findAllByUser(userId),
         SeriesOpinionQuery.all(userId),
       ])
       const seriesRatings = seriesRatingsOf(opinions)
-      const ranked = lovedFirst(
-        books.filter((book) => inLibraryView(book, view) && statuses.includes(book.status)),
-        (book) => lovedRankOfBook(book, seriesRatings),
-        shelfOrder,
+      return pageOf(
+        lovedFirst(books.filter(shown), (book) => lovedRankOfBook(book, seriesRatings), shelfOrder),
       )
-      const { books: shown, hasMore } = shelfPageOf(ranked, page.limit, page.after)
-      return { books: await withCovers(shown), hasMore }
     }
     try {
       const { books, hasMore } = await repository.findShelfPage(
@@ -159,11 +156,7 @@ export namespace BookQuery {
       if (!missingIndex(error)) throw error
       logger.warn('library page index missing, sorted in memory', { error, view })
     }
-    const kept = (await repository.findAllByUser(userId)).filter(
-      (book) => inLibraryView(book, view) && statuses.includes(book.status),
-    )
-    const { books, hasMore } = shelfPageOf(shelvedOf(kept), page.limit, page.after)
-    return { books: await withCovers(books), hasMore }
+    return shelvedInMemory()
   }
 
   /** Every book of the reader, for the search the app runs on the phone: one

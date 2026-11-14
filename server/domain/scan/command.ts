@@ -200,7 +200,7 @@ export namespace ScanCommand {
 
     const { result: enriched, regularEdition, usage: enrichment } = await enrich(seen, language)
     // Cached with the rest, so the same cover scanned again probes nothing.
-    const result = { ...enriched, coverUrl: await coverOf(enriched.isbn13, regularEdition) }
+    const result = await withPublishedCover(enriched, regularEdition)
 
     // Best-effort cache: a failed write only costs a re-scan on the next hit.
     repository
@@ -236,7 +236,7 @@ export namespace ScanCommand {
       regularEdition,
       usage: enrichment,
     } = await enrich(named, language, 'typed')
-    const result = { ...enriched, coverUrl: await coverOf(enriched.isbn13, regularEdition) }
+    const result = await withPublishedCover(enriched, regularEdition)
     return { result, usage: { enrichment } }
   }
 
@@ -261,7 +261,7 @@ export namespace ScanCommand {
     const library = await describedFromLibrary(seen, language, hints)
     const described = library.found ?? (await enrich(seen, language, 'cover', hints))
     const { result: enriched, regularEdition } = described
-    const result = { ...enriched, coverUrl: await coverOf(enriched.isbn13, regularEdition) }
+    const result = await withPublishedCover(enriched, regularEdition)
     const enrichment = library.found ? library.usage : summedUsage(library.usage, described.usage)
     return { result, usage: { enrichment } }
   }
@@ -312,7 +312,7 @@ export namespace ScanCommand {
       // The catalogue files an album under "Bande dessinée" as the web does.
       const { format, subgenres } = formatSettledBySubgenres(
         formatNamedByLookup(seen.format, value.format),
-        (value.subgenres ?? []).map((subgenre) => optional(subgenre, Subgenre)).filter(isPresent),
+        subgenresOf(value.subgenres),
       )
       return {
         usage,
@@ -375,7 +375,7 @@ export namespace ScanCommand {
     if (import.meta.dev && config().scanStub) return { result: STUBBED_SCAN, usage: {} }
 
     const { result: enriched, regularEdition, usage: enrichment } = await enrich(seen, language)
-    const result = { ...enriched, coverUrl: await coverOf(enriched.isbn13, regularEdition) }
+    const result = await withPublishedCover(enriched, regularEdition)
     return { result, usage: { enrichment } }
   }
 
@@ -559,7 +559,7 @@ export namespace ScanCommand {
     // the format, or a subgenre does, and leaves the list.
     const { format, subgenres } = formatSettledBySubgenres(
       formatNamedByLookup(seen.format, value.format),
-      (value.subgenres ?? []).map((subgenre) => optional(subgenre, Subgenre)).filter(isPresent),
+      subgenresOf(value.subgenres),
     )
     const series = parsedSeries(value, authors, format)
     return {
@@ -623,6 +623,19 @@ export namespace ScanCommand {
     }
     return isbn13 ? await publishedCoverOf(isbn13) : undefined
   }
+
+  /** A described book with its published cover: see `coverOf`. */
+  const withPublishedCover = async (
+    enriched: ScanResult,
+    regularEdition: Isbn13Type | undefined,
+  ): Promise<ScanResult> => ({
+    ...enriched,
+    coverUrl: await coverOf(enriched.isbn13, regularEdition),
+  })
+
+  /** The subgenres a model named, those that are not one dropped. */
+  const subgenresOf = (named: readonly (string | null)[] | null | undefined) =>
+    (named ?? []).map((subgenre) => optional(subgenre, Subgenre)).filter(isPresent)
 
   /** The catalogue call on its own, for a saga named but never described — or
    *  described once and asked again. The series screen runs it for a saga an Audible import named, since an import

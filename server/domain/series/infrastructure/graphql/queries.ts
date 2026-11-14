@@ -10,6 +10,7 @@ import { isAudioSeries, seriesReferenceOf } from '~/domain/series/primitives'
 import { type FollowedSeries, type SagaProgress, SeriesUseCase } from '~/domain/series/use-case'
 import { SeriesOpinionType } from '~/domain/series-opinion/infrastructure/graphql/types'
 import { builder } from '~/domain/shared/graphql/builder'
+import { pageSizeOf } from '~/domain/shared/graphql/pagination'
 import { languageOf } from '~/domain/shared/language'
 
 const SagaProgressType = builder.objectRef<SagaProgress>('SagaProgress').implement({
@@ -299,7 +300,7 @@ builder.queryFields((t) => ({
       SeriesUseCase.followedPage(
         context.userId,
         {
-          limit: Math.max(1, Math.min(args.limit ?? 40, 200)),
+          limit: pageSizeOf(args.limit, { fallback: 40, ceiling: 200 }),
           after: args.after ?? undefined,
           offset: Math.max(0, args.offset ?? 0),
         },

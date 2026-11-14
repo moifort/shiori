@@ -10,6 +10,7 @@ import {
 } from '~/domain/narrator/use-case'
 import { FollowedSeriesType } from '~/domain/series/infrastructure/graphql/queries'
 import { builder } from '~/domain/shared/graphql/builder'
+import { pageSizeOf } from '~/domain/shared/graphql/pagination'
 import { languageOf } from '~/domain/shared/language'
 import { Count } from '~/domain/shared/primitives'
 
@@ -192,7 +193,10 @@ builder.queryFields((t) => ({
     resolve: (_root, args, { userId }) =>
       NarratorUseCase.followedPage(
         userId,
-        { limit: Math.max(1, Math.min(args.limit ?? 40, 200)), after: args.after ?? undefined },
+        {
+          limit: pageSizeOf(args.limit, { fallback: 40, ceiling: 200 }),
+          after: args.after ?? undefined,
+        },
         args.order ?? 'loved',
       ),
   }),

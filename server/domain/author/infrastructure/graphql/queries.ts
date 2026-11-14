@@ -13,6 +13,7 @@ import { FollowedSeriesType } from '~/domain/series/infrastructure/graphql/queri
 import { seriesIdOf } from '~/domain/series/primitives'
 import type { SeriesId } from '~/domain/series/types'
 import { builder } from '~/domain/shared/graphql/builder'
+import { pageSizeOf } from '~/domain/shared/graphql/pagination'
 import { languageOf } from '~/domain/shared/language'
 import { Count } from '~/domain/shared/primitives'
 import type { AuthorName } from '~/domain/shared/types'
@@ -351,7 +352,7 @@ builder.queryFields((t) => ({
       AuthorUseCase.followedPage(
         context.userId,
         {
-          limit: Math.max(1, Math.min(args.limit ?? 40, 200)),
+          limit: pageSizeOf(args.limit, { fallback: 40, ceiling: 200 }),
           after: args.after ?? undefined,
           offset: Math.max(0, args.offset ?? 0),
         },

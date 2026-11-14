@@ -492,12 +492,7 @@ export namespace SeriesUseCase {
     edition: BookLanguage | undefined,
     proposed?: ProposedSaga,
   ): Series | undefined => {
-    const volume = held.find((book) => book.series && book.authors.length > 0)
-    const source = volume?.series
-      ? { name: volume.series.name, author: volume.authors[0] }
-      : proposed && namesSaga(proposed, seriesId)
-        ? proposed
-        : undefined
+    const source = catalogueAskedFor(seriesId, held, proposed)
     if (!source) return undefined
     const { provisional: _, ...drawn } = provisionalCatalogueOf(
       {
@@ -563,12 +558,7 @@ export namespace SeriesUseCase {
     edition: BookLanguage | undefined,
     proposed?: ProposedSaga,
   ): Promise<Series | undefined> => {
-    const volume = held.find((book) => book.series && book.authors.length > 0)
-    const source = volume?.series
-      ? { name: volume.series.name, author: volume.authors[0] }
-      : proposed && namesSaga(proposed, seriesId)
-        ? proposed
-        : undefined
+    const source = catalogueAskedFor(seriesId, held, proposed)
     if (!source) return undefined
 
     const { series: catalogued, usage } = await ScanCommand.catalogueSeries(
@@ -592,6 +582,19 @@ export namespace SeriesUseCase {
     if (series) await AnalyticsUseCase.markStale(userId)
     return series ? withShelvedVolumes(series, held) : undefined
   }
+}
+
+/** The name and author a saga's catalogue is asked with: a volume of the
+ *  edition the reader holds names it, else the saga proposed when it is this
+ *  one. Nothing when neither does. */
+const catalogueAskedFor = (
+  seriesId: SagaKey,
+  held: readonly Book[],
+  proposed: ProposedSaga | undefined,
+): { name: SeriesName; author: AuthorName } | undefined => {
+  const volume = held.find((book) => book.series && book.authors.length > 0)
+  if (volume?.series) return { name: volume.series.name, author: volume.authors[0] }
+  return proposed && namesSaga(proposed, seriesId) ? proposed : undefined
 }
 
 /** A catalogue just built, with what the release watch already found of that

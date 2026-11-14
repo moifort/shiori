@@ -16,6 +16,7 @@ import { BookQuery } from '~/domain/book/query'
 import { BookUseCase } from '~/domain/book/use-case'
 import { builder } from '~/domain/shared/graphql/builder'
 import { badUserInput, notFound } from '~/domain/shared/graphql/errors'
+import { pageSizeOf } from '~/domain/shared/graphql/pagination'
 import { languageOf } from '~/domain/shared/language'
 
 /** Covers a search result asks for at once: the rows on one screen, with margin. */
@@ -108,7 +109,10 @@ builder.queryFields((t) => ({
     resolve: (_root, args, context) =>
       BookQuery.libraryPage(
         context.userId,
-        { limit: Math.max(1, Math.min(args.limit ?? 60, 200)), after: args.after ?? undefined },
+        {
+          limit: pageSizeOf(args.limit, { fallback: 60, ceiling: 200 }),
+          after: args.after ?? undefined,
+        },
         {
           favorite: args.favorite ?? undefined,
           excludeLovedSeries: args.excludeLovedSeries ?? undefined,

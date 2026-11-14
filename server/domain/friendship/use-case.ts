@@ -4,6 +4,8 @@ import type { AuthorKey, PortraitUrl } from '~/domain/author/types'
 import type { EditionOffer } from '~/domain/awaited-edition/types'
 import { AwaitedEditionUseCase, type AwaitOutcome } from '~/domain/awaited-edition/use-case'
 import {
+  isOnShelf,
+  SHELF_STATUSES,
   seriesRatingsOf,
   shelfDateOf,
   shelfKeyOf,
@@ -25,7 +27,6 @@ import type {
   StarRating,
   TaggedSubgenre,
 } from '~/domain/book/types'
-import { READING_STATUSES } from '~/domain/book/types'
 import { BookUseCase } from '~/domain/book/use-case'
 import type { ReleaseFormat } from '~/domain/discovery/types'
 import { DiscoveryUseCase } from '~/domain/discovery/use-case'
@@ -177,12 +178,6 @@ const RECOMMENDATIONS_SHOWN = 20
 export type FriendLibraryPage = { books: FriendBook[]; hasMore: boolean }
 export type FriendSagaPage = { sagas: FriendSaga[]; hasMore: boolean }
 
-/** The statuses a library shows unfiltered: all but the dropped books, which
- *  have their own filter — the reader's own Library tab does the same. */
-const SHELVED_STATUSES: readonly ReadingStatus[] = READING_STATUSES.filter(
-  (status) => status !== 'dropped',
-)
-
 /** The statuses a book copied from a friend may land in: on the pile, or
  *  straight among the books read, for a reader who had already read it. */
 export type CopiedStatus = Extract<ReadingStatus, 'to-read' | 'read'>
@@ -285,7 +280,9 @@ export namespace FriendshipUseCase {
       ? [view.status]
       : view.favorite || view.loved
         ? undefined
-        : SHELVED_STATUSES
+        : // All but the dropped books, which have their own filter — the
+          // reader's own Library tab does the same.
+          SHELF_STATUSES
     const kept = books.filter(
       (book) =>
         (!view.favorite || book.favorite === true) && (!statuses || statuses.includes(book.status)),
@@ -781,7 +778,7 @@ const sharedShelfOf = async (
     sagas: sagas.map((saga, index) =>
       friendSagaOf(saga, favoriteSagas, ratings, unmarked(signedVolumes[index] ?? [])),
     ),
-    bookCount: Count(books.filter((book) => SHELVED_STATUSES.includes(book.status)).length),
+    bookCount: Count(books.filter(isOnShelf).length),
     readThisYear: Count(figures.get(ownerId)?.readThisYear ?? 0),
   }
 }
