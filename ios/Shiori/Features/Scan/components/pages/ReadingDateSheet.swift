@@ -1,8 +1,8 @@
 import SwiftUI
 
-/// Asked when a book being checked is moved to "En cours" or "Lu": the day it
-/// was started, or finished, on a calendar opened on today. Closed without an
-/// answer, the book keeps today, as the server stamps it.
+/// Asked when a book being checked is added "En cours" or "Déjà lu": the day
+/// it was started, or finished, on a calendar opened on today. Closed without
+/// an answer, the book is not added.
 struct ReadingDateSheet: View {
     let title: LocalizedStringKey
     let range: ClosedRange<Date>

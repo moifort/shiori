@@ -20,6 +20,9 @@ struct FactTile: Identifiable {
     /// A chevron after the value, for a tile that opens a choice of its own
     /// — the genre — rather than a field to type in.
     var showsChevron = false
+    /// The chevron's symbol: up and down for a tile that opens a menu of
+    /// values, as a pop-up button marks one.
+    var chevronSymbol = "chevron.right"
     var action: (() -> Void)?
 }
 
@@ -201,7 +204,7 @@ struct FactGrid: View {
                 .lineLimit(2)
                 .multilineTextAlignment(.leading)
             if tile.showsChevron {
-                Image(systemName: "chevron.right")
+                Image(systemName: tile.chevronSymbol)
                     .font(.caption.weight(.bold))
                     .foregroundStyle(.tertiary)
             }

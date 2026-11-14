@@ -6377,6 +6377,22 @@
         }
       }
     },
+    "Envie" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Envie"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wish"
+          }
+        }
+      }
+    },
     "Envoyer" : {
       "localizations" : {
         "en" : {
@@ -6949,6 +6965,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Geralt"
+          }
+        }
+      }
+    },
+    "Guetter" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guetter"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Watch"
           }
         }
       }
@@ -17153,6 +17185,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "séries"
+          }
+        }
+      }
+    },
+    "titre et auteur" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "titre et auteur"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "title and author"
           }
         }
       }

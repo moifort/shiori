@@ -3,6 +3,7 @@ import SwiftUI
 /// One fact of the book sheet that a tap on its row corrects in place, without
 /// going through the whole edit form.
 enum BookField: String, Identifiable {
+    case publisher
     case firstPublishedIn
     case pageCount
     case isbn13
@@ -14,6 +15,7 @@ enum BookField: String, Identifiable {
 
     var title: LocalizedStringKey {
         switch self {
+        case .publisher: "Éditeur"
         case .firstPublishedIn: "Première parution"
         case .pageCount: "Pages"
         case .isbn13: "ISBN"
@@ -33,7 +35,7 @@ enum BookField: String, Identifiable {
     /// is moving the book along the pile that stamps them.
     func isEditable(on book: Book) -> Bool {
         switch self {
-        case .firstPublishedIn, .pageCount, .isbn13: true
+        case .publisher, .firstPublishedIn, .pageCount, .isbn13: true
         case .addedAt: book.addedAt != nil
         case .startedAt: book.startedAt != nil
         case .finishedAt: book.finishedAt != nil
@@ -69,6 +71,7 @@ struct FieldEditSheet: View {
         self.field = field
         self.onSave = onSave
         let text: String = switch field {
+        case .publisher: book.publisher ?? ""
         case .firstPublishedIn: book.firstPublishedIn.map(String.init) ?? ""
         case .pageCount: book.pageCount.map(String.init) ?? ""
         case .isbn13: book.isbn13 ?? ""
@@ -101,7 +104,7 @@ struct FieldEditSheet: View {
                 } else {
                     TextField(field.title, text: $text)
                         .textFieldStyle(.roundedBorder)
-                        .keyboardType(.numberPad)
+                        .keyboardType(field == .publisher ? .default : .numberPad)
                         .focused($isFocused)
                         .accessibilityIdentifier("field-edit-text")
                 }
@@ -176,6 +179,8 @@ struct FieldEditSheet: View {
         var correction = BookCorrection()
         let value = trimmed.isEmpty ? nil : trimmed
         switch field {
+        case .publisher:
+            correction.publisher = change(from: book.publisher, to: value)
         case .firstPublishedIn:
             correction.firstPublishedIn = change(from: book.firstPublishedIn, to: value.flatMap { Int($0) })
         case .pageCount:
