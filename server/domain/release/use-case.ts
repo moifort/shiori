@@ -1,6 +1,6 @@
 import { releaseDescriptionOf, releaseEditionOf } from '~/domain/discovery/business-rules'
-import { audibleEditionOf } from '~/domain/discovery/infrastructure/audible-catalogue'
 import type { ReleaseSeed } from '~/domain/discovery/types'
+import { DiscoveryUseCase } from '~/domain/discovery/use-case'
 import {
   describedFromOf,
   isDescriptionFresh,
@@ -44,7 +44,7 @@ export namespace ReleaseUseCase {
         siblings: [],
       }),
       seed.format === 'audiobook' && edition
-        ? audibleEditionOf(seed.title, seed.authors[0], edition)
+        ? DiscoveryUseCase.audioEditionOf(seed.title, seed.authors[0], edition)
         : undefined,
     ])
     if (typeof described === 'string' || 'failed' in described) return described
