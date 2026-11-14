@@ -37,7 +37,7 @@ mock.module('~/domain/discovery/infrastructure/audible-catalogue', () => ({
   audibleSeriesOf: async () => 'unknown',
   audibleRecordingOf: async () => 'unknown',
 }))
-mock.module('~/domain/scan/bnf', () => ({ bnfEditionsOf: async () => [] }))
+mock.module('~/domain/scan/infrastructure/bnf', () => ({ bnfEditionsOf: async () => [] }))
 
 const { DiscoveryUseCase } = await import('~/domain/discovery/use-case')
 const { DiscoveryQuery } = await import('~/domain/discovery/query')

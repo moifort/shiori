@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, spyOn, test } from 'bun:test'
 import * as Sentry from '@sentry/node'
-import { bnfEditionsOf, editionsIn, isbn13Of, pagesIn } from '~/domain/scan/bnf'
+import { bnfEditionsOf, editionsIn, isbn13Of, pagesIn } from '~/domain/scan/infrastructure/bnf'
 import * as dnsOverHttps from '~/utils/dns-over-https'
 
 const field = (tag: string, subfields: Record<string, string>) =>

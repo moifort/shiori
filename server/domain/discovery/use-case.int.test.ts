@@ -12,7 +12,7 @@ import {
 
 mock.module('~/system/firebase', () => ({ db: fakeDb }))
 // The BnF is a network call: a French edition falls through to the grounded step.
-mock.module('~/domain/scan/bnf', () => ({ bnfEditionsOf: async () => [] }))
+mock.module('~/domain/scan/infrastructure/bnf', () => ({ bnfEditionsOf: async () => [] }))
 mock.module('~/system/object-store', () => ({
   objectStore: () => ({ downloadUrl: async () => 'https://fake.store/cover' }),
 }))

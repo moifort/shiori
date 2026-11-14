@@ -5,7 +5,7 @@ import { fakeDb, resetFakeFirestore } from '~/test/fake-firestore'
 
 mock.module('~/system/firebase', () => ({ db: fakeDb }))
 // The BnF is a network call: a French edition falls through to the grounded step.
-mock.module('~/domain/scan/bnf', () => ({ bnfEditionsOf: async () => [] }))
+mock.module('~/domain/scan/infrastructure/bnf', () => ({ bnfEditionsOf: async () => [] }))
 let premiumUserIds: string[] = []
 mock.module('~/system/config', () => ({
   config: () => ({ googleApiKey: 'test-key', premiumUserIds }),
@@ -32,7 +32,9 @@ mock.module('~/domain/book/infrastructure/published-cover', () => ({
 
 /** What a shared page answers for its title. Undefined is a page with none. */
 let pageTitle: string | undefined
-mock.module('~/domain/scan/page-title', () => ({ pageTitleOf: async () => pageTitle }))
+mock.module('~/domain/scan/infrastructure/page-title', () => ({
+  pageTitleOf: async () => pageTitle,
+}))
 
 const { ScanUseCase } = await import('~/domain/scan/use-case')
 const { monthOf } = await import('~/domain/quota/business-rules')

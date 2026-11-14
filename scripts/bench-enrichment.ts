@@ -41,9 +41,9 @@ let column: Column = 'bnf'
 const lookedUp: string[] = []
 
 // The web columns are the same lookup with a catalogue that lists nothing.
-const bnf = await import('~/domain/scan/bnf')
+const bnf = await import('~/domain/scan/infrastructure/bnf')
 const catalogueOf = bnf.bnfEditionsOf
-mock.module('~/domain/scan/bnf', () => ({
+mock.module('~/domain/scan/infrastructure/bnf', () => ({
   ...bnf,
   bnfEditionsOf: async (book: Parameters<typeof catalogueOf>[0]) => {
     if (column !== 'bnf') return []

@@ -21,7 +21,6 @@ import type {
   Isbn13 as Isbn13Type,
   Publisher as PublisherType,
 } from '~/domain/book/types'
-import { bnfEditionsOf } from '~/domain/scan/bnf'
 import {
   boxOf,
   heldFormatOf,
@@ -31,6 +30,7 @@ import {
   typedQueryOf,
   withTypedCandidate,
 } from '~/domain/scan/business-rules'
+import { bnfEditionsOf } from '~/domain/scan/infrastructure/bnf'
 import * as repository from '~/domain/scan/infrastructure/repository'
 import { hashImage } from '~/domain/scan/primitives'
 import {

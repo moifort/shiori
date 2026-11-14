@@ -7,7 +7,7 @@ import { exhausted } from '~/domain/quota/business-rules'
 import { QuotaCommand } from '~/domain/quota/command'
 import { QuotaQuery } from '~/domain/quota/query'
 import { ScanCommand } from '~/domain/scan/command'
-import { pageTitleOf } from '~/domain/scan/page-title'
+import { pageTitleOf } from '~/domain/scan/infrastructure/page-title'
 import type {
   DetectedBook,
   EditionHints,

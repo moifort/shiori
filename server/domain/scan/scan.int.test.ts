@@ -59,7 +59,7 @@ mock.module('~/domain/author/infrastructure/open-library', () => ({
  *  so a French edition goes to the grounded step as it always did. */
 let bnfEditions: unknown[] = []
 const bnfLookups: unknown[] = []
-mock.module('~/domain/scan/bnf', () => ({
+mock.module('~/domain/scan/infrastructure/bnf', () => ({
   bnfEditionsOf: async (book: unknown) => {
     bnfLookups.push(book)
     return bnfEditions

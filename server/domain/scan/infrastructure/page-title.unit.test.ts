@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { cleanedTitleOf } from '~/domain/scan/page-title'
+import { cleanedTitleOf } from '~/domain/scan/infrastructure/page-title'
 
 const page = (title: string) => `<html><head><title>${title}</title></head><body>…</body></html>`
 
