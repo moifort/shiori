@@ -62,6 +62,15 @@ const allCacheKey = (userId: UserId) => `books:all:${userId}`
 const seenCopies = (userId: UserId): Map<BookId, Book> =>
   memoizedPerRequest(`books:seen:${userId}`, () => new Map<BookId, Book>())
 
+/** Books a query just read, recorded as seen: a direct save of one of them
+ *  later in the request then carries only the fields it changed, as for a
+ *  book read by id. Every read path goes through here — a book read some
+ *  other way would be written whole over whatever landed since. */
+const seen = (read: Book[]): Book[] => {
+  for (const book of read) seenCopies(book.userId).set(book.id, book)
+  return read
+}
+
 // The library list, the series sections and the home screen all want the same
 // rows in one request. Memoizing the scan means they cost one query between
 // them rather than one each. Shared in flight too: the app opens on some ten
@@ -103,7 +112,7 @@ export const findShelfPage = async (
     if (cursor.exists && cursor.data()?.userId === userId) query = query.startAfter(cursor)
   }
   const snapshot = await query.limit(limit + 1).get()
-  const rows = snapshot.docs.map((doc) => asBook(doc.data()))
+  const rows = seen(snapshot.docs.map((doc) => asBook(doc.data())))
   return { books: rows.slice(0, limit), hasMore: rows.length > limit }
 }
 
@@ -127,10 +136,12 @@ export const findById = async (userId: UserId, bookId: BookId): Promise<Book | n
 export const findByIds = async (userId: UserId, ids: readonly BookId[]): Promise<Book[]> => {
   if (ids.length === 0) return []
   const snapshots = await db().getAll(...ids.map((id) => books().doc(id)))
-  return snapshots.flatMap((snapshot) => {
-    const book = snapshot.data() as StoredBook | undefined
-    return book?.userId === userId ? [asBook(book)] : []
-  })
+  return seen(
+    snapshots.flatMap((snapshot) => {
+      const book = snapshot.data() as StoredBook | undefined
+      return book?.userId === userId ? [asBook(book)] : []
+    }),
+  )
 }
 
 // One edition's volumes alone, by a query on its series id: the saga screen
@@ -144,7 +155,7 @@ export const findBySeries = async (userId: UserId, seriesId: SeriesId): Promise<
   if (isInRequestCache(allCacheKey(userId)))
     return (await findAllByUser(userId)).filter((book) => book.series?.id === seriesId)
   const snapshot = await ownedBy(userId).where('series.id', '==', seriesId).get()
-  return snapshot.docs.map((doc) => asBook(doc.data()))
+  return seen(snapshot.docs.map((doc) => asBook(doc.data())))
 }
 
 // Every edition's volumes of one saga, by a query on the saga key stored beside
@@ -154,7 +165,7 @@ export const findBySaga = async (userId: UserId, saga: SagaKey): Promise<Book[]>
   if (isInRequestCache(allCacheKey(userId)))
     return (await findAllByUser(userId)).filter((book) => book.series?.saga === saga)
   const snapshot = await ownedBy(userId).where('series.saga', '==', saga).get()
-  return snapshot.docs.map((doc) => asBook(doc.data()))
+  return seen(snapshot.docs.map((doc) => asBook(doc.data())))
 }
 
 // Every reader's volumes of one edition: what a saga renamed by its catalogue
@@ -162,7 +173,7 @@ export const findBySaga = async (userId: UserId, saga: SagaKey): Promise<Book[]>
 // automatic single-field index.
 export const findInSeries = async (seriesId: SeriesId): Promise<Book[]> => {
   const snapshot = await books().where('series.id', '==', seriesId).get()
-  return snapshot.docs.map((doc) => asBook(doc.data()))
+  return seen(snapshot.docs.map((doc) => asBook(doc.data())))
 }
 
 // A direct write revises the memoized scan in place, so a read later in the same

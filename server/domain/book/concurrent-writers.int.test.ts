@@ -13,6 +13,7 @@ const { BookCommand } = await import('~/domain/book/command')
 const { BookQuery } = await import('~/domain/book/query')
 const { ListeningMinutes } = await import('~/domain/book/primitives')
 const { BookTitle, StarRating } = await import('~/domain/shared/primitives')
+const { SagaKey, SeriesName, VolumeNumber } = await import('~/domain/series/primitives')
 
 // The nightly Audible and Kindle passes read a reader's whole shelf once, then
 // write book after book, minutes later, from that copy. A reader rating a book
@@ -158,5 +159,39 @@ describe('a book written by a sync pass and its reader at once', () => {
     const stored = fake.data('books', id)
     expect(stored?.rating).toBe(5)
     expect(stored?.listenedMinutes).toBe(120)
+  })
+})
+
+// A saga renamed by its catalogue writes its new name into every reader's
+// volumes, read by a query across readers. A book a query read is written over
+// what landed since, as one read by id is.
+describe('a saga renamed while its reader rates a volume', () => {
+  test("keeps the reader's rating that landed after the rename read the volumes", async () => {
+    const { id, series } = await BookCommand.add(
+      reader,
+      {
+        title: BookTitle('Carl 1'),
+        series: {
+          saga: SagaKey('carl--matt-dinniman'),
+          name: SeriesName('Carl'),
+          volume: VolumeNumber(1),
+          kind: 'main',
+        },
+      },
+      NOW,
+    )
+    if (!series) throw new Error('no series filed')
+    // The rename's query answers late, as one across every reader does: the
+    // reader's rating lands between its read and its write.
+    fake.answerQueriesAfter(20)
+
+    await inConcurrentFakeRequests<unknown>([
+      () => BookCommand.nameSeries(series.id, SeriesName('Dungeon Crawler Carl')),
+      () => BookCommand.rate(reader, id, StarRating(4), LATER),
+    ])
+
+    const stored = fake.data('books', id)
+    expect(stored?.rating).toBe(4)
+    expect((stored?.series as { name?: string } | undefined)?.name).toBe('Dungeon Crawler Carl')
   })
 })
