@@ -107,7 +107,7 @@ builder.mutationFields((t) => ({
       return answered(
         await DiscoveryUseCase.describeVolume(
           context.userId,
-          { seriesId: saga, language: edition, number: volume.number },
+          { saga, language: edition, number: volume.number },
           language,
         ),
       )

@@ -172,7 +172,7 @@ builder.mutationFields((t) => ({
       return match(
         await DiscoveryUseCase.previewAnnouncedVolume(
           context.userId,
-          { seriesId: saga, language, number: args.number },
+          { saga, language, number: args.number },
           languageOf(context.event),
         ),
       )

@@ -1006,7 +1006,7 @@ describe('the recording of one volume of a saga', () => {
       new Map(),
     ) as ImportableBook
   const wanted = {
-    seriesId: saga,
+    saga,
     volume: 2 as VolumeNumber,
     language: 'fr' as const,
     title: 'La Peur du sage' as BookTitle,

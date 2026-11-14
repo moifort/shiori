@@ -70,7 +70,7 @@ describe('correcting a catalogued edition', () => {
     })
     const stored = await SeriesQuery.byId({ saga, language: 'fr' })
     expect(stored?.corrected).toEqual(['name', 'description'])
-    expect((await BookQuery.bySeries(other, saga))[0].series?.name).toBe(SeriesName('Naruto'))
+    expect((await BookQuery.bySaga(other, saga))[0].series?.name).toBe(SeriesName('Naruto'))
     expect(await correctionsBy(reader)).toMatchObject([
       {
         catalogue: 'series',
@@ -106,11 +106,11 @@ describe('correcting a catalogued edition', () => {
 
     await SeriesUseCase.correct(reader, saga, 'fr', 'fr', { format: 'manga' })
 
-    expect((await BookQuery.bySeries(reader, saga)).map((book) => book.format)).toEqual([
+    expect((await BookQuery.bySaga(reader, saga)).map((book) => book.format)).toEqual([
       'manga',
       'manga',
     ])
-    expect((await BookQuery.bySeries(other, saga))[0].format).toBe('book')
+    expect((await BookQuery.bySaga(other, saga))[0].format).toBe('book')
     expect(await correctionsBy(reader)).toEqual([])
   })
 
@@ -140,8 +140,8 @@ describe('correcting an edition nobody catalogued', () => {
 
     await SeriesUseCase.correct(reader, saga, 'fr', 'fr', { name: SeriesName('Naruto') })
 
-    expect((await BookQuery.bySeries(reader, saga))[0].series?.name).toBe(SeriesName('Naruto'))
-    expect((await BookQuery.bySeries(other, saga))[0].series?.name).toBe(
+    expect((await BookQuery.bySaga(reader, saga))[0].series?.name).toBe(SeriesName('Naruto'))
+    expect((await BookQuery.bySaga(other, saga))[0].series?.name).toBe(
       SeriesName('Naruto (French Edition)'),
     )
     expect(await SeriesQuery.byId({ saga, language: 'fr' })).toBeUndefined()

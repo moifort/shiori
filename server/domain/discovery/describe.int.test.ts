@@ -192,7 +192,7 @@ describe('a saga’s volume announced', () => {
 
     const opened = await DiscoveryUseCase.describeVolume(
       reader,
-      { seriesId: printed, language: 'fr', number: VolumeNumber(4) } as never,
+      { saga: printed, language: 'fr', number: VolumeNumber(4) } as never,
       'fr',
     )
     const shown = shownVolumeOf(watch as never, watch.volumes[0] as never)
@@ -218,7 +218,7 @@ describe('a saga’s volume announced', () => {
     expect(
       await DiscoveryUseCase.describeVolume(
         reader,
-        { seriesId: printed, language: 'fr', number: VolumeNumber(9) } as never,
+        { saga: printed, language: 'fr', number: VolumeNumber(9) } as never,
         'fr',
       ),
     ).toBe('not-found')

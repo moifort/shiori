@@ -245,18 +245,18 @@ export namespace DiscoveryUseCase {
    *  for an edition nobody looked up yet. */
   export const sagaReleases = async (
     userId: UserId,
-    seriesId: SagaKey,
+    sagaKey: SagaKey,
     language: BookLanguage,
     now = new Date(),
   ): Promise<SagaReleases> => {
     const [books, watches, catalogue] = await Promise.all([
-      BookQuery.bySeries(userId, seriesId),
-      DiscoveryQuery.watches([watchKeyOf({ seriesId, language })]),
-      SeriesQuery.byId({ saga: seriesId, language }),
+      BookQuery.bySaga(userId, sagaKey),
+      DiscoveryQuery.watches([watchKeyOf({ seriesId: sagaKey, language })]),
+      SeriesQuery.byId({ saga: sagaKey, language }),
     ])
     return releasesOf(
       books.filter((book) => book.language === language),
-      watches.get(watchKeyOf({ seriesId, language })),
+      watches.get(watchKeyOf({ seriesId: sagaKey, language })),
       catalogue,
       todayOf(now),
     )
@@ -268,15 +268,15 @@ export namespace DiscoveryUseCase {
    *  nor a catalogue has no name to search the web with. */
   export const lookUpSaga = async (
     userId: UserId,
-    seriesId: SagaKey,
+    sagaKey: SagaKey,
     language: BookLanguage,
     now = new Date(),
   ): Promise<SagaReleases> => {
-    const key = watchKeyOf({ seriesId, language })
+    const key = watchKeyOf({ seriesId: sagaKey, language })
     const [books, watches, catalogue] = await Promise.all([
-      BookQuery.bySeries(userId, seriesId),
+      BookQuery.bySaga(userId, sagaKey),
       DiscoveryQuery.watches([key]),
-      SeriesQuery.byId({ saga: seriesId, language }),
+      SeriesQuery.byId({ saga: sagaKey, language }),
     ])
     const held = books.filter((book) => book.language === language)
     const lookingUp = !watches.has(key)
@@ -286,7 +286,15 @@ export namespace DiscoveryUseCase {
       const asin = held.find((book) => book.audibleAsin)?.audibleAsin
       if (name)
         await lookUpAll(
-          [{ seriesId, language, name, ...(author ? { author } : {}), ...(asin ? { asin } : {}) }],
+          [
+            {
+              seriesId: sagaKey,
+              language,
+              name,
+              ...(author ? { author } : {}),
+              ...(asin ? { asin } : {}),
+            },
+          ],
           watches,
           now,
           () => false,
@@ -295,7 +303,7 @@ export namespace DiscoveryUseCase {
     // The catalogue as the lookup left it, the dates it found written in.
     const written =
       lookingUp && watches.has(key)
-        ? await SeriesQuery.byId({ saga: seriesId, language })
+        ? await SeriesQuery.byId({ saga: sagaKey, language })
         : catalogue
     return releasesOf(held, watches.get(key), written, todayOf(now))
   }
@@ -411,14 +419,10 @@ export namespace DiscoveryUseCase {
    *  lookup of any title. */
   export const previewAnnouncedVolume = async (
     userId: UserId,
-    {
-      seriesId,
-      language,
-      number,
-    }: { seriesId: SagaKey; language: BookLanguage; number: VolumeNumber },
+    { saga, language, number }: { saga: SagaKey; language: BookLanguage; number: VolumeNumber },
     appLanguage: Language,
   ): Promise<AnnouncedVolumePreview | 'not-found' | Exclude<ScanOutcome, ScanResult>> => {
-    const key = watchKeyOf({ seriesId, language })
+    const key = watchKeyOf({ seriesId: saga, language })
     const watch = (await DiscoveryQuery.watches([key])).get(key)
     const volume = watch?.volumes.find((found) => found.number === number)
     if (!watch || !volume) return 'not-found'
@@ -437,15 +441,11 @@ export namespace DiscoveryUseCase {
    *  release: `not-found` for a volume no watch announced in that edition. */
   export const describeVolume = async (
     userId: UserId,
-    {
-      seriesId,
-      language,
-      number,
-    }: { seriesId: SagaKey; language: BookLanguage; number: VolumeNumber },
+    { saga, language, number }: { saga: SagaKey; language: BookLanguage; number: VolumeNumber },
     appLanguage: Language,
     now = new Date(),
   ): Promise<ReleaseView | DescribeRefusal | 'not-found'> => {
-    const key = watchKeyOf({ seriesId, language })
+    const key = watchKeyOf({ seriesId: saga, language })
     const watch = (await DiscoveryQuery.watches([key])).get(key)
     const volume = watch?.volumes.find((found) => found.number === number)
     if (!watch || !volume) return 'not-found'
@@ -1010,10 +1010,6 @@ const authorRowsOf = async (
   }
 }
 
-/** The readers whose account still exists, by id; the others are forgotten. A
- *  pass that read an account just before it was deleted writes its reader back
- *  after the deletion erased it, and the reader's sagas would then be looked
- *  up every two weeks for nobody. One that cannot be forgotten now is next hour. */
 /** The watches the hourly pass decides on, read by what can be due rather than
  *  whole: the stale ones and the ones looked up in the last day, by two range
  *  queries each; the followed keys that may have no watch, by what the last
@@ -1090,6 +1086,10 @@ const withTheRestRead = async <W extends { key: string }>(
   return { watches, keys: new Set([...watches.keys(), ...missing]) }
 }
 
+/** The readers whose account still exists, by id; the others are forgotten. A
+ *  pass that read an account just before it was deleted writes its reader back
+ *  after the deletion erased it, and the reader's sagas would then be looked
+ *  up every two weeks for nobody. One that cannot be forgotten now is next hour. */
 const withoutAccountsGone = async (
   stored: readonly DiscoveryReader[],
   userIds: readonly UserId[],

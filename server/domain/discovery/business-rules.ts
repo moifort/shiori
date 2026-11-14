@@ -79,13 +79,15 @@ const dayMinus = (today: string, days: number): string => {
 
 // MARK: - What is watched
 
-export const watchKeyOf = ({ seriesId, language }: Pick<WatchedSaga, 'seriesId' | 'language'>) =>
-  `${seriesId}--${language}`
+export const watchKeyOf = ({
+  seriesId: saga,
+  language,
+}: Pick<WatchedSaga, 'seriesId' | 'language'>) => `${saga}--${language}`
 
 /** The format a saga is made of: its recordings for the saga heard, its
  *  printed books for the saga read. */
-export const formatOf = (seriesId: SagaKey): ReleaseFormat =>
-  isAudioSeries(seriesId) ? 'audiobook' : 'book'
+export const formatOf = (saga: SagaKey): ReleaseFormat =>
+  isAudioSeries(saga) ? 'audiobook' : 'book'
 
 /** Whether Discover looks out for a saga's next volumes: not when the reader
  *  set it aside, nor when they gave up on one of its volumes — a volume dropped

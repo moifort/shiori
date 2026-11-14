@@ -198,7 +198,7 @@ export namespace BookQuery {
   export const isImageAt = (url: CoverUrl): Promise<boolean> => servesImage(url)
 
   /** The reader's volumes of a saga, every edition of it. */
-  export const bySeries = async (userId: UserId, saga: SagaKey): Promise<Book[]> =>
+  export const bySaga = async (userId: UserId, saga: SagaKey): Promise<Book[]> =>
     repository.findBySaga(userId, saga)
 
   /** The volumes of one saga the reader holds, in the order the saga runs, with

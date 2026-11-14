@@ -500,8 +500,8 @@ describe('merging a duplicate saga', () => {
 
     expect(await SeriesUseCase.mergeInto(reader, duplicate, undefined, kept)).toBe(2)
 
-    expect(await BookQuery.bySeries(reader, duplicate)).toEqual([])
-    const volumes = await BookQuery.bySeries(reader, kept)
+    expect(await BookQuery.bySaga(reader, duplicate)).toEqual([])
+    const volumes = await BookQuery.bySaga(reader, kept)
     expect(volumes.map((book) => `${book.series?.name} ${book.series?.volume}`).sort()).toEqual([
       "L'Assassin royal 1",
       "L'Assassin royal 2",
@@ -532,7 +532,7 @@ describe('merging a duplicate saga', () => {
 
     expect(await SeriesUseCase.mergeInto(reader, duplicate, 'fr', kept)).toBe(1)
 
-    const left = await BookQuery.bySeries(reader, duplicate)
+    const left = await BookQuery.bySaga(reader, duplicate)
     expect(left.map((book) => book.language)).toEqual(['en'])
     expect((await SeriesOpinionQuery.of(reader, duplicate))?.favorite).toBe(true)
   })
@@ -547,7 +547,7 @@ describe('merging a duplicate saga', () => {
     expect(
       await SeriesUseCase.mergeInto(reader, duplicate, undefined, SagaKey(`${kept}--audio`)),
     ).toBe('other-format')
-    expect(await BookQuery.bySeries(reader, duplicate)).toHaveLength(1)
+    expect(await BookQuery.bySaga(reader, duplicate)).toHaveLength(1)
   })
 })
 

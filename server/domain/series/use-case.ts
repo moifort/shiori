@@ -284,7 +284,7 @@ export namespace SeriesUseCase {
    *  went; zero when the reader held none. */
   export const removeFromLibrary = (
     userId: UserId,
-    seriesId: SagaKey,
+    saga: SagaKey,
     edition?: BookLanguage,
   ): Promise<number> =>
     AnalyticsUseCase.afterWrite(
@@ -292,12 +292,12 @@ export namespace SeriesUseCase {
       async (batch) => {
         const { removed, remaining } = await BookCommand.removeSeries(
           userId,
-          seriesId,
+          saga,
           edition,
           new Date(),
           batch,
         )
-        if (remaining === 0) await SeriesOpinionCommand.forget(userId, seriesId, batch)
+        if (remaining === 0) await SeriesOpinionCommand.forget(userId, saga, batch)
         return removed
       },
       (removed) => removed > 0,
@@ -320,13 +320,13 @@ export namespace SeriesUseCase {
    *  a recording has a spine of its own. Returns how many books moved. */
   export const mergeInto = async (
     userId: UserId,
-    seriesId: SagaKey,
+    sagaKey: SagaKey,
     edition: BookLanguage | undefined,
     targetId: SagaKey,
   ): Promise<number | 'not-found' | 'same-series' | 'other-format'> => {
-    if (seriesId === targetId) return 'same-series'
-    if (isAudioSeries(seriesId) !== isAudioSeries(targetId)) return 'other-format'
-    const kept = await BookQuery.bySeries(userId, targetId)
+    if (sagaKey === targetId) return 'same-series'
+    if (isAudioSeries(sagaKey) !== isAudioSeries(targetId)) return 'other-format'
+    const kept = await BookQuery.bySaga(userId, targetId)
     const named = (
       kept.find((book) => book.language === edition && book.series) ??
       kept.find((book) => book.series)
@@ -337,13 +337,13 @@ export namespace SeriesUseCase {
       async (batch) => {
         const { moved, remaining } = await BookCommand.moveSeries(
           userId,
-          seriesId,
+          sagaKey,
           edition,
           { saga: targetId, name: named.name },
           new Date(),
           batch,
         )
-        if (moved > 0 && remaining === 0) await SeriesOpinionCommand.forget(userId, seriesId, batch)
+        if (moved > 0 && remaining === 0) await SeriesOpinionCommand.forget(userId, sagaKey, batch)
         return moved
       },
       (moved) => moved > 0,
@@ -370,15 +370,15 @@ export namespace SeriesUseCase {
    *  two refusals. */
   export const correct = async (
     userId: UserId,
-    seriesId: SagaKey,
+    sagaKey: SagaKey,
     language: ScanLanguage,
     edition: BookLanguage | undefined,
     { format, ...correction }: SeriesCorrection & { format?: BookFormat },
   ): Promise<Series | undefined | 'not-found' | 'audio-format' | 'not-catalogued'> => {
-    const shelf = await BookQuery.bySeries(userId, seriesId)
-    const opened = { saga: seriesId, language: editionOpened(shelf, language, edition) }
+    const shelf = await BookQuery.bySaga(userId, sagaKey)
+    const opened = { saga: sagaKey, language: editionOpened(shelf, language, edition) }
     if (!shelf.some((book) => book.language === opened.language)) return 'not-found'
-    if (format && (format === 'audiobook' || isAudioSeries(seriesId))) return 'audio-format'
+    if (format && (format === 'audiobook' || isAudioSeries(sagaKey))) return 'audio-format'
     const known = await SeriesQuery.byId(opened)
     if ('description' in correction && !known) return 'not-catalogued'
 
@@ -406,7 +406,7 @@ export namespace SeriesUseCase {
         (batch) =>
           BookCommand.correctSeries(
             userId,
-            seriesId,
+            sagaKey,
             opened.language,
             { name, format },
             new Date(),
@@ -414,7 +414,7 @@ export namespace SeriesUseCase {
           ),
         (changed) => changed > 0,
       )
-    return describe(userId, seriesId, language, opened.language, undefined, {
+    return describe(userId, sagaKey, language, opened.language, undefined, {
       waitForCatalogue: false,
     })
   }
@@ -451,24 +451,24 @@ export namespace SeriesUseCase {
    *  opens at once. */
   export const describe = async (
     userId: UserId,
-    seriesId: SagaKey,
+    sagaKey: SagaKey,
     language: ScanLanguage,
     edition?: BookLanguage,
     proposed?: ProposedSaga,
     { waitForCatalogue = true }: { waitForCatalogue?: boolean } = {},
   ): Promise<Series | undefined> => {
-    const shelf = await BookQuery.bySeries(userId, seriesId)
-    const opened = { saga: seriesId, language: editionOpened(shelf, language, edition) }
+    const shelf = await BookQuery.bySaga(userId, sagaKey)
+    const opened = { saga: sagaKey, language: editionOpened(shelf, language, edition) }
     const held = shelf.filter((book) => book.language === opened.language)
     const known = await SeriesQuery.byId(opened)
     if (known) return withShelvedVolumes(known, held)
     // The reader counted the volumes themselves: their spine is drawn from
     // that, and the world is only asked again when they ask for it — every
     // opening would otherwise wait on a model call that already failed once.
-    const opinion = await SeriesOpinionQuery.of(userId, seriesId)
+    const opinion = await SeriesOpinionQuery.of(userId, sagaKey)
     if (opinion?.volumeCount !== undefined) {
       const provisional = cataloguesOf(held, [], [opinion]).get(
-        seriesIdOf(seriesId, opened.language),
+        seriesIdOf(sagaKey, opened.language),
       )
       if (provisional) return provisional
     }
@@ -476,8 +476,8 @@ export namespace SeriesUseCase {
     // lists no recording of: asking again would make every opening wait on the
     // same empty answer. `recatalogue` asks regardless.
     if (isRecentMiss(await SeriesQuery.lastMiss(opened), new Date())) return undefined
-    if (!waitForCatalogue) return awaitingCatalogue(seriesId, held, opened.language, proposed)
-    return catalogueFromLibrary(userId, seriesId, held, language, opened.language, proposed)
+    if (!waitForCatalogue) return awaitingCatalogue(sagaKey, held, opened.language, proposed)
+    return catalogueFromLibrary(userId, sagaKey, held, language, opened.language, proposed)
   }
 
   /** A saga nobody catalogued, for a screen that draws at once and asks for
@@ -487,17 +487,17 @@ export namespace SeriesUseCase {
    *  the catalogue would be asked for with. Null when there is nothing to ask
    *  with, as the catalogue call would answer. */
   const awaitingCatalogue = (
-    seriesId: SagaKey,
+    sagaKey: SagaKey,
     held: readonly Book[],
     edition: BookLanguage | undefined,
     proposed?: ProposedSaga,
   ): Series | undefined => {
-    const source = catalogueAskedFor(seriesId, held, proposed)
+    const source = catalogueAskedFor(sagaKey, held, proposed)
     if (!source) return undefined
     const { provisional: _, ...drawn } = provisionalCatalogueOf(
       {
-        id: seriesIdOf(seriesId, edition),
-        saga: seriesId,
+        id: seriesIdOf(sagaKey, edition),
+        saga: sagaKey,
         name: source.name,
         author: source.author,
       },
@@ -532,15 +532,15 @@ export namespace SeriesUseCase {
    *  refresh never costs the reader what they had. */
   export const recatalogue = async (
     userId: UserId,
-    seriesId: SagaKey,
+    saga: SagaKey,
     language: ScanLanguage,
     edition?: BookLanguage,
   ): Promise<Series | undefined> => {
-    const shelf = await BookQuery.bySeries(userId, seriesId)
+    const shelf = await BookQuery.bySaga(userId, saga)
     const opened = editionOpened(shelf, language, edition)
     return catalogueFromLibrary(
       userId,
-      seriesId,
+      saga,
       shelf.filter((book) => book.language === opened),
       language,
       opened,
@@ -552,17 +552,17 @@ export namespace SeriesUseCase {
    *  `held` is the reader's volumes of that edition. */
   const catalogueFromLibrary = async (
     userId: UserId,
-    seriesId: SagaKey,
+    sagaKey: SagaKey,
     held: readonly Book[],
     language: ScanLanguage,
     edition: BookLanguage | undefined,
     proposed?: ProposedSaga,
   ): Promise<Series | undefined> => {
-    const source = catalogueAskedFor(seriesId, held, proposed)
+    const source = catalogueAskedFor(sagaKey, held, proposed)
     if (!source) return undefined
 
     const { series: catalogued, usage } = await ScanCommand.catalogueSeries(
-      seriesId,
+      sagaKey,
       source.name,
       source.author,
       language,
@@ -588,13 +588,13 @@ export namespace SeriesUseCase {
  *  edition the reader holds names it, else the saga proposed when it is this
  *  one. Nothing when neither does. */
 const catalogueAskedFor = (
-  seriesId: SagaKey,
+  saga: SagaKey,
   held: readonly Book[],
   proposed: ProposedSaga | undefined,
 ): { name: SeriesName; author: AuthorName } | undefined => {
   const volume = held.find((book) => book.series && book.authors.length > 0)
   if (volume?.series) return { name: volume.series.name, author: volume.authors[0] }
-  return proposed && namesSaga(proposed, seriesId) ? proposed : undefined
+  return proposed && namesSaga(proposed, saga) ? proposed : undefined
 }
 
 /** A catalogue just built, with what the release watch already found of that
@@ -637,9 +637,8 @@ const editionOpened = (
 export type ProposedSaga = { name: SeriesName; author: AuthorName }
 
 /** Whether a proposed name and author fold into this saga's key, in its format. */
-const namesSaga = (proposed: ProposedSaga, seriesId: SagaKey): boolean =>
-  seriesKeyOf(proposed.name, proposed.author, isAudioSeries(seriesId) ? 'audiobook' : 'book') ===
-  seriesId
+const namesSaga = (proposed: ProposedSaga, saga: SagaKey): boolean =>
+  seriesKeyOf(proposed.name, proposed.author, isAudioSeries(saga) ? 'audiobook' : 'book') === saga
 
 /** A saga as the books and the opinions describe it, before any catalogue is
  *  read: enough to filter and order the Series tab. */

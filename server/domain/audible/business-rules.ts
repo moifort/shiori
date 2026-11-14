@@ -230,12 +230,6 @@ export const heardByAsin = (
 ): ReadonlyMap<string, LastPosition> =>
   new Map(positions.map((position) => [position.asin, position]))
 
-/** The saga the title belongs to, keyed the way a scan keys a recording — the
- *  saga heard, never the saga read — so an imported volume joins the very
- *  catalogue a scanned audiobook built.
- *
- *  Without an author there is no stable key, so the membership is dropped rather
- *  than given an id nothing else shares — the same rule the scan applies. */
 /** What a few publishers append to a title or a saga's name on Audible,
  *  "(French Edition)", when the language is a field of its own. */
 const EDITION_MENTION = /\s*\((?:\p{L}+ Edition|[EÉ]dition \p{L}+)\)\s*$/iu
@@ -249,6 +243,12 @@ export const titleOf = (item: AudibleItem): string =>
     item.series?.name?.replace(EDITION_MENTION, ''),
   )
 
+/** The saga the title belongs to, keyed the way a scan keys a recording — the
+ *  saga heard, never the saga read — so an imported volume joins the very
+ *  catalogue a scanned audiobook built.
+ *
+ *  Without an author there is no stable key, so the membership is dropped rather
+ *  than given an id nothing else shares — the same rule the scan applies. */
 const seriesMembershipOf = (
   item: AudibleItem,
   authors: readonly AuthorNameValue[],
@@ -650,13 +650,13 @@ export const audibleProductUrlOf = (marketplace: AudibleMarketplace, asin: Audib
 export const recordingOfVolume = (
   found: readonly ImportableBook[],
   {
-    seriesId,
+    saga,
     volume,
     language,
     title,
     author,
   }: {
-    seriesId: SagaKey
+    saga: SagaKey
     volume: VolumeNumberValue
     language: BookLanguage
     title: string
@@ -667,7 +667,7 @@ export const recordingOfVolume = (
   const candidates = inLanguage.filter((importable) => importable.series?.volume === volume)
   const wanted = shelfKeyOf(title, author)
   return (
-    candidates.find((importable) => importable.series?.saga === seriesId) ??
+    candidates.find((importable) => importable.series?.saga === saga) ??
     candidates[0] ??
     inLanguage.find(
       (importable) =>

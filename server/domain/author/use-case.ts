@@ -43,9 +43,8 @@ const logger = createLogger('author')
 export type AuthorOrder = 'loved' | 'name' | 'recent'
 
 /** An author of the Authors tab: what the library says, and the portrait once
- *  somebody has opened their page. */
-/** `favorite` is the reader's own heart on the author, apart from the hearts
- *  their books and sagas carry. */
+ *  somebody has opened their page. `favorite` is the reader's own heart on the
+ *  author, apart from the hearts their books and sagas carry. */
 export type FollowedAuthor = ShelvedAuthor<Book> & { portraitUrl?: PortraitUrl; favorite?: boolean }
 
 /** Everything an author's page draws, in one answer: what the world knows of

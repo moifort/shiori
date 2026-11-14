@@ -139,7 +139,7 @@ builder.mutationFields((t) => ({
       const { saga, language } = seriesReferenceOf(args.seriesId, args.language ?? undefined)
       if (!language) return badUserInput('The series id names no edition')
       const result = await AudibleUseCase.addSeriesVolume(context.userId, {
-        seriesId: saga,
+        saga,
         volume: args.volume,
         language,
       }).catch(audibleUnavailable)

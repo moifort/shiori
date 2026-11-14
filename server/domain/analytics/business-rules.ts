@@ -316,11 +316,11 @@ export const seriesProgressOf = (
  *  own rating of it, else the average of the volumes they rated themselves.
  *  Undefined when they have said nothing of it. */
 const sagaRatingOf = (
-  seriesId: SagaKey,
+  saga: SagaKey,
   owned: readonly Book[],
   seriesRatings: ReadonlyMap<SagaKey, StarRating>,
 ): number | undefined => {
-  const own = seriesRatings.get(seriesId)
+  const own = seriesRatings.get(saga)
   if (own !== undefined) return own
   const rated = owned.flatMap((book) => (book.rating === undefined ? [] : [book.rating]))
   return rated.length === 0

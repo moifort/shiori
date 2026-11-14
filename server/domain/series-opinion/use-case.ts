@@ -14,16 +14,16 @@ import type { UserId } from '~/domain/shared/types'
  *  the way a book write does. The GraphQL layer writes opinions through here,
  *  never through `SeriesOpinionCommand` directly. */
 export namespace SeriesOpinionUseCase {
-  export const rate = (userId: UserId, seriesId: SagaKey, rating: StarRating | undefined) =>
-    withAnalytics(userId, (batch) => SeriesOpinionCommand.rate(userId, seriesId, rating, batch))
+  export const rate = (userId: UserId, saga: SagaKey, rating: StarRating | undefined) =>
+    withAnalytics(userId, (batch) => SeriesOpinionCommand.rate(userId, saga, rating, batch))
 
   /** A heart given to a saga rates, with the saga's stars, the volumes the
    *  reader finished and left unrated, in the same batch. Taking it back
    *  leaves those stars, as on a book. */
-  export const setFavorite = async (userId: UserId, seriesId: SagaKey, favorite: boolean) => {
-    const rated = favorite ? volumesRatedByHeart(await BookQuery.bySeries(userId, seriesId)) : []
+  export const setFavorite = async (userId: UserId, saga: SagaKey, favorite: boolean) => {
+    const rated = favorite ? volumesRatedByHeart(await BookQuery.bySaga(userId, saga)) : []
     return withAnalytics(userId, async (batch) => {
-      const opinion = await SeriesOpinionCommand.setFavorite(userId, seriesId, favorite, batch)
+      const opinion = await SeriesOpinionCommand.setFavorite(userId, saga, favorite, batch)
       const { rating } = opinion
       if (rating !== undefined)
         for (const volume of rated)
@@ -38,26 +38,22 @@ export namespace SeriesOpinionUseCase {
    *  aside of a saga set aside as a whole. */
   export const setFollowed = async (
     userId: UserId,
-    seriesId: SagaKey,
+    saga: SagaKey,
     followed: boolean,
     language?: BookLanguage,
   ) => {
     const heldLanguages =
-      language === undefined ? [] : heldLanguagesOf(await BookQuery.all(userId), seriesId)
+      language === undefined ? [] : heldLanguagesOf(await BookQuery.all(userId), saga)
     return withAnalytics(userId, (batch) =>
-      SeriesOpinionCommand.setFollowed(userId, seriesId, followed, language, heldLanguages, batch),
+      SeriesOpinionCommand.setFollowed(userId, saga, followed, language, heldLanguages, batch),
     )
   }
 
   /** The dashboard measures a saga against this count when nobody has
    *  catalogued it, so the count reaches the view as a heart does. */
-  export const declareVolumeCount = (
-    userId: UserId,
-    seriesId: SagaKey,
-    volumeCount: VolumeNumber,
-  ) =>
+  export const declareVolumeCount = (userId: UserId, saga: SagaKey, volumeCount: VolumeNumber) =>
     withAnalytics(userId, (batch) =>
-      SeriesOpinionCommand.declareVolumeCount(userId, seriesId, volumeCount, batch),
+      SeriesOpinionCommand.declareVolumeCount(userId, saga, volumeCount, batch),
     )
 }
 
@@ -69,10 +65,10 @@ const withAnalytics = (
   write: (batch: WriteBatch) => Promise<SeriesOpinion>,
 ): Promise<SeriesOpinion> => AnalyticsUseCase.afterWrite(userId, write)
 
-const heldLanguagesOf = (books: readonly Book[], seriesId: SagaKey): BookLanguage[] => [
+const heldLanguagesOf = (books: readonly Book[], sagaKey: SagaKey): BookLanguage[] => [
   ...new Set(
     books.flatMap((book) =>
-      book.series?.saga === seriesId && book.language !== undefined ? [book.language] : [],
+      book.series?.saga === sagaKey && book.language !== undefined ? [book.language] : [],
     ),
   ),
 ]

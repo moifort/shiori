@@ -247,28 +247,24 @@ export namespace AudibleUseCase {
    *  Audible sells no recording of it there. */
   export const addSeriesVolume = async (
     userId: UserId,
-    {
-      seriesId,
-      volume,
-      language,
-    }: { seriesId: SagaKey; volume: VolumeNumber; language: BookLanguage },
+    { saga, volume, language }: { saga: SagaKey; volume: VolumeNumber; language: BookLanguage },
   ): Promise<Book | 'not-connected' | 'not-found'> => {
     const connected = await connectedCredentials(userId)
     if (connected === 'not-connected') return connected
     const [catalogue, watches] = await Promise.all([
-      SeriesQuery.byId({ saga: seriesId, language }),
-      DiscoveryQuery.watches([watchKeyOf({ seriesId, language })]),
+      SeriesQuery.byId({ saga, language }),
+      DiscoveryQuery.watches([watchKeyOf({ seriesId: saga, language })]),
     ])
     const entry = catalogue?.volumes.find(
       (candidate) => candidate.kind === 'main' && candidate.number === volume,
     )
     if (!catalogue || !entry) return 'not-found'
     const confirmed = watches
-      .get(watchKeyOf({ seriesId, language }))
+      .get(watchKeyOf({ seriesId: saga, language }))
       ?.volumes.find((found) => found.number === volume)?.asin
 
     const { recording, credentials } = await recordingOf(connected.credentials, {
-      seriesId,
+      saga,
       volume,
       language,
       asin: confirmed,
@@ -279,7 +275,7 @@ export namespace AudibleUseCase {
     await AudibleCommand.rememberRotatedCredentials(userId, credentials)
     if (!recording) return 'not-found'
 
-    const membership = { saga: seriesId, name: catalogue.name, volume, kind: 'main' as const }
+    const membership = { saga, name: catalogue.name, volume, kind: 'main' as const }
     return BookUseCase.add(userId, volumeBookFrom(recording, membership, language))
   }
 
@@ -361,7 +357,7 @@ const importablesOf = (items: readonly AudibleItem[]) =>
 const recordingOf = async (
   credentials: Credentials,
   wanted: {
-    seriesId: SagaKey
+    saga: SagaKey
     volume: VolumeNumber
     language: BookLanguage
     asin?: AudibleAsin

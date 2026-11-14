@@ -127,7 +127,7 @@ export namespace ScanUseCase {
     const edition = seen.language
     const key = edition ? watchKeyOf({ seriesId: series.saga, language: edition }) : undefined
     const [held, catalogue, watches] = await Promise.all([
-      BookQuery.bySeries(userId, series.saga),
+      BookQuery.bySaga(userId, series.saga),
       SeriesQuery.byId({ saga: series.saga, language: edition }),
       key ? DiscoveryQuery.watches([key]) : undefined,
     ])

@@ -207,9 +207,6 @@ export type AuthorWatch = {
   works: FoundWork[]
 }
 
-/** One row of the Découvrir tab's Authors shelf: an author the reader holds,
- *  drawn as the Library's Authors shelf draws them, and what they have for
- *  the reader outside the sagas the reader already holds. */
 /** What one author has for the reader in one format, outside the sagas they
  *  hold. */
 export type AuthorReleases = {
@@ -222,6 +219,9 @@ export type AuthorReleases = {
   awaited: AwaitedEditionView[]
 }
 
+/** One row of the Découvrir tab's Authors shelf: an author the reader holds,
+ *  drawn as the Library's Authors shelf draws them, and what they have for
+ *  the reader outside the sagas the reader already holds. */
 export type AuthorDiscovery = AuthorReleases & {
   author: FollowedAuthor
   /** The language the author's works were looked up in. Absent on a row held

@@ -91,7 +91,7 @@ describe('an announced volume’s page', () => {
 
     const preview = await DiscoveryUseCase.previewAnnouncedVolume(
       reader,
-      { seriesId: printed, language: 'fr', number: VolumeNumber(4) },
+      { saga: printed, language: 'fr', number: VolumeNumber(4) },
       'fr',
     )
 
@@ -120,7 +120,7 @@ describe('an announced volume’s page', () => {
 
     const preview = await DiscoveryUseCase.previewAnnouncedVolume(
       reader,
-      { seriesId: heard, language: 'fr', number: VolumeNumber(4) },
+      { saga: heard, language: 'fr', number: VolumeNumber(4) },
       'fr',
     )
 
@@ -148,7 +148,7 @@ describe('an announced volume’s page', () => {
 
     const preview = await DiscoveryUseCase.previewAnnouncedVolume(
       reader,
-      { seriesId: printed, language: 'fr', number: VolumeNumber(9) },
+      { saga: printed, language: 'fr', number: VolumeNumber(9) },
       'fr',
     )
 
@@ -163,7 +163,7 @@ describe('an announced volume’s page', () => {
 
     const preview = await DiscoveryUseCase.previewAnnouncedVolume(
       reader,
-      { seriesId: printed, language: 'fr', number: VolumeNumber(4) },
+      { saga: printed, language: 'fr', number: VolumeNumber(4) },
       'fr',
     )
 

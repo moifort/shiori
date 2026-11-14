@@ -985,7 +985,7 @@ describe('adding a volume of a saga heard from its screen', () => {
         },
       ],
     })
-  const wanted = { seriesId: saga, volume: VolumeNumber(2), language: 'fr' as const }
+  const wanted = { saga, volume: VolumeNumber(2), language: 'fr' as const }
 
   test('says so when no account is connected', async () => {
     catalogued()

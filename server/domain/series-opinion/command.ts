@@ -15,13 +15,13 @@ export namespace SeriesOpinionCommand {
    *  saga the catalogue has never described is still theirs to hold. */
   export const rate = (
     userId: UserId,
-    seriesId: SagaKey,
+    saga: SagaKey,
     rating: StarRating | undefined,
     batch?: WriteBatch,
   ) =>
     write(
       userId,
-      seriesId,
+      saga,
       (opinion) => ({
         ...opinion,
         rating,
@@ -37,14 +37,14 @@ export namespace SeriesOpinionCommand {
    *  own stars when they can hold it, else on five; taken back, it leaves them. */
   export const setFavorite = (
     userId: UserId,
-    seriesId: SagaKey,
+    saga: SagaKey,
     favorite: boolean,
     batch?: WriteBatch,
     now = new Date(),
   ) =>
     write(
       userId,
-      seriesId,
+      saga,
       (opinion) =>
         favorite
           ? {
@@ -64,10 +64,10 @@ export namespace SeriesOpinionCommand {
    *  saga. */
   export const declareVolumeCount = (
     userId: UserId,
-    seriesId: SagaKey,
+    saga: SagaKey,
     volumeCount: VolumeNumber,
     batch?: WriteBatch,
-  ) => write(userId, seriesId, (opinion) => ({ ...opinion, volumeCount }), batch)
+  ) => write(userId, saga, (opinion) => ({ ...opinion, volumeCount }), batch)
 
   /** Set a saga aside, or follow it again: one edition when `language` names
    *  it, else the whole saga. `heldLanguages` are the editions the reader
@@ -75,7 +75,7 @@ export namespace SeriesOpinionCommand {
    *  aside. */
   export const setFollowed = (
     userId: UserId,
-    seriesId: SagaKey,
+    saga: SagaKey,
     followed: boolean,
     language: BookLanguage | undefined,
     heldLanguages: readonly BookLanguage[],
@@ -83,7 +83,7 @@ export namespace SeriesOpinionCommand {
   ) =>
     write(
       userId,
-      seriesId,
+      saga,
       (opinion) => ({
         ...opinion,
         ...followingAfter(opinion, followed, language, heldLanguages),
@@ -92,8 +92,8 @@ export namespace SeriesOpinionCommand {
     )
 
   /** Forget what the reader made of a saga they no longer hold. */
-  export const forget = (userId: UserId, seriesId: SagaKey, batch?: WriteBatch): Promise<void> =>
-    repository.remove(userId, seriesId, batch)
+  export const forget = (userId: UserId, saga: SagaKey, batch?: WriteBatch): Promise<void> =>
+    repository.remove(userId, saga, batch)
 
   export const deleteAllForUser = (userId: UserId): Promise<void> =>
     repository.removeAllByUser(userId)
@@ -105,11 +105,11 @@ export namespace SeriesOpinionCommand {
 // and answers nothing.
 const write = async (
   userId: UserId,
-  seriesId: SagaKey,
+  saga: SagaKey,
   change: (opinion: SeriesOpinion) => SeriesOpinion,
   batch?: WriteBatch,
 ): Promise<SeriesOpinion> => {
-  const current = (await repository.findBy(userId, seriesId)) ?? { userId, seriesId }
+  const current = (await repository.findBy(userId, saga)) ?? { userId, seriesId: saga }
   const next = change(current)
   if (
     next.rating === undefined &&
@@ -118,7 +118,7 @@ const write = async (
     next.unfollowed === undefined &&
     next.unfollowedLanguages === undefined
   ) {
-    await repository.remove(userId, seriesId, batch)
+    await repository.remove(userId, saga, batch)
     return next
   }
   return repository.save(next, batch)

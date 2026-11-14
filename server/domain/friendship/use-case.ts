@@ -369,14 +369,14 @@ export namespace FriendshipUseCase {
   export const saga = async (
     viewerId: UserId,
     ownerId: UserId,
-    seriesId: SagaKey,
+    sagaKey: SagaKey,
     edition?: BookLanguage,
   ): Promise<FriendSaga | undefined> => {
     if (!(await canRead(viewerId, ownerId))) return undefined
     const [held, opinion, viewerVolumes] = await Promise.all([
-      BookQuery.sharedInSaga(ownerId, seriesId),
-      SeriesOpinionQuery.of(ownerId, seriesId),
-      BookQuery.bySeries(viewerId, seriesId),
+      BookQuery.sharedInSaga(ownerId, sagaKey),
+      SeriesOpinionQuery.of(ownerId, sagaKey),
+      BookQuery.bySaga(viewerId, sagaKey),
     ])
     const [saga] = followedSagasOf(
       edition ? held.filter((book) => book.language === edition) : held,
@@ -384,7 +384,7 @@ export namespace FriendshipUseCase {
     if (!saga) return undefined
     const owned = shelfKeysOf(viewerVolumes)
     const favorites = new Map<SagaKey, Date | undefined>(
-      opinion?.favorite ? [[seriesId, opinion.favoritedAt]] : [],
+      opinion?.favorite ? [[sagaKey, opinion.favoritedAt]] : [],
     )
     const ratings = seriesRatingsOf(opinion ? [opinion] : [])
     const volumes = await BookQuery.withSignedCovers(inReadingOrder(saga.books))
