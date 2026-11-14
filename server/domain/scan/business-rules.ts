@@ -1,7 +1,7 @@
 import { BookFormatValue } from '~/domain/book/primitives'
 import type { BookFormat, BookMedium } from '~/domain/book/types'
 import { BOOK_FORMATS } from '~/domain/book/types'
-import type { DetectedBox } from '~/domain/scan/types'
+import type { DetectedBox, EditionHints, LibraryEdition, ScanResult } from '~/domain/scan/types'
 import { optionally } from '~/utils/input'
 import { foldedText } from '~/utils/slug'
 
@@ -105,4 +105,22 @@ export const withTypedCandidate = <Candidate extends { title: string }>(
     return candidates.slice(0, limit)
   const kept = candidates.slice(0, limit - 1)
   return authorNamed ? [typed, ...kept] : [...kept, typed]
+}
+
+/** Past this many editions, the prompt grows and the right one is no likelier
+ *  to be among them: the catalogue ranks the closest first. */
+export const EDITIONS_SHOWN = 25
+
+/** The editions shown to the model: never one the reader holds as another
+ *  volume, and only this volume's when the catalogue numbers any of them. */
+export const editionsToShow = (
+  editions: readonly LibraryEdition[],
+  seen: Pick<ScanResult, 'series'>,
+  hints: EditionHints | undefined,
+): LibraryEdition[] => {
+  const siblings = new Set(hints?.siblings.map((sibling) => sibling.isbn13))
+  const kept = editions.filter((edition) => !siblings.has(edition.isbn13))
+  const volume = seen.series?.volume
+  const numbered = kept.filter((edition) => Number.parseInt(edition.volume ?? '', 10) === volume)
+  return (numbered.length > 0 ? numbered : kept).slice(0, EDITIONS_SHOWN)
 }

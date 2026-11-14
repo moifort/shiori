@@ -1,12 +1,16 @@
 import { describe, expect, test } from 'bun:test'
+import { Isbn13 } from '~/domain/book/primitives'
 import {
   boxOf,
+  EDITIONS_SHOWN,
+  editionsToShow,
   heldFormatOf,
   inReadingOrder,
   searchedQueryOf,
   typedQueryOf,
   withTypedCandidate,
 } from '~/domain/scan/business-rules'
+import { SagaKey, SeriesName, VolumeNumber } from '~/domain/series/primitives'
 
 describe('boxOf', () => {
   test('turns Gemini’s [ymin, xmin, ymax, xmax] on 0–1000 into fractions of the photo', () => {
@@ -116,5 +120,39 @@ describe('withTypedCandidate', () => {
       { title: 'Le mensonge' },
       { title: 'Autre' },
     ])
+  })
+})
+
+describe('editionsToShow', () => {
+  const saga = { saga: SagaKey('dune'), name: SeriesName('Dune'), kind: 'main' as const }
+  const edition = (volume: string | undefined, isbn13: string) => ({
+    isbn13: Isbn13(isbn13),
+    volume,
+  })
+  const tome1 = edition('1', '9782070612758')
+  const tome2 = edition('2', '9782266320481')
+  const unnumbered = edition(undefined, '9780306406157')
+
+  test('keeps only this volume’s editions when the catalogue numbers any of them', () => {
+    const shown = editionsToShow(
+      [tome1, tome2, unnumbered],
+      { series: { ...saga, volume: VolumeNumber(2) } },
+      undefined,
+    )
+    expect(shown).toEqual([tome2])
+  })
+
+  test('keeps them all when none is numbered as this volume', () => {
+    expect(editionsToShow([tome1, unnumbered], {}, undefined)).toEqual([tome1, unnumbered])
+  })
+
+  test('never shows an edition the reader holds as another volume', () => {
+    const hints = { siblings: [{ kind: 'main' as const, isbn13: tome1.isbn13 }] }
+    expect(editionsToShow([tome1, unnumbered], {}, hints)).toEqual([unnumbered])
+  })
+
+  test('shows at most EDITIONS_SHOWN', () => {
+    const many = Array.from({ length: EDITIONS_SHOWN + 5 }, () => unnumbered)
+    expect(editionsToShow(many, {}, undefined)).toHaveLength(EDITIONS_SHOWN)
   })
 })

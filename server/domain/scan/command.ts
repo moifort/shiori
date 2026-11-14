@@ -1,29 +1,8 @@
-import {
-  formatNamedByLookup,
-  formatSettledBySubgenres,
-  mendedSpelling,
-  titleWithoutAuthor,
-} from '~/domain/book/business-rules'
 import { BookCommand } from '~/domain/book/command'
-import {
-  BookLanguageValue,
-  GenreValue,
-  Isbn13,
-  MAX_SUBGENRES,
-  PageCount,
-  Publisher,
-  Subgenre,
-  Synopsis,
-} from '~/domain/book/primitives'
 import { BookQuery } from '~/domain/book/query'
-import type {
-  BookLanguage,
-  Isbn13 as Isbn13Type,
-  Publisher as PublisherType,
-} from '~/domain/book/types'
+import type { BookLanguage, Isbn13 as Isbn13Type } from '~/domain/book/types'
 import {
-  boxOf,
-  heldFormatOf,
+  editionsToShow,
   inReadingOrder,
   MAX_DETECTED_BOOKS,
   searchedQueryOf,
@@ -32,6 +11,16 @@ import {
 } from '~/domain/scan/business-rules'
 import { bnfEditionsOf } from '~/domain/scan/infrastructure/bnf'
 import * as repository from '~/domain/scan/infrastructure/repository'
+import {
+  authorsFrom,
+  candidatesFrom,
+  catalogueVolumeFrom,
+  coverReadingFrom,
+  type Described,
+  enrichmentFrom,
+  libraryDescriptionFrom,
+  shelfBookFrom,
+} from '~/domain/scan/parsing'
 import { hashImage } from '~/domain/scan/primitives'
 import {
   audioCataloguePrompt,
@@ -46,15 +35,20 @@ import {
 import {
   CANDIDATES_SCHEMA,
   CATALOGUE_SCHEMA,
+  type CandidatesOutput,
+  type CatalogueOutput,
   EDITIONS_SCHEMA,
+  type EditionsOutput,
   ENRICHMENT_SCHEMA,
+  type EnrichmentOutput,
   SHELF_SCHEMA,
+  type ShelfOutput,
   VISION_SCHEMA,
+  type VisionOutput,
 } from '~/domain/scan/schemas'
 import { STUBBED_SCAN, STUBBED_SHELF } from '~/domain/scan/stub'
 import type {
   EditionHints,
-  LibraryEdition,
   ScanLanguage,
   ScanResult,
   ScanUsage,
@@ -68,13 +62,9 @@ import {
   SeriesDescription,
   SeriesName,
   seriesIdOf,
-  seriesKeyOf,
-  VolumeKindValue,
-  VolumeNumber,
 } from '~/domain/series/primitives'
-import type { SagaKey, Series, SeriesName as SeriesNameValue, Volume } from '~/domain/series/types'
-import { AuthorName, BookTitle, Year } from '~/domain/shared/primitives'
-import { bareTitleOf } from '~/domain/shared/saga-title'
+import type { SagaKey, Series, SeriesName as SeriesNameValue } from '~/domain/series/types'
+import { AuthorName, BookTitle } from '~/domain/shared/primitives'
 import type {
   AuthorName as AuthorNameValue,
   BookTitle as BookTitleValue,
@@ -84,88 +74,12 @@ import { generate } from '~/system/gemini'
 import { type AiStepUsage, summedUsage } from '~/system/gemini/usage'
 import { createLogger } from '~/system/logger'
 import { isPresent, optionally as optional } from '~/utils/input'
-import { foldedText, slugify } from '~/utils/slug'
+import { slugify } from '~/utils/slug'
 
 const logger = createLogger('scan')
 
-type VisionOutput = {
-  recognized: boolean
-  format?: string | null
-  title: string
-  authors: string[]
-  publisher?: string | null
-  language?: string | null
-  seriesName?: string | null
-  volumeNumber?: number | null
-}
-
-type ShelfOutput = {
-  books?: {
-    box_2d?: number[]
-    title?: string | null
-    authors?: string[]
-    format?: string | null
-    publisher?: string | null
-    language?: string | null
-    seriesName?: string | null
-    volumeNumber?: number | null
-  }[]
-}
-
-type EnrichmentOutput = {
-  title: string
-  authors: string[]
-  format?: string | null
-  seriesName?: string | null
-  volumeNumber?: number | null
-  volumeKind?: string | null
-  firstPublishedIn?: number | null
-  genre?: string | null
-  subgenres: string[]
-  pageCount?: number | null
-  isbn13?: string | null
-  regularEditionIsbn13?: string | null
-  synopsis?: string | null
-  publisher?: string | null
-}
-
-type EditionsOutput = {
-  edition?: number | null
-  format?: string | null
-  regularEdition?: number | null
-  firstPublishedIn?: number | null
-  genre?: string | null
-  subgenres?: string[]
-  synopsis?: string | null
-}
-
-/** What a described book is, before its cover is looked up. */
-type Enriched = {
-  result: ScanResult
-  regularEdition?: Isbn13Type
-  usage?: AiStepUsage
-}
-
-/** Past this many editions, the prompt grows and the right one is no likelier
- *  to be among them: the catalogue ranks the closest first. */
-const EDITIONS_SHOWN = 25
-
-type CandidatesOutput = {
-  candidates?: {
-    title: string
-    authors: string[]
-    firstPublishedIn?: number | null
-    seriesName?: string | null
-    volumeNumber?: number | null
-  }[]
-}
-
-type CatalogueOutput = {
-  name: string
-  author: string
-  description?: string | null
-  volumes: { kind: string; number?: number | null; title: string; publishedIn?: number | null }[]
-}
+/** A described book and what describing it cost. */
+type Enriched = Described & { usage?: AiStepUsage }
 
 export namespace ScanCommand {
   /** Read a cover and produce a reviewable record.
@@ -227,7 +141,7 @@ export namespace ScanCommand {
     const named: ScanResult = {
       recognized: true,
       title: BookTitle(typed.title),
-      authors: parsedAuthors(typed.author ? [typed.author] : []),
+      authors: authorsFrom(typed.author ? [typed.author] : []),
       subgenres: [],
     }
     const {
@@ -287,7 +201,7 @@ export namespace ScanCommand {
 
     const { series } = seen
     const titledAfterSaga = series !== undefined && slugify(series.name) === slugify(seen.title)
-    const editions = volumeEditionsOf(
+    const editions = editionsToShow(
       await bnfEditionsOf({
         title: seen.title,
         author,
@@ -304,59 +218,13 @@ export namespace ScanCommand {
         parts: [{ text: editionsPrompt(seen, editions, language, hints) }],
         responseSchema: EDITIONS_SCHEMA,
       })
-      const picked = value.edition != null ? editions[value.edition] : undefined
-      const synopsis = optional(value.synopsis, Synopsis)
-      if (!picked || !(synopsis ?? seen.synopsis)) return { usage }
-      const regular = value.regularEdition != null ? editions[value.regularEdition] : undefined
-      // The catalogue files an album under "Bande dessinée" as the web does.
-      const { format, subgenres } = formatSettledBySubgenres(
-        formatNamedByLookup(seen.format, value.format),
-        subgenresOf(value.subgenres),
-      )
-      return {
-        usage,
-        found: {
-          result: {
-            recognized: true,
-            // What the spine misread with a space inside a word, the
-            // catalogue spells whole.
-            title: mendedSpelling(seen.title || undefined, catalogueTitleOf(picked)) ?? seen.title,
-            authors: seen.authors,
-            format,
-            media: seen.media,
-            publisher: mendedOrHeld(seen.publisher, optional(picked.publisher, Publisher)),
-            language: seen.language,
-            firstPublishedIn: optional(value.firstPublishedIn, Year),
-            synopsis,
-            genre: optional(value.genre, GenreValue),
-            subgenres: subgenres.slice(0, MAX_SUBGENRES),
-            pageCount: picked.pageCount,
-            isbn13: picked.isbn13,
-            series,
-          },
-          regularEdition: regular?.isbn13 !== picked.isbn13 ? regular?.isbn13 : undefined,
-          usage,
-        },
-      }
+      const found = libraryDescriptionFrom(value, seen, editions)
+      return found ? { usage, found: { ...found, usage } } : { usage }
     } catch (error) {
       // The grounded step is asked next; a refusal it shares, it reports.
       logger.warn('library description failed', { error, title: seen.title })
       return {}
     }
-  }
-
-  /** The editions shown to the model: never one the reader holds as another
-   *  volume, and only this volume's when the catalogue numbers any of them. */
-  const volumeEditionsOf = (
-    editions: LibraryEdition[],
-    seen: ScanResult,
-    hints: EditionHints | undefined,
-  ) => {
-    const siblings = new Set(hints?.siblings.map((sibling) => sibling.isbn13))
-    const kept = editions.filter((edition) => !siblings.has(edition.isbn13))
-    const volume = seen.series?.volume
-    const numbered = kept.filter((edition) => Number.parseInt(edition.volume ?? '', 10) === volume)
-    return (numbered.length > 0 ? numbered : kept).slice(0, EDITIONS_SHOWN)
   }
 
   /** A book ticked on a shelf photo, described as a scanned cover is once it
@@ -395,32 +263,8 @@ export namespace ScanCommand {
       ],
       responseSchema: SHELF_SCHEMA,
     })
-    const books = (value.books ?? []).map(parsedShelfBook).filter(isPresent)
+    const books = (value.books ?? []).map(shelfBookFrom).filter(isPresent)
     return { books: inReadingOrder(books).slice(0, MAX_DETECTED_BOOKS), usage }
-  }
-
-  /** A book without a frame cannot be cropped or pointed at, so it is dropped;
-   *  a book without a title is kept, for the reader to name. */
-  const parsedShelfBook = (
-    raw: NonNullable<ShelfOutput['books']>[number],
-  ): SeenOnShelf | undefined => {
-    const box = boxOf(raw.box_2d ?? [])
-    if (!box) return undefined
-    const book: SeenOnShelf = {
-      title: optional(raw.title, BookTitle),
-      authors: parsedAuthors(raw.authors ?? []),
-      ...heldFormatOf(raw.format),
-      publisher: optional(raw.publisher, Publisher),
-      language: optional(raw.language, BookLanguageValue),
-      seriesName: optional(raw.seriesName, SeriesName),
-      volume: optional(raw.volumeNumber, VolumeNumber),
-      box,
-    }
-    // A field the spine did not print is absent, not present-and-undefined:
-    // the checklist reads "no title" as a missing key.
-    return Object.fromEntries(
-      Object.entries(book).filter(([, value]) => value !== undefined),
-    ) as SeenOnShelf
   }
 
   /** The books a typed title may mean, for the reader to pick one before the
@@ -449,18 +293,11 @@ export namespace ScanCommand {
       parts: [{ text: candidatesPrompt(title, language) }],
       responseSchema: CANDIDATES_SCHEMA,
     })
-    const candidates = (value.candidates ?? [])
-      .map(parsedCandidate)
-      .filter(isPresent)
-      // The prompt asks for one entry per work, and the model still lists an
-      // edition twice now and then: the same title by the same author is one book.
-      .filter(
-        (candidate, index, all) => all.findIndex((other) => sameBook(other, candidate)) === index,
-      )
+    const candidates = candidatesFrom(value)
     const searched = searchedQueryOf(title)
     const typed: TitleCandidate = {
       title: BookTitle(searched.title),
-      authors: parsedAuthors(searched.author ? [searched.author] : []),
+      authors: authorsFrom(searched.author ? [searched.author] : []),
     }
     return {
       candidates: withTypedCandidate(
@@ -472,24 +309,6 @@ export namespace ScanCommand {
       usage,
     }
   }
-
-  const parsedCandidate = (
-    raw: NonNullable<CandidatesOutput['candidates']>[number],
-  ): TitleCandidate | undefined => {
-    const title = optional(raw.title, BookTitle)
-    if (!title) return undefined
-    return {
-      title,
-      authors: parsedAuthors(raw.authors),
-      firstPublishedIn: optional(raw.firstPublishedIn, Year),
-      seriesName: optional(raw.seriesName, SeriesName),
-      volume: optional(raw.volumeNumber, VolumeNumber),
-    }
-  }
-
-  const sameBook = (a: TitleCandidate, b: TitleCandidate) =>
-    foldedText(a.title) === foldedText(b.title) &&
-    foldedText(a.authors[0] ?? '') === foldedText(b.authors[0] ?? '')
 
   /** Step 1. Not grounded: the answer is in the image, and letting the model
    *  search here invites it to "correct" a cover it read correctly. */
@@ -503,38 +322,7 @@ export namespace ScanCommand {
       responseSchema: VISION_SCHEMA,
     })
 
-    if (!value.recognized || !value.title.trim()) {
-      return {
-        result: { recognized: false, title: '' as const, authors: [], subgenres: [] },
-        usage,
-      }
-    }
-
-    const authors = parsedAuthors(value.authors)
-    const held = heldFormatOf(value.format)
-    return {
-      result: {
-        recognized: true,
-        title: BookTitle(value.title),
-        authors,
-        ...held,
-        publisher: optional(value.publisher, Publisher),
-        language: optional(value.language, BookLanguageValue),
-        subgenres: [],
-        // What the cover printed of its saga — "Volume 2" — goes on to step 2,
-        // which needs it to tell this volume from the others titled the same.
-        series: parsedSeries(
-          {
-            seriesName: value.seriesName,
-            volumeNumber: value.volumeNumber,
-            volumeKind: value.volumeNumber != null ? 'main' : null,
-          },
-          authors,
-          held.format,
-        ),
-      } satisfies ScanResult,
-      usage,
-    }
+    return { result: coverReadingFrom(value), usage }
   }
 
   /** Step 2. Grounded, and the only step that can find a series the cover never
@@ -552,61 +340,8 @@ export namespace ScanCommand {
       grounded: true,
     })
 
-    const parsed = parsedAuthors(value.authors)
-    const authors = parsed.length > 0 ? parsed : seen.authors
-    // The search knows a comic album where the cover left it a book: it names
-    // the format, or a subgenre does, and leaves the list.
-    const { format, subgenres } = formatSettledBySubgenres(
-      formatNamedByLookup(seen.format, value.format),
-      subgenresOf(value.subgenres),
-    )
-    const series = parsedSeries(value, authors, format)
-    return {
-      result: {
-        recognized: true,
-        // The review shows the saga, the volume and the authors beside the
-        // title, as the book will.
-        title: titleWithoutAuthor(
-          bareTitleOf(optional(value.title, BookTitle) ?? seen.title, series?.name),
-          authors,
-        ),
-        authors,
-        format,
-        media: seen.media,
-        publisher: mendedOrHeld(seen.publisher, optional(value.publisher, Publisher)),
-        // Kept from step 1 rather than asked again: the language of the edition
-        // is a fact about the object photographed, and the grounded step answers
-        // about the work — which is a different question with a different answer.
-        language: seen.language,
-        firstPublishedIn: optional(value.firstPublishedIn, Year),
-        synopsis: optional(value.synopsis, Synopsis),
-        genre: optional(value.genre, GenreValue),
-        subgenres: subgenres.slice(0, MAX_SUBGENRES),
-        pageCount: optional(value.pageCount, PageCount),
-        // Another volume's ISBN, though the model was told it is not this one,
-        // would draw that volume's cover: no cover beats a wrong one.
-        isbn13: notAnotherVolume(optional(value.isbn13, Isbn13), hints),
-        series,
-      } satisfies ScanResult,
-      // Not part of the result: the book is the edition the reader holds, and
-      // this one only lends it a cover.
-      regularEdition: notAnotherVolume(optional(value.regularEditionIsbn13, Isbn13), hints),
-      usage,
-    }
+    return { ...enrichmentFrom(value, seen, hints), usage }
   }
-
-  /** The publisher the scan read, but as a lookup spells it whole when the
-   *  read split a word (`mendedSpelling`); the lookup's when none was read. */
-  const mendedOrHeld = (held: PublisherType | undefined, found: PublisherType | undefined) =>
-    held ? (mendedSpelling(held, found) ?? held) : found
-
-  /** A catalogue edition's title proper, without what its record adds after
-   *  a dash: the volume, its own title, a subtitle. */
-  const catalogueTitleOf = (edition: LibraryEdition) =>
-    optional(edition.title?.split(' — ')[0], BookTitle)
-
-  const notAnotherVolume = (isbn13: Isbn13Type | undefined, hints: EditionHints | undefined) =>
-    isbn13 && hints?.siblings.some((sibling) => sibling.isbn13 === isbn13) ? undefined : isbn13
 
   /** The published cover of the edition the reader holds, drawn with its regular
    *  edition's cover when it is a special one. A collector's own cover is often a
@@ -631,10 +366,6 @@ export namespace ScanCommand {
     ...enriched,
     coverUrl: await coverOf(enriched.isbn13, regularEdition),
   })
-
-  /** The subgenres a model named, those that are not one dropped. */
-  const subgenresOf = (named: readonly (string | null)[] | null | undefined) =>
-    (named ?? []).map((subgenre) => optional(subgenre, Subgenre)).filter(isPresent)
 
   /** The catalogue call on its own, for a saga named but never described — or
    *  described once and asked again. The series screen runs it for a saga an Audible import named, since an import
@@ -674,7 +405,9 @@ export namespace ScanCommand {
         grounded: true,
       })
 
-      const volumes = withoutDuplicateVolumes(value.volumes.map(parsedVolume).filter(isPresent))
+      const volumes = withoutDuplicateVolumes(
+        value.volumes.map(catalogueVolumeOrDropped).filter(isPresent),
+      )
       if (volumes.length === 0) {
         await SeriesCommand.recordNothingFound({ saga, language: editionLanguage }, new Date())
         return { usage }
@@ -710,46 +443,14 @@ export namespace ScanCommand {
     }
   }
 
-  const parsedVolume = (raw: CatalogueOutput['volumes'][number]): Volume | undefined => {
-    const title = optional(raw.title, BookTitle)
-    if (!title) return undefined
+  /** One malformed volume drops out rather than losing the whole catalogue,
+   *  and the model output that produced it is reported. */
+  const catalogueVolumeOrDropped = (raw: CatalogueOutput['volumes'][number]) => {
     try {
-      return {
-        title,
-        kind: VolumeKindValue(raw.kind),
-        number: optional(raw.number, VolumeNumber),
-        publishedIn: optional(raw.publishedIn, Year),
-      }
+      return catalogueVolumeFrom(raw)
     } catch (error) {
-      // One malformed volume drops out rather than losing the whole catalogue,
-      // and the model output that produced it is reported.
       logger.warn('malformed catalogue volume dropped', { error, volume: raw })
       return undefined
     }
   }
-
-  const parsedSeries = (
-    value: Pick<EnrichmentOutput, 'seriesName' | 'volumeNumber' | 'volumeKind'>,
-    authors: ScanResult['authors'],
-    format: ScanResult['format'],
-  ): ScanResult['series'] => {
-    const name = optional(value.seriesName, SeriesName)
-    // Without an author there is no stable key, so the saga cannot be catalogued
-    // or rejoined later. Dropping it beats inventing an id nothing else shares.
-    if (!name || authors.length === 0) return undefined
-    return {
-      // A format the cover did not settle is a printed book, as `BookCommand.add`
-      // would file it; the reader's pick realigns the saga when the book is saved.
-      saga: seriesKeyOf(name, authors[0], format ?? 'book'),
-      name,
-      volume: optional(value.volumeNumber, VolumeNumber),
-      // A series the model found but could not classify is a main volume: it is
-      // what a numbered cycle is, and the alternative would bury it in related
-      // works where the reader would not look for it.
-      kind: optional(value.volumeKind, VolumeKindValue) ?? 'main',
-    }
-  }
-
-  const parsedAuthors = (raw: string[] | undefined): ScanResult['authors'] =>
-    (raw ?? []).map((author) => optional(author, AuthorName)).filter(isPresent)
 }

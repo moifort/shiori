@@ -285,3 +285,74 @@ export const SHELF_SCHEMA = {
   },
   required: ['books'],
 } as const
+
+/** The answers the schemas above describe, as the model sends them: every
+ *  field unchecked, read into the domain by `parsing.ts`. */
+
+export type VisionOutput = {
+  recognized: boolean
+  format?: string | null
+  title: string
+  authors: string[]
+  publisher?: string | null
+  language?: string | null
+  seriesName?: string | null
+  volumeNumber?: number | null
+}
+
+export type ShelfOutput = {
+  books?: {
+    box_2d?: number[]
+    title?: string | null
+    authors?: string[]
+    format?: string | null
+    publisher?: string | null
+    language?: string | null
+    seriesName?: string | null
+    volumeNumber?: number | null
+  }[]
+}
+
+export type EnrichmentOutput = {
+  title: string
+  authors: string[]
+  format?: string | null
+  seriesName?: string | null
+  volumeNumber?: number | null
+  volumeKind?: string | null
+  firstPublishedIn?: number | null
+  genre?: string | null
+  subgenres: string[]
+  pageCount?: number | null
+  isbn13?: string | null
+  regularEditionIsbn13?: string | null
+  synopsis?: string | null
+  publisher?: string | null
+}
+
+export type EditionsOutput = {
+  edition?: number | null
+  format?: string | null
+  regularEdition?: number | null
+  firstPublishedIn?: number | null
+  genre?: string | null
+  subgenres?: string[]
+  synopsis?: string | null
+}
+
+export type CandidatesOutput = {
+  candidates?: {
+    title: string
+    authors: string[]
+    firstPublishedIn?: number | null
+    seriesName?: string | null
+    volumeNumber?: number | null
+  }[]
+}
+
+export type CatalogueOutput = {
+  name: string
+  author: string
+  description?: string | null
+  volumes: { kind: string; number?: number | null; title: string; publishedIn?: number | null }[]
+}
