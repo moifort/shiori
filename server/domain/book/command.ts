@@ -53,6 +53,7 @@ import type { SagaKey, SeriesId, SeriesName, VolumeNumber } from '~/domain/serie
 import { favoriteAfterRating, ratingUnderHeart } from '~/domain/shared/rating'
 import { bareTitleOf } from '~/domain/shared/saga-title'
 import type { AuthorName, BookTitle, UserId, Year } from '~/domain/shared/types'
+import { WishCommand } from '~/domain/wish/command'
 import type { ObjectPath } from '~/system/object-store/types'
 
 /** Everything a book can be created with. Only a title is required: a book added
@@ -253,7 +254,11 @@ export namespace BookCommand {
     input: NewBook,
     now = new Date(),
     batch?: WriteBatch,
-  ): Promise<Book> => repository.save(recordOf(userId, input, now), batch)
+  ): Promise<Book> => {
+    const book = await repository.save(recordOf(userId, input, now), batch)
+    await WishCommand.forgetHeld(userId, [book], batch)
+    return book
+  }
 
   /** Fold a book arriving on another medium into the record the reader already
    *  keeps of it — the paperback scanned after the Kindle copy — rather than
@@ -267,7 +272,12 @@ export namespace BookCommand {
   ): Promise<Book | 'not-found'> => {
     const book = await repository.findById(userId, bookId)
     if (!book) return 'not-found'
-    return repository.save(mergedCopies(book, recordOf(userId, input, now), now), batch)
+    const joined = await repository.save(
+      mergedCopies(book, recordOf(userId, input, now), now),
+      batch,
+    )
+    await WishCommand.forgetHeld(userId, [joined], batch)
+    return joined
   }
 
   /** Move the dates a record was stamped with on arrival back to the day the
@@ -375,6 +385,8 @@ export namespace BookCommand {
       },
       batch,
     )
+    if ('title' in facts || 'authors' in facts)
+      await WishCommand.forgetHeld(userId, [edited], batch)
     const classification = {
       ...('genre' in edit ? { genre: edit.genre } : {}),
       ...('subgenres' in edit ? { subgenres: edited.subgenres } : {}),

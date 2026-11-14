@@ -1,3 +1,4 @@
+import type { WriteBatch } from 'firebase-admin/firestore'
 import type { UserId } from '~/domain/shared/types'
 import type { Wish, WishId } from '~/domain/wish/types'
 import { db } from '~/system/firebase'
@@ -31,8 +32,16 @@ export const save = async (wish: Wish): Promise<Wish> => {
   return wish
 }
 
-export const remove = async (userId: UserId, ids: readonly WishId[]): Promise<void> => {
-  await deleteInBatches(ids.map((id) => wishes().doc(id)))
+// Deletes without reading first: a wish that does not exist is deleted all the
+// same, for a write and no read. In the caller's batch when it has one.
+export const remove = async (
+  userId: UserId,
+  ids: readonly WishId[],
+  batch?: WriteBatch,
+): Promise<void> => {
+  const refs = ids.map((id) => wishes().doc(id))
+  if (batch) for (const ref of refs) batch.delete(ref)
+  else await deleteInBatches(refs)
   evictFromRequestCache(allCacheKey(userId))
 }
 

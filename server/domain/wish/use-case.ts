@@ -37,19 +37,14 @@ export namespace WishUseCase {
     return true
   }
 
-  /** Every wish, the latest first. The ones whose story the library now holds
-   *  — scanned, synced from Kindle or Audible, added by hand or from a friend —
-   *  are no longer wished for, and go. */
+  /** Every wish, the latest first. A story the library now holds is no
+   *  longer wished for: the book's arrival deleted its wish
+   *  (`WishCommand.forgetHeld`), and one the library held before that rule is
+   *  left out here all the same. */
   export const wishes = async (userId: UserId): Promise<Wish[]> => {
     const all = await WishQuery.byUser(userId)
     if (all.length === 0) return []
     const shelfKeys = await BookQuery.shelfKeys(userId)
-    const held = all.filter((wish) => isHeld(wish, shelfKeys))
-    if (held.length > 0)
-      await WishCommand.remove(
-        userId,
-        held.map((wish) => wish.id),
-      )
-    return newestFirst(all.filter((wish) => !held.includes(wish)))
+    return newestFirst(all.filter((wish) => !isHeld(wish, shelfKeys)))
   }
 }
