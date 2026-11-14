@@ -2,11 +2,13 @@ import type { Language } from '~/domain/shared/language'
 import type { UserId } from '~/domain/shared/types'
 import { db } from '~/system/firebase'
 import {
+  compositeId,
   deleteAllOwnedBy,
   genericDataConverter,
   transactionally,
   withoutAbsentFields,
 } from '~/utils/firestore'
+import { oneDocumentPerReaderAndKey } from '~/utils/reader-documents'
 import type { Dismissal, Suggestion, SuggestionQueue } from '../types'
 
 // One document per reader, whose id IS the userId: the month's selection.
@@ -14,15 +16,20 @@ const queues = () =>
   db().collection('suggestion-queues').withConverter(genericDataConverter<SuggestionQueue>())
 
 // Flat, one document per reader and book: what they said "Pas intéressé" to.
-const dismissals = () =>
+const dismissalCollection = () =>
   db().collection('suggestion-dismissals').withConverter(genericDataConverter<Dismissal>())
+
+const dismissals = oneDocumentPerReaderAndKey({
+  collection: dismissalCollection,
+  keyOf: (dismissal) => dismissal.key,
+})
 
 export const findQueue = async (userId: UserId): Promise<SuggestionQueue | undefined> =>
   (await queues().doc(userId).get()).data()
 
 /** Every reader's selection, whatever its month: the monthly pass picks the
  *  readers it renews from them. */
-export const allQueues = async (): Promise<SuggestionQueue[]> =>
+export const findAllQueues = async (): Promise<SuggestionQueue[]> =>
   (await queues().get()).docs.map((doc) => doc.data())
 
 /** Rewrite the reader's selection from what is stored when the transaction
@@ -55,7 +62,7 @@ export const dismissFromQueue = async (
     const suggestion = queue?.suggestions[position]
     if (!queue || !suggestion) return undefined
     const dismissal = dismissalOf(suggestion, position)
-    tx.set(dismissals().doc(`${userId}~${key}`), withoutAbsentFields(dismissal))
+    tx.set(dismissalCollection().doc(compositeId(userId, key)), withoutAbsentFields(dismissal))
     tx.set(
       ref,
       withoutAbsentFields({
@@ -115,20 +122,13 @@ export const endGeneration = async (userId: UserId): Promise<void> =>
     tx.set(ref, withoutAbsentFields(rest))
   })
 
-export const findDismissals = async (userId: UserId): Promise<Dismissal[]> =>
-  (await dismissals().where('userId', '==', userId).get()).docs.map((doc) => doc.data())
-
-export const saveDismissal = async (dismissal: Dismissal): Promise<void> => {
-  await dismissals().doc(`${dismissal.userId}~${dismissal.key}`).set(withoutAbsentFields(dismissal))
-}
-
-export const findDismissal = async (userId: UserId, key: string): Promise<Dismissal | undefined> =>
-  (await dismissals().doc(`${userId}~${key}`).get()).data()
-
-export const deleteDismissal = async (userId: UserId, key: string): Promise<void> => {
-  await dismissals().doc(`${userId}~${key}`).delete()
-}
+export const {
+  findAllByUser: findDismissals,
+  save: saveDismissal,
+  findOne: findDismissal,
+  remove: removeDismissal,
+} = dismissals
 
 /** The reader's selection and every "Pas intéressé" they said (account deletion). */
 export const removeAllByUser = (userId: UserId): Promise<void> =>
-  deleteAllOwnedBy(dismissals(), userId, [queues().doc(userId)])
+  deleteAllOwnedBy(dismissalCollection(), userId, [queues().doc(userId)])

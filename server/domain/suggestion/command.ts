@@ -53,7 +53,7 @@ export namespace SuggestionCommand {
   export const reconsider = async (userId: UserId, key: string) => {
     const dismissal = await repository.findDismissal(userId, key)
     if (!dismissal) return 'not-found' as const
-    await repository.deleteDismissal(userId, key)
+    await repository.removeDismissal(userId, key)
     const { suggestion, position } = dismissal
     if (suggestion)
       await repository.reviseQueue(userId, (queue) => {
