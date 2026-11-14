@@ -38,42 +38,36 @@ enum DismissalReason: Hashable, Sendable {
 struct Suggestion: Identifiable, Hashable, Sendable, Codable {
     let id: String
     let format: ReleaseFormat
-    /// Its title in the app's language: the edition's once found, else the
-    /// model's.
-    let title: String
-    let originalTitle: String
-    let originalLanguage: BookLanguage?
-    let authors: [String]
     /// Why, in one sentence citing a book of the reader's.
     let reason: String
     /// "comme Gagner la guerre".
     let short: String
     let references: [SuggestionReference]
-    let state: AwaitedState
-    let watched: Bool
-    let date: String?
-    let coverURL: URL?
-    let storeURL: URL?
     let awaitableFormats: [ReleaseFormat]
     let awaitedEditionId: String?
     /// What the model named it, for a drawn story; a book otherwise.
     var drawnFormat: BookFormat? = nil
+    /// Its edition as every list and its page draw it.
+    var release: Release
+
+    /// Its title in the app's language: the edition's once found, else the
+    /// model's.
+    var title: String { release.title }
+    var originalTitle: String { release.originalTitle }
+    var originalLanguage: BookLanguage? { release.originalLanguage }
+    var authors: [String] { release.authors }
+    var state: AwaitedState { release.state }
+    var watched: Bool { release.watched }
+    var date: String? { release.date }
+    var coverURL: URL? { release.coverURL }
+    var storeURL: URL? { release.storeURL }
 
     /// The reference the row's mark is drawn from: the first the reason cites.
     var leadReference: SuggestionReference? { references.first }
 
     /// Drawn as the Books tab draws a book, the headphones on a recording's
-    /// cover.
-    var cover: Book {
-        Book(
-            id: "suggestion-\(id)",
-            title: title,
-            authors: authors,
-            format: format == .audiobook ? .audiobook : drawnFormat ?? .book,
-            coverURL: coverURL,
-            status: .toRead
-        )
-    }
+    /// cover: on its tile and on its page alike.
+    var cover: Book { release.book(id: "suggestion-\(id)") }
 
     /// What adding it or awaiting it sends: the original title, in the
     /// language it was written in, so the server finds the watch it is read
@@ -105,19 +99,6 @@ struct Suggestion: Identifiable, Hashable, Sendable, Codable {
         case .announced: .orange
         case .unannounced: .gray
         }
-    }
-
-    /// What the model is told when the page describes it: the edition in the
-    /// app's language when found, else the book as written.
-    var seed: ReleaseSeed {
-        ReleaseSeed(
-            title: title,
-            authors: authors,
-            format: format == .audiobook ? .audiobook : drawnFormat ?? .book,
-            language: state == .unannounced ? originalLanguage : nil,
-            releasedOn: date,
-            coverURL: coverURL
-        )
     }
 }
 
@@ -277,11 +258,6 @@ extension MonthlyDiscoveries {
 
 extension Suggestion {
     init(fields: ShioriGraphQL.SuggestionFields) {
-        let state: AwaitedState = switch fields.state.value {
-        case .available: .available
-        case .announced: .announced
-        case .unannounced, nil: .unannounced
-        }
         let drawnFormat: BookFormat? = switch fields.kind.value {
         case .bandeDessinee: .bandeDessinee
         case .comic: .comic
@@ -291,10 +267,6 @@ extension Suggestion {
         self.init(
             id: fields.id,
             format: fields.format.value == .audiobook ? .audiobook : .book,
-            title: fields.title,
-            originalTitle: fields.originalTitle,
-            originalLanguage: fields.originalLanguage.asDomain,
-            authors: fields.authors,
             reason: fields.reason,
             short: fields.short,
             references: fields.references.map { reference in
@@ -309,11 +281,6 @@ extension Suggestion {
                     citesSaga: reference.citesSaga
                 )
             },
-            state: state,
-            watched: fields.watched,
-            date: fields.date,
-            coverURL: fields.coverUrl.flatMap(URL.init(string:)),
-            storeURL: fields.storeUrl.flatMap(URL.init(string:)),
             awaitableFormats: fields.awaitableFormats.compactMap { format -> ReleaseFormat? in
                 switch format.value {
                 case .book: return .book
@@ -322,7 +289,57 @@ extension Suggestion {
                 }
             },
             awaitedEditionId: fields.awaitedEditionId,
-            drawnFormat: drawnFormat
+            drawnFormat: drawnFormat,
+            release: Release(fields: fields.release.fragments.releaseFields)
+        )
+    }
+}
+
+extension Suggestion {
+    /// A suggestion known only by what a fixture says of it: nothing described
+    /// yet.
+    init(
+        id: String,
+        format: ReleaseFormat,
+        title: String,
+        originalTitle: String,
+        originalLanguage: BookLanguage?,
+        authors: [String],
+        reason: String,
+        short: String,
+        references: [SuggestionReference],
+        state: AwaitedState,
+        watched: Bool,
+        date: String?,
+        coverURL: URL?,
+        storeURL: URL?,
+        awaitableFormats: [ReleaseFormat],
+        awaitedEditionId: String?,
+        drawnFormat: BookFormat? = nil
+    ) {
+        self.init(
+            id: id,
+            format: format,
+            reason: reason,
+            short: short,
+            references: references,
+            awaitableFormats: awaitableFormats,
+            awaitedEditionId: awaitedEditionId,
+            drawnFormat: drawnFormat,
+            release: Release(
+                key: id,
+                title: title,
+                originalTitle: originalTitle,
+                authors: authors,
+                releaseFormat: format,
+                format: format == .audiobook ? .audiobook : drawnFormat ?? .book,
+                originalLanguage: originalLanguage,
+                state: state,
+                watched: watched,
+                date: date,
+                coverURL: coverURL,
+                storeURL: storeURL
+            )
         )
     }
 }

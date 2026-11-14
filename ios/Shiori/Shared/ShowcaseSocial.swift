@@ -343,27 +343,23 @@ extension Showcase {
         )
     }
 
-    /// What a suggestion's page tells once described.
-    static func description(of seed: ReleaseSeed) -> ReleaseDescription {
-        let pick = discoveryPicks.first { $0.title == seed.title }
-        return ReleaseDescription(
-            book: ScannedBook(
-                recognized: true,
-                title: seed.title,
-                authors: seed.authors,
-                format: .book,
-                publisher: pick?.publisher,
-                firstPublishedIn: pick?.year,
-                synopsis: pick?.synopsis,
-                genre: .scienceFiction,
-                subgenres: pick.map { [$0.subgenre] } ?? [],
-                pageCount: pick?.pages,
-                language: language,
-                coverURL: seed.coverURL
-            ),
-            narrators: [],
-            durationMinutes: nil
-        )
+    /// What a suggestion's page tells once described: its release as the
+    /// server would answer it. Nil for anything but a discovery of the month.
+    static func release(of item: ReleaseItem) -> Release? {
+        guard case let .suggestion(id, _) = item,
+              let suggestion = monthlyDiscoveries.suggestions.first(where: { $0.id == id }),
+              let pick = discoveryPicks.first(where: { $0.slug == id })
+        else { return nil }
+        var release = suggestion.release
+        release.publisher = pick.publisher
+        release.firstPublishedIn = pick.year
+        release.synopsis = pick.synopsis
+        release.genre = .scienceFiction
+        release.subgenres = [pick.subgenre]
+        release.pageCount = pick.pages
+        release.language = language
+        release.described = true
+        return release
     }
 }
 #endif

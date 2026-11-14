@@ -185,7 +185,7 @@ struct DiscoveryAddActions<Item: Discovery>: View {
     NavigationStack {
         SuggestionPage(
             suggestion: .preview,
-            shown: Suggestion.preview.cover.described(by: .preview),
+            shown: Suggestion.preview.release.describedForPreview.book(id: "suggestion-preview"),
             isDescribing: false,
             choices: DiscoveryChoices(),
             onChoice: { _, _ in true }

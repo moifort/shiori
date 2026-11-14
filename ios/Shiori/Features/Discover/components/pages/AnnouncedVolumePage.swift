@@ -96,7 +96,7 @@ struct AnnouncedVolumePage: View {
     NavigationStack {
         AnnouncedVolumePage(
             opened: .preview,
-            shown: DiscoveryVolume.preview.book.described(by: .preview),
+            shown: DiscoveryVolume.preview.book(of: DiscoveryVolume.preview.volume.release.describedForPreview),
             isDescribing: false,
             added: true,
             linksToSaga: true,

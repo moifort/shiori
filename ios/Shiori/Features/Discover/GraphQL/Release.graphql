@@ -1,0 +1,42 @@
+# A book the reader does not hold — an edition awaited, an award winner, a
+# discovery, a saga's volume — as every list and its page draw it: one record,
+# built on the server. Nothing is merged on the device.
+fragment ReleaseFields on Release {
+  key
+  title
+  originalTitle
+  authors
+  format
+  releaseFormat
+  language
+  originalLanguage
+  state
+  watched
+  date
+  isbn13
+  coverUrl
+  storeUrl
+  series {
+    seriesId
+    name
+    volume
+  }
+  publisher
+  firstPublishedIn
+  synopsis
+  genre
+  subgenres
+  pageCount
+  narrators
+  durationMinutes
+  described
+}
+
+# Describe for its page what a list showed, named by its kind: the server
+# answers the same release completed, kept for every reader. About ten seconds
+# the first time.
+mutation DescribeReleaseOf($item: ReleaseItemInput!) {
+  describeReleaseOf(item: $item) {
+    ...ReleaseFields
+  }
+}

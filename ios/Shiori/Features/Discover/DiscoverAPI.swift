@@ -25,18 +25,46 @@ enum ReleaseFormat: String, Codable, Sendable, Hashable, CaseIterable, Identifia
 /// search found it.
 struct DiscoveredVolume: Identifiable, Hashable, Codable, Sendable {
     let number: Int
-    let title: String
-    /// `YYYY`, `YYYY-MM` or `YYYY-MM-DD`. Nil for a volume announced for a date
-    /// nobody found.
-    let date: String?
-    let isbn13: String?
-    let coverURL: URL?
-    /// The recording's page on the reader's Audible store, which the Audible
-    /// app opens on the title. Nil on a saga read, on a recording Audible never
-    /// confirmed, and without an Audible account.
-    var audibleURL: URL?
+    /// The volume as every list and its page draw it.
+    var release: Release
 
     var id: Int { number }
+    var title: String { release.title }
+    /// `YYYY`, `YYYY-MM` or `YYYY-MM-DD`. Nil for a volume announced for a date
+    /// nobody found.
+    var date: String? { release.date }
+    var isbn13: String? { release.isbn13 }
+    var coverURL: URL? { release.coverURL }
+    /// The recording's page on the reader's Audible store, or a search for it
+    /// there. Nil on a saga read.
+    var audibleURL: URL? { release.releaseFormat == .audiobook ? release.storeURL : nil }
+}
+
+extension DiscoveredVolume {
+    /// A volume known only by what a fixture says of it.
+    init(
+        number: Int,
+        title: String,
+        date: String?,
+        isbn13: String?,
+        coverURL: URL?,
+        audibleURL: URL? = nil
+    ) {
+        self.init(
+            number: number,
+            release: Release(
+                key: "volume-\(number)-\(title)",
+                title: title,
+                authors: [],
+                releaseFormat: audibleURL == nil ? .book : .audiobook,
+                state: .announced,
+                date: date,
+                isbn13: isbn13,
+                coverURL: coverURL,
+                storeURL: audibleURL
+            )
+        )
+    }
 }
 
 /// What one saga has for the reader: the next volume announced they do not
@@ -202,6 +230,28 @@ struct DiscoveryVolume: Identifiable, Codable, Sendable {
     let volume: DiscoveredVolume
 
     var id: String { "\(saga.id)-\(volume.number)" }
+
+    /// A volume of the saga. The server names a volume it sends with its
+    /// saga; one the saga screen reads off its catalogue, or a fixture, takes
+    /// from the saga what it does not say.
+    init(saga: SagaDiscovery, volume: DiscoveredVolume) {
+        self.saga = saga
+        var volume = volume
+        let series = saga.series
+        if volume.release.authors.isEmpty { volume.release.authors = series.author.map { [$0] } ?? [] }
+        if volume.release.language == nil { volume.release.language = series.language }
+        if volume.release.originalLanguage == nil { volume.release.originalLanguage = series.language }
+        if volume.release.series == nil {
+            volume.release.series = SeriesMembership(
+                id: series.seriesId, name: series.name, volume: volume.number, kind: .main
+            )
+        }
+        if series.isAudio, volume.release.releaseFormat != .audiobook {
+            volume.release.releaseFormat = .audiobook
+            volume.release.format = .audiobook
+        }
+        self.volume = volume
+    }
 }
 
 /// The tab as last shown, one list per format.
@@ -403,14 +453,7 @@ private extension SagaReleases {
 
 extension DiscoveredVolume {
     init(fields: ShioriGraphQL.DiscoveredVolumeFields) {
-        self.init(
-            number: fields.number,
-            title: fields.title,
-            date: fields.date,
-            isbn13: fields.isbn13,
-            coverURL: fields.coverUrl.flatMap(URL.init(string:)),
-            audibleURL: fields.audibleUrl.flatMap(URL.init(string:))
-        )
+        self.init(number: fields.number, release: Release(fields: fields.release.fragments.releaseFields))
     }
 }
 

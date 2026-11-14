@@ -88,7 +88,7 @@ struct AwaitedEditionPage: View {
     NavigationStack {
         AwaitedEditionPage(
             edition: .preview,
-            shown: AwaitedEdition.preview.cover.described(by: .preview),
+            shown: AwaitedEdition.preview.release.describedForPreview.book(id: "awaited-preview"),
             isDescribing: false
         ) { _ in }
     }

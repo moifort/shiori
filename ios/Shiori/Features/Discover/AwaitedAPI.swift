@@ -29,19 +29,8 @@ enum AwaitedState: String, Codable, Sendable, Hashable {
 struct AwaitedEdition: Identifiable, Hashable, Codable, Sendable {
     let id: String
     let format: ReleaseFormat
-    let state: AwaitedState
-    /// Its title in the language awaited once found, else the original's.
-    let title: String
-    let originalTitle: String
-    let originalLanguage: BookLanguage?
-    let authors: [String]
-    /// `YYYY`, `YYYY-MM` or `YYYY-MM-DD`. Nil until found, and for an edition
-    /// announced with no date.
-    let date: String?
-    let coverURL: URL?
-    /// Where to get it: the recording on Audible, the printed edition on
-    /// Amazon. Nil until a store confirmed it.
-    let storeURL: URL?
+    /// The edition as every list and its page draw it.
+    var release: Release
     /// When the reader started awaiting it.
     let awaitedAt: Date?
     /// The book it was awaited from, on its owner's shelf. Nil for one awaited
@@ -49,6 +38,20 @@ struct AwaitedEdition: Identifiable, Hashable, Codable, Sendable {
     let bookId: String?
     /// The reader's own id for their copy, a friend's for theirs.
     let ownerId: String
+
+    var state: AwaitedState { release.state }
+    /// Its title in the language awaited once found, else the original's.
+    var title: String { release.title }
+    var originalTitle: String { release.originalTitle }
+    var originalLanguage: BookLanguage? { release.originalLanguage }
+    var authors: [String] { release.authors }
+    /// `YYYY`, `YYYY-MM` or `YYYY-MM-DD`. Nil until found, and for an edition
+    /// announced with no date.
+    var date: String? { release.date }
+    var coverURL: URL? { release.coverURL }
+    /// Where to get it: the recording on Audible, the printed edition on
+    /// Amazon. Nil until a store confirmed it.
+    var storeURL: URL? { release.storeURL }
 
     /// Under a cover, in a strip: out, when it comes, or that nothing is
     /// announced.
@@ -84,15 +87,46 @@ struct AwaitedEdition: Identifiable, Hashable, Codable, Sendable {
     }
 
     /// Drawn as the Books tab draws a book, the headphones on a recording's
-    /// cover.
-    var cover: Book {
-        Book(
-            id: "awaited-\(id)",
-            title: title,
-            authors: authors,
-            format: format == .audiobook ? .audiobook : .book,
-            coverURL: coverURL,
-            status: .toRead
+    /// cover: on its tile and on its page alike.
+    var cover: Book { release.book(id: "awaited-\(id)") }
+}
+
+extension AwaitedEdition {
+    /// An edition known only by what a page or a fixture says of it: nothing
+    /// described yet.
+    init(
+        id: String,
+        format: ReleaseFormat,
+        state: AwaitedState,
+        title: String,
+        originalTitle: String,
+        originalLanguage: BookLanguage?,
+        authors: [String],
+        date: String?,
+        coverURL: URL?,
+        storeURL: URL?,
+        awaitedAt: Date?,
+        bookId: String?,
+        ownerId: String
+    ) {
+        self.init(
+            id: id,
+            format: format,
+            release: Release(
+                key: id,
+                title: title,
+                originalTitle: originalTitle,
+                authors: authors,
+                releaseFormat: format,
+                originalLanguage: originalLanguage,
+                state: state,
+                date: date,
+                coverURL: coverURL,
+                storeURL: storeURL
+            ),
+            awaitedAt: awaitedAt,
+            bookId: bookId,
+            ownerId: ownerId
         )
     }
 }
@@ -154,19 +188,6 @@ extension AwaitedEdition {
 }
 
 extension AwaitedEdition {
-    /// What the model is told: the edition awaited once found, else the book
-    /// it is awaited from, in its own language.
-    var seed: ReleaseSeed {
-        ReleaseSeed(
-            title: state == .unannounced ? originalTitle : title,
-            authors: authors,
-            format: format == .audiobook ? .audiobook : .book,
-            language: state == .unannounced ? originalLanguage : nil,
-            releasedOn: date,
-            coverURL: coverURL
-        )
-    }
-
     /// Whether it can be put on the pile: once found, out or announced. An
     /// edition nobody announced yet is no book to add.
     var isAddable: Bool { state != .unannounced }
@@ -386,22 +407,10 @@ enum AwaitedAPI {
 
 extension AwaitedEdition {
     init(fields: ShioriGraphQL.AwaitedEditionFields) {
-        let state: AwaitedState = switch fields.state.value {
-        case .available: .available
-        case .announced: .announced
-        case .unannounced, nil: .unannounced
-        }
         self.init(
             id: fields.id,
             format: fields.format.value == .audiobook ? .audiobook : .book,
-            state: state,
-            title: fields.title,
-            originalTitle: fields.originalTitle,
-            originalLanguage: fields.originalLanguage.asDomain,
-            authors: fields.authors,
-            date: fields.date,
-            coverURL: fields.coverUrl.flatMap(URL.init(string:)),
-            storeURL: fields.storeUrl.flatMap(URL.init(string:)),
+            release: Release(fields: fields.release.fragments.releaseFields),
             awaitedAt: GraphQLHelpers.parseISO8601(fields.awaitedAt),
             bookId: fields.sourceBookId,
             ownerId: fields.ownerId

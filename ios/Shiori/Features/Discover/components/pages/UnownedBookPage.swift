@@ -396,7 +396,7 @@ private struct AsyncRoundButton: View {
 #Preview("Volume announced") {
     NavigationStack {
         UnownedBookPage(
-            book: DiscoveryVolume.preview.book.described(by: .preview),
+            book: DiscoveryVolume.preview.book(of: DiscoveryVolume.preview.volume.release.describedForPreview),
             releaseDate: Calendar.current.date(byAdding: .day, value: 79, to: .now)!
                 .formatted(.iso8601.year().month().day()),
             isDescribing: false,
@@ -412,7 +412,7 @@ private struct AsyncRoundButton: View {
 #Preview("Recording awaited") {
     NavigationStack {
         UnownedBookPage(
-            book: AwaitedEdition.preview.cover.described(by: .preview),
+            book: AwaitedEdition.preview.release.describedForPreview.book(id: "awaited-preview"),
             releaseDate: AwaitedEdition.preview.date,
             isDescribing: true,
             store: UnownedBookStore(url: URL(string: "https://www.audible.fr")!, isAudible: true),

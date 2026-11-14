@@ -8,18 +8,26 @@ final class AwardWinnerViewModel {
     init(winner: AwardWinner, client: DiscoverClient) {
         self.winner = winner
         self.client = client
-        describer = ReleaseDescriber(describe: client.describe)
+        // A winner read back from a snapshot saved before its key was sent is
+        // not described: its page stays the one its list drew.
+        let item = winner.key.map { ReleaseItem.awardWinner(key: $0, format: winner.format) }
+        var release = winner.release
+        if item == nil { release.described = true }
+        describer = ReleaseDescriber(release: release) {
+            guard let item else { throw CancellationError() }
+            return try await client.describe(item)
+        }
     }
 
     let winner: AwardWinner
     private let client: DiscoverClient
     private let describer: ReleaseDescriber
 
-    /// The winner once described, as a book's page draws it.
-    var shown: Book { winner.cover.described(by: describer.description) }
+    /// The winner as its list drew it, then as the server described it.
+    var shown: Book { describer.release.book(id: "award-\(winner.id)") }
     var isDescribing: Bool { describer.isDescribing }
 
-    func describe() async { await describer.describe(winner.seed) }
+    func describe() async { await describer.describe() }
 
     /// The book said read here, which the check pressed again takes off the
     /// shelf.

@@ -8,18 +8,19 @@ final class SuggestionViewModel {
     init(suggestion: Suggestion, client: DiscoverClient) {
         self.suggestion = suggestion
         self.client = client
-        describer = ReleaseDescriber(describe: client.describe)
+        let item = ReleaseItem.suggestion(id: suggestion.id, format: suggestion.format)
+        describer = ReleaseDescriber(release: suggestion.release) { try await client.describe(item) }
     }
 
     let suggestion: Suggestion
     private let client: DiscoverClient
     private let describer: ReleaseDescriber
 
-    /// The suggestion once described, as a book's page draws it.
-    var shown: Book { suggestion.cover.described(by: describer.description) }
+    /// The suggestion as its list drew it, then as the server described it.
+    var shown: Book { describer.release.book(id: "suggestion-\(suggestion.id)") }
     var isDescribing: Bool { describer.isDescribing }
 
-    func describe() async { await describer.describe(suggestion.seed) }
+    func describe() async { await describer.describe() }
 
     /// The book said read here, which the check pressed again takes off the
     /// shelf.

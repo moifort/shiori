@@ -170,7 +170,7 @@ struct AwardWinnerPage: View {
     NavigationStack {
         AwardWinnerPage(
             winner: .preview,
-            shown: AwardWinner.preview.cover.described(by: .preview),
+            shown: AwardWinner.preview.release.describedForPreview.book(id: "award-preview"),
             others: [.goncourtPreview],
             isDescribing: false,
             choices: DiscoveryChoices(),
