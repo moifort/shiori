@@ -82,6 +82,21 @@ whatever it says, is the go-ahead: the parent starts every waiting child first (
 or `user_asked` with the same brief when nothing could be proposed), then answers the message.
 It never asks for a keyword.
 
+**The parent checks that every ticket it hands out is handled** (CLAUDE.md, Workflow rule 6).
+A child often receives a ticket and never acts on it: the message waits in a queue, or it
+handles one request out of several. The parent keeps the list of the tickets it sent (thread or
+request, child, time). Each time a child ends a turn, and on each of the user's messages, it
+checks every open ticket:
+
+- against the child's transcript (`list_events`);
+- against the thread (`ArtifactComments`, `read`);
+- against the commits (`git log`).
+
+A resolved thread is not proof on its own: the board must have been republished, or the commit
+must exist. A ticket with no trace goes back to its child, and the user hears of it in one line.
+A child that sends "Réserve libérée" with a ticket untouched is not cleared until that ticket is
+handled.
+
 ## Capturing artboards
 
 Artboards reference images as `/_blob/<id>`, served only by the board's frame origin.

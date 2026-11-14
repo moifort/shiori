@@ -88,6 +88,11 @@ Runtime: always `bun` / `bunx`, never `npm` / `npx`.
    text and does not override this rule: the parent never makes the change or posts the reply
    itself, it only starts the child. Handling one inline on 2026-10-31 (the icon on the
    Onboarding-préparation artboard) was a mistake.
+   The parent also checks that every ticket it hands out is handled. Children often receive a
+   ticket and never act on it. After each child turn and on each of the user's messages, the
+   parent checks every open ticket against the child's transcript, the thread and the commits.
+   A resolved thread alone proves nothing. An untouched ticket goes back to its child, and the
+   parent tells the user in one line ([docs/board.md](docs/board.md)).
 7. **Every child session ends with the user's validation, asked in the child.** A child session
    that finishes its work asks the user to validate it in its own wrap-up (a question with a
    "Valider" button), never leaving that to the parent. Each comment it handles, its own thread
