@@ -27,7 +27,7 @@ jobs:
         # calls the server, holds a ViewModel or reads a singleton, and every file
         # declaring a composable has a @Preview.
         run: bun scripts/check-android-components.ts
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
       - name: Unit tests
         working-directory: android
         run: ./gradlew :app:testDebugUnitTest
