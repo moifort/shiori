@@ -13,6 +13,7 @@ mock.module('~/system/object-store', () => ({
 mock.module('~/system/identity', () => ({ deleteAuthUser: async () => undefined }))
 
 const { BookUseCase } = await import('~/domain/book/use-case')
+const { BookCommand } = await import('~/domain/book/command')
 const { AnalyticsUseCase } = await import('~/domain/analytics/use-case')
 const { TimeZone } = await import('~/domain/analytics/primitives')
 const { BookTitle } = await import('~/domain/shared/primitives')
@@ -182,5 +183,44 @@ describe('deleting the account', () => {
     await UserUseCase.deleteAccount(reader)
 
     expect(fake.data('analytics', reader)).toBeNull()
+  })
+})
+
+describe('writing a long import', () => {
+  // What an import or a sync writes: the book alone, the view left to whileStale.
+  const importBook = (title: string) =>
+    BookCommand.add(reader, {
+      title: BookTitle(title),
+      status: 'reading',
+      pageCount: PageCount(300),
+    })
+
+  test('leaves the view stale when a dashboard read in the middle of it stored a fresh one', async () => {
+    await addBook('Le Nom du vent', 'reading')
+
+    await AnalyticsUseCase.whileStale(reader, async () => {
+      await importBook('Le Silence de Rose')
+      startFakeRequest()
+      await AnalyticsUseCase.dashboard(reader, paris)
+      await importBook('La Peur du sage')
+    })
+
+    expect(fake.data('analytics', reader)?.stale).toBe(true)
+    startFakeRequest()
+    expect((await AnalyticsUseCase.dashboard(reader, paris)).reading).toHaveLength(3)
+  })
+
+  test('leaves the view stale when the writes throw part-way', async () => {
+    await addBook('Le Nom du vent', 'reading')
+
+    const failed = AnalyticsUseCase.whileStale(reader, async () => {
+      await importBook('Le Silence de Rose')
+      startFakeRequest()
+      await AnalyticsUseCase.dashboard(reader, paris)
+      throw new Error('Amazon went away')
+    })
+
+    await expect(failed).rejects.toThrow('Amazon went away')
+    expect(fake.data('analytics', reader)?.stale).toBe(true)
   })
 })

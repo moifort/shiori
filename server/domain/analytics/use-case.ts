@@ -73,13 +73,19 @@ export namespace AnalyticsUseCase {
 
   /** Run writes too many for one batch — an import, a nightly sync — with the
    *  view flagged stale before the first of them lands, so it can never look
-   *  fresh over books it does not count. */
+   *  fresh over books it does not count. Flagged again once the last has
+   *  landed, or the writes have thrown: a dashboard read while they ran
+   *  rebuilt the view from part of them and stored it as fresh. */
   export const whileStale = async <Outcome>(
     userId: UserId,
     write: () => Promise<Outcome>,
   ): Promise<Outcome> => {
     await AnalyticsCommand.markStale(userId)
-    return write()
+    try {
+      return await write()
+    } finally {
+      await AnalyticsCommand.markStale(userId)
+    }
   }
 
   /** What each of these readers' friends may see of their shelf, keyed by
