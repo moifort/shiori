@@ -1,9 +1,9 @@
 import { match, P } from 'ts-pattern'
+import { EntitlementType } from '~/domain/entitlement/infrastructure/graphql/types'
 import { EntitlementQuery } from '~/domain/entitlement/query'
 import { EntitlementUseCase } from '~/domain/entitlement/use-case'
 import { builder } from '~/domain/shared/graphql/builder'
 import { domainError } from '~/domain/shared/graphql/errors'
-import { EntitlementType } from './types'
 
 builder.mutationField('syncEntitlement', (t) =>
   t.field({

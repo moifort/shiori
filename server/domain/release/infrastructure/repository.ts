@@ -1,3 +1,4 @@
+import type { KeptDescription, Release } from '~/domain/release/types'
 import type { Language } from '~/domain/shared/language'
 import { db } from '~/system/firebase'
 import { evictFromRequestCache } from '~/system/request-cache'
@@ -6,7 +7,6 @@ import {
   genericDataConverter,
   withoutAbsentFields,
 } from '~/utils/firestore'
-import type { KeptDescription, Release } from '../types'
 
 // Shared, holding no reference to any reader: keyed by the book, the format
 // and the language of the edition. The edition watch and the page's

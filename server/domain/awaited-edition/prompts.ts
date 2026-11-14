@@ -1,7 +1,7 @@
+import type { EditionWatch } from '~/domain/awaited-edition/types'
 import { LANGUAGE_NAMES } from '~/domain/discovery/prompts'
 import { AMAZON_STORES } from '~/domain/shared/amazon-stores'
 import { AUDIBLE_STORES } from '~/domain/shared/audible-stores'
-import type { EditionWatch } from './types'
 
 /** One book's edition in one language and one format: its translation into
  *  print, or its recording, out or announced. The saga it belongs to is named

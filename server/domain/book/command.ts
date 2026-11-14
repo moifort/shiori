@@ -799,7 +799,7 @@ export namespace BookCommand {
     userId: UserId,
     source: SyncSource,
     asins: readonly string[],
-  ): Promise<void> => repository.forgetSyncRemovals(userId, source, asins)
+  ): Promise<void> => repository.removeSyncRemovals(userId, source, asins)
 
   export const deleteAllForUser = async (userId: UserId): Promise<void> => {
     await repository.removeAllByUser(userId)

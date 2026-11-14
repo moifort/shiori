@@ -1,4 +1,4 @@
-import type { Award } from './types'
+import type { Award } from '~/domain/award/types'
 
 /** One winner as the award announced it: the year it was presented, the title
  *  it won under — in the language the award crowns, English for all but the

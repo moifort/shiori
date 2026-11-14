@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { pageAfter } from './page'
+import { pageAfter } from '~/domain/shared/page'
 
 const rows = ['a', 'b', 'c', 'd', 'e']
 const cursorOf = (row: string) => row

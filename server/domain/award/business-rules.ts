@@ -1,11 +1,5 @@
 import { editionWatchKeyOf, stateOf } from '~/domain/awaited-edition/business-rules'
 import type { AwaitedState, FoundEdition } from '~/domain/awaited-edition/types'
-import { shelfKeyOf } from '~/domain/book/business-rules'
-import type { Book, BookLanguage, Genre } from '~/domain/book/types'
-import { releaseFormatOf } from '~/domain/discovery/business-rules'
-import type { ReleaseFormat } from '~/domain/discovery/types'
-import type { ReleaseIdentity, ReleaseShown } from '~/domain/release/types'
-import { AuthorName, BookTitle } from '~/domain/shared/primitives'
 import {
   AWARDS,
   type Award,
@@ -14,8 +8,14 @@ import {
   type AwardedWorkView,
   type AwardMention,
   type FoundWinners,
-} from './types'
-import { WINNERS, type WinnerEntry } from './winners'
+} from '~/domain/award/types'
+import { WINNERS, type WinnerEntry } from '~/domain/award/winners'
+import { shelfKeyOf } from '~/domain/book/business-rules'
+import type { Book, BookLanguage, Genre } from '~/domain/book/types'
+import { releaseFormatOf } from '~/domain/discovery/business-rules'
+import type { ReleaseFormat } from '~/domain/discovery/types'
+import type { ReleaseIdentity, ReleaseShown } from '~/domain/release/types'
+import { AuthorName, BookTitle } from '~/domain/shared/primitives'
 
 /** The awards each genre is shown, the genre's own first. Hugo and Nebula crown
  *  science fiction and fantasy alike, so both genres list them. A genre absent

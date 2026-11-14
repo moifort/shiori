@@ -1,7 +1,7 @@
 import type { BookFormat, BookLanguage } from '~/domain/book/types'
 import { LANGUAGE_NAMES } from '~/domain/discovery/prompts'
 import type { Language } from '~/domain/shared/language'
-import { ASKED_COUNT } from './business-rules'
+import { ASKED_COUNT } from '~/domain/suggestion/business-rules'
 
 const FORMAT_NAMES: Record<BookFormat, string> = {
   book: 'livres papier ou numériques',

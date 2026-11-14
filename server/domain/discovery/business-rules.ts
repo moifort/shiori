@@ -2,23 +2,6 @@ import { mainLanguageOf } from '~/domain/author/business-rules'
 import { authorKeyOf } from '~/domain/author/primitives'
 import type { AuthorKey, ShelvedAuthor } from '~/domain/author/types'
 import type { Book, BookFormat, BookLanguage, NarratorName } from '~/domain/book/types'
-import type { NarratorKey, ShelvedNarrator } from '~/domain/narrator/types'
-import { releaseKeyOf } from '~/domain/release/business-rules'
-import type { ReleaseIdentity, ReleaseShown } from '~/domain/release/types'
-import type { ScanResult } from '~/domain/scan/types'
-import {
-  type FoundVolume as CatalogueVolume,
-  editionOf,
-  isForthcoming,
-  withReleases,
-} from '~/domain/series/business-rules'
-import { isAudioSeries, seriesIdOf } from '~/domain/series/primitives'
-import type { SagaKey, Series, SeriesId, VolumeNumber } from '~/domain/series/types'
-import type { FollowedSeries } from '~/domain/series/use-case'
-import { type Language, SUPPORTED_LANGUAGES } from '~/domain/shared/language'
-import { Year } from '~/domain/shared/primitives'
-import type { AuthorName, BookTitle, UserId } from '~/domain/shared/types'
-import { slugify } from '~/utils/slug'
 import type {
   AnnouncedVolumePreview,
   AudibleRecording,
@@ -42,7 +25,24 @@ import type {
   WatchedNarrator,
   WatchedSaga,
   WatchKeys,
-} from './types'
+} from '~/domain/discovery/types'
+import type { NarratorKey, ShelvedNarrator } from '~/domain/narrator/types'
+import { releaseKeyOf } from '~/domain/release/business-rules'
+import type { ReleaseIdentity, ReleaseShown } from '~/domain/release/types'
+import type { ScanResult } from '~/domain/scan/types'
+import {
+  type FoundVolume as CatalogueVolume,
+  editionOf,
+  isForthcoming,
+  withReleases,
+} from '~/domain/series/business-rules'
+import { isAudioSeries, seriesIdOf } from '~/domain/series/primitives'
+import type { SagaKey, Series, SeriesId, VolumeNumber } from '~/domain/series/types'
+import type { FollowedSeries } from '~/domain/series/use-case'
+import { type Language, SUPPORTED_LANGUAGES } from '~/domain/shared/language'
+import { Year } from '~/domain/shared/primitives'
+import type { AuthorName, BookTitle, UserId } from '~/domain/shared/types'
+import { slugify } from '~/utils/slug'
 
 /** How often the web is searched again for one saga, announced or not. A
  *  publisher announces months ahead, so two months apart still catches the

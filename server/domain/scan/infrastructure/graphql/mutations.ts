@@ -8,6 +8,11 @@ import {
 import { BookType } from '~/domain/book/infrastructure/graphql/types'
 import { BookQuery } from '~/domain/book/query'
 import { BookUseCase } from '~/domain/book/use-case'
+import {
+  DetectedBookType,
+  ScanResultType,
+  TitleCandidateType,
+} from '~/domain/scan/infrastructure/graphql/types'
 import { imageWithinSizeLimit } from '~/domain/scan/limits'
 import type { ScanOutcome, ShelfOutcome } from '~/domain/scan/use-case'
 import { ScanUseCase } from '~/domain/scan/use-case'
@@ -16,7 +21,6 @@ import { seriesReferenceOf } from '~/domain/series/primitives'
 import { builder } from '~/domain/shared/graphql/builder'
 import { aiUnavailable, domainError, notFound } from '~/domain/shared/graphql/errors'
 import { languageFrom, languageOf } from '~/domain/shared/language'
-import { DetectedBookType, ScanResultType, TitleCandidateType } from './types'
 
 const answered = (outcome: ScanOutcome) =>
   match(outcome)

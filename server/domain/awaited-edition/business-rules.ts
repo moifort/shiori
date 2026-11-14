@@ -1,5 +1,15 @@
 import { authorKeyOf } from '~/domain/author/primitives'
 import type { AuthorKey } from '~/domain/author/types'
+import { AwaitedEditionId } from '~/domain/awaited-edition/primitives'
+import type {
+  AwaitedEdition,
+  AwaitedEditionView,
+  AwaitedSource,
+  AwaitedState,
+  EditionPassEntry,
+  EditionWatch,
+  FoundEdition,
+} from '~/domain/awaited-edition/types'
 import { shelfKeyOf } from '~/domain/book/business-rules'
 import type { Book, BookFormat, BookLanguage } from '~/domain/book/types'
 import { lastDayOf, releaseFormatOf } from '~/domain/discovery/business-rules'
@@ -10,16 +20,6 @@ import { isbn10Of } from '~/domain/scan/amazon-cover'
 import { AMAZON_STORES } from '~/domain/shared/amazon-stores'
 import type { Language } from '~/domain/shared/language'
 import type { UserId } from '~/domain/shared/types'
-import { AwaitedEditionId } from './primitives'
-import type {
-  AwaitedEdition,
-  AwaitedEditionView,
-  AwaitedSource,
-  AwaitedState,
-  EditionPassEntry,
-  EditionWatch,
-  FoundEdition,
-} from './types'
 
 /** How often the web is searched again for an edition awaited and not yet out
  *  or confirmed: every two weeks, as the saga watch did until 2026-10-20. */

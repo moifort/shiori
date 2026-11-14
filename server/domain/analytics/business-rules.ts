@@ -9,6 +9,7 @@ import type {
   GenreInsights,
   GenreShare,
   GenreTaste,
+  LocalDate as LocalDateValue,
   MonthHours,
   MonthPages,
   SeriesProgress,
@@ -43,7 +44,6 @@ import { editionUnfollowed } from '~/domain/series-opinion/business-rules'
 import type { SeriesOpinion } from '~/domain/series-opinion/types'
 import { Year } from '~/domain/shared/primitives'
 import type { UserId } from '~/domain/shared/types'
-import type { LocalDate as LocalDateValue } from './types'
 
 /** How many years the books chart shows, always: past six bars they stop being
  *  readable on a phone, and fewer leaves one wide bar for a reader's first year. */

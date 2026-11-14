@@ -4,7 +4,7 @@ import { answerOf } from '~/domain/scan/json-answer'
 // The month's grounded calls are counted in Firestore; a unit test counts none.
 mock.module('~/domain/scan/infrastructure/repository', () => ({
   countGroundedCall: async () => {},
-  groundedCallsIn: async () => 0,
+  findGroundedCalls: async () => 0,
 }))
 
 const {

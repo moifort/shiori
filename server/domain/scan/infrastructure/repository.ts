@@ -41,7 +41,7 @@ export const countGroundedCall = async (month: string): Promise<void> => {
     .set({ month, calls: FieldValue.increment(1) }, { merge: true })
 }
 
-export const groundedCallsIn = async (month: string): Promise<number> => {
+export const findGroundedCalls = async (month: string): Promise<number> => {
   const doc = await groundingMonths().doc(month).get()
   return (doc.data()?.calls as number | undefined) ?? 0
 }

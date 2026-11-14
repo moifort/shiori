@@ -1,8 +1,8 @@
+import { builder } from '~/domain/shared/graphql/builder'
 import { markBootStep } from '~/system/boot-marks'
-import { builder } from './builder'
 
 // Custom scalars must be registered before any type that references them.
-import './scalars'
+import '~/domain/shared/graphql/scalars'
 
 // Domain GraphQL layers, imported as they come online. Each domain owns its
 // enums.ts, types.ts, inputs.ts, queries.ts and mutations.ts under

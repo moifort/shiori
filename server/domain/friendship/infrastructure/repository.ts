@@ -70,7 +70,7 @@ export const removeFriendship = async (friendship: Friendship): Promise<void> =>
  *  half of, and the invitation it may have left open. A friendship is deleted
  *  outright rather than left dangling — the other reader loses a friend, which
  *  is what deleting an account means. */
-export const removeAllForUser = async (userId: UserId): Promise<void> => {
+export const removeAllByUser = async (userId: UserId): Promise<void> => {
   const [mine, invited] = await Promise.all([
     findAllByUser(userId),
     invitations().where('userId', '==', userId).get(),

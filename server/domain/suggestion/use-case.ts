@@ -20,10 +20,6 @@ import { SeriesOpinionQuery } from '~/domain/series-opinion/query'
 import type { SeriesOpinion } from '~/domain/series-opinion/types'
 import type { Language } from '~/domain/shared/language'
 import type { UserId } from '~/domain/shared/types'
-import { WishQuery } from '~/domain/wish/query'
-import type { Wish } from '~/domain/wish/types'
-import { createLogger } from '~/system/logger'
-import { withRequestCacheScope } from '~/system/request-cache'
 import {
   discoveriesAlertOf,
   monthOf,
@@ -35,13 +31,13 @@ import {
   shownOf,
   statusOf,
   tasteDigestOf,
-} from './business-rules'
-import { SuggestionCommand } from './command'
-import { coverOf } from './infrastructure/catalogue'
-import { ask, isConfigured } from './infrastructure/claude'
-import { suggestionsOf } from './parsing'
-import { suggestionsPrompt } from './prompts'
-import { SuggestionQuery } from './query'
+} from '~/domain/suggestion/business-rules'
+import { SuggestionCommand } from '~/domain/suggestion/command'
+import { coverOf } from '~/domain/suggestion/infrastructure/catalogue'
+import { ask, isConfigured } from '~/domain/suggestion/infrastructure/claude'
+import { suggestionsOf } from '~/domain/suggestion/parsing'
+import { suggestionsPrompt } from '~/domain/suggestion/prompts'
+import { SuggestionQuery } from '~/domain/suggestion/query'
 import type {
   Dismissal,
   DismissalReason,
@@ -49,7 +45,11 @@ import type {
   Suggestion,
   SuggestionQueue,
   SuggestionView,
-} from './types'
+} from '~/domain/suggestion/types'
+import { WishQuery } from '~/domain/wish/query'
+import type { Wish } from '~/domain/wish/types'
+import { createLogger } from '~/system/logger'
+import { withRequestCacheScope } from '~/system/request-cache'
 
 const logger = createLogger('suggestion')
 

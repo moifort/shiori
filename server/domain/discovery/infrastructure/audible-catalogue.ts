@@ -10,13 +10,13 @@ import {
   Synopsis,
 } from '~/domain/book/primitives'
 import type { BookLanguage, CoverUrl as CoverUrlType } from '~/domain/book/types'
+import type { AudibleRecording, FoundVolume } from '~/domain/discovery/types'
 import { ReleaseDate, VolumeNumber } from '~/domain/series/primitives'
 import type { ReleaseDate as ReleaseDateType } from '~/domain/series/types'
 import { AuthorName, BookTitle } from '~/domain/shared/primitives'
 import { createLogger } from '~/system/logger'
 import { isPresent, optionally } from '~/utils/input'
 import { slugify } from '~/utils/slug'
-import type { AudibleRecording, FoundVolume } from '../types'
 
 const logger = createLogger('audible-catalogue')
 

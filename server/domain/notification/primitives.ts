@@ -1,6 +1,10 @@
 import { make } from 'ts-brand'
 import { z } from 'zod'
-import { ALERT_KINDS, type AlertKind, type DeviceToken as DeviceTokenType } from './types'
+import {
+  ALERT_KINDS,
+  type AlertKind,
+  type DeviceToken as DeviceTokenType,
+} from '~/domain/notification/types'
 
 // APNs tokens are 32 bytes today, rendered as 64 hex digits; Apple documents
 // them as variable length, so the bound is loose on purpose.

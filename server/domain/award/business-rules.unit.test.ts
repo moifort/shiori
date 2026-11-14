@@ -1,7 +1,4 @@
 import { describe, expect, test } from 'bun:test'
-import type { Book } from '~/domain/book/types'
-import { ReleaseDate } from '~/domain/series/primitives'
-import { AuthorName, BookTitle } from '~/domain/shared/primitives'
 import {
   AWARDS_BY_GENRE,
   genresOf,
@@ -11,9 +8,12 @@ import {
   watchKeyOf,
   winnerStateOf,
   worksOf,
-} from './business-rules'
-import { AWARDS } from './types'
-import { WINNERS } from './winners'
+} from '~/domain/award/business-rules'
+import { AWARDS } from '~/domain/award/types'
+import { WINNERS } from '~/domain/award/winners'
+import type { Book } from '~/domain/book/types'
+import { ReleaseDate } from '~/domain/series/primitives'
+import { AuthorName, BookTitle } from '~/domain/shared/primitives'
 
 type Read = Pick<Book, 'genre' | 'status' | 'rating' | 'finishedAt' | 'statusChangedAt'>
 const read = (genre: Book['genre'], extra: Partial<Read> = {}): Read => ({

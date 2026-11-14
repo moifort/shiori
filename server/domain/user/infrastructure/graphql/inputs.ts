@@ -1,5 +1,5 @@
 import { builder } from '~/domain/shared/graphql/builder'
-import { AvatarColorEnum, AvatarHeroEnum } from './enums'
+import { AvatarColorEnum, AvatarHeroEnum } from '~/domain/user/infrastructure/graphql/enums'
 
 export const CompleteOnboardingInput = builder.inputType('CompleteOnboardingInput', {
   description:

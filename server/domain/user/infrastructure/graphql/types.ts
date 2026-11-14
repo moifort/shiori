@@ -1,7 +1,7 @@
 import { builder } from '~/domain/shared/graphql/builder'
+import { AvatarColorEnum, AvatarHeroEnum } from '~/domain/user/infrastructure/graphql/enums'
 import type { MeView } from '~/domain/user/types'
 import { objectStore } from '~/system/object-store'
-import { AvatarColorEnum, AvatarHeroEnum } from './enums'
 
 export const MeType = builder.objectRef<MeView>('Me').implement({
   description:

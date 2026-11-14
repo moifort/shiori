@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { shelfKeyOf } from '~/domain/book/business-rules'
 import { BOOK_LANGUAGES, type BookLanguage } from '~/domain/book/types'
 import { AuthorName, BookTitle } from '~/domain/shared/primitives'
-import { SUGGESTION_KINDS, type Suggestion, type SuggestionKind } from './types'
+import { SUGGESTION_KINDS, type Suggestion, type SuggestionKind } from '~/domain/suggestion/types'
 
 const answerItem = z.object({
   title: z.string().trim().min(1),

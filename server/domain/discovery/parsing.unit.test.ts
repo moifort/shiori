@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { amazonDateOf, amazonEditionFrom, volumesFrom, worksFrom } from './parsing'
+import { amazonDateOf, amazonEditionFrom, volumesFrom, worksFrom } from '~/domain/discovery/parsing'
 
 /** The book details carousel as an Amazon product page draws it. */
 const page = (date: string, language: string) =>

@@ -1,8 +1,8 @@
 import type { Language } from '~/domain/shared/language'
 import type { UserId } from '~/domain/shared/types'
-import { monthOf } from './business-rules'
-import * as repository from './infrastructure/repository'
-import type { Dismissal, DismissalReason, SuggestionQueue } from './types'
+import { monthOf } from '~/domain/suggestion/business-rules'
+import * as repository from '~/domain/suggestion/infrastructure/repository'
+import type { Dismissal, DismissalReason, SuggestionQueue } from '~/domain/suggestion/types'
 
 export namespace SuggestionCommand {
   /** Keep the selection just made, over the one stored: the month the reader

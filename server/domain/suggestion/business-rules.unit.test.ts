@@ -14,8 +14,8 @@ import {
   shownOf,
   statusOf,
   tasteDigestOf,
-} from './business-rules'
-import type { Dismissal, Suggestion } from './types'
+} from '~/domain/suggestion/business-rules'
+import type { Dismissal, Suggestion } from '~/domain/suggestion/types'
 
 const reader = 'reader' as UserId
 let made = 0

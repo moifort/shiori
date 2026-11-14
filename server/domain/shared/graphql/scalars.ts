@@ -22,6 +22,7 @@ import { KindleAsin } from '~/domain/kindle/primitives'
 import { NarratorBiography, NarratorKey } from '~/domain/narrator/primitives'
 import { DeviceToken } from '~/domain/notification/primitives'
 import { SeriesDescription, SeriesId, SeriesName, VolumeNumber } from '~/domain/series/primitives'
+import { builder } from '~/domain/shared/graphql/builder'
 import {
   AuthorName,
   BookTitle,
@@ -34,7 +35,6 @@ import {
   Year,
 } from '~/domain/shared/primitives'
 import { WishId } from '~/domain/wish/primitives'
-import { builder } from './builder'
 
 // A brand's Zod constructor is the single definition of what the value may be, so
 // the scalar reuses it rather than restating the rule. A rejection becomes a

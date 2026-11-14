@@ -1,6 +1,6 @@
+import { EntitlementType } from '~/domain/entitlement/infrastructure/graphql/types'
 import { EntitlementQuery } from '~/domain/entitlement/query'
 import { builder } from '~/domain/shared/graphql/builder'
-import { EntitlementType } from './types'
 
 builder.queryField('entitlement', (t) =>
   t.field({

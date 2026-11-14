@@ -1,8 +1,4 @@
 import { describe, expect, test } from 'bun:test'
-import type { AwaitedEditionView, FoundEdition } from '~/domain/awaited-edition/types'
-import type { Book } from '~/domain/book/types'
-import type { ReleaseDate } from '~/domain/series/types'
-import type { UserId } from '~/domain/shared/types'
 import {
   alertIsDue,
   alertOf,
@@ -14,8 +10,16 @@ import {
   isHeld,
   stateOf,
   storeUrlOf,
-} from './business-rules'
-import type { AwaitedEdition, EditionWatch } from './types'
+} from '~/domain/awaited-edition/business-rules'
+import type {
+  AwaitedEdition,
+  AwaitedEditionView,
+  EditionWatch,
+  FoundEdition,
+} from '~/domain/awaited-edition/types'
+import type { Book } from '~/domain/book/types'
+import type { ReleaseDate } from '~/domain/series/types'
+import type { UserId } from '~/domain/shared/types'
 
 const today = '2026-09-28'
 const found = (fields: Partial<FoundEdition> = {}) =>

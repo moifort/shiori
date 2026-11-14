@@ -1,5 +1,5 @@
 import type { UserId } from '~/domain/shared/types'
-import * as repository from './infrastructure/repository'
+import * as repository from '~/domain/suggestion/infrastructure/repository'
 
 export namespace SuggestionQuery {
   export const queue = (userId: UserId) => repository.findQueue(userId)

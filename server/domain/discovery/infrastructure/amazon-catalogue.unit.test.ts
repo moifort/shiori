@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, spyOn, test } from 'bun:test'
 import * as Sentry from '@sentry/node'
 import type { Isbn13 } from '~/domain/book/types'
-import { amazonEditionOf } from './amazon-catalogue'
+import { amazonEditionOf } from '~/domain/discovery/infrastructure/amazon-catalogue'
 
 const isbn13 = '9781538752043' as Isbn13
 

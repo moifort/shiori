@@ -1,6 +1,6 @@
 import { make } from 'ts-brand'
 import { z } from 'zod'
-import type { LocalDate as LocalDateType, TimeZone as TimeZoneType } from './types'
+import type { LocalDate as LocalDateType, TimeZone as TimeZoneType } from '~/domain/analytics/types'
 
 // Validated against the runtime's own time zone database rather than a pattern:
 // "Europe/Pariss" has the right shape and would throw on first use.

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { suggestionsPrompt } from './prompts'
+import { suggestionsPrompt } from '~/domain/suggestion/prompts'
 
 const profile = {
   formats: [{ value: 'audiobook' as const, share: 0.9 }],

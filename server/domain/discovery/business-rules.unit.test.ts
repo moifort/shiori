@@ -10,11 +10,6 @@ import type {
   NarratorName,
   Synopsis,
 } from '~/domain/book/types'
-import { seriesIdOf, seriesKeyOf } from '~/domain/series/primitives'
-import type { ReleaseDate, SagaKey, Series, SeriesName, VolumeNumber } from '~/domain/series/types'
-import type { FollowedSeries } from '~/domain/series/use-case'
-import type { AuthorName, BookTitle, StarRating, UserId } from '~/domain/shared/types'
-import { slugify } from '~/utils/slug'
 import {
   alertOf,
   announcedPreviewOf,
@@ -52,8 +47,8 @@ import {
   watchIsStale,
   workAlertOf,
   yearVolumesOf,
-} from './business-rules'
-import { releasesPrompt } from './prompts'
+} from '~/domain/discovery/business-rules'
+import { releasesPrompt } from '~/domain/discovery/prompts'
 import type {
   AuthorWatch,
   DiscoveryProjectionState,
@@ -64,7 +59,12 @@ import type {
   SagaDiscovery,
   SagaWatch,
   WatchedSaga,
-} from './types'
+} from '~/domain/discovery/types'
+import { seriesIdOf, seriesKeyOf } from '~/domain/series/primitives'
+import type { ReleaseDate, SagaKey, Series, SeriesName, VolumeNumber } from '~/domain/series/types'
+import type { FollowedSeries } from '~/domain/series/use-case'
+import type { AuthorName, BookTitle, StarRating, UserId } from '~/domain/shared/types'
+import { slugify } from '~/utils/slug'
 
 const carl = 'dungeon-crawler-carl--matt-dinniman' as SagaKey
 const carlHeard = 'dungeon-crawler-carl--matt-dinniman--audio' as SagaKey

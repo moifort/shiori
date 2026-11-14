@@ -1,5 +1,10 @@
+import {
+  ALERT_KINDS,
+  type AlertKind,
+  type DeviceToken,
+  type NotificationSettings,
+} from '~/domain/notification/types'
 import type { PushEnvironment } from '~/system/apns'
-import { ALERT_KINDS, type AlertKind, type DeviceToken, type NotificationSettings } from './types'
 
 /** A reader signs in on a phone, an iPad, a new phone: a handful of devices,
  *  never more. The oldest goes when a new one arrives past the limit, since a

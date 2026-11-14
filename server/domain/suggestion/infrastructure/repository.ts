@@ -1,5 +1,6 @@
 import type { Language } from '~/domain/shared/language'
 import type { UserId } from '~/domain/shared/types'
+import type { Dismissal, Suggestion, SuggestionQueue } from '~/domain/suggestion/types'
 import { db } from '~/system/firebase'
 import {
   compositeId,
@@ -9,7 +10,6 @@ import {
   withoutAbsentFields,
 } from '~/utils/firestore'
 import { oneDocumentPerReaderAndKey } from '~/utils/reader-documents'
-import type { Dismissal, Suggestion, SuggestionQueue } from '../types'
 
 // One document per reader, whose id IS the userId: the month's selection.
 const queues = () =>

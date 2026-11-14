@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { suggestionsOf } from './parsing'
+import { suggestionsOf } from '~/domain/suggestion/parsing'
 
 const item = (extra: Record<string, unknown> = {}) => ({
   title: 'Les Salauds Gentilshommes',

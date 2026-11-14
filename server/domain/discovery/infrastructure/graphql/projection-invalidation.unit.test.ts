@@ -11,7 +11,9 @@ mock.module('~/domain/discovery/command', () => ({
   },
 }))
 
-const { discoveryProjectionInvalidation } = await import('./projection-invalidation')
+const { discoveryProjectionInvalidation } = await import(
+  '~/domain/discovery/infrastructure/graphql/projection-invalidation'
+)
 
 const userId = 'bob' as UserId
 

@@ -1,6 +1,6 @@
+import { QuotaType } from '~/domain/quota/infrastructure/graphql/types'
 import { QuotaQuery } from '~/domain/quota/query'
 import { builder } from '~/domain/shared/graphql/builder'
-import { QuotaType } from './types'
 
 builder.queryField('quota', (t) =>
   t.field({

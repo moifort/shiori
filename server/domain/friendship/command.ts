@@ -96,5 +96,5 @@ export namespace FriendshipCommand {
   /** An account deletion takes its friendships with it, and the invitation it
    *  may have left open. */
   export const deleteAllForUser = (userId: UserId): Promise<void> =>
-    repository.removeAllForUser(userId)
+    repository.removeAllByUser(userId)
 }

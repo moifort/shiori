@@ -3,10 +3,10 @@ import { shelfKeyOf } from '~/domain/book/copies'
 import type { BookLanguage } from '~/domain/book/types'
 import { lastDayOf } from '~/domain/discovery/business-rules'
 import type { ReleaseFormat, ReleaseSeed } from '~/domain/discovery/types'
+import type { KeptDescription, Release, ReleaseShown, ReleaseView } from '~/domain/release/types'
 import type { ReleaseDate } from '~/domain/series/types'
 import type { Language } from '~/domain/shared/language'
 import { slugify } from '~/utils/slug'
-import type { KeptDescription, Release, ReleaseShown, ReleaseView } from './types'
 
 /** How long a description made before the book was out serves before it is
  *  asked again: an announced book is described thinly, and grows a summary

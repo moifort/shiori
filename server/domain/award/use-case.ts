@@ -1,19 +1,6 @@
 import { awaitableFormatsOf, stateOf } from '~/domain/awaited-edition/business-rules'
 import { AwaitedEditionQuery } from '~/domain/awaited-edition/query'
 import type { AwaitedEditionId } from '~/domain/awaited-edition/types'
-import { AwardCommand } from '~/domain/award/command'
-import { AwardQuery } from '~/domain/award/query'
-import { BookQuery } from '~/domain/book/query'
-import type { Genre } from '~/domain/book/types'
-import { todayOf } from '~/domain/discovery/business-rules'
-import { RELEASE_FORMATS, type ReleaseFormat } from '~/domain/discovery/types'
-import { watchOf } from '~/domain/release/business-rules'
-import { ReleaseQuery } from '~/domain/release/query'
-import type { Release, ReleaseView } from '~/domain/release/types'
-import { type DescribeRefusal, ReleaseUseCase } from '~/domain/release/use-case'
-import type { Language } from '~/domain/shared/language'
-import type { UserId } from '~/domain/shared/types'
-import { createLogger } from '~/system/logger'
 import {
   AWARDS_BY_GENRE,
   genresOf,
@@ -29,8 +16,10 @@ import {
   watchKeyOf,
   winnerStateOf,
   worksOf,
-} from './business-rules'
-import { winnersAfter } from './infrastructure/wikidata'
+} from '~/domain/award/business-rules'
+import { AwardCommand } from '~/domain/award/command'
+import { winnersAfter } from '~/domain/award/infrastructure/wikidata'
+import { AwardQuery } from '~/domain/award/query'
 import {
   AWARDS,
   type Award,
@@ -38,7 +27,18 @@ import {
   type AwardedWorkView,
   type AwardSection,
   type AwardShelf,
-} from './types'
+} from '~/domain/award/types'
+import { BookQuery } from '~/domain/book/query'
+import type { Genre } from '~/domain/book/types'
+import { todayOf } from '~/domain/discovery/business-rules'
+import { RELEASE_FORMATS, type ReleaseFormat } from '~/domain/discovery/types'
+import { watchOf } from '~/domain/release/business-rules'
+import { ReleaseQuery } from '~/domain/release/query'
+import type { Release, ReleaseView } from '~/domain/release/types'
+import { type DescribeRefusal, ReleaseUseCase } from '~/domain/release/use-case'
+import type { Language } from '~/domain/shared/language'
+import type { UserId } from '~/domain/shared/types'
+import { createLogger } from '~/system/logger'
 
 const logger = createLogger('award')
 

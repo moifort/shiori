@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { winnersOfAnswer } from './wikidata'
+import { winnersOfAnswer } from '~/domain/award/infrastructure/wikidata'
 
 const binding = (title: string, year: string, authors: string) => ({
   title: { value: title },

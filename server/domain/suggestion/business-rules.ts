@@ -2,7 +2,6 @@ import type { Book, BookFormat, StarRating } from '~/domain/book/types'
 import type { ReleaseIdentity, ReleaseShown } from '~/domain/release/types'
 import type { SeriesOpinion } from '~/domain/series-opinion/types'
 import type { Language } from '~/domain/shared/language'
-import { slugify } from '~/utils/slug'
 import type {
   Dismissal,
   DismissalReason,
@@ -12,7 +11,8 @@ import type {
   SuggestionQueue,
   SuggestionReference,
   SuggestionView,
-} from './types'
+} from '~/domain/suggestion/types'
+import { slugify } from '~/utils/slug'
 
 /** How many suggestions the model is asked for: enough that the checks and the
  *  reader's dismissals leave the line full for the month. */

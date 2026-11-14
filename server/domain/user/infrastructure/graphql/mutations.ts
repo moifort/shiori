@@ -1,10 +1,13 @@
 import { match, P } from 'ts-pattern'
 import { builder } from '~/domain/shared/graphql/builder'
 import { badUserInput, notFound } from '~/domain/shared/graphql/errors'
+import {
+  ChangeAvatarInput,
+  CompleteOnboardingInput,
+} from '~/domain/user/infrastructure/graphql/inputs'
+import { MeType } from '~/domain/user/infrastructure/graphql/types'
 import { UserQuery } from '~/domain/user/query'
 import { UserUseCase } from '~/domain/user/use-case'
-import { ChangeAvatarInput, CompleteOnboardingInput } from './inputs'
-import { MeType } from './types'
 
 builder.mutationField('completeOnboarding', (t) =>
   t.field({

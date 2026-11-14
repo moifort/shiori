@@ -1,7 +1,7 @@
 import { shelfKeyOf } from '~/domain/book/business-rules'
 import type { UserId } from '~/domain/shared/types'
-import { WishId } from './primitives'
-import type { Wish, WishedBook } from './types'
+import { WishId } from '~/domain/wish/primitives'
+import type { Wish, WishedBook } from '~/domain/wish/types'
 
 /** A reader wishes for as many books as they like, within reason. */
 export const MAX_WISHES = 500

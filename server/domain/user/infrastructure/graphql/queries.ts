@@ -1,6 +1,6 @@
 import { builder } from '~/domain/shared/graphql/builder'
+import { MeType } from '~/domain/user/infrastructure/graphql/types'
 import { UserQuery } from '~/domain/user/query'
-import { MeType } from './types'
 
 builder.queryField('me', (t) =>
   t.field({

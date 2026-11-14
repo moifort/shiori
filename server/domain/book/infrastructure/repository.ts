@@ -299,7 +299,7 @@ export const findSyncRemovals = async (
     (doc) => doc.data(),
   )
 
-export const forgetSyncRemovals = async (
+export const removeSyncRemovals = async (
   userId: UserId,
   source: SyncSource,
   asins: readonly string[],

@@ -109,7 +109,7 @@ export const generate = async <T>(
 const searchesOnClaude = async (): Promise<boolean> => {
   if (!config().anthropicApiKey) return false
   try {
-    return freeSearchesSpent(await repository.groundedCallsIn(thisMonth()))
+    return freeSearchesSpent(await repository.findGroundedCalls(thisMonth()))
   } catch (error) {
     logger.warn('grounded calls not read', { error })
     return false

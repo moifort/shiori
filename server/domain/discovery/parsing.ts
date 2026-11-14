@@ -2,13 +2,13 @@ import { AudibleAsin } from '~/domain/audible/primitives'
 import { drawnFormatOf } from '~/domain/book/business-rules'
 import { Isbn13 } from '~/domain/book/primitives'
 import type { BookLanguage } from '~/domain/book/types'
+import type { NarratedWorkOutput, VolumeOutput, WorkOutput } from '~/domain/discovery/schemas'
+import type { FoundVolume, FoundWork, NarratedWork } from '~/domain/discovery/types'
 import { ReleaseDate, SeriesName, VolumeNumber } from '~/domain/series/primitives'
 import type { ReleaseDate as ReleaseDateType } from '~/domain/series/types'
 import { AuthorName, BookTitle } from '~/domain/shared/primitives'
 import { optionally } from '~/utils/input'
 import { slugify } from '~/utils/slug'
-import type { NarratedWorkOutput, VolumeOutput, WorkOutput } from './schemas'
-import type { FoundVolume, FoundWork, NarratedWork } from './types'
 
 /** Every volume of the model's answer, one per number and one per title and
  *  ISBN — the first listed wins — or nothing without a title or a number. Every other field is dropped on its

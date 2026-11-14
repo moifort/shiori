@@ -1,8 +1,8 @@
 import type { BookLanguage } from '~/domain/book/types'
+import { formatOf } from '~/domain/discovery/business-rules'
+import type { SagaWatch, WatchedAuthor, WatchedNarrator } from '~/domain/discovery/types'
 import { AMAZON_STORES } from '~/domain/shared/amazon-stores'
 import { AUDIBLE_STORES } from '~/domain/shared/audible-stores'
-import { formatOf } from './business-rules'
-import type { SagaWatch, WatchedAuthor, WatchedNarrator } from './types'
 
 /** Written into the prompt so the volumes come back in the language asked. */
 export const LANGUAGE_NAMES: Record<BookLanguage, string> = {
