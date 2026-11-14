@@ -252,7 +252,14 @@ export namespace SeriesUseCase {
         favorite: saga.opinion?.favorite === true,
       }))
       const kept = matchingFilter(all, filter)
-      return pageAfter(filter.loved ? inLovedOrder(kept) : inTabOrder(kept), page, rowCursorOf)
+      // The state needs every saga's catalogue; the release watches are read
+      // for the page's rows alone, as on the other branch.
+      const { items, ...rest } = pageAfter(
+        filter.loved ? inLovedOrder(kept) : inTabOrder(kept),
+        page,
+        rowCursorOf,
+      )
+      return { items: await withNextReleases(items), ...rest }
     }
     const kept = matchingFilter(
       shelf.sagas.map((saga) => ({ ...saga, state: saga.unfollowed ? 'unfollowed' : null })),
@@ -669,29 +676,20 @@ const described = async (
   { withReleases = false }: { withReleases?: boolean } = {},
 ): Promise<FollowedSeries[]> => {
   const ids = new Set(sagas.map((saga) => saga.id))
-  const watchKeys = withReleases
-    ? sagas.flatMap(({ saga, language }) =>
-        language ? [watchKeyOf({ seriesId: saga, language })] : [],
-      )
-    : []
-  const [catalogues, watches] = await Promise.all([
-    SeriesQuery.byIds(sagas.map(({ saga, language }) => ({ saga, language }))),
-    watchKeys.length > 0 ? DiscoveryQuery.watches(watchKeys) : new Map<string, SagaWatch>(),
-  ])
+  // Read beside the catalogues rather than after them.
+  const watches = withReleases ? watchesOf(sagas) : undefined
+  const catalogues = await SeriesQuery.byIds(
+    sagas.map(({ saga, language }) => ({ saga, language })),
+  )
   const catalogued = cataloguesOf(
     shelf.books.filter((book) => book.series && ids.has(book.series.id)),
     catalogues,
     shelf.opinions,
   )
-  const now = new Date()
-  const currentYear = Year(now.getUTCFullYear())
-  return sagas.map((saga) => {
+  const currentYear = Year(new Date().getUTCFullYear())
+  const rows = sagas.map((saga): FollowedSeries => {
     const catalogue = catalogued.get(saga.id) ?? null
     const read = readVolumeNumbersOf(saga.books)
-    const watch = saga.language
-      ? watches.get(watchKeyOf({ seriesId: saga.saga, language: saga.language }))
-      : undefined
-    const nextRelease = watch && releasesOf(saga.books, watch, catalogue, todayOf(now)).next
     return {
       id: saga.id,
       saga: saga.saga,
@@ -717,10 +715,40 @@ const described = async (
       ownedCount: Count(saga.books.length),
       books: inSagaOrder(saga.books),
       shelvedAt: saga.shelvedAt,
-      ...(nextRelease ? { nextRelease } : {}),
     }
   })
+  return watches ? nextReleasesIn(rows, await watches) : rows
 }
+
+/** The release watches of these sagas, in one read. */
+const watchesOf = async (
+  sagas: readonly { saga: SagaKey; language?: BookLanguage }[],
+): Promise<Map<string, SagaWatch>> => {
+  const keys = sagas.flatMap(({ saga, language }) =>
+    language ? [watchKeyOf({ seriesId: saga, language })] : [],
+  )
+  return keys.length > 0 ? DiscoveryQuery.watches(keys) : new Map()
+}
+
+/** The rows given, each with the soonest volume announced that the reader does
+ *  not hold, by the rule the saga screen's release card follows. */
+const nextReleasesIn = (
+  rows: readonly FollowedSeries[],
+  watches: Map<string, SagaWatch>,
+): FollowedSeries[] => {
+  const today = todayOf(new Date())
+  return rows.map((row) => {
+    const watch = row.language
+      ? watches.get(watchKeyOf({ seriesId: row.saga, language: row.language }))
+      : undefined
+    const nextRelease = watch && releasesOf(row.books, watch, row.catalogue, today).next
+    return nextRelease ? { ...row, nextRelease } : row
+  })
+}
+
+/** The rows given with their next release: the watches of those rows alone. */
+const withNextReleases = async (rows: readonly FollowedSeries[]): Promise<FollowedSeries[]> =>
+  nextReleasesIn(rows, await watchesOf(rows))
 
 /** A row of the Series tab named for the next page to start after: its
  *  series id — a saga held in two languages is two rows, two editions. */

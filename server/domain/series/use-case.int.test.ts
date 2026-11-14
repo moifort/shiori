@@ -116,7 +116,7 @@ describe('a page of the Series tab', () => {
     expect(items).toEqual(all.filter((saga) => ['saga-2', 'saga-3'].includes(String(saga.saga))))
   })
 
-  test('reads every catalogue when it filters on a state', async () => {
+  test('reads every catalogue when it filters on a state, and the watches of its page', async () => {
     await followSagas(6)
     const before = fake.docReads
 
@@ -127,7 +127,33 @@ describe('a page of the Series tab', () => {
     )
 
     expect(items).toHaveLength(2)
-    expect(fake.docReads - before).toBe(6)
+    expect(fake.docReads - before).toBe(6 + 2)
+  })
+
+  test('announces the next volume when it filters on a state', async () => {
+    await followSagas(2)
+    fake.seed('saga-watches', 'saga-1--fr', {
+      key: 'saga-1--fr',
+      seriesId: 'saga-1',
+      name: 'Saga 1',
+      language: 'fr',
+      checkedAt: NOW,
+      volumes: [
+        { number: 1, title: 'Saga 1, tome 1', date: '2024-03-01' },
+        { number: 2, title: 'Le Retour', date: '2099-03-12' },
+      ],
+    })
+
+    const { items } = await SeriesUseCase.followedPage(
+      reader,
+      { limit: 5 },
+      { state: 'not-started' },
+    )
+
+    expect(items.find((saga) => saga.saga === 'saga-1')?.nextRelease).toMatchObject({
+      number: VolumeNumber(2),
+      title: BookTitle('Le Retour'),
+    })
   })
 })
 
