@@ -2,8 +2,8 @@ import SwiftUI
 
 /// The AI at work, as Siri's orb: red, blue and green lobes of light turn and
 /// tip, edge-on lobes reading as ribbons, and the crossings burn to white.
-/// Shown where a reader waits on the model with nothing else to look at, such
-/// as a shelf being searched.
+/// Shown wherever a reader waits on the model: a shelf being searched, a cover,
+/// a link or a title being read, a typed title being looked up.
 ///
 /// Built from Vinarium's `SiriLoader`, itself a port of Amos Gyamfi's
 /// ListeningSiriAnimation (GetStream/purposeful-ios-animations): its vector
@@ -13,7 +13,8 @@ import SwiftUI
 /// with no sphere behind, centred and clipped round. The phase eases back and
 /// forth between two poses, so the loop has no seam.
 ///
-/// Drawn over black, so it belongs on a dark page. Respects Reduce Motion by
+/// Drawn over black, so it belongs on a dark page; on a dark grey one, add it
+/// as light (`.blendMode(.plusLighter)`) and its black falls away. Respects Reduce Motion by
 /// holding one frame. Purely presentational.
 struct SiriOrb: View {
     /// Layout footprint; the artwork (largest layer ≈ 640 pt) is scaled to fit.

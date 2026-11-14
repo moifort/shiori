@@ -30,6 +30,7 @@ struct AddBookSheet: View {
     let onChoose: (AddBookSource) -> Void
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
     @Environment(SubscriptionStore.self) private var subscriptions
     @State private var recentPhotos = RecentPhotos()
     @State private var loadingPhotoId: String?
@@ -77,10 +78,14 @@ struct AddBookSheet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: padding) {
             header
-            strip
-            titleRow
-            searchOutcome
-            manualRow
+            if search == .searching {
+                searchingOrb
+            } else {
+                strip
+                titleRow
+                searchOutcome
+                manualRow
+            }
         }
         .padding(padding)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -266,12 +271,7 @@ struct AddBookSheet: View {
                 .onSubmit(submitTitle)
                 .disabled(search == .searching)
                 .accessibilityIdentifier("add-book-title")
-            if search == .searching {
-                ProgressView()
-                    .frame(width: 28, height: 28)
-                    .accessibilityLabel("Recherche en cours")
-                    .accessibilityIdentifier("add-book-title-searching")
-            } else if !trimmedTitle.isEmpty {
+            if !trimmedTitle.isEmpty {
                 Button(action: submitTitle) {
                     Image(systemName: "arrow.right.circle.fill")
                         .font(.title2)
@@ -289,6 +289,23 @@ struct AddBookSheet: View {
         .clipShape(.rect(cornerRadius: 18))
         .contentShape(.rect)
         .onTapGesture { titleFocused = true }
+    }
+
+    /// The AI looking the typed title up: Siri's orb in the room the tiles and
+    /// rows leave, the title it looks for under it. Added as light in the dark,
+    /// so its black falls away into the sheet; drawn as it is in the light.
+    private var searchingOrb: some View {
+        VStack(spacing: 14) {
+            SiriOrb(size: 200)
+                .blendMode(colorScheme == .dark ? .plusLighter : .normal)
+            Text("Recherche de « \(trimmedTitle) »")
+                .font(.headline)
+                .lineLimit(2)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("add-book-title-searching")
     }
 
     /// What the search answered, when it is not a book to open straight away.

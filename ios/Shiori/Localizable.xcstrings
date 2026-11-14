@@ -12357,6 +12357,22 @@
         }
       }
     },
+    "Recherche de « %@ »" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Searching for “%@”"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recherche de « %@ »"
+          }
+        }
+      }
+    },
     "Recherche des couvertures…" : {
       "localizations" : {
         "en" : {
