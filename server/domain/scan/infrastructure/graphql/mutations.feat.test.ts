@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test'
 import { graphql } from 'graphql'
-import { SpendCapReached } from '~/domain/scan/spend-cap'
 import type { UserId } from '~/domain/shared/types'
+import { SpendCapReached } from '~/system/gemini/spend-cap'
 import { fakeDb, resetFakeFirestore } from '~/test/fake-firestore'
 
 mock.module('~/system/firebase', () => ({ db: fakeDb }))
@@ -14,7 +14,7 @@ mock.module('~/system/config', () => ({
 
 let answers: unknown[] = []
 let prompts: string[] = []
-mock.module('~/domain/scan/gemini', () => ({
+mock.module('~/system/gemini', () => ({
   generate: async ({ step, parts }: { step: string; parts: { text?: string }[] }) => {
     prompts.push(parts.map((part) => part.text ?? '').join(''))
     const value = answers.shift()

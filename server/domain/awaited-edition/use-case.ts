@@ -42,10 +42,10 @@ import { NotificationUseCase } from '~/domain/notification/use-case'
 import { ReleaseQuery } from '~/domain/release/query'
 import type { ReleaseView } from '~/domain/release/types'
 import { type DescribeRefusal, ReleaseUseCase } from '~/domain/release/use-case'
-import { generate } from '~/domain/scan/gemini'
-import { isSpendCapReached } from '~/domain/scan/spend-cap'
 import type { Language } from '~/domain/shared/language'
 import type { UserId } from '~/domain/shared/types'
+import { generate } from '~/system/gemini'
+import { isSpendCapReached } from '~/system/gemini/spend-cap'
 import { createLogger } from '~/system/logger'
 
 const logger = createLogger('awaited-edition')

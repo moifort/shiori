@@ -1,5 +1,5 @@
 import { DRAWN_FORMATS } from '~/domain/book/types'
-import { generate } from '~/domain/scan/gemini'
+import { generate } from '~/system/gemini'
 
 /** One title as the model is asked to split it. */
 export type TitleToRead = { asin: string; title: string; author?: string }

@@ -1,11 +1,10 @@
 import { setTimeout } from 'node:timers/promises'
-import { freeSearchesSpent, summedUsage } from '~/domain/scan/business-rules'
-import { searchedWithClaude } from '~/domain/scan/claude-search'
-import * as repository from '~/domain/scan/infrastructure/repository'
-import { answerOf, answerShape } from '~/domain/scan/json-answer'
-import { SpendCapReached } from '~/domain/scan/spend-cap'
-import type { AiStepUsage } from '~/domain/scan/types'
 import { config } from '~/system/config'
+import { searchedWithClaude } from '~/system/gemini/claude-search'
+import { answerOf, answerShape } from '~/system/gemini/json-answer'
+import * as repository from '~/system/gemini/repository'
+import { SpendCapReached } from '~/system/gemini/spend-cap'
+import { type AiStepUsage, freeSearchesSpent, summedUsage } from '~/system/gemini/usage'
 import { createLogger } from '~/system/logger'
 
 /** The model every scan step calls.

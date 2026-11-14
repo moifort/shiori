@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { answerFrom, answerTextOf } from '~/domain/scan/claude-search'
+import { answerFrom, answerTextOf } from '~/system/gemini/claude-search'
 
 describe("reading Claude's answer after its searches", () => {
   test('keeps the text written after the last search, not what came before', () => {

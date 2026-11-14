@@ -17,7 +17,7 @@ const prompts: Record<string, string> = {}
 const authorCalls: string[] = []
 let authorAnswer: unknown
 
-mock.module('~/domain/scan/gemini', () => ({
+mock.module('~/system/gemini', () => ({
   generate: async ({ step, parts }: { step: string; parts: { text?: string }[] }) => {
     prompts[step] = parts.map((part) => part.text ?? '').join('')
     if (step === 'author') {

@@ -1,7 +1,7 @@
 import { BookFormatValue } from '~/domain/book/primitives'
 import type { BookFormat, BookMedium } from '~/domain/book/types'
 import { BOOK_FORMATS } from '~/domain/book/types'
-import type { AiStepUsage, DetectedBox } from '~/domain/scan/types'
+import type { DetectedBox } from '~/domain/scan/types'
 import { optionally } from '~/utils/input'
 import { foldedText } from '~/utils/slug'
 
@@ -60,39 +60,6 @@ export const inReadingOrder = <T extends { box: DetectedBox }>(books: readonly T
   }
   return rows.flatMap((row) => row.sort((a, b) => a.box.x - b.box.x))
 }
-
-/** Two calls made for one step, billed as one. */
-export const summedUsage = (
-  first: AiStepUsage | undefined,
-  second: AiStepUsage | undefined,
-): AiStepUsage | undefined =>
-  first && second
-    ? {
-        promptTokens: first.promptTokens + second.promptTokens,
-        outputTokens: first.outputTokens + second.outputTokens,
-        thinkingTokens: first.thinkingTokens + second.thinkingTokens,
-        searches: first.searches + second.searches,
-      }
-    : (first ?? second)
-
-/** The Google searches Gemini bills free each month. */
-export const FREE_GEMINI_SEARCHES = 5000
-
-/** The searches one grounded Gemini call is billed for, measured: 421 for 67
- *  calls on 2026-10-19, 450 for 107 on 2026-10-12 counting the shelf's
- *  ungrounded ones. Gemini's own figure says a fourth of it, so the bill is
- *  read from the calls instead. */
-export const SEARCHES_PER_GROUNDED_CALL = 6.3
-
-/** How far under the free searches the grounded steps move to Claude: the
- *  ratio is an average, and a shelf scan runs twenty calls in a minute. */
-const FREE_SEARCHES_MARGIN = 500
-
-/** Whether this month's grounded Gemini calls have spent the free searches,
- *  give or take the margin: past it, every search is billed, and Claude's are
- *  paid from the Anthropic credit instead. */
-export const freeSearchesSpent = (groundedCalls: number): boolean =>
-  groundedCalls * SEARCHES_PER_GROUNDED_CALL >= FREE_GEMINI_SEARCHES - FREE_SEARCHES_MARGIN
 
 /** The separator the app puts between a picked title and its author. */
 const TYPED_AUTHOR_SEPARATOR = ' — '

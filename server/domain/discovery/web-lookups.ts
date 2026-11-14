@@ -50,10 +50,10 @@ import type {
   WatchedNarrator,
   WatchedSaga,
 } from '~/domain/discovery/types'
-import { generate } from '~/domain/scan/gemini'
 import { publishedCoverOf } from '~/domain/scan/published-cover'
-import { isSpendCapReached } from '~/domain/scan/spend-cap'
 import { SeriesCommand } from '~/domain/series/command'
+import { generate } from '~/system/gemini'
+import { isSpendCapReached } from '~/system/gemini/spend-cap'
 import { createLogger } from '~/system/logger'
 import { slugify } from '~/utils/slug'
 

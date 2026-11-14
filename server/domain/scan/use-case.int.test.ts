@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test'
-import { SpendCapReached } from '~/domain/scan/spend-cap'
 import type { UserId } from '~/domain/shared/types'
+import { SpendCapReached } from '~/system/gemini/spend-cap'
 import { fakeDb, resetFakeFirestore } from '~/test/fake-firestore'
 
 mock.module('~/system/firebase', () => ({ db: fakeDb }))
@@ -15,7 +15,7 @@ mock.module('~/system/config', () => ({
 let answers: unknown[] = []
 const calls: string[] = []
 
-mock.module('~/domain/scan/gemini', () => ({
+mock.module('~/system/gemini', () => ({
   generate: async ({ step }: { step: string }) => {
     calls.push(step)
     const value = answers.shift()

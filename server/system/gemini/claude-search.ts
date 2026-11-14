@@ -1,6 +1,6 @@
-import { answerOf, answerShape } from '~/domain/scan/json-answer'
-import type { AiStepUsage } from '~/domain/scan/types'
 import { askClaude, type ClaudeBlock, type ClaudeMessage } from '~/system/claude'
+import { answerOf, answerShape } from '~/system/gemini/json-answer'
+import type { AiStepUsage } from '~/system/gemini/usage'
 import { createLogger } from '~/system/logger'
 
 /** The model a grounded step runs on once Gemini's free searches are spent:

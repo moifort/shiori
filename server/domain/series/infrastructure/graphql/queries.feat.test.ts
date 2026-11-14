@@ -18,7 +18,7 @@ const calls: string[] = []
 /** The text each step was prompted with, keyed by step. */
 const prompts: Record<string, string> = {}
 
-mock.module('~/domain/scan/gemini', () => ({
+mock.module('~/system/gemini', () => ({
   generate: async ({ step, parts }: { step: string; parts: { text?: string }[] }) => {
     calls.push(step)
     prompts[step] = parts.map((part) => part.text ?? '').join('')

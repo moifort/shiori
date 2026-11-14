@@ -6,7 +6,7 @@ mock.module('~/system/firebase', () => ({ db: fakeDb }))
 
 /** Queued Gemini answers: nobody pays Google in a test. */
 let answers: unknown[] = []
-mock.module('~/domain/scan/gemini', () => ({
+mock.module('~/system/gemini', () => ({
   generate: async () => {
     const value = answers.shift()
     if (value === undefined) throw new Error('no queued answer')

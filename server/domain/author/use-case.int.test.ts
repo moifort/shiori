@@ -10,7 +10,7 @@ mock.module('~/domain/scan/bnf', () => ({ bnfEditionsOf: async () => [] }))
 /** Queued Gemini answers, consumed in call order: nobody pays Google in a test. */
 let answers: unknown[] = []
 const calls: string[] = []
-mock.module('~/domain/scan/gemini', () => ({
+mock.module('~/system/gemini', () => ({
   generate: async ({ step }: { step: string }) => {
     calls.push(step)
     const value = answers.shift()

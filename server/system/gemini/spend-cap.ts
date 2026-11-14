@@ -2,7 +2,7 @@
  *  cap reached, or its prepaid credits spent. Nothing the reader did, and
  *  nothing a retry fixes until someone tops the project up in AI Studio.
  *
- *  Apart from `gemini.ts`, which tests replace wholesale, so a caller can tell
+ *  Apart from the client in `index.ts`, which tests replace wholesale, so a caller can tell
  *  this refusal from any other failure whether the model is real or faked. */
 export class SpendCapReached extends Error {
   /** Read by the logger: one issue for the cap, whichever caller hit it. */

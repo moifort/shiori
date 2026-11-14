@@ -27,11 +27,9 @@ import {
   inReadingOrder,
   MAX_DETECTED_BOOKS,
   searchedQueryOf,
-  summedUsage,
   typedQueryOf,
   withTypedCandidate,
 } from '~/domain/scan/business-rules'
-import { generate } from '~/domain/scan/gemini'
 import * as repository from '~/domain/scan/infrastructure/repository'
 import { hashImage } from '~/domain/scan/primitives'
 import {
@@ -55,7 +53,6 @@ import {
 } from '~/domain/scan/schemas'
 import { STUBBED_SCAN, STUBBED_SHELF } from '~/domain/scan/stub'
 import type {
-  AiStepUsage,
   EditionHints,
   LibraryEdition,
   ScanLanguage,
@@ -83,6 +80,8 @@ import type {
   BookTitle as BookTitleValue,
 } from '~/domain/shared/types'
 import { config } from '~/system/config'
+import { generate } from '~/system/gemini'
+import { type AiStepUsage, summedUsage } from '~/system/gemini/usage'
 import { createLogger } from '~/system/logger'
 import { isPresent, optionally as optional } from '~/utils/input'
 import { foldedText, slugify } from '~/utils/slug'

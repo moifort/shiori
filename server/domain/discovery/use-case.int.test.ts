@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, mock, spyOn, test } from 'bun:test'
 import * as Sentry from '@sentry/node'
-import { SpendCapReached } from '~/domain/scan/spend-cap'
 import { seriesIdOf } from '~/domain/series/primitives'
 import type { UserId } from '~/domain/shared/types'
+import { SpendCapReached } from '~/system/gemini/spend-cap'
 import {
   type FakeFirestore,
   fakeDb,
@@ -36,7 +36,7 @@ const prompts: string[] = []
 const authorCalls: string[] = []
 /** Set, every call is asked and refused: the Gemini credit is spent. */
 let capped = false
-mock.module('~/domain/scan/gemini', () => ({
+mock.module('~/system/gemini', () => ({
   generate: async ({ parts }: { parts: { text: string }[] }) => {
     const text = parts[0]?.text ?? ''
     const heard = text.includes('livre audio')

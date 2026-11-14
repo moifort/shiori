@@ -19,7 +19,7 @@ let modelAnswer: Record<string, unknown> | 'fails' = {
   biography: 'Comédien, voix française de Robert Downey Jr.',
   wikipediaTitle: 'Bernard_Gabay',
 }
-mock.module('~/domain/scan/gemini', () => ({
+mock.module('~/system/gemini', () => ({
   generate: async ({ step, parts }: { step: string; parts: { text: string }[] }) => {
     if (step !== 'narrator') throw new Error(`no model call expected, got "${step}"`)
     modelCalls.push(parts[0]?.text.match(/Narrateur : (.+)/)?.[1] ?? '')

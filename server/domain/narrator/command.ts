@@ -14,11 +14,11 @@ import {
   type NarratorCorrection,
   type NarratorKey,
 } from '~/domain/narrator/types'
-import { generate } from '~/domain/scan/gemini'
-import type { AiStepUsage } from '~/domain/scan/types'
 import type { Language } from '~/domain/shared/language'
 import { Year } from '~/domain/shared/primitives'
 import type { AuthorName, UserId } from '~/domain/shared/types'
+import { generate } from '~/system/gemini'
+import type { AiStepUsage } from '~/system/gemini/usage'
 import { createLogger } from '~/system/logger'
 import { optionally } from '~/utils/input'
 

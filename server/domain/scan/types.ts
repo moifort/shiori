@@ -20,6 +20,7 @@ import type {
 } from '~/domain/series/types'
 import type { Language } from '~/domain/shared/language'
 import type { AuthorName, BookTitle, Year } from '~/domain/shared/types'
+import type { AiStepUsage } from '~/system/gemini/usage'
 
 /** SHA-256 of the submitted image. The cache key, so the same photo never pays
  *  for the model twice. */
@@ -122,20 +123,6 @@ export type CachedScan = {
   language: ScanLanguage
   result: ScanResult
   cachedAt: Date
-}
-
-/** What one Gemini step consumed. Thinking tokens bill at the output rate and
- *  are the largest line on a scan, so they are kept apart rather than folded
- *  into the output count: the allowance and the price are sized on them.
- *
- *  `searches` is the Google searches a grounded step ran, billed per search on
- *  top of the tokens and past a few thousand a month the larger of the two. An
- *  ungrounded step is always zero. */
-export type AiStepUsage = {
-  promptTokens: number
-  outputTokens: number
-  thinkingTokens: number
-  searches: number
 }
 
 /** What the calls of one scan consumed. A step that never ran — a cache hit, an

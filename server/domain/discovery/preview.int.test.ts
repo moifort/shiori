@@ -12,7 +12,7 @@ mock.module('~/system/config', () => ({
 /** Stands in for Gemini's grounded step: what it was asked about, and a
  *  description of the fourth volume. */
 const asked: string[] = []
-mock.module('~/domain/scan/gemini', () => ({
+mock.module('~/system/gemini', () => ({
   generate: async ({ parts }: { parts: { text: string }[] }) => {
     asked.push(parts[0]?.text ?? '')
     return {

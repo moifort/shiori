@@ -15,7 +15,7 @@ mock.module('~/domain/scan/bnf', () => ({ bnfEditionsOf: async () => [] }))
 
 /** Stands in for Gemini: nothing here may ask it anything. */
 const asked: string[] = []
-mock.module('~/domain/scan/gemini', () => ({
+mock.module('~/system/gemini', () => ({
   generate: async ({ step }: { step: string }) => {
     asked.push(step)
     return {

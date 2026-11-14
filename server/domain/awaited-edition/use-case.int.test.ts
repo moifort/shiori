@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test'
 import type { BookId } from '~/domain/book/types'
-import { SpendCapReached } from '~/domain/scan/spend-cap'
 import type { UserId } from '~/domain/shared/types'
+import { SpendCapReached } from '~/system/gemini/spend-cap'
 import {
   type FakeFirestore,
   fakeDb,
@@ -32,7 +32,7 @@ const asked: string[] = []
 let answers: Record<string, unknown> = {}
 /** Set, every call is asked and refused: the Gemini credit is spent. */
 let capped = false
-mock.module('~/domain/scan/gemini', () => ({
+mock.module('~/system/gemini', () => ({
   generate: async ({ parts }: { parts: { text: string }[] }) => {
     const title = parts[0]?.text.match(/« ([^»]+) »/)?.[1] ?? '?'
     asked.push(`${title} (${parts[0]?.text.includes('livre audio') ? 'audio' : 'livre'})`)

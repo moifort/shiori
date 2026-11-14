@@ -55,10 +55,10 @@ mock.module('~/domain/scan/bnf', () => ({
   },
 }))
 // Claude's column sends the grounded step to Claude, as the switch does.
-const gemini = await import('~/domain/scan/gemini')
+const gemini = await import('~/system/gemini')
 const generateOf = gemini.generate
-const { searchedWithClaude } = await import('~/domain/scan/claude-search')
-mock.module('~/domain/scan/gemini', () => ({
+const { searchedWithClaude } = await import('~/system/gemini/claude-search')
+mock.module('~/system/gemini', () => ({
   ...gemini,
   generate: (options: Parameters<typeof generateOf>[0]) =>
     column === 'claude' && options.grounded

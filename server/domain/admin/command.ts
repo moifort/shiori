@@ -1,7 +1,8 @@
 import { monthOf } from '~/domain/admin/business-rules'
 import * as repository from '~/domain/admin/infrastructure/repository'
 import type { AdminMetricsProjection } from '~/domain/admin/types'
-import type { AiStepUsage, ScanUsage } from '~/domain/scan/types'
+import type { ScanUsage } from '~/domain/scan/types'
+import type { AiStepUsage } from '~/system/gemini/usage'
 
 export namespace AdminCommand {
   // Fold one scan into the month's cost counters — a single atomic write of

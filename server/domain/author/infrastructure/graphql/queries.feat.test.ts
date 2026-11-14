@@ -12,7 +12,7 @@ mock.module('~/system/object-store', () => ({
 }))
 
 let answers: unknown[] = []
-mock.module('~/domain/scan/gemini', () => ({
+mock.module('~/system/gemini', () => ({
   generate: async ({ step }: { step: string }) => {
     const value = answers.shift()
     if (value === undefined) throw new Error(`no queued answer for step "${step}"`)

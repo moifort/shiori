@@ -205,7 +205,7 @@ the release workflow (issuer `58ccb3ea-10df-4d1e-ae5c-02fba75ab425`, alongside
 
 `gemini-2.5-flash`, which Vinarium runs on, is no longer served to new projects
 at all: a fresh key gets a 404 on that model path pointing at 3.6. The model is a
-named constant in `server/domain/scan/gemini.ts` for that reason — the next
+named constant in `server/system/gemini/index.ts` for that reason — the next
 retirement will land as a 404, not as a deprecation warning.
 
 The pipeline has since been run end to end against the real API on a real cover.

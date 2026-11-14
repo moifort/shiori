@@ -70,15 +70,17 @@ const shared = new Set([
   'friendships',
 ])
 
-// The collections the domains' repositories open, read from their source, so a
-// collection added later fails here until it is classified above.
+// The collections the repositories open, the domains' and the system services'
+// (Gemini's grounded-call counter), read from their source, so a collection
+// added later fails here until it is classified above.
 const collectionsInUse = () => {
-  const root = join(import.meta.dir, '..')
+  const server = join(import.meta.dir, '..', '..')
   const found = new Set<string>()
-  for (const file of new Bun.Glob('*/infrastructure/*repository.ts').scanSync(root)) {
-    const source = readFileSync(join(root, file), 'utf8')
-    for (const [, name] of source.matchAll(/collection\('([^']+)'\)/g)) found.add(name)
-  }
+  for (const pattern of ['domain/*/infrastructure/*repository.ts', 'system/*/repository.ts'])
+    for (const file of new Bun.Glob(pattern).scanSync(server)) {
+      const source = readFileSync(join(server, file), 'utf8')
+      for (const [, name] of source.matchAll(/collection\('([^']+)'\)/g)) found.add(name)
+    }
   return found
 }
 

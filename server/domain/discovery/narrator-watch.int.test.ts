@@ -9,7 +9,7 @@ mock.module('~/system/object-store', () => ({
 mock.module('~/system/apns', () => ({ Apns: { send: async () => 'sent' } }))
 
 const narratorCalls: string[] = []
-mock.module('~/domain/scan/gemini', () => ({
+mock.module('~/system/gemini', () => ({
   generate: async ({ parts }: { parts: { text: string }[] }) => {
     const text = parts[0]?.text ?? ''
     const narrator = text.match(/suit le narrateur (.+?) en /)?.[1]

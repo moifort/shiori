@@ -8,7 +8,6 @@ import { QuotaCommand } from '~/domain/quota/command'
 import { QuotaQuery } from '~/domain/quota/query'
 import { ScanCommand } from '~/domain/scan/command'
 import { pageTitleOf } from '~/domain/scan/page-title'
-import { isSpendCapReached } from '~/domain/scan/spend-cap'
 import type {
   DetectedBook,
   EditionHints,
@@ -22,6 +21,7 @@ import { SeriesQuery } from '~/domain/series/query'
 import type { VolumeKind, VolumeNumber } from '~/domain/series/types'
 import { BookTitle } from '~/domain/shared/primitives'
 import type { BookTitle as BookTitleValue, Plan, UserId } from '~/domain/shared/types'
+import { isSpendCapReached } from '~/system/gemini/spend-cap'
 import { createLogger } from '~/system/logger'
 import { slugify } from '~/utils/slug'
 

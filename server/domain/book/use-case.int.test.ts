@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test'
 import type { CoverUrl as CoverUrlType, Isbn13 as Isbn13Type } from '~/domain/book/types'
-import { SpendCapReached } from '~/domain/scan/spend-cap'
 import type { UserId } from '~/domain/shared/types'
+import { SpendCapReached } from '~/system/gemini/spend-cap'
 import { fakeDb, resetFakeFirestore } from '~/test/fake-firestore'
 
 mock.module('~/system/firebase', () => ({ db: fakeDb }))
@@ -13,7 +13,7 @@ mock.module('~/system/config', () => ({
 
 /** Queued Gemini answers, consumed in call order. An Error is thrown. */
 let answers: unknown[] = []
-mock.module('~/domain/scan/gemini', () => ({
+mock.module('~/system/gemini', () => ({
   generate: async ({ step }: { step: string }) => {
     const value = answers.shift()
     if (value === undefined) throw new Error(`no queued answer for step "${step}"`)
