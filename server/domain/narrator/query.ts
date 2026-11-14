@@ -1,4 +1,4 @@
-import { portraitOf } from '~/domain/author/infrastructure/wikipedia'
+import { AuthorQuery } from '~/domain/author/query'
 import type { PortraitUrl } from '~/domain/author/types'
 import type { NarratorName } from '~/domain/book/types'
 import * as favoriteRepository from '~/domain/narrator/infrastructure/favorite-repository'
@@ -24,5 +24,5 @@ export namespace NarratorQuery {
    *  Free. Wikidata and Open Library, which an author's picker also asks,
    *  know writers only. */
   export const portraitFor = (name: NarratorName): Promise<PortraitUrl | undefined> =>
-    portraitOf(name as string as AuthorName)
+    AuthorQuery.wikipediaPortraitOf(name as string as AuthorName)
 }

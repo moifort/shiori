@@ -26,6 +26,14 @@ export namespace AuthorQuery {
   export const favoriteKeys = async (userId: UserId): Promise<Set<AuthorKey>> =>
     new Set((await favoriteRepository.findAllByUser(userId)).map((favorite) => favorite.authorKey))
 
+  /** The photograph Wikipedia shows for a name, the page the model named
+   *  tried first: shared with the narrators, whose faces Wikipedia alone
+   *  knows. Never throws. */
+  export const wikipediaPortraitOf = (
+    name: AuthorName,
+    pageTitle?: string,
+  ): Promise<PortraitUrl | undefined> => portraitOf(name, pageTitle)
+
   /** Every face the free sources find for a name, each once, in the order
    *  they are trusted. Asked at once, so a miss costs one timeout; a source
    *  with nothing is left out. */

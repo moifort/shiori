@@ -1,6 +1,6 @@
 import { keepingCorrectionsOf, withCorrectionOf } from '~/domain/author/business-rules'
-import { portraitOf } from '~/domain/author/infrastructure/wikipedia'
 import { Nationality } from '~/domain/author/primitives'
+import { AuthorQuery } from '~/domain/author/query'
 import type { NarratorName } from '~/domain/book/types'
 import * as favoriteRepository from '~/domain/narrator/infrastructure/favorite-repository'
 import * as repository from '~/domain/narrator/infrastructure/repository'
@@ -29,7 +29,7 @@ const logger = createLogger('narrator')
  *  Wikidata and Open Library, which the author's face also asks, know writers
  *  only. */
 const faceOf = (name: NarratorName, pageTitle?: string) =>
-  portraitOf(name as string as AuthorName, pageTitle)
+  AuthorQuery.wikipediaPortraitOf(name as string as AuthorName, pageTitle)
 
 export namespace NarratorCommand {
   /** Heart a narrator, or take the heart back: the reader's own. Answers what
