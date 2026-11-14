@@ -58,8 +58,8 @@ export namespace NarratorCommand {
     name: NarratorName,
     correction: NarratorCorrection,
   ): Promise<Narrator> =>
-    repository.save(
-      withCorrectionOf(NARRATOR_CORRECTABLE_FIELDS, current ?? { key, name }, correction),
+    revised(key, (stored) =>
+      withCorrectionOf(NARRATOR_CORRECTABLE_FIELDS, stored ?? current ?? { key, name }, correction),
     )
 
   /** Ask Wikipedia again for the face of a narrator described without one, by
@@ -68,14 +68,19 @@ export namespace NarratorCommand {
   export const seekPortrait = async (known: Narrator, at: Date = new Date()): Promise<Narrator> => {
     if (known.corrected?.includes('portraitUrl')) return known
     const portraitUrl = await faceOf(known.name)
-    const entry: Narrator = portraitUrl
-      ? { ...known, portraitUrl, portraitSoughtAt: undefined }
-      : { ...known, portraitSoughtAt: at }
+    const withFace = (narrator: Narrator): Narrator =>
+      portraitUrl
+        ? { ...narrator, portraitUrl, portraitSoughtAt: undefined }
+        : { ...narrator, portraitSoughtAt: at }
     try {
-      return await repository.save(entry)
+      // On the entry as it stands: a reader may have corrected it meanwhile.
+      return await revised(known.key, (stored) => {
+        const current = stored ?? known
+        return current.corrected?.includes('portraitUrl') ? undefined : withFace(current)
+      })
     } catch (error) {
       logger.warn('narrator portrait not recorded', { error, key: known.key })
-      return entry
+      return withFace(known)
     }
   }
 
@@ -105,45 +110,63 @@ export namespace NarratorCommand {
       })
       const biography = optionally(value.biography, NarratorBiography)
       const foundPortrait = await faceOf(name, value.wikipediaTitle ?? undefined)
-      const portraitUrl = foundPortrait ?? known?.portraitUrl
-      const face = portraitUrl ? { portraitUrl } : { portraitSoughtAt: at }
-      const narrator: Narrator = biography
-        ? {
-            key,
-            name: known?.name ?? name,
-            nationality: optionally(value.nationality, Nationality),
-            birthYear: optionally(value.birthYear, Year),
-            deathYear: optionally(value.deathYear, Year),
-            biography,
-            ...face,
-            cataloguedAt: at,
-          }
-        : { key, name: known?.name ?? name, ...face, missedAt: at }
-      return { narrator: await save(kept(narrator, known)), usage }
+      const narratorFrom = (previous: Narrator | null): Narrator => {
+        const portraitUrl = foundPortrait ?? previous?.portraitUrl
+        const face = portraitUrl ? { portraitUrl } : { portraitSoughtAt: at }
+        return biography
+          ? {
+              key,
+              name: previous?.name ?? name,
+              nationality: optionally(value.nationality, Nationality),
+              birthYear: optionally(value.birthYear, Year),
+              deathYear: optionally(value.deathYear, Year),
+              biography,
+              ...face,
+              cataloguedAt: at,
+            }
+          : { key, name: previous?.name ?? name, ...face, missedAt: at }
+      }
+      return { narrator: await save(key, narratorFrom, known), usage }
     } catch (error) {
       logger.error('narrator catalogue generation failed', { error, key })
       const portraitUrl = known?.portraitUrl ?? (await faceOf(name))
-      const missed: Narrator = {
-        ...(known ?? { key, name }),
-        ...(portraitUrl ? { portraitUrl, portraitSoughtAt: undefined } : { portraitSoughtAt: at }),
-        missedAt: at,
+      const missedFrom = (previous: Narrator | null): Narrator => {
+        const face = previous?.portraitUrl ?? portraitUrl
+        return {
+          ...(previous ?? { key, name }),
+          ...(face ? { portraitUrl: face, portraitSoughtAt: undefined } : { portraitSoughtAt: at }),
+          missedAt: at,
+        }
       }
-      return { narrator: await save(kept(missed, known)) }
+      return { narrator: await save(key, missedFrom, known) }
     }
   }
 
-  /** A fresh entry with what readers corrected on the stored one. */
-  const kept = (fresh: Narrator, previous: Narrator | null) =>
-    keepingCorrectionsOf<NarratorCorrectableField, Narrator>(fresh, previous)
-
-  /** Stores the entry, logging a failed write rather than failing the page:
-   *  the reader still sees what was found. */
-  const save = async (entry: Narrator): Promise<Narrator> => {
+  /** Stores the entry built on the one stored, with what readers corrected on
+   *  it, logging a failed write rather than failing the page: the reader
+   *  still sees what was found. */
+  const save = async (
+    key: NarratorKey,
+    entryFrom: (previous: Narrator | null) => Narrator,
+    known: Narrator | null,
+  ): Promise<Narrator> => {
     try {
-      return await repository.save(entry)
+      return await revised(key, (previous) =>
+        keepingCorrectionsOf<NarratorCorrectableField, Narrator>(entryFrom(previous), previous),
+      )
     } catch (error) {
-      logger.warn('narrator catalogue not recorded', { error, key: entry.key })
-      return entry
+      logger.warn('narrator catalogue not recorded', { error, key })
+      return keepingCorrectionsOf<NarratorCorrectableField, Narrator>(entryFrom(known), known)
     }
   }
+}
+
+/** The entry as `revise` left it, written on the one stored. */
+const revised = async (
+  key: NarratorKey,
+  revise: (current: Narrator | null) => Narrator | undefined,
+): Promise<Narrator> => {
+  const narrator = await repository.revise(key, revise)
+  if (!narrator) throw new Error('a narrator just written is missing')
+  return narrator
 }

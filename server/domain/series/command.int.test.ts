@@ -104,3 +104,52 @@ describe('release dates written into the catalogue', () => {
     expect(french?.volumes).toHaveLength(1)
   })
 })
+
+// A scan, a reader's correction and the hourly release watch write the same
+// shared catalogue: each writes on the document as it stands, never on a copy
+// its request read before another write landed.
+describe('writers of one catalogue crossing', () => {
+  const edition = { saga: id, language: 'fr' as const }
+  const stored = () => withRequestCacheScope(() => SeriesQuery.byId(edition))
+  const announced = [
+    { volume: VolumeNumber(5), title: BookTitle('Cinq'), date: ReleaseDate('2026-10-08') },
+  ]
+
+  test('a catalogue built again keeps a correction made since its request read it', async () => {
+    await SeriesCommand.catalogue(catalogue())
+    await SeriesQuery.byId(edition)
+    await withRequestCacheScope(async () => {
+      const current = await SeriesQuery.byId(edition)
+      if (current) await SeriesCommand.correct(current, { name: SeriesName('Corrigé') })
+    })
+
+    await SeriesCommand.catalogue(catalogue())
+
+    expect((await stored())?.name).toBe(SeriesName('Corrigé'))
+  })
+
+  test('a correction keeps the dates the watch wrote since its request read the saga', async () => {
+    await SeriesCommand.catalogue(catalogue())
+    const read = await SeriesQuery.byId(edition)
+    await withRequestCacheScope(() => SeriesCommand.recordReleases(id, 'fr', announced))
+
+    if (read) await SeriesCommand.correct(read, { name: SeriesName('Corrigé') })
+
+    expect((await stored())?.volumes.map((volume) => Number(volume.number))).toEqual([4, 5])
+    expect((await stored())?.name).toBe(SeriesName('Corrigé'))
+  })
+
+  test('the watch keeps a correction made since its pass read the saga', async () => {
+    await SeriesCommand.catalogue(catalogue())
+    await SeriesQuery.byId(edition)
+    await withRequestCacheScope(async () => {
+      const current = await SeriesQuery.byId(edition)
+      if (current) await SeriesCommand.correct(current, { name: SeriesName('Corrigé') })
+    })
+
+    await SeriesCommand.recordReleases(id, 'fr', announced)
+
+    expect((await stored())?.name).toBe(SeriesName('Corrigé'))
+    expect((await stored())?.volumes).toHaveLength(2)
+  })
+})

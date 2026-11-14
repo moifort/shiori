@@ -24,17 +24,23 @@ export namespace SeriesCommand {
    *  reader corrected by hand — the name, the description — stays as they
    *  wrote it. */
   export const catalogue = async (entry: Series): Promise<Series> => {
-    const previous = await repository.findById(entry)
-    return repository.save(
+    const written = await repository.revise(entry, (previous) =>
       keepingCorrections(keepingReleases(withBareTitles(entry), previous), previous),
     )
+    if (!written) throw new Error('a catalogue just written is missing')
+    return written
   }
 
   /** Write a reader's correction into an edition's catalogue, for every reader
    *  of it, the fields it names marked so that no later catalogue call writes
    *  over them. */
-  export const correct = (series: Series, correction: SeriesCorrection): Promise<Series> =>
-    repository.save(withCorrection(series, correction))
+  export const correct = async (series: Series, correction: SeriesCorrection): Promise<Series> => {
+    const written = await repository.revise(series, (current) =>
+      withCorrection(current ?? series, correction),
+    )
+    if (!written) throw new Error('a catalogue just corrected is missing')
+    return written
+  }
 
   /** Write what the release watch found of one edition into that edition's
    *  catalogue. An edition nobody catalogued is left alone: the watch is no
@@ -44,10 +50,15 @@ export namespace SeriesCommand {
     language: BookLanguage,
     found: readonly FoundVolume[],
   ): Promise<Series | null> => {
-    const current = await repository.findById({ saga, language })
-    if (!current || current.provisional) return current
-    const merged = withReleases(current, language, found)
-    return merged === current ? current : repository.save(merged)
+    // Decided first on the catalogue as this request read it, which costs
+    // nothing when nothing moved; written on the one stored, in a transaction.
+    const known = await repository.findById({ saga, language })
+    if (!known || known.provisional || withReleases(known, language, found) === known) return known
+    return repository.revise({ saga, language }, (current) => {
+      if (!current || current.provisional) return undefined
+      const merged = withReleases(current, language, found)
+      return merged === current ? undefined : merged
+    })
   }
 
   /** Remember that the catalogue call found no volume of this saga in that

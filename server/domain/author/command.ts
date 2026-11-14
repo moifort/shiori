@@ -60,10 +60,6 @@ export namespace AuthorCommand {
   export const deleteFavoritesOf = (userId: UserId): Promise<void> =>
     favoriteRepository.removeAllByUser(userId)
 
-  /** Record an author's catalogue. Nothing in it is per reader, so the write
-   *  simply replaces whatever was there. */
-  export const catalogue = (entry: Author): Promise<Author> => repository.save(entry)
-
   /** Write a reader's correction into an author's catalogue, for every reader,
    *  the fields it names marked so that no later catalogue call or portrait
    *  lookup writes over them. An author nobody could describe gets a
@@ -76,8 +72,11 @@ export namespace AuthorCommand {
     correction: AuthorCorrection,
     at: Date = new Date(),
   ): Promise<Author> =>
-    repository.save(
-      withCorrection(current ?? { key, name, series: [], books: [], cataloguedAt: at }, correction),
+    revised(key, (stored) =>
+      withCorrection(
+        stored ?? current ?? { key, name, series: [], books: [], cataloguedAt: at },
+        correction,
+      ),
     )
 
   /** Ask again for the face of an author catalogued without one, by their
@@ -87,11 +86,14 @@ export namespace AuthorCommand {
     if (author.corrected?.includes('portraitUrl')) return author
     const portraitUrl = await faceOf(author.name)
     try {
-      return await catalogue(
-        portraitUrl
-          ? { ...author, portraitUrl, portraitSoughtAt: undefined }
-          : { ...author, portraitSoughtAt: new Date() },
-      )
+      // On the entry as it stands: a reader may have corrected it meanwhile.
+      return await revised(author.key, (stored) => {
+        const current = stored ?? author
+        if (current.corrected?.includes('portraitUrl')) return undefined
+        return portraitUrl
+          ? { ...current, portraitUrl, portraitSoughtAt: undefined }
+          : { ...current, portraitSoughtAt: new Date() }
+      })
     } catch (error) {
       logger.warn('author portrait not recorded', { error, key: author.key })
       return portraitUrl ? { ...author, portraitUrl } : author
@@ -142,22 +144,25 @@ export namespace AuthorCommand {
         withCovers(series, openLibrary),
         withCovers(books, openLibrary),
       ])
-      const previous = await repository.findByKey(key)
-      const portraitUrl = foundPortrait ?? previous?.portraitUrl
-      const built: Author = {
-        key,
-        name: signedName,
-        nationality: optionally(value.nationality, Nationality),
-        birthYear: optionally(value.birthYear, Year),
-        deathYear: optionally(value.deathYear, Year),
-        biography,
-        portraitUrl,
-        portraitSoughtAt: portraitUrl ? undefined : new Date(),
-        series: coveredSeries,
-        books: coveredBooks,
-        cataloguedAt: new Date(),
-      }
-      const author = await catalogue(keepingCorrections(built, previous))
+      // Built on the entry as it stands when written, not as the page read it
+      // before the call: a correction made meanwhile is kept.
+      const author = await revised(key, (previous) => {
+        const portraitUrl = foundPortrait ?? previous?.portraitUrl
+        const built: Author = {
+          key,
+          name: signedName,
+          nationality: optionally(value.nationality, Nationality),
+          birthYear: optionally(value.birthYear, Year),
+          deathYear: optionally(value.deathYear, Year),
+          biography,
+          portraitUrl,
+          portraitSoughtAt: portraitUrl ? undefined : new Date(),
+          series: coveredSeries,
+          books: coveredBooks,
+          cataloguedAt: new Date(),
+        }
+        return keepingCorrections(built, previous)
+      })
       return { author, usage }
     } catch (error) {
       logger.error('author catalogue generation failed', { error, key })
@@ -242,4 +247,14 @@ export namespace AuthorCommand {
     }
     return covered
   }
+}
+
+/** The entry as `revise` left it, written on the one stored. */
+const revised = async (
+  key: AuthorKey,
+  revise: (current: Author | null) => Author | undefined,
+): Promise<Author> => {
+  const author = await repository.revise(key, revise)
+  if (!author) throw new Error('an author just written is missing')
+  return author
 }

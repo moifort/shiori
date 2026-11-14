@@ -5,7 +5,7 @@ import {
   memoizedManyPerRequest,
   memoizedPerRequest,
 } from '~/system/request-cache'
-import { genericDataConverter, withoutAbsentFields } from '~/utils/firestore'
+import { genericDataConverter, transactionally, withoutAbsentFields } from '~/utils/firestore'
 
 // A single global collection, as `series` is. An author catalogue is a fact
 // about the world with no reference to any reader, so one document serves
@@ -33,10 +33,25 @@ export const findManyByKeys = async (keys: readonly AuthorKey[]): Promise<Author
 
 // Drops the memoized absence, so the page that built the catalogue reads it
 // back in the same request.
-export const save = async (entry: Author): Promise<Author> => {
-  await authors().doc(entry.key).set(withoutAbsentFields(entry))
-  evictFromRequestCache(cacheKey(entry.key))
-  return entry
+// A read-modify-write on the entry as it stands when the transaction runs:
+// a page's catalogue call, a reader's correction and a portrait lookup write
+// the same shared document, and none may write back a copy read before
+// another landed. `revise` answers undefined to leave it as it is, which is
+// then what comes back. The memo is dropped either way.
+export const revise = async (
+  key: AuthorKey,
+  revise: (current: Author | null) => Author | undefined,
+): Promise<Author | null> => {
+  const result = await transactionally(async (tx) => {
+    const ref = authors().doc(key)
+    const current = (await tx.get(ref)).data() ?? null
+    const revised = revise(current)
+    if (!revised) return current
+    tx.set(ref, withoutAbsentFields(revised))
+    return revised
+  })
+  evictFromRequestCache(cacheKey(key))
+  return result
 }
 
 const misses = () =>

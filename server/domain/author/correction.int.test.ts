@@ -177,3 +177,31 @@ describe('the portraits offered for an author', () => {
     })
   })
 })
+
+// A page's catalogue call takes seconds, and a reader may correct the author
+// meanwhile: each writer builds on the entry as it stands when it writes.
+describe('writers of one author crossing', () => {
+  test('a correction keeps the catalogue written since the page read the author', async () => {
+    const stale = null
+    answers = [sanderson]
+    await AuthorCommand.catalogueFromWeb(key, name, 'fr')
+
+    await AuthorCommand.correct(stale, key, name, { nationality: 'Canadien' as never })
+
+    const stored = await AuthorQuery.byKey(key)
+    expect(stored?.books.map((book) => String(book.title))).toEqual(['Elantris'])
+    expect(String(stored?.nationality)).toBe('Canadien')
+  })
+
+  test('a portrait lookup keeps a correction made since the page read the author', async () => {
+    answers = [sanderson]
+    const { author } = await AuthorCommand.catalogueFromWeb(key, name, 'fr')
+    if (!author) throw new Error('no author catalogued')
+    const stale = { ...author, portraitUrl: undefined }
+    await AuthorCommand.correct(author, key, name, { biography: AuthorBiography('Corrigée.') })
+
+    await AuthorCommand.seekPortrait(stale)
+
+    expect(String((await AuthorQuery.byKey(key))?.biography)).toBe('Corrigée.')
+  })
+})
