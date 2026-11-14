@@ -1,6 +1,6 @@
-import { BookCommand } from '~/domain/book/command'
 import { BookQuery } from '~/domain/book/query'
 import type { BookLanguage, Isbn13 as Isbn13Type } from '~/domain/book/types'
+import { BookUseCase } from '~/domain/book/use-case'
 import {
   editionsToShow,
   inReadingOrder,
@@ -437,7 +437,7 @@ export namespace ScanCommand {
    *  failure leaves them named as they were, and the catalogue stands. */
   const nameBooksAfter = async (series: Series) => {
     try {
-      await BookCommand.nameSeries(series.id, series.name)
+      await BookUseCase.nameSeries(series.id, series.name)
     } catch (error) {
       logger.warn('saga name not written into its books', { error, series: series.id })
     }

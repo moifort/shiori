@@ -10,6 +10,7 @@ import {
   DEFAULT_BOOK_LANGUAGE,
   type Genre,
 } from '~/domain/book/types'
+import { BookUseCase } from '~/domain/book/use-case'
 import { CatalogueCorrectionCommand } from '~/domain/catalogue-correction/command'
 import {
   catalogueVolumesOf,
@@ -397,7 +398,7 @@ export namespace SeriesUseCase {
           : []),
       ])
       if (correction.name && correction.name !== known.name)
-        await BookCommand.nameSeries(known.id, correction.name)
+        await BookUseCase.nameSeries(known.id, correction.name)
     }
     const name = known ? undefined : correction.name
     if (name || format)

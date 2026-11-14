@@ -39,7 +39,7 @@ import { QuotaQuery } from '~/domain/quota/query'
 import type { ScanResult } from '~/domain/scan/types'
 import { ScanUseCase } from '~/domain/scan/use-case'
 import { seriesKeyOf } from '~/domain/series/primitives'
-import type { SeriesName, VolumeNumber } from '~/domain/series/types'
+import type { SeriesId, SeriesName, VolumeNumber } from '~/domain/series/types'
 import { SeriesUseCase } from '~/domain/series/use-case'
 import type { Language } from '~/domain/shared/language'
 import type { AuthorName, BookTitle, UserId } from '~/domain/shared/types'
@@ -264,6 +264,18 @@ export namespace BookUseCase {
 
   export const remove = (userId: UserId, bookId: BookId) =>
     withAnalytics(userId, (batch) => BookCommand.remove(userId, bookId, new Date(), batch))
+
+  /** Give every reader's volumes of a saga in one edition the name its
+   *  catalogue gives it, and flag the view of each reader renamed: what they
+   *  and their friends are shown names the saga too. Across readers, so not
+   *  one batch: each view is flagged once its reader's volumes are written, and
+   *  a rebuild that ran meanwhile is flagged again by it. Answers how many
+   *  readers were renamed. */
+  export const nameSeries = async (seriesId: SeriesId, name: SeriesName): Promise<number> => {
+    const readers = await BookCommand.nameSeries(seriesId, name)
+    await Promise.all(readers.map((reader) => AnalyticsUseCase.markStale(reader)))
+    return readers.length
+  }
 }
 
 /** What names a book, to look it up again. */

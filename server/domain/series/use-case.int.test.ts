@@ -7,6 +7,7 @@ mock.module('~/system/firebase', () => ({ db: fakeDb }))
 
 const { SeriesUseCase } = await import('~/domain/series/use-case')
 const { BookCommand } = await import('~/domain/book/command')
+const { BookUseCase } = await import('~/domain/book/use-case')
 const { ReleaseDate, SagaKey, SeriesName, VolumeNumber } = await import(
   '~/domain/series/primitives'
 )
@@ -375,12 +376,29 @@ describe('the name a saga goes by', () => {
     const other = await volumeOf('Red Rising [French Edition]', 'reader-2' as UserId, 2)
 
     expect(
-      await BookCommand.nameSeries(seriesIdOf(redRising, 'fr'), SeriesName('Red Rising')),
-    ).toBe(2)
+      (await BookCommand.nameSeries(seriesIdOf(redRising, 'fr'), SeriesName('Red Rising'))).sort(),
+    ).toEqual([reader, 'reader-2' as UserId].sort())
 
     for (const book of [first, other])
       expect(fake.data('books', book.id)?.series).toMatchObject({ name: 'Red Rising' })
     expect(fake.data('books', first.id)?.updatedAt).toEqual(first.updatedAt)
+  })
+
+  // Their dashboards and what their friends are shown name the saga too, so
+  // each renamed reader's view is flagged — the reader holding no volume of
+  // it is left alone.
+  test('flags the view of every reader renamed', async () => {
+    await volumeOf('Red Rising[French Edition]', reader, 1)
+    await volumeOf('Red Rising [French Edition]', 'reader-2' as UserId, 2)
+    fake.seed('analytics', 'reader-3', { userId: 'reader-3', stale: false })
+
+    expect(
+      await BookUseCase.nameSeries(seriesIdOf(redRising, 'fr'), SeriesName('Red Rising')),
+    ).toBe(2)
+
+    expect(fake.data('analytics', reader)?.stale).toBe(true)
+    expect(fake.data('analytics', 'reader-2')?.stale).toBe(true)
+    expect(fake.data('analytics', 'reader-3')?.stale).toBe(false)
   })
 })
 
@@ -460,7 +478,7 @@ describe('a saga held in two languages', () => {
 
     expect(
       await BookCommand.nameSeries(seriesIdOf(dune, 'fr'), SeriesName('Le Cycle de Dune')),
-    ).toBe(1)
+    ).toEqual([reader])
 
     expect(fake.data('books', french.id)?.series).toMatchObject({ name: 'Le Cycle de Dune' })
     expect(fake.data('books', english.id)?.series).toMatchObject({ name: 'Dune' })

@@ -736,15 +736,16 @@ export namespace BookCommand {
    *  catalogue's "Red Rising". Volumes in another language keep theirs, as
    *  their own catalogue names the saga. Only the name moves; the book is
    *  otherwise untouched, `updatedAt` too: every reader's books are rewritten
-   *  at once, and none of them did anything. Answers how many books were
-   *  renamed. */
-  export const nameSeries = async (seriesId: SeriesId, name: SeriesName): Promise<number> => {
+   *  at once, and none of them did anything. Answers the readers whose volumes
+   *  were renamed, each once, for their views to be flagged: `BookUseCase.
+   *  nameSeries` does both. */
+  export const nameSeries = async (seriesId: SeriesId, name: SeriesName): Promise<UserId[]> => {
     const renamed = (await repository.findInSeries(seriesId)).filter(
       (book) => book.series && book.series.name !== name,
     )
     for (const book of renamed)
       if (book.series) await repository.save({ ...book, series: { ...book.series, name } })
-    return renamed.length
+    return [...new Set(renamed.map((book) => book.userId))]
   }
 
   /** The removals a sync has to honour are forgotten once it brings the title
