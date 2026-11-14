@@ -178,10 +178,12 @@ describe('the month’s discoveries', () => {
     await SuggestionUseCase.dismiss(reader, 'silo--hugh-howey', 'not-interested')
 
     expect(fake.transactions.slice(before)).toHaveLength(1)
-    expect(fake.transactions.at(-1)?.map((op) => op.ref.collectionPath).sort()).toEqual([
-      'suggestion-dismissals',
-      'suggestion-queues',
-    ])
+    expect(
+      fake.transactions
+        .at(-1)
+        ?.map((op) => op.ref.collectionPath)
+        .sort(),
+    ).toEqual(['suggestion-dismissals', 'suggestion-queues'])
   })
 
   test('a look while another is making the selection says it is on its way', async () => {
