@@ -66,7 +66,7 @@ const printed = seriesKeyOf('Dungeon Crawler Carl', 'Matt Dinniman', 'book')
 const heard = seriesKeyOf('Dungeon Crawler Carl', 'Matt Dinniman', 'audiobook')
 let fake: FakeFirestore
 
-const quotaDoc = () => `${reader}_${monthOf(new Date())}`
+const quotaDoc = () => `${reader}~${monthOf(new Date())}`
 const spent = () => (fake.data('ai-quotas', quotaDoc()) as { scans: number } | null)?.scans ?? 0
 
 const watch = (seriesId: string, volume: Record<string, unknown>) =>

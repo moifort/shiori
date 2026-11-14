@@ -87,7 +87,7 @@ beforeEach(() => {
 })
 
 const spent = () =>
-  (fake.data('ai-quotas', `${reader}_${monthOf(new Date())}`) as { scans: number } | null)?.scans ??
+  (fake.data('ai-quotas', `${reader}~${monthOf(new Date())}`) as { scans: number } | null)?.scans ??
   0
 
 const aBook = (facts: { isbn13?: Isbn13Type; publishedCoverUrl?: CoverUrlType } = {}) =>
@@ -379,7 +379,7 @@ describe('a book added from a shelf photo', () => {
   })
 
   test('is refused, and nothing saved, once the allowance is used up', async () => {
-    fake.seed('ai-quotas', `${reader}_${monthOf(new Date())}`, {
+    fake.seed('ai-quotas', `${reader}~${monthOf(new Date())}`, {
       userId: reader,
       month: monthOf(new Date()),
       scans: 5,
@@ -424,7 +424,7 @@ describe('a book added from a shelf photo', () => {
 
   test('is described on its first opening, free, even once the allowance is used up', async () => {
     const book = await shelved()
-    fake.seed('ai-quotas', `${reader}_${monthOf(new Date())}`, {
+    fake.seed('ai-quotas', `${reader}~${monthOf(new Date())}`, {
       userId: reader,
       month: monthOf(new Date()),
       scans: 5,

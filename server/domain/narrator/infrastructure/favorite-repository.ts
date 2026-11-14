@@ -10,7 +10,8 @@ const favorites = oneDocumentPerReaderAndKey({
     db().collection('narrator-favorites').withConverter(genericDataConverter<NarratorFavorite>()),
   keyOf: (favorite) => favorite.narratorKey,
   cacheTag: 'narrator-favorites',
-  idOf: (userId, key) => `${userId}--${key}`,
+  // Until migration 037 has run in production.
+  legacyIdOf: (userId, key) => `${userId}--${key}`,
 })
 
 export const { findAllByUser, save, remove, removeAllByUser } = favorites

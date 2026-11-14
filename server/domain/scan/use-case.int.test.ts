@@ -54,7 +54,7 @@ beforeEach(() => {
   premiumUserIds = []
 })
 
-const quotaDoc = () => `${reader}_${monthOf(new Date())}`
+const quotaDoc = () => `${reader}~${monthOf(new Date())}`
 const spent = () => (fake.data('ai-quotas', quotaDoc()) as { scans: number } | null)?.scans ?? 0
 
 describe('a metered scan', () => {

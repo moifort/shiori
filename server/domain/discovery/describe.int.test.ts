@@ -73,7 +73,7 @@ const other = 'other' as UserId
 const printed = seriesKeyOf('Dungeon Crawler Carl', 'Matt Dinniman', 'book')
 let fake: FakeFirestore
 
-const quotaDoc = (userId: UserId) => `${userId}_${monthOf(new Date())}`
+const quotaDoc = (userId: UserId) => `${userId}~${monthOf(new Date())}`
 const spent = (userId: UserId) =>
   (fake.data('ai-quotas', quotaDoc(userId)) as { scans: number } | null)?.scans ?? 0
 

@@ -61,19 +61,34 @@ export const oneDocumentPerReaderAndKey = <T extends OwnedDocument>({
   collection,
   keyOf,
   cacheTag,
-  idOf = compositeId,
+  legacyIdOf,
 }: {
   collection: () => CollectionReference<T>
   keyOf: (document: T) => string
   cacheTag?: string
-  idOf?: (userId: T['userId'], key: string) => string
+  /** The id a document had before ids took one separator. Read where the
+   *  current one holds nothing, and removed with it, until the migration that
+   *  moves the documents has run. */
+  legacyIdOf?: (userId: T['userId'], key: string) => string
 }) => {
+  const idOf = (userId: T['userId'], key: string) => compositeId(userId, key)
   const allCacheKey = (userId: T['userId']) => `${cacheTag}:all:${userId}`
   const forget = (userId: T['userId']) => {
     if (cacheTag) evictFromRequestCache(allCacheKey(userId))
   }
-  const readAll = async (userId: T['userId']): Promise<T[]> =>
-    (await collection().where('userId', '==', userId).get()).docs.map((doc) => doc.data())
+  // A document stored under both ids — written again before the migration
+  // moved it — answers once, as written last: under its current id.
+  const readAll = async (userId: T['userId']): Promise<T[]> => {
+    const { docs } = await collection().where('userId', '==', userId).get()
+    if (!legacyIdOf) return docs.map((doc) => doc.data())
+    const byKey = new Map<string, T>()
+    for (const doc of docs) {
+      const document = doc.data()
+      const key = keyOf(document)
+      if (!byKey.has(key) || doc.ref.id === idOf(userId, key)) byKey.set(key, document)
+    }
+    return [...byKey.values()]
+  }
 
   const findAllByUser = (userId: T['userId']): Promise<T[]> =>
     cacheTag
@@ -86,7 +101,9 @@ export const oneDocumentPerReaderAndKey = <T extends OwnedDocument>({
     findOne: async (userId: T['userId'], key: string): Promise<T | undefined> => {
       if (cacheTag && isInRequestCache(allCacheKey(userId)))
         return (await findAllByUser(userId)).find((document) => keyOf(document) === key)
-      return (await collection().doc(idOf(userId, key)).get()).data()
+      const stored = (await collection().doc(idOf(userId, key)).get()).data()
+      if (stored || !legacyIdOf) return stored
+      return (await collection().doc(legacyIdOf(userId, key)).get()).data()
     },
 
     /** Enlisted in the caller's batch when it gives one. */
@@ -99,10 +116,16 @@ export const oneDocumentPerReaderAndKey = <T extends OwnedDocument>({
       return document
     },
 
+    /** Under the legacy id too, or a document the migration had not moved
+     *  yet would come back. */
     remove: async (userId: T['userId'], key: string, batch?: WriteBatch): Promise<void> => {
-      const ref = collection().doc(idOf(userId, key))
-      if (batch) batch.delete(ref)
-      else await ref.delete()
+      const refs = [idOf(userId, key), ...(legacyIdOf ? [legacyIdOf(userId, key)] : [])].map((id) =>
+        collection().doc(id),
+      )
+      for (const ref of refs) {
+        if (batch) batch.delete(ref)
+        else await ref.delete()
+      }
       forget(userId)
     },
 

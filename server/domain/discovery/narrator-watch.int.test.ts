@@ -69,7 +69,7 @@ beforeEach(() => {
   narratorCalls.length = 0
   fake.seed('users', reader, { userId: reader, firstName: 'Bob' })
   // Bernard Gabay is hearted. Kelly Marot, however many recordings, is not.
-  fake.seed('narrator-favorites', `${reader}--bernard-gabay`, {
+  fake.seed('narrator-favorites', `${reader}~bernard-gabay`, {
     userId: reader,
     narratorKey: 'bernard-gabay',
     favoritedAt: new Date('2026-01-02T00:00:00Z'),
@@ -120,7 +120,7 @@ describe('the narrators’ news', () => {
 
   test('falls silent on a narrator whose heart was taken back', async () => {
     await DiscoveryUseCase.watchDueSagas(now)
-    await fakeDb().collection('narrator-favorites').doc(`${reader}--bernard-gabay`).delete()
+    await fakeDb().collection('narrator-favorites').doc(`${reader}~bernard-gabay`).delete()
 
     expect(await NewsUseCase.narratorNews(reader, now)).toEqual([])
   })

@@ -90,7 +90,7 @@ describe('searchTitle', () => {
   })
 
   test('is refused with QUOTA_EXHAUSTED once the allowance is used up', async () => {
-    fake.seed('ai-quotas', `${userId}_${monthOf(new Date())}`, {
+    fake.seed('ai-quotas', `${userId}~${monthOf(new Date())}`, {
       userId,
       month: monthOf(new Date()),
       scans: 5,
@@ -182,7 +182,7 @@ describe('describeDetectedBook', () => {
         format: 'BOOK',
       },
     })
-    const month = fake.data('ai-quotas', `${userId}_${monthOf(new Date())}`) as { scans: number }
+    const month = fake.data('ai-quotas', `${userId}~${monthOf(new Date())}`) as { scans: number }
     expect(month.scans).toBe(1)
   })
 })
@@ -200,7 +200,7 @@ describe('adding a shelf book, then opening it', () => {
   })
 
   const scans = () =>
-    (fake.data('ai-quotas', `${userId}_${monthOf(new Date())}`) as { scans: number } | null)
+    (fake.data('ai-quotas', `${userId}~${monthOf(new Date())}`) as { scans: number } | null)
       ?.scans ?? 0
 
   const addDetectedBook = () =>
@@ -261,7 +261,7 @@ describe('adding a shelf book, then opening it', () => {
   })
 
   test('refuses to add once the allowance is used up', async () => {
-    fake.seed('ai-quotas', `${userId}_${monthOf(new Date())}`, {
+    fake.seed('ai-quotas', `${userId}~${monthOf(new Date())}`, {
       userId,
       month: monthOf(new Date()),
       scans: 5,
@@ -347,7 +347,7 @@ describe('scanSeriesVolume', () => {
         series: { id: 'sweet-tooth--jeff-lemire~fr', name: 'Sweet Tooth', volume: 2, kind: 'MAIN' },
       },
     })
-    const month = fake.data('ai-quotas', `${userId}_${monthOf(new Date())}`) as { scans: number }
+    const month = fake.data('ai-quotas', `${userId}~${monthOf(new Date())}`) as { scans: number }
     expect(month.scans).toBe(1)
   })
 })
