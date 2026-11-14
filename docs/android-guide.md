@@ -2,7 +2,9 @@
 
 The Android app is a mirror of the iOS app. iOS is where features are designed, built and
 validated; Android follows, and catches up with every iOS change before each release
-(CLAUDE.md, Workflow rule 10). The design is
+(CLAUDE.md, Workflow rule 10). `android/` is never edited during feature or fix work: the whole
+port happens at release time, is tested by the user on their Pixel 8, and the tag is cut only
+after their validation. The design is
 [superpowers/specs/2026-11-06-android-mirror-design.md](superpowers/specs/2026-11-06-android-mirror-design.md).
 
 ## Stack

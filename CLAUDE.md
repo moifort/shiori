@@ -114,12 +114,16 @@ Runtime: always `bun` / `bunx`, never `npm` / `npx`.
    in that order; a change in the prototyping zone stops after the board step. Board-comment
    child sessions follow this too, and their wrap-up question (rule 7) is asked once per step.
 10. **Android follows iOS, and catches up before every release.** Features are designed,
-   built and validated on iOS only; `android/` is never where a feature starts. When a release
-   is asked for, before tagging `ios-v*`: list the iOS commits since the previous release
-   (`git log ios-v<previous>..HEAD -- ios shared`), port each one to the Kotlin file of the same
-   name, regenerate the strings (`bun scripts/android-strings.ts`), build and test Android,
-   capture the changed screens on the emulator, then cut both releases with the same version.
-   The release is not cut while Android lags. The mapping and the rules are in
+   built and validated on iOS only; `android/` is never where a feature starts, and is never
+   edited during feature or fix work, even once the iOS change is validated: no Kotlin port, no
+   string regeneration (building Android to check a shared `.graphql` edit is fine). Android code
+   is written only when a release is asked for, before tagging `ios-v*`: list the iOS commits
+   since the previous release (`git log ios-v<previous>..HEAD -- ios shared`), port each one to
+   the Kotlin file of the same name, regenerate the strings (`bun scripts/android-strings.ts`),
+   build and test Android, capture the changed screens on the emulator, then install the build
+   on the user's Pixel 8 and wait for them to test it and validate. Only after that yes are both
+   releases cut with the same version. The release is not cut while Android lags or is
+   unvalidated. The mapping and the rules are in
    [docs/android-guide.md](docs/android-guide.md).
 11. **A bug is looked for elsewhere before its fix is done.** Once the cause is found, search
    for the same mechanism in the other features (every list, page or job built the same way),
