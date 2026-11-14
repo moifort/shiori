@@ -253,9 +253,19 @@ export namespace BookQuery {
 }
 
 // Firestore refuses a query whose composite index does not exist, or is still
-// building, with FAILED_PRECONDITION (gRPC code 9).
-const missingIndex = (error: unknown): boolean =>
-  typeof error === 'object' && error !== null && (error as { code?: unknown }).code === 9
+// building. Over gRPC that is FAILED_PRECONDITION (code 9). Over REST, which
+// `preferRest` makes the transport here, Firestore answers HTTP 400 and
+// google-gax maps the HTTP status rather than the body's `status`, so the error
+// carries INVALID_ARGUMENT (code 3), no status at all, and only its message
+// says an index is wanted. The message is what the two shapes share.
+const INDEX_WANTED = /requires an index|index is currently building/i
+
+const missingIndex = (error: unknown): boolean => {
+  if (typeof error !== 'object' || error === null) return false
+  const { code, status, message } = error as { code?: unknown; status?: unknown; message?: unknown }
+  if (code === 9 || status === 'FAILED_PRECONDITION') return true
+  return typeof message === 'string' && INDEX_WANTED.test(message)
+}
 
 // Cover URLs are signed one by one because each signature is a separate call, but
 // a page of them is signed concurrently rather than in sequence: a 40-row library

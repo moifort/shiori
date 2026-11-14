@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test'
+import { GoogleError } from 'google-gax'
 import { seriesIdOf } from '~/domain/series/primitives'
 import type { UserId } from '~/domain/shared/types'
 import { fakeDb, resetFakeFirestore, startFakeRequest } from '~/test/fake-firestore'
@@ -848,6 +849,44 @@ describe('paging the Library tab', () => {
     const { books } = await BookQuery.libraryPage(reader, { limit: 10 }, { favorite: false })
 
     expect(books).toHaveLength(3)
+  })
+
+  // What the server meets in production: Firestore over REST answers HTTP 400,
+  // which google-gax turns into code 3 with the reason left in the message.
+  const restRefusal = (message: string) =>
+    GoogleError.parseHttpError([{ error: { code: 400, message, status: 'FAILED_PRECONDITION' } }])
+
+  test('falls back on the full scan when Firestore over REST wants an index', async () => {
+    await shelve(3)
+    fake.failNextQueryWith(
+      restRefusal('The query requires an index. You can create it here: https://console.x/i'),
+    )
+
+    const { books } = await BookQuery.libraryPage(reader, { limit: 10 }, { favorite: false })
+
+    expect(books).toHaveLength(3)
+  })
+
+  test('falls back on the full scan while Firestore over REST builds the index', async () => {
+    await shelve(3)
+    fake.failNextQueryWith(
+      restRefusal(
+        'The query requires an index. That index is currently building and cannot be used yet.',
+      ),
+    )
+
+    const { books } = await BookQuery.libraryPage(reader, { limit: 10 }, { favorite: false })
+
+    expect(books).toHaveLength(3)
+  })
+
+  test('lets any other refused query fail', async () => {
+    await shelve(1)
+    fake.failNextQueryWith(restRefusal('Invalid cursor'))
+
+    await expect(BookQuery.libraryPage(reader, { limit: 10 }, { favorite: false })).rejects.toThrow(
+      'Invalid cursor',
+    )
   })
 
   test('never hands the stored shelf date back as part of a book', async () => {
