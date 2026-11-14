@@ -74,11 +74,13 @@ export const AwaitedEditionType = builder
         nullable: true,
         description:
           'The edition’s own cover once found, else the cover of the book it was ' +
-          'awaited from.',
+          'awaited from, else the one its page found when a reader opened it.',
         resolve: async (view) =>
           view.found?.coverUrl ??
           view.source.coverUrl ??
-          (view.source.coverPath ? await objectStore().downloadUrl(view.source.coverPath) : null),
+          (view.source.coverPath ? await objectStore().downloadUrl(view.source.coverPath) : null) ??
+          view.describedCoverUrl ??
+          null,
       }),
       storeUrl: t.string({
         nullable: true,

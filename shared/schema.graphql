@@ -711,7 +711,7 @@ type AwaitedEdition {
   bookId: BookId! @deprecated(reason: "Use `sourceBookId`, null for an edition awaited from a scan without being added.")
 
   """
-  The edition’s own cover once found, else the cover of the book it was awaited from.
+  The edition’s own cover once found, else the cover of the book it was awaited from, else the one its page found when a reader opened it.
   """
   coverUrl: String
 

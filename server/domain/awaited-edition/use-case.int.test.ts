@@ -72,6 +72,7 @@ const { AwaitedEditionUseCase } = await import('~/domain/awaited-edition/use-cas
 const { NotificationCommand } = await import('~/domain/notification/command')
 const { DeviceToken } = await import('~/domain/notification/primitives')
 const { AuthorName, BookTitle } = await import('~/domain/shared/primitives')
+const { releaseDescriptionKeyOf } = await import('~/domain/discovery/business-rules')
 
 const reader = 'reader' as UserId
 const other = 'other' as UserId
@@ -357,7 +358,7 @@ describe('the editions awaited', () => {
     expect(fake.snapshot('awaited-editions').size).toBe(1)
   })
 
-  test('are read in one query and one getAll of their watches', async () => {
+  test('are read in one query, one getAll of their watches, one of the descriptions of the bare', async () => {
     await AwaitedEditionUseCase.awaitOwnBook(reader, await stock(reader), 'book', 'fr', now)
     startFakeRequest()
     const [docReads, queryReads] = [fake.docReads, fake.queryReads]
@@ -366,7 +367,49 @@ describe('the editions awaited', () => {
 
     expect(views.map((view) => view.state)).toEqual(['unannounced'])
     expect(fake.queryReads - queryReads).toBe(1)
-    expect(fake.docReads - docReads).toBe(1)
+    // Its watch, and its page's description in each language the app speaks:
+    // the book has no cover.
+    expect(fake.docReads - docReads).toBe(3)
+  })
+
+  test('with no cover, draw the one their page found when a reader opened it', async () => {
+    await AwaitedEditionUseCase.awaitScannedBook(
+      reader,
+      {
+        title: BookTitle('La ragazza nella nebbia'),
+        authors: [AuthorName('Donato Carrisi')],
+        language: 'it',
+        format: 'audiobook',
+      },
+      'audiobook',
+      'fr',
+      now,
+    )
+    // The page asks for the original, in its own language, while nobody
+    // announced the edition: the description is kept under that key.
+    const key = releaseDescriptionKeyOf(
+      {
+        title: BookTitle('La ragazza nella nebbia'),
+        authors: [AuthorName('Donato Carrisi')],
+        format: 'audiobook',
+        language: 'it',
+      },
+      'fr',
+    )
+    fake.seed('release-descriptions', key, {
+      key,
+      description: {
+        book: { title: 'La ragazza nella nebbia', coverUrl: 'https://covers.example/nebbia.jpg' },
+        narrators: [],
+      },
+      describedAt: now,
+    })
+    startFakeRequest()
+
+    const [view] = await AwaitedEditionUseCase.everyAwaited(reader, now)
+
+    expect(view?.state).toBe('unannounced')
+    expect(view?.describedCoverUrl).toBe('https://covers.example/nebbia.jpg' as never)
   })
 
   test('are stopped one by one, the reader’s own only', async () => {

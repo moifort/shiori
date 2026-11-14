@@ -4,10 +4,12 @@ import {
   alertOf,
   awaitableFormatsOf,
   awaitedIdOf,
+  describedKeysOf,
   dueWatchesOf,
   editionWatchKeyOf,
   inShelfOrder,
   isNoLongerAwaited,
+  lacksCover,
   MAX_AWAITED,
   PASS_CLOCK_MARGIN_MS,
   PASS_REBUILT_EVERY_MS,
@@ -34,6 +36,7 @@ import { coverSourcesOf, drawnFormatOf } from '~/domain/book/business-rules'
 import { BookQuery } from '~/domain/book/query'
 import type { BookFormat, BookId, BookView } from '~/domain/book/types'
 import { todayOf } from '~/domain/discovery/business-rules'
+import { DiscoveryQuery } from '~/domain/discovery/query'
 import type { ReleaseFormat } from '~/domain/discovery/types'
 import { DiscoveryUseCase } from '~/domain/discovery/use-case'
 import { NotificationUseCase } from '~/domain/notification/use-case'
@@ -383,7 +386,9 @@ const awaitedOf = async (userId: UserId, now: Date): Promise<AwaitedEditionView[
   if (all.length === 0) return []
   const watches = await AwaitedEditionQuery.watches(all.map((awaited) => awaited.watchKey))
   const today = todayOf(now)
-  const views = all.map((awaited) => viewOf(awaited, watches.get(awaited.watchKey), today))
+  const views = await withDescribedCovers(
+    all.map((awaited) => viewOf(awaited, watches.get(awaited.watchKey), today)),
+  )
   if (!views.some((view) => view.found)) return views
   const books = await BookQuery.all(userId)
   const held = views.filter((view) => isNoLongerAwaited(view, books, today))
@@ -393,6 +398,22 @@ const awaitedOf = async (userId: UserId, now: Date): Promise<AwaitedEditionView[
     held.map((view) => view.id),
   )
   return views.filter((view) => !held.includes(view))
+}
+
+/** The editions with no cover, given the one their page found when a reader
+ *  opened it: the description is kept under the key that page asks it by, so
+ *  one getAll reads them all, and a list draws what the page draws. */
+const withDescribedCovers = async (views: AwaitedEditionView[]): Promise<AwaitedEditionView[]> => {
+  const bare = views.filter(lacksCover)
+  if (bare.length === 0) return views
+  const kept = await DiscoveryQuery.descriptions([...new Set(bare.flatMap(describedKeysOf))])
+  return views.map((view) => {
+    if (!lacksCover(view)) return view
+    const coverUrl = describedKeysOf(view)
+      .map((key) => kept.get(key)?.description.book.coverUrl)
+      .find((url) => url !== undefined)
+    return coverUrl ? { ...view, describedCoverUrl: coverUrl } : view
+  })
 }
 
 /** The book as the awaited edition remembers it. The reader's own photo is

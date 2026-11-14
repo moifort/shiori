@@ -104,6 +104,9 @@ export type AwaitedEditionView = AwaitedEdition & {
   found?: FoundEdition
   /** Whether the web was ever searched for it. */
   watched: boolean
+  /** The cover its page found when a reader opened it, drawn when neither the
+   *  edition nor the book it is awaited from has one. */
+  describedCoverUrl?: CoverUrl
 }
 
 /** What a book's page offers: the formats its edition in the app's language

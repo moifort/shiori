@@ -2,11 +2,15 @@ import { authorKeyOf } from '~/domain/author/primitives'
 import type { AuthorKey } from '~/domain/author/types'
 import { shelfKeyOf } from '~/domain/book/business-rules'
 import type { Book, BookFormat, BookLanguage } from '~/domain/book/types'
-import { lastDayOf, releaseFormatOf } from '~/domain/discovery/business-rules'
+import {
+  lastDayOf,
+  releaseDescriptionKeyOf,
+  releaseFormatOf,
+} from '~/domain/discovery/business-rules'
 import type { ReleaseFormat } from '~/domain/discovery/types'
 import { isbn10Of } from '~/domain/scan/amazon-cover'
 import { AMAZON_STORES } from '~/domain/shared/amazon-stores'
-import type { Language } from '~/domain/shared/language'
+import { type Language, SUPPORTED_LANGUAGES } from '~/domain/shared/language'
 import type { UserId } from '~/domain/shared/types'
 import { AwaitedEditionId } from './primitives'
 import type {
@@ -324,4 +328,29 @@ export const storeUrlOf = (
 const dayMinus = (today: string, days: number): string => {
   const [year, month, day] = today.split('-').map(Number)
   return new Date(Date.UTC(year, month - 1, day) - days * 86_400_000).toISOString().slice(0, 10)
+}
+
+/** Whether the edition has no cover to draw: none found for it, and none of
+ *  the book it is awaited from, neither the publisher's nor the reader's photo. */
+export const lacksCover = (view: AwaitedEditionView): boolean =>
+  !view.found?.coverUrl && !view.source.coverUrl && !view.source.coverPath
+
+/** The keys its page's description may be kept under. The page asks for it as
+ *  it draws the edition — the original title and language while nobody
+ *  announced it, the edition's title once found — in the app's language: the
+ *  one it is awaited in, first, unless the reader changed it since. */
+export const describedKeysOf = (view: AwaitedEditionView): string[] => {
+  const unannounced = view.state === 'unannounced'
+  const seed = {
+    title: unannounced ? view.source.title : (view.found?.title ?? view.source.title),
+    authors: view.source.authors,
+    format: view.format === 'audiobook' ? ('audiobook' as const) : ('book' as const),
+    ...(unannounced ? { language: view.source.language } : {}),
+  }
+  const awaitedIn = SUPPORTED_LANGUAGES.find((language) => language === view.language)
+  const languages: Language[] = [
+    ...(awaitedIn ? [awaitedIn] : []),
+    ...SUPPORTED_LANGUAGES.filter((language) => language !== awaitedIn),
+  ]
+  return languages.map((language) => releaseDescriptionKeyOf(seed, language))
 }
