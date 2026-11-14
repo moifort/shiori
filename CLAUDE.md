@@ -121,6 +121,14 @@ Runtime: always `bun` / `bunx`, never `npm` / `npx`.
    capture the changed screens on the emulator, then cut both releases with the same version.
    The release is not cut while Android lags. The mapping and the rules are in
    [docs/android-guide.md](docs/android-guide.md).
+11. **A bug is looked for elsewhere before its fix is done.** Once the cause is found, search
+   for the same mechanism in the other features (every list, page or job built the same way),
+   through what the feature uses and what uses it, and between the two sides of one piece of data
+   (a list and the page it opens, the app and the server). Fix every place found in the same
+   work; when the two sides disagree, make the server the single source rather than patching one
+   reader. The report says where it looked, what it fixed and what was clean. On 2026-11-14 a
+   wishlist cover fixed alone left the same gap in the suggestions and announced volumes, whose
+   pages merge a second source in the app.
 
 ## Paid API calls
 
