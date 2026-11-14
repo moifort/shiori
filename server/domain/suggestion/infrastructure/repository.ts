@@ -9,7 +9,7 @@ import {
   transactionally,
   withoutAbsentFields,
 } from '~/utils/firestore'
-import { oneDocumentPerReaderAndKey } from '~/utils/reader-documents'
+import { oneDocumentPerUserAndKey } from '~/utils/user-documents'
 
 // One document per reader, whose id IS the userId: the month's selection.
 const queues = () =>
@@ -19,7 +19,7 @@ const queues = () =>
 const dismissalCollection = () =>
   db().collection('suggestion-dismissals').withConverter(genericDataConverter<Dismissal>())
 
-const dismissals = oneDocumentPerReaderAndKey({
+const dismissals = oneDocumentPerUserAndKey({
   collection: dismissalCollection,
   keyOf: (dismissal) => dismissal.key,
 })

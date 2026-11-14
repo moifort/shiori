@@ -1,7 +1,7 @@
 import type { AwardDismissal, FoundWinners } from '~/domain/award/types'
 import { db } from '~/system/firebase'
 import { genericDataConverter, withoutAbsentFields } from '~/utils/firestore'
-import { oneDocumentPerReaderAndKey } from '~/utils/reader-documents'
+import { oneDocumentPerUserAndKey } from '~/utils/user-documents'
 
 // Shared, naming nobody: one document per award and year the daily pass found
 // after the versioned list — a handful a year.
@@ -16,7 +16,7 @@ export const saveWinners = async (found: FoundWinners): Promise<void> => {
 }
 
 // Private: one document per reader and novel turned down.
-const dismissals = oneDocumentPerReaderAndKey({
+const dismissals = oneDocumentPerUserAndKey({
   collection: () =>
     db().collection('award-dismissals').withConverter(genericDataConverter<AwardDismissal>()),
   keyOf: (dismissal) => dismissal.key,

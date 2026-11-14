@@ -1,7 +1,7 @@
 import type { AudibleConnection } from '~/domain/audible/types'
 import { db } from '~/system/firebase'
 import { genericDataConverter } from '~/utils/firestore'
-import { oneDocumentPerReader } from '~/utils/reader-documents'
+import { oneDocumentPerUser } from '~/utils/user-documents'
 
 // One document per reader, whose id IS the userId: a reader has one Audible
 // account, so there is nothing else to key it on and nothing to query.
@@ -14,7 +14,7 @@ import { oneDocumentPerReader } from '~/utils/reader-documents'
 //
 // Saved whole rather than merged: finishing a sign-in has to make `pending`
 // disappear, and a merge would leave the spent code verifier behind forever.
-const connections = oneDocumentPerReader({
+const connections = oneDocumentPerUser({
   collection: () =>
     db().collection('audible-connections').withConverter(genericDataConverter<AudibleConnection>()),
   cacheKeyOf: (userId) => `audible:connection:${userId}`,

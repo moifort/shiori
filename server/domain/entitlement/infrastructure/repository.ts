@@ -1,7 +1,7 @@
 import type { AppAccountToken, Entitlement } from '~/domain/entitlement/types'
 import { db } from '~/system/firebase'
 import { genericDataConverter } from '~/utils/firestore'
-import { oneDocumentPerReader } from '~/utils/reader-documents'
+import { oneDocumentPerUser } from '~/utils/user-documents'
 
 const entitlements = () =>
   db().collection('entitlements').withConverter(genericDataConverter<Entitlement>())
@@ -16,7 +16,7 @@ const entitlements = () =>
 // Removed with the account. This only forgets our record of the purchase;
 // Apple still owns the subscription's lifecycle, so an active subscription
 // keeps renewing until cancelled in the App Store. Idempotent.
-const byAccount = oneDocumentPerReader({
+const byAccount = oneDocumentPerUser({
   collection: entitlements,
   cacheKeyOf: (userId) => `entitlement:${userId}`,
 })

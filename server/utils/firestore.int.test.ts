@@ -25,8 +25,8 @@ const notes = () =>
 
 describe('compositeId', () => {
   test('joins the parts with a tilde, in their order', () => {
-    expect(compositeId('reader-1', '2026-11')).toBe('reader-1~2026-11')
-    expect(compositeId('reader-1', 'dune--frank-herbert')).toBe('reader-1~dune--frank-herbert')
+    expect(compositeId('user-1', '2026-11')).toBe('user-1~2026-11')
+    expect(compositeId('user-1', 'dune--frank-herbert')).toBe('user-1~dune--frank-herbert')
   })
 })
 
@@ -88,7 +88,7 @@ describe('setInBatches', () => {
 })
 
 describe('deleteAllOwnedBy', () => {
-  test('deletes the reader’s documents and the ones named beside, never the neighbour’s', async () => {
+  test('deletes the user’s documents and the ones named beside, never the neighbour’s', async () => {
     fake.seed('notes', 'mine', { userId: 'r' })
     fake.seed('notes', 'theirs', { userId: 'other' })
     fake.seed('balances', 'r', { userId: 'r' })

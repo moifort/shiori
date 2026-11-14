@@ -1,7 +1,7 @@
 import type { KindleConnection, ReadKindleTitle } from '~/domain/kindle/types'
 import { db } from '~/system/firebase'
 import { findDocuments, genericDataConverter, withoutAbsentFields } from '~/utils/firestore'
-import { oneDocumentPerReader } from '~/utils/reader-documents'
+import { oneDocumentPerUser } from '~/utils/user-documents'
 
 // One document per reader, whose id IS the userId: a reader has one Kindle
 // library, so there is nothing else to key it on and nothing to query.
@@ -10,7 +10,7 @@ import { oneDocumentPerReader } from '~/utils/reader-documents'
 // credentials, then writes it back with what it saw, and the screen reads it
 // again alongside. Saved whole, as the Audible connection is: finishing a
 // sign-in has to make `pending` disappear.
-const connections = oneDocumentPerReader({
+const connections = oneDocumentPerUser({
   collection: () =>
     db().collection('kindle-connections').withConverter(genericDataConverter<KindleConnection>()),
   cacheKeyOf: (userId) => `kindle:connection:${userId}`,

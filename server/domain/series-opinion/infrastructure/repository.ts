@@ -1,7 +1,7 @@
 import type { SeriesOpinion } from '~/domain/series-opinion/types'
 import { db } from '~/system/firebase'
 import { genericDataConverter } from '~/utils/firestore'
-import { oneDocumentPerReaderAndKey } from '~/utils/reader-documents'
+import { oneDocumentPerUserAndKey } from '~/utils/user-documents'
 
 // Flat, like every other collection, and keyed by the pair rather than given a
 // random id: one reader holds exactly one opinion of one saga, so the pair IS
@@ -15,7 +15,7 @@ import { oneDocumentPerReaderAndKey } from '~/utils/reader-documents'
 // An opinion with nothing left in it is removed rather than stored empty: a
 // document saying "no rating, not a favourite" is what an absent document
 // already says, and keeping it would bill a read for nothing on every tab open.
-const opinions = oneDocumentPerReaderAndKey({
+const opinions = oneDocumentPerUserAndKey({
   collection: () =>
     db().collection('series-opinions').withConverter(genericDataConverter<SeriesOpinion>()),
   keyOf: (opinion) => opinion.seriesId,
