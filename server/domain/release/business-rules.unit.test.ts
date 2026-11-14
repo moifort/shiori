@@ -112,6 +112,12 @@ describe('releaseViewOf', () => {
     })
   })
 
+  test('says the language of the book shown, the original’s while nothing is announced', () => {
+    const view = releaseViewOf(shown(), undefined, 'fr', now)
+    expect(view.language).toBe('it' as never)
+    expect(view.editionLanguage).toBe('fr' as never)
+  })
+
   test('gives a recording no pages, nor the ISBN of the print', () => {
     const view = releaseViewOf(shown(), { descriptions: { fr: kept() } }, 'fr', now)
     expect(view.pageCount).toBeUndefined()

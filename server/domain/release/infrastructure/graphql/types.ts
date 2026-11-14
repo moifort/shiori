@@ -60,7 +60,9 @@ export const ReleaseType = builder.objectRef<ReleaseView>('Release').implement({
     releaseFormat: t.field({ type: ReleaseFormatEnum, resolve: (view) => view.releaseFormat }),
     language: t.field({
       type: BookLanguageEnum,
-      description: 'The language of the edition.',
+      description:
+        'The language of the book shown: the original’s while nobody announced the edition, ' +
+        'the edition’s once found.',
       resolve: (view) => view.language,
     }),
     originalLanguage: t.field({ type: BookLanguageEnum, resolve: (view) => view.originalLanguage }),
@@ -102,7 +104,9 @@ export const ReleaseType = builder.objectRef<ReleaseView>('Release').implement({
         const own = asin ? await AudibleQuery.recordingUrlOf(userId, asin) : undefined
         if (own) return own
         if (!view.found) return null
-        return storeUrlOf(view.releaseFormat, view.language, view.found, view.authors[0]) ?? null
+        return (
+          storeUrlOf(view.releaseFormat, view.editionLanguage, view.found, view.authors[0]) ?? null
+        )
       },
     }),
     series: t.field({

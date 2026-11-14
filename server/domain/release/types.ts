@@ -69,8 +69,11 @@ export type ReleaseView = {
   /** What the book is: a novel, a manga, a recording. */
   format: BookFormat
   releaseFormat: ReleaseFormat
-  /** The language of the edition shown. */
+  /** The language of the book shown: the original's while nobody announced
+   *  the edition, the edition's once found. */
   language: BookLanguage
+  /** The language of the edition looked for: whose store sells it. */
+  editionLanguage: BookLanguage
   originalLanguage: BookLanguage
   state: AwaitedState
   /** Whether the web was ever searched for it. */

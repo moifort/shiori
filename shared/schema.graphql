@@ -4789,7 +4789,9 @@ type Release {
   """The release, whoever shows it: the same book, format and edition."""
   key: String!
 
-  """The language of the edition."""
+  """
+  The language of the book shown: the original’s while nobody announced the edition, the edition’s once found.
+  """
   language: BookLanguage!
 
   """

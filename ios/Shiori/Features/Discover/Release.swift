@@ -16,7 +16,8 @@ struct Release: Hashable, Codable, Sendable {
     /// What the book is: a novel, a manga, a recording.
     var format: BookFormat
     var releaseFormat: ReleaseFormat
-    /// The language of the edition.
+    /// The language of the book shown: the original's while nobody announced
+    /// the edition, the edition's once found.
     var language: BookLanguage?
     var originalLanguage: BookLanguage?
     var state: AwaitedState
