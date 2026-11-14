@@ -1,9 +1,8 @@
-import { AudibleAsin } from '~/domain/audible/primitives'
 import type { EditionOutput } from '~/domain/awaited-edition/schemas'
 import type { FoundEdition } from '~/domain/awaited-edition/types'
 import { Isbn13 } from '~/domain/book/primitives'
 import { ReleaseDate } from '~/domain/series/primitives'
-import { BookTitle } from '~/domain/shared/primitives'
+import { AudibleAsin, BookTitle } from '~/domain/shared/primitives'
 import { optionally } from '~/utils/input'
 
 /** The edition of the model's answer, or nothing when it found none or gave it

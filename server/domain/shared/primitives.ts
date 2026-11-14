@@ -1,6 +1,7 @@
 import { make } from 'ts-brand'
 import { z } from 'zod'
 import type {
+  AudibleAsin as AudibleAsinType,
   AuthorName as AuthorNameType,
   BookTitle as BookTitleType,
   Count as CountType,
@@ -101,4 +102,15 @@ export const StarRating = (value: unknown) => {
     )
     .parse(value)
   return make<StarRatingType>()(v)
+}
+
+// Amazon's product identifier: ten characters, alphanumeric, upper case. Bounded
+// at the door because it is handed back by the app as the list of titles to
+// import, and it addresses a row in somebody's Amazon library.
+export const AudibleAsin = (value: unknown) => {
+  const v = z
+    .string()
+    .regex(/^[A-Z0-9]{10}$/, 'an ASIN is ten upper-case alphanumeric characters')
+    .parse(value)
+  return make<AudibleAsinType>()(v)
 }

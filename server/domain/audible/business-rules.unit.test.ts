@@ -12,7 +12,6 @@ import {
   importableFrom,
   listenedMinutesFor,
   listeningChangesFor,
-  plainTextOf,
   purchaseDatesFor,
   readersDueForSync,
   recordingOfVolume,
@@ -463,7 +462,6 @@ describe('an Audible summary', () => {
   })
 
   test('leaves the synopsis empty when Audible has nothing to say', () => {
-    expect(plainTextOf(undefined)).toBeUndefined()
     expect(importableFrom(anItem(), noneOwned)?.synopsis).toBeUndefined()
   })
 })

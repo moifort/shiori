@@ -26,3 +26,7 @@ export type PersonName = Brand<string, 'PersonName'>
  *  stay within what a reader tells apart, and a personal rating crowds the top
  *  of the scale: the half star is what separates a 4 from a 5. */
 export type StarRating = Brand<number, 'StarRating'>
+
+/** Amazon's product identifier, the stable handle on an audiobook. Ten
+ *  alphanumeric characters, `B002V1OF70`. */
+export type AudibleAsin = Brand<string, 'AudibleAsin'>

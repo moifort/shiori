@@ -1,4 +1,3 @@
-import { AudibleAsin } from '~/domain/audible/primitives'
 import { drawnFormatOf } from '~/domain/book/business-rules'
 import { Isbn13 } from '~/domain/book/primitives'
 import type { BookLanguage } from '~/domain/book/types'
@@ -6,7 +5,7 @@ import type { NarratedWorkOutput, VolumeOutput, WorkOutput } from '~/domain/disc
 import type { FoundVolume, FoundWork, NarratedWork } from '~/domain/discovery/types'
 import { ReleaseDate, SeriesName, VolumeNumber } from '~/domain/series/primitives'
 import type { ReleaseDate as ReleaseDateType } from '~/domain/series/types'
-import { AuthorName, BookTitle } from '~/domain/shared/primitives'
+import { AudibleAsin, AuthorName, BookTitle } from '~/domain/shared/primitives'
 import { optionally } from '~/utils/input'
 import { slugify } from '~/utils/slug'
 

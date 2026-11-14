@@ -1,6 +1,5 @@
 import type { AudibleItem, LastPosition } from 'audible-api-ts'
 import { genreFrom, subgenresFrom } from '~/domain/audible/genre-mapping'
-import { AudibleAsin } from '~/domain/audible/primitives'
 import type {
   AudibleAsin as AudibleAsinValue,
   AudibleConnection,
@@ -38,7 +37,8 @@ import { watchKeyOf } from '~/domain/discovery/business-rules'
 import type { WatchedSaga } from '~/domain/discovery/types'
 import { isAudioSeries, SeriesName, seriesKeyOf, VolumeNumber } from '~/domain/series/primitives'
 import type { SagaKey, VolumeNumber as VolumeNumberValue } from '~/domain/series/types'
-import { AuthorName, BookTitle, Year } from '~/domain/shared/primitives'
+import { plainTextOf } from '~/domain/shared/plain-text'
+import { AudibleAsin, AuthorName, BookTitle, Year } from '~/domain/shared/primitives'
 import { titleWithoutSaga } from '~/domain/shared/saga-title'
 import type {
   AuthorName as AuthorNameValue,
@@ -350,31 +350,6 @@ const largestCoverOf = (item: AudibleItem): string | undefined => {
     .filter(([size, url]) => Number.isFinite(size) && typeof url === 'string')
     .sort(([left], [right]) => right - left)
   return bySize[0]?.[1] ?? item.coverUrl
-}
-
-/** Audible's summaries arrive as HTML. Stored as written they would render as
- *  `<p>` on the book screen, so the markup is taken out here rather than in every
- *  view that draws a synopsis. */
-export const plainTextOf = (html: string | undefined): string | undefined => {
-  if (!html) return undefined
-  return (
-    html
-      .replace(/<br\s*\/?>/gi, '\n')
-      .replace(/<\/p>/gi, '\n\n')
-      .replace(/<[^>]*>/g, '')
-      .replace(/&nbsp;/g, ' ')
-      .replace(/&amp;/g, '&')
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      .replace(/&quot;/g, '"')
-      .replace(/&#39;|&apos;/g, "'")
-      .replace(/\n{3,}/g, '\n\n')
-      .trim()
-      // Audible summaries run long; a synopsis is capped at 4000 characters, and a
-      // truncated one beats losing it to a failed constructor.
-      .slice(0, 4000)
-      .trim()
-  )
 }
 
 // What counts as "the reader already has this one" is the book domain's shelf

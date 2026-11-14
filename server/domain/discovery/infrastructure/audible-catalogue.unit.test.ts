@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, spyOn, test } from 'bun:test'
-import { AudibleAsin } from '~/domain/audible/primitives'
 import {
   audibleEditionOf,
   audibleProductOf,
   audibleSeriesOf,
 } from '~/domain/discovery/infrastructure/audible-catalogue'
+import { AudibleAsin } from '~/domain/shared/primitives'
 
 const US_ASIN = AudibleAsin('B09VY3W1FF')
 const FR_ASIN = 'B09VY5GXM7'

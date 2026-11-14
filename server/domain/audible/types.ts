@@ -12,11 +12,10 @@ import type {
   Synopsis,
   TaggedSubgenre,
 } from '~/domain/book/types'
-import type { AuthorName, BookTitle, UserId, Year } from '~/domain/shared/types'
+import type { AudibleAsin, AuthorName, BookTitle, UserId, Year } from '~/domain/shared/types'
 
-/** Amazon's product identifier, the stable handle on an audiobook. Ten
- *  alphanumeric characters, `B002V1OF70`. */
-export type AudibleAsin = Brand<string, 'AudibleAsin'>
+// The ASIN is a shared brand: books, releases and awaited editions carry it.
+export type { AudibleAsin }
 
 /** The Amazon marketplace an account was opened on. It decides which domain the
  *  sign-in page and the API live on, so a connection is worthless without it. */

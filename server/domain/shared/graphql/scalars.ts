@@ -1,7 +1,6 @@
 import { GraphQLError } from 'graphql'
 import { ZodError } from 'zod'
 import { TimeZone } from '~/domain/analytics/primitives'
-import { AudibleAsin } from '~/domain/audible/primitives'
 import { AuthorBiography, AuthorKey, Nationality, PortraitUrl } from '~/domain/author/primitives'
 import { AwaitedEditionId } from '~/domain/awaited-edition/primitives'
 import {
@@ -24,6 +23,7 @@ import { DeviceToken } from '~/domain/notification/primitives'
 import { SeriesDescription, SeriesId, SeriesName, VolumeNumber } from '~/domain/series/primitives'
 import { builder } from '~/domain/shared/graphql/builder'
 import {
+  AudibleAsin,
   AuthorName,
   BookTitle,
   Count,
