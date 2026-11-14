@@ -147,7 +147,7 @@ export const findPassState = async (): Promise<DiscoveryPassState | undefined> =
   (await passState().get()).data()
 
 export const savePassState = async (state: DiscoveryPassState): Promise<void> => {
-  await passState().set(state)
+  await passState().set(withoutAbsentFields(state))
 }
 
 const readerCacheKey = (userId: UserId) => `discovery-readers:${userId}`
@@ -270,7 +270,7 @@ export const saveProjection = async ({
   if (rows.length > MAX_STORED_ROWS) return false
   await projections()
     .doc(projectionIdOf(state.userId, state.format))
-    .set({ ...state, rows })
+    .set(withoutAbsentFields({ ...state, rows }))
   return true
 }
 

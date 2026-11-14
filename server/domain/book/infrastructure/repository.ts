@@ -291,8 +291,8 @@ export const saveSyncRemovals = async (
 ): Promise<void> => {
   for (const removal of removals) {
     const ref = syncRemovals().doc(removalId(removal.userId, removal.source, removal.asin))
-    if (batch) batch.set(ref, removal)
-    else await ref.set(removal)
+    if (batch) batch.set(ref, withoutAbsentFields(removal))
+    else await ref.set(withoutAbsentFields(removal))
   }
 }
 

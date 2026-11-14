@@ -61,5 +61,5 @@ export const findMiss = async (key: AuthorKey): Promise<AuthorMiss | null> =>
   (await misses().doc(key).get()).data() ?? null
 
 export const saveMiss = async (miss: AuthorMiss): Promise<void> => {
-  await misses().doc(miss.key).set(miss)
+  await misses().doc(miss.key).set(withoutAbsentFields(miss))
 }

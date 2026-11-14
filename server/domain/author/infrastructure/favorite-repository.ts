@@ -2,7 +2,7 @@ import type { AuthorFavorite, AuthorKey } from '~/domain/author/types'
 import type { UserId } from '~/domain/shared/types'
 import { db } from '~/system/firebase'
 import { evictFromRequestCache, memoizedPerRequest } from '~/system/request-cache'
-import { deleteInBatches, genericDataConverter } from '~/utils/firestore'
+import { deleteInBatches, genericDataConverter, withoutAbsentFields } from '~/utils/firestore'
 
 // Flat, as every collection is, and keyed by the pair: one reader hearts one
 // author once, so the pair is the identity. An author not hearted has no
@@ -27,7 +27,9 @@ export const findAllByUser = (userId: UserId): Promise<AuthorFavorite[]> =>
   )
 
 export const save = async (favorite: AuthorFavorite): Promise<void> => {
-  await favorites().doc(documentId(favorite.userId, favorite.authorKey)).set(favorite)
+  await favorites()
+    .doc(documentId(favorite.userId, favorite.authorKey))
+    .set(withoutAbsentFields(favorite))
   evictFromRequestCache(allCacheKey(favorite.userId))
 }
 

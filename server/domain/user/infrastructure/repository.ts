@@ -4,7 +4,7 @@ import type { UserProfile } from '~/domain/user/types'
 import { db } from '~/system/firebase'
 import { deleteAuthUser } from '~/system/identity'
 import { evictFromRequestCache, memoizedPerRequest } from '~/system/request-cache'
-import { genericDataConverter, transactionally } from '~/utils/firestore'
+import { genericDataConverter, transactionally, withoutAbsentFields } from '~/utils/firestore'
 
 const profiles = () => db().collection('users').withConverter(genericDataConverter<UserProfile>())
 
@@ -53,8 +53,8 @@ export const saveProfile = async (
   batch?: WriteBatch,
 ): Promise<UserProfile> => {
   const ref = profiles().doc(profile.userId)
-  if (batch) batch.set(ref, profile)
-  else await ref.set(profile)
+  if (batch) batch.set(ref, withoutAbsentFields(profile))
+  else await ref.set(withoutAbsentFields(profile))
   // Drop the memoized pre-write value: the onboarding reads the profile to know
   // whether it is the first one, then answers with what it just wrote, and the
   // absence it saw on the way in must not be what the caller reads back.
@@ -87,7 +87,7 @@ export const reviseProfile = async (
     const profile = (await tx.get(ref)).data()
     if (!profile) return undefined
     const next = revise(profile)
-    tx.set(ref, next)
+    tx.set(ref, withoutAbsentFields(next))
     return next
   })
   evictFromRequestCache(cacheKey(userId))

@@ -81,15 +81,18 @@ export const claimGeneration = async (
     if (!mayGenerate(queue)) return false
     // The month and its suggestions stay what they were until the new
     // selection is saved: only the date and the mark of the search change.
-    tx.set(ref, {
-      userId,
-      month: queue?.month ?? '',
-      language: queue?.language ?? language,
-      generatedAt: now,
-      generatingSince: now,
-      suggestions: queue?.suggestions ?? [],
-      ...(queue?.toldMonth ? { toldMonth: queue.toldMonth } : {}),
-    })
+    tx.set(
+      ref,
+      withoutAbsentFields({
+        userId,
+        month: queue?.month ?? '',
+        language: queue?.language ?? language,
+        generatedAt: now,
+        generatingSince: now,
+        suggestions: queue?.suggestions ?? [],
+        ...(queue?.toldMonth ? { toldMonth: queue.toldMonth } : {}),
+      }),
+    )
     return true
   })
 
@@ -99,7 +102,7 @@ export const markTold = async (userId: UserId, month: string): Promise<void> =>
     const ref = queues().doc(userId)
     const queue = (await tx.get(ref)).data()
     if (!queue) return
-    tx.set(ref, { ...queue, toldMonth: month })
+    tx.set(ref, withoutAbsentFields({ ...queue, toldMonth: month }))
   })
 
 /** The search failed: its mark is taken off, the selection left as it was. */
@@ -109,14 +112,14 @@ export const endGeneration = async (userId: UserId): Promise<void> =>
     const queue = (await tx.get(ref)).data()
     if (!queue) return
     const { generatingSince: _, ...rest } = queue
-    tx.set(ref, rest)
+    tx.set(ref, withoutAbsentFields(rest))
   })
 
 export const findDismissals = async (userId: UserId): Promise<Dismissal[]> =>
   (await dismissals().where('userId', '==', userId).get()).docs.map((doc) => doc.data())
 
 export const saveDismissal = async (dismissal: Dismissal): Promise<void> => {
-  await dismissals().doc(`${dismissal.userId}~${dismissal.key}`).set(dismissal)
+  await dismissals().doc(`${dismissal.userId}~${dismissal.key}`).set(withoutAbsentFields(dismissal))
 }
 
 export const findDismissal = async (userId: UserId, key: string): Promise<Dismissal | undefined> =>

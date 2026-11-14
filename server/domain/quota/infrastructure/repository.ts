@@ -4,7 +4,12 @@ import type { Quota, QuotaMonth, ScanCredit } from '~/domain/quota/types'
 import type { UserId } from '~/domain/shared/types'
 import { db } from '~/system/firebase'
 import { evictFromRequestCache, memoizedPerRequest } from '~/system/request-cache'
-import { deleteInBatches, genericDataConverter, transactionally } from '~/utils/firestore'
+import {
+  deleteInBatches,
+  genericDataConverter,
+  transactionally,
+  withoutAbsentFields,
+} from '~/utils/firestore'
 
 const quotas = () => db().collection('ai-quotas').withConverter(genericDataConverter<Quota>())
 
@@ -46,7 +51,7 @@ export const consume = async (
     const doc = await tx.get(ref)
     // Same storage boundary as `findBy`: an absent document is a fresh month.
     const spent = spend(doc.data() ?? freshQuota(userId, month))
-    tx.set(ref, spent)
+    tx.set(ref, withoutAbsentFields(spent))
     return spent
   })
   // Drop the memoized pre-write value so anything reading the quota later in the
@@ -74,7 +79,7 @@ export const consumeCredit = async (
   const spent = await transactionally(async (tx) => {
     const doc = await tx.get(ref)
     const spent = spend(doc.data() ?? noCredit(userId))
-    tx.set(ref, spent)
+    tx.set(ref, withoutAbsentFields(spent))
     return spent
   })
   evictFromRequestCache(creditCacheKey(userId))
@@ -95,7 +100,7 @@ export const topUpCredit = async (
     const held = doc.data() ?? noCredit(userId)
     const toppedUp = topUp(held)
     if (!toppedUp) return held
-    tx.set(ref, toppedUp)
+    tx.set(ref, withoutAbsentFields(toppedUp))
     return toppedUp
   })
   evictFromRequestCache(creditCacheKey(userId))
@@ -106,8 +111,8 @@ export const topUpCredit = async (
 // with the profile that earns it, or neither does.
 export const saveCredit = async (credit: ScanCredit, batch?: WriteBatch): Promise<ScanCredit> => {
   const ref = credits().doc(credit.userId)
-  if (batch) batch.set(ref, credit)
-  else await ref.set(credit)
+  if (batch) batch.set(ref, withoutAbsentFields(credit))
+  else await ref.set(withoutAbsentFields(credit))
   evictFromRequestCache(creditCacheKey(credit.userId))
   return credit
 }

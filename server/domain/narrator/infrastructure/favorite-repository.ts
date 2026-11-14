@@ -2,7 +2,7 @@ import type { NarratorFavorite, NarratorKey } from '~/domain/narrator/types'
 import type { UserId } from '~/domain/shared/types'
 import { db } from '~/system/firebase'
 import { evictFromRequestCache, memoizedPerRequest } from '~/system/request-cache'
-import { deleteInBatches, genericDataConverter } from '~/utils/firestore'
+import { deleteInBatches, genericDataConverter, withoutAbsentFields } from '~/utils/firestore'
 
 // Flat and keyed by the pair, as the author hearts are: a narrator not hearted
 // has no document at all.
@@ -24,7 +24,9 @@ export const findAllByUser = (userId: UserId): Promise<NarratorFavorite[]> =>
   )
 
 export const save = async (favorite: NarratorFavorite): Promise<void> => {
-  await favorites().doc(documentId(favorite.userId, favorite.narratorKey)).set(favorite)
+  await favorites()
+    .doc(documentId(favorite.userId, favorite.narratorKey))
+    .set(withoutAbsentFields(favorite))
   evictFromRequestCache(allCacheKey(favorite.userId))
 }
 
