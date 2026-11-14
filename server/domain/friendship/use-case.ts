@@ -397,10 +397,11 @@ export namespace FriendshipUseCase {
   }
 
   /** Each friend's last heart of the last thirty days, a saga or a book,
-   *  the newest first: the news from the people the reader shares with. One
-   *  scan of each friend's shelf and hearts; only the covers drawn are signed,
-   *  a saga's first volume standing for it. A book marked "do not share" is
-   *  never among them. */
+   *  the newest first: the news from the people the reader shares with. Read
+   *  off each friend's projection of their hearts, one batched read, and the
+   *  reader's own library for the "Chez vous" badge; only the covers drawn are
+   *  signed, a saga's first volume standing for it. A book marked "do not
+   *  share" is never among them. */
   export const recentFavorites = async (
     userId: UserId,
     now = new Date(),
@@ -410,41 +411,30 @@ export namespace FriendshipUseCase {
     const [names, owned, shelves] = await Promise.all([
       UserQuery.namesOf(friendIds),
       BookQuery.shelfKeys(userId),
-      Promise.all(
-        friendIds.map(async (friendId) => {
-          const [books, favoriteSagas, ratings] = await Promise.all([
-            BookQuery.shared(friendId),
-            favoriteSagasOf(friendId),
-            sagaRatingsOf(friendId),
-          ])
-          return { friendId, books, sagas: followedSagasOf(books), favoriteSagas, ratings }
-        }),
-      ),
+      heartShelvesOf(friendIds, now),
     ])
     const hearts = recentHeartsOf(
       shelves,
       new Date(now.getTime() - FAVORITES_RECENT_MS),
       FAVORITES_SHOWN,
     )
-    const favoriteSagas = new Map(shelves.map((shelf) => [shelf.friendId, shelf.favoriteSagas]))
-    const ratings = new Map(shelves.map((shelf) => [shelf.friendId, shelf.ratings]))
-    const mark = (book: BookView): FriendBook => ({ ...book, inLibrary: ownsStory(owned, book) })
+    const byFriend = new Map(shelves.map((shelf) => [shelf.friendId, shelf]))
+    const mark = markedBy((book) => ownsStory(owned, book))
     return Promise.all(
       hearts.map(async ({ friendId, favoritedAt, book, saga }): Promise<FriendFavorite> => {
         const whose = { friendId, friendName: names.get(friendId), favoritedAt }
         if (book) {
-          const [signed] = await BookQuery.withSignedCovers([book])
-          return { ...whose, ...(signed ? { book: mark(signed) } : {}) }
+          const [signed] = mark(await BookQuery.withSignedCovers([book]))
+          return { ...whose, ...(signed ? { book: signed } : {}) }
         }
         const first = inReadingOrder(saga.books).slice(0, 1)
-        const volumes = (await BookQuery.withSignedCovers(first)).map(mark)
         return {
           ...whose,
           saga: friendSagaOf(
             saga,
-            favoriteSagas.get(friendId) ?? new Map(),
-            ratings.get(friendId) ?? new Map(),
-            volumes,
+            byFriend.get(friendId)?.favoriteSagas ?? new Map(),
+            byFriend.get(friendId)?.ratings ?? new Map(),
+            mark(await BookQuery.withSignedCovers(first)),
           ),
         }
       }),
@@ -453,26 +443,21 @@ export namespace FriendshipUseCase {
 
   /** What the reader's friends love that the reader does not hold, for
    *  Découvrir: the books and sagas they hearted and the authors of both, the
-   *  newest heart first. Held is judged on the story, whatever the format. One
-   *  scan of the reader's library and of each friend's shelf and hearts; only
-   *  the covers drawn are signed, and the faces are one batched read of the
-   *  author catalogue. A book marked "do not share" is never among them. */
-  export const recommendations = async (userId: UserId): Promise<FriendRecommendations> => {
+   *  newest heart first. Held is judged on the story, whatever the format. Read
+   *  off each friend's projection of their hearts, one batched read, and the
+   *  reader's own library; only the covers drawn are signed, and the faces are
+   *  one batched read of the author catalogue. A book marked "do not share" is
+   *  never among them. */
+  export const recommendations = async (
+    userId: UserId,
+    now = new Date(),
+  ): Promise<FriendRecommendations> => {
     const friendIds = await FriendshipQuery.friendsOf(userId)
     if (friendIds.length === 0) return { books: [], sagas: [], authors: [] }
     const [names, held, shelves] = await Promise.all([
       UserQuery.namesOf(friendIds),
       BookQuery.all(userId),
-      Promise.all(
-        friendIds.map(async (friendId) => {
-          const [books, favoriteSagas, ratings] = await Promise.all([
-            BookQuery.shared(friendId),
-            favoriteSagasOf(friendId),
-            sagaRatingsOf(friendId),
-          ])
-          return { friendId, books, sagas: followedSagasOf(books), favoriteSagas, ratings }
-        }),
-      ),
+      heartShelvesOf(friendIds, now),
     ])
     const picks = friendPicksOf(shelves, held, RECOMMENDATIONS_SHOWN)
     const byFriend = new Map(shelves.map((shelf) => [shelf.friendId, shelf]))
@@ -484,8 +469,7 @@ export namespace FriendshipUseCase {
         friends: friendIds.map((id) => ({ userId: id, firstName: names.get(id) })),
       }
     }
-    const unowned = (books: BookView[]): FriendBook[] =>
-      books.map((book) => ({ ...book, inLibrary: false }))
+    const unowned = markedBy(() => false)
     const [books, sagas, catalogue] = await Promise.all([
       BookQuery.withSignedCovers(picks.books.map((pick) => pick.item)),
       Promise.all(
@@ -496,10 +480,11 @@ export namespace FriendshipUseCase {
       AuthorQuery.byKeys(picks.authors.map((pick) => pick.item.key)),
     ])
     const portraits = new Map(catalogue.map((author) => [author.key, author.portraitUrl]))
+    const shownBooks = unowned(books)
     return {
       books: picks.books.flatMap((pick, index) => {
-        const book = books[index]
-        return book ? [loved(pick, { ...book, inLibrary: false })] : []
+        const book = shownBooks[index]
+        return book ? [loved(pick, book)] : []
       }),
       sagas: picks.sagas.map((pick, index) => {
         const shelf = byFriend.get(pick.friendId)
@@ -678,6 +663,28 @@ const friendSagaOf = (
   }
 }
 
+/** Each friend's hearts as the feeds' rules read a shelf, in the order of
+ *  `friendIds`: the books a heart draws, their sagas, the sagas hearted and
+ *  their stars. One batched read of the projections, never their libraries. */
+const heartShelvesOf = async (friendIds: readonly UserId[], now: Date) => {
+  const projections = await AnalyticsUseCase.sharedHearts(friendIds, now)
+  return friendIds.map((friendId) => {
+    const hearts = projections.get(friendId)
+    const books = hearts?.books ?? []
+    return {
+      friendId,
+      books,
+      sagas: followedSagasOf(books),
+      favoriteSagas: new Map<SagaKey, Date | undefined>(
+        (hearts?.favoriteSagas ?? []).map(({ saga, favoritedAt }) => [saga, favoritedAt]),
+      ),
+      ratings: new Map<SagaKey, StarRating>(
+        (hearts?.sagaRatings ?? []).map(({ saga, rating }) => [saga, rating]),
+      ),
+    }
+  })
+}
+
 /** The hearted sagas of a shelf, with the day of each heart. */
 const favoriteSagasOf = async (ownerId: UserId): Promise<Map<SagaKey, Date | undefined>> =>
   new Map(
@@ -763,8 +770,7 @@ const sharedShelfOf = async (
     BookQuery.withSignedCovers(dropped ? [dropped] : []),
     BookQuery.withSignedCovers(added ? [added] : []),
   ])
-  const unmarked = (books: BookView[]): FriendBook[] =>
-    books.map((book) => ({ ...book, inLibrary: false }))
+  const unmarked = markedBy(() => false)
 
   return {
     userId: ownerId,
@@ -783,10 +789,15 @@ const sharedShelfOf = async (
   }
 }
 
-/** The shelf with each book saying whether the viewer already owns it. */
-const marked = (shelf: FriendProfile, inLibrary: (book: FriendBook) => boolean): FriendProfile => {
-  const mark = (books: FriendBook[]) =>
+/** Each book saying whether the viewer already owns its story. */
+const markedBy =
+  (inLibrary: (book: BookView) => boolean) =>
+  (books: readonly BookView[]): FriendBook[] =>
     books.map((book) => ({ ...book, inLibrary: inLibrary(book) }))
+
+/** The shelf with each book saying whether the viewer already owns it. */
+const marked = (shelf: FriendProfile, inLibrary: (book: BookView) => boolean): FriendProfile => {
+  const mark = markedBy(inLibrary)
   return {
     ...shelf,
     reading: mark(shelf.reading),

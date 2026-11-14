@@ -1,5 +1,6 @@
 import type { Brand } from 'ts-brand'
 import type {
+  Book,
   BookFormat,
   BookId,
   BookLanguage,
@@ -199,6 +200,42 @@ export type SharedFavorite = {
   series?: SeriesMembership
   coverPath?: ObjectPath
   publishedCoverUrl?: CoverUrl
+}
+
+/** What the reader's friends' two feeds — the dashboard's news of their
+ *  hearts and Découvrir's "what your friends love" — need of the reader's
+ *  shelf: the hearts, not the library.
+ *
+ *  Its own document beside the analytics view rather than a part of it: the
+ *  dashboard reads the view on every opening and has no use for these books,
+ *  and the friends list reads every friend's view. Flagged by the very call
+ *  that flags the view, so no write can reach one and miss the other. */
+export type SharedHearts = {
+  userId: UserId
+  /** Every book shared that a heart draws, whole, in library order: the ones
+   *  hearted, and every volume shared of a saga hearted — what its tile and
+   *  its counts are worked out from. Never a book marked "do not share". The
+   *  covers are their sources, signed when drawn. */
+  books: Book[]
+  /** The sagas hearted, with the day of each heart when it was kept. */
+  favoriteSagas: { saga: SagaKey; favoritedAt?: Date }[]
+  /** The stars given to the sagas hearted. */
+  sagaRatings: { saga: SagaKey; rating: StarRating }[]
+  /** Set when the oldest hearts were left out to keep the document within
+   *  Firestore's limit of a document. */
+  truncated?: true
+}
+
+/** What tells a stored projection of the hearts fresh. `writes` counts the
+ *  writes that flagged it, `builtFrom` the count it was built at: a write that
+ *  lands while it is being rebuilt leaves the two apart, where a flag cleared
+ *  by the rebuild would be lost. */
+export type SharedHeartsState = {
+  userId: UserId
+  version?: number
+  writes?: number
+  builtFrom?: number
+  refreshedAt?: Date
 }
 
 export type YearCount = { year: number; count: number }

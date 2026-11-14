@@ -60,6 +60,7 @@ describe('keeping the view in step with the library', () => {
       ['set', 'books'],
       ['delete', 'wishes'],
       ['merge', 'analytics'],
+      ['merge', 'shared-hearts'],
     ])
   })
 
@@ -119,6 +120,7 @@ describe('keeping the view in step with the library', () => {
     expect(batch?.ops.map((op) => [op.type, op.ref.collectionPath])).toEqual([
       ['set', 'series-opinions'],
       ['merge', 'analytics'],
+      ['merge', 'shared-hearts'],
     ])
     expect((await viewAfterRead())?.favoriteSeriesCount).toBe(1)
   })

@@ -1082,11 +1082,11 @@ describe('what the friends love, for Découvrir', () => {
     expect(result.data?.friendRecommendations).toEqual({ books: [], sagas: [], authors: [] })
   })
 
-  // One scan of the friendships, of the reader's library, and of each
-  // friend's books and saga opinions; then the friend's name and, in one
-  // batch, the catalogue documents of the two authors shown — one friend
-  // stands for two picks at most — for their faces.
-  test('reads each shelf once, whatever it suggests', async () => {
+  // One scan of the friendships and of the reader's library, never of a
+  // friend's: their name and their projection of their hearts, one document
+  // each, and in one batch the catalogue documents of the two authors shown —
+  // one friend stands for two picks at most — for their faces.
+  test('reads one document of each friend, whatever it suggests', async () => {
     for (const title of ['Un', 'Deux', 'Trois']) {
       const id = await addBook(
         alice,
@@ -1101,8 +1101,8 @@ describe('what the friends love, for Découvrir', () => {
     const before = { docs: fake.docReads, queries: fake.queryReads }
     await as(bob)(query)
 
-    expect(fake.queryReads - before.queries).toBe(4)
-    expect(fake.docReads - before.docs).toBe(3)
+    expect(fake.queryReads - before.queries).toBe(2)
+    expect(fake.docReads - before.docs).toBe(1 + 1 + 2)
   })
 })
 

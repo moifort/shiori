@@ -2,6 +2,7 @@ import type { WriteBatch } from 'firebase-admin/firestore'
 import {
   dashboardOf,
   genreInsightsOf,
+  heartsAreFresh,
   localDateOf,
   sharedShelfTodayOf,
   VIEW_VERSION,
@@ -16,6 +17,7 @@ import type {
   DashboardBook,
   GenreInsights,
   SeriesProgress,
+  SharedHearts,
   SharedShelfToday,
   TimeZone as TimeZoneValue,
 } from '~/domain/analytics/types'
@@ -120,6 +122,29 @@ export namespace AnalyticsUseCase {
     )
   }
 
+  /** What each of these readers' friends' feeds need of their shelf — their
+   *  hearts — keyed by reader. One batched read of the projections; one that
+   *  is missing, flagged by a write since it was built, or built by an older
+   *  rule set is rebuilt first from the reader's books and opinions, so a
+   *  friend is never shown a heart taken back. */
+  export const sharedHearts = async (
+    userIds: readonly UserId[],
+    now = new Date(),
+  ): Promise<Map<UserId, SharedHearts>> => {
+    const stored = new Map(
+      (await AnalyticsQuery.hearts(userIds)).map((state) => [state.userId, state]),
+    )
+    return new Map(
+      await Promise.all(
+        [...new Set(userIds)].map(async (userId) => {
+          const state = stored.get(userId)
+          if (state?.shared && heartsAreFresh(state)) return [userId, state.shared] as const
+          return [userId, await rebuildHearts(userId, state?.writes ?? 0, now)] as const
+        }),
+      ),
+    )
+  }
+
   /** Flag the view after something it is built from changed outside the
    *  reader's library — a saga they hold gaining its catalogue. */
   export const markStale = (userId: UserId): Promise<void> => AnalyticsCommand.markStale(userId)
@@ -146,6 +171,21 @@ const rebuild = async (
   // none: a saga they counted themselves has a bar on the dashboard too.
   const catalogues = [...cataloguesOf(books, await SeriesQuery.byIds(editions), opinions).values()]
   return AnalyticsCommand.rebuild({ userId, books, catalogues, opinions, timeZone, now })
+}
+
+// Built from the count of flagging writes read before the sources: a write that
+// lands while they are read leaves the projection stale for the next feed.
+// Only the books shared are read into it.
+const rebuildHearts = async (
+  userId: UserId,
+  builtFrom: number,
+  now: Date,
+): Promise<SharedHearts> => {
+  const [books, opinions] = await Promise.all([
+    BookQuery.shared(userId),
+    SeriesOpinionQuery.all(userId),
+  ])
+  return AnalyticsCommand.rebuildHearts({ userId, books, opinions, builtFrom, now })
 }
 
 // Signed here rather than stored: a signed URL expires. A dozen covers at most,

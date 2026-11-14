@@ -58,22 +58,35 @@ beforeEach(() => {
 })
 
 describe('the friends’ hearts, asked for together', () => {
-  /** The dashboard's news and Découvrir's shelf, each as its own request. Each
-   *  reads the friendships, the reader's library, and the friend's shelf and
-   *  saga opinions: one document, two, three and none. */
+  /** The dashboard's news and Découvrir's shelf, each as its own request.
+   *  Each scans the friendships and the reader's library — one document and
+   *  two — and reads the friend's projection of their hearts; the first one
+   *  finds none and builds it from the friend's shelf and saga opinions —
+   *  three documents and none. */
   const favorites = () => FriendshipUseCase.recentFavorites(reader, now)
-  const recommendations = () => FriendshipUseCase.recommendations(reader)
+  const recommendations = () => FriendshipUseCase.recommendations(reader, now)
   const reads = () => ({ queries: fake.queryReads, docs: fake.queriedDocs })
 
-  test('one after the other, each reads both libraries', async () => {
+  test('one after the other, only the first reads the friend’s library', async () => {
     const before = reads()
 
     const [hearts] = await inConcurrentFakeRequests([favorites])
     await inConcurrentFakeRequests([recommendations])
 
     expect(hearts).toHaveLength(1)
-    expect(fake.queryReads - before.queries).toBe(8)
-    expect(fake.queriedDocs - before.docs).toBe(2 * (1 + 2 + 3))
+    expect(fake.queryReads - before.queries).toBe(2 + 2 + 2)
+    expect(fake.queriedDocs - before.docs).toBe(1 + 2 + 3 + (1 + 2))
+  })
+
+  test('once built, neither reads the friend’s library', async () => {
+    await inConcurrentFakeRequests([favorites])
+    const before = reads()
+
+    await inConcurrentFakeRequests([favorites])
+    await inConcurrentFakeRequests([recommendations])
+
+    expect(fake.queryReads - before.queries).toBe(2 * 2)
+    expect(fake.queriedDocs - before.docs).toBe(2 * (1 + 2))
   })
 
   test('sent together, they read each library once between them', async () => {

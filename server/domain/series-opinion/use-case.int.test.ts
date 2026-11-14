@@ -96,7 +96,7 @@ describe('hearting a saga', () => {
     expect(ratingOf(first.id)).toBe(StarRating(5))
   })
 
-  test('lands the volumes, the heart and the analytics flag in one batch', async () => {
+  test('lands the volumes, the heart and the analytics flags in one batch', async () => {
     await volume(1, 'read')
     await volume(2, 'read')
 
@@ -107,6 +107,7 @@ describe('hearting a saga', () => {
       'books',
       'books',
       'analytics',
+      'shared-hearts',
     ])
   })
 })

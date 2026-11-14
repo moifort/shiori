@@ -24,6 +24,7 @@ const perReader: Record<string, (userId: UserId) => string> = {
   books: (userId) => `${userId}-book`,
   'book-sync-removals': (userId) => `${userId}~kindle~B000`,
   analytics: (userId) => userId,
+  'shared-hearts': (userId) => userId,
   entitlements: (userId) => userId,
   'ai-quotas': (userId) => `${userId}~2026-11`,
   'ai-credits': (userId) => userId,

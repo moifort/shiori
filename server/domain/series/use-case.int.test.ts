@@ -398,6 +398,7 @@ describe('the name a saga goes by', () => {
 
     expect(fake.data('analytics', reader)?.stale).toBe(true)
     expect(fake.data('analytics', 'reader-2')?.stale).toBe(true)
+    expect(fake.data('shared-hearts', 'reader-2')?.writes).toBe(1)
     expect(fake.data('analytics', 'reader-3')?.stale).toBe(false)
   })
 })

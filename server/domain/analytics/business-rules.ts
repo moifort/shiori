@@ -14,6 +14,8 @@ import type {
   MonthPages,
   SeriesProgress,
   SharedFavorite,
+  SharedHearts,
+  SharedHeartsState,
   SharedShelf,
   SharedShelfToday,
   TimeZone,
@@ -23,6 +25,7 @@ import type {
 import {
   coverSourcesOf,
   inSagaOrder,
+  lastActivityOf,
   listeningProgressOf,
   readVolumeNumbersOf,
   recentActivityOf,
@@ -785,3 +788,93 @@ const genreOrder = (left: { genre: Genre }, right: { genre: Genre }) =>
 
 const mostFirst = (left: GenreShare, right: GenreShare) =>
   right.count - left.count || genreOrder(left, right)
+
+// MARK: - The hearts the friends' feeds draw
+
+/** Bumped whenever the projection of the hearts gains a field or a rule
+ *  changes, as the view's own version: a projection stored by an older bundle
+ *  is rebuilt on its next read. */
+export const HEARTS_VERSION = 1
+
+/** Whether a stored projection of the hearts can be served as it is: built by
+ *  this rule set, and no write flagged since it was built. */
+export const heartsAreFresh = (state: SharedHeartsState): boolean =>
+  state.version === HEARTS_VERSION &&
+  state.builtFrom !== undefined &&
+  (state.writes ?? 0) === state.builtFrom
+
+/** One heart and the books it brings: a saga with every volume of it shared,
+ *  or a book no hearted saga stands for. */
+type HeartEntry = { saga?: SagaKey; books: readonly Book[]; lovedAt: number }
+
+/** When a book was hearted, as the feeds rank it: an undated heart on the
+ *  book's last activity. */
+const heartedAtOf = (book: Book): number => (book.favoritedAt ?? lastActivityOf(book)).getTime()
+
+/** The hearts of a shelf, each with what it brings, the newest first. */
+const heartEntriesOf = (
+  shown: readonly Book[],
+  hearted: readonly SeriesOpinion[],
+): HeartEntry[] => {
+  const heartedSagas = new Set(hearted.map((opinion) => opinion.seriesId))
+  const sagas = hearted.map((opinion): HeartEntry => {
+    const volumes = shown.filter((book) => book.series?.saga === opinion.seriesId)
+    // The saga's own heart — an undated one on its volumes' last activity —
+    // or a heart given since to one of its volumes, whichever is newer.
+    const sagaHeartedAt =
+      opinion.favoritedAt?.getTime() ??
+      Math.max(0, ...volumes.map((book) => lastActivityOf(book).getTime()))
+    const lovedAt = Math.max(
+      sagaHeartedAt,
+      ...volumes.filter((book) => book.favorite === true).map(heartedAtOf),
+    )
+    return { saga: opinion.seriesId, books: volumes, lovedAt }
+  })
+  const books = shown
+    .filter(
+      (book) => book.favorite === true && !(book.series && heartedSagas.has(book.series.saga)),
+    )
+    .map((book): HeartEntry => ({ books: [book], lovedAt: heartedAtOf(book) }))
+  return [...sagas, ...books].sort((left, right) => right.lovedAt - left.lovedAt)
+}
+
+/** How many hearts a shelf holds, each saga counted once whatever its
+ *  volumes: what `sharedHeartsOf` keeps the newest of. */
+export const heartCountOf = (books: readonly Book[], opinions: readonly SeriesOpinion[]): number =>
+  heartEntriesOf(
+    books.filter((book) => !book.hidden),
+    opinions.filter((opinion) => opinion.favorite === true),
+  ).length
+
+/** What the reader's friends' feeds need of the shelf: every book shared that
+ *  a heart draws, the sagas hearted and their stars. The books marked "do not
+ *  share" are dropped first, as everywhere a friend looks. `kept` keeps the
+ *  newest hearts only, a saga with all its volumes or not at all, for a shelf
+ *  whose hearts would not fit one document. */
+export const sharedHeartsOf = (
+  userId: UserId,
+  books: readonly Book[],
+  opinions: readonly SeriesOpinion[],
+  kept = Number.POSITIVE_INFINITY,
+): SharedHearts => {
+  const shown = books.filter((book) => !book.hidden)
+  const hearted = opinions.filter((opinion) => opinion.favorite === true)
+  const entries = heartEntriesOf(shown, hearted)
+  const keptEntries = entries.slice(0, kept)
+  const keptSagas = new Set(keptEntries.flatMap((entry) => (entry.saga ? [entry.saga] : [])))
+  const keptBooks = new Set(keptEntries.flatMap((entry) => entry.books.map((book) => book.id)))
+  const keptOpinions = hearted.filter((opinion) => keptSagas.has(opinion.seriesId))
+  return {
+    userId,
+    books: shown.filter((book) => keptBooks.has(book.id)),
+    favoriteSagas: keptOpinions.map((opinion) =>
+      opinion.favoritedAt
+        ? { saga: opinion.seriesId, favoritedAt: opinion.favoritedAt }
+        : { saga: opinion.seriesId },
+    ),
+    sagaRatings: keptOpinions.flatMap((opinion) =>
+      opinion.rating === undefined ? [] : [{ saga: opinion.seriesId, rating: opinion.rating }],
+    ),
+    ...(keptEntries.length < entries.length ? { truncated: true as const } : {}),
+  }
+}
