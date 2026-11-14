@@ -43,6 +43,7 @@ struct AwaitedEditionPage: View {
                 action: "Ne plus suivre"
             ),
             state: state,
+            stateTag: edition.state == .unannounced && !added ? String(localized: "Pas annoncé") : nil,
             isOut: edition.state == .available,
             isAdded: edition.isAddable ? added : nil,
             leadingTiles: originalTitleTile,
@@ -63,9 +64,10 @@ struct AwaitedEditionPage: View {
     }
 
     /// Said on the detail line only when the calendar leaf does not say it:
-    /// once out, or while nothing is announced.
+    /// once out, or announced with no date. Nothing announced is a tag.
     private var state: BookState? {
         if added { return .addedToPile }
+        if edition.state == .unannounced { return nil }
         if edition.state == .announced, let date = edition.date, ReleaseDateText.isUpcoming(date) { return nil }
         return BookState(text: edition.stateLine, tint: edition.stateTint ?? .gray)
     }

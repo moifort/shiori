@@ -15,6 +15,9 @@ struct BookHero<Actions: View>: View {
     /// Where the reader stands, first on the detail line: "depuis 3j" on the
     /// reader's own page, "Pas encore paru" on a volume to come.
     var state: BookState?
+    /// Where the edition stands, as a word in an outlined tag before the
+    /// format's: "Pas annoncé" while nothing is.
+    var stateTag: String? = nil
     /// The reader awaits an edition of it: binoculars beside the title.
     var isAwaited = false
     /// How long the book runs on the detail line — pages, or a recording's
@@ -250,6 +253,10 @@ struct BookHero<Actions: View>: View {
                         .foregroundStyle(.white.opacity(0.75))
                         .lineLimit(2)
                         .accessibilityIdentifier("book-state")
+                }
+                if let stateTag {
+                    OutlinedTag(text: stateTag, isFrosted: false)
+                        .accessibilityIdentifier("book-state-tag")
                 }
                 // Only a foreign edition and a recording are tagged: paper in
                 // the phone's language is what a book is taken to be. Clear

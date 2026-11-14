@@ -80,6 +80,7 @@ struct AwardWinnerPage: View {
         BookHero(
             book: shown,
             state: state,
+            stateTag: winner.watched && winner.state == .unannounced ? String(localized: "Pas annoncé") : nil,
             isAwaited: winner.awaitedEditionId != nil,
             overTitle: winner.mentions.first.map { AnyView(AwardLaurels(mention: $0)) }
         ) {
@@ -97,7 +98,10 @@ struct AwardWinnerPage: View {
         if winner.state == .announced, let date = winner.date, ReleaseDateText.isUpcoming(date) {
             return .release(date)
         }
-        if winner.watched { return BookState(text: winner.stateLine, tint: winner.stateTint) }
+        if winner.watched {
+            // Nothing announced is a tag, beside the format's.
+            return winner.state == .unannounced ? nil : BookState(text: winner.stateLine, tint: winner.stateTint)
+        }
         return shown.firstPublishedIn.map { BookState(text: String($0), tint: .secondary) }
     }
 
