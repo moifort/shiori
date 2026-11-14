@@ -25,6 +25,7 @@ import {
   inSagaOrder,
   listeningProgressOf,
   readVolumeNumbersOf,
+  recentActivityOf,
   seriesRatingsOf,
   shelfDateOf,
   shelvedOf,
@@ -32,7 +33,6 @@ import {
 } from '~/domain/book/business-rules'
 import type { Book, BookFormat, Genre, StarRating, Subgenre } from '~/domain/book/types'
 import { GENRES } from '~/domain/book/types'
-import { recentActivityOf } from '~/domain/friendship/business-rules'
 import {
   followedSagasOf,
   followedStateOf,

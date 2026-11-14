@@ -16,6 +16,10 @@ import {
   keepsStory,
   kindleLinkUnder,
   kindleMoveOf,
+  lastActivityOf,
+  lastAddedOf,
+  lastDroppedOf,
+  lastFinishedOf,
   listeningProgressOf,
   mediaFor,
   membershipFor,
@@ -25,6 +29,7 @@ import {
   pageAtKindlePosition,
   readingProgressOf,
   readVolumeNumbersOf,
+  recentActivityOf,
   recordJoinedBy,
   refreshedFacts,
   retaggedAfterEdit,
@@ -1692,5 +1697,156 @@ describe('isbn10Of', () => {
 
   test('has nothing for a 979 ISBN, which never had an ISBN-10', () => {
     expect(isbn10Of(Isbn13('9791032705278'))).toBeUndefined()
+  })
+})
+
+const activityDay = (n: number) => new Date(Date.UTC(2026, 8, n))
+
+describe('lastActivityOf', () => {
+  // A listening position moved by the nightly sync is activity too, and it
+  // only ever shows as `updatedAt`.
+  test('takes the latest of every stamp the record carries', () => {
+    expect(
+      lastActivityOf({
+        addedAt: activityDay(1),
+        startedAt: activityDay(3),
+        statusChangedAt: activityDay(3),
+        updatedAt: activityDay(9),
+      }),
+    ).toEqual(activityDay(9))
+  })
+
+  test('falls back to the day it was added on a record with no other stamp', () => {
+    expect(lastActivityOf({ addedAt: activityDay(2) })).toEqual(activityDay(2))
+  })
+})
+
+describe('lastFinishedOf', () => {
+  test('picks the book read with the latest finishing date', () => {
+    const books = [
+      { title: 'earlier', status: 'read' as const, finishedAt: activityDay(3) },
+      { title: 'latest', status: 'read' as const, finishedAt: activityDay(9) },
+      { title: 'in progress', status: 'reading' as const },
+    ]
+    expect(lastFinishedOf(books)?.title).toBe('latest')
+  })
+
+  // A book filed as read with no date says nothing about when.
+  test('answers nothing when no book read carries its date', () => {
+    expect(lastFinishedOf([{ status: 'read' as const }, { status: 'to-read' as const }])).toBe(
+      undefined,
+    )
+  })
+})
+
+describe('recentActivityOf', () => {
+  test('names one book per kind, in the order the friends list draws them', () => {
+    const books = [
+      {
+        title: 'dropped',
+        status: 'dropped' as const,
+        addedAt: activityDay(1),
+        statusChangedAt: activityDay(6),
+      },
+      {
+        title: 'hearted',
+        status: 'read' as const,
+        addedAt: activityDay(2),
+        favorite: true,
+        favoritedAt: activityDay(7),
+      },
+      {
+        title: 'finished',
+        status: 'read' as const,
+        addedAt: activityDay(3),
+        finishedAt: activityDay(8),
+      },
+      {
+        title: 'reading',
+        status: 'reading' as const,
+        addedAt: activityDay(4),
+        startedAt: activityDay(9),
+      },
+      { title: 'added', status: 'to-read' as const, addedAt: activityDay(10) },
+    ]
+    expect(recentActivityOf(books).map(({ kind, at, book }) => [kind, at, book.title])).toEqual([
+      ['reading', activityDay(9), 'reading'],
+      ['read', activityDay(8), 'finished'],
+      ['hearted', activityDay(7), 'hearted'],
+      ['added', activityDay(10), 'added'],
+      ['dropped', activityDay(6), 'dropped'],
+    ])
+  })
+
+  // The book in progress is the one the dashboard leads with: the recording
+  // last listened to, not the one whose status was put right last.
+  test('names in progress the book last listened to', () => {
+    const books = [
+      {
+        title: 'listened to',
+        status: 'reading' as const,
+        addedAt: activityDay(1),
+        startedAt: activityDay(2),
+        listenedAt: activityDay(8),
+      },
+      {
+        title: 'status put right',
+        status: 'reading' as const,
+        addedAt: activityDay(1),
+        startedAt: activityDay(9),
+        listenedAt: activityDay(3),
+        updatedAt: activityDay(9),
+        statusChangedAt: activityDay(9),
+      },
+    ]
+    const [inProgress] = recentActivityOf(books)
+    expect(inProgress?.kind).toBe('reading')
+    expect(inProgress?.at).toEqual(activityDay(8))
+    expect(inProgress?.book.title).toBe('listened to')
+  })
+
+  // A heart given before the date was kept says nothing about when.
+  test('leaves out a kind with no book, and a heart with no date', () => {
+    const books = [{ status: 'read' as const, addedAt: activityDay(2), favorite: true }]
+    expect(recentActivityOf(books).map(({ kind }) => kind)).toEqual(['added'])
+  })
+})
+
+describe('lastAddedOf', () => {
+  test('picks the book shelved last, whatever its status', () => {
+    const books = [
+      { title: 'earlier', status: 'to-read' as const, addedAt: activityDay(3) },
+      { title: 'latest', status: 'read' as const, addedAt: activityDay(9) },
+    ]
+    expect(lastAddedOf(books)?.title).toBe('latest')
+  })
+
+  test('answers nothing on an empty shelf', () => {
+    expect(lastAddedOf([])).toBe(undefined)
+  })
+})
+
+describe('lastDroppedOf', () => {
+  test('picks the book whose drop is the latest', () => {
+    const books = [
+      {
+        title: 'earlier',
+        status: 'dropped' as const,
+        addedAt: activityDay(1),
+        statusChangedAt: activityDay(4),
+      },
+      {
+        title: 'latest',
+        status: 'dropped' as const,
+        addedAt: activityDay(2),
+        statusChangedAt: activityDay(8),
+      },
+      { title: 'in progress', status: 'reading' as const, addedAt: activityDay(9) },
+    ]
+    expect(lastDroppedOf(books)?.title).toBe('latest')
+  })
+
+  test('answers nothing when no book was dropped', () => {
+    expect(lastDroppedOf([{ status: 'read' as const, addedAt: activityDay(1) }])).toBe(undefined)
   })
 })

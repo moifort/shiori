@@ -913,3 +913,113 @@ export const markedRemovedByReader = <
   importables.map((importable) =>
     removed.has(importable.asin) ? { ...importable, removedByReader: true } : importable,
   )
+
+/** When the reader last did anything with a book: picked it up, moved its
+ *  status, or had a sync move its listening position. What "most recently
+ *  active first" orders on, falling back through the older stamps for records
+ *  written before the newer ones existed. */
+export const lastActivityOf = (
+  book: Pick<Book, 'addedAt' | 'updatedAt' | 'statusChangedAt' | 'startedAt'>,
+): Date =>
+  new Date(
+    Math.max(
+      book.addedAt.getTime(),
+      book.updatedAt?.getTime() ?? 0,
+      book.statusChangedAt?.getTime() ?? 0,
+      book.startedAt?.getTime() ?? 0,
+    ),
+  )
+
+/** The book finished most recently: the one a friend coming back would ask
+ *  about. Only a book with a finishing date counts — one filed as read with no
+ *  date says nothing about when. */
+export const lastFinishedOf = <Finished extends Pick<Book, 'status' | 'finishedAt'>>(
+  books: readonly Finished[],
+): Finished | undefined =>
+  books
+    .filter((book) => book.status === 'read' && book.finishedAt !== undefined)
+    .reduce<Finished | undefined>(
+      (latest, book) =>
+        !latest || (book.finishedAt?.getTime() ?? 0) > (latest.finishedAt?.getTime() ?? 0)
+          ? book
+          : latest,
+      undefined,
+    )
+
+/** The book dropped most recently, on the day its status last moved — the
+ *  last time anything was done with it, for a record written before that
+ *  stamp existed. */
+export const lastDroppedOf = <
+  Dropped extends Pick<Book, 'status' | 'addedAt' | 'updatedAt' | 'statusChangedAt' | 'startedAt'>,
+>(
+  books: readonly Dropped[],
+): Dropped | undefined =>
+  books
+    .filter((book) => book.status === 'dropped')
+    .reduce<Dropped | undefined>(
+      (latest, book) =>
+        !latest || lastActivityOf(book).getTime() > lastActivityOf(latest).getTime()
+          ? book
+          : latest,
+      undefined,
+    )
+
+/** What moved last on a shelf, one book per kind, always in this order: the
+ *  book in progress the dashboard leads with — the one last listened to, else
+ *  last started — the last one finished, the last one hearted,
+ *  the last one shelved and the last one dropped — each with its day. A kind
+ *  with no book, or a finish or a heart with no date, is left out. */
+export const recentActivityOf = <
+  Moved extends Pick<
+    Book,
+    | 'status'
+    | 'addedAt'
+    | 'updatedAt'
+    | 'statusChangedAt'
+    | 'startedAt'
+    | 'finishedAt'
+    | 'listenedAt'
+    | 'favorite'
+    | 'favoritedAt'
+  >,
+>(
+  books: readonly Moved[],
+): { kind: 'reading' | 'read' | 'hearted' | 'added' | 'dropped'; at: Date; book: Moved }[] => {
+  const latest = (candidates: readonly Moved[], dateOf: (book: Moved) => Date | undefined) =>
+    candidates.reduce<{ book: Moved; at: Date } | undefined>((found, book) => {
+      const at = dateOf(book)
+      return at && (!found || at > found.at) ? { book, at } : found
+    }, undefined)
+  const finished = lastFinishedOf(books)
+  const dropped = lastDroppedOf(books)
+  const added = lastAddedOf(books)
+  const moves = [
+    {
+      kind: 'reading' as const,
+      ...latest(
+        books.filter((book) => book.status === 'reading'),
+        shelfDateOf,
+      ),
+    },
+    { kind: 'read' as const, book: finished, at: finished?.finishedAt },
+    {
+      kind: 'hearted' as const,
+      ...latest(
+        books.filter((book) => book.favorite === true),
+        (book) => book.favoritedAt,
+      ),
+    },
+    { kind: 'added' as const, book: added, at: added?.addedAt },
+    { kind: 'dropped' as const, book: dropped, at: dropped && lastActivityOf(dropped) },
+  ]
+  return moves.flatMap(({ kind, book, at }) => (book && at ? [{ kind, at, book }] : []))
+}
+
+/** The book shelved most recently, whatever it became since. */
+export const lastAddedOf = <Added extends Pick<Book, 'addedAt'>>(
+  books: readonly Added[],
+): Added | undefined =>
+  books.reduce<Added | undefined>(
+    (latest, book) => (!latest || book.addedAt > latest.addedAt ? book : latest),
+    undefined,
+  )

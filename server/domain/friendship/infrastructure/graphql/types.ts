@@ -1,7 +1,12 @@
 import type { SharedActivity } from '~/domain/analytics/types'
 import { AudibleQuery } from '~/domain/audible/query'
 import { authorKeyOf } from '~/domain/author/primitives'
-import { amazonUrlOf, listeningProgressOf, shelfDateOf } from '~/domain/book/business-rules'
+import {
+  amazonUrlOf,
+  lastActivityOf,
+  listeningProgressOf,
+  shelfDateOf,
+} from '~/domain/book/business-rules'
 import {
   BookFormatEnum,
   BookLanguageEnum,
@@ -9,7 +14,6 @@ import {
   ReadingStatusEnum,
 } from '~/domain/book/infrastructure/graphql/enums'
 import { SeriesMembershipType } from '~/domain/book/infrastructure/graphql/types'
-import { lastActivityOf } from '~/domain/friendship/business-rules'
 import { FriendActivityKindEnum } from '~/domain/friendship/infrastructure/graphql/enums'
 import type { Friend } from '~/domain/friendship/types'
 import type {

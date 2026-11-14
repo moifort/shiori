@@ -5,6 +5,9 @@ import type { EditionOffer } from '~/domain/awaited-edition/types'
 import { AwaitedEditionUseCase, type AwaitOutcome } from '~/domain/awaited-edition/use-case'
 import {
   isOnShelf,
+  lastAddedOf,
+  lastDroppedOf,
+  lastFinishedOf,
   SHELF_STATUSES,
   seriesRatingsOf,
   shelfDateOf,
@@ -36,9 +39,6 @@ import {
   friendPicksOf,
   friendSagaStateOf,
   inReadingOrder,
-  lastAddedOf,
-  lastDroppedOf,
-  lastFinishedOf,
   newestFavoritesFirst,
   recentHeartsOf,
   subgenreOf,
