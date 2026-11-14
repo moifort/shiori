@@ -509,7 +509,7 @@ describe('merging a duplicate saga', () => {
     ])
     // A moved volume is a write like any other: it says when it last changed.
     const moved = volumes.filter((book) => Number(book.series?.volume) > 1)
-    expect(moved.every((book) => book.updatedAt > NOW)).toBe(true)
+    expect(moved.every((book) => book.updatedAt !== undefined && book.updatedAt > NOW)).toBe(true)
   })
 
   test("forgets the duplicate's opinion and keeps the kept saga's", async () => {
