@@ -15,7 +15,7 @@ import { sagaKeyFor, seriesKeyOf } from '~/domain/series/primitives'
 import type { SagaKey, SeriesState } from '~/domain/series/types'
 import { Count } from '~/domain/shared/primitives'
 import type { AuthorName, Count as CountValue } from '~/domain/shared/types'
-import { slugify } from '~/utils/slug'
+import { slugify, withoutAccents } from '~/utils/slug'
 
 type AuthoredBook = {
   title: string
@@ -206,11 +206,7 @@ const isLowercaseParticle = (word: string) =>
 /** The letter of the alphabet index an author sits under: the first letter of
  *  their filing name, stripped of its accent, or "#" when it is no Latin letter. */
 export const indexLetterOf = (name: string): string => {
-  const first = filingNameOf(name)
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .charAt(0)
-    .toUpperCase()
+  const first = withoutAccents(filingNameOf(name)).charAt(0).toUpperCase()
   return /^[A-Z]$/.test(first) ? first : '#'
 }
 

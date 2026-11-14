@@ -33,7 +33,7 @@ import type { AuthorName, UserId } from '~/domain/shared/types'
 import { ObjectPath } from '~/system/object-store/primitives'
 import type { ObjectPath as ObjectPathValue } from '~/system/object-store/types'
 import { isPresent } from '~/utils/input'
-import { slugify } from '~/utils/slug'
+import { foldedText, slugify } from '~/utils/slug'
 
 export {
   copyOf,
@@ -840,10 +840,7 @@ const FORMAT_SUBGENRES: Record<string, BookFormat> = {
 
 const formatNamedBy = (subgenre: string): BookFormat | undefined =>
   FORMAT_SUBGENRES[
-    subgenre
-      .normalize('NFD')
-      .replace(/\p{Diacritic}/gu, '')
-      .toLowerCase()
+    foldedText(subgenre)
       .replace(/[^a-z]+/g, ' ')
       .trim()
   ]

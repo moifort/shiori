@@ -85,7 +85,7 @@ import type {
 import { config } from '~/system/config'
 import { createLogger } from '~/system/logger'
 import { isPresent, optionally as optional } from '~/utils/input'
-import { slugify } from '~/utils/slug'
+import { foldedText, slugify } from '~/utils/slug'
 
 const logger = createLogger('scan')
 
@@ -488,15 +488,9 @@ export namespace ScanCommand {
     }
   }
 
-  const folded = (text: string) =>
-    text
-      .normalize('NFD')
-      .replace(/\p{Diacritic}/gu, '')
-      .toLowerCase()
-      .trim()
-
   const sameBook = (a: TitleCandidate, b: TitleCandidate) =>
-    folded(a.title) === folded(b.title) && folded(a.authors[0] ?? '') === folded(b.authors[0] ?? '')
+    foldedText(a.title) === foldedText(b.title) &&
+    foldedText(a.authors[0] ?? '') === foldedText(b.authors[0] ?? '')
 
   /** Step 1. Not grounded: the answer is in the image, and letting the model
    *  search here invites it to "correct" a cover it read correctly. */

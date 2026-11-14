@@ -3,6 +3,7 @@ import type { BookFormat, BookMedium } from '~/domain/book/types'
 import { BOOK_FORMATS } from '~/domain/book/types'
 import type { AiStepUsage, DetectedBox } from '~/domain/scan/types'
 import { optionally } from '~/utils/input'
+import { foldedText } from '~/utils/slug'
 
 /** What the model may say an object is. `ebook` is not a format of the
  *  library — paper or screen is where a book is held, not what it is — but it
@@ -120,13 +121,6 @@ export const searchedQueryOf = (query: string): { title: string; author?: string
   return title && author ? { title, author } : { title: query.trim() }
 }
 
-const foldedTitle = (text: string) =>
-  text
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .toLowerCase()
-    .trim()
-
 /** The candidates offered for a typed search, with what the reader typed among
  *  them unless one already bears that title. The candidates come from a model
  *  that does not search the web: a book too recent for it is missing, or worse
@@ -140,7 +134,7 @@ export const withTypedCandidate = <Candidate extends { title: string }>(
   authorNamed: boolean,
   limit: number,
 ): Candidate[] => {
-  if (candidates.some(({ title }) => foldedTitle(title) === foldedTitle(typed.title)))
+  if (candidates.some(({ title }) => foldedText(title) === foldedText(typed.title)))
     return candidates.slice(0, limit)
   const kept = candidates.slice(0, limit - 1)
   return authorNamed ? [typed, ...kept] : [...kept, typed]
