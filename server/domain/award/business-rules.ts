@@ -4,12 +4,14 @@ import { shelfKeyOf } from '~/domain/book/business-rules'
 import type { Book, BookLanguage, Genre } from '~/domain/book/types'
 import { releaseFormatOf } from '~/domain/discovery/business-rules'
 import type { ReleaseFormat } from '~/domain/discovery/types'
+import type { ReleaseIdentity, ReleaseShown } from '~/domain/release/types'
 import { AuthorName, BookTitle } from '~/domain/shared/primitives'
 import {
   AWARDS,
   type Award,
   type AwardCategory,
   type AwardedWork,
+  type AwardedWorkView,
   type AwardMention,
   type FoundWinners,
 } from './types'
@@ -227,3 +229,38 @@ export const categoryOf = (award: Award): AwardCategory =>
     : award === 'locus-fantasy'
       ? 'fantasy-novel'
       : 'novel'
+
+/** What the server knows of a winner's edition before its description: the
+ *  edition by its own title once found, else the novel as it won, in its
+ *  language. */
+export const releaseShownOf = (view: AwardedWorkView): ReleaseShown => {
+  const found = view.watch?.found
+  const unannounced = view.state === 'unannounced'
+  return {
+    key: view.watchKey,
+    seed: {
+      title: found?.title ?? view.work.title,
+      authors: view.work.authors,
+      format: view.format === 'audiobook' ? 'audiobook' : 'book',
+      ...(unannounced ? { language: view.work.language } : {}),
+      ...(found?.date ? { releasedOn: found.date } : {}),
+    },
+    originalTitle: view.work.title,
+    originalLanguage: view.work.language,
+    language: view.language,
+    releaseFormat: view.format,
+    state: view.state,
+    watched: view.watch !== undefined,
+    ...(found ? { found } : {}),
+  }
+}
+
+/** The book a winner's release is of, as its watch names it. */
+export const releaseIdentityOf = (view: AwardedWorkView): ReleaseIdentity => ({
+  key: view.watchKey,
+  title: view.work.title,
+  ...(view.work.authors[0] ? { author: view.work.authors[0] } : {}),
+  originalLanguage: view.work.language,
+  format: view.format,
+  language: view.language,
+})

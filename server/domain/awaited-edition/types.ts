@@ -9,6 +9,7 @@ import type {
   Isbn13,
 } from '~/domain/book/types'
 import type { ReleaseFormat } from '~/domain/discovery/types'
+import type { Release } from '~/domain/release/types'
 import type { ReleaseDate, SeriesName, VolumeNumber } from '~/domain/series/types'
 import type { AuthorName, BookTitle, UserId } from '~/domain/shared/types'
 import type { ObjectPath } from '~/system/object-store/types'
@@ -78,21 +79,11 @@ export type FoundEdition = {
   coverUrl?: CoverUrl
 }
 
-/** What the web says of one book in one language and format — shared by every
- *  reader who awaits it, keyed on the book rather than on anybody, so the
- *  grounded call behind it is paid once every two weeks. */
-export type EditionWatch = {
-  /** `{shelfKey}--{format}--{language}`. */
-  key: string
-  title: BookTitle
-  author?: AuthorName
-  originalLanguage: BookLanguage
-  series?: { name: SeriesName; volume?: VolumeNumber }
-  format: ReleaseFormat
-  language: BookLanguage
-  checkedAt: Date
-  found?: FoundEdition
-}
+/** A release the web was searched for: what it says of one book in one
+ *  language and format — shared by every reader who awaits it, keyed on the
+ *  book rather than on anybody, so the grounded call behind it is paid once
+ *  every two weeks. Its page's descriptions ride along: see `Release`. */
+export type EditionWatch = Release & { checkedAt: Date }
 
 /** Where an awaited edition stands: nothing found yet, found but not out, or
  *  out — for a recording, only once Audible confirmed it. */
@@ -104,9 +95,6 @@ export type AwaitedEditionView = AwaitedEdition & {
   found?: FoundEdition
   /** Whether the web was ever searched for it. */
   watched: boolean
-  /** The cover its page found when a reader opened it, drawn when neither the
-   *  edition nor the book it is awaited from has one. */
-  describedCoverUrl?: CoverUrl
 }
 
 /** What a book's page offers: the formats its edition in the app's language

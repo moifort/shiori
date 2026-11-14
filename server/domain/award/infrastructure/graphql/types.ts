@@ -1,7 +1,10 @@
 import { AudibleQuery } from '~/domain/audible/query'
 import { storeUrlOf } from '~/domain/awaited-edition/business-rules'
-import { AwaitedStateEnum } from '~/domain/awaited-edition/infrastructure/graphql/types'
-import { categoryOf } from '~/domain/award/business-rules'
+import {
+  AwaitedStateEnum,
+  READ_RELEASE,
+} from '~/domain/awaited-edition/infrastructure/graphql/types'
+import { categoryOf, releaseShownOf } from '~/domain/award/business-rules'
 import type {
   AwardedWorkView,
   AwardList,
@@ -11,6 +14,7 @@ import type {
 } from '~/domain/award/types'
 import { BookLanguageEnum, GenreEnum } from '~/domain/book/infrastructure/graphql/enums'
 import { ReleaseFormatEnum } from '~/domain/discovery/infrastructure/graphql/types'
+import { ReleaseType, releaseViewFor } from '~/domain/release/infrastructure/graphql/types'
 import { builder } from '~/domain/shared/graphql/builder'
 
 export const AwardEnum = builder.enumType('Award', {
@@ -78,18 +82,31 @@ export const AwardWinnerType = builder.objectRef<AwardedWorkView>('AwardWinner')
     title: t.field({
       type: 'BookTitle',
       description: 'Its title in the app’s language once found, else the one it won under.',
+      deprecationReason: READ_RELEASE,
       resolve: (view) => view.watch?.found?.title ?? view.work.title,
     }),
     originalTitle: t.field({
       type: 'BookTitle',
       description: 'The title it won under, in the language the award crowns.',
+      deprecationReason: READ_RELEASE,
       resolve: (view) => view.work.title,
     }),
     originalLanguage: t.field({
       type: BookLanguageEnum,
+      deprecationReason: READ_RELEASE,
       resolve: (view) => view.work.language,
     }),
-    authors: t.field({ type: ['AuthorName'], resolve: (view) => view.work.authors }),
+    authors: t.field({
+      type: ['AuthorName'],
+      deprecationReason: READ_RELEASE,
+      resolve: (view) => view.work.authors,
+    }),
+    release: t.field({
+      type: ReleaseType,
+      description:
+        'Its edition as every list and its page show it, described or not: what to draw.',
+      resolve: (view, _args, context) => releaseViewFor(releaseShownOf(view), context.event),
+    }),
     awards: t.field({
       type: [AwardMentionType],
       description: 'Every prize it won among the genre’s awards, the newest first.',
@@ -108,6 +125,7 @@ export const AwardWinnerType = builder.objectRef<AwardedWorkView>('AwardWinner')
     }),
     date: t.string({
       nullable: true,
+      deprecationReason: READ_RELEASE,
       description:
         'When the edition came out or comes out: `YYYY`, `YYYY-MM` or `YYYY-MM-DD`. Null ' +
         'until found, and for an edition found with no date.',
@@ -115,12 +133,13 @@ export const AwardWinnerType = builder.objectRef<AwardedWorkView>('AwardWinner')
     }),
     coverUrl: t.string({
       nullable: true,
-      description:
-        'The edition’s cover once found, else the one its page found when it was described.',
-      resolve: (view) => view.watch?.found?.coverUrl ?? view.describedCoverUrl ?? null,
+      description: 'The edition’s cover once found.',
+      deprecationReason: READ_RELEASE,
+      resolve: (view) => view.watch?.found?.coverUrl ?? null,
     }),
     storeUrl: t.string({
       nullable: true,
+      deprecationReason: READ_RELEASE,
       description:
         'Where to get it: the recording’s page on the reader’s Audible store, or a ' +
         'search for it there while Audible has not confirmed it; the printed edition’s ' +

@@ -76,6 +76,8 @@ builder.mutationFields((t) => ({
       '`QUOTA_EXHAUSTED` when the reader’s allowance is used up and nobody described it ' +
       'yet, `SCAN_FAILED` ' +
       '(`AI_UNAVAILABLE` while the AI is out of credit) when the model call errors.',
+    deprecationReason:
+      'Use `describeReleaseOf`, which names the item and answers the release every list draws.',
     args: { book: t.arg({ type: ReleaseInput, required: true }) },
     resolve: async (_root, { book }, context) =>
       match(

@@ -135,7 +135,7 @@ describe('the month’s discoveries', () => {
         coverUrl: 'https://covers.example/shibumi.jpg',
       },
     ] as never)
-    expect(sanction?.describedCoverUrl).toBe('https://covers.example/La%20Sanction.jpg' as never)
+    expect(sanction?.suggestion.coverUrl).toBe('https://covers.example/La%20Sanction.jpg' as never)
     expect(sanction?.awaitableFormats).toEqual(['book', 'audiobook'])
     expect(
       (fake.data('suggestion-queues', reader)?.suggestions as unknown[] | undefined)?.length,
@@ -149,8 +149,8 @@ describe('the month’s discoveries', () => {
     const discoveries = await look()
 
     expect(titles(discoveries)).toEqual(['Le Cercle', 'Silo'])
-    expect(discoveries.suggestions[0]?.describedCoverUrl).toBeUndefined()
-    expect(discoveries.suggestions[1]?.describedCoverUrl).toBe(
+    expect(discoveries.suggestions[0]?.suggestion.coverUrl).toBeUndefined()
+    expect(discoveries.suggestions[1]?.suggestion.coverUrl).toBe(
       'https://covers.example/Silo.jpg' as never,
     )
   })

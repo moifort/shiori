@@ -3,7 +3,6 @@ import type {
   AwaitedEdition,
   AwaitedEditionId,
   EditionPassState,
-  EditionWatch,
 } from '~/domain/awaited-edition/types'
 import type { UserId } from '~/domain/shared/types'
 import { db } from '~/system/firebase'
@@ -13,12 +12,6 @@ import { deleteInBatches, genericDataConverter, withoutAbsentFields } from '~/ut
 // Private: one document per reader, book and format, naming its reader.
 const awaitedEditions = () =>
   db().collection('awaited-editions').withConverter(genericDataConverter<AwaitedEdition>())
-
-// Shared, holding no reference to any reader: keyed by the book, the format
-// and the language, so every reader awaiting the same edition converges on one
-// document and the call behind it is paid once.
-const editionWatches = () =>
-  db().collection('edition-watches').withConverter(genericDataConverter<EditionWatch>())
 
 const allCacheKey = (userId: UserId) => `awaited-editions:all:${userId}`
 
@@ -89,19 +82,4 @@ export const removeAllByUser = async (userId: UserId): Promise<void> => {
   const snapshot = await awaitedEditions().where('userId', '==', userId).get()
   await deleteInBatches(snapshot.docs.map((doc) => doc.ref))
   evictFromRequestCache(allCacheKey(userId))
-}
-
-export const findWatches = async (keys: readonly string[]): Promise<EditionWatch[]> => {
-  const unique = [...new Set(keys)]
-  if (unique.length === 0) return []
-  const snapshots = await db().getAll(...unique.map((key) => editionWatches().doc(key)))
-  // Typed loosely by getAll, though each ref carries the converter.
-  return snapshots.flatMap((snapshot) => {
-    const watch = snapshot.data() as EditionWatch | undefined
-    return watch ? [watch] : []
-  })
-}
-
-export const saveWatch = async (watch: EditionWatch): Promise<void> => {
-  await editionWatches().doc(watch.key).set(withoutAbsentFields(watch))
 }

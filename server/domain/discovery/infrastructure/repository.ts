@@ -12,7 +12,6 @@ import type {
   DiscoveryProjection,
   DiscoveryProjectionState,
   DiscoveryReader,
-  KeptReleaseDescription,
   NarratorWatch,
   ReleaseFormat,
   SagaWatch,
@@ -43,14 +42,6 @@ const authorWatches = () =>
 // holding no reference to any reader.
 const narratorWatches = () =>
   db().collection('narrator-watches').withConverter(genericDataConverter<NarratorWatch>())
-
-// Shared as the saga watches are: a book's description is a fact about the
-// book, keyed by it and the language it is written in, holding no reference to
-// any reader, so the model call behind it is paid once.
-const descriptions = () =>
-  db()
-    .collection('release-descriptions')
-    .withConverter(genericDataConverter<KeptReleaseDescription>())
 
 // One document per reader, keyed by the reader.
 const readers = () =>
@@ -289,24 +280,4 @@ export const saveLibraryChanges = async (
     await batch.commit()
   }
   for (const userId of unique) evictFromRequestCache(libraryChangeCacheKey(userId))
-}
-
-export const findDescription = async (key: string): Promise<KeptReleaseDescription | undefined> =>
-  (await descriptions().doc(key).get()).data()
-
-export const findDescriptions = async (
-  keys: readonly string[],
-): Promise<KeptReleaseDescription[]> => {
-  const unique = [...new Set(keys)]
-  if (unique.length === 0) return []
-  const snapshots = await db().getAll(...unique.map((key) => descriptions().doc(key)))
-  // Typed loosely by getAll, though each ref carries the converter.
-  return snapshots.flatMap((snapshot) => {
-    const kept = snapshot.data() as KeptReleaseDescription | undefined
-    return kept ? [kept] : []
-  })
-}
-
-export const saveDescription = async (kept: KeptReleaseDescription): Promise<void> => {
-  await descriptions().doc(kept.key).set(withoutAbsentFields(kept))
 }

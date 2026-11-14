@@ -35,8 +35,11 @@ mock.module('~/domain/scan/gemini', () => ({
 mock.module('~/domain/scan/published-cover', () => ({
   shelfCoverOf: async () => undefined,
   publishedCoverOf: async () => undefined,
-  isCoverGone: async () => false,
+  isbnCoversOf: async () => ({}),
+  isbnsInLanguage: () => [],
+  otherEditionCoversOf: async () => [],
   isImageAt: async () => true,
+  isCoverGone: async () => false,
 }))
 
 /** Audible sells the recording, read by Jeff Hays. */
@@ -61,6 +64,8 @@ mock.module('~/domain/discovery/infrastructure/audible-catalogue', () => ({
 
 const { DiscoveryUseCase } = await import('~/domain/discovery/use-case')
 const { monthOf } = await import('~/domain/quota/business-rules')
+const { shownVolumeOf, volumeShownOf } = await import('~/domain/discovery/business-rules')
+const { releaseViewOf } = await import('~/domain/release/business-rules')
 const { VolumeNumber, seriesKeyOf } = await import('~/domain/series/primitives')
 
 const reader = 'reader' as UserId
@@ -168,5 +173,54 @@ describe('a shown book’s page', () => {
     expect(await DiscoveryUseCase.describeRelease(reader, volume, 'fr')).toMatchObject({
       book: { title: 'Carl 4' },
     })
+  })
+})
+
+describe('a saga’s volume announced', () => {
+  const watch = {
+    key: `${printed}--fr`,
+    seriesId: printed,
+    name: 'Dungeon Crawler Carl',
+    author: 'Matt Dinniman',
+    language: 'fr',
+    checkedAt: new Date(),
+    volumes: [{ number: 4, title: 'Carl 4', date: '2027-03-12', isbn13: '9782226488190' }],
+  }
+
+  test('is described into its release, which its list then draws as its page does', async () => {
+    fake.seed('saga-watches', watch.key, watch)
+
+    const opened = await DiscoveryUseCase.describeVolume(
+      reader,
+      { seriesId: printed, language: 'fr', number: VolumeNumber(4) } as never,
+      'fr',
+    )
+    const shown = shownVolumeOf(watch as never, watch.volumes[0] as never)
+    const listed = releaseViewOf(
+      volumeShownOf(shown, '2026-11-14'),
+      fake.snapshot('releases').get('carl-4--matt-dinniman--book--fr') as never,
+      'fr',
+      new Date(),
+    )
+
+    expect(opened).toMatchObject({
+      title: 'Carl 4',
+      synopsis: 'Carl descend au quatrième étage.',
+      series: { name: 'Dungeon Crawler Carl', volume: 4 },
+      date: '2027-03-12',
+      described: true,
+    })
+    expect(listed).toEqual(opened as never)
+    expect(spent(reader)).toBe(0)
+  })
+
+  test('is not found when no watch announced it', async () => {
+    expect(
+      await DiscoveryUseCase.describeVolume(
+        reader,
+        { seriesId: printed, language: 'fr', number: VolumeNumber(9) } as never,
+        'fr',
+      ),
+    ).toBe('not-found')
   })
 })

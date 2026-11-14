@@ -1,13 +1,16 @@
 import { awaitableFormatsOf, stateOf } from '~/domain/awaited-edition/business-rules'
 import { AwaitedEditionQuery } from '~/domain/awaited-edition/query'
-import type { AwaitedEditionId, EditionWatch } from '~/domain/awaited-edition/types'
+import type { AwaitedEditionId } from '~/domain/awaited-edition/types'
 import { AwardCommand } from '~/domain/award/command'
 import { AwardQuery } from '~/domain/award/query'
 import { BookQuery } from '~/domain/book/query'
 import type { Genre } from '~/domain/book/types'
-import { releaseDescriptionKeyOf, todayOf } from '~/domain/discovery/business-rules'
-import { DiscoveryQuery } from '~/domain/discovery/query'
+import { todayOf } from '~/domain/discovery/business-rules'
 import { RELEASE_FORMATS, type ReleaseFormat } from '~/domain/discovery/types'
+import { watchOf } from '~/domain/release/business-rules'
+import { ReleaseQuery } from '~/domain/release/query'
+import type { Release, ReleaseView } from '~/domain/release/types'
+import { type DescribeRefusal, ReleaseUseCase } from '~/domain/release/use-case'
 import type { Language } from '~/domain/shared/language'
 import type { UserId } from '~/domain/shared/types'
 import { createLogger } from '~/system/logger'
@@ -20,6 +23,8 @@ import {
   latestYearsOf,
   MAX_AWARD_SECTIONS,
   RECENT_COUNT,
+  releaseIdentityOf,
+  releaseShownOf,
   sectionGenreOf,
   watchKeyOf,
   winnerStateOf,
@@ -64,10 +69,7 @@ export namespace AwardUseCase {
     )
     const shown = (view: AwardedWorkView) =>
       !dismissed.has(view.work.key) && !isHeld(view.work, format, view.watch?.found, books)
-    const recent = await withDescribedCovers(
-      [...views.values()].filter(shown).slice(0, RECENT_COUNT),
-      appLanguage,
-    )
+    const recent = [...views.values()].filter(shown).slice(0, RECENT_COUNT)
 
     return {
       genre,
@@ -127,20 +129,30 @@ export namespace AwardUseCase {
         .filter((view) => sectionGenreOf(view.work, genres) === genre)
         .slice(0, RECENT_COUNT),
     }))
-    const described = new Map(
-      (
-        await withDescribedCovers(
-          picked.flatMap((section) => section.winners),
-          appLanguage,
-        )
-      ).map((view) => [view.work.key, view]),
+    return picked.filter((section) => section.winners.length > 0)
+  }
+
+  /** Describe one winner's edition for its page, as its release, in one
+   *  format and the app's language: `not-found` for a novel no ceremony
+   *  crowned lately. */
+  export const describe = async (
+    userId: UserId,
+    key: string,
+    format: ReleaseFormat,
+    appLanguage: Language,
+    now = new Date(),
+  ): Promise<ReleaseView | DescribeRefusal | 'not-found'> => {
+    const work = (await latestWorksOf(AWARDS)).find((candidate) => candidate.key === key)
+    if (!work) return 'not-found'
+    const editions = await editionsOf([work], userId, appLanguage)
+    const view = viewOf(work, format, appLanguage, editions, todayOf(now))
+    return ReleaseUseCase.describeShown(
+      userId,
+      releaseIdentityOf(view),
+      releaseShownOf(view),
+      appLanguage,
+      now,
     )
-    return picked
-      .map(({ genre, winners }) => ({
-        genre,
-        winners: winners.map((view) => described.get(view.work.key) ?? view),
-      }))
-      .filter((section) => section.winners.length > 0)
   }
 
   /** "Pas intéressé" on a winner: gone from the lists, in every format. */
@@ -207,18 +219,18 @@ const editionsOf = async (
   const keys = works.flatMap((work) =>
     RELEASE_FORMATS.map((format) => watchKeyOf(work, format, appLanguage)),
   )
-  const [watches, awaited] = await Promise.all([
-    AwaitedEditionQuery.watches(keys),
+  const [releases, awaited] = await Promise.all([
+    ReleaseQuery.byKeys(keys),
     AwaitedEditionQuery.byUser(userId),
   ])
   return {
-    watches,
+    releases,
     awaitedByKey: new Map(awaited.map((edition) => [edition.watchKey, edition.id])),
   }
 }
 
 type Editions = {
-  watches: Map<string, EditionWatch>
+  releases: Map<string, Release>
   awaitedByKey: Map<string, AwaitedEditionId>
 }
 
@@ -230,14 +242,15 @@ const viewOf = (
   today: string,
 ): AwardedWorkView => {
   const watchKey = watchKeyOf(work, format, language)
-  const watch = editions.watches.get(watchKey)
+  const release = editions.releases.get(watchKey)
+  const watch = watchOf(release)
   const awaitedId = editions.awaitedByKey.get(watchKey)
   const awaitableFormats = awaitableFormatsOf(
     { language: work.language, format: 'book' },
     language,
   ).filter((candidate) => {
     const key = watchKeyOf(work, candidate, language)
-    const found = editions.watches.get(key)?.found
+    const found = watchOf(editions.releases.get(key))?.found
     return stateOf(found, candidate, today) !== 'available' && !editions.awaitedByKey.has(key)
   })
   return {
@@ -251,31 +264,4 @@ const viewOf = (
     awaitableFormats,
     ...(awaitedId ? { awaitedId } : {}),
   }
-}
-
-/** The strip's winners with no cover found, given the one their page found
- *  when a reader opened it: the description is kept under the key that page
- *  asks it by, so one getAll reads them all. */
-const withDescribedCovers = async (
-  views: AwardedWorkView[],
-  appLanguage: Language,
-): Promise<AwardedWorkView[]> => {
-  const bare = views.filter((view) => !view.watch?.found?.coverUrl)
-  if (bare.length === 0) return views
-  const keyOf = (view: AwardedWorkView) =>
-    releaseDescriptionKeyOf(
-      {
-        title: view.watch?.found?.title ?? view.work.title,
-        authors: view.work.authors,
-        format: view.format,
-        ...(view.state === 'unannounced' ? { language: view.work.language } : {}),
-      },
-      appLanguage,
-    )
-  const kept = await DiscoveryQuery.descriptions(bare.map(keyOf))
-  return views.map((view) => {
-    if (view.watch?.found?.coverUrl) return view
-    const coverUrl = kept.get(keyOf(view))?.description.book.coverUrl
-    return coverUrl ? { ...view, describedCoverUrl: coverUrl } : view
-  })
 }

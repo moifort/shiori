@@ -117,7 +117,6 @@ export type SuggestionView = {
   state: AwaitedState
   awaitableFormats: ReleaseFormat[]
   awaitedId?: AwaitedEditionId
-  describedCoverUrl?: CoverUrl
   references: SuggestionReference[]
 }
 

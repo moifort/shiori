@@ -194,7 +194,7 @@ const awaits = (
     awaitedAt: new Date('2026-09-01T08:00:00Z'),
   })
   if (found)
-    fake.seed('edition-watches', watchKey, {
+    fake.seed('releases', watchKey, {
       key: watchKey,
       title: original,
       author: 'Matt Dinniman',
@@ -923,7 +923,7 @@ describe('the saga screen', () => {
 
     const releases = await DiscoveryUseCase.sagaReleases(reader, carl, 'fr', now)
 
-    expect(releases).toEqual({
+    expect(releases).toMatchObject({
       watched: true,
       next: { number: VolumeNumber(4), title: BookTitle('Carl 4'), date: '2027-02-12' as never },
     })

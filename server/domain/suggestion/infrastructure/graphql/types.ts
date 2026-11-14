@@ -1,9 +1,14 @@
 import { AudibleQuery } from '~/domain/audible/query'
 import { storeUrlOf } from '~/domain/awaited-edition/business-rules'
-import { AwaitedStateEnum } from '~/domain/awaited-edition/infrastructure/graphql/types'
+import {
+  AwaitedStateEnum,
+  READ_RELEASE,
+} from '~/domain/awaited-edition/infrastructure/graphql/types'
 import { BookLanguageEnum, GenreEnum } from '~/domain/book/infrastructure/graphql/enums'
 import { ReleaseFormatEnum } from '~/domain/discovery/infrastructure/graphql/types'
+import { ReleaseType, releaseViewFor } from '~/domain/release/infrastructure/graphql/types'
 import { builder } from '~/domain/shared/graphql/builder'
+import { releaseShownOf } from '~/domain/suggestion/business-rules'
 import type {
   MonthlyDiscoveries,
   SuggestionReference,
@@ -105,14 +110,30 @@ export const SuggestionType = builder.objectRef<SuggestionView>('Suggestion').im
       description:
         'Its title in the app’s language: the edition’s once found, else the model’s, ' +
         'which may be a guess for a recent translation.',
+      deprecationReason: READ_RELEASE,
       resolve: (view) => view.watch?.found?.title ?? view.suggestion.title,
     }),
-    originalTitle: t.field({ type: 'BookTitle', resolve: (view) => view.suggestion.originalTitle }),
+    originalTitle: t.field({
+      type: 'BookTitle',
+      deprecationReason: READ_RELEASE,
+      resolve: (view) => view.suggestion.originalTitle,
+    }),
     originalLanguage: t.field({
       type: BookLanguageEnum,
+      deprecationReason: READ_RELEASE,
       resolve: (view) => view.suggestion.language,
     }),
-    authors: t.field({ type: ['AuthorName'], resolve: (view) => view.suggestion.authors }),
+    authors: t.field({
+      type: ['AuthorName'],
+      deprecationReason: READ_RELEASE,
+      resolve: (view) => view.suggestion.authors,
+    }),
+    release: t.field({
+      type: ReleaseType,
+      description:
+        'Its edition as every list and its page show it, described or not: what to draw.',
+      resolve: (view, _args, context) => releaseViewFor(releaseShownOf(view), context.event),
+    }),
     kind: t.field({ type: SuggestionKindEnum, resolve: (view) => view.suggestion.kind }),
     reason: t.string({
       description: 'Why, in one sentence citing a book of the reader’s.',
@@ -137,16 +158,19 @@ export const SuggestionType = builder.objectRef<SuggestionView>('Suggestion').im
     watched: t.boolean({ resolve: (view) => view.watch !== undefined }),
     date: t.string({
       nullable: true,
+      deprecationReason: READ_RELEASE,
       description: 'When the edition came out or comes out, once found.',
       resolve: (view) => view.watch?.found?.date ?? null,
     }),
     coverUrl: t.string({
       nullable: true,
-      description: 'The edition’s cover once found, else its page’s, else a catalogue’s.',
-      resolve: (view) => view.watch?.found?.coverUrl ?? view.describedCoverUrl ?? null,
+      description: 'The edition’s cover once found, else a catalogue’s.',
+      deprecationReason: READ_RELEASE,
+      resolve: (view) => view.watch?.found?.coverUrl ?? view.suggestion.coverUrl ?? null,
     }),
     storeUrl: t.string({
       nullable: true,
+      deprecationReason: READ_RELEASE,
       description: 'Where to get it once its edition is found, as an award winner’s.',
       resolve: async (view, _args, { userId }) => {
         const found = view.watch?.found

@@ -1,4 +1,5 @@
-import type { Book, StarRating } from '~/domain/book/types'
+import type { Book, BookFormat, StarRating } from '~/domain/book/types'
+import type { ReleaseIdentity, ReleaseShown } from '~/domain/release/types'
 import type { SeriesOpinion } from '~/domain/series-opinion/types'
 import type { Language } from '~/domain/shared/language'
 import { slugify } from '~/utils/slug'
@@ -7,8 +8,10 @@ import type {
   DismissalReason,
   ReferenceRank,
   Suggestion,
+  SuggestionKind,
   SuggestionQueue,
   SuggestionReference,
+  SuggestionView,
 } from './types'
 
 /** How many suggestions the model is asked for: enough that the checks and the
@@ -322,4 +325,52 @@ const rankOf = (
   favorite: favorite === true,
   ...(rating !== undefined ? { rating } : {}),
   viaSeries,
+})
+
+/** What the server knows of a suggestion's edition before its description: the
+ *  edition by its own title once found, else the title the model gave, in the
+ *  language the book was written in while nobody announced it. A drawn story
+ *  stays what the model named it. */
+export const releaseShownOf = (view: SuggestionView): ReleaseShown => {
+  const { suggestion } = view
+  const found = view.watch?.found
+  const unannounced = view.state === 'unannounced'
+  const drawn = DRAWN_FORMAT_OF_KIND[suggestion.kind]
+  return {
+    key: view.watchKey,
+    seed: {
+      title: found?.title ?? suggestion.title,
+      authors: suggestion.authors,
+      format: view.format === 'audiobook' ? 'audiobook' : (drawn ?? 'book'),
+      ...(unannounced ? { language: suggestion.language } : {}),
+      ...(found?.date ? { releasedOn: found.date } : {}),
+    },
+    originalTitle: suggestion.originalTitle,
+    originalLanguage: suggestion.language,
+    language: view.language,
+    releaseFormat: view.format,
+    state: view.state,
+    watched: view.watch !== undefined,
+    ...(found ? { found } : {}),
+    ...(suggestion.coverUrl ? { fallbackCoverUrl: suggestion.coverUrl } : {}),
+  }
+}
+
+/** What each kind of drawn story is, as a book: a novel or an essay is none. */
+const DRAWN_FORMAT_OF_KIND: Record<SuggestionKind, BookFormat | undefined> = {
+  novel: undefined,
+  essay: undefined,
+  'bande-dessinee': 'bande-dessinee',
+  comic: 'comic',
+  manga: 'manga',
+}
+
+/** The book a suggestion's release is of, as its watch names it. */
+export const releaseIdentityOf = (view: SuggestionView): ReleaseIdentity => ({
+  key: view.watchKey,
+  title: view.suggestion.originalTitle,
+  ...(view.suggestion.authors[0] ? { author: view.suggestion.authors[0] } : {}),
+  originalLanguage: view.suggestion.language,
+  format: view.format,
+  language: view.language,
 })

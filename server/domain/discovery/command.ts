@@ -4,7 +4,6 @@ import type {
   DiscoveryPassState,
   DiscoveryProjection,
   DiscoveryReader,
-  KeptReleaseDescription,
   NarratorWatch,
   SagaWatch,
 } from '~/domain/discovery/types'
@@ -14,10 +13,6 @@ import type { UserId } from '~/domain/shared/types'
 const REMEMBERED = 500
 
 export namespace DiscoveryCommand {
-  /** Keeps a shown book's description for every reader who opens it next. */
-  export const keepDescription = (kept: KeptReleaseDescription): Promise<void> =>
-    repository.saveDescription(kept)
-
   export const saveReader = (reader: DiscoveryReader): Promise<DiscoveryReader> =>
     repository.saveReader(reader)
 

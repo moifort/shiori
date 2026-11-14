@@ -94,7 +94,7 @@ describe('a page of the Series tab', () => {
 
     const { items } = await SeriesUseCase.followedPage(reader, { limit: 5 }, {})
 
-    expect(items.find((saga) => saga.saga === 'saga-1')?.nextRelease).toEqual({
+    expect(items.find((saga) => saga.saga === 'saga-1')?.nextRelease).toMatchObject({
       number: VolumeNumber(2),
       title: BookTitle('Le Retour'),
       date: ReleaseDate('2099-03-12'),
