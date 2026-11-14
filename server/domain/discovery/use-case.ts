@@ -657,7 +657,9 @@ export namespace DiscoveryUseCase {
                 reader,
                 authorWatches,
                 narratorWatches,
-                await workContextOf(reader.userId, now),
+                // In a scope of its own, as the digest reads it: the reader's
+                // library is not kept in memory until the pass ends.
+                await withRequestCacheScope(() => workContextOf(reader.userId, now)),
                 today,
               )
         const due = [

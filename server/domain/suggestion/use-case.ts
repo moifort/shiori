@@ -23,6 +23,7 @@ import type { UserId } from '~/domain/shared/types'
 import { WishQuery } from '~/domain/wish/query'
 import type { Wish } from '~/domain/wish/types'
 import { createLogger } from '~/system/logger'
+import { withRequestCacheScope } from '~/system/request-cache'
 import {
   discoveriesAlertOf,
   monthOf,
@@ -196,7 +197,9 @@ export namespace SuggestionUseCase {
             language,
           )
           if (!claimed) return false
-          const selection = await newSelection(userId, await libraryOf(userId), language, now)
+          // Read in a scope of its own: the library is not kept until the pass ends.
+          const library = await withRequestCacheScope(() => libraryOf(userId))
+          const selection = await newSelection(userId, library, language, now)
           if (!selection || selection.length === 0) return false
           return await tell(userId, language)
         } catch (error) {
