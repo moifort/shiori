@@ -113,6 +113,7 @@ builder.mutationFields((t) => ({
   }),
   lookUpDiscovery: t.field({
     type: DiscoveryType,
+    deprecationReason: 'Découvrir left the iOS app: nothing replaces the first look.',
     description:
       'Look up now, on the web, every saga, then every author, the reader follows in that ' +
       'format that was never looked up, rather than wait for the hourly pass — for the first look at the ' +

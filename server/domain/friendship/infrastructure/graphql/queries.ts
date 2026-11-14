@@ -43,6 +43,8 @@ builder.queryFields((t) => ({
 
   friendRecommendations: t.field({
     type: FriendRecommendationsType,
+    deprecationReason:
+      'Découvrir left the iOS app: no screen asks for the friends’ picks any more.',
     description:
       'What the reader’s friends hearted and the reader does not hold, for Découvrir: ' +
       'books, sagas and the authors of both, the newest heart first, twenty of each at ' +

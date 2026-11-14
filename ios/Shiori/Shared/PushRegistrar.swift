@@ -2,8 +2,8 @@ import UIKit
 import UserNotifications
 
 extension Notification.Name {
-    /// A translation alert was tapped: the app opens on the Découvrir tab.
-    static let shioriOpenDiscover = Notification.Name("ShioriOpenDiscover")
+    /// A release alert was tapped: the app opens on the Actu tab.
+    static let shioriOpenNews = Notification.Name("ShioriOpenNews")
 }
 
 /// Where the app meets APNs: asking permission, handing the device token to
@@ -109,7 +109,7 @@ final class PushRegistrar: NSObject, UNUserNotificationCenterDelegate {
     ) {
         nonisolated(unsafe) let completionHandler = completionHandler
         DispatchQueue.main.async {
-            NotificationCenter.default.post(name: .shioriOpenDiscover, object: nil)
+            NotificationCenter.default.post(name: .shioriOpenNews, object: nil)
             completionHandler()
         }
     }

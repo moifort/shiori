@@ -10,8 +10,6 @@ enum NewsAction {
     case dismiss(NewsCard)
     /// Everything announced, from "Sorties et découvertes ›".
     case openUpcoming
-    /// Découvrir in full, from "Prix littéraires ›".
-    case openDiscover
     case invite
     case openAlerts
     case refresh
@@ -626,7 +624,7 @@ struct NewsPrizesSlider: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            NewsShelfHeader(title: "Prix de l'année") { Task { await onAction(.openDiscover) } }
+            NewsShelfHeader(title: "Prix de l'année")
             ScrollView(.horizontal) {
                 LazyHStack(spacing: 12) {
                     ForEach(cards) { card in

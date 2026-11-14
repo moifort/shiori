@@ -41,15 +41,6 @@ struct ContentView: View {
     @State private var libraryMode: LibraryRequest?
     /// The same for the Library tab's series shelf.
     @State private var seriesMode: SeriesRequest?
-    /// The shelf Découvrir shows. Held here so that arriving on the tab
-    /// brings it back to the books, whatever the reader left it on.
-    @State private var discoverShelf: LibraryShelf = .books
-    /// A book a scan's review asked to await, handed to Découvrir, which
-    /// shows the reader its tile.
-    @State private var awaitRequest: AwaitRequest?
-    /// Découvrir lives over the Actu tab now: a release alert or a book
-    /// awaited opens it there.
-    @State private var opensDiscover = false
     /// The add sheet, behind the tab bar's scan button: the camera, the last
     /// photos, a title and a record typed by hand, from every tab.
     @State private var showAddSheet = false
@@ -195,9 +186,9 @@ struct ContentView: View {
                     refreshAfterAbsence()
                 }
             }
-            // A release alert tapped: its book is in Découvrir, over the Actu tab.
-            .onReceive(NotificationCenter.default.publisher(for: .shioriOpenDiscover)) { _ in
-                showDiscover(.books)
+            // A release alert tapped: its book is in the Actu tab.
+            .onReceive(NotificationCenter.default.publisher(for: .shioriOpenNews)) { _ in
+                selectedTab = .news
             }
             .onChange(of: selectedTab) { _, tab in
                 // The scan tab is a button, not a destination: it opens the add
@@ -255,7 +246,6 @@ struct ContentView: View {
                         selectedTab = .library
                     },
                     onScan: { showAddSheet = true },
-                    onShowDiscover: { showDiscover(.books) },
                     onShowShared: { showShared = true }
                 )
             }
@@ -271,11 +261,7 @@ struct ContentView: View {
                 )
             }
             Tab(TabSelection.news.label, systemImage: TabSelection.news.symbol, value: .news) {
-                NewsScreen(
-                    discoverShelf: $discoverShelf,
-                    awaitRequest: $awaitRequest,
-                    opensDiscover: $opensDiscover
-                )
+                NewsScreen()
             }
             Tab(TabSelection.search.label, systemImage: TabSelection.search.symbol, value: .search) {
                 LibrarySearchScreen()
@@ -291,13 +277,6 @@ struct ContentView: View {
                 Color.clear
             }
         }
-    }
-
-    /// Découvrir, whole, over the Actu tab, on the shelf asked for.
-    private func showDiscover(_ shelf: LibraryShelf) {
-        selectedTab = .news
-        discoverShelf = shelf
-        opensDiscover = true
     }
 
     /// A book awaited from a scan's review: the wishlist, where its edition

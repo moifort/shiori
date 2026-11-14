@@ -142,85 +142,6 @@ struct AuthorDiscovery: Identifiable, Codable, Sendable {
 
     /// Whether the row has nothing left to show.
     var isEmpty: Bool { next == nil && recent.isEmpty && awaited.isEmpty && sagas.isEmpty }
-
-    /// The editions awaited that are out, for the "Nouvelles parutions" row.
-    var awaitedOut: [AwaitedEdition] { awaited.filter { $0.state == .available } }
-    /// The editions awaited still to come, for the "Prochaines sorties" row.
-    var awaitedComing: [AwaitedEdition] { awaited.filter { $0.state == .announced } }
-    /// The next volume of each saga of theirs, for the "Prochaines sorties" row.
-    var sagaComing: [DiscoveryVolume] {
-        sagas.compactMap { saga in saga.releases.next.map { DiscoveryVolume(saga: saga, volume: $0) } }
-    }
-    /// The volumes of their sagas just out, for the "Nouvelles parutions" row.
-    var sagaOut: [DiscoveryVolume] {
-        sagas.flatMap { saga in saga.recent.map { DiscoveryVolume(saga: saga, volume: $0) } }
-    }
-
-    /// The last day of the soonest date announced, the work found, an edition
-    /// awaited or a saga's volume. Nil when nothing announced is dated.
-    var soonestComing: String? {
-        ([next?.date] + awaitedComing.map(\.date) + sagaComing.map(\.volume.date))
-            .compactMap { $0.map(ReleaseDateText.lastDay) }.min()
-    }
-
-    /// The last day of the newest date out, the work found, an edition
-    /// awaited or a saga's volume.
-    var newestOut: String? {
-        (recent.map(\.date) + awaitedOut.map(\.date) + sagaOut.map(\.volume.date))
-            .compactMap { $0.map(ReleaseDateText.lastDay) }.max()
-    }
-}
-
-/// One author on the Authors shelf, read and heard alike: their row in each
-/// format they are followed in, the book's first.
-struct AuthorNews: Identifiable {
-    struct Part {
-        let format: ReleaseFormat
-        let row: AuthorDiscovery
-    }
-
-    let parts: [Part]
-
-    init(parts: [Part]) {
-        precondition(!parts.isEmpty, "an author on the shelf has a row in some format")
-        self.parts = parts
-    }
-
-    var id: String { author.id }
-    var author: FollowedAuthor { parts[0].row.author }
-    private var rows: [AuthorDiscovery] { parts.map(\.row) }
-
-    /// Something announced in either format.
-    var hasComing: Bool {
-        rows.contains { $0.next != nil || !$0.awaitedComing.isEmpty || !$0.sagaComing.isEmpty }
-    }
-
-    /// Something just out in either format.
-    var hasOut: Bool {
-        rows.contains { !$0.recent.isEmpty || !$0.awaitedOut.isEmpty || !$0.sagaOut.isEmpty }
-    }
-
-    var soonestComing: String? { rows.compactMap(\.soonestComing).min() }
-    var newestOut: String? { rows.compactMap(\.newestOut).max() }
-
-    /// The works of one section in both formats: the next one announced of
-    /// each among the announcements, every one just out among the new releases.
-    func works(in section: SagaReleasesSummary.Section) -> [(work: DiscoveredWork, format: ReleaseFormat)] {
-        parts.flatMap { part in
-            let works = section == .recent ? part.row.recent : (part.row.next.map { [$0] } ?? [])
-            return works.map { (work: $0, format: part.format) }
-        }
-    }
-
-    /// The volumes of their sagas of one section, in both formats.
-    func volumes(in section: SagaReleasesSummary.Section) -> [DiscoveryVolume] {
-        rows.flatMap { section == .recent ? $0.sagaOut : $0.sagaComing }
-    }
-
-    /// The editions awaited of one section, in both formats.
-    func awaited(in section: SagaReleasesSummary.Section) -> [AwaitedEdition] {
-        rows.flatMap { section == .recent ? $0.awaitedOut : $0.awaitedComing }
-    }
 }
 
 /// One volume of a saga, announced or just out, as the Books shelf lists it
@@ -276,14 +197,6 @@ struct DiscoveryPage: Sendable {
     let followed: Int
 }
 
-/// Découvrir's side strips, asked together: the award winners only when the
-/// request named the format shown.
-struct DiscoverSides: Sendable {
-    let picks: FriendPicks
-    let awaited: [ReleaseFormat: [AwaitedEdition]]
-    let awards: [AwardSection]?
-}
-
 enum DiscoverAPI {
     /// A first look runs grounded model calls, a few side by side, for up to a
     /// minute and a half: the request is given that and a margin.
@@ -300,44 +213,6 @@ enum DiscoverAPI {
             query: ShioriGraphQL.DiscoveryQuery(format: .case(format.graphQL))
         )
         return DiscoveryPage(fields: data.discovery.fragments.discoveryFields)
-    }
-
-    /// Découvrir's side strips in one request, which reads the library once
-    /// for them: the friends' hearts, the editions awaited in both formats,
-    /// and the award winners of `awards` when the format shown is known.
-    static func sides(awards: ReleaseFormat?) async throws -> DiscoverSides {
-        #if DEBUG
-        if Showcase.isOn {
-            return DiscoverSides(picks: Showcase.picks, awaited: [.book: [], .audiobook: []], awards: awards.map { _ in [] })
-        }
-        #endif
-        let data = try await GraphQLHelpers.fetch(
-            GraphQLClient.shared.apollo,
-            query: ShioriGraphQL.DiscoverSidesQuery(
-                withAwards: awards != nil,
-                awardsFormat: .case((awards ?? .book).graphQL)
-            )
-        )
-        return DiscoverSides(
-            picks: FriendPicks(fields: data.friendRecommendations.fragments.friendRecommendationsFields),
-            awaited: [
-                .book: data.awaitedBooks.map { AwaitedEdition(fields: $0.fragments.awaitedEditionFields) },
-                .audiobook: data.awaitedAudiobooks.map { AwaitedEdition(fields: $0.fragments.awaitedEditionFields) },
-            ],
-            awards: data.awardSections?.map { AwardSection(fields: $0.fragments.awardSectionFields) }
-        )
-    }
-
-    /// Look up now the sagas of that format nobody ever looked up. What was
-    /// found is written into the sagas' catalogues, so the Series tab and the
-    /// dashboard are told, and draw the same volumes as here.
-    static func lookUp(format: ReleaseFormat) async throws -> DiscoveryPage {
-        let data = try await GraphQLHelpers.perform(
-            GraphQLClient.shared.apollo,
-            mutation: ShioriGraphQL.LookUpDiscoveryMutation(format: .case(format.graphQL)),
-            requestTimeout: lookUpTimeout
-        )
-        return DiscoveryPage(fields: data.lookUpDiscovery.fragments.discoveryFields)
     }
 
     /// What the saga screen shows under its introduction, in the edition

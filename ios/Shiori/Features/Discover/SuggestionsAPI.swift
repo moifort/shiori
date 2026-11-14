@@ -62,9 +62,6 @@ struct Suggestion: Identifiable, Hashable, Sendable, Codable {
     var coverURL: URL? { release.coverURL }
     var storeURL: URL? { release.storeURL }
 
-    /// The reference the row's mark is drawn from: the first the reason cites.
-    var leadReference: SuggestionReference? { references.first }
-
     /// Drawn as the Books tab draws a book, the headphones on a recording's
     /// cover: on its tile and on its page alike.
     var cover: Book { release.book(id: "suggestion-\(id)") }
@@ -150,12 +147,6 @@ struct MonthlyDiscoveries: Hashable, Sendable, Codable {
         return elided(name)
             ? String(localized: "Vos livres d’\(name) arrivent")
             : String(localized: "Vos livres de \(name) arrivent")
-    }
-
-    /// Under the title once the month's selection ran out: that it did, and
-    /// when the next ones come.
-    var nextLine: String {
-        String(localized: "Plus de découvertes ce mois-ci : prochaines en \(Self.monthName(Self.month(after: month))).")
     }
 
     /// The home's last page once the month's discoveries ran out: "Les

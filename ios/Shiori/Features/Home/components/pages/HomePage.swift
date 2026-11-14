@@ -27,8 +27,6 @@ enum HomeAction {
     /// An empty library's start rows: the Partagé tab, where a friend is
     /// invited or an invitation entered.
     case showShared
-    /// "Prochaines sorties"'s header, and the hero's way to every discovery.
-    case showDiscover
     /// A volume just out or announced, or a recording awaited.
     case openRelease(HomeRelease)
     case openDiscovery(Suggestion)
@@ -140,8 +138,7 @@ struct HomePage: View {
                         discoveries: shownDiscoveries,
                         date: today,
                         isWide: isSideBySide,
-                        onOpen: { onAction(.openDiscovery($0)) },
-                        onShowAll: { onAction(.showDiscover) }
+                        onOpen: { onAction(.openDiscovery($0)) }
                     )
                 }
                 VStack(alignment: .leading, spacing: 30) {
@@ -421,9 +418,7 @@ struct HomePage: View {
         let tiles = newsTiles
         if !tiles.isEmpty, !dashboard.libraryIsEmpty {
             VStack(alignment: .leading, spacing: 12) {
-                RowHeader(title: "Prochaines sorties", detail: String(localized: "Découvrir"), style: headerStyle) {
-                    onAction(.showDiscover)
-                }
+                RowHeader(title: "Prochaines sorties", style: headerStyle)
                 // A phone shelves them as the pile, the day out or "Disponible"
                 // in each cover; the open Duo keeps its tiles.
                 if isCompact {

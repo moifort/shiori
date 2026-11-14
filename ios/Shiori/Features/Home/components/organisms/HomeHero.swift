@@ -14,7 +14,6 @@ struct HomeHero: View {
     /// Room for the month's other discoveries beside the first.
     var isWide = false
     let onOpen: (Suggestion) -> Void
-    let onShowAll: () -> Void
 
     var body: some View {
         if let lead = discoveries.first {
@@ -94,25 +93,15 @@ struct HomeHero: View {
             .buttonStyle(.plain)
             .accessibilityIdentifier("home-discovery")
 
-            GlassEffectContainer(spacing: 10) {
-                HStack(spacing: 10) {
-                    Button { onOpen(suggestion) } label: {
-                        Label("Découvrir", systemImage: "sparkles")
-                            .font(.subheadline.weight(.semibold))
-                            .padding(.horizontal, 4)
-                    }
-                    .buttonStyle(.glassProminent)
-                    .tint(.white)
-                    .foregroundStyle(.black)
-                    Button(action: onShowAll) {
-                        Text("Tout voir")
-                            .font(.subheadline.weight(.semibold))
-                            .padding(.horizontal, 4)
-                    }
-                    .buttonStyle(.glass)
-                }
-                .controlSize(.large)
+            Button { onOpen(suggestion) } label: {
+                Label("Découvrir", systemImage: "sparkles")
+                    .font(.subheadline.weight(.semibold))
+                    .padding(.horizontal, 4)
             }
+            .buttonStyle(.glassProminent)
+            .tint(.white)
+            .foregroundStyle(.black)
+            .controlSize(.large)
         }
     }
 
@@ -162,18 +151,18 @@ extension Suggestion {
 
 #Preview("Discovery") {
     ScrollView {
-        HomeHero(discoveries: MonthlyDiscoveries.preview.suggestions, date: .now, onOpen: { _ in }, onShowAll: {})
+        HomeHero(discoveries: MonthlyDiscoveries.preview.suggestions, date: .now, onOpen: { _ in })
     }
     .background(Color(.systemGroupedBackground))
 }
 
 #Preview("Wide", traits: .fixedLayout(width: 859, height: 400)) {
     ScrollView {
-        HomeHero(discoveries: MonthlyDiscoveries.preview.suggestions, date: .now, isWide: true, onOpen: { _ in }, onShowAll: {})
+        HomeHero(discoveries: MonthlyDiscoveries.preview.suggestions, date: .now, isWide: true, onOpen: { _ in })
     }
     .background(Color(.systemGroupedBackground))
 }
 
 #Preview("No discovery") {
-    HomeHero(discoveries: [], date: .now, onOpen: { _ in }, onShowAll: {})
+    HomeHero(discoveries: [], date: .now, onOpen: { _ in })
 }

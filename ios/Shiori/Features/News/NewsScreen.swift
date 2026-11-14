@@ -1,32 +1,16 @@
 import SwiftUI
 
-/// The Découvrir tab (ex-Actualités), connected: owns the ViewModel, its loads, and what a
+/// The Actu tab, connected: owns the ViewModel, its loads, and what a
 /// tap opens. Draws `NewsPage`.
 ///
 /// What opens is what the app already has: a friend's book on its read-only
-/// page, an author's page, a narrator's page. A release alert or a book awaited
-/// opens Découvrir, whole, over the tab.
+/// page, an author's page, a narrator's page.
 struct NewsScreen: View {
-    /// Held by `ContentView`, which brings it back to the books on each visit.
-    @Binding var discoverShelf: LibraryShelf
-    /// A book a scan's review asked to await, handed on to Découvrir.
-    @Binding var awaitRequest: AwaitRequest?
-    /// Set by a release alert or a book awaited: Découvrir opens at once.
-    @Binding var opensDiscover: Bool
-
     @State private var viewModel: NewsViewModel
     @State private var detail: NewsDetail?
     @State private var showsAlerts = false
 
-    init(
-        discoverShelf: Binding<LibraryShelf>,
-        awaitRequest: Binding<AwaitRequest?>,
-        opensDiscover: Binding<Bool>,
-        client: NewsClient = .live
-    ) {
-        _discoverShelf = discoverShelf
-        _awaitRequest = awaitRequest
-        _opensDiscover = opensDiscover
+    init(client: NewsClient = .live) {
         _viewModel = State(initialValue: NewsViewModel(client: client))
     }
 
@@ -56,20 +40,6 @@ struct NewsScreen: View {
         .task { await viewModel.loadOnAppear() }
         .onReceive(NotificationCenter.default.publisher(for: .shioriDataDidChange)) { _ in
             Task { await viewModel.load() }
-        }
-        .fullScreenCover(isPresented: $opensDiscover) {
-            DiscoverScreen(shelf: $discoverShelf, awaitRequest: $awaitRequest)
-                .overlay(alignment: .topTrailing) {
-                    Button { opensDiscover = false } label: {
-                        Image(systemName: "xmark")
-                            .font(.footnote.weight(.bold))
-                            .frame(width: 36, height: 36)
-                            .glassEffect(.regular.interactive(), in: .circle)
-                    }
-                    .padding(.trailing, 16)
-                    .padding(.top, 6)
-                    .accessibilityLabel("Fermer")
-                }
         }
     }
 
@@ -101,7 +71,6 @@ struct NewsScreen: View {
         case let .wish(card): await viewModel.wish(card)
         case let .dismiss(card): await viewModel.dismiss(card)
         case .openUpcoming: open(.upcoming)
-        case .openDiscover: opensDiscover = true
         case .invite: await viewModel.invite()
         case .openAlerts: showsAlerts = true
         case .refresh: await viewModel.load()
@@ -209,10 +178,5 @@ private struct UpcomingReleasesScreen: View {
 }
 
 #Preview("Smoke") {
-    NewsScreen(
-        discoverShelf: .constant(.books),
-        awaitRequest: .constant(nil),
-        opensDiscover: .constant(false),
-        client: .preview
-    )
+    NewsScreen(client: .preview)
 }

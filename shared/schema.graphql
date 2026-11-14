@@ -3342,7 +3342,7 @@ type Mutation {
   """
   Look up now, on the web, every saga, then every author, the reader follows in that format that was never looked up, rather than wait for the hourly pass — for the first look at the tab, and a saga followed since. Slow: grounded model calls, a few side by side, up to about ninety seconds; whatever is left goes to the hourly pass. Answers the tab.
   """
-  lookUpDiscovery(format: ReleaseFormat!): Discovery!
+  lookUpDiscovery(format: ReleaseFormat!): Discovery! @deprecated(reason: "Découvrir left the iOS app: nothing replaces the first look.")
 
   """
   Look a saga up on the web now in the edition opened, when nobody ever did — one grounded call, about ten seconds — and answer what it has for the reader. An edition already looked up is answered as it stands.
@@ -4248,7 +4248,7 @@ type Query {
   
   A book marked "do not share" is never among them.
   """
-  friendRecommendations: FriendRecommendations!
+  friendRecommendations: FriendRecommendations! @deprecated(reason: "Découvrir left the iOS app: no screen asks for the friends’ picks any more.")
 
   """
   One saga of a friend's shelf — or of the reader's own, previewed — with every volume of it they share, in reading order: what the saga screen draws against its catalogue when opened from their shelf, so where it stands is theirs, not the reader's.

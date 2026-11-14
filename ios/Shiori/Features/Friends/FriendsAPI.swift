@@ -374,24 +374,6 @@ enum FriendsAPI {
         )
     }
 
-    /// One book of a friend's shelf, with everything the read-only page shows.
-    /// Nil for a book they keep to themselves, and for anybody who is not a
-    /// friend.
-    /// "Coups de cœur de vos amis", for Découvrir: what the friends hearted
-    /// and the reader holds in no format.
-    static func picks() async throws -> FriendPicks {
-        #if DEBUG
-        if Showcase.isOn {
-            return Showcase.picks
-        }
-        #endif
-        let data = try await GraphQLHelpers.fetch(
-            GraphQLClient.shared.apollo,
-            query: ShioriGraphQL.FriendRecommendationsQuery()
-        )
-        return FriendPicks(fields: data.friendRecommendations.fragments.friendRecommendationsFields)
-    }
-
     /// Whether the reader may take a friend's book as an audiobook. Nil for a
     /// book that is not shared with them.
     static func audio(friendId: String, bookId: String) async throws -> AudioAvailability? {
@@ -407,6 +389,9 @@ enum FriendsAPI {
         }
     }
 
+    /// One book of a friend's shelf, with everything the read-only page shows.
+    /// Nil for a book they keep to themselves, and for anybody who is not a
+    /// friend.
     static func book(friendId: String, bookId: String) async throws -> FriendBook? {
         let data = try await GraphQLHelpers.fetch(
             GraphQLClient.shared.apollo,

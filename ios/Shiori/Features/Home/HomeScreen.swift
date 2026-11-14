@@ -14,8 +14,6 @@ struct HomeScreen: View {
     /// the rated books, the favourites, the dropped ones, the whole shelf.
     let onShowLibrary: (LibraryRequest) -> Void
     let onScan: () -> Void
-    /// Opens Découvrir, from the releases header.
-    var onShowDiscover: () -> Void = {}
     /// The Partagé tab, from the empty shelf's start rows.
     var onShowShared: () -> Void = {}
 
@@ -64,14 +62,12 @@ struct HomeScreen: View {
         onShowSeries: @escaping (SeriesRequest) -> Void,
         onShowLibrary: @escaping (LibraryRequest) -> Void,
         onScan: @escaping () -> Void,
-        onShowDiscover: @escaping () -> Void = {},
         onShowShared: @escaping () -> Void = {},
         client: HomeClient = .live
     ) {
         self.onShowSeries = onShowSeries
         self.onShowLibrary = onShowLibrary
         self.onScan = onScan
-        self.onShowDiscover = onShowDiscover
         self.onShowShared = onShowShared
         _viewModel = State(initialValue: HomeViewModel(client: client))
     }
@@ -340,7 +336,6 @@ struct HomeScreen: View {
                     case .scan: onScan()
                     case let .connectSource(source): openSource = source
                     case .showShared: onShowShared()
-                    case .showDiscover: onShowDiscover()
                     case let .openRelease(.volume(volume)): detail = .release(volume)
                     case let .openRelease(.awaited(edition)): detail = .awaited(edition)
                     case let .openDiscovery(suggestion): detail = .discovery(suggestion)

@@ -81,20 +81,6 @@ extension Showcase {
         ),
     ]
 
-    static var picks: FriendPicks {
-        let leaLover = FriendLovers.Lover(userId: "lea", firstName: lea)
-        let hugoLover = FriendLovers.Lover(userId: "hugo", firstName: hugo)
-        let camilleLover = FriendLovers.Lover(userId: "camille", firstName: camille)
-        return FriendPicks(books: [
-            LovedBook(book: friendBook(shared("nuit-des-temps"), activity: 1),
-                      lovers: FriendLovers(friends: [leaLover, hugoLover], lovedByMany: true)),
-            LovedBook(book: friendBook(shared("seul-sur-mars"), activity: 2),
-                      lovers: FriendLovers(friends: [hugoLover], lovedByMany: false)),
-            LovedBook(book: friendBook(shared("furtifs"), activity: 3),
-                      lovers: FriendLovers(friends: [leaLover, camilleLover], lovedByMany: true)),
-        ])
-    }
-
     /// The reader's own shelf as their friends see it.
     static var myShelf: FriendProfile {
         let reading = books.filter { $0.status == .reading }
