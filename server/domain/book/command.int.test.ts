@@ -956,7 +956,7 @@ describe('deleting', () => {
   test('removes the book and says so', async () => {
     const book = await add('Le Nom du vent')
 
-    expect(await BookCommand.remove(reader, book.id)).toBe('removed')
+    expect(await BookCommand.remove(reader, book.id)).toMatchObject({ id: book.id })
     expect(await BookQuery.byId(reader, book.id)).toBeNull()
   })
 

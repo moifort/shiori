@@ -667,12 +667,12 @@ export namespace BookCommand {
     bookId: BookId,
     batch?: WriteBatch,
     now = new Date(),
-  ): Promise<'removed' | 'not-found'> => {
+  ): Promise<Book | 'not-found'> => {
     const book = await repository.findById(userId, bookId)
     if (!book) return 'not-found'
     await repository.remove(userId, bookId, batch)
     await repository.saveSyncRemovals(syncRemovalsOf(book, now), batch)
-    return 'removed'
+    return book
   }
 
   /** Remove every volume of one saga from the reader's library, in one batch —

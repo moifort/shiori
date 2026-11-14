@@ -302,13 +302,12 @@ const rewrittenFrom = async (userId: UserId, book: Book, found: ScanResult, lang
 }
 
 // A book that was not found, or an edit refused, wrote nothing, so the view
-// stays as it was.
-const withAnalytics = <Outcome>(userId: UserId, write: (batch: WriteBatch) => Promise<Outcome>) =>
-  AnalyticsUseCase.afterWrite(userId, write, wrote)
+// stays as it was. A command answers a refusal as a bare string and a write as
+// the book it wrote, so any refusal added later is told apart without a list
+// to keep in step.
+const withAnalytics = <Outcome extends Book | string>(
+  userId: UserId,
+  write: (batch: WriteBatch) => Promise<Outcome>,
+) => AnalyticsUseCase.afterWrite(userId, write, wrote)
 
-const wrote = (outcome: unknown): boolean =>
-  outcome !== 'not-found' &&
-  outcome !== 'no-author' &&
-  outcome !== 'no-photo' &&
-  outcome !== 'audiobook' &&
-  outcome !== 'past-the-end'
+const wrote = (outcome: Book | string): boolean => typeof outcome !== 'string'

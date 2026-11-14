@@ -420,9 +420,8 @@ builder.mutationFields((t) => ({
     resolve: async (_root, args, context) => {
       const result = await BookUseCase.remove(context.userId, args.id)
       return match(result)
-        .with('removed', () => true)
         .with('not-found', () => notFound('Book not found'))
-        .exhaustive()
+        .otherwise(() => true)
     },
   }),
 }))

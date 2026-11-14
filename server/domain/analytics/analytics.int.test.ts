@@ -224,3 +224,19 @@ describe('writing a long import', () => {
     expect(fake.data('analytics', reader)?.stale).toBe(true)
   })
 })
+
+describe('an edit refused', () => {
+  test('for its dates leaves the view fresh', async () => {
+    const book = await addBook('Le Nom du vent', 'read')
+    await AnalyticsUseCase.dashboard(reader, paris)
+    startFakeRequest()
+
+    const outcome = await BookUseCase.edit(reader, book.id, {
+      startedAt: new Date('2026-05-02T00:00:00.000Z'),
+      finishedAt: new Date('2026-05-01T00:00:00.000Z'),
+    })
+
+    expect(outcome).toBe('bad-dates')
+    expect(fake.data('analytics', reader)?.stale).toBe(false)
+  })
+})
