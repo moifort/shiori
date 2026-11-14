@@ -70,10 +70,4 @@ export namespace SeriesCommand {
       ...(edition.language ? { language: edition.language } : {}),
       missedAt: at,
     })
-
-  /** Whether the catalogue already holds this saga in that edition — what
-   *  decides if the third Gemini call runs at all. A hit means the scan costs
-   *  two calls, not three. */
-  export const isCatalogued = async (edition: SeriesEdition): Promise<boolean> =>
-    (await repository.findById(edition)) !== null
 }

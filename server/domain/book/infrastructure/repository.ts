@@ -139,20 +139,6 @@ export const findById = async (userId: UserId, bookId: BookId): Promise<Book | u
 export const findByIds = async (userId: UserId, ids: readonly BookId[]): Promise<Book[]> =>
   seen((await findDocuments(books(), ids)).filter((book) => book.userId === userId).map(asBook))
 
-// One edition's volumes alone, by a query on its series id: the saga screen
-// used to load the whole library to keep a handful of rows. Taken from the
-// library when this request already holds it, where filtering in memory costs
-// nothing.
-//
-// Equalities only, which Firestore serves by merging its automatic single-field
-// indexes: no composite index.
-export const findBySeries = async (userId: UserId, seriesId: SeriesId): Promise<Book[]> => {
-  if (isInRequestCache(allCacheKey(userId)))
-    return (await findAllByUser(userId)).filter((book) => book.series?.id === seriesId)
-  const snapshot = await ownedBy(userId).where('series.id', '==', seriesId).get()
-  return seen(snapshot.docs.map((doc) => asBook(doc.data())))
-}
-
 // Every edition's volumes of one saga, by a query on the saga key stored beside
 // the id: what removing or merging a whole saga, and a build older than the
 // edition ids, ask for.

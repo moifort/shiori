@@ -14,10 +14,5 @@ const corrections = () =>
 export const saveAll = (entries: readonly CatalogueCorrection[]): Promise<void> =>
   setInBatches(entries.map((entry) => ({ ref: corrections().doc(), data: entry })))
 
-export const findAllByUser = async (userId: UserId): Promise<CatalogueCorrection[]> => {
-  const snapshot = await corrections().where('userId', '==', userId).get()
-  return snapshot.docs.map((doc) => doc.data())
-}
-
 export const removeAllByUser = (userId: UserId): Promise<void> =>
   deleteAllOwnedBy(corrections(), userId)

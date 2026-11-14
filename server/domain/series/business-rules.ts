@@ -108,15 +108,6 @@ const earliestRelease = (volume: Volume): ReleaseDate | undefined =>
 const announcedToTheDay = (volume: Volume, currentYear: YearValue, edition: Edition): boolean =>
   releaseOf(volume, edition.language)?.length === 10 && isForthcoming(volume, currentYear, edition)
 
-export const publishedVolumes = (
-  series: Series,
-  currentYear: YearValue,
-  edition: Edition = {},
-): Volume[] => {
-  const known = editionOf(series, edition)
-  return series.volumes.filter((volume) => !isForthcoming(volume, currentYear, known))
-}
-
 /** Whether a book the reader holds is a volume not out yet in its own edition:
  *  the volume it is, found in the saga's catalogue for that language, judged
  *  as that catalogue judges its unowned volumes. A numbered volume is found by

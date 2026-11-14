@@ -9,11 +9,16 @@ const { SeriesCommand } = await import('~/domain/series/command')
 const { SeriesQuery } = await import('~/domain/series/query')
 const { BookCommand } = await import('~/domain/book/command')
 const { BookQuery } = await import('~/domain/book/query')
-const { CatalogueCorrectionQuery } = await import('~/domain/catalogue-correction/query')
 const { SagaKey, SeriesDescription, SeriesName, VolumeNumber } = await import(
   '~/domain/series/primitives'
 )
 const { AuthorName, BookTitle } = await import('~/domain/shared/primitives')
+
+/** The corrections log as stored: no query of the domain reads it back. */
+const correctionsBy = async (userId: string) =>
+  (await fakeDb().collection('catalogue-corrections').where('userId', '==', userId).get()).docs.map(
+    (doc) => doc.data(),
+  )
 
 const reader = 'reader-1' as UserId
 const other = 'reader-2' as UserId
@@ -66,7 +71,7 @@ describe('correcting a catalogued edition', () => {
     const stored = await SeriesQuery.byId({ saga, language: 'fr' })
     expect(stored?.corrected).toEqual(['name', 'description'])
     expect((await BookQuery.bySeries(other, saga))[0].series?.name).toBe(SeriesName('Naruto'))
-    expect(await CatalogueCorrectionQuery.byUser(reader)).toMatchObject([
+    expect(await correctionsBy(reader)).toMatchObject([
       {
         catalogue: 'series',
         documentId: `${saga}~fr`,
@@ -106,7 +111,7 @@ describe('correcting a catalogued edition', () => {
       'manga',
     ])
     expect((await BookQuery.bySeries(other, saga))[0].format).toBe('book')
-    expect(await CatalogueCorrectionQuery.byUser(reader)).toEqual([])
+    expect(await correctionsBy(reader)).toEqual([])
   })
 
   test('refuses a recording either way', async () => {

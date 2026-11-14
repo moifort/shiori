@@ -391,16 +391,12 @@ export const storedRecommendation = (
 export const statusAfterRating = (current: ReadingStatus): ReadingStatus =>
   current === 'dropped' ? 'dropped' : 'read'
 
-/** Where a reader's cover images live in the bucket. Derived from the owner and
- *  the book, never chosen by a caller: a caller-supplied path is a traversal.
+/** Where a reader's cover images live in the bucket.
  *
  *  Keyed by owner first so an account deletion can erase every cover with one
  *  prefix sweep, rather than one delete per book it would have to enumerate
  *  after the Firestore records are already gone. */
 export const coverPrefixOf = (userId: UserId): ObjectPathValue => ObjectPath(`covers/${userId}/`)
-
-export const coverPathOf = (userId: UserId, bookId: BookId): ObjectPathValue =>
-  ObjectPath(`${coverPrefixOf(userId)}${bookId}`)
 
 /** Every subgenre the reader has used in `language`, the most used first and
  *  the alphabet breaking ties, folded on case so "Dark fantasy" and "dark

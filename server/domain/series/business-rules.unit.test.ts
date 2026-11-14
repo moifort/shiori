@@ -15,7 +15,6 @@ import {
   numberInCatalogue,
   progressOf,
   provisionalCatalogueOf,
-  publishedVolumes,
   splitBySpine,
   stateOf,
   withBareTitles,
@@ -673,7 +672,6 @@ describe('release dates per edition', () => {
     expect(
       isForthcoming(fifth, THIS_YEAR, editionOf(series, { language: 'en', today: TODAY })),
     ).toBe(false)
-    expect(publishedVolumes(series, THIS_YEAR, { language: 'fr', today: TODAY })).toHaveLength(4)
   })
 
   test('a catalogue of its edition alone is out up to its last volume, whatever was dated', () => {
@@ -695,7 +693,6 @@ describe('release dates per edition', () => {
     }
     const fr = editionOf(series, { language: 'fr', today: TODAY })
     expect(isForthcoming(fifth, THIS_YEAR, fr)).toBe(false)
-    expect(publishedVolumes(series, THIS_YEAR, { language: 'fr', today: TODAY })).toHaveLength(5)
   })
 
   test('an edition nobody dated yet falls back on the other editions', () => {

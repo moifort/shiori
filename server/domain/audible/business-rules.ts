@@ -633,12 +633,6 @@ export const readersDueForSync = (connections: readonly AudibleConnection[]): Us
     )
     .map((connection) => connection.userId)
 
-/** A search for a title on the reader's own Audible store: every marketplace
- *  serves its catalogue at `audible.{marketplace}`, the one the account was
- *  opened on. */
-export const audibleSearchUrlOf = (marketplace: AudibleMarketplace, keywords: string) =>
-  `https://www.audible.${marketplace}/search?keywords=${encodeURIComponent(keywords)}`
-
 /** A recording's page on the reader's own Audible store. Audible claims
  *  `/pd/{asin}` as a universal link, so on an iPhone with the Audible app it
  *  opens the app on the title, and the website otherwise. */

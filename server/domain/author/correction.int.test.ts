@@ -40,8 +40,13 @@ const { AuthorCommand } = await import('~/domain/author/command')
 const { AuthorQuery } = await import('~/domain/author/query')
 const { authorKeyOf, AuthorBiography, PortraitUrl } = await import('~/domain/author/primitives')
 const { BookCommand } = await import('~/domain/book/command')
-const { CatalogueCorrectionQuery } = await import('~/domain/catalogue-correction/query')
 const { AuthorName, BookTitle, Year } = await import('~/domain/shared/primitives')
+
+/** The corrections log as stored: no query of the domain reads it back. */
+const correctionsBy = async (userId: string) =>
+  (await fakeDb().collection('catalogue-corrections').where('userId', '==', userId).get()).docs.map(
+    (doc) => doc.data(),
+  )
 
 const reader = 'reader-1' as UserId
 const name = AuthorName('Brandon Sanderson')
@@ -80,7 +85,7 @@ describe('correcting an author', () => {
     const stored = await AuthorQuery.byKey(key)
     expect(stored?.corrected).toEqual(['birthYear', 'deathYear', 'biography'])
     expect(stored?.books).toHaveLength(1)
-    expect(await CatalogueCorrectionQuery.byUser(reader)).toMatchObject([
+    expect(await correctionsBy(reader)).toMatchObject([
       {
         catalogue: 'author',
         documentId: key,

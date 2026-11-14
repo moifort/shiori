@@ -21,13 +21,7 @@ import { AudibleCommand } from '~/domain/audible/command'
 import * as api from '~/domain/audible/infrastructure/audible-api'
 import { openReadableCredentials } from '~/domain/audible/infrastructure/credentials-vault'
 import { AudibleQuery } from '~/domain/audible/query'
-import type {
-  AudibleAsin,
-  AudibleMarketplace,
-  ImportableBook,
-  LibrarySync,
-  SyncRun,
-} from '~/domain/audible/types'
+import type { AudibleAsin, ImportableBook, LibrarySync, SyncRun } from '~/domain/audible/types'
 import { markedRemovedByReader } from '~/domain/book/business-rules'
 import { BookCommand } from '~/domain/book/command'
 import { BookQuery } from '~/domain/book/query'
@@ -50,11 +44,6 @@ import { NIGHTLY_BUDGET_MS, syncEveryConnectedReader } from '~/utils/nightly-pas
 const logger = createLogger('audible')
 
 export namespace AudibleUseCase {
-  /** The store the reader's Audible account was opened on, or nothing for a
-   *  reader who never connected one — who is then offered no recording. */
-  export const marketplaceOf = async (userId: UserId): Promise<AudibleMarketplace | undefined> =>
-    (await AudibleQuery.accountOf(userId))?.marketplace
-
   /** The reader's Audible library, as books they could catalogue.
    *
    *  Nothing is saved: the answer is a proposal, the same contract `scanBook`

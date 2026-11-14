@@ -4,7 +4,6 @@ import { resolveGenreId } from 'audible-api-ts'
 import {
   audibleLinksFor,
   audibleProductUrlOf,
-  audibleSearchUrlOf,
   bookFrom,
   boughtSince,
   editionYearsFor,
@@ -983,14 +982,6 @@ describe('choosing whose library to sync', () => {
       aConnection('never', {}),
     ])
     expect(order).toEqual(['never', 'stale', 'recent'] as UserId[])
-  })
-})
-
-describe('a search on the reader’s Audible store', () => {
-  test('is on their marketplace, the title encoded', () => {
-    expect(audibleSearchUrlOf('fr', 'Nous sommes Légion')).toBe(
-      'https://www.audible.fr/search?keywords=Nous%20sommes%20L%C3%A9gion',
-    )
   })
 })
 
