@@ -231,7 +231,8 @@ struct SeriesScreen: View {
             addingTitle: viewModel.addingTitle,
             releases: viewModel.releases,
             takenFormat: viewModel.takenFormat,
-            announcedVolume: viewModel.announcedVolume
+            announcedVolume: viewModel.announcedVolume,
+            unownedVolume: viewModel.unownedVolume
         ) { action in
             switch action {
             case let .openBook(book):

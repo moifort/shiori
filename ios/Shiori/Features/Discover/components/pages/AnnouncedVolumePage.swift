@@ -3,8 +3,9 @@ import SwiftUI
 /// Everything an announced volume's page can ask for.
 enum AnnouncedVolumeAction {
     case close
-    /// On the pile, filed in its saga at its number.
-    case add
+    /// On the pile, read already or on the wishlist, filed in its saga at
+    /// its number.
+    case add(UnownedBookAddition)
     case openSaga
     /// The saga's alerts on or off, from the bell.
     case toggleFollowed
@@ -47,7 +48,8 @@ struct AnnouncedVolumePage: View {
             sagaVolumes: sagaVolumes,
             showsClose: showsClose,
             onClose: { act(.close) },
-            onAdd: { await onAction(.add) },
+            additions: UnownedBookAddition.allCases,
+            onAdd: { await onAction(.add($0)) },
             onToggleBell: { act(.toggleFollowed) },
             onOpenSaga: { act(linksToSaga ? .openSaga : .close) },
             onOpenVolume: { act(.openVolume($0)) }

@@ -8,7 +8,7 @@ enum SeriesAction {
     /// The eye: the saga followed again, or set aside.
     case setFollowed(Bool)
     case openAuthor(AuthorDestination)
-    /// A volume announced in the edition opened, on its own page.
+    /// A volume the reader lacks, announced or out, on its own page.
     case openAnnounced(DiscoveredVolume)
     /// A volume the reader does not hold, added in the format and status asked.
     case add(Volume, author: String, format: BookFormat, status: ReadingStatus)
@@ -26,7 +26,7 @@ enum SeriesAction {
 /// its annexes as rows of posters, and its facts as the book page's table.
 ///
 /// The owned volumes are the reader's own books; the missing ones are dimmed,
-/// and a tap offers to add them. Opened from a friend's shelf, the same
+/// a tap opens their page and a long press offers to add them. Opened from a friend's shelf, the same
 /// catalogue reads as theirs: the capsule, the stars, the days and the volumes
 /// held are the friend's, read-only.
 struct SeriesPage: View {
@@ -48,6 +48,8 @@ struct SeriesPage: View {
     let takenFormat: BookFormat
     /// The page of an announced volume, when the release watch found it.
     let announcedVolume: (Volume) -> DiscoveredVolume?
+    /// The page of a volume out the reader lacks; nil for an annex.
+    var unownedVolume: (Volume) -> DiscoveredVolume? = { _ in nil }
     let onAction: (SeriesAction) async -> Void
 
     /// Bumped on each tap of the eye, which swings as it changes.
@@ -325,7 +327,8 @@ struct SeriesPage: View {
     }
 
     /// A volume the reader does not hold, dimmed and without a badge. Out, a
-    /// tap offers to add it; announced, its day replaces its number, in
+    /// tap opens its page, the page of a book not in the library, and a long
+    /// press offers to add it at once; announced, its day replaces its number, in
     /// white like the others, and a tap opens its page once the release watch
     /// found one.
     @ViewBuilder
@@ -390,33 +393,48 @@ struct SeriesPage: View {
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(label)
         } else {
-            Menu {
-                ForEach(takenFormat.takenAs, id: \.self) { format in
-                    Section(format.label) {
-                        Button(
-                            format == .audiobook ? "À écouter" : "À lire",
-                            systemImage: "bookmark.fill"
-                        ) {
-                            Task { await onAction(.add(volume, author: author, format: format, status: .toRead)) }
-                        }
-                        .accessibilityIdentifier("series-volume-add-pile-\(format.rawValue)")
-                        Button(
-                            format == .audiobook ? "Déjà écouté" : "Déjà lu",
-                            systemImage: "checkmark"
-                        ) {
-                            Task { await onAction(.add(volume, author: author, format: format, status: .read)) }
-                        }
-                        .accessibilityIdentifier("series-volume-add-read-\(format.rawValue)")
-                    }
-                }
-            } label: {
-                cover
+            if let page = unownedVolume(volume) {
+                Button { Task { await onAction(.openAnnounced(page)) } } label: { cover }
+                    .buttonStyle(.plain)
+                    .disabled(addingTitle != nil)
+                    .contextMenu { addActions(volume, author: author) }
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(label)
+                    .accessibilityAddTraits(.isButton)
+                    .accessibilityIdentifier("series-volume-open")
+            } else {
+                // An annex has no page: a tap offers to add it.
+                Menu { addActions(volume, author: author) } label: { cover }
+                    .menuStyle(.button)
+                    .buttonStyle(.plain)
+                    .disabled(addingTitle != nil)
+                    .accessibilityLabel(Text("Ajouter « \(title) » à ma bibliothèque"))
+                    .accessibilityIdentifier("series-volume-add")
             }
-            .menuStyle(.button)
-            .buttonStyle(.plain)
-            .disabled(addingTitle != nil)
-            .accessibilityLabel(Text("Ajouter « \(title) » à ma bibliothèque"))
-            .accessibilityIdentifier("series-volume-add")
+        }
+    }
+
+    /// What a volume the reader lacks can be added as, in each format the
+    /// saga is taken in: on the pile, or read already.
+    @ViewBuilder
+    private func addActions(_ volume: Volume, author: String) -> some View {
+        ForEach(takenFormat.takenAs, id: \.self) { format in
+            Section(format.label) {
+                Button(
+                    format == .audiobook ? "À écouter" : "À lire",
+                    systemImage: "bookmark.fill"
+                ) {
+                    Task { await onAction(.add(volume, author: author, format: format, status: .toRead)) }
+                }
+                .accessibilityIdentifier("series-volume-add-pile-\(format.rawValue)")
+                Button(
+                    format == .audiobook ? "Déjà écouté" : "Déjà lu",
+                    systemImage: "checkmark"
+                ) {
+                    Task { await onAction(.add(volume, author: author, format: format, status: .read)) }
+                }
+                .accessibilityIdentifier("series-volume-add-read-\(format.rawValue)")
+            }
         }
     }
 

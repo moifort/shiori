@@ -16,6 +16,12 @@ struct UnownedBookStore {
     }
 }
 
+/// What the "+" of a book not in the library makes of it: on the pile,
+/// read already, or on the wishlist.
+enum UnownedBookAddition: CaseIterable, Sendable {
+    case pile, read, wishlist
+}
+
 /// What the bell asks before it falls silent, when giving up cannot be
 /// undone from the page: an edition awaited stops being watched for good.
 struct BellConfirmation {
@@ -31,8 +37,9 @@ struct BellConfirmation {
 /// What it adds is in the hero alone: the day as a calendar leaf on glass in
 /// its corner while it is to come, how long is left tagged after the format,
 /// and the saga page's row of actions — the white button that orders it from
-/// its store, the "+" that puts it on the pile once it is out, and the bell
-/// that alerts on the day, which swings when tapped. A recording differs only
+/// its store, the "+" once it is out, which opens the suggestion's menu where
+/// more than the pile is offered, and the bell that alerts on the day while
+/// it is to come, which swings when tapped. A recording differs only
 /// by what the hero already says of one: its "Audio" tag and who reads it.
 /// Pure and previewable.
 struct UnownedBookPage: View {
@@ -65,7 +72,9 @@ struct UnownedBookPage: View {
     /// False when the page is pushed: Back closes it, not a Close button.
     var showsClose = true
     var onClose: () -> Void = {}
-    var onAdd: () async -> Void = {}
+    /// What the "+" offers: one, it adds at once; more, it opens a menu.
+    var additions: [UnownedBookAddition] = [.pile]
+    var onAdd: (UnownedBookAddition) async -> Void = { _ in }
     let onToggleBell: () -> Void
     var onOpenSaga: () -> Void = {}
     var onOpenVolume: (Book) -> Void = { _ in }
@@ -73,6 +82,8 @@ struct UnownedBookPage: View {
     /// Bumped on each tap of the bell, which swings as a bell rings.
     @State private var rings = 0
     @State private var confirmsSilence = false
+    /// The choice of the "+" menu being sent, its button turning.
+    @State private var adding = false
 
     /// The height of the hero's buttons, the saga page's.
     private static let buttonHeight: CGFloat = 50
@@ -105,9 +116,20 @@ struct UnownedBookPage: View {
             // The hero's "+" again, within reach once it has scrolled away.
             if let isAdded = offeredAddition {
                 ToolbarItem(placement: .primaryAction) {
-                    AsyncToolbarButton(title: "Ajouter à ma pile", systemImage: "plus", action: onAdd)
-                        .disabled(isAdded)
+                    if additions.count > 1 {
+                        Menu {
+                            additionButtons
+                        } label: {
+                            Label("Ajouter", systemImage: "plus")
+                                .labelStyle(.iconOnly)
+                        }
+                        .disabled(isAdded || adding)
                         .accessibilityIdentifier("unowned-toolbar-add")
+                    } else {
+                        AsyncToolbarButton(title: "Ajouter à ma pile", systemImage: "plus") { await onAdd(.pile) }
+                            .disabled(isAdded)
+                            .accessibilityIdentifier("unowned-toolbar-add")
+                    }
                 }
             }
         }
@@ -123,12 +145,18 @@ struct UnownedBookPage: View {
             releaseDate: releaseDate,
             countdown: releaseDate.flatMap { ReleaseDateText.countdown($0) }
         ) {
-            GlassEffectContainer(spacing: 10) {
-                HStack(spacing: 10) {
-                    if let store { storeButton(store) }
-                    if let isAdded = offeredAddition { addButton(isAdded) }
-                    bell
+            HStack(spacing: 10) {
+                GlassEffectContainer(spacing: 10) {
+                    HStack(spacing: 10) {
+                        if let store { storeButton(store) }
+                        if let isAdded = offeredAddition, additions.count == 1 { addButton(isAdded) }
+                        // Nothing left to alert on once it is out.
+                        if isUpcoming { bell }
+                    }
                 }
+                // Outside the glass container: a menu inside one loses the
+                // taps that move over a neighbouring button.
+                if let isAdded = offeredAddition, additions.count > 1 { addMenu(isAdded) }
             }
         }
     }
@@ -164,10 +192,63 @@ struct UnownedBookPage: View {
             title: isAdded ? "Dans votre pile" : "Ajouter à ma pile",
             systemImage: isAdded ? "checkmark" : "plus",
             side: Self.buttonHeight,
-            action: onAdd
+            action: { await onAdd(.pile) }
         )
         .disabled(isAdded)
         .accessibilityIdentifier("unowned-add")
+    }
+
+    /// The suggestion's "+": on the pile, read already, or on the wishlist,
+    /// round on glass beside the store; a tick once added.
+    private func addMenu(_ isAdded: Bool) -> some View {
+        Menu {
+            additionButtons
+        } label: {
+            Group {
+                if adding {
+                    ProgressView()
+                } else {
+                    Image(systemName: isAdded ? "checkmark" : "plus")
+                        .font(.title3.weight(.medium))
+                        .contentTransition(.symbolEffect(.replace))
+                }
+            }
+            .foregroundStyle(.white)
+            .frame(width: Self.buttonHeight, height: Self.buttonHeight)
+            .contentShape(.circle)
+        }
+        .menuStyle(.button)
+        .buttonStyle(.plain)
+        .glassEffect(.regular.interactive(), in: .circle)
+        .disabled(isAdded || adding)
+        .accessibilityLabel(Text(isAdded ? "Ajouté" : "Ajouter"))
+        .accessibilityIdentifier("unowned-add")
+    }
+
+    /// The choices of the "+", in the hero and in the bar.
+    @ViewBuilder private var additionButtons: some View {
+        if additions.contains(.pile) {
+            Button(book.format == .audiobook ? "À écouter" : "À lire", systemImage: "bookmark.fill") { add(.pile) }
+                .accessibilityIdentifier("unowned-add-pile")
+        }
+        if additions.contains(.read) {
+            Button(book.format == .audiobook ? "Déjà écouté" : "Déjà lu", systemImage: "checkmark") { add(.read) }
+                .accessibilityIdentifier("unowned-add-read")
+        }
+        if additions.contains(.wishlist) {
+            Section {
+                Button("Liste d'envies", systemImage: "bookmark") { add(.wishlist) }
+                    .accessibilityIdentifier("unowned-add-wishlist")
+            }
+        }
+    }
+
+    private func add(_ addition: UnownedBookAddition) {
+        adding = true
+        Task {
+            await onAdd(addition)
+            adding = false
+        }
     }
 
     /// Alerts on the day, or falls silent: a tap swings it as a bell rings,

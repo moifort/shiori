@@ -51,13 +51,23 @@ final class AnnouncedVolumeViewModel {
         }
     }
 
-    /// Onto the pile, filed in its saga at its number. A recording is best
-    /// added through the reader's Audible account: it keeps its link to the
-    /// title, as an import does. Without one, or when Audible sells none, it
-    /// is added from its page, as a printed volume is.
-    func add() async {
+    /// Onto the pile, filed in its saga at its number, or read already, or
+    /// on the wishlist. A recording is best put on the pile through the
+    /// reader's Audible account: it keeps its link to the title, as an import
+    /// does. Without one, or when Audible sells none, it is added from its
+    /// page, as a printed volume is.
+    func add(_ addition: UnownedBookAddition = .pile) async {
         let series = opened.saga.series
-        if series.isAudio {
+        if addition == .wishlist {
+            do {
+                try await client.wish(opened.draft(from: shown), .discovery, nil)
+                added = true
+            } catch {
+                addFailed = reportError(error)
+            }
+            return
+        }
+        if addition == .pile, series.isAudio {
             do {
                 try await client.addAudibleVolume(series.seriesId, opened.volume.number)
                 added = true
@@ -68,7 +78,9 @@ final class AnnouncedVolumeViewModel {
             }
         }
         do {
-            try await client.addBook(opened.draft(from: shown))
+            var draft = opened.draft(from: shown)
+            if addition == .read { draft.status = .read }
+            try await client.addBook(draft)
             added = true
         } catch {
             addFailed = reportError(error)

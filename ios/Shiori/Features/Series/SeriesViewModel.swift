@@ -434,6 +434,23 @@ final class SeriesViewModel {
         )
     }
 
+    /// The page of a volume of the saga the reader lacks: the announcement
+    /// when the release watch found one, else what the catalogue keeps of it —
+    /// its title, date and cover in the edition opened, or its title and year.
+    /// Nil for an annex, which has no number to file it at.
+    func unownedVolume(_ volume: Volume) -> DiscoveredVolume? {
+        if let announced = announcedVolume(volume) { return announced }
+        guard volume.kind == .main, let number = volume.number else { return nil }
+        let release = language.flatMap { volume.release(in: $0) }
+        return DiscoveredVolume(
+            number: number,
+            title: release?.title ?? volume.title,
+            date: release?.date ?? volume.publishedIn.map(String.init),
+            isbn13: nil,
+            coverURL: release?.coverURL
+        )
+    }
+
     /// The saga as the announced volume's page reads it: the edition opened.
     var announcedSaga: SagaDiscovery? {
         guard let series, let language else { return nil }

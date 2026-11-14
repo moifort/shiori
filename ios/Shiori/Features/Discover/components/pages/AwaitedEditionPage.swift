@@ -51,7 +51,7 @@ struct AwaitedEditionPage: View {
             currentVolumeId: edition.bookId,
             showsClose: showsClose,
             onClose: { act(.close) },
-            onAdd: { await onAction(.add) },
+            onAdd: { _ in await onAction(.add) },
             onToggleBell: { act(.stopAwaiting) },
             onOpenSaga: { if let id = shown.series?.id { act(.openSaga(id)) } },
             onOpenVolume: { act(.openVolume($0)) }
