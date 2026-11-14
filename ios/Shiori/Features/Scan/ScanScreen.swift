@@ -40,7 +40,8 @@ struct ScanScreen: View {
     var start: Start = .camera
     var onDismiss: () -> Void
     /// The review asked to await the book rather than add it: the scan closes
-    /// and Découvrir takes the request, showing the reader its tile.
+    /// and the caller sends the request, which may take a web search, behind
+    /// it.
     var onAwait: (BookDraft, ReleaseFormat) -> Void
     /// The book went into the library: the scan closes and the Library shows
     /// the reader where it was shelved.

@@ -35,6 +35,10 @@ enum LibraryDestination: Identifiable, Hashable {
     /// A view another tab asked for, as the destination it opens: the pile,
     /// the books read or being read, the favourites.
     init?(_ request: LibraryRequest) {
+        if request.opensWishlist {
+            self = .wishlist
+            return
+        }
         switch request.filter {
         case .status(.toRead): self = .shelf(.toRead)
         case .status(.read): self = .shelf(.read)

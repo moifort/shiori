@@ -80,4 +80,7 @@ struct LibraryRequest: Equatable {
     /// A book just added, scrolled to wherever its date shelves it in the
     /// list by date, every book shown.
     var focus: String?
+    /// The wishlist, opened over the shelves: where a scan's book goes when it
+    /// is wished for or its edition awaited.
+    var opensWishlist = false
 }

@@ -127,6 +127,7 @@ struct ContentView: View {
                     onWished: {
                         pendingConfirmation = .addedToWishlist
                         scanStart = nil
+                        showWishlist()
                     }
                 )
             }
@@ -173,6 +174,7 @@ struct ContentView: View {
                     onWished: {
                         pendingConfirmation = .addedToWishlist
                         sharedStart = nil
+                        showWishlist()
                     },
                     origin: .share
                 )
@@ -298,11 +300,24 @@ struct ContentView: View {
         opensDiscover = true
     }
 
-    /// A book awaited from a scan's review: Découvrir's books, where its tile
-    /// shows among the editions awaited, so the reader sees it was taken.
+    /// A book awaited from a scan's review: the wishlist, where its edition
+    /// shows once the server has looked it up — a web search the reader is
+    /// not kept waiting on: the list redraws itself on the change notice.
     private func showAwaited(_ draft: BookDraft, _ format: ReleaseFormat) {
-        showDiscover(.books)
-        awaitRequest = AwaitRequest(draft: draft, format: format)
+        showWishlist()
+        Task {
+            do {
+                _ = try await AwaitedAPI.awaitScanned(draft, format: format)
+            } catch {
+                _ = reportError(error)
+            }
+        }
+    }
+
+    /// The Library's wishlist, opened over its shelves.
+    private func showWishlist() {
+        libraryMode = LibraryRequest(opensWishlist: true)
+        Task { @MainActor in selectedTab = .library }
     }
 
     /// A book added from a scan: the Library's books, scrolled to where its
