@@ -116,6 +116,7 @@ struct ScanScreen: View {
                     ownedCopy: viewModel.ownedCopy,
                     isSaving: viewModel.isSaving,
                     awaitable: viewModel.awaitable,
+                    sagaVolumes: viewModel.sagaVolumes,
                     loadSubgenres: viewModel.subgenres,
                     loadVocabulary: viewModel.vocabulary
                 ) { action in
@@ -128,7 +129,9 @@ struct ScanScreen: View {
                     case let .wish(draft):
                         if await viewModel.wish(draft) { onWished() }
                     case let .languageOrFormatChanged(language, format):
-                        await viewModel.loadAwaitable(language: language, format: format)
+                        async let awaitable: Void = viewModel.loadAwaitable(language: language, format: format)
+                        async let saga: Void = viewModel.loadSagaVolumes(language: language)
+                        _ = await (awaitable, saga)
                     }
                 }
             }

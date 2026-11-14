@@ -39,6 +39,8 @@ final class ScanViewModel {
     /// The editions in the app's language the book under review may be
     /// awaited in, as the server says for its language and format.
     private(set) var awaitable: [ReleaseFormat] = []
+    /// The scanned book's saga, every volume of it, as its page will list them.
+    private(set) var sagaVolumes: [SeriesStripItem] = []
 
     private let client: ScanClient
     /// How a book saved here reached the library: a scan, a typed title, a share.
@@ -222,6 +224,20 @@ final class ScanViewModel {
         }
         do {
             awaitable = try await client.awaitableFormats(language, format)
+        } catch {
+            _ = reportError(error)
+        }
+    }
+
+    /// The saga's volumes in the edition reviewed, from the catalogue the scan
+    /// built: the same row a book's page draws, never a catalogue built here.
+    func loadSagaVolumes(language: BookLanguage?) async {
+        guard let seriesId = draft?.series?.id, !seriesId.isEmpty else {
+            sagaVolumes = []
+            return
+        }
+        do {
+            sagaVolumes = try await client.sagaVolumes(seriesId, language)
         } catch {
             _ = reportError(error)
         }

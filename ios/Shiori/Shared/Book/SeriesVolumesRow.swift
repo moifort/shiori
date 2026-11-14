@@ -94,7 +94,8 @@ struct SeriesVolumesRow: View {
         coverURL: URL?
     ) -> some View {
         let caption = number.map { String(localized: "Tome \($0)") } ?? title
-        let day = forthcoming ? date.map(ReleaseDateText.short) : nil
+        // An announced volume shows its day, or "Annoncé" before it has one.
+        let day = forthcoming ? date.map(ReleaseDateText.short) ?? String(localized: "Annoncé") : nil
         return Button(action: onOpenSeries) {
             PosterCover(
                     book: Book(id: id, title: title, authors: [], coverURL: coverURL, status: .toRead),
@@ -104,7 +105,7 @@ struct SeriesVolumesRow: View {
                 )
                 // A volume out the reader lacks is dimmed whole; an announced
                 // one keeps its day bright.
-                .opacity(day != nil ? 1 : forthcoming ? 0.3 : 0.45)
+                .opacity(day == nil ? 0.45 : 1)
                 .contentShape(.rect)
         }
         .buttonStyle(.plain)

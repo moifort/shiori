@@ -104,10 +104,10 @@ struct SeriesPage: View {
                     if let description = series.description {
                         BookSynopsisBlock(synopsis: description)
                     }
-                    rail("Tomes", posters: posters(series.spine), author: series.author, ringed: ringedId(series))
+                    rail("Tomes", posters: posters(series.spine), author: series.author)
                     let annexes = annexPosters(series.relatedWorks)
                     if !annexes.isEmpty {
-                        rail("Hors-série", posters: annexes, author: series.author, ringed: nil)
+                        rail("Hors-série", posters: annexes, author: series.author)
                     }
                     facts(series)
                 }
@@ -248,9 +248,10 @@ struct SeriesPage: View {
     // MARK: - Volumes
 
     /// A row of posters, one per volume in catalogue order — a poster per
-    /// part of a novel sold in two, and per format held.
-    private func rail(_ title: LocalizedStringKey, posters: [Poster], author: String, ringed: String?) -> some View {
-        SeriesPosterRail(title: title, items: posters, ringedId: ringed) { poster in
+    /// part of a novel sold in two, and per format held. None is ringed: a
+    /// saga's page is about the saga, no volume of it is open here.
+    private func rail(_ title: LocalizedStringKey, posters: [Poster], author: String) -> some View {
+        SeriesPosterRail(title: title, items: posters) { poster in
             switch poster.kind {
             case let .owned(book, volume): ownedPoster(book, volume: volume)
             case let .missing(volume): missingPoster(volume, author: author)
@@ -338,7 +339,12 @@ struct SeriesPage: View {
         let release = language.flatMap { volume.release(in: $0) }
         let title = release?.title ?? volume.title
         let forthcoming = volume.isForthcoming(asOf: currentYear, in: language, datedUpTo: datedUpTo)
-        let day = forthcoming ? release.map { ReleaseDateText.short($0.date) } : nil
+        // Its day as the edition, the release watch or the card above dates
+        // it, else "Annoncé": an announced volume never shows a bare number.
+        let date = release?.date
+            ?? announcedVolume(volume)?.date
+            ?? releases?.next.flatMap { $0.number == volume.number && volume.kind == .main ? $0.date : nil }
+        let day = forthcoming ? date.map(ReleaseDateText.short) ?? String(localized: "Annoncé") : nil
         // An announced volume shows the edition's cover once the watch found
         // one, dimmed, its day in white over the blurred foot.
         let coverURL = release?.coverURL
@@ -536,23 +542,6 @@ struct SeriesPage: View {
             owned.contains { volume.matches($0) && $0.status == .read }
         }
         return (read.count, published.count)
-    }
-
-    /// The volume to read next: the one open, else the first on the pile.
-    private var nextToRead: Book? {
-        let main = owned
-            .filter { $0.series?.kind == .main }
-            .sorted { ($0.series?.volume ?? .max) < ($1.series?.volume ?? .max) }
-        return main.first { $0.status == .reading } ?? main.first { $0.status == .toRead }
-    }
-
-    /// The poster ringed and scrolled to: the volume to read next, else the
-    /// first the reader lacks.
-    private func ringedId(_ series: BookSeries) -> String? {
-        if let next = nextToRead { return next.id }
-        return posters(series.spine).first {
-            if case .missing = $0.kind { true } else { false }
-        }?.id
     }
 
     /// The hero's covers: the first volume, in front and behind the hero as

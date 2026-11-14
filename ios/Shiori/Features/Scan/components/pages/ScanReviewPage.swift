@@ -46,6 +46,8 @@ struct ScanReviewPage: View {
     /// The editions in the app's language this book may be awaited in, as the
     /// server says for its language and format.
     let awaitable: [ReleaseFormat]
+    /// The saga's volumes, held or lacking, as the book's page will list them.
+    let sagaVolumes: [SeriesStripItem]
     /// The proposals under the genre and saga sheets.
     let loadSubgenres: () async -> [String]
     let loadVocabulary: () async -> BookVocabulary?
@@ -65,6 +67,7 @@ struct ScanReviewPage: View {
         ownedCopy: Book? = nil,
         isSaving: Bool,
         awaitable: [ReleaseFormat] = [],
+        sagaVolumes: [SeriesStripItem] = [],
         loadSubgenres: @escaping () async -> [String] = { [] },
         loadVocabulary: @escaping () async -> BookVocabulary? = { nil },
         onAction: @escaping (ScanReviewAction) async -> Void
@@ -73,6 +76,7 @@ struct ScanReviewPage: View {
         self.ownedCopy = ownedCopy
         self.isSaving = isSaving
         self.awaitable = awaitable
+        self.sagaVolumes = sagaVolumes
         self.loadSubgenres = loadSubgenres
         self.loadVocabulary = loadVocabulary
         self.onAction = onAction
@@ -89,6 +93,26 @@ struct ScanReviewPage: View {
             )
         }
         return book
+    }
+
+    /// The saga's row with the book scanned in its own place, bright and
+    /// ringed: in place of the volume the reader lacks, or of their own copy
+    /// of it. The book alone when the saga was renamed here, or before its
+    /// volumes have loaded.
+    private var rowVolumes: [SeriesStripItem] {
+        let current = SeriesStripItem.owned(book)
+        guard renamedSeries == nil, let number = book.series?.volume, !sagaVolumes.isEmpty else { return [current] }
+        var placed = false
+        let items: [SeriesStripItem] = sagaVolumes.compactMap { item in
+            let isThisVolume = switch item {
+            case let .missing(_, itemNumber, _, _, _, _): itemNumber == number
+            case let .owned(held): held.series?.kind == .main && held.series?.volume == number
+            }
+            guard isThisVolume else { return item }
+            defer { placed = true }
+            return placed ? nil : current
+        }
+        return placed ? items : items + [current]
     }
 
     /// The app's language, French and English, and the cover's own language
@@ -208,7 +232,7 @@ struct ScanReviewPage: View {
                     if let membership = book.series {
                         SeriesVolumesRow(
                             name: membership.name,
-                            volumes: [.owned(book)],
+                            volumes: rowVolumes,
                             currentId: book.id,
                             onOpenSeries: { editsSeries = true },
                             onOpenVolume: { _ in }
