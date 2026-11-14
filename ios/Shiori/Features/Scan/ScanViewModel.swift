@@ -41,8 +41,11 @@ final class ScanViewModel {
     private(set) var awaitable: [ReleaseFormat] = []
 
     private let client: ScanClient
+    /// How a book saved here reached the library: a scan, a typed title, a share.
+    private let origin: BookOrigin.Kind
 
-    init(client: ScanClient) {
+    init(origin: BookOrigin.Kind = .scan, client: ScanClient) {
+        self.origin = origin
         self.client = client
     }
 
@@ -158,6 +161,7 @@ final class ScanViewModel {
         defer { isSaving = false }
         do {
             var added = draft
+            added.origin = BookOrigin(origin)
             if placement != nil { added.series = nil }
             var book = try await client.add(added)
             track(.bookAdded(source: .scan))

@@ -1349,6 +1349,13 @@ describe('two copies of one book as one record', () => {
     })
   })
 
+  test('keeps how the record reached the library, unknown included', () => {
+    const scanned = { ...paperback, origin: { kind: 'scan' as const } }
+    const synced = { ...kindle, origin: { kind: 'kindle' as const } }
+    expect(mergedCopies(scanned, synced, LATER).origin).toEqual({ kind: 'scan' })
+    expect(mergedCopies(paperback, synced, LATER).origin).toBeUndefined()
+  })
+
   test('stays hidden when either copy was', () => {
     expect(mergedCopies(paperback, kindle, LATER).hidden).toBe(true)
   })

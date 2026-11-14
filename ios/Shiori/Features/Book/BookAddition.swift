@@ -34,6 +34,9 @@ enum BookAddition {
         if let lookUp, let found = try? await find(lookUp), found.recognized {
             draft = draft.completed(by: found.asDraft)
         }
+        // The caller may know better than the screen: a wish keeps where it
+        // was come across, an awaited edition says it was awaited.
+        if draft.origin == nil { draft.origin = BookOrigin(source.origin) }
         let added = try await BookAPI.add(draft)
         track(.bookAdded(source: source))
         return added
@@ -67,6 +70,7 @@ extension BookDraft {
         merged.series = series ?? found.series
         merged.language = language ?? found.language
         merged.status = status
+        merged.origin = origin
         return merged
     }
 }

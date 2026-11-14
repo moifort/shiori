@@ -370,6 +370,7 @@ describe('a book added from a shelf photo', () => {
       series: { name: 'One Piece', volume: 5, kind: 'main' },
       publishedCoverUrl: cover,
       awaitingDescription: true,
+      origin: { kind: 'shelf' },
     })
     expect(shelfSearches).toEqual([
       { title: 'One Piece', author: 'Eiichiro Oda', volume: 5, language: 'fr' },

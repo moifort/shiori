@@ -238,6 +238,9 @@ extension ShioriGraphQL.BookDetail {
             recommendation: recommendation.map {
                 BookRecommendation(recommenderName: $0.recommenderName, comment: $0.comment)
             },
+            origin: origin.flatMap { origin in
+                origin.kind.value.map { BookOrigin($0.asDomain, friendName: origin.friendName) }
+            },
             hidden: hidden,
             awaitingDescription: awaitingDescription,
             addedAt: GraphQLHelpers.parseISO8601(addedAt),
@@ -306,5 +309,50 @@ extension ShioriGraphQL.BookCoverChoicesQuery.Data.BookCoverChoice {
         case .web: .web
         }
         return CoverChoice(source: domainSource, url: url, isCurrent: current)
+    }
+}
+
+extension ShioriGraphQL.BookOriginKind {
+    var asDomain: BookOrigin.Kind {
+        switch self {
+        case .scan: .scan
+        case .shelf: .shelf
+        case .search: .search
+        case .manual: .manual
+        case .share: .share
+        case .discover: .discover
+        case .series: .series
+        case .author: .author
+        case .friend: .friend
+        case .awaited: .awaited
+        case .kindle: .kindle
+        case .audible: .audible
+        }
+    }
+}
+
+extension BookOrigin {
+    var asInput: ShioriGraphQL.BookOriginInput {
+        ShioriGraphQL.BookOriginInput(
+            friendName: GraphQLHelpers.graphQLNullable(kind == .friend ? friendName : nil),
+            kind: .case(graphQLKind)
+        )
+    }
+
+    private var graphQLKind: ShioriGraphQL.BookOriginKind {
+        switch kind {
+        case .scan: .scan
+        case .shelf: .shelf
+        case .search: .search
+        case .manual: .manual
+        case .share: .share
+        case .discover: .discover
+        case .series: .series
+        case .author: .author
+        case .friend: .friend
+        case .awaited: .awaited
+        case .kindle: .kindle
+        case .audible: .audible
+        }
     }
 }

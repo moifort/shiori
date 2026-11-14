@@ -297,6 +297,8 @@ struct BookDraft {
     /// the book exists, as the book page gives them.
     var rating = 0.0
     var favorite = false
+    /// The screen the book is added from, recorded once on the new record.
+    var origin: BookOrigin?
 
     var asInput: ShioriGraphQL.NewBookInput {
         ShioriGraphQL.NewBookInput(
@@ -312,6 +314,7 @@ struct BookDraft {
             isbn13: GraphQLHelpers.graphQLNullable(isbn13),
             language: GraphQLHelpers.graphQLNullable(language.map(LibraryAPI.graphQLLanguage)),
             media: format == .audiobook ? .none : .some(LibraryAPI.graphQLMedia(media)),
+            origin: GraphQLHelpers.graphQLNullable(origin?.asInput),
             pageCount: GraphQLHelpers.graphQLNullable(pageCount),
             publisher: GraphQLHelpers.graphQLNullable(publisher),
             series: GraphQLHelpers.graphQLNullable(

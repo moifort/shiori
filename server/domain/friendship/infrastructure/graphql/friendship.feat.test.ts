@@ -766,7 +766,7 @@ describe("taking a book off a friend's shelf", () => {
     (result.data as { addBook: { id: string } }).addBook.id
   const copy = (bookId: string, status = 'TO_READ') =>
     as(bob)(
-      `mutation { addFriendBook(userId: "alice", bookId: "${bookId}", status: ${status}) { title authors status rating favorite recommendation { recommenderName } series { name volume } } }`,
+      `mutation { addFriendBook(userId: "alice", bookId: "${bookId}", status: ${status}) { title authors status rating favorite recommendation { recommenderName } origin { kind friendName } series { name volume } } }`,
     )
 
   const nameAlice = () =>
@@ -850,6 +850,7 @@ describe("taking a book off a friend's shelf", () => {
       rating: null,
       favorite: false,
       recommendation: { recommenderName: 'Alice' },
+      origin: { kind: 'FRIEND', friendName: 'Alice' },
       series: { name: 'Hypérion', volume: 1 },
     })
   })

@@ -145,6 +145,10 @@ fragment BookDetail on Book {
     recommenderName
     comment
   }
+  origin {
+    kind
+    friendName
+  }
   hidden
   awaitingDescription
   addedAt

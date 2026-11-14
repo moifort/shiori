@@ -275,6 +275,43 @@ struct BookRecommendation: Hashable, Codable, Sendable {
     var comment: String?
 }
 
+/// How a book reached the library, recorded once when it was added: the
+/// screen, the share or the import it came from. Absent on books added before
+/// origins were recorded.
+struct BookOrigin: Hashable, Codable, Sendable {
+    enum Kind: String, Codable, Sendable, CaseIterable {
+        case scan, shelf, search, manual, share, discover, series, author, friend, awaited, kindle, audible
+    }
+
+    var kind: Kind
+    /// The friend whose shelf it was taken from, for `.friend`.
+    var friendName: String?
+
+    init(_ kind: Kind, friendName: String? = nil) {
+        self.kind = kind
+        self.friendName = friendName
+    }
+
+    /// The tile's value on the book page: "Scan", "Chez Léa", "Audible".
+    var label: String {
+        switch kind {
+        case .scan: String(localized: "Scan")
+        case .shelf: String(localized: "Étagère")
+        case .search: String(localized: "Recherche")
+        case .manual: String(localized: "Saisie")
+        case .share: String(localized: "Partage")
+        case .discover: String(localized: "Découvrir")
+        case .series: String(localized: "Série")
+        case .author: String(localized: "Auteur")
+        case .friend:
+            friendName.map { String(localized: "Chez \($0)") } ?? String(localized: "Chez un ami")
+        case .awaited: String(localized: "Guetté")
+        case .kindle: "Kindle"
+        case .audible: "Audible"
+        }
+    }
+}
+
 struct Book: Identifiable, Hashable, Codable, Sendable {
     let id: String
     let title: String
@@ -347,6 +384,8 @@ struct Book: Identifiable, Hashable, Codable, Sendable {
     /// Who recommended the book, when the reader recorded it. Nil when nobody
     /// was: the server never keeps one that names nobody and says nothing.
     var recommendation: BookRecommendation?
+    /// How the book reached the library; nil on books added before it was kept.
+    var origin: BookOrigin?
     var hidden: Bool = false
     /// Added from a shelf photo and not described yet: only what the spine
     /// printed, no summary or genre. The page asks for its description when it

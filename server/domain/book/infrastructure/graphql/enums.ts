@@ -144,3 +144,27 @@ export const CoverSourceEnum = builder.enumType('CoverSource', {
     WEB: { value: 'web', description: 'An image no known source serves: most often one pasted.' },
   } as const,
 })
+
+export const BookOriginKindEnum = builder.enumType('BookOriginKind', {
+  description:
+    'How a book reached the library: the screen or the source it was added from. ' +
+    'Written once, when the book is added, so the library can count its additions ' +
+    'by origin.',
+  values: {
+    SCAN: { value: 'scan', description: 'A photo of its cover, taken or picked.' },
+    SHELF: { value: 'shelf', description: 'Ticked on a photo of a shelf.' },
+    SEARCH: { value: 'search', description: 'A title typed in the add sheet.' },
+    MANUAL: { value: 'manual', description: 'Typed in by hand.' },
+    SHARE: { value: 'share', description: 'Shared from another app: a page, a text, an image.' },
+    DISCOVER: {
+      value: 'discover',
+      description: 'Découvrir: a suggestion, an award winner, an announced release.',
+    },
+    SERIES: { value: 'series', description: "A volume added from a saga's page." },
+    AUTHOR: { value: 'author', description: "Added from an author's page." },
+    FRIEND: { value: 'friend', description: "Taken from a friend's shelf or feed." },
+    AWAITED: { value: 'awaited', description: 'An awaited edition, added once it came out.' },
+    KINDLE: { value: 'kindle', description: 'A Kindle import or sync.' },
+    AUDIBLE: { value: 'audible', description: 'An Audible import or sync.' },
+  } as const,
+})

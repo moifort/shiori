@@ -11,12 +11,14 @@ import {
   BookFormatEnum,
   BookLanguageEnum,
   BookMediumEnum,
+  BookOriginKindEnum,
   CoverSourceEnum,
   GenreEnum,
   ReadingStatusEnum,
 } from '~/domain/book/infrastructure/graphql/enums'
 import type {
   BookId,
+  BookOrigin,
   BookView,
   CoverChoice,
   LibrarySection,
@@ -49,6 +51,21 @@ export const RecommendationType = builder.objectRef<Recommendation>('Recommendat
       nullable: true,
       description: 'What they said of it.',
       resolve: (recommendation) => recommendation.comment ?? null,
+    }),
+  }),
+})
+
+export const BookOriginType = builder.objectRef<BookOrigin>('BookOrigin').implement({
+  description:
+    'How a book reached the library, written once when it was added. Private: a ' +
+    'friend browsing the library never sees it.',
+  fields: (t) => ({
+    kind: t.field({ type: BookOriginKindEnum, resolve: (origin) => origin.kind }),
+    friendName: t.field({
+      type: 'PersonName',
+      nullable: true,
+      description: 'For FRIEND: the first name of the friend whose shelf it was taken from.',
+      resolve: (origin) => origin.friendName ?? null,
     }),
   }),
 })
@@ -313,6 +330,13 @@ export const BookType = builder.objectRef<BookView>('Book').implement({
       nullable: true,
       description: 'Who recommended the book to the reader. Null when nobody was recorded.',
       resolve: (book) => book.recommendation ?? null,
+    }),
+    origin: t.field({
+      type: BookOriginType,
+      nullable: true,
+      description:
+        'How the book reached the library. Null on books added before origins were ' + 'recorded.',
+      resolve: (book) => book.origin ?? null,
     }),
     favorite: t.boolean({
       description:

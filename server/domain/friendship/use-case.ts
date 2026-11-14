@@ -637,6 +637,10 @@ export namespace FriendshipUseCase {
       publishedCoverUrl: recording?.coverUrl ?? source.kindleCoverUrl ?? source.publishedCoverUrl,
       status,
       recommendation: firstName ? { recommenderName: PersonName(firstName) } : undefined,
+      origin: {
+        kind: 'friend',
+        ...(firstName ? { friendName: PersonName(firstName) } : {}),
+      },
     })
   }
 }

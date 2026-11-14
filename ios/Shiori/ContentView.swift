@@ -173,7 +173,8 @@ struct ContentView: View {
                     onWished: {
                         pendingConfirmation = .addedToWishlist
                         sharedStart = nil
-                    }
+                    },
+                    origin: .share
                 )
             }
             // The invitation is asked about rather than accepted: the link

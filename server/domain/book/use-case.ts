@@ -138,6 +138,7 @@ export namespace BookUseCase {
       series,
       publishedCoverUrl,
       awaitingDescription: true,
+      origin: { kind: 'shelf' },
     })
     await QuotaCommand.record(userId, plan)
     return book

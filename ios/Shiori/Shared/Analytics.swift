@@ -51,6 +51,18 @@ enum AnalyticsEvent {
         /// Ticked on a shelf photo: a scan, counted apart to see what the
         /// batch import is worth against one cover at a time.
         case shelf
+
+        /// The origin a book added from here is recorded with.
+        var origin: BookOrigin.Kind {
+            switch self {
+            case .scan: .scan
+            case .manual: .manual
+            case .series: .series
+            case .discover: .discover
+            case .author: .author
+            case .shelf: .shelf
+            }
+        }
     }
 }
 

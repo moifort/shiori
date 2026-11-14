@@ -184,6 +184,7 @@ describe('importing the ticked titles', () => {
       kindleAsin: 'B0TESTAAA1',
       kindleCoverUrl: 'https://m.media-amazon.com/images/I/91cover.jpg',
       series: { name: 'Powerless', volume: 3 },
+      origin: { kind: 'kindle' },
     })
     // Dated on the acquisition, never on import night.
     expect(book.addedAt).toEqual(new Date('2026-09-14T10:00:00.000Z'))

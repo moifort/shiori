@@ -253,6 +253,9 @@ export const mergedCopies = (kept: Book, other: Book, now: Date): Book => {
     favoritedAt: earliest(...hearted.map((copy) => copy.favoritedAt)),
     note: notes.length > 0 ? ReadingNote(notes.join('\n\n').slice(0, MAX_NOTE_LENGTH)) : undefined,
     hidden: kept.hidden || other.hidden,
+    // The record was added first: how it reached the library stays its story,
+    // unknown included.
+    origin: kept.origin,
     // Described if either copy was: the record keeps the facts of the one that was.
     awaitingDescription: kept.awaitingDescription && other.awaitingDescription ? true : undefined,
     addedAt: earliest(kept.addedAt, other.addedAt) ?? kept.addedAt,

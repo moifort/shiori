@@ -60,7 +60,19 @@ struct Wish: Identifiable, Hashable, Codable, Sendable {
         draft.isbn13 = isbn13
         draft.coverURL = coverURL
         draft.status = status
+        draft.origin = bookOrigin
         return draft
+    }
+
+    /// Where the book came from once it is on the shelf: where it was wished
+    /// from, the wishlist being only the stop on the way.
+    var bookOrigin: BookOrigin {
+        switch origin {
+        case .friend: BookOrigin(.friend, friendName: originLabel)
+        case .discovery, .award: BookOrigin(.discover)
+        case .author: BookOrigin(.author)
+        case .scan: BookOrigin(.scan)
+        }
     }
 }
 

@@ -1024,6 +1024,11 @@ type Book {
   """
   narrators: [NarratorName!]!
   note: ReadingNote
+
+  """
+  How the book reached the library. Null on books added before origins were recorded.
+  """
+  origin: BookOrigin
   pageCount: PageCount
   publisher: Publisher
 
@@ -1198,6 +1203,65 @@ enum BookMedium {
 
   """On paper."""
   PRINT
+}
+
+"""
+How a book reached the library, written once when it was added. Private: a friend browsing the library never sees it.
+"""
+type BookOrigin {
+  """
+  For FRIEND: the first name of the friend whose shelf it was taken from.
+  """
+  friendName: PersonName
+  kind: BookOriginKind!
+}
+
+"""How the book reached the library, as the app knows it."""
+input BookOriginInput {
+  """For FRIEND: the friend's first name. Ignored on any other kind."""
+  friendName: PersonName
+  kind: BookOriginKind!
+}
+
+"""
+How a book reached the library: the screen or the source it was added from. Written once, when the book is added, so the library can count its additions by origin.
+"""
+enum BookOriginKind {
+  """An Audible import or sync."""
+  AUDIBLE
+
+  """Added from an author's page."""
+  AUTHOR
+
+  """An awaited edition, added once it came out."""
+  AWAITED
+
+  """Découvrir: a suggestion, an award winner, an announced release."""
+  DISCOVER
+
+  """Taken from a friend's shelf or feed."""
+  FRIEND
+
+  """A Kindle import or sync."""
+  KINDLE
+
+  """Typed in by hand."""
+  MANUAL
+
+  """A photo of its cover, taken or picked."""
+  SCAN
+
+  """A title typed in the add sheet."""
+  SEARCH
+
+  """A volume added from a saga's page."""
+  SERIES
+
+  """Shared from another app: a page, a text, an image."""
+  SHARE
+
+  """Ticked on a photo of a shelf."""
+  SHELF
 }
 
 """
@@ -3738,6 +3802,11 @@ input NewBookInput {
   Who reads the recording, at most five. Only meaningful on an AUDIOBOOK.
   """
   narrators: [NarratorName!]
+
+  """
+  The screen the book is added from. Omitted by builds that predate it: the book then has no recorded origin.
+  """
+  origin: BookOriginInput
   pageCount: PageCount
   publisher: Publisher
 

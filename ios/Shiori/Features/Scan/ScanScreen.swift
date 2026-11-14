@@ -17,6 +17,16 @@ struct ScanScreen: View {
         /// A page shared from Safari or a bookshop app.
         case link(String)
 
+        /// Where a book saved from this start came from, unless the caller
+        /// knows better: a shared page or image says `.share` itself.
+        var origin: BookOrigin.Kind {
+            switch self {
+            case .camera, .photo: .scan
+            case .title: .search
+            case .link: .share
+            }
+        }
+
         var id: String {
             switch self {
             case .camera: "camera"
@@ -47,6 +57,7 @@ struct ScanScreen: View {
         onAwait: @escaping (BookDraft, ReleaseFormat) -> Void,
         onAdded: @escaping (Book) -> Void,
         onWished: @escaping () -> Void,
+        origin: BookOrigin.Kind? = nil,
         client: ScanClient = .live
     ) {
         self.start = start
@@ -54,7 +65,7 @@ struct ScanScreen: View {
         self.onAwait = onAwait
         self.onAdded = onAdded
         self.onWished = onWished
-        _viewModel = State(initialValue: ScanViewModel(client: client))
+        _viewModel = State(initialValue: ScanViewModel(origin: origin ?? start.origin, client: client))
     }
 
     var body: some View {

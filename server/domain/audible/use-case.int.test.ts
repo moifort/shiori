@@ -252,6 +252,7 @@ describe('importing the ticked titles', () => {
     expect((await BookQuery.all(reader)).map((book) => String(book.title))).toEqual([
       'La Peur du sage',
     ])
+    expect((await BookQuery.all(reader))[0].origin).toEqual({ kind: 'audible' })
   })
 
   test('catalogues them as audiobooks, with what Audible knows', async () => {

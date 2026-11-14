@@ -187,6 +187,7 @@ extension AwaitedEdition {
         draft.series = shown.series
         draft.coverURL = shown.coverURL
         draft.status = .toRead
+        draft.origin = BookOrigin(.awaited)
         return draft
     }
 

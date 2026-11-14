@@ -92,6 +92,12 @@ builder.mutationFields((t) => ({
         publishedCoverUrl: args.input.coverUrl ?? undefined,
         status: args.input.status ?? undefined,
         hidden: args.input.hidden ?? undefined,
+        origin: args.input.origin
+          ? {
+              kind: args.input.origin.kind,
+              friendName: args.input.origin.friendName ?? undefined,
+            }
+          : undefined,
       })
       return readBack(context.userId, book.id)
     },

@@ -270,6 +270,7 @@ export const importableFrom = (
  *  shows for it. Nothing is guessed beyond what the list carries and the title
  *  tells — no summary, no page count, no genre. */
 export const bookFrom = (importable: ImportableKindleBook): NewBook => ({
+  origin: { kind: 'kindle' },
   title: importable.title,
   authors: importable.authors,
   format: importable.drawnFormat ?? 'book',

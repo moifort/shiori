@@ -4361,6 +4361,22 @@
         }
       }
     },
+    "Chez un ami" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "From a friend"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chez un ami"
+          }
+        }
+      }
+    },
     "Chez vous" : {
       "localizations" : {
         "en" : {
@@ -10837,6 +10853,22 @@
         }
       }
     },
+    "Origine" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Origin"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Origine"
+          }
+        }
+      }
+    },
     "Ouvre la fiche de l'auteur" : {
       "localizations" : {
         "en" : {
@@ -11089,6 +11121,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Parfait"
+          }
+        }
+      }
+    },
+    "Partage" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shared"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Partage"
           }
         }
       }
@@ -12245,6 +12293,22 @@
         }
       }
     },
+    "Recherche" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recherche"
+          }
+        }
+      }
+    },
     "Recherche de vos découvertes…" : {
       "localizations" : {
         "en" : {
@@ -13137,6 +13201,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sa pile à lire"
+          }
+        }
+      }
+    },
+    "Saisie" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Typed in"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saisie"
           }
         }
       }
@@ -17489,6 +17569,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Égalité en tête : %lld lecteurs se disputent la première place !"
+          }
+        }
+      }
+    },
+    "Étagère" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shelf"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Étagère"
           }
         }
       }

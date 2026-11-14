@@ -25,6 +25,7 @@ import type {
   BookId,
   BookLanguage,
   BookMedium,
+  BookOrigin,
   ChosenCover,
   CoverUrl,
   DrawnFormat,
@@ -103,6 +104,9 @@ export type NewBook = {
   /** Who put the book in the reader's hands — a friend whose shelf it was
    *  copied from. */
   recommendation?: Recommendation
+  /** How the book reached the library: the screen it was added from, or the
+   *  import that brought it. */
+  origin?: BookOrigin
   /** When the reading ended, for a book catalogued as already read. An import
    *  knows it and a scan does not: without it, a decade of Audible listening
    *  would land on today's date and rewrite every reading statistic. Ignored
@@ -208,6 +212,12 @@ const recordOf = (userId: UserId, input: NewBook, now: Date): Book => {
     status: input.status ?? 'to-read',
     hidden: input.hidden ?? false,
     recommendation: storedRecommendation(input.recommendation),
+    origin: input.origin && {
+      kind: input.origin.kind,
+      ...(input.origin.kind === 'friend' && input.origin.friendName
+        ? { friendName: input.origin.friendName }
+        : {}),
+    },
     addedAt,
     updatedAt: now,
     // The status was set when the date it implies says so — finished, else

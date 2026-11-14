@@ -2,6 +2,7 @@ import {
   BookFormatEnum,
   BookLanguageEnum,
   BookMediumEnum,
+  BookOriginKindEnum,
   GenreEnum,
   ReadingStatusEnum,
 } from '~/domain/book/infrastructure/graphql/enums'
@@ -69,6 +70,19 @@ export const RecommendationInput = builder.inputType('RecommendationInput', {
   }),
 })
 
+/** The screen a book is added from, as the app knows it. */
+export const BookOriginInput = builder.inputType('BookOriginInput', {
+  description: 'How the book reached the library, as the app knows it.',
+  fields: (t) => ({
+    kind: t.field({ type: BookOriginKindEnum, required: true }),
+    friendName: t.field({
+      type: 'PersonName',
+      required: false,
+      description: "For FRIEND: the friend's first name. Ignored on any other kind.",
+    }),
+  }),
+})
+
 /** What a book can be created with by hand, with no photo and no AI call. Only a
  *  title is required: a book added from a half-remembered recommendation is still
  *  a book, and demanding an author would push the reader back to a notes app. */
@@ -127,6 +141,13 @@ export const NewBookInput = builder.inputType('NewBookInput', {
       type: ReadingStatusEnum,
       required: false,
       description: 'Defaults to TO_READ, the only status true of every freshly catalogued book.',
+    }),
+    origin: t.field({
+      type: BookOriginInput,
+      required: false,
+      description:
+        'The screen the book is added from. Omitted by builds that predate it: the ' +
+        'book then has no recorded origin.',
     }),
     startedAt: t.field({
       type: 'DateTime',

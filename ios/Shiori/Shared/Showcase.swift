@@ -293,6 +293,8 @@ enum Showcase {
             coverURL: cover(saga.coverSlug(number)),
             status: status,
             seriesRating: saga.rating,
+            // Recordings come from the Audible library, paper from a scan.
+            origin: BookOrigin(saga.isAudio ? .audible : .scan),
             addedAt: addedAt,
             startedAt: startedAt,
             finishedAt: finishedAt,
@@ -348,6 +350,8 @@ enum Showcase {
             favorite: favorite,
             note: note,
             recommendation: recommendation,
+            origin: recommendation.map { BookOrigin(.friend, friendName: $0.recommenderName) }
+                ?? BookOrigin(.scan),
             addedAt: addedAt,
             startedAt: startedAt,
             finishedAt: finishedAt,

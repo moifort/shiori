@@ -9,6 +9,8 @@ struct ManualAddScreen: View {
     var body: some View {
         ManualAddSheet { draft in
             do {
+                var draft = draft
+                draft.origin = BookOrigin(.manual)
                 let book = try await client.add(draft)
                 track(.bookAdded(source: .manual))
                 onAdded(book)

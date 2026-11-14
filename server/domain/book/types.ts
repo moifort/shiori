@@ -201,6 +201,33 @@ export type Recommendation = {
   comment?: RecommendationComment
 }
 
+/** How a book reached the library: the screen or the source it was added from.
+ *  Written once, when the record is created, and never moved after: what the
+ *  library's statistics count additions by (scans against Découvrir against
+ *  sharing). A copy on another medium joining the record keeps the record's. */
+export const BOOK_ORIGINS = [
+  'scan',
+  'shelf',
+  'search',
+  'manual',
+  'share',
+  'discover',
+  'series',
+  'author',
+  'friend',
+  'awaited',
+  'kindle',
+  'audible',
+] as const
+export type BookOriginKind = (typeof BOOK_ORIGINS)[number]
+
+/** Where the book came from, and for a friend's book whose shelf it was taken
+ *  from — their first name, copied like a recommender's. */
+export type BookOrigin = {
+  kind: BookOriginKind
+  friendName?: PersonName
+}
+
 /** A book as one reader holds it. Private, owned by exactly one user, never
  *  merged with anyone else's: two readers who scan the same novel keep two
  *  independent records. Public facts and personal judgment live side by side,
@@ -312,6 +339,9 @@ export type Book = {
   /** Who recommended the book, when the reader recorded it. Private, unlike
    *  the note: a friend browsing the library never sees it. */
   recommendation?: Recommendation
+  /** How the book reached the library. Absent on books added before the field
+   *  existed, which stay of unknown origin. */
+  origin?: BookOrigin
   /** Excluded from any shared view. Built now, used when sharing ships, because
    *  adding a boolean to records already in production costs a migration. */
   hidden: boolean

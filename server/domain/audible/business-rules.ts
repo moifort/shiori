@@ -132,6 +132,7 @@ export const importableFrom = (
  *  the dashboard counts hours listened the way it counts pages read. So are the
  *  narrators, for the same reason — nothing else in Shiori ever learns them. */
 export const bookFrom = (importable: ImportableBook): NewBook => ({
+  origin: { kind: 'audible' },
   title: importable.title,
   authors: importable.authors,
   format: 'audiobook',
@@ -692,6 +693,8 @@ export const volumeBookFrom = (
   language: BookLanguage,
 ): NewBook => ({
   ...bookFrom(recording),
+  // Added from the saga's page, which only reads Audible for the recording.
+  origin: { kind: 'series' },
   series: membership,
   language,
   status: 'to-read',

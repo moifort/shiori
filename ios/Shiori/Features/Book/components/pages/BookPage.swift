@@ -378,6 +378,10 @@ struct BookPage: View {
                 action: { onEditField(.isbn13) }
             ))
         }
+        // Read only: how the book arrived is not the reader's to correct.
+        if let origin = book.origin {
+            tiles.append(FactTile(id: "origin", title: "Origine", value: origin.label))
+        }
         return tiles
     }
 

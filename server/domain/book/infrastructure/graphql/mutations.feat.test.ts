@@ -61,6 +61,24 @@ describe('cataloguing through the API', () => {
     })
   })
 
+  test('records the screen a book was added from, and none for an older build', async () => {
+    const fromFriend = await execute(
+      'mutation { addBook(input: { title: "Dune", origin: { kind: FRIEND, friendName: "Léa" } }) ' +
+        '{ origin { kind friendName } } }',
+    )
+    const fromScan = await execute(
+      'mutation { addBook(input: { title: "Hypérion", origin: { kind: SCAN, friendName: "Léa" } }) ' +
+        '{ origin { kind friendName } } }',
+    )
+    const unknown = await execute(
+      'mutation { addBook(input: { title: "Ubik" }) { origin { kind } } }',
+    )
+
+    expect(fromFriend.data?.addBook).toEqual({ origin: { kind: 'FRIEND', friendName: 'Léa' } })
+    expect(fromScan.data?.addBook).toEqual({ origin: { kind: 'SCAN', friendName: null } })
+    expect(unknown.data?.addBook).toEqual({ origin: null })
+  })
+
   // A book whose edition nothing names is in the language the reader's app
   // speaks: on a row of no language it showed its saga twice.
   test('takes a book that names no language to be in the language of the app', async () => {

@@ -187,6 +187,7 @@ export const importablesFrom = (
  *  with its title and its author, and the reader fills the rest in, or scans
  *  the cover, if they ever care to. */
 export const bookFrom = (importable: ExportedKindleBook): NewBook => ({
+  origin: { kind: 'kindle' },
   title: importable.title,
   authors: importable.authors,
   format: 'book',
