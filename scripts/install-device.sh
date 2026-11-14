@@ -14,8 +14,10 @@ echo "==> Building for device ${DEVICE_ID}"
 # -allowProvisioningUpdates lets automatic signing register the device and mint
 # the profile on first run; without it a fresh App ID fails with "no profile
 # matching" and says nothing about why.
+# A generic destination builds without the iPhone: a device destination waits
+# for it to be unlocked, while devicectl installs on a locked one.
 xcodebuild -project ios/Shiori.xcodeproj -scheme Shiori \
-  -destination "platform=iOS,id=${DEVICE_ID}" \
+  -destination "generic/platform=iOS" \
   -derivedDataPath build/device \
   -allowProvisioningUpdates \
   build
