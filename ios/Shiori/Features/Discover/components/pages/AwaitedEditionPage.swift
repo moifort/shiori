@@ -14,7 +14,7 @@ enum AwaitedEditionAction {
 
 /// One awaited edition — a translation or a recording of a book the reader
 /// holds — opened from "Nouveautés", Découvrir or the book's page, drawn as a
-/// book to come is (`UpcomingBookPage`): the reader's own book page, its day
+/// book to come is (`UnownedBookPage`): the reader's own book page, its day
 /// pinned in the hero's corner, the saga of their copy under it, their copy
 /// ringed. Only what is known is drawn. The bell gives the wait up, asked for
 /// twice as a saga's deletion is; the Audible sync brings a recording bought
@@ -31,11 +31,11 @@ struct AwaitedEditionPage: View {
     let onAction: (AwaitedEditionAction) async -> Void
 
     var body: some View {
-        UpcomingBookPage(
+        UnownedBookPage(
             book: shown,
             releaseDate: edition.date,
             isDescribing: isDescribing,
-            store: edition.storeURL.map { UpcomingStore(url: $0, isAudible: edition.format == .audiobook) },
+            store: edition.storeURL.map { UnownedBookStore(url: $0, isAudible: edition.format == .audiobook) },
             isAlerted: true,
             bellConfirmation: BellConfirmation(
                 title: "Ne plus suivre ce livre ?",

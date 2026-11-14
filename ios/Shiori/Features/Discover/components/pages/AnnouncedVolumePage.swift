@@ -13,7 +13,7 @@ enum AnnouncedVolumeAction {
 }
 
 /// A volume announced, opened from "Nouveautés", Découvrir or its saga, drawn
-/// as a book to come is (`UpcomingBookPage`): the reader's own book page,
+/// as a book not in the library is (`UnownedBookPage`): the reader's own book page,
 /// its day pinned in the hero's corner. It opens at once on what the look on
 /// the web found, then fills in as a book's page — summary, genre, pages,
 /// publisher, narrators — once the model described it, for every reader at
@@ -35,7 +35,7 @@ struct AnnouncedVolumePage: View {
     let onAction: (AnnouncedVolumeAction) async -> Void
 
     var body: some View {
-        UpcomingBookPage(
+        UnownedBookPage(
             book: shown,
             releaseDate: opened.volume.date,
             isDescribing: isDescribing,
@@ -61,12 +61,12 @@ struct AnnouncedVolumePage: View {
 
     /// Where it is ordered: its recording on Audible for a saga heard, once
     /// Audible confirmed it; Amazon for anything else.
-    private var store: UpcomingStore? {
+    private var store: UnownedBookStore? {
         let series = opened.saga.series
         if series.isAudio {
-            return opened.volume.audibleURL.map { UpcomingStore(url: $0, isAudible: true) }
+            return opened.volume.audibleURL.map { UnownedBookStore(url: $0, isAudible: true) }
         }
-        return opened.volume.amazonURL(author: series.author ?? "").map { UpcomingStore(url: $0, isAudible: false) }
+        return opened.volume.amazonURL(author: series.author ?? "").map { UnownedBookStore(url: $0, isAudible: false) }
     }
 
     /// Said on the detail line only when the calendar leaf in the corner does

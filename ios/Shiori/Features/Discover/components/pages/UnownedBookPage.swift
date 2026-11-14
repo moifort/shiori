@@ -1,8 +1,8 @@
 import SwiftUI
 
-/// Where a book to come is ordered: the recording on Audible, the printed
-/// edition on Amazon.
-struct UpcomingStore {
+/// Where a book the reader does not hold is ordered: the recording on
+/// Audible, the printed edition on Amazon.
+struct UnownedBookStore {
     let url: URL
     let isAudible: Bool
 
@@ -24,23 +24,24 @@ struct BellConfirmation {
     let action: LocalizedStringKey
 }
 
-/// A book to come, opened from "Nouveautés" or Découvrir — a volume
-/// announced, an edition awaited — drawn as the reader's own book page is,
-/// so nothing new is to be learnt: the hero over the cover's colours, then
-/// the summary, the saga, the facts. What a book to come adds is in the hero
-/// alone: the day as a calendar leaf on glass in its corner, how long is left
-/// tagged after the format, and the saga page's row of actions — the white
-/// button that orders it from its store, the "+" that puts it on the pile
-/// once it is out, and the bell that alerts on the day, which swings
-/// when tapped. A recording differs only by what the hero already says of
-/// one: its "Audio" tag and who reads it. Pure and previewable.
-struct UpcomingBookPage: View {
+/// A book that is not in the reader's library — a volume announced or out,
+/// an edition awaited — opened from "Nouveautés", Découvrir or a saga, and
+/// drawn as the reader's own book page is, so nothing new is to be learnt:
+/// the hero over the cover's colours, then the summary, the saga, the facts.
+/// What it adds is in the hero alone: the day as a calendar leaf on glass in
+/// its corner while it is to come, how long is left tagged after the format,
+/// and the saga page's row of actions — the white button that orders it from
+/// its store, the "+" that puts it on the pile once it is out, and the bell
+/// that alerts on the day, which swings when tapped. A recording differs only
+/// by what the hero already says of one: its "Audio" tag and who reads it.
+/// Pure and previewable.
+struct UnownedBookPage: View {
     /// The book as described, or as the look on the web knows it until then.
     let book: Book
     /// `YYYY`, `YYYY-MM` or `YYYY-MM-DD`; nil for one announced with no date.
     let releaseDate: String?
     let isDescribing: Bool
-    let store: UpcomingStore?
+    let store: UnownedBookStore?
     /// Whether the bell alerts on the day.
     let isAlerted: Bool
     /// Asked before the bell falls silent; nil silences it at once.
@@ -106,7 +107,7 @@ struct UpcomingBookPage: View {
                 ToolbarItem(placement: .primaryAction) {
                     AsyncToolbarButton(title: "Ajouter à ma pile", systemImage: "plus", action: onAdd)
                         .disabled(isAdded)
-                        .accessibilityIdentifier("upcoming-toolbar-add")
+                        .accessibilityIdentifier("unowned-toolbar-add")
                 }
             }
         }
@@ -135,7 +136,7 @@ struct UpcomingBookPage: View {
     /// The white button of the saga page's hero, at its content's width:
     /// "Précommander" while the book is to come, "Commander" once out, with
     /// its store's logo.
-    private func storeButton(_ store: UpcomingStore) -> some View {
+    private func storeButton(_ store: UnownedBookStore) -> some View {
         Link(destination: store.url) {
             HStack(spacing: 8) {
                 Text(isUpcoming ? "Précommander" : "Commander")
@@ -154,7 +155,7 @@ struct UpcomingBookPage: View {
             .background(.white, in: .capsule)
             .shadow(color: .black.opacity(0.45), radius: 11, y: 8)
         }
-        .accessibilityIdentifier("upcoming-store")
+        .accessibilityIdentifier("unowned-store")
     }
 
     /// On the pile, round on glass beside the store; a tick once there.
@@ -166,7 +167,7 @@ struct UpcomingBookPage: View {
             action: onAdd
         )
         .disabled(isAdded)
-        .accessibilityIdentifier("upcoming-add")
+        .accessibilityIdentifier("unowned-add")
     }
 
     /// Alerts on the day, or falls silent: a tap swings it as a bell rings,
@@ -192,7 +193,7 @@ struct UpcomingBookPage: View {
         .glassEffect(.regular.interactive(), in: .circle)
         .sensoryFeedback(.selection, trigger: rings)
         .accessibilityLabel(Text(isAlerted ? "Ne plus être prévenu" : "Être prévenu de la sortie"))
-        .accessibilityIdentifier(isAlerted ? "upcoming-silence" : "upcoming-alert")
+        .accessibilityIdentifier(isAlerted ? "unowned-silence" : "unowned-alert")
         // Attached to the bell, as a saga's deletion is: the dialog rises
         // from the control that asked.
         .confirmationDialog(
@@ -202,7 +203,7 @@ struct UpcomingBookPage: View {
         ) {
             if let bellConfirmation {
                 Button(bellConfirmation.action, role: .destructive) { ring() }
-                    .accessibilityIdentifier("upcoming-confirm-silence")
+                    .accessibilityIdentifier("unowned-confirm-silence")
                 Button("Annuler", role: .cancel) {}
             }
         } message: {
@@ -313,12 +314,12 @@ private struct AsyncRoundButton: View {
 
 #Preview("Volume announced") {
     NavigationStack {
-        UpcomingBookPage(
+        UnownedBookPage(
             book: DiscoveryVolume.preview.book.described(by: .preview),
             releaseDate: Calendar.current.date(byAdding: .day, value: 79, to: .now)!
                 .formatted(.iso8601.year().month().day()),
             isDescribing: false,
-            store: UpcomingStore(url: URL(string: "https://www.amazon.fr")!, isAudible: false),
+            store: UnownedBookStore(url: URL(string: "https://www.amazon.fr")!, isAudible: false),
             isAlerted: true,
             isAdded: false,
             sagaName: "Dungeon Crawler Carl",
@@ -329,11 +330,11 @@ private struct AsyncRoundButton: View {
 
 #Preview("Recording awaited") {
     NavigationStack {
-        UpcomingBookPage(
+        UnownedBookPage(
             book: AwaitedEdition.preview.cover.described(by: .preview),
             releaseDate: AwaitedEdition.preview.date,
             isDescribing: true,
-            store: UpcomingStore(url: URL(string: "https://www.audible.fr")!, isAudible: true),
+            store: UnownedBookStore(url: URL(string: "https://www.audible.fr")!, isAudible: true),
             isAlerted: true,
             bellConfirmation: BellConfirmation(
                 title: "Ne plus suivre ce livre ?",

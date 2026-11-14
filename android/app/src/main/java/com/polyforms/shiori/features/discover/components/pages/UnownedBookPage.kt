@@ -55,8 +55,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.polyforms.shiori.DebugFixtures
 import com.polyforms.shiori.PreviewSurface
 
-/** Where a book to come is sold: Audible for a recording, Amazon otherwise. */
-data class UpcomingStore(val url: String, val isAudible: Boolean) {
+/** Where a book the reader does not hold is sold: Audible for a recording, Amazon otherwise. */
+data class UnownedBookStore(val url: String, val isAudible: Boolean) {
     val logo: Int get() = if (isAudible) R.drawable.audible_logo else R.drawable.amazon_logo
     val factLink: FactLink
         get() = if (isAudible) FactLink("audible", L("Écouter sur Audible"), logo, url) else FactLink("amazon", L("Voir sur Amazon"), logo, url)
@@ -66,14 +66,15 @@ data class UpcomingStore(val url: String, val isAudible: Boolean) {
 data class BellConfirmation(val title: String, val message: String, val action: String)
 
 /**
- * A book to come, as its page draws it everywhere: the hero over the cover's colours with the
- * store, the "+" once it is out and the bell, then the summary, the saga and the facts.
+ * A book that is not in the reader's library — announced, out or awaited — as its page draws it
+ * everywhere: the hero over the cover's colours with the store, the "+" once it is out and the
+ * bell, then the summary, the saga and the facts.
  */
 @Composable
-fun UpcomingBookPage(
+fun UnownedBookPage(
     book: Book,
     releaseDate: String?,
-    store: UpcomingStore?,
+    store: UnownedBookStore?,
     isAlerted: Boolean,
     onToggleBell: () -> Unit,
     bellConfirmation: BellConfirmation? = null,
@@ -152,8 +153,8 @@ fun UpcomingBookPage(
 
 @Preview(showBackground = true)
 @Composable
-private fun UpcomingBookPagePreview() = PreviewSurface {
-    UpcomingBookPage(
+private fun UnownedBookPagePreview() = PreviewSurface {
+    UnownedBookPage(
         DebugFixtures.reading[2].copy(title = "Frieren 16"),
         releaseDate = DebugFixtures.announcedVolume.date,
         store = null,

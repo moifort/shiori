@@ -12,8 +12,8 @@ import androidx.compose.ui.Modifier
 import com.polyforms.shiori.features.book.BookApi
 import com.polyforms.shiori.features.book.BookScreen
 import com.polyforms.shiori.features.discover.components.pages.BellConfirmation
-import com.polyforms.shiori.features.discover.components.pages.UpcomingBookPage
-import com.polyforms.shiori.features.discover.components.pages.UpcomingStore
+import com.polyforms.shiori.features.discover.components.pages.UnownedBookPage
+import com.polyforms.shiori.features.discover.components.pages.UnownedBookStore
 import com.polyforms.shiori.features.series.SeriesScreen
 import com.polyforms.shiori.shared.Book
 import com.polyforms.shiori.shared.L
@@ -81,10 +81,10 @@ fun AwaitedEditionScreen(edition: AwaitedEdition, onStop: () -> Unit) {
         else -> BookState(edition.stateLine, edition.stateTint ?: com.polyforms.shiori.shared.SystemTint.GRAY)
     }
     Box(Modifier.fillMaxSize()) {
-        UpcomingBookPage(
+        UnownedBookPage(
             shown,
             edition.date,
-            edition.storeURL?.let { UpcomingStore(it, edition.format == ReleaseFormat.AUDIOBOOK) },
+            edition.storeURL?.let { UnownedBookStore(it, edition.format == ReleaseFormat.AUDIOBOOK) },
             isAlerted = true,
             onToggleBell = {
                 onStop()

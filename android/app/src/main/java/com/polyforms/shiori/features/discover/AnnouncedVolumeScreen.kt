@@ -13,8 +13,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.polyforms.shiori.features.book.BookApi
 import com.polyforms.shiori.features.book.BookScreen
-import com.polyforms.shiori.features.discover.components.pages.UpcomingBookPage
-import com.polyforms.shiori.features.discover.components.pages.UpcomingStore
+import com.polyforms.shiori.features.discover.components.pages.UnownedBookPage
+import com.polyforms.shiori.features.discover.components.pages.UnownedBookStore
 import com.polyforms.shiori.features.series.SeriesApi
 import com.polyforms.shiori.features.series.SeriesScreen
 import com.polyforms.shiori.features.series.components.organisms.amazonURL
@@ -98,14 +98,14 @@ fun AnnouncedVolumeScreen(saga: SagaDiscovery, volume: DiscoveredVolume, linksTo
     LaunchedEffect(Unit) { viewModel.describe() }
     LaunchedEffect(Unit) { viewModel.loadSaga() }
     val series = saga.series
-    val store = if (series.isAudio) volume.audibleURL?.let { UpcomingStore(it, true) } else UpcomingStore(volume.amazonURL(series.author ?: ""), false)
+    val store = if (series.isAudio) volume.audibleURL?.let { UnownedBookStore(it, true) } else UnownedBookStore(volume.amazonURL(series.author ?: ""), false)
     val state = when {
         viewModel.added -> BookState.addedToPile
         volume.date?.let { ReleaseDateText.isUpcoming(it) } == true -> null
         else -> BookState.release(volume.date)
     }
     Box(Modifier.fillMaxSize()) {
-        UpcomingBookPage(
+        UnownedBookPage(
             viewModel.shown,
             volume.date,
             store,
