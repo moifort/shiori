@@ -12,4 +12,8 @@ export namespace AwardCommand {
   /** A dismissal taken back: the novel is listed again. */
   export const reconsider = (userId: UserId, key: string): Promise<void> =>
     repository.deleteDismissal(userId, key)
+
+  /** Every novel the reader turned down (account deletion). */
+  export const deleteAllForUser = (userId: UserId): Promise<void> =>
+    repository.removeAllByUser(userId)
 }

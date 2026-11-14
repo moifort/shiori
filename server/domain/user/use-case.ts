@@ -2,6 +2,7 @@ import { AnalyticsCommand } from '~/domain/analytics/command'
 import { AudibleCommand } from '~/domain/audible/command'
 import { AuthorCommand } from '~/domain/author/command'
 import { AwaitedEditionCommand } from '~/domain/awaited-edition/command'
+import { AwardCommand } from '~/domain/award/command'
 import { coverPrefixOf } from '~/domain/book/business-rules'
 import { BookCommand } from '~/domain/book/command'
 import { CatalogueCorrectionCommand } from '~/domain/catalogue-correction/command'
@@ -14,6 +15,7 @@ import { NotificationCommand } from '~/domain/notification/command'
 import { QuotaCommand } from '~/domain/quota/command'
 import { SeriesOpinionCommand } from '~/domain/series-opinion/command'
 import type { PersonName, UserId } from '~/domain/shared/types'
+import { SuggestionCommand } from '~/domain/suggestion/command'
 import {
   avatarPathOf,
   avatarPrefixOf,
@@ -116,6 +118,8 @@ export namespace UserUseCase {
       DiscoveryCommand.deleteForUser(userId),
       AwaitedEditionCommand.deleteAllForUser(userId),
       WishCommand.deleteAllForUser(userId),
+      AwardCommand.deleteAllForUser(userId),
+      SuggestionCommand.deleteAllForUser(userId),
     ])
     await Promise.all([
       objectStore().removeByPrefix(coverPrefixOf(userId)),

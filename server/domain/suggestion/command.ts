@@ -73,4 +73,8 @@ export namespace SuggestionCommand {
     }
     return 'reconsidered' as const
   }
+
+  /** The reader's selection and every book they turned down (account deletion). */
+  export const deleteAllForUser = (userId: UserId): Promise<void> =>
+    repository.removeAllByUser(userId)
 }

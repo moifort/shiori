@@ -1,7 +1,7 @@
 import type { AwardDismissal, FoundWinners } from '~/domain/award/types'
 import type { UserId } from '~/domain/shared/types'
 import { db } from '~/system/firebase'
-import { genericDataConverter } from '~/utils/firestore'
+import { deleteInBatches, genericDataConverter } from '~/utils/firestore'
 
 // Shared, naming nobody: one document per award and year the daily pass found
 // after the versioned list — a handful a year.
@@ -28,4 +28,9 @@ export const saveDismissal = async (dismissal: AwardDismissal): Promise<void> =>
 
 export const deleteDismissal = async (userId: UserId, key: string): Promise<void> => {
   await dismissals().doc(`${userId}~${key}`).delete()
+}
+
+export const removeAllByUser = async (userId: UserId): Promise<void> => {
+  const snapshot = await dismissals().where('userId', '==', userId).get()
+  await deleteInBatches(snapshot.docs.map((doc) => doc.ref))
 }

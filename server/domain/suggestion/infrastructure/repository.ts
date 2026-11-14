@@ -1,7 +1,7 @@
 import type { Language } from '~/domain/shared/language'
 import type { UserId } from '~/domain/shared/types'
 import { db } from '~/system/firebase'
-import { genericDataConverter, transactionally } from '~/utils/firestore'
+import { deleteInBatches, genericDataConverter, transactionally } from '~/utils/firestore'
 import type { Dismissal, SuggestionQueue } from '../types'
 
 // One document per reader, whose id IS the userId: the month's selection.
@@ -82,4 +82,10 @@ export const findDismissal = async (userId: UserId, key: string): Promise<Dismis
 
 export const deleteDismissal = async (userId: UserId, key: string): Promise<void> => {
   await dismissals().doc(`${userId}~${key}`).delete()
+}
+
+/** The reader's selection and every "Pas intéressé" they said (account deletion). */
+export const removeAllByUser = async (userId: UserId): Promise<void> => {
+  const snapshot = await dismissals().where('userId', '==', userId).get()
+  await deleteInBatches([queues().doc(userId), ...snapshot.docs.map((doc) => doc.ref)])
 }
