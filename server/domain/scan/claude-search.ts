@@ -1,13 +1,11 @@
 import { answerOf, answerShape } from '~/domain/scan/json-answer'
 import type { AiStepUsage } from '~/domain/scan/types'
-import { config } from '~/system/config'
+import { askClaude, type ClaudeBlock, type ClaudeMessage } from '~/system/claude'
 import { createLogger } from '~/system/logger'
 
 /** The model a grounded step runs on once Gemini's free searches are spent:
  *  the cheapest Claude, since the web search does the knowing. */
 export const CLAUDE_SEARCH_MODEL = 'claude-haiku-5-5'
-
-const API_URL = 'https://api.anthropic.com/v1/messages'
 
 /** The searches one call may run. Gemini, which cannot be told, ran six on
  *  average on 2026-10-19 (421 billed for 67 calls); each costs a cent here,
@@ -28,17 +26,7 @@ const MAX_CONTINUATIONS = 2
 
 const logger = createLogger('scan')
 
-type Block = { type: string; text?: string }
-
-type MessagesResponse = {
-  content?: Block[]
-  stop_reason?: string
-  usage?: {
-    input_tokens?: number
-    output_tokens?: number
-    server_tool_use?: { web_search_requests?: number }
-  }
-}
+type Block = ClaudeBlock
 
 type SearchOptions = {
   step: string
@@ -60,16 +48,22 @@ export const searchedWithClaude = async <T>({
   responseSchema,
   model = CLAUDE_SEARCH_MODEL,
 }: SearchOptions): Promise<{ value: T; usage: AiStepUsage }> => {
-  const key = config().anthropicApiKey
-  if (!key) throw new Error('Anthropic API key is not configured')
-  const messages: { role: 'user' | 'assistant'; content: string | Block[] }[] = [
+  const messages: ClaudeMessage[] = [
     { role: 'user', content: `${prompt}\n\n${answerShape(responseSchema)}` },
   ]
   const usage: AiStepUsage = { promptTokens: 0, outputTokens: 0, thinkingTokens: 0, searches: 0 }
   let content: Block[] = []
   let stopReason: string | undefined
   for (let turn = 0; turn <= MAX_CONTINUATIONS; turn += 1) {
-    const body = await asked(key, model, messages)
+    const body = await askClaude(
+      {
+        model,
+        max_tokens: MAX_TOKENS,
+        messages,
+        tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: MAX_SEARCHES }],
+      },
+      TIMEOUT_MS,
+    )
     usage.promptTokens += body.usage?.input_tokens ?? 0
     usage.outputTokens += body.usage?.output_tokens ?? 0
     usage.searches += body.usage?.server_tool_use?.web_search_requests ?? 0
@@ -118,29 +112,4 @@ export const answerTextOf = (content: readonly Block[]): string => {
     .filter((block) => block.type === 'text')
     .map((block) => block.text ?? '')
     .join('')
-}
-
-const asked = async (
-  key: string,
-  model: string,
-  messages: { role: 'user' | 'assistant'; content: string | Block[] }[],
-): Promise<MessagesResponse> => {
-  const response = await fetch(API_URL, {
-    method: 'POST',
-    headers: {
-      'x-api-key': key,
-      'anthropic-version': '2023-06-01',
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify({
-      model,
-      max_tokens: MAX_TOKENS,
-      messages,
-      tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: MAX_SEARCHES }],
-    }),
-    signal: AbortSignal.timeout(TIMEOUT_MS),
-  })
-  if (!response.ok)
-    throw new Error(`Claude answered ${response.status}: ${(await response.text()).slice(0, 500)}`)
-  return (await response.json()) as MessagesResponse
 }

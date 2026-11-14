@@ -2,6 +2,7 @@ import { authorKeyOf, PortraitUrl } from '~/domain/author/primitives'
 import type { PortraitUrl as PortraitUrlType } from '~/domain/author/types'
 import type { AuthorName } from '~/domain/shared/types'
 import { createLogger } from '~/system/logger'
+import { probeOpenLibraryImage, searchOpenLibrary } from '~/system/open-library'
 import { isTimeout } from '~/utils/fetch'
 
 const logger = createLogger('open-library-author')
@@ -32,30 +33,21 @@ export const openLibraryPortraitOf = async (
 ): Promise<PortraitUrlType | undefined> => {
   const signal = AbortSignal.timeout(LOOKUP_TIMEOUT_MS)
   try {
-    const query = new URLSearchParams({ q: name, fields: 'key,name,work_count', limit: '5' })
-    const response = await fetch(`https://openlibrary.org/search/authors.json?${query}`, {
-      // Open Library asks every client to say who it is, and throttles those that don't.
-      headers: { 'user-agent': 'Shiori/1.0 (https://github.com/moifort/shiori)' },
+    const answer = await searchOpenLibrary<SearchAnswer>(
+      'search/authors.json',
+      { q: name, fields: 'key,name,work_count', limit: '5' },
       signal,
-    })
-    if (!response.ok) {
-      logger.warn('Open Library author search failed', { name, status: response.status })
-      return undefined
-    }
+    )
     const key = authorKeyOf(name)
-    const olid = (((await response.json()) as SearchAnswer).docs ?? [])
+    const olid = (answer.docs ?? [])
       .filter((doc) => doc.key && doc.name && authorKeyOf(doc.name) === key)
       .toSorted((a, b) => (b.work_count ?? 0) - (a.work_count ?? 0))[0]?.key
     if (!olid) return undefined
 
     const url = photoUrlOf(olid)
-    const photo = await fetch(url, {
-      method: 'HEAD',
-      redirect: 'manual',
-      signal,
-    })
-    if (photo.status === 404) return undefined
-    if (photo.ok || (photo.status >= 300 && photo.status < 400)) return PortraitUrl(url)
+    const photo = await probeOpenLibraryImage(url, signal)
+    if (photo === 'missing') return undefined
+    if (photo === 'found') return PortraitUrl(url)
     logger.warn('Open Library author photo lookup failed', { name, status: photo.status })
     return undefined
   } catch (error) {

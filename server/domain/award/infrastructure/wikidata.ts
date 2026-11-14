@@ -1,5 +1,6 @@
 import { AWARD_LANGUAGES } from '~/domain/award/business-rules'
 import type { Award } from '~/domain/award/types'
+import { queryWikidata } from '~/system/wikidata'
 
 /** The English label of each award's item on Wikidata: looked up by label
  *  rather than by Q-id so a wrong id cannot silently match nothing. */
@@ -12,8 +13,6 @@ const LABELS: Record<Award, string> = {
   'world-fantasy': 'World Fantasy Award for Best Novel',
   goncourt: 'Prix Goncourt',
 }
-
-const ENDPOINT = 'https://query.wikidata.org/sparql'
 
 const AUTHORS_SEPARATOR = '|'
 
@@ -52,14 +51,5 @@ export const winnersOfAnswer = (bindings: readonly Binding[]): WikidataWinner[] 
 
 /** The award's winners Wikidata records after a year. Throws on an answer that
  *  is not a success: the caller logs it and asks again the next day. */
-export const winnersAfter = async (award: Award, after: number): Promise<WikidataWinner[]> => {
-  const response = await fetch(`${ENDPOINT}?query=${encodeURIComponent(queryOf(award, after))}`, {
-    headers: {
-      Accept: 'application/sparql-results+json',
-      'User-Agent': 'shiori-award-watch/1.0 (https://github.com/moifort/shiori)',
-    },
-  })
-  if (!response.ok) throw new Error(`Wikidata answered ${response.status}`)
-  const body = (await response.json()) as { results: { bindings: Binding[] } }
-  return winnersOfAnswer(body.results.bindings)
-}
+export const winnersAfter = async (award: Award, after: number): Promise<WikidataWinner[]> =>
+  winnersOfAnswer(await queryWikidata<Binding>(queryOf(award, after)))

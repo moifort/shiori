@@ -1,6 +1,6 @@
-import { applicationDefault, getApp } from 'firebase-admin/app'
 import type { Month } from '~/domain/shared/types'
 import { config } from '~/system/config/index'
+import { cloudPlatformAccessToken } from '~/system/google-token'
 import { createLogger } from '~/system/logger'
 import { type BilledDay, parseDailyCosts } from './daily-costs'
 
@@ -41,7 +41,7 @@ export namespace GcpBilling {
       {
         method: 'POST',
         headers: {
-          authorization: `Bearer ${await accessToken()}`,
+          authorization: `Bearer ${await cloudPlatformAccessToken()}`,
           'content-type': 'application/json',
         },
         body: JSON.stringify({
@@ -70,14 +70,4 @@ export namespace GcpBilling {
     parameterType: { type },
     parameterValue: { value },
   })
-
-  // The function's own service account, through the credential firebase-admin
-  // already holds — no extra auth library for one bearer token. getApp() is
-  // safe here: the auth middleware initializes firebase-admin at boot, long
-  // before any refresh can run (and applicationDefault() covers a bare use).
-  const accessToken = async (): Promise<string> => {
-    const credential = getApp().options.credential ?? applicationDefault()
-    const { access_token } = await credential.getAccessToken()
-    return access_token
-  }
 }

@@ -2,7 +2,8 @@ import { authorKeyOf, PortraitUrl } from '~/domain/author/primitives'
 import type { PortraitUrl as PortraitUrlType } from '~/domain/author/types'
 import type { AuthorName } from '~/domain/shared/types'
 import { createLogger } from '~/system/logger'
-import { isTimeout } from '~/utils/fetch'
+import { askWikidata } from '~/system/wikidata'
+import { fetchJson, isTimeout } from '~/utils/fetch'
 
 const logger = createLogger('wikidata')
 
@@ -26,7 +27,6 @@ const THUMB_WIDTH = 330
 const WIKIS_ASKED = 10
 
 // Wikimedia asks every client to say who it is, and throttles those that don't.
-const headers = { 'user-agent': 'Shiori/1.0 (https://github.com/moifort/shiori)' }
 
 /** The occupations that make a namesake the author rather than someone else:
  *  the ones the writers of a reading library carry on Wikidata, from novelist
@@ -69,11 +69,8 @@ type Entity = {
 }
 type Page = { thumbnail?: { source?: string } }
 
-const ask = async <T>(url: string, signal: AbortSignal): Promise<T> => {
-  const response = await fetch(url, { headers, signal })
-  if (!response.ok) throw new Error(`${new URL(url).host} answered ${response.status}`)
-  return (await response.json()) as T
-}
+/** Commons and the Wikipedias, asked under Shiori's name like Wikidata. */
+const ask = <T>(url: string, signal: AbortSignal): Promise<T> => fetchJson<T>(url, { signal })
 
 const idsOf = (entity: Entity, property: string) =>
   (entity.claims?.[property] ?? []).map((claim) => claim.mainsnak?.datavalue?.value)
@@ -169,29 +166,27 @@ export const wikidataPortraitOf = async (
 ): Promise<PortraitUrlType | undefined> => {
   const signal = AbortSignal.timeout(LOOKUP_TIMEOUT_MS)
   try {
-    const search = new URLSearchParams({
-      action: 'wbsearchentities',
-      format: 'json',
-      language: 'en',
-      type: 'item',
-      limit: '7',
-      search: name,
-    })
-    const found = await ask<{ search?: { id: string }[] }>(
-      `https://www.wikidata.org/w/api.php?${search}`,
+    const found = await askWikidata<{ search?: { id: string }[] }>(
+      {
+        action: 'wbsearchentities',
+        format: 'json',
+        language: 'en',
+        type: 'item',
+        limit: '7',
+        search: name,
+      },
       signal,
     )
     const ids = (found.search ?? []).map(({ id }) => id)
     if (ids.length === 0) return undefined
 
-    const read = new URLSearchParams({
-      action: 'wbgetentities',
-      format: 'json',
-      props: 'labels|aliases|claims|sitelinks',
-      ids: ids.join('|'),
-    })
-    const { entities } = await ask<{ entities?: Record<string, Entity> }>(
-      `https://www.wikidata.org/w/api.php?${read}`,
+    const { entities } = await askWikidata<{ entities?: Record<string, Entity> }>(
+      {
+        action: 'wbgetentities',
+        format: 'json',
+        props: 'labels|aliases|claims|sitelinks',
+        ids: ids.join('|'),
+      },
       signal,
     )
     const author = Object.values(entities ?? {})

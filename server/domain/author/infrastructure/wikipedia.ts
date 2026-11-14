@@ -2,7 +2,7 @@ import { PortraitUrl } from '~/domain/author/primitives'
 import type { PortraitUrl as PortraitUrlType } from '~/domain/author/types'
 import type { AuthorName } from '~/domain/shared/types'
 import { createLogger } from '~/system/logger'
-import { isTimeout } from '~/utils/fetch'
+import { isTimeout, SHIORI_USER_AGENT } from '~/utils/fetch'
 
 const logger = createLogger('wikipedia')
 
@@ -74,7 +74,7 @@ const summaryPortrait = async ({
   try {
     const response = await fetch(url, {
       // Wikimedia asks every client to say who it is, and throttles those that don't.
-      headers: { 'user-agent': 'Shiori/1.0 (https://github.com/moifort/shiori)' },
+      headers: { 'user-agent': SHIORI_USER_AGENT },
       signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS),
     })
     if (response.status === 404) return undefined

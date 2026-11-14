@@ -2,7 +2,7 @@ import { Isbn13, PageCount } from '~/domain/book/primitives'
 import type { LibraryEdition } from '~/domain/scan/types'
 import { createLogger } from '~/system/logger'
 import { addressFromCloudflare, fetchFromAddress } from '~/utils/dns-over-https'
-import { isTimeout } from '~/utils/fetch'
+import { isTimeout, SHIORI_USER_AGENT } from '~/utils/fetch'
 import { isPresent, optionally } from '~/utils/input'
 
 const logger = createLogger('bnf')
@@ -64,7 +64,7 @@ export const bnfEditionsOf = async (book: CataloguedBook): Promise<LibraryEditio
 const CATALOGUE_HOST = 'catalogue.bnf.fr'
 
 /** The catalogue answers 403 to a request that names no user agent. */
-const headers = { 'user-agent': 'Shiori/1.0 (https://github.com/moifort/shiori)' }
+const headers = { 'user-agent': SHIORI_USER_AGENT }
 
 /** The catalogue's answer, reached at the address Cloudflare's resolver gives.
  *

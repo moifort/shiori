@@ -1,24 +1,16 @@
+import { scopedAccessToken } from '~/system/google-token'
 import { createLogger } from '~/system/logger'
 import { parseSubscription, type SubscriptionPurchaseV2 } from './subscription'
 import { PACKAGE_NAME, type PlaySubscription } from './types'
 
 const logger = createLogger('google-play')
 
-// The Play Developer API only takes a token carrying its own scope; the metadata server mints
-// one for the runtime's service account, which Play Console must list as a user with the
-// "View financial data" and "Manage orders and subscriptions" permissions.
-const TOKEN_URL =
-  'http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token' +
-  '?scopes=https://www.googleapis.com/auth/androidpublisher'
+// The Play Developer API only takes a token carrying its own scope, for the runtime's service
+// account, which Play Console must list as a user with the "View financial data" and "Manage
+// orders and subscriptions" permissions.
+const accessToken = () => scopedAccessToken('https://www.googleapis.com/auth/androidpublisher')
 
 const API = `https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${PACKAGE_NAME}`
-
-const accessToken = async (): Promise<string> => {
-  const response = await fetch(TOKEN_URL, { headers: { 'Metadata-Flavor': 'Google' } })
-  if (!response.ok) throw new Error(`Metadata server answered ${response.status}`)
-  const { access_token } = (await response.json()) as { access_token: string }
-  return access_token
-}
 
 export namespace GooglePlay {
   // What Google says a purchase token bought. 'invalid-token' when Google does not know it —

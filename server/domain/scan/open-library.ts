@@ -1,6 +1,11 @@
 import { CoverUrl } from '~/domain/book/primitives'
 import type { CoverUrl as CoverUrlType, Isbn13 } from '~/domain/book/types'
 import { createLogger } from '~/system/logger'
+import {
+  openLibraryCoverOfId,
+  probeOpenLibraryImage,
+  searchOpenLibrary,
+} from '~/system/open-library'
 import { isTimeout } from '~/utils/fetch'
 
 const logger = createLogger('open-library')
@@ -28,17 +33,12 @@ const LOOKUP_TIMEOUT_MS = 3000
  *
  *  Never throws: a failed lookup is a book without a cover, not a failed scan. */
 export const openLibraryCoverOf = async (isbn13: Isbn13): Promise<CoverUrlType | undefined> => {
-  const url = coverUrlOf(isbn13)
+  const url = `${coverUrlOf(isbn13)}?default=false`
   try {
-    const response = await fetch(`${url}?default=false`, {
-      method: 'HEAD',
-      redirect: 'manual',
-      signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS),
-    })
-    if (response.status === 404) return undefined
-    if (response.ok || (response.status >= 300 && response.status < 400))
-      return CoverUrl(`${url}?default=false`)
-    logger.warn('Open Library cover lookup failed', { isbn13, status: response.status })
+    const probed = await probeOpenLibraryImage(url, AbortSignal.timeout(LOOKUP_TIMEOUT_MS))
+    if (probed === 'missing') return undefined
+    if (probed === 'found') return CoverUrl(url)
+    logger.warn('Open Library cover lookup failed', { isbn13, status: probed.status })
     return undefined
   } catch (error) {
     // Running out of time is the cutoff above doing its job, not a failure to look into.
@@ -66,17 +66,13 @@ export const openLibraryCoverByTitle = async (
   title: string,
   author: string,
 ): Promise<CoverUrlType | undefined> => {
-  const query = new URLSearchParams({ title, author, fields: 'cover_i', limit: '1' })
-  const response = await fetch(`https://openlibrary.org/search.json?${query}`, {
-    // Open Library asks every client to say who it is, and throttles those that don't.
-    headers: { 'user-agent': 'Shiori/1.0 (https://github.com/moifort/shiori)' },
-    signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS),
-  })
-  if (!response.ok) throw new Error(`Open Library title search answered ${response.status}`)
-  const coverId = ((await response.json()) as SearchAnswer).docs?.[0]?.cover_i
-  return coverId
-    ? CoverUrl(`https://covers.openlibrary.org/b/id/${coverId}-M.jpg?default=false`)
-    : undefined
+  const answer = await searchOpenLibrary<SearchAnswer>(
+    'search.json',
+    { title, author, fields: 'cover_i', limit: '1' },
+    AbortSignal.timeout(LOOKUP_TIMEOUT_MS),
+  )
+  const coverId = answer.docs?.[0]?.cover_i
+  return coverId ? CoverUrl(openLibraryCoverOfId(coverId)) : undefined
 }
 
 /** What names a book on a spine, to search Open Library with. */
@@ -116,12 +112,11 @@ export const openLibraryIsbnsOf = async (book: PrintedBook): Promise<string[]> =
   }
 }
 
-const isbnsFound = async (search: Record<string, string>, language: string) => {
-  const query = new URLSearchParams({ ...search, lang: language, fields: 'isbn', limit: '1' })
-  const response = await fetch(`https://openlibrary.org/search.json?${query}`, {
-    headers: { 'user-agent': 'Shiori/1.0 (https://github.com/moifort/shiori)' },
-    signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS),
-  })
-  if (!response.ok) throw new Error(`Open Library search answered ${response.status}`)
-  return ((await response.json()) as IsbnAnswer).docs?.[0]?.isbn ?? []
-}
+const isbnsFound = async (search: Record<string, string>, language: string) =>
+  (
+    await searchOpenLibrary<IsbnAnswer>(
+      'search.json',
+      { ...search, lang: language, fields: 'isbn', limit: '1' },
+      AbortSignal.timeout(LOOKUP_TIMEOUT_MS),
+    )
+  ).docs?.[0]?.isbn ?? []

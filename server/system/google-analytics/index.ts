@@ -1,15 +1,12 @@
 import { config } from '~/system/config/index'
+import { scopedAccessToken } from '~/system/google-token'
 import { createLogger } from '~/system/logger'
 import { type DailySessionCount, parseSessionsReport } from './sessions-report'
 
 const logger = createLogger('google-analytics')
 
-// The GA4 Data API only takes a token carrying an Analytics scope, and the one
-// firebase-admin hands out carries cloud-platform alone. The metadata server
-// mints a token for any scope the runtime's service account is asked for.
-const TOKEN_URL =
-  'http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token' +
-  '?scopes=https://www.googleapis.com/auth/analytics.readonly'
+// The GA4 Data API only takes a token carrying an Analytics scope.
+const accessToken = () => scopedAccessToken('https://www.googleapis.com/auth/analytics.readonly')
 
 export namespace GoogleAnalytics {
   // How many sessions GA4 counted each day between two calendar days, both
@@ -46,12 +43,5 @@ export namespace GoogleAnalytics {
       throw new Error(`GA4 runReport answered ${response.status}`)
     }
     return parseSessionsReport(await response.json())
-  }
-
-  const accessToken = async (): Promise<string> => {
-    const response = await fetch(TOKEN_URL, { headers: { 'Metadata-Flavor': 'Google' } })
-    if (!response.ok) throw new Error(`Metadata server answered ${response.status}`)
-    const { access_token } = (await response.json()) as { access_token: string }
-    return access_token
   }
 }
