@@ -111,10 +111,15 @@ extension FollowedSeries {
 }
 
 extension [FollowedSeries] {
-    /// "À suivre": the sagas being read, the next volume of each.
+    /// "À suivre": the sagas being read, the next volume of each. A saga
+    /// with a volume open is left out: that volume is already in "À finir".
     var upNext: [(series: FollowedSeries, volume: FollowedSeries.NextVolume)] {
         filter { $0.state == .inProgress }
             .compactMap { saga in saga.nextVolume.map { (saga, $0) } }
+            .filter { entry in
+                if case let .owned(book) = entry.volume { return book.status != .reading }
+                return true
+            }
     }
 }
 

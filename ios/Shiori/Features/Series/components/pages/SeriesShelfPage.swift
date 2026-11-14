@@ -155,7 +155,7 @@ struct SeriesShelfPage: View {
     let series = SeriesFixtures.followed
     NavigationStack {
         SeriesShelfPage(
-            upNext: series.compactMap { saga in saga.nextVolume.map { (saga, $0) } },
+            upNext: series.upNext,
             releases: series.compactMap { saga in saga.announced.map { (saga, $0) } },
             filters: SeriesShelfFilter.offered(for: series),
             filter: .all,

@@ -165,6 +165,13 @@ struct SeriesShelfTests {
         #expect(sagas.upNext.count == 1)
     }
 
+    @Test func upNextLeavesOutASagaWithAVolumeOpen() {
+        let sagas = [saga(owned: [.read, .reading, .toRead], published: 3), saga(owned: [.read, .toRead], published: 2)]
+
+        #expect(sagas.upNext.count == 1)
+        #expect(sagas.upNext.first?.volume == .owned(sagas[1].volumes[1]))
+    }
+
     @Test func thePilePillsNarrowUpNextToTheSagasFormatAndGenre() {
         var audio = saga(owned: [.read], published: 3, genre: .fantasy)
         audio.isAudio = true
