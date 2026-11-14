@@ -1,0 +1,405 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`the friends’ last hearts, for the dashboard answer each friend’s newest heart of the month, as they always did 1`] = `
+[
+  {
+    "book": {
+      "addedAt": 2025-12-19T16:00:00.000Z,
+      "authors": [
+        "Dan Simmons",
+      ],
+      "favorite": true,
+      "favoritedAt": 2026-10-14T16:00:00.000Z,
+      "format": "book",
+      "hidden": false,
+      "id": "l1",
+      "inLibrary": false,
+      "language": "fr",
+      "media": [
+        "print",
+      ],
+      "narrators": [],
+      "status": "read",
+      "subgenres": [],
+      "title": "Endymion",
+      "userId": "lou",
+    },
+    "favoritedAt": 2026-10-14T16:00:00.000Z,
+    "friendId": "lou",
+    "friendName": "Lou",
+  },
+  {
+    "favoritedAt": 2026-10-13T16:00:00.000Z,
+    "friendId": "camille",
+    "friendName": "Camille",
+    "saga": {
+      "author": "Glen Cook",
+      "favorite": true,
+      "favoritedAt": 2026-10-13T16:00:00.000Z,
+      "genre": "fantasy",
+      "id": "la-compagnie-noire--glen-cook~fr",
+      "language": "fr",
+      "name": "La Compagnie noire",
+      "ownedCount": 3,
+      "rating": 4,
+      "saga": "la-compagnie-noire--glen-cook",
+      "seriesId": "la-compagnie-noire--glen-cook~fr",
+      "shelvedAt": 2026-08-16T16:00:00.000Z,
+      "state": "in-progress",
+      "subgenre": {
+        "label": "dark fantasy",
+        "language": "fr",
+      },
+      "volumes": [
+        {
+          "addedAt": 2026-08-16T16:00:00.000Z,
+          "authors": [
+            "Glen Cook",
+          ],
+          "coverUrl": "https://covers.example/c06.jpg",
+          "format": "book",
+          "genre": "fantasy",
+          "hidden": false,
+          "id": "c06",
+          "inLibrary": false,
+          "language": "fr",
+          "media": [
+            "print",
+          ],
+          "narrators": [],
+          "publishedCoverUrl": "https://covers.example/c06.jpg",
+          "series": {
+            "id": "la-compagnie-noire--glen-cook~fr",
+            "kind": "main",
+            "name": "La Compagnie noire",
+            "saga": "la-compagnie-noire--glen-cook",
+            "volume": 1,
+          },
+          "status": "read",
+          "subgenres": [],
+          "title": "La Compagnie noire",
+          "userId": "camille",
+        },
+      ],
+    },
+  },
+]
+`;
+
+exports[`what the friends love, for Découvrir answer the books, sagas and authors the reader does not hold, as they always did 1`] = `
+{
+  "authors": [
+    {
+      "friendId": "camille",
+      "friends": [
+        {
+          "firstName": "Camille",
+          "userId": "camille",
+        },
+      ],
+      "item": {
+        "key": "glen-cook",
+        "name": "Glen Cook",
+      },
+      "lovedAt": 2026-10-13T16:00:00.000Z,
+      "lovedByMany": false,
+    },
+    {
+      "friendId": "lou",
+      "friends": [
+        {
+          "firstName": "Lou",
+          "userId": "lou",
+        },
+      ],
+      "item": {
+        "key": "jean-giono",
+        "name": "Jean Giono",
+      },
+      "lovedAt": 2026-09-05T16:00:00.000Z,
+      "lovedByMany": false,
+    },
+    {
+      "friendId": "camille",
+      "friends": [
+        {
+          "firstName": "Camille",
+          "userId": "camille",
+        },
+      ],
+      "item": {
+        "key": "ursula-k-le-guin",
+        "name": "Ursula K. Le Guin",
+      },
+      "lovedAt": 2026-07-07T16:00:00.000Z,
+      "lovedByMany": false,
+    },
+  ],
+  "books": [
+    {
+      "friendId": "lou",
+      "friends": [
+        {
+          "firstName": "Lou",
+          "userId": "lou",
+        },
+        {
+          "firstName": "Camille",
+          "userId": "camille",
+        },
+      ],
+      "item": {
+        "addedAt": 2025-12-19T16:00:00.000Z,
+        "authors": [
+          "Dan Simmons",
+        ],
+        "favorite": true,
+        "favoritedAt": 2026-10-14T16:00:00.000Z,
+        "format": "book",
+        "hidden": false,
+        "id": "l1",
+        "inLibrary": false,
+        "language": "fr",
+        "media": [
+          "print",
+        ],
+        "narrators": [],
+        "status": "read",
+        "subgenres": [],
+        "title": "Endymion",
+        "userId": "lou",
+      },
+      "lovedAt": 2026-10-14T16:00:00.000Z,
+      "lovedByMany": true,
+    },
+    {
+      "friendId": "camille",
+      "friends": [
+        {
+          "firstName": "Camille",
+          "userId": "camille",
+        },
+      ],
+      "item": {
+        "addedAt": 2025-12-19T16:00:00.000Z,
+        "authors": [
+          "Glen Cook",
+        ],
+        "favorite": true,
+        "favoritedAt": 2026-10-05T16:00:00.000Z,
+        "format": "book",
+        "genre": "fantasy",
+        "hidden": false,
+        "id": "c05",
+        "inLibrary": false,
+        "language": "fr",
+        "media": [
+          "print",
+        ],
+        "narrators": [],
+        "series": {
+          "id": "la-compagnie-noire--glen-cook~fr",
+          "kind": "main",
+          "name": "La Compagnie noire",
+          "saga": "la-compagnie-noire--glen-cook",
+          "volume": 2,
+        },
+        "status": "read",
+        "subgenres": [
+          {
+            "label": "dark fantasy",
+            "language": "fr",
+          },
+        ],
+        "title": "Le Château noir",
+        "userId": "camille",
+      },
+      "lovedAt": 2026-10-05T16:00:00.000Z,
+      "lovedByMany": false,
+    },
+    {
+      "friendId": "lou",
+      "friends": [
+        {
+          "firstName": "Lou",
+          "userId": "lou",
+        },
+      ],
+      "item": {
+        "addedAt": 2025-12-19T16:00:00.000Z,
+        "authors": [
+          "Jean Giono",
+        ],
+        "favorite": true,
+        "favoritedAt": 2026-09-05T16:00:00.000Z,
+        "format": "book",
+        "hidden": false,
+        "id": "l2",
+        "inLibrary": false,
+        "language": "fr",
+        "media": [
+          "print",
+        ],
+        "narrators": [],
+        "status": "read",
+        "subgenres": [],
+        "title": "Vieux coup de cœur",
+        "userId": "lou",
+      },
+      "lovedAt": 2026-09-05T16:00:00.000Z,
+      "lovedByMany": false,
+    },
+    {
+      "friendId": "camille",
+      "friends": [
+        {
+          "firstName": "Camille",
+          "userId": "camille",
+        },
+      ],
+      "item": {
+        "addedAt": 2026-03-29T16:00:00.000Z,
+        "authors": [
+          "Ursula K. Le Guin",
+        ],
+        "favorite": true,
+        "format": "book",
+        "hidden": false,
+        "id": "c04",
+        "inLibrary": false,
+        "language": "fr",
+        "media": [
+          "print",
+        ],
+        "narrators": [],
+        "status": "read",
+        "subgenres": [],
+        "title": "Ancien",
+        "updatedAt": 2026-07-07T16:00:00.000Z,
+        "userId": "camille",
+      },
+      "lovedAt": 2026-07-07T16:00:00.000Z,
+      "lovedByMany": false,
+    },
+  ],
+  "sagas": [
+    {
+      "friendId": "camille",
+      "friends": [
+        {
+          "firstName": "Camille",
+          "userId": "camille",
+        },
+      ],
+      "item": {
+        "author": "Glen Cook",
+        "favorite": true,
+        "favoritedAt": 2026-10-13T16:00:00.000Z,
+        "genre": "fantasy",
+        "id": "la-compagnie-noire--glen-cook~fr",
+        "language": "fr",
+        "name": "La Compagnie noire",
+        "ownedCount": 3,
+        "rating": 4,
+        "saga": "la-compagnie-noire--glen-cook",
+        "seriesId": "la-compagnie-noire--glen-cook~fr",
+        "shelvedAt": 2026-08-16T16:00:00.000Z,
+        "state": "in-progress",
+        "subgenre": {
+          "label": "dark fantasy",
+          "language": "fr",
+        },
+        "volumes": [
+          {
+            "addedAt": 2026-08-16T16:00:00.000Z,
+            "authors": [
+              "Glen Cook",
+            ],
+            "coverUrl": "https://covers.example/c06.jpg",
+            "format": "book",
+            "genre": "fantasy",
+            "hidden": false,
+            "id": "c06",
+            "inLibrary": false,
+            "language": "fr",
+            "media": [
+              "print",
+            ],
+            "narrators": [],
+            "publishedCoverUrl": "https://covers.example/c06.jpg",
+            "series": {
+              "id": "la-compagnie-noire--glen-cook~fr",
+              "kind": "main",
+              "name": "La Compagnie noire",
+              "saga": "la-compagnie-noire--glen-cook",
+              "volume": 1,
+            },
+            "status": "read",
+            "subgenres": [],
+            "title": "La Compagnie noire",
+            "userId": "camille",
+          },
+        ],
+      },
+      "lovedAt": 2026-10-13T16:00:00.000Z,
+      "lovedByMany": false,
+    },
+    {
+      "friendId": "lou",
+      "friends": [
+        {
+          "firstName": "Lou",
+          "userId": "lou",
+        },
+      ],
+      "item": {
+        "author": "Robin Hobb",
+        "favorite": true,
+        "favoritedAt": undefined,
+        "genre": undefined,
+        "id": "l-assassin-royal--robin-hobb~fr",
+        "language": "fr",
+        "name": "L’Assassin royal",
+        "ownedCount": 2,
+        "rating": 5,
+        "saga": "l-assassin-royal--robin-hobb",
+        "seriesId": "l-assassin-royal--robin-hobb~fr",
+        "shelvedAt": 2026-10-07T16:00:00.000Z,
+        "state": "in-progress",
+        "subgenre": undefined,
+        "volumes": [
+          {
+            "addedAt": 2025-12-19T16:00:00.000Z,
+            "authors": [
+              "Robin Hobb",
+            ],
+            "format": "book",
+            "hidden": false,
+            "id": "l3",
+            "inLibrary": false,
+            "language": "fr",
+            "media": [
+              "print",
+            ],
+            "narrators": [],
+            "series": {
+              "id": "l-assassin-royal--robin-hobb~fr",
+              "kind": "main",
+              "name": "L’Assassin royal",
+              "saga": "l-assassin-royal--robin-hobb",
+              "volume": 1,
+            },
+            "status": "read",
+            "subgenres": [],
+            "title": "L’Apprenti assassin",
+            "updatedAt": 2026-09-15T16:00:00.000Z,
+            "userId": "lou",
+          },
+        ],
+      },
+      "lovedAt": 2026-10-07T16:00:00.000Z,
+      "lovedByMany": false,
+    },
+  ],
+}
+`;
