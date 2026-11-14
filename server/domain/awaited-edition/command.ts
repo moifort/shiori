@@ -5,6 +5,7 @@ import type {
   EditionPassState,
   EditionWatch,
 } from '~/domain/awaited-edition/types'
+import { ReleaseCommand } from '~/domain/release/command'
 import type { UserId } from '~/domain/shared/types'
 
 export namespace AwaitedEditionCommand {
@@ -19,7 +20,10 @@ export namespace AwaitedEditionCommand {
   export const markNotified = (awaited: AwaitedEdition, now: Date): Promise<AwaitedEdition> =>
     repository.save({ ...awaited, notifiedAt: now })
 
-  export const saveWatch = (watch: EditionWatch): Promise<void> => repository.saveWatch(watch)
+  /** What the web says of an edition, beside the descriptions its release
+   *  keeps. */
+  export const saveWatch = ({ descriptions: _, ...watch }: EditionWatch): Promise<void> =>
+    ReleaseCommand.saveWatch(watch)
 
   export const deleteAllForUser = (userId: UserId): Promise<void> =>
     repository.removeAllByUser(userId)

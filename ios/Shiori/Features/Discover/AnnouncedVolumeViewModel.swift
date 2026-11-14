@@ -8,7 +8,8 @@ final class AnnouncedVolumeViewModel {
     init(opened: DiscoveryVolume, client: DiscoverClient) {
         self.opened = opened
         self.client = client
-        describer = ReleaseDescriber(describe: client.describe)
+        let item = ReleaseItem.sagaVolume(seriesId: opened.saga.series.seriesId, number: opened.volume.number)
+        describer = ReleaseDescriber(release: opened.volume.release) { try await client.describe(item) }
     }
 
     let opened: DiscoveryVolume
@@ -25,11 +26,11 @@ final class AnnouncedVolumeViewModel {
     /// Why the addition failed, for the alert; nil once read.
     var addFailed: String?
 
-    /// The book once described, or as the look on the web knows it until then.
-    var shown: Book { opened.book.described(by: describer.description) }
+    /// The volume as its list drew it, then as the server described it.
+    var shown: Book { opened.book(of: describer.release) }
     var isDescribing: Bool { describer.isDescribing }
 
-    func describe() async { await describer.describe(opened.seed) }
+    func describe() async { await describer.describe() }
 
     /// The saga's row, read off the catalogue already built: it never pays
     /// for one. Nothing when it fails, the page whole without it.

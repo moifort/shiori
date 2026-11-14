@@ -17,7 +17,8 @@ struct DiscoverClient: Sendable {
     /// The month's discoveries, the selection made when the month has none.
     var discoveries: @Sendable (ReleaseFormat) async throws -> MonthlyDiscoveries
     var dismissSuggestion: @Sendable (_ id: String, DismissalReason) async throws -> Void
-    var describe: @Sendable (ReleaseSeed) async throws -> ReleaseDescription
+    /// The release a list showed, described for its page by the server.
+    var describe: @Sendable (ReleaseItem) async throws -> Release
     /// Onto the pile, through the one "look up, then add" use case.
     var addBook: @Sendable (BookDraft) async throws -> Void
     /// A suggestion put on the shelf from its page: the book's id.

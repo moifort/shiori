@@ -1,5 +1,6 @@
 import * as repository from '~/domain/awaited-edition/infrastructure/repository'
 import type { AwaitedEdition, EditionPassState, EditionWatch } from '~/domain/awaited-edition/types'
+import { ReleaseQuery } from '~/domain/release/query'
 import type { UserId } from '~/domain/shared/types'
 
 export namespace AwaitedEditionQuery {
@@ -19,7 +20,12 @@ export namespace AwaitedEditionQuery {
   /** What the last hourly pass left for this one, if it left anything. */
   export const passState = (): Promise<EditionPassState | undefined> => repository.findPassState()
 
-  /** The watches under these keys, in one getAll, keyed by theirs. */
+  /** The releases under these keys the web was searched for, in one getAll,
+   *  keyed by theirs: a release only described is not watched. */
   export const watches = async (keys: readonly string[]): Promise<Map<string, EditionWatch>> =>
-    new Map((await repository.findWatches(keys)).map((watch) => [watch.key, watch]))
+    new Map(
+      [...(await ReleaseQuery.byKeys(keys)).values()].flatMap((release) =>
+        release.checkedAt ? [[release.key, release as EditionWatch] as const] : [],
+      ),
+    )
 }

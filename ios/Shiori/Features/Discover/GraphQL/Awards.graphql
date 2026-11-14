@@ -26,14 +26,18 @@ fragment AwardWinnerFields on AwardWinner {
   id
   key
   format
-  title
-  originalTitle
-  originalLanguage
-  authors
   awards {
     award
     year
   }
+  release {
+    ...ReleaseFields
+  }
+  # Read by Android until its release-time port: iOS draws `release`.
+  title
+  originalTitle
+  originalLanguage
+  authors
   state
   watched
   date

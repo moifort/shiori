@@ -30,10 +30,6 @@ mutation ReconsiderSuggestion($id: String!) {
 fragment SuggestionFields on Suggestion {
   id
   format
-  title
-  originalTitle
-  originalLanguage
-  authors
   kind
   reason
   short
@@ -47,6 +43,14 @@ fragment SuggestionFields on Suggestion {
     viaSeries
     coverUrl
   }
+  release {
+    ...ReleaseFields
+  }
+  # Read by Android until its release-time port: iOS draws `release`.
+  title
+  originalTitle
+  originalLanguage
+  authors
   state
   watched
   date

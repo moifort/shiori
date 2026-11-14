@@ -1,16 +1,19 @@
 import { AudibleQuery } from '~/domain/audible/query'
 import { FollowedAuthorType } from '~/domain/author/infrastructure/graphql/queries'
+import { READ_RELEASE } from '~/domain/awaited-edition/infrastructure/graphql/types'
+import { todayOf, volumeShownOf } from '~/domain/discovery/business-rules'
 import type {
   AnnouncedVolumePreview,
   AuthorDiscovery,
   AuthorReleases,
   Discovery,
-  FoundVolume,
   FoundWork,
   ReleaseDescription,
   SagaDiscovery,
   SagaReleases,
+  ShownVolume,
 } from '~/domain/discovery/types'
+import { ReleaseType, releaseViewFor } from '~/domain/release/infrastructure/graphql/types'
 import { ScanResultType } from '~/domain/scan/infrastructure/graphql/types'
 import { FollowedSeriesType } from '~/domain/series/infrastructure/graphql/queries'
 import { builder } from '~/domain/shared/graphql/builder'
@@ -23,25 +26,36 @@ export const ReleaseFormatEnum = builder.enumType('ReleaseFormat', {
   } as const,
 })
 
-const DiscoveredVolumeType = builder.objectRef<FoundVolume>('DiscoveredVolume').implement({
+const DiscoveredVolumeType = builder.objectRef<ShownVolume>('DiscoveredVolume').implement({
   description:
     'One volume of a saga the reader does not hold, announced or just out, as the web search ' +
     'found it in the language they follow the saga in.',
   fields: (t) => ({
     number: t.field({ type: 'VolumeNumber', resolve: (volume) => volume.number }),
-    title: t.field({ type: 'BookTitle', resolve: (volume) => volume.title }),
+    title: t.field({
+      type: 'BookTitle',
+      deprecationReason: READ_RELEASE,
+      resolve: (volume) => volume.title,
+    }),
     date: t.string({
       nullable: true,
+      deprecationReason: READ_RELEASE,
       description:
         'When it comes out, as precisely as announced: `YYYY`, `YYYY-MM` or `YYYY-MM-DD`. ' +
         'Null for a volume announced for a date nobody found.',
       resolve: (volume) => volume.date ?? null,
     }),
-    isbn13: t.field({ type: 'Isbn13', nullable: true, resolve: (volume) => volume.isbn13 ?? null }),
+    isbn13: t.field({
+      type: 'Isbn13',
+      nullable: true,
+      deprecationReason: READ_RELEASE,
+      resolve: (volume) => volume.isbn13 ?? null,
+    }),
     coverUrl: t.field({
       type: 'CoverUrl',
       nullable: true,
       description: 'The publisher’s cover, or the recording’s on Audible.',
+      deprecationReason: READ_RELEASE,
       resolve: (volume) => volume.coverUrl ?? null,
     }),
     audibleUrl: t.string({
@@ -50,8 +64,15 @@ const DiscoveredVolumeType = builder.objectRef<FoundVolume>('DiscoveredVolume').
         "The recording's page on the reader's Audible store, `https://www.audible.{marketplace}/pd/{asin}`, " +
         'which the Audible app opens on the title. Null on a volume of a saga read, on a ' +
         'recording Audible never confirmed, and without an Audible account.',
+      deprecationReason: READ_RELEASE,
       resolve: async (volume, _args, { userId }) =>
         volume.asin ? ((await AudibleQuery.recordingUrlOf(userId, volume.asin)) ?? null) : null,
+    }),
+    release: t.field({
+      type: ReleaseType,
+      description: 'The volume as every list and its page show it, described or not: what to draw.',
+      resolve: (volume, _args, context) =>
+        releaseViewFor(volumeShownOf(volume, todayOf(new Date())), context.event),
     }),
   }),
 })

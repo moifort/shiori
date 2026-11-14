@@ -3,6 +3,8 @@ import { authorKeyOf } from '~/domain/author/primitives'
 import type { AuthorKey, ShelvedAuthor } from '~/domain/author/types'
 import type { Book, BookFormat, BookLanguage, NarratorName } from '~/domain/book/types'
 import type { NarratorKey, ShelvedNarrator } from '~/domain/narrator/types'
+import { releaseKeyOf } from '~/domain/release/business-rules'
+import type { ReleaseIdentity, ReleaseShown } from '~/domain/release/types'
 import type { ScanResult } from '~/domain/scan/types'
 import {
   type FoundVolume as CatalogueVolume,
@@ -10,7 +12,7 @@ import {
   isForthcoming,
   withReleases,
 } from '~/domain/series/business-rules'
-import { isAudioSeries } from '~/domain/series/primitives'
+import { isAudioSeries, seriesIdOf } from '~/domain/series/primitives'
 import type { SagaKey, Series, SeriesId, VolumeNumber } from '~/domain/series/types'
 import type { FollowedSeries } from '~/domain/series/use-case'
 import { type Language, SUPPORTED_LANGUAGES } from '~/domain/shared/language'
@@ -27,7 +29,6 @@ import type {
   DiscoveryReader,
   FoundVolume,
   FoundWork,
-  KeptReleaseDescription,
   NarratedWork,
   NarratorWatch,
   ReleaseDate,
@@ -36,6 +37,7 @@ import type {
   ReleaseSeed,
   SagaReleases,
   SagaWatch,
+  ShownVolume,
   WatchedAuthor,
   WatchedNarrator,
   WatchedSaga,
@@ -577,8 +579,78 @@ export const releasesOf = (
       (left, right) =>
         whenOf(left).localeCompare(whenOf(right)) || left.volume.number - right.volume.number,
     )[0]?.volume
-  return next ? { watched: true, next } : { watched: true }
+  return next ? { watched: true, next: shownVolumeOf(watch, next) } : { watched: true }
 }
+
+/** A volume with the saga it is of, as a list shows it. */
+export const shownVolumeOf = (watch: SagaWatch, volume: FoundVolume): ShownVolume => ({
+  ...volume,
+  saga: {
+    seriesId: watch.seriesId,
+    name: watch.name,
+    ...(watch.author ? { author: watch.author } : {}),
+    language: watch.language,
+  },
+})
+
+/** What the server knows of a saga's volume before its description: the
+ *  volume as its saga's watch found it, in the saga's edition. */
+export const volumeShownOf = (volume: ShownVolume, today: string): ReleaseShown => {
+  const { saga } = volume
+  const format = formatOf(saga.seriesId)
+  const found = {
+    title: volume.title,
+    ...(volume.date ? { date: volume.date } : {}),
+    ...(volume.isbn13 ? { isbn13: volume.isbn13 } : {}),
+    ...(volume.asin ? { asin: volume.asin } : {}),
+    ...(volume.coverUrl ? { coverUrl: volume.coverUrl } : {}),
+  }
+  return {
+    key: volumeReleaseKeyOf(volume),
+    seed: {
+      title: volume.title,
+      authors: saga.author ? [saga.author] : [],
+      format,
+      language: saga.language,
+      series: { saga: saga.seriesId, name: saga.name, volume: volume.number, kind: 'main' },
+      ...(volume.isbn13 ? { isbn13: volume.isbn13 } : {}),
+      ...(volume.date ? { releasedOn: volume.date } : {}),
+      ...(volume.coverUrl ? { coverUrl: volume.coverUrl } : {}),
+    },
+    originalTitle: volume.title,
+    originalLanguage: saga.language,
+    language: saga.language,
+    releaseFormat: format,
+    state: volume.date && lastDayOf(volume.date) < today ? 'available' : 'announced',
+    watched: true,
+    found,
+    series: {
+      seriesId: seriesIdOf(saga.seriesId, saga.language),
+      name: saga.name,
+      volume: volume.number,
+    },
+  }
+}
+
+/** The release a saga's volume is kept under. */
+export const volumeReleaseKeyOf = (volume: ShownVolume): string =>
+  releaseKeyOf(
+    volume.title,
+    volume.saga.author,
+    formatOf(volume.saga.seriesId),
+    volume.saga.language,
+  )
+
+/** The book a saga's volume's release is of. */
+export const volumeIdentityOf = (volume: ShownVolume): ReleaseIdentity => ({
+  key: volumeReleaseKeyOf(volume),
+  title: volume.title,
+  ...(volume.saga.author ? { author: volume.saga.author } : {}),
+  originalLanguage: volume.saga.language,
+  series: { name: volume.saga.name, volume: volume.number },
+  format: formatOf(volume.saga.seriesId),
+  language: volume.saga.language,
+})
 
 /** The numbers of the volumes out that the reader does not hold, in order, by
  *  the same rule the Series tab's strip draws them missing: what Découvrir says
@@ -616,7 +688,7 @@ export const recentReleasesOf = (
   watch: SagaWatch | undefined,
   catalogue: Series | null | undefined,
   today: string,
-): FoundVolume[] => {
+): ShownVolume[] => {
   if (!watch) return []
   const held = heldNumbersOf(books)
   const since = dayMinus(today, RECENT_DAYS)
@@ -636,6 +708,7 @@ export const recentReleasesOf = (
       (left, right) =>
         (right.date as string).localeCompare(left.date as string) || right.number - left.number,
     )
+    .map((volume) => shownVolumeOf(watch, volume))
 }
 
 /** The volumes of a saga out since the start of the year, held or not: out on
@@ -1196,39 +1269,6 @@ export const announcedPreviewOf = (
     asin: volume.asin,
   }
 }
-
-/** How long a description made before the book was out serves before it is
- *  asked again: an announced book is described thinly, and grows a summary
- *  once it is out. One made after it came out is kept for good. */
-export const DESCRIPTION_KEPT_DAYS = 60
-
-/** The key a book's description is kept under: the title, the first author,
- *  the format, the edition, the volume and the language it is written in. Two
- *  readers who open the same book converge on one description; the same title
- *  recorded, or in another edition, is another book. */
-export const releaseDescriptionKeyOf = (seed: ReleaseSeed, language: Language): string =>
-  [
-    slugify(seed.title),
-    slugify(seed.authors[0] ?? ''),
-    seed.format,
-    seed.language ?? '-',
-    seed.series?.volume ?? '-',
-    language,
-  ].join('~')
-
-/** Whether a kept description still serves: for good once it was made
- *  after the book came out, since nothing about a book out changes; for
- *  `DESCRIPTION_KEPT_DAYS` otherwise, so that an announced book is described
- *  again once it is out. A date known only to the month or the year counts
- *  from its last day. */
-export const isDescriptionFresh = (
-  kept: KeptReleaseDescription,
-  now: Date,
-  releasedOn?: ReleaseDate,
-): boolean =>
-  (releasedOn !== undefined &&
-    kept.describedAt.toISOString().slice(0, 10) > lastDayOf(releasedOn)) ||
-  now.getTime() - kept.describedAt.getTime() < DESCRIPTION_KEPT_DAYS * 86_400_000
 
 /** What the model is told of a book Découvrir shows: what the app already
  *  knows, named so it describes this book and not another titled the same. */

@@ -41,7 +41,7 @@ beforeEach(() => {
   shelve('three', 'La Mort de l’auteur', 'Nnedi Okorafor')
   // The French edition of Death of the Author, out, as the awaited editions'
   // pass kept it once a reader awaited it.
-  fake.seed('edition-watches', 'death-of-the-author--nnedi-okorafor--book--fr', {
+  fake.seed('releases', 'death-of-the-author--nnedi-okorafor--book--fr', {
     key: 'death-of-the-author--nnedi-okorafor--book--fr',
     title: 'Death of the Author',
     author: 'Nnedi Okorafor',

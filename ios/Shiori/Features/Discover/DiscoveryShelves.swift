@@ -167,47 +167,16 @@ extension DiscoveryVolume {
     }
 
     /// Drawn as the Books tab draws a book, the headphones on a recording's
-    /// cover.
-    var cover: Book {
-        let series = saga.series
-        return Book(
-            id: "release-\(series.id)-\(volume.number)",
-            title: volume.title,
-            authors: series.author.map { [$0] } ?? [],
-            format: series.isAudio ? .audiobook : .book,
-            language: series.language,
-            coverURL: volume.coverURL,
-            status: .toRead
-        )
-    }
+    /// cover: on its tile and on its page alike.
+    var cover: Book { book(of: volume.release) }
 
-    /// What the look on the web knows, for its page: its title, author, cover
-    /// and place in the saga.
-    var book: Book {
-        var book = cover
-        book.isbn13 = volume.isbn13
-        book.series = SeriesMembership(
-            id: saga.series.seriesId,
-            name: saga.series.name,
-            volume: volume.number,
-            kind: .main
-        )
-        return book
-    }
+    /// The volume as its page draws it, until its page described it.
+    var book: Book { book(of: volume.release) }
 
-    /// What the model is told: the volume as the watch found it.
-    var seed: ReleaseSeed {
-        let book = book
-        return ReleaseSeed(
-            title: book.title,
-            authors: book.authors,
-            format: book.format,
-            language: book.language,
-            series: book.series,
-            isbn13: volume.isbn13,
-            releasedOn: volume.date,
-            coverURL: volume.coverURL
-        )
+    /// A release of this volume as drawn: the list's, or the server's answer
+    /// once its page described it.
+    func book(of release: Release) -> Book {
+        release.book(id: "release-\(saga.series.id)-\(volume.number)")
     }
 
     /// What adding it to the pile sends: the page as shown, described or

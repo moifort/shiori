@@ -2,13 +2,11 @@ import { describe, expect, test } from 'bun:test'
 import type { AwaitedEditionView, FoundEdition } from '~/domain/awaited-edition/types'
 import type { Book } from '~/domain/book/types'
 import type { ReleaseDate } from '~/domain/series/types'
-import { AuthorName, BookTitle } from '~/domain/shared/primitives'
 import type { UserId } from '~/domain/shared/types'
 import {
   alertIsDue,
   alertOf,
   awaitableFormatsOf,
-  describedKeysOf,
   dueWatchesOf,
   editionWatchKeyOf,
   inShelfOrder,
@@ -295,36 +293,5 @@ describe('storeUrlOf', () => {
       'https://www.amazon.fr/s?k=Vent+et+v%C3%A9rit%C3%A9+Brandon+Sanderson&i=stripbooks',
     )
     expect(storeUrlOf('book', 'fr', {})).toBeUndefined()
-  })
-})
-
-describe('describedKeysOf', () => {
-  const view = {
-    format: 'audiobook',
-    language: 'fr',
-    state: 'unannounced',
-    source: {
-      title: BookTitle('La ragazza nella nebbia'),
-      authors: [AuthorName('Donato Carrisi')],
-      language: 'it',
-    },
-  } as unknown as AwaitedEditionView
-
-  test('asks for the original in its language while nobody announced it, the app’s first', () => {
-    expect(describedKeysOf(view)).toEqual([
-      'ragazza-nella-nebbia~donato-carrisi~audiobook~it~-~fr',
-      'ragazza-nella-nebbia~donato-carrisi~audiobook~it~-~en',
-    ])
-  })
-
-  test('asks for the edition found by its own title, in no language of its own', () => {
-    const found = {
-      ...view,
-      state: 'announced',
-      found: { title: BookTitle('La fille dans le brouillard') },
-    } as unknown as AwaitedEditionView
-    expect(describedKeysOf(found)[0]).toBe(
-      'fille-dans-le-brouillard~donato-carrisi~audiobook~-~-~fr',
-    )
   })
 })

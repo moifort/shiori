@@ -4,15 +4,18 @@ import {
   stateOf,
 } from '~/domain/awaited-edition/business-rules'
 import { AwaitedEditionQuery } from '~/domain/awaited-edition/query'
-import type { AwaitedEditionId, EditionWatch } from '~/domain/awaited-edition/types'
+import type { AwaitedEditionId } from '~/domain/awaited-edition/types'
 import { BookQuery } from '~/domain/book/query'
 import type { Book } from '~/domain/book/types'
-import { releaseDescriptionKeyOf, todayOf } from '~/domain/discovery/business-rules'
-import { DiscoveryQuery } from '~/domain/discovery/query'
+import { todayOf } from '~/domain/discovery/business-rules'
 import { RELEASE_FORMATS, type ReleaseFormat } from '~/domain/discovery/types'
 import { wantsAlert } from '~/domain/notification/business-rules'
 import { NotificationQuery } from '~/domain/notification/query'
 import { NotificationUseCase } from '~/domain/notification/use-case'
+import { watchOf } from '~/domain/release/business-rules'
+import { ReleaseQuery } from '~/domain/release/query'
+import type { ReleaseView } from '~/domain/release/types'
+import { type DescribeRefusal, ReleaseUseCase } from '~/domain/release/use-case'
 import { SeriesOpinionQuery } from '~/domain/series-opinion/query'
 import type { SeriesOpinion } from '~/domain/series-opinion/types'
 import type { Language } from '~/domain/shared/language'
@@ -25,6 +28,8 @@ import {
   monthOf,
   readerProfileOf,
   referencesOf,
+  releaseIdentityOf,
+  releaseShownOf,
   shouldGenerate,
   shownOf,
   statusOf,
@@ -104,6 +109,28 @@ export namespace SuggestionUseCase {
       }),
       needsRatings: !tasteDigestOf(books, opinions, dismissals),
     }
+  }
+
+  /** Describe one of the month's discoveries for its page, as its release, in
+   *  one format and the app's language: `not-found` for one the reader is not
+   *  shown this month. */
+  export const describe = async (
+    userId: UserId,
+    key: string,
+    format: ReleaseFormat,
+    appLanguage: Language,
+    now = new Date(),
+  ): Promise<ReleaseView | DescribeRefusal | 'not-found'> => {
+    const { suggestions } = await monthly(userId, format, appLanguage, false, now)
+    const view = suggestions.find((candidate) => candidate.suggestion.key === key)
+    if (!view) return 'not-found'
+    return ReleaseUseCase.describeShown(
+      userId,
+      releaseIdentityOf(view),
+      releaseShownOf(view),
+      appLanguage,
+      now,
+    )
   }
 
   export const dismiss = (userId: UserId, key: string, reason: DismissalReason, now = new Date()) =>
@@ -327,20 +354,8 @@ const viewsOf = async (
   const keys = suggestions.flatMap((suggestion) =>
     RELEASE_FORMATS.map((candidate) => watchKeyOf(suggestion, candidate, appLanguage)),
   )
-  const describedKeyOf = (suggestion: Suggestion) =>
-    releaseDescriptionKeyOf(
-      {
-        title: suggestion.title,
-        authors: suggestion.authors,
-        format,
-        ...(suggestion.language !== appLanguage ? { language: suggestion.language } : {}),
-      },
-      appLanguage,
-    )
-  const [watches, described] = await Promise.all([
-    AwaitedEditionQuery.watches(keys),
-    DiscoveryQuery.descriptions(suggestions.map(describedKeyOf)),
-  ])
+  const releases = await ReleaseQuery.byKeys(keys)
+  const watchAt = (key: string) => watchOf(releases.get(key))
   const awaitedByKey = new Map(context.awaited.map((edition) => [edition.watchKey, edition.id]))
   const today = todayOf(now)
   // The covers of the books cited, signed once for every row: a photo's URL
@@ -361,10 +376,8 @@ const viewsOf = async (
   )
   return suggestions.map((suggestion) => {
     const watchKey = watchKeyOf(suggestion, format, appLanguage)
-    const watch: EditionWatch | undefined = watches.get(watchKey)
+    const watch = watchAt(watchKey)
     const awaitedId = awaitedByKey.get(watchKey)
-    const describedCoverUrl =
-      described.get(describedKeyOf(suggestion))?.description.book.coverUrl ?? suggestion.coverUrl
     return {
       suggestion,
       format,
@@ -378,12 +391,10 @@ const viewsOf = async (
       ).filter((candidate) => {
         const key = watchKeyOf(suggestion, candidate, appLanguage)
         return (
-          stateOf(watches.get(key)?.found, candidate, today) !== 'available' &&
-          !awaitedByKey.has(key)
+          stateOf(watchAt(key)?.found, candidate, today) !== 'available' && !awaitedByKey.has(key)
         )
       }),
       ...(awaitedId ? { awaitedId } : {}),
-      ...(describedCoverUrl ? { describedCoverUrl } : {}),
       references: (referencesBySuggestion.get(suggestion.key) ?? []).map((reference) => {
         const coverUrl = covers.get(reference.bookId)
         return coverUrl ? { ...reference, coverUrl } : reference

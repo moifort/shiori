@@ -230,7 +230,7 @@ describe("Découvrir's opening", () => {
       await as(friend)(`mutation { setBookFavorite(id: "${loved.id}", favorite: true) { id } }`)
     for (const format of ['book', 'audiobook'] as const) {
       const key = `wind-and-truth--brandon-sanderson--${format}--fr`
-      fake.seed('edition-watches', key, {
+      fake.seed('releases', key, {
         key,
         title: 'Wind and Truth',
         author: 'Brandon Sanderson',

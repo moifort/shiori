@@ -81,6 +81,7 @@ struct SuggestionPage: View {
         BookHero(
             book: shown,
             state: state,
+            stateTag: suggestion.watched && suggestion.state == .unannounced ? String(localized: "Pas annoncé") : nil,
             isAwaited: suggestion.awaitedEditionId != nil,
             showsLength: false
         ) {
@@ -97,7 +98,8 @@ struct SuggestionPage: View {
         if suggestion.state == .announced, let date = suggestion.date, ReleaseDateText.isUpcoming(date) {
             return .release(date)
         }
-        if !suggestion.watched { return nil }
+        // Nothing announced is a tag, beside the format's.
+        if !suggestion.watched || suggestion.state == .unannounced { return nil }
         return BookState(text: suggestion.stateLine, tint: suggestion.stateTint)
     }
 
@@ -185,7 +187,7 @@ struct DiscoveryAddActions<Item: Discovery>: View {
     NavigationStack {
         SuggestionPage(
             suggestion: .preview,
-            shown: Suggestion.preview.cover.described(by: .preview),
+            shown: Suggestion.preview.release.describedForPreview.book(id: "suggestion-preview"),
             isDescribing: false,
             choices: DiscoveryChoices(),
             onChoice: { _, _ in true }

@@ -25,7 +25,6 @@ import {
   formatOf,
   inAnnouncementOrder,
   inDiscoveryOrder,
-  isDescriptionFresh,
   isDiscoverable,
   isFollowedAuthor,
   isProjectionFresh,
@@ -43,14 +42,14 @@ import {
   readerIsStale,
   readersFollowingOf,
   recentReleasesOf,
-  releaseDescriptionKeyOf,
-  releaseDescriptionOf,
-  releaseEditionOf,
   releaseFormatOf,
   releasesOf,
   sagasByAuthorOf,
   sagasToListOnAudible,
+  shownVolumeOf,
   todayOf,
+  volumeIdentityOf,
+  volumeShownOf,
   WATCH_EVERY_MS,
   type WorkContext,
   watchedAuthorsOf,
@@ -101,6 +100,10 @@ import {
 import { shelvedNarratorsOf } from '~/domain/narrator/business-rules'
 import { NarratorQuery } from '~/domain/narrator/query'
 import { NotificationUseCase } from '~/domain/notification/use-case'
+import { releaseKeyOf } from '~/domain/release/business-rules'
+import { ReleaseQuery } from '~/domain/release/query'
+import type { ReleaseView } from '~/domain/release/types'
+import { type DescribeRefusal, ReleaseUseCase } from '~/domain/release/use-case'
 import type { ScanResult } from '~/domain/scan/types'
 import { type ScanOutcome, ScanUseCase } from '~/domain/scan/use-case'
 import { SeriesCommand } from '~/domain/series/command'
@@ -430,6 +433,32 @@ export namespace DiscoveryUseCase {
     return announcedPreviewOf(watch, volume, recording, described)
   }
 
+  /** Describe one volume a saga's watch announced for its page, as its
+   *  release: `not-found` for a volume no watch announced in that edition. */
+  export const describeVolume = async (
+    userId: UserId,
+    {
+      seriesId,
+      language,
+      number,
+    }: { seriesId: SagaKey; language: BookLanguage; number: VolumeNumber },
+    appLanguage: Language,
+    now = new Date(),
+  ): Promise<ReleaseView | DescribeRefusal | 'not-found'> => {
+    const key = watchKeyOf({ seriesId, language })
+    const watch = (await DiscoveryQuery.watches([key])).get(key)
+    const volume = watch?.volumes.find((found) => found.number === number)
+    if (!watch || !volume) return 'not-found'
+    const shown = shownVolumeOf(watch, volume)
+    return ReleaseUseCase.describeShown(
+      userId,
+      volumeIdentityOf(shown),
+      volumeShownOf(shown, todayOf(now)),
+      appLanguage,
+      now,
+    )
+  }
+
   /** Describe a book Découvrir shows — a saga's volume, an edition awaited,
    *  an award winner — for its page, as a scan describes a book: the grounded
    *  model fills in its summary, genre, pages and publisher, and Audible its
@@ -443,31 +472,34 @@ export namespace DiscoveryUseCase {
     appLanguage: Language,
     now = new Date(),
   ): Promise<ReleaseDescription | Exclude<ScanOutcome, ScanResult>> => {
-    const key = releaseDescriptionKeyOf(seed, appLanguage)
-    const kept = await DiscoveryQuery.description(key)
-    if (kept && isDescriptionFresh(kept, now, seed.releasedOn)) return kept.description
-    const edition = seed.language
-    const [described, heard] = await Promise.all([
-      ScanUseCase.describeShown(userId, releaseEditionOf(seed), appLanguage, {
-        watchedIsbn13: seed.isbn13,
-        releasedOn: seed.releasedOn,
-        siblings: [],
-      }),
-      seed.format === 'audiobook' && edition
-        ? audibleEditionOf(seed.title, seed.authors[0], edition)
-        : undefined,
-    ])
-    if (typeof described === 'string' || 'failed' in described) return described
-    const description = releaseDescriptionOf(
+    const format = releaseFormatOf(seed.format)
+    const language = seed.language ?? appLanguage
+    const release = await ReleaseUseCase.describe(
+      userId,
+      {
+        key: releaseKeyOf(seed.title, seed.authors[0], format, language),
+        title: seed.title,
+        ...(seed.authors[0] ? { author: seed.authors[0] } : {}),
+        originalLanguage: language,
+        ...(seed.series
+          ? {
+              series: {
+                name: seed.series.name,
+                ...(seed.series.volume !== undefined ? { volume: seed.series.volume } : {}),
+              },
+            }
+          : {}),
+        format,
+        language,
+      },
       seed,
-      described,
-      typeof heard === 'object' ? heard : undefined,
+      appLanguage,
+      now,
     )
-    // Best effort: a failed write only costs the next reader a model call.
-    await DiscoveryCommand.keepDescription({ key, description, describedAt: now }).catch((error) =>
-      logger.warn('release description not kept', { error, key }),
-    )
-    return description
+    if (typeof release === 'string' || 'failed' in release) return release
+    const kept = release.descriptions?.[appLanguage]
+    if (!kept) throw new Error('A release just described holds no description')
+    return kept.description
   }
 
   /** The hourly pass. First every reader whose sagas and authors were last
@@ -852,9 +884,9 @@ const watchesOf = async (library: Library, format: ReleaseFormat) => {
  *  found. */
 const awaitedOf = async (userId: UserId, now: Date): Promise<AwaitedEditionView[]> => {
   const awaited = await AwaitedEditionQuery.byUser(userId)
-  const watches = await AwaitedEditionQuery.watches(awaited.map((edition) => edition.watchKey))
+  const releases = await ReleaseQuery.byKeys(awaited.map((edition) => edition.watchKey))
   const today = todayOf(now)
-  return awaited.map((edition) => viewOf(edition, watches.get(edition.watchKey), today))
+  return awaited.map((edition) => viewOf(edition, releases.get(edition.watchKey), today))
 }
 
 /** The folded titles of editions awaited: a work the author's watch found

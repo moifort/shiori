@@ -51,7 +51,8 @@ const { AwardUseCase } = await import('~/domain/award/use-case')
 const { AwaitedEditionUseCase } = await import('~/domain/awaited-edition/use-case')
 const { AuthorName, BookTitle } = await import('~/domain/shared/primitives')
 const { watchKeyOf } = await import('~/domain/award/business-rules')
-const { releaseDescriptionKeyOf } = await import('~/domain/discovery/business-rules')
+const { releaseShownOf } = await import('~/domain/award/business-rules')
+const { releaseViewOf } = await import('~/domain/release/business-rules')
 
 const reader = 'reader' as UserId
 const now = new Date('2026-10-08T08:00:00Z')
@@ -99,7 +100,7 @@ const deathOfTheAuthor = {
  *  editions' pass kept it once a reader awaited it. */
 const deathOfTheAuthorFound = () => {
   const key = watchKeyOf(deathOfTheAuthor, 'book', 'fr')
-  fake.seed('edition-watches', key, {
+  fake.seed('releases', key, {
     key,
     title: 'Death of the Author',
     author: 'Nnedi Okorafor',
@@ -140,32 +141,41 @@ describe('the award shelf', () => {
     expect(asked).toEqual([])
   })
 
-  test('draws a winner with no cover found with the one its page found when described', async () => {
+  test('draws a winner with no cover found with the one its page described', async () => {
     sfReader()
-    const key = releaseDescriptionKeyOf(
-      {
-        title: BookTitle('The Everlasting'),
-        authors: [AuthorName('Alix E. Harrow')],
-        format: 'book',
-        language: 'en',
-      },
-      'fr',
-    )
-    fake.seed('release-descriptions', key, {
+    const key = 'everlasting--alix-e-harrow--book--fr'
+    fake.seed('releases', key, {
       key,
-      description: {
-        book: { title: 'The Everlasting', coverUrl: 'https://covers.example/everlasting.jpg' },
-        narrators: [],
+      title: 'The Everlasting',
+      author: 'Alix E. Harrow',
+      originalLanguage: 'en',
+      format: 'book',
+      language: 'fr',
+      descriptions: {
+        fr: {
+          description: {
+            book: { title: 'The Everlasting', coverUrl: 'https://covers.example/everlasting.jpg' },
+            narrators: [],
+          },
+          describedAt: now,
+          describedFrom: 'everlasting~en',
+        },
       },
-      describedAt: now,
     })
 
     const shelf = await AwardUseCase.shelf(reader, 'book', 'fr', undefined, now)
-
-    expect(shelf?.recent[0]?.describedCoverUrl).toBe(
-      'https://covers.example/everlasting.jpg' as never,
+    const [described, bare] = (shelf?.recent ?? []).map((view) =>
+      releaseViewOf(
+        releaseShownOf(view),
+        fake.snapshot('releases').get(view.watchKey) as never,
+        'fr',
+        now,
+      ),
     )
-    expect(shelf?.recent[1]?.describedCoverUrl).toBeUndefined()
+
+    expect(described?.describedCoverUrl).toBe('https://covers.example/everlasting.jpg' as never)
+    expect(described?.described).toBe(true)
+    expect(bare?.describedCoverUrl).toBeUndefined()
   })
 
   test('is absent for a reader of no genre with awards', async () => {

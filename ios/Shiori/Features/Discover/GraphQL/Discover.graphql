@@ -84,6 +84,10 @@ fragment SagaReleasesFields on SagaReleases {
 
 fragment DiscoveredVolumeFields on DiscoveredVolume {
   number
+  release {
+    ...ReleaseFields
+  }
+  # Read by Android until its release-time port: iOS draws `release`.
   title
   date
   isbn13
@@ -202,7 +206,8 @@ fragment FriendLovedAuthorLovers on FriendLovedAuthor {
 
 # A book Découvrir shows — a saga's volume, an edition awaited, an award
 # winner — described for its page by the model and Audible. Kept for every
-# reader, so it spends no scan; about ten seconds the first time.
+# reader, so it spends no scan; about ten seconds the first time. Read by
+# Android until its release-time port: iOS asks `describeReleaseOf`.
 mutation DescribeRelease($book: ReleaseInput!) {
   describeRelease(book: $book) {
     book {

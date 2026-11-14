@@ -60,6 +60,17 @@ export type FoundVolume = {
   coverUrl?: CoverUrl
 }
 
+/** The saga a volume shown is of: what its release is named by. */
+export type VolumeSaga = {
+  seriesId: SagaKey
+  name: SeriesName
+  author?: AuthorName
+  language: BookLanguage
+}
+
+/** A volume as a list shows it: with its saga, which its release is named by. */
+export type ShownVolume = FoundVolume & { saga: VolumeSaga }
+
 /** What exists or is announced of one saga in one language, as the web says —
  *  shared by every reader who follows it, keyed on the saga rather than on
  *  anybody, so the grounded call behind it is paid once every two weeks. */
@@ -110,7 +121,7 @@ export type SagaReleases = {
   /** Whether the saga was ever looked up in that language: until it is, it
    *  has nothing to say, and opening it is what looks it up. */
   watched: boolean
-  next?: FoundVolume
+  next?: ShownVolume
 }
 
 /** One row of the Découvrir tab: what the saga has for the reader, the
@@ -119,7 +130,7 @@ export type SagaReleases = {
 export type SagaDiscovery = SagaReleases & {
   series: FollowedSeries
   missing: VolumeNumber[]
-  recent: FoundVolume[]
+  recent: ShownVolume[]
 }
 
 /** An author in one format and one language, as one reader holds them: what
@@ -282,14 +293,6 @@ export type ReleaseDescription = {
   book: ScanResult
   narrators: NarratorName[]
   durationMinutes?: ListeningMinutes
-}
-
-/** A description kept for every reader who opens the same book in the same
- *  language. Holds no reference to any reader. */
-export type KeptReleaseDescription = {
-  key: string
-  description: ReleaseDescription
-  describedAt: Date
 }
 
 /** The watch keys of each kind, as the hourly pass groups them. */

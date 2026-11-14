@@ -2,15 +2,13 @@ import { authorKeyOf } from '~/domain/author/primitives'
 import type { AuthorKey } from '~/domain/author/types'
 import { shelfKeyOf } from '~/domain/book/business-rules'
 import type { Book, BookFormat, BookLanguage } from '~/domain/book/types'
-import {
-  lastDayOf,
-  releaseDescriptionKeyOf,
-  releaseFormatOf,
-} from '~/domain/discovery/business-rules'
+import { lastDayOf, releaseFormatOf } from '~/domain/discovery/business-rules'
 import type { ReleaseFormat } from '~/domain/discovery/types'
+import { releaseKeyOf } from '~/domain/release/business-rules'
+import type { Release, ReleaseShown } from '~/domain/release/types'
 import { isbn10Of } from '~/domain/scan/amazon-cover'
 import { AMAZON_STORES } from '~/domain/shared/amazon-stores'
-import { type Language, SUPPORTED_LANGUAGES } from '~/domain/shared/language'
+import type { Language } from '~/domain/shared/language'
 import type { UserId } from '~/domain/shared/types'
 import { AwaitedEditionId } from './primitives'
 import type {
@@ -39,7 +37,7 @@ export const editionWatchKeyOf = (
   source: Pick<AwaitedSource, 'title' | 'authors'>,
   format: ReleaseFormat,
   language: BookLanguage,
-): string => `${shelfKeyOf(source.title, source.authors[0])}--${format}--${language}`
+): string => releaseKeyOf(source.title, source.authors[0], format, language)
 
 export const awaitedIdOf = (userId: UserId, watchKey: string) =>
   AwaitedEditionId(`${userId}--${watchKey}`)
@@ -80,15 +78,64 @@ export const stateOf = (
 export const isConfirmed = (found: FoundEdition | undefined, format: ReleaseFormat): boolean =>
   format !== 'audiobook' || found?.asin !== undefined
 
+/** An awaited edition as it stands, read off its release: where the web
+ *  found it, and what its page described. A release only described was never
+ *  looked for: not watched. */
 export const viewOf = (
   awaited: AwaitedEdition,
-  watch: EditionWatch | undefined,
+  release: Release | undefined,
   today: string,
-): AwaitedEditionView => ({
-  ...awaited,
-  state: stateOf(watch?.found, awaited.format, today),
-  ...(watch?.found ? { found: watch.found } : {}),
-  watched: watch !== undefined,
+): AwaitedEditionView => {
+  const found = release?.checkedAt ? release.found : undefined
+  return {
+    ...awaited,
+    state: stateOf(found, awaited.format, today),
+    ...(found ? { found } : {}),
+    watched: release?.checkedAt !== undefined,
+  }
+}
+
+/** What the server knows of an awaited edition before its description: the
+ *  original while nobody announced it, the edition once found. */
+export const releaseShownOf = (view: AwaitedEditionView): ReleaseShown => {
+  const { source } = view
+  const unannounced = view.state === 'unannounced'
+  return {
+    key: view.watchKey,
+    seed: {
+      title: unannounced ? source.title : (view.found?.title ?? source.title),
+      authors: source.authors,
+      format: view.format === 'audiobook' ? 'audiobook' : (source.drawnFormat ?? 'book'),
+      ...(unannounced ? { language: source.language } : {}),
+      ...(view.found?.date ? { releasedOn: view.found.date } : {}),
+      ...(source.coverUrl ? { coverUrl: source.coverUrl } : {}),
+    },
+    originalTitle: source.title,
+    originalLanguage: source.language,
+    language: view.language,
+    releaseFormat: view.format,
+    state: view.state,
+    watched: view.watched,
+    ...(view.found ? { found: view.found } : {}),
+    ...(source.coverPath && !source.coverUrl ? { coverPath: source.coverPath } : {}),
+    ...(source.series ? { series: source.series } : {}),
+  }
+}
+
+/** The book an awaited edition's release is of, as its watch names it. */
+export const releaseIdentityOf = ({
+  watchKey,
+  source,
+  format,
+  language,
+}: AwaitedEdition): Omit<Release, 'descriptions' | 'checkedAt' | 'found'> => ({
+  key: watchKey,
+  title: source.title,
+  ...(source.authors[0] ? { author: source.authors[0] } : {}),
+  originalLanguage: source.language,
+  ...(source.series ? { series: source.series } : {}),
+  format,
+  language,
 })
 
 /** Whether the reader now holds the edition awaited: a book of its format, in
@@ -328,29 +375,4 @@ export const storeUrlOf = (
 const dayMinus = (today: string, days: number): string => {
   const [year, month, day] = today.split('-').map(Number)
   return new Date(Date.UTC(year, month - 1, day) - days * 86_400_000).toISOString().slice(0, 10)
-}
-
-/** Whether the edition has no cover to draw: none found for it, and none of
- *  the book it is awaited from, neither the publisher's nor the reader's photo. */
-export const lacksCover = (view: AwaitedEditionView): boolean =>
-  !view.found?.coverUrl && !view.source.coverUrl && !view.source.coverPath
-
-/** The keys its page's description may be kept under. The page asks for it as
- *  it draws the edition — the original title and language while nobody
- *  announced it, the edition's title once found — in the app's language: the
- *  one it is awaited in, first, unless the reader changed it since. */
-export const describedKeysOf = (view: AwaitedEditionView): string[] => {
-  const unannounced = view.state === 'unannounced'
-  const seed = {
-    title: unannounced ? view.source.title : (view.found?.title ?? view.source.title),
-    authors: view.source.authors,
-    format: view.format === 'audiobook' ? ('audiobook' as const) : ('book' as const),
-    ...(unannounced ? { language: view.source.language } : {}),
-  }
-  const awaitedIn = SUPPORTED_LANGUAGES.find((language) => language === view.language)
-  const languages: Language[] = [
-    ...(awaitedIn ? [awaitedIn] : []),
-    ...SUPPORTED_LANGUAGES.filter((language) => language !== awaitedIn),
-  ]
-  return languages.map((language) => releaseDescriptionKeyOf(seed, language))
 }

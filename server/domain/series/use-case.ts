@@ -18,7 +18,7 @@ import {
   watchKeyOf,
 } from '~/domain/discovery/business-rules'
 import { DiscoveryQuery } from '~/domain/discovery/query'
-import type { FoundVolume, SagaWatch } from '~/domain/discovery/types'
+import type { SagaWatch, ShownVolume } from '~/domain/discovery/types'
 import { ScanCommand } from '~/domain/scan/command'
 import type { ScanLanguage } from '~/domain/scan/types'
 import {
@@ -96,7 +96,7 @@ export type FollowedSeries = {
   /** The soonest volume announced that the reader does not hold, by the rule
    *  the saga screen's release card follows: the release watch laid over the
    *  catalogue. Read only for the Series tab's rows (`withReleases`). */
-  nextRelease?: FoundVolume
+  nextRelease?: ShownVolume
 }
 
 export type SagaProgress = { readCount: number; totalCount: number }

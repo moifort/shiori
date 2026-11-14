@@ -94,7 +94,7 @@ struct SuggestionViewModelTests {
 
         await viewModel.describe()
 
-        #expect(viewModel.shown.synopsis == ReleaseDescription.preview.book.synopsis)
+        #expect(viewModel.shown.synopsis == Release.preview.synopsis)
         #expect(viewModel.isDescribing == false)
     }
 }
@@ -103,23 +103,23 @@ struct SuggestionViewModelTests {
 struct ReleaseDescriberTests {
     @Test func aCachedAnswerNeverSaysTheAIIsAtWork() async {
         let seen = Calls()
-        let describer = ReleaseDescriber { _ in .preview }
+        let describer = ReleaseDescriber(release: Suggestion.preview.release) { .preview }
         // Observed as the page would: the flag is sampled when the answer lands.
-        await describer.describe(Suggestion.preview.seed)
+        await describer.describe()
         seen.record(describer.isDescribing ? "on" : "off")
 
         #expect(seen.all == ["off"])
-        #expect(describer.description != nil)
+        #expect(describer.release == .preview)
     }
 
     @Test func aSlowAnswerSaysTheAIIsAtWorkThenStops() async {
         // The answer waits for the test, so the grace runs out however slow the machine.
         let (answered, answer) = AsyncStream<Void>.makeStream()
-        let describer = ReleaseDescriber { _ in
+        let describer = ReleaseDescriber(release: Suggestion.preview.release) {
             for await _ in answered { break }
             return .preview
         }
-        async let done: Void = describer.describe(Suggestion.preview.seed)
+        async let done: Void = describer.describe()
         await eventually { describer.isDescribing }
         let midway = describer.isDescribing
         answer.yield()
@@ -127,7 +127,20 @@ struct ReleaseDescriberTests {
 
         #expect(midway == true)
         #expect(describer.isDescribing == false)
-        #expect(describer.description != nil)
+        #expect(describer.release == .preview)
+    }
+
+    @Test func aReleaseTheListShowedDescribedIsNotAskedAgain() async {
+        let calls = Calls()
+        let describer = ReleaseDescriber(release: .preview) {
+            calls.record("describe")
+            return .preview
+        }
+
+        await describer.describe()
+
+        #expect(calls.all.isEmpty)
+        #expect(describer.release == .preview)
     }
 }
 
@@ -138,7 +151,22 @@ struct AwaitedEditionViewModelTests {
 
         await viewModel.describe()
 
-        #expect(viewModel.shown.synopsis == ReleaseDescription.preview.book.synopsis)
+        #expect(viewModel.shown.synopsis == Release.preview.synopsis)
+    }
+
+    @Test func thePageAsksTheServerByTheEditionNotByTheBook() async {
+        let asked = Calls()
+        var client = DiscoverClient.preview
+        client.describe = { item in
+            asked.record("\(item)")
+            return .preview
+        }
+        let viewModel = AwaitedEditionViewModel(edition: .preview, client: client)
+
+        await viewModel.describe()
+
+        #expect(asked.all == ["\(ReleaseItem.awaitedEdition(id: AwaitedEdition.preview.id))"])
+        #expect(viewModel.shown.title == Release.preview.title)
     }
 
     @Test func aSpentAllowanceLeavesThePagePlain() async {

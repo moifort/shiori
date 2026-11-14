@@ -209,18 +209,25 @@ extension DiscoveryFeed {
     }
 }
 
-extension ReleaseDescription {
-    /// What the model writes of an announced volume.
-    static let preview = ReleaseDescription(
-        book: ScannedBook(
-            recognized: true,
-            title: "Le Livre du Carnage",
-            authors: ["Matt Dinniman"],
-            publisher: "Bragelonne",
-            synopsis: "Carl et Princesse Donut descendent au neuvième étage du donjon, où les règles changent encore.",
-            genre: .fantasy
-        ),
-        narrators: ["Jeff Hays"],
-        durationMinutes: 1_260
-    )
+extension Release {
+    /// What the server answers once the model described an announced volume.
+    static let preview = Release(
+        key: "le-livre-du-carnage--matt-dinniman--audiobook--fr",
+        title: "Le Livre du Carnage",
+        authors: ["Matt Dinniman"],
+        releaseFormat: .audiobook,
+        state: .announced
+    ).describedForPreview
+
+    /// The same release, described as the preview volume is.
+    var describedForPreview: Release {
+        var release = self
+        release.publisher = "Bragelonne"
+        release.synopsis = "Carl et Princesse Donut descendent au neuvième étage du donjon, où les règles changent encore."
+        release.genre = .fantasy
+        release.narrators = ["Jeff Hays"]
+        release.durationMinutes = 1_260
+        release.described = true
+        return release
+    }
 }

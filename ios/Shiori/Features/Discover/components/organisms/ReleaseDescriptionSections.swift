@@ -18,7 +18,7 @@ struct ReleaseDescriptionSections: View {
     NavigationStack {
         List {
             ReleaseDescriptionSections(isDescribing: true, synopsis: nil)
-            ReleaseDescriptionSections(isDescribing: false, synopsis: ReleaseDescription.preview.book.synopsis)
+            ReleaseDescriptionSections(isDescribing: false, synopsis: Release.preview.synopsis)
         }
     }
 }

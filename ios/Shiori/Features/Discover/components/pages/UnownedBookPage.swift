@@ -55,6 +55,9 @@ struct UnownedBookPage: View {
     var bellConfirmation: BellConfirmation? = nil
     /// Said on the detail line: once added, once out.
     var state: BookState? = nil
+    /// Where the edition stands, as an outlined tag beside the format's:
+    /// "Pas annoncé" while nothing is.
+    var stateTag: String? = nil
     /// Whether it is out, when its store said so; nil reads it off the date.
     var isOut: Bool? = nil
     /// Nil where the reader has the book already: no "+". None either while
@@ -141,6 +144,7 @@ struct UnownedBookPage: View {
         BookHero(
             book: book,
             state: state,
+            stateTag: stateTag,
             showsLength: false,
             releaseDate: releaseDate,
             countdown: releaseDate.flatMap { ReleaseDateText.countdown($0) }
@@ -253,7 +257,8 @@ struct UnownedBookPage: View {
 
     /// Alerts on the day, or falls silent: a tap swings it as a bell rings,
     /// then strikes it through or clears it — asking first where silencing
-    /// cannot be undone here.
+    /// cannot be undone here. Alone in the row, with no store to buy from, it
+    /// is the white button and says what it does: "Suivi", "Suivre".
     private var bell: some View {
         Button {
             if isAlerted, bellConfirmation != nil {
@@ -262,16 +267,30 @@ struct UnownedBookPage: View {
                 ring()
             }
         } label: {
-            Image(systemName: isAlerted ? "bell" : "bell.slash")
-                .font(.title3.weight(.medium))
-                .foregroundStyle(.white)
-                .symbolEffect(.wiggle, value: rings)
-                .contentTransition(.symbolEffect(.replace))
-                .frame(width: Self.buttonHeight, height: Self.buttonHeight)
-                .contentShape(.circle)
+            if bellIsAlone {
+                HStack(spacing: 8) {
+                    bellSymbol
+                    Text(isAlerted ? "Suivi" : "Suivre")
+                }
+                .font(.headline)
+                .foregroundStyle(.black)
+                .lineLimit(1)
+                .fixedSize()
+                .padding(.horizontal, 22)
+                .frame(height: Self.buttonHeight)
+                .background(.white, in: .capsule)
+                .contentShape(.capsule)
+                .shadow(color: .black.opacity(0.45), radius: 11, y: 8)
+            } else {
+                bellSymbol
+                    .font(.title3.weight(.medium))
+                    .foregroundStyle(.white)
+                    .frame(width: Self.buttonHeight, height: Self.buttonHeight)
+                    .contentShape(.circle)
+                    .glassEffect(.regular.interactive(), in: .circle)
+            }
         }
         .buttonStyle(.plain)
-        .glassEffect(.regular.interactive(), in: .circle)
         .sensoryFeedback(.selection, trigger: rings)
         .accessibilityLabel(Text(isAlerted ? "Ne plus être prévenu" : "Être prévenu de la sortie"))
         .accessibilityIdentifier(isAlerted ? "unowned-silence" : "unowned-alert")
@@ -291,6 +310,15 @@ struct UnownedBookPage: View {
             if let bellConfirmation { Text(bellConfirmation.message) }
         }
     }
+
+    private var bellSymbol: some View {
+        Image(systemName: isAlerted ? "bell" : "bell.slash")
+            .symbolEffect(.wiggle, value: rings)
+            .contentTransition(.symbolEffect(.replace))
+    }
+
+    /// The bell is the row's only button: nothing to buy yet.
+    private var bellIsAlone: Bool { store == nil }
 
     private func ring() {
         rings += 1
@@ -396,7 +424,7 @@ private struct AsyncRoundButton: View {
 #Preview("Volume announced") {
     NavigationStack {
         UnownedBookPage(
-            book: DiscoveryVolume.preview.book.described(by: .preview),
+            book: DiscoveryVolume.preview.book(of: DiscoveryVolume.preview.volume.release.describedForPreview),
             releaseDate: Calendar.current.date(byAdding: .day, value: 79, to: .now)!
                 .formatted(.iso8601.year().month().day()),
             isDescribing: false,
@@ -412,7 +440,7 @@ private struct AsyncRoundButton: View {
 #Preview("Recording awaited") {
     NavigationStack {
         UnownedBookPage(
-            book: AwaitedEdition.preview.cover.described(by: .preview),
+            book: AwaitedEdition.preview.release.describedForPreview.book(id: "awaited-preview"),
             releaseDate: AwaitedEdition.preview.date,
             isDescribing: true,
             store: UnownedBookStore(url: URL(string: "https://www.audible.fr")!, isAudible: true),

@@ -700,7 +700,7 @@ enum AvatarHero {
 A book the reader waits to see come out in the language of their app, in one format: translated into print, or recorded. The web is searched for it once a week, and an alert goes out the day it comes out. It stops being awaited on its own once the library holds it — the Audible sync bringing it in, or the reader adding it.
 """
 type AwaitedEdition {
-  authors: [AuthorName!]!
+  authors: [AuthorName!]! @deprecated(reason: "Read `release`, which the list and the page draw alike.")
 
   """When the reader started awaiting it."""
   awaitedAt: DateTime!
@@ -711,26 +711,31 @@ type AwaitedEdition {
   bookId: BookId! @deprecated(reason: "Use `sourceBookId`, null for an edition awaited from a scan without being added.")
 
   """
-  The edition’s own cover once found, else the cover of the book it was awaited from, else the one its page found when a reader opened it.
+  The edition’s own cover once found, else the cover of the book it was awaited from.
   """
-  coverUrl: String
+  coverUrl: String @deprecated(reason: "Read `release`, which the list and the page draw alike.")
 
   """
   When it comes out or came out, as precisely as announced: `YYYY`, `YYYY-MM` or `YYYY-MM-DD`. Null until found, and for an edition announced with no date.
   """
-  date: String
+  date: String @deprecated(reason: "Read `release`, which the list and the page draw alike.")
   format: ReleaseFormat!
   id: AwaitedEditionId!
 
   """The language it is awaited in: the app’s when the reader asked."""
   language: BookLanguage!
-  originalLanguage: BookLanguage!
+  originalLanguage: BookLanguage! @deprecated(reason: "Read `release`, which the list and the page draw alike.")
 
   """The title of the book it was awaited from."""
-  originalTitle: BookTitle!
+  originalTitle: BookTitle! @deprecated(reason: "Read `release`, which the list and the page draw alike.")
 
   """Whose shelf that book is on: the reader’s, or a friend’s."""
   ownerId: UserId!
+
+  """
+  The edition as every list and its page show it, described or not: what to draw.
+  """
+  release: Release!
 
   """
   The book it was awaited from, on its owner’s shelf. Null for one awaited from a scan’s review without being added to the library.
@@ -741,10 +746,10 @@ type AwaitedEdition {
   """
   Where to get it: the recording’s page on the reader’s Audible store, which the Audible app opens on the title, or a search for it on the store of its language while Audible has not confirmed it; the printed edition’s page on Amazon once its ISBN is known, a search for its title and author until then. Null until the edition is found.
   """
-  storeUrl: String
+  storeUrl: String @deprecated(reason: "Read `release`, which the list and the page draw alike.")
 
   """Its title in the language awaited once found, else the original’s."""
-  title: BookTitle!
+  title: BookTitle! @deprecated(reason: "Read `release`, which the list and the page draw alike.")
 
   """Whether the web was ever searched for it."""
   watched: Boolean!
@@ -867,7 +872,7 @@ type AwardShelf {
 A novel crowned at the latest ceremony of one of the awards, as its edition stands in one format and the app’s language. Looked up on the web only once a reader awaits it, shared by every reader.
 """
 type AwardWinner {
-  authors: [AuthorName!]!
+  authors: [AuthorName!]! @deprecated(reason: "Read `release`, which the list and the page draw alike.")
 
   """
   Whether it may be awaited from its row, with `awaitScannedEdition`: not out, not awaited already, and in a format its edition can be awaited in.
@@ -885,15 +890,13 @@ type AwardWinner {
   """Every prize it won among the genre’s awards, the newest first."""
   awards: [AwardMention!]!
 
-  """
-  The edition’s cover once found, else the one its page found when it was described.
-  """
-  coverUrl: String
+  """The edition’s cover once found."""
+  coverUrl: String @deprecated(reason: "Read `release`, which the list and the page draw alike.")
 
   """
   When the edition came out or comes out: `YYYY`, `YYYY-MM` or `YYYY-MM-DD`. Null until found, and for an edition found with no date.
   """
-  date: String
+  date: String @deprecated(reason: "Read `release`, which the list and the page draw alike.")
   format: ReleaseFormat!
 
   """The edition’s shared watch: stable for a novel, format and language."""
@@ -901,10 +904,15 @@ type AwardWinner {
 
   """The novel, whatever its format: what `dismissAwardWinner` turns down."""
   key: String!
-  originalLanguage: BookLanguage!
+  originalLanguage: BookLanguage! @deprecated(reason: "Read `release`, which the list and the page draw alike.")
 
   """The title it won under, in the language the award crowns."""
-  originalTitle: BookTitle!
+  originalTitle: BookTitle! @deprecated(reason: "Read `release`, which the list and the page draw alike.")
+
+  """
+  Its edition as every list and its page show it, described or not: what to draw.
+  """
+  release: Release!
 
   """
   Where its edition stands: out, announced, or not found. Not found also for a novel nobody awaited, never looked up: `watched` tells them apart.
@@ -914,13 +922,21 @@ type AwardWinner {
   """
   Where to get it: the recording’s page on the reader’s Audible store, or a search for it there while Audible has not confirmed it; the printed edition’s page on Amazon once its ISBN is known. Null until the edition is found.
   """
-  storeUrl: String
+  storeUrl: String @deprecated(reason: "Read `release`, which the list and the page draw alike.")
 
   """Its title in the app’s language once found, else the one it won under."""
-  title: BookTitle!
+  title: BookTitle! @deprecated(reason: "Read `release`, which the list and the page draw alike.")
 
   """Whether the web was ever searched for its edition."""
   watched: Boolean!
+}
+
+"""An award winner’s edition in one format."""
+input AwardWinnerReleaseInput {
+  format: ReleaseFormat!
+
+  """The novel: `AwardWinner.key`."""
+  key: String!
 }
 
 """
@@ -1553,18 +1569,23 @@ type DiscoveredVolume {
   """
   The recording's page on the reader's Audible store, `https://www.audible.{marketplace}/pd/{asin}`, which the Audible app opens on the title. Null on a volume of a saga read, on a recording Audible never confirmed, and without an Audible account.
   """
-  audibleUrl: String
+  audibleUrl: String @deprecated(reason: "Read `release`, which the list and the page draw alike.")
 
   """The publisher’s cover, or the recording’s on Audible."""
-  coverUrl: CoverUrl
+  coverUrl: CoverUrl @deprecated(reason: "Read `release`, which the list and the page draw alike.")
 
   """
   When it comes out, as precisely as announced: `YYYY`, `YYYY-MM` or `YYYY-MM-DD`. Null for a volume announced for a date nobody found.
   """
-  date: String
-  isbn13: Isbn13
+  date: String @deprecated(reason: "Read `release`, which the list and the page draw alike.")
+  isbn13: Isbn13 @deprecated(reason: "Read `release`, which the list and the page draw alike.")
   number: VolumeNumber!
-  title: BookTitle!
+
+  """
+  The volume as every list and its page show it, described or not: what to draw.
+  """
+  release: Release!
+  title: BookTitle! @deprecated(reason: "Read `release`, which the list and the page draw alike.")
 }
 
 """
@@ -3219,7 +3240,14 @@ type Mutation {
   
   Kept for every reader who opens the same book in the same language, for sixty days: the call is paid once and spends nobody’s scan. Refused with `QUOTA_EXHAUSTED` when the reader’s allowance is used up and nobody described it yet, `SCAN_FAILED` (`AI_UNAVAILABLE` while the AI is out of credit) when the model call errors.
   """
-  describeRelease(book: ReleaseInput!): ReleaseDescription!
+  describeRelease(book: ReleaseInput!): ReleaseDescription! @deprecated(reason: "Use `describeReleaseOf`, which names the item and answers the release every list draws.")
+
+  """
+  Describe for its page a book a list shows — an edition awaited, an award winner, a discovery, a saga’s volume — as a scan describes one: the web-grounded model fills in its summary, genre, pages and publisher, and Audible the narrators and running time of a recording. About ten seconds the first time. Answers the release as every list and its page now draw it.
+  
+  Kept in the release for every reader, for sixty days: the call is paid once and spends nobody’s scan. Refused with `QUOTA_EXHAUSTED` when the reader’s allowance is used up and nobody described it yet, `SCAN_FAILED` (`AI_UNAVAILABLE` while the AI is out of credit) when the model call errors, `NOT_FOUND` for a release the reader is not shown.
+  """
+  describeReleaseOf(item: ReleaseItemInput!): Release!
 
   """
   Find every book in one photo — spines on a shelf, or covers laid out flat — and where each sits, for the reader to tick the ones to add.
@@ -4729,6 +4757,72 @@ input RecommendationInput {
 }
 
 """
+A book the reader does not hold — an edition awaited, an award winner, a discovery, a saga’s volume — as every list and its page show it: one record, shared by every reader, made of what the web found of the edition and what its page described. Nothing is to be merged on the device: a tile and the page it opens draw this.
+"""
+type Release {
+  authors: [AuthorName!]!
+
+  """
+  The edition’s own cover once found, else the cover of the book shown, else the one its page’s description found.
+  """
+  coverUrl: String
+
+  """
+  When it comes out or came out, as precisely as announced: `YYYY`, `YYYY-MM` or `YYYY-MM-DD`. Null until found, and for an edition announced with no date.
+  """
+  date: String
+
+  """
+  Whether its page’s description is kept and fresh. False, opening its page asks `describeRelease` for it, which answers this release completed.
+  """
+  described: Boolean!
+
+  """The recording’s running time, as Audible gives it."""
+  durationMinutes: Int
+  firstPublishedIn: Year
+
+  """What the book is: a novel, a manga, a recording."""
+  format: BookFormat!
+  genre: Genre
+  isbn13: Isbn13
+
+  """The release, whoever shows it: the same book, format and edition."""
+  key: String!
+
+  """
+  The language of the book shown: the original’s while nobody announced the edition, the edition’s once found.
+  """
+  language: BookLanguage!
+
+  """
+  Who reads the recording, as Audible lists them. Empty for a printed book.
+  """
+  narrators: [NarratorName!]!
+  originalLanguage: BookLanguage!
+  originalTitle: BookTitle!
+
+  """Null for a recording."""
+  pageCount: PageCount
+  publisher: Publisher
+  releaseFormat: ReleaseFormat!
+  series: ReleaseSeries
+  state: AwaitedState!
+
+  """
+  Where to get it: the recording’s page on the reader’s Audible store, which the Audible app opens on the title, or a search for it on the store of its language while Audible has not confirmed it; the printed edition’s page on Amazon once its ISBN is known, a search for its title and author until then. Null until the edition is found.
+  """
+  storeUrl: String
+  subgenres: [Subgenre!]!
+  synopsis: Synopsis
+
+  """Its title as shown: the edition’s once found, else the original’s."""
+  title: BookTitle!
+
+  """Whether the web was ever searched for it."""
+  watched: Boolean!
+}
+
+"""
 A book Découvrir shows, described for its page: the record a scan would propose, and what only a recording has.
 """
 type ReleaseDescription {
@@ -4778,6 +4872,25 @@ input ReleaseInput {
   seriesId: SeriesId
   seriesName: SeriesName
   title: BookTitle!
+  volume: VolumeNumber
+}
+
+"""
+What a list showed the release as, exactly one of: an edition the reader awaits, an award winner, a discovery, a saga’s volume. The server knows the release from it; the device sends nothing of the book.
+"""
+input ReleaseItemInput {
+  awaitedEditionId: AwaitedEditionId
+  awardWinner: AwardWinnerReleaseInput
+  sagaVolume: SagaVolumeReleaseInput
+  suggestion: SuggestionReleaseInput
+}
+
+"""The saga a release is a volume of."""
+type ReleaseSeries {
+  name: SeriesName!
+
+  """Its saga, in the edition shown. Null when only its name is known."""
+  seriesId: SeriesId
   volume: VolumeNumber
 }
 
@@ -4837,6 +4950,12 @@ type SagaReleases {
   Whether the saga was ever looked up in that language. False until it is: `lookUpSagaReleases` looks it up at once.
   """
   watched: Boolean!
+}
+
+"""A volume a saga’s watch announced, in the edition shown."""
+input SagaVolumeReleaseInput {
+  number: VolumeNumber!
+  seriesId: SeriesId!
 }
 
 """
@@ -5179,7 +5298,7 @@ scalar Subgenre
 A book chosen for the reader from their library’s hearts and stars, with why, as its edition stands in one format and the app’s language.
 """
 type Suggestion {
-  authors: [AuthorName!]!
+  authors: [AuthorName!]! @deprecated(reason: "Read `release`, which the list and the page draw alike.")
 
   """
   The formats its edition may be awaited in from its page, with `awaitScannedEdition`.
@@ -5187,24 +5306,29 @@ type Suggestion {
   awaitableFormats: [ReleaseFormat!]!
   awaitedEditionId: AwaitedEditionId
 
-  """The edition’s cover once found, else its page’s, else a catalogue’s."""
-  coverUrl: String
+  """The edition’s cover once found, else a catalogue’s."""
+  coverUrl: String @deprecated(reason: "Read `release`, which the list and the page draw alike.")
 
   """When the edition came out or comes out, once found."""
-  date: String
+  date: String @deprecated(reason: "Read `release`, which the list and the page draw alike.")
   format: ReleaseFormat!
 
   """Stable for a book: what `dismissSuggestion` takes."""
   id: String!
   kind: SuggestionKind!
-  originalLanguage: BookLanguage!
-  originalTitle: BookTitle!
+  originalLanguage: BookLanguage! @deprecated(reason: "Read `release`, which the list and the page draw alike.")
+  originalTitle: BookTitle! @deprecated(reason: "Read `release`, which the list and the page draw alike.")
 
   """Why, in one sentence citing a book of the reader’s."""
   reason: String!
 
   """The reader’s books the reason draws on, in the order it cites them."""
   references: [SuggestionReference!]!
+
+  """
+  Its edition as every list and its page show it, described or not: what to draw.
+  """
+  release: Release!
 
   """Two or three words: "comme Gagner la guerre"."""
   short: String!
@@ -5215,12 +5339,12 @@ type Suggestion {
   state: AwaitedState!
 
   """Where to get it once its edition is found, as an award winner’s."""
-  storeUrl: String
+  storeUrl: String @deprecated(reason: "Read `release`, which the list and the page draw alike.")
 
   """
   Its title in the app’s language: the edition’s once found, else the model’s, which may be a guess for a recent translation.
   """
-  title: BookTitle!
+  title: BookTitle! @deprecated(reason: "Read `release`, which the list and the page draw alike.")
   watched: Boolean!
 }
 
@@ -5268,6 +5392,14 @@ type SuggestionReference {
 
   """Whether the heart or the stars are the saga’s, the book having none."""
   viaSeries: Boolean!
+}
+
+"""One of the month’s discoveries, in one format."""
+input SuggestionReleaseInput {
+  format: ReleaseFormat!
+
+  """`Suggestion.id`."""
+  id: String!
 }
 
 """The book summary, 1 to 4000 characters, in the caller language."""

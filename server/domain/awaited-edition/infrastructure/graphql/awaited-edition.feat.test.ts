@@ -11,6 +11,7 @@ mock.module('~/system/identity', () => ({ deleteAuthUser: async () => undefined 
 const { schema } = await import('~/domain/shared/graphql/schema')
 const { BookUseCase } = await import('~/domain/book/use-case')
 const { AuthorName, BookTitle } = await import('~/domain/shared/primitives')
+const { describedFromOf } = await import('~/domain/release/business-rules')
 
 const alice = 'alice' as UserId
 const bob = 'bob' as UserId
@@ -40,7 +41,7 @@ const shelve = async (
  *  it: every edition awaited below is watched already, so no model is asked. */
 const watched = (format: 'book' | 'audiobook') => {
   const key = `wind-and-truth--brandon-sanderson--${format}--fr`
-  fake.seed('edition-watches', key, {
+  fake.seed('releases', key, {
     key,
     title: 'Wind and Truth',
     author: 'Brandon Sanderson',
@@ -244,5 +245,61 @@ describe('awaiting a friend’s book', () => {
     )
 
     expect(awaited.errors?.[0]?.extensions?.code).toBe('NOT_FOUND')
+  })
+})
+
+describe('an awaited edition’s release', () => {
+  test('is drawn the same in the wishlist and on its page, described once', async () => {
+    const key = 'wind-and-truth--brandon-sanderson--audiobook--fr'
+    fake.seed('releases', key, {
+      ...fake.snapshot('releases').get(key),
+      descriptions: {
+        fr: {
+          description: {
+            book: { title: 'Vent et vérité', synopsis: 'La guerre arrive.' },
+            narrators: ['Michael Kramer'],
+          },
+          describedAt: new Date(),
+          describedFrom: describedFromOf({ title: 'Vent et vérité' } as never),
+        },
+      },
+    })
+    // Awaiting it keeps what its page described: the watch is written beside.
+    const bookId = await shelve(bob, 'Wind and Truth', 'en')
+    await as(bob)(
+      'mutation ($bookId: BookId!) { awaitBookEdition(bookId: $bookId, format: AUDIOBOOK) { id } }',
+      { bookId },
+    )
+    const RELEASE = 'key title authors date storeUrl synopsis narrators described state'
+
+    const listed = await as(bob)(`{ wishlist { awaited { id release { ${RELEASE} } } } }`)
+    const wishlist = listed.data?.wishlist as
+      | { awaited: { id: string; release: unknown }[] }
+      | undefined
+    const awaited = wishlist?.awaited[0]
+    const opened = await as(bob)(
+      `mutation ($id: AwaitedEditionId!) { describeReleaseOf(item: { awaitedEditionId: $id }) { ${RELEASE} } }`,
+      { id: awaited?.id ?? '' },
+    )
+
+    expect(listed.errors).toBeUndefined()
+    expect(awaited?.release).toEqual({
+      key,
+      title: 'Vent et vérité',
+      authors: ['Brandon Sanderson'],
+      date: '2026-09-20',
+      storeUrl: 'https://www.audible.fr/pd/B0DM67WR2V',
+      synopsis: 'La guerre arrive.',
+      narrators: ['Michael Kramer'],
+      described: true,
+      state: 'AVAILABLE',
+    })
+    expect(opened.errors).toBeUndefined()
+    expect(opened.data?.describeReleaseOf).toEqual(awaited?.release)
+  })
+
+  test('refuses an item named twice, or not at all', async () => {
+    const result = await as(bob)('mutation { describeReleaseOf(item: {}) { key } }')
+    expect(result.errors?.[0]?.extensions?.code).toBe('BAD_USER_INPUT')
   })
 })

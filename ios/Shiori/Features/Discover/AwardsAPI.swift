@@ -63,18 +63,10 @@ struct AwardMention: Hashable, Sendable, Codable {
 struct AwardWinner: Discovery, Hashable, Sendable, Codable {
     let id: String
     let format: ReleaseFormat
-    /// Its title in the app's language once found, else the one it won under.
-    let title: String
-    let originalTitle: String
-    let originalLanguage: BookLanguage?
-    let authors: [String]
     /// Newest first.
     let mentions: [AwardMention]
-    let state: AwaitedState
-    let watched: Bool
-    let date: String?
-    let coverURL: URL?
-    let storeURL: URL?
+    /// Its edition as every list and its page draw it.
+    var release: Release
     /// The formats "Guetter" is offered in, whatever the one on screen: a
     /// novel in another language translated and recorded, one in the app's
     /// language recorded only — each left out once out, or awaited already, in
@@ -84,6 +76,17 @@ struct AwardWinner: Discovery, Hashable, Sendable, Codable {
     /// The novel whatever its format, which "Pas intéressé" turns down. Nil
     /// on a winner read back from a snapshot saved before it was sent.
     var key: String?
+
+    /// Its title in the app's language once found, else the one it won under.
+    var title: String { release.title }
+    var originalTitle: String { release.originalTitle }
+    var originalLanguage: BookLanguage? { release.originalLanguage }
+    var authors: [String] { release.authors }
+    var state: AwaitedState { release.state }
+    var watched: Bool { release.watched }
+    var date: String? { release.date }
+    var coverURL: URL? { release.coverURL }
+    var storeURL: URL? { release.storeURL }
 
     /// Under its cover in the strip: the latest prize and its year.
     var caption: String {
@@ -123,17 +126,8 @@ struct AwardWinner: Discovery, Hashable, Sendable, Codable {
     }
 
     /// Drawn as the Books tab draws a book, the headphones on a recording's
-    /// cover.
-    var cover: Book {
-        Book(
-            id: "award-\(id)",
-            title: title,
-            authors: authors,
-            format: format == .audiobook ? .audiobook : .book,
-            coverURL: coverURL,
-            status: .toRead
-        )
-    }
+    /// cover: on its tile and on its page alike.
+    var cover: Book { release.book(id: "award-\(id)") }
 
     /// What adding it to the pile or awaiting it sends: the title it won
     /// under, in the language it won in, so the server finds the watch the
@@ -147,19 +141,6 @@ struct AwardWinner: Discovery, Hashable, Sendable, Codable {
 }
 
 extension AwardWinner {
-    /// What the model is told: the edition found in the app's language, else
-    /// the novel as it won.
-    var seed: ReleaseSeed {
-        ReleaseSeed(
-            title: title,
-            authors: authors,
-            format: format == .audiobook ? .audiobook : .book,
-            language: state == .unannounced ? originalLanguage : nil,
-            releasedOn: date,
-            coverURL: coverURL
-        )
-    }
-
     /// What putting it on the pile sends: the edition found when there is
     /// one, in the app's language, else the title it won under.
     var pileDraft: BookDraft {
@@ -241,26 +222,13 @@ extension AwardSection {
 
 extension AwardWinner {
     init(fields: ShioriGraphQL.AwardWinnerFields) {
-        let state: AwaitedState = switch fields.state.value {
-        case .available: .available
-        case .announced: .announced
-        case .unannounced, nil: .unannounced
-        }
         self.init(
             id: fields.id,
             format: fields.format.value == .audiobook ? .audiobook : .book,
-            title: fields.title,
-            originalTitle: fields.originalTitle,
-            originalLanguage: fields.originalLanguage.asDomain,
-            authors: fields.authors,
             mentions: fields.awards.compactMap { mention in
                 LiteraryAward(rawValue: mention.award.rawValue).map { AwardMention(award: $0, year: mention.year) }
             },
-            state: state,
-            watched: fields.watched,
-            date: fields.date,
-            coverURL: fields.coverUrl.flatMap(URL.init(string:)),
-            storeURL: fields.storeUrl.flatMap(URL.init(string:)),
+            release: Release(fields: fields.release.fragments.releaseFields),
             awaitableFormats: fields.awaitableFormats.compactMap { format -> ReleaseFormat? in
                 switch format.value {
                 case .book: return .book
@@ -270,6 +238,49 @@ extension AwardWinner {
             },
             awaitedEditionId: fields.awaitedEditionId,
             key: fields.key
+        )
+    }
+}
+
+extension AwardWinner {
+    /// A winner known only by what a fixture says of it: nothing described yet.
+    init(
+        id: String,
+        format: ReleaseFormat,
+        title: String,
+        originalTitle: String,
+        originalLanguage: BookLanguage?,
+        authors: [String],
+        mentions: [AwardMention],
+        state: AwaitedState,
+        watched: Bool,
+        date: String?,
+        coverURL: URL?,
+        storeURL: URL?,
+        awaitableFormats: [ReleaseFormat],
+        awaitedEditionId: String?,
+        key: String? = nil
+    ) {
+        self.init(
+            id: id,
+            format: format,
+            mentions: mentions,
+            release: Release(
+                key: id,
+                title: title,
+                originalTitle: originalTitle,
+                authors: authors,
+                releaseFormat: format,
+                originalLanguage: originalLanguage,
+                state: state,
+                watched: watched,
+                date: date,
+                coverURL: coverURL,
+                storeURL: storeURL
+            ),
+            awaitableFormats: awaitableFormats,
+            awaitedEditionId: awaitedEditionId,
+            key: key
         )
     }
 }

@@ -1,5 +1,5 @@
 import { AudibleQuery } from '~/domain/audible/query'
-import { storeUrlOf } from '~/domain/awaited-edition/business-rules'
+import { releaseShownOf, storeUrlOf } from '~/domain/awaited-edition/business-rules'
 import type { AwaitedEditionView, EditionOffer } from '~/domain/awaited-edition/types'
 import { BookLanguageEnum } from '~/domain/book/infrastructure/graphql/enums'
 import { BookId } from '~/domain/book/primitives'
@@ -8,8 +8,12 @@ import {
   AuthorReleasesType,
   ReleaseFormatEnum,
 } from '~/domain/discovery/infrastructure/graphql/types'
+import { ReleaseType, releaseViewFor } from '~/domain/release/infrastructure/graphql/types'
 import { builder } from '~/domain/shared/graphql/builder'
 import { objectStore } from '~/system/object-store'
+
+/** Why a field moved: the list and the page draw one record. */
+export const READ_RELEASE = 'Read `release`, which the list and the page draw alike.'
 
 export const AwaitedStateEnum = builder.enumType('AwaitedState', {
   description: 'Where an edition the reader awaits stands.',
@@ -51,20 +55,34 @@ export const AwaitedEditionType = builder
       title: t.field({
         type: 'BookTitle',
         description: 'Its title in the language awaited once found, else the original’s.',
+        deprecationReason: READ_RELEASE,
         resolve: (view) => view.found?.title ?? view.source.title,
       }),
       originalTitle: t.field({
         type: 'BookTitle',
         description: 'The title of the book it was awaited from.',
+        deprecationReason: READ_RELEASE,
         resolve: (view) => view.source.title,
       }),
       originalLanguage: t.field({
         type: BookLanguageEnum,
+        deprecationReason: READ_RELEASE,
         resolve: (view) => view.source.language,
       }),
-      authors: t.field({ type: ['AuthorName'], resolve: (view) => view.source.authors }),
+      release: t.field({
+        type: ReleaseType,
+        description:
+          'The edition as every list and its page show it, described or not: what to draw.',
+        resolve: (view, _args, context) => releaseViewFor(releaseShownOf(view), context.event),
+      }),
+      authors: t.field({
+        type: ['AuthorName'],
+        deprecationReason: READ_RELEASE,
+        resolve: (view) => view.source.authors,
+      }),
       date: t.string({
         nullable: true,
+        deprecationReason: READ_RELEASE,
         description:
           'When it comes out or came out, as precisely as announced: `YYYY`, `YYYY-MM` ' +
           'or `YYYY-MM-DD`. Null until found, and for an edition announced with no date.',
@@ -74,16 +92,16 @@ export const AwaitedEditionType = builder
         nullable: true,
         description:
           'The edition’s own cover once found, else the cover of the book it was ' +
-          'awaited from, else the one its page found when a reader opened it.',
+          'awaited from.',
+        deprecationReason: READ_RELEASE,
         resolve: async (view) =>
           view.found?.coverUrl ??
           view.source.coverUrl ??
-          (view.source.coverPath ? await objectStore().downloadUrl(view.source.coverPath) : null) ??
-          view.describedCoverUrl ??
-          null,
+          (view.source.coverPath ? await objectStore().downloadUrl(view.source.coverPath) : null),
       }),
       storeUrl: t.string({
         nullable: true,
+        deprecationReason: READ_RELEASE,
         description:
           'Where to get it: the recording’s page on the reader’s Audible store, which ' +
           'the Audible app opens on the title, or a search for it on the store of its ' +

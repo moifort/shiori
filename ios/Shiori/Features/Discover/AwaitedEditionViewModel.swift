@@ -8,7 +8,8 @@ final class AwaitedEditionViewModel {
     init(edition: AwaitedEdition, client: DiscoverClient) {
         self.edition = edition
         self.client = client
-        describer = ReleaseDescriber(describe: client.describe)
+        let item = ReleaseItem.awaitedEdition(id: edition.id)
+        describer = ReleaseDescriber(release: edition.release) { try await client.describe(item) }
     }
 
     let edition: AwaitedEdition
@@ -23,9 +24,10 @@ final class AwaitedEditionViewModel {
     private(set) var series: SeriesMembership?
     var sagaName: String? { series?.name }
 
-    /// The edition once described, as a book's page draws it.
+    /// The edition as its list drew it, then as the server described it, in
+    /// the saga of the reader's copy.
     var shown: Book {
-        var book = edition.cover.described(by: describer.description)
+        var book = describer.release.book(id: "awaited-\(edition.id)")
         if book.series == nil { book.series = series }
         return book
     }
@@ -35,7 +37,7 @@ final class AwaitedEditionViewModel {
     /// Why the addition failed, for the alert; nil once read.
     var addFailed: String?
 
-    func describe() async { await describer.describe(edition.seed) }
+    func describe() async { await describer.describe() }
 
     /// The reader's copy, then its saga's row off the catalogue already
     /// built. Nothing when either fails, the page whole without it.

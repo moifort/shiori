@@ -72,7 +72,8 @@ const { AwaitedEditionUseCase } = await import('~/domain/awaited-edition/use-cas
 const { NotificationCommand } = await import('~/domain/notification/command')
 const { DeviceToken } = await import('~/domain/notification/primitives')
 const { AuthorName, BookTitle } = await import('~/domain/shared/primitives')
-const { releaseDescriptionKeyOf } = await import('~/domain/discovery/business-rules')
+const { releaseShownOf } = await import('~/domain/awaited-edition/business-rules')
+const { releaseViewOf } = await import('~/domain/release/business-rules')
 
 const reader = 'reader' as UserId
 const other = 'other' as UserId
@@ -358,7 +359,7 @@ describe('the editions awaited', () => {
     expect(fake.snapshot('awaited-editions').size).toBe(1)
   })
 
-  test('are read in one query, one getAll of their watches, one of the descriptions of the bare', async () => {
+  test('are read in one query and one getAll of their releases', async () => {
     await AwaitedEditionUseCase.awaitOwnBook(reader, await stock(reader), 'book', 'fr', now)
     startFakeRequest()
     const [docReads, queryReads] = [fake.docReads, fake.queryReads]
@@ -367,12 +368,10 @@ describe('the editions awaited', () => {
 
     expect(views.map((view) => view.state)).toEqual(['unannounced'])
     expect(fake.queryReads - queryReads).toBe(1)
-    // Its watch, and its page's description in each language the app speaks:
-    // the book has no cover.
-    expect(fake.docReads - docReads).toBe(3)
+    expect(fake.docReads - docReads).toBe(1)
   })
 
-  test('with no cover, draw the one their page found when a reader opened it', async () => {
+  test('draw what their page described, in the list and on the page alike', async () => {
     await AwaitedEditionUseCase.awaitScannedBook(
       reader,
       {
@@ -385,31 +384,48 @@ describe('the editions awaited', () => {
       'fr',
       now,
     )
-    // The page asks for the original, in its own language, while nobody
-    // announced the edition: the description is kept under that key.
-    const key = releaseDescriptionKeyOf(
-      {
-        title: BookTitle('La ragazza nella nebbia'),
-        authors: [AuthorName('Donato Carrisi')],
-        format: 'audiobook',
-        language: 'it',
+    // Its page described the original, in its own language, while nobody
+    // announced the edition: kept in the release every list reads.
+    const key = 'ragazza-nella-nebbia--donato-carrisi--audiobook--fr'
+    fake.seed('releases', key, {
+      ...fake.snapshot('releases').get(key),
+      descriptions: {
+        fr: {
+          description: {
+            book: {
+              title: 'La ragazza nella nebbia',
+              synopsis: 'Une adolescente disparaît.',
+              coverUrl: 'https://covers.example/nebbia.jpg',
+            },
+            narrators: ['Alberto Angrisano'],
+          },
+          describedAt: now,
+          describedFrom: 'ragazza-nella-nebbia~it',
+        },
       },
-      'fr',
-    )
-    fake.seed('release-descriptions', key, {
-      key,
-      description: {
-        book: { title: 'La ragazza nella nebbia', coverUrl: 'https://covers.example/nebbia.jpg' },
-        narrators: [],
-      },
-      describedAt: now,
     })
     startFakeRequest()
 
     const [view] = await AwaitedEditionUseCase.everyAwaited(reader, now)
+    if (!view) throw new Error('no edition awaited')
+    const listed = releaseViewOf(
+      releaseShownOf(view),
+      fake.snapshot('releases').get(key) as never,
+      'fr',
+      now,
+    )
+    const opened = await AwaitedEditionUseCase.describe(reader, view.id, 'fr', now)
 
-    expect(view?.state).toBe('unannounced')
-    expect(view?.describedCoverUrl).toBe('https://covers.example/nebbia.jpg' as never)
+    expect(view.state).toBe('unannounced')
+    expect(listed).toMatchObject({
+      describedCoverUrl: 'https://covers.example/nebbia.jpg',
+      synopsis: 'Une adolescente disparaît.',
+      narrators: ['Alberto Angrisano'],
+      described: true,
+    })
+    // The page opens on the same record, and the model is not asked again.
+    expect(opened).toEqual(listed)
+    expect(asked).toEqual(['La ragazza nella nebbia (audio)'])
   })
 
   test('are stopped one by one, the reader’s own only', async () => {
@@ -454,7 +470,7 @@ describe("the hourly pass's reads", () => {
     return id
   }
   const watchOf = (index: number, checkedAt: Date) =>
-    fake.seed('edition-watches', keyOf(index), {
+    fake.seed('releases', keyOf(index), {
       key: keyOf(index),
       title: `Book ${index}`,
       author: 'Brandon Sanderson',

@@ -45,6 +45,7 @@ import {
   releasesOf,
   sagasByAuthorOf,
   sagasToListOnAudible,
+  shownVolumeOf,
   type WorkContext,
   watchedAuthorsOf,
   watchedSagasOf,
@@ -248,7 +249,7 @@ describe('what a saga has for the reader', () => {
       volume(4, '2027-02-12'),
     ])
     const releases = releasesOf(held(1), watch, undefined, today)
-    expect(releases).toEqual({ watched: true, next: volume(4, '2027-02-12') })
+    expect(releases).toEqual({ watched: true, next: shownVolumeOf(watch, volume(4, '2027-02-12')) })
   })
 
   test('is nothing before the saga was ever looked up', () => {
@@ -304,7 +305,9 @@ describe('what a saga has for the reader', () => {
       ],
     } as unknown as Series
     const watch = watchOf(carl, [volume(4, '2026-05-01'), volume(5, '2026-10-08')])
-    expect(releasesOf(held(4), watch, catalogue, today).next).toEqual(volume(5, '2026-10-08'))
+    expect(releasesOf(held(4), watch, catalogue, today).next).toEqual(
+      shownVolumeOf(watch, volume(5, '2026-10-08')),
+    )
     expect(missingVolumesOf(held(4), watch, catalogue, today)).toEqual([])
   })
 
@@ -414,7 +417,7 @@ describe('the volumes a saga has just brought out', () => {
       volume(5, '2026-09-24', { asin }),
     ])
     expect(recentReleasesOf(held(), watch, undefined, today)).toEqual([
-      volume(5, '2026-09-24', { asin }),
+      shownVolumeOf(watch, volume(5, '2026-09-24', { asin })),
     ])
   })
 
@@ -468,7 +471,7 @@ describe('the tab', () => {
       next: next ? volume(9, next) : undefined,
       missing: [],
       recent,
-    }) as SagaDiscovery
+    }) as unknown as SagaDiscovery
 
   test('lists the dated announcements, the soonest first, and drops the rest', () => {
     const ordered = inDiscoveryOrder([

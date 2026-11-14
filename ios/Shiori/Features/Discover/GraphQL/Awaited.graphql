@@ -64,6 +64,10 @@ fragment EditionOfferFields on EditionOffer {
 fragment AwaitedEditionFields on AwaitedEdition {
   id
   format
+  release {
+    ...ReleaseFields
+  }
+  # Read by Android until its release-time port: iOS draws `release`.
   state
   title
   originalTitle
