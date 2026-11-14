@@ -2425,6 +2425,38 @@
         }
       }
     },
+    "Ajouté à la bibliothèque" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Added to library"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajouté à la bibliothèque"
+          }
+        }
+      }
+    },
+    "Ajouté à la liste d'envies" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Added to wishlist"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajouté à la liste d'envies"
+          }
+        }
+      }
+    },
     "Ajouté à vos livres lus" : {
       "localizations" : {
         "en" : {

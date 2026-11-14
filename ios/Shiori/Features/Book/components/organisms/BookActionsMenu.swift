@@ -59,7 +59,7 @@ struct BookActionsMenu: View {
 
             // Its French edition watched for and announced the day it is out.
             ForEach(offer.awaitable) { format in
-                Button(format.awaitLabel, systemImage: format == .audiobook ? "headphones" : "character.book.closed") {
+                Button(format.awaitLabel, systemImage: format == .audiobook ? "headphones" : "binoculars") {
                     onAction(.awaitEdition(format))
                 }
                 .accessibilityIdentifier("book-await-\(format.rawValue)")

@@ -35,6 +35,8 @@ struct ScanScreen: View {
     /// The book went into the library: the scan closes and the Library shows
     /// the reader where it was shelved.
     var onAdded: (Book) -> Void
+    /// The book went onto the wishlist: the scan closes.
+    var onWished: () -> Void
 
     @State private var viewModel: ScanViewModel
     @State private var shouldCapture = false
@@ -44,12 +46,14 @@ struct ScanScreen: View {
         onDismiss: @escaping () -> Void,
         onAwait: @escaping (BookDraft, ReleaseFormat) -> Void,
         onAdded: @escaping (Book) -> Void,
+        onWished: @escaping () -> Void,
         client: ScanClient = .live
     ) {
         self.start = start
         self.onDismiss = onDismiss
         self.onAwait = onAwait
         self.onAdded = onAdded
+        self.onWished = onWished
         _viewModel = State(initialValue: ScanViewModel(client: client))
     }
 
@@ -110,7 +114,7 @@ struct ScanScreen: View {
                     case let .awaitEdition(draft, format):
                         onAwait(draft, format)
                     case let .wish(draft):
-                        if await viewModel.wish(draft) { onDismiss() }
+                        if await viewModel.wish(draft) { onWished() }
                     case let .languageOrFormatChanged(language, format):
                         await viewModel.loadAwaitable(language: language, format: format)
                     }

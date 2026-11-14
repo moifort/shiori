@@ -58,6 +58,9 @@ struct ContentView: View {
     /// its way out.
     @State private var pendingSource: AddBookSource?
     @State private var scanStart: ScanStart?
+    /// What the scan just did, said once its cover has gone.
+    @State private var pendingConfirmation: Confirmation?
+    @State private var confirmation: Confirmation?
     @State private var shelfStart: ShelfStart?
     /// The offer, for a free reader who chose the shelf import.
     @State private var shelfPaywall = false
@@ -103,20 +106,27 @@ struct ContentView: View {
 
     var body: some View {
         tabs
+            .confirmationHUD($confirmation)
             .sheet(isPresented: $showAddSheet, onDismiss: actOnPendingSource) {
                 AddBookSheet(searchTitle: ScanClient.live.searchTitle, onChoose: choose)
             }
-            .fullScreenCover(item: $scanStart) { boxed in
+            .fullScreenCover(item: $scanStart, onDismiss: confirmScan) { boxed in
                 ScanScreen(
                     start: boxed.start,
                     onDismiss: { scanStart = nil },
                     onAwait: { draft, format in
+                        pendingConfirmation = .awaited
                         scanStart = nil
                         showAwaited(draft, format)
                     },
                     onAdded: { book in
+                        pendingConfirmation = .addedToLibrary
                         scanStart = nil
                         showAdded(book)
+                    },
+                    onWished: {
+                        pendingConfirmation = .addedToWishlist
+                        scanStart = nil
                     }
                 )
             }
@@ -146,17 +156,23 @@ struct ContentView: View {
             // up. On every return to the front, because the extension cannot
             // bring the app forward itself — the reader shares, then opens
             // Shiori, and the book is waiting for them.
-            .fullScreenCover(item: $sharedStart) { start in
+            .fullScreenCover(item: $sharedStart, onDismiss: confirmScan) { start in
                 ScanScreen(
                     start: start,
                     onDismiss: { sharedStart = nil },
                     onAwait: { draft, format in
+                        pendingConfirmation = .awaited
                         sharedStart = nil
                         showAwaited(draft, format)
                     },
                     onAdded: { book in
+                        pendingConfirmation = .addedToLibrary
                         sharedStart = nil
                         showAdded(book)
+                    },
+                    onWished: {
+                        pendingConfirmation = .addedToWishlist
+                        sharedStart = nil
                     }
                 )
             }
@@ -296,6 +312,13 @@ struct ContentView: View {
         // opens on the list by date rather than flashing the mosaic it was
         // left on.
         Task { @MainActor in selectedTab = .library }
+    }
+
+    /// The scan's cover is gone: say what it did, over whatever comes next.
+    private func confirmScan() {
+        guard let pending = pendingConfirmation else { return }
+        pendingConfirmation = nil
+        confirmation = pending
     }
 
     private func choose(_ source: AddBookSource) {

@@ -199,7 +199,7 @@ struct ScanReviewPage: View {
             if !awaitable.isEmpty {
                 Section {
                     ForEach(awaitable) { format in
-                        Button(format.awaitLabel, systemImage: format == .audiobook ? "headphones" : "character.book.closed") {
+                        Button(format.awaitLabel, systemImage: format == .audiobook ? "headphones" : "binoculars") {
                             Task { await onAction(.awaitEdition(draft, format)) }
                         }
                         .accessibilityIdentifier("review-await-\(format.rawValue)")

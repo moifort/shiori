@@ -158,7 +158,7 @@ struct DiscoveryAddActions<Item: Discovery>: View {
                 ForEach(item.awaitableFormats) { format in
                     Button(
                         format.awaitLabel,
-                        systemImage: format == .audiobook ? "headphones" : "character.book.closed"
+                        systemImage: format == .audiobook ? "headphones" : "binoculars"
                     ) {
                         onChoose(.await(format), .added)
                     }
