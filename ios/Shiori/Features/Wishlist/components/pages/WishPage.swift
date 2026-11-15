@@ -3,7 +3,7 @@ import SwiftUI
 /// A book wished for, drawn as a book to have is (`UnownedBookPage`): the
 /// hero over the cover's colours, where it came from on the detail line, the
 /// white button that orders it from its store and the "+" that puts it on
-/// the pile or among the books read, and "Plus intéressé" that takes it off
+/// the pile or among the books read, and "Retirer" that takes it off
 /// the list. Then its summary and its facts. No bell: nothing is awaited. Pure and previewable.
 struct WishPage: View {
     let wish: Wish

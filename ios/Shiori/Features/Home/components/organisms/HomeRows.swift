@@ -183,7 +183,7 @@ struct PosterRow: View {
         /// What a tap opens, when it is not the book itself: a release, a
         /// friend's favourite.
         var open: (() -> Void)?
-        /// "Plus intéressé" on the long press, for a cover of the wishlist:
+        /// "Retirer" on the long press, for a cover of the wishlist:
         /// what takes it off the list, when it is not the row's own.
         var dropWished: (() -> Void)?
         var id: String { book.id }
@@ -211,7 +211,7 @@ struct PosterRow: View {
     let onOpen: (Book) -> Void
     /// The long press on a cover; nil leaves the covers without one.
     var onMenu: ((Book, BookQuickAction) -> Void)?
-    /// The long press on a cover of the wishlist: "Plus intéressé" alone.
+    /// The long press on a cover of the wishlist: "Retirer" alone.
     var onDropWished: ((Book) -> Void)?
 
     var body: some View {

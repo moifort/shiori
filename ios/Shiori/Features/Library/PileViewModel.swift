@@ -34,7 +34,7 @@ final class PileViewModel {
     private(set) var view: ShelvesView
     private(set) var isLoading = false
     private(set) var errorMessage: String?
-    /// Why "Plus intéressé" failed, for the alert; nil once read.
+    /// Why "Retirer" failed, for the alert; nil once read.
     var actionError: String?
     /// The pills offered, kept from the view without a pill: choosing one
     /// must not take the others away.
@@ -78,7 +78,7 @@ final class PileViewModel {
 
     /// Loads the view. A failure over sections already on screen says
     /// nothing: they stay as they were, and a pull tries again.
-    /// "Plus intéressé" from the wishlist's rail: a book wished for leaves the
+    /// "Retirer" from the wishlist's rail: a book wished for leaves the
     /// list, an edition stops being awaited. The cover goes at once; the rail
     /// is read again on the notice the call posts.
     func dropWished(_ book: Book) async {

@@ -33,14 +33,14 @@ extension View {
 
 extension View {
     /// The long press on a cover of the wishlist: the cover lifted as a book's
-    /// is, and "Plus intéressé" in red, which takes it off the list. Nil
+    /// is, and "Retirer" in red, which takes it off the list. Nil
     /// `onDrop` leaves the cover without one.
     @ViewBuilder
     func wishContextMenu(_ book: Book, onDrop: (() -> Void)?) -> some View {
         if let onDrop {
             contextMenu {
                 Button(role: .destructive, action: onDrop) {
-                    Label("Plus intéressé", systemImage: "bookmark.slash")
+                    Label("Retirer", systemImage: "bookmark.slash")
                         .foregroundStyle(.red)
                 }
                 .accessibilityIdentifier("wish-not-interested")

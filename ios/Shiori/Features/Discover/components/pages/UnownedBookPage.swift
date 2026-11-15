@@ -34,7 +34,8 @@ struct BellConfirmation {
 /// an edition awaited — opened from "Nouveautés", Découvrir or a saga, and
 /// drawn as the reader's own book page is, so nothing new is to be learnt:
 /// the hero over the cover's colours, then the summary, the saga, the facts.
-/// What it adds is in the hero alone: the day as a calendar leaf on glass in
+/// What it adds is in the hero alone, its first button always white with its
+/// label and icon, the others round on glass: the day as a calendar leaf on glass in
 /// its corner while it is to come, how long is left tagged after the format,
 /// and the saga page's row of actions — the white button that orders it from
 /// its store, the "+" once it is out, which opens the suggestion's menu where
@@ -81,9 +82,9 @@ struct UnownedBookPage: View {
     let onToggleBell: () -> Void
     var onOpenSaga: () -> Void = {}
     var onOpenVolume: (Book) -> Void = { _ in }
-    /// "Plus intéressé", round on glass at the end of the hero's row: a book
-    /// wished for leaves the list, an edition awaited stops being watched.
-    /// Nil draws no button; none either beside the bell, which already says it.
+    /// "Retirer", at the end of the hero's row, asked first: a book wished for
+    /// leaves the list, an edition awaited stops being watched. Nil draws no
+    /// button; none either beside the bell, which already says it.
     var onNoLongerInterested: (() async -> Void)? = nil
     /// "Couverture" in the "…" of the bar: another cover picked for the book,
     /// for every reader. Nil draws no "…".
@@ -175,12 +176,14 @@ struct UnownedBookPage: View {
                 if let isAdded = offeredAddition, additions.count > 1 { addMenu(isAdded) }
                 if let onNoLongerInterested, !isUpcoming {
                     AsyncRoundButton(
-                        title: "Plus intéressé",
+                        title: "Retirer",
                         systemImage: "bookmark.slash",
                         side: Self.buttonHeight,
+                        isPrimary: lead == .remove,
+                        confirmation: "Retirer de la liste d'envies ?",
                         action: onNoLongerInterested
                     )
-                    .accessibilityIdentifier("unowned-not-interested")
+                    .accessibilityIdentifier("unowned-remove")
                 }
             }
         }
@@ -211,12 +214,26 @@ struct UnownedBookPage: View {
         .accessibilityIdentifier("unowned-store")
     }
 
-    /// On the pile, round on glass beside the store; a tick once there.
+    /// The row's first button, white with its label and icon: the store,
+    /// else the "+", else the bell, else "Retirer".
+    private enum Lead { case store, add, bell, remove }
+
+    private var lead: Lead? {
+        if store != nil { return .store }
+        if offeredAddition != nil { return .add }
+        if isUpcoming { return .bell }
+        if onNoLongerInterested != nil { return .remove }
+        return nil
+    }
+
+    /// On the pile, round on glass beside the store, or first in the row
+    /// with no store; a tick once there.
     private func addButton(_ isAdded: Bool) -> some View {
         AsyncRoundButton(
-            title: isAdded ? "Dans votre pile" : "Ajouter à ma pile",
+            title: isAdded ? "Ajouté" : "Ajouter",
             systemImage: isAdded ? "checkmark" : "plus",
             side: Self.buttonHeight,
+            isPrimary: lead == .add,
             action: { await onAdd(.pile) }
         )
         .disabled(isAdded)
@@ -229,22 +246,35 @@ struct UnownedBookPage: View {
         Menu {
             additionButtons
         } label: {
-            Group {
-                if adding {
-                    ProgressView()
-                } else {
-                    Image(systemName: isAdded ? "checkmark" : "plus")
-                        .font(.title3.weight(.medium))
-                        .contentTransition(.symbolEffect(.replace))
+            if lead == .add {
+                HStack(spacing: 8) {
+                    if adding {
+                        ProgressView().tint(.black)
+                    } else {
+                        Image(systemName: isAdded ? "checkmark" : "plus")
+                            .contentTransition(.symbolEffect(.replace))
+                    }
+                    Text(isAdded ? "Ajouté" : "Ajouter")
                 }
+                .heroPrimary(height: Self.buttonHeight)
+            } else {
+                Group {
+                    if adding {
+                        ProgressView()
+                    } else {
+                        Image(systemName: isAdded ? "checkmark" : "plus")
+                            .font(.title3.weight(.medium))
+                            .contentTransition(.symbolEffect(.replace))
+                    }
+                }
+                .foregroundStyle(.white)
+                .frame(width: Self.buttonHeight, height: Self.buttonHeight)
+                .contentShape(.circle)
+                .glassEffect(.regular.interactive(), in: .circle)
             }
-            .foregroundStyle(.white)
-            .frame(width: Self.buttonHeight, height: Self.buttonHeight)
-            .contentShape(.circle)
         }
         .menuStyle(.button)
         .buttonStyle(.plain)
-        .glassEffect(.regular.interactive(), in: .circle)
         .disabled(isAdded || adding)
         .accessibilityLabel(Text(isAdded ? "Ajouté" : "Ajouter"))
         .accessibilityIdentifier("unowned-add")
@@ -339,7 +369,7 @@ struct UnownedBookPage: View {
     }
 
     /// The bell is the row's only button: nothing to buy yet.
-    private var bellIsAlone: Bool { store == nil }
+    private var bellIsAlone: Bool { lead == .bell }
 
     private func ring() {
         rings += 1
@@ -410,35 +440,79 @@ private struct AsyncRoundButton: View {
     let title: LocalizedStringKey
     let systemImage: String
     let side: CGFloat
+    /// First in the row: white, its label beside its icon.
+    var isPrimary = false
+    /// Asked before the action, which cannot be undone from the page; its
+    /// destructive answer is the button's title. Nil acts at once.
+    var confirmation: LocalizedStringKey? = nil
     let action: () async -> Void
 
     @State private var isInProgress = false
+    @State private var confirms = false
 
     var body: some View {
         Button {
             guard !isInProgress else { return }
-            isInProgress = true
-            Task {
-                await action()
-                isInProgress = false
-            }
+            if confirmation != nil { confirms = true } else { run() }
         } label: {
-            Group {
-                if isInProgress {
-                    ProgressView()
-                } else {
-                    Image(systemName: systemImage)
-                        .font(.title3.weight(.medium))
-                        .contentTransition(.symbolEffect(.replace))
+            if isPrimary {
+                HStack(spacing: 8) {
+                    if isInProgress {
+                        ProgressView().tint(.black)
+                    } else {
+                        Image(systemName: systemImage)
+                            .contentTransition(.symbolEffect(.replace))
+                    }
+                    Text(title)
                 }
+                .heroPrimary(height: side)
+            } else {
+                Group {
+                    if isInProgress {
+                        ProgressView()
+                    } else {
+                        Image(systemName: systemImage)
+                            .font(.title3.weight(.medium))
+                            .contentTransition(.symbolEffect(.replace))
+                    }
+                }
+                .foregroundStyle(.white)
+                .frame(width: side, height: side)
+                .contentShape(.circle)
+                .glassEffect(.regular.interactive(), in: .circle)
             }
-            .foregroundStyle(.white)
-            .frame(width: side, height: side)
-            .contentShape(.circle)
         }
         .buttonStyle(.plain)
-        .glassEffect(.regular.interactive(), in: .circle)
         .accessibilityLabel(Text(title))
+        // Attached to the button, as the bell's: the dialog rises from it.
+        .confirmationDialog(confirmation ?? "", isPresented: $confirms, titleVisibility: .visible) {
+            Button(title, role: .destructive) { run() }
+                .accessibilityIdentifier("unowned-confirm-remove")
+            Button("Annuler", role: .cancel) {}
+        }
+    }
+
+    private func run() {
+        isInProgress = true
+        Task {
+            await action()
+            isInProgress = false
+        }
+    }
+}
+
+private extension View {
+    /// The hero's first button, as the store's: white, black label, shadowed.
+    func heroPrimary(height: CGFloat) -> some View {
+        font(.headline)
+            .foregroundStyle(.black)
+            .lineLimit(1)
+            .fixedSize()
+            .padding(.horizontal, 22)
+            .frame(height: height)
+            .background(.white, in: .capsule)
+            .contentShape(.capsule)
+            .shadow(color: .black.opacity(0.45), radius: 11, y: 8)
     }
 }
 

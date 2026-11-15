@@ -41,7 +41,7 @@ struct WishlistScreen: View {
         ) { wish in
             Button("À lire") { Task { await viewModel.add(wish, status: .toRead) } }
             Button("Déjà lu") { Task { await viewModel.add(wish, status: .read) } }
-            Button("Plus intéressé", role: .destructive) { Task { await viewModel.remove(wish) } }
+            Button("Retirer", role: .destructive) { Task { await viewModel.remove(wish) } }
         }
         .alert(
             "Action impossible",

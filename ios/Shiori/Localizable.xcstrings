@@ -11637,22 +11637,6 @@
         }
       }
     },
-    "Plus intéressé" : {
-      "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Plus intéressé"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Not interested"
-          }
-        }
-      }
-    },
     "Plus tard" : {
       "localizations" : {
         "en" : {
@@ -12785,6 +12769,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Retirer"
+          }
+        }
+      }
+    },
+    "Retirer de la liste d'envies ?" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Retirer de la liste d'envies ?"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove from your wishlist?"
           }
         }
       }

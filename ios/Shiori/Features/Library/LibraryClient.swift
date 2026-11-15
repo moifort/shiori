@@ -20,7 +20,7 @@ struct LibraryClient: Sendable {
     var delete: @Sendable (_ id: String) async throws -> Void = { _ in }
     /// The wishlist, for the pile's rail of what can be had now.
     var wishlist: @Sendable () async throws -> Wishlist = { Wishlist() }
-    /// The rail's long press, "Plus intéressé": a book wished for off the list,
+    /// The rail's long press, "Retirer": a book wished for off the list,
     /// an edition no longer awaited.
     var removeWish: @Sendable (_ wishId: String) async throws -> Void = { _ in }
     var stopAwaiting: @Sendable (_ editionId: String) async throws -> Void = { _ in }

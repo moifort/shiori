@@ -5,7 +5,7 @@ enum AwaitedEditionAction {
     case close
     /// On the pile, filed in the saga of the reader's copy.
     case add
-    /// Given up, by the bell once confirmed or by "Plus intéressé": the page
+    /// Given up, by the bell once confirmed or by "Retirer": the page
     /// closes behind it.
     case stopAwaiting
     /// The reader's copy, or another of their volumes, in the saga's row.
@@ -20,7 +20,7 @@ enum AwaitedEditionAction {
 /// book to come is (`UnownedBookPage`): the reader's own book page, its day
 /// pinned in the hero's corner, the saga of their copy under it, their copy
 /// ringed. Only what is known is drawn. The bell gives the wait up, asked for
-/// twice as a saga's deletion is, and "Plus intéressé" once the edition is
+/// twice as a saga's deletion is, and "Retirer" once the edition is
 /// out and nothing is left to alert on; the Audible sync brings a recording bought
 /// into the library by itself, which ends the wait.
 struct AwaitedEditionPage: View {

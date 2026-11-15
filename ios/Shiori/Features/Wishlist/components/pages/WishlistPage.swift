@@ -4,7 +4,7 @@ import SwiftUI
 enum WishlistAction {
     case openEdition(AwaitedEdition)
     case chooseWish(Wish)
-    /// "Plus intéressé", from a cover's long press: off the list.
+    /// "Retirer", from a cover's long press: off the list.
     case dropWish(Wish)
     case dropEdition(AwaitedEdition)
     case selectFormat(BookFormat?)
@@ -15,7 +15,7 @@ enum WishlistAction {
 /// awaited announced for a day, as its "Prochaines sorties" cards; then a
 /// rail per way the books came — the editions out, a friend's, the
 /// discoveries, the scans — and the editions nobody announced yet. Each cover
-/// says where it came from, and a long press on it offers "Plus intéressé". A
+/// says where it came from, and a long press on it offers "Retirer". A
 /// section with nothing in it is not drawn.
 struct WishlistPage: View {
     let wishlist: Wishlist

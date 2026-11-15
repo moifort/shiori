@@ -12,7 +12,7 @@ enum PileAction {
     /// A cover of the wishlist's rail: the book wished for, or the edition
     /// awaited, on its own page.
     case openWished(Book)
-    /// "Plus intéressé", from a cover's long press in the wishlist's rail.
+    /// "Retirer", from a cover's long press in the wishlist's rail.
     case dropWished(Book)
     case refresh
 }
