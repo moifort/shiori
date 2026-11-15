@@ -11,6 +11,8 @@ enum AnnouncedVolumeAction {
     case toggleFollowed
     /// One of the reader's own volumes in the saga's row.
     case openVolume(Book)
+    /// Another cover picked for it, for every reader.
+    case chooseCover
 }
 
 /// A volume announced, opened from "Nouveautés", Découvrir or its saga, drawn
@@ -52,7 +54,8 @@ struct AnnouncedVolumePage: View {
             onAdd: { await onAction(.add($0)) },
             onToggleBell: { act(.toggleFollowed) },
             onOpenSaga: { act(linksToSaga ? .openSaga : .close) },
-            onOpenVolume: { act(.openVolume($0)) }
+            onOpenVolume: { act(.openVolume($0)) },
+            onChooseCover: { act(.chooseCover) }
         )
     }
 

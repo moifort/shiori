@@ -5,6 +5,8 @@ enum SuggestionAction {
     case close
     /// One of the reader's own books it was drawn from.
     case openReference(SuggestionReference)
+    /// Another cover picked for it, for every reader.
+    case chooseCover
 }
 
 /// A suggestion's page, in the reader's own book page's grammar: the hero over
@@ -63,6 +65,9 @@ struct SuggestionPage: View {
                 }
                 .disabled(choices.marks[suggestion.id] != nil || choices.working[suggestion.id] != nil)
                 .accessibilityIdentifier("suggestion-toolbar-add")
+            }
+            ToolbarItem(placement: .primaryAction) {
+                UnownedBookActionsMenu { act(.chooseCover) }
             }
         }
     }

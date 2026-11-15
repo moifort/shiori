@@ -26,6 +26,11 @@ final class AwardWinnerViewModel {
     /// The winner as its list drew it, then as the server described it.
     var shown: Book { describer.release.book(id: "award-\(winner.id)") }
     var isDescribing: Bool { describer.isDescribing }
+    /// The release the page shows: its cover is picked for every reader.
+    var releaseKey: String { describer.release.key }
+
+    /// The cover picked for it, drawn at once.
+    func drawCover(_ url: URL) { describer.drawCover(url) }
 
     func describe() async { await describer.describe() }
 

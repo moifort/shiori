@@ -85,6 +85,9 @@ struct UnownedBookPage: View {
     /// wished for leaves the list, an edition awaited stops being watched.
     /// Nil draws no button; none either beside the bell, which already says it.
     var onNoLongerInterested: (() async -> Void)? = nil
+    /// "Couverture" in the "…" of the bar: another cover picked for the book,
+    /// for every reader. Nil draws no "…".
+    var onChooseCover: (() -> Void)? = nil
 
     /// Bumped on each tap of the bell, which swings as a bell rings.
     @State private var rings = 0
@@ -137,6 +140,11 @@ struct UnownedBookPage: View {
                             .disabled(isAdded)
                             .accessibilityIdentifier("unowned-toolbar-add")
                     }
+                }
+            }
+            if let onChooseCover {
+                ToolbarItem(placement: .primaryAction) {
+                    UnownedBookActionsMenu(onChooseCover: onChooseCover)
                 }
             }
         }

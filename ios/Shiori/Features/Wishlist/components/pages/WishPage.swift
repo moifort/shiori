@@ -16,6 +16,8 @@ struct WishPage: View {
     var onClose: () -> Void = {}
     let onAdd: (ReadingStatus) async -> Void
     let onRemove: () async -> Void
+    /// Another cover picked for the book, for every reader.
+    var onChooseCover: (() -> Void)? = nil
 
     var body: some View {
         UnownedBookPage(
@@ -32,7 +34,8 @@ struct WishPage: View {
             additions: [.pile, .read],
             onAdd: { addition in await onAdd(addition == .read ? .read : .toRead) },
             onToggleBell: {},
-            onNoLongerInterested: onRemove
+            onNoLongerInterested: onRemove,
+            onChooseCover: onChooseCover
         )
     }
 }

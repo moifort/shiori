@@ -40,3 +40,19 @@ mutation DescribeReleaseOf($item: ReleaseItemInput!) {
     ...ReleaseFields
   }
 }
+
+# The covers any reader may pick for a book nobody here holds, the one its page
+# draws now first. Free: no model call.
+query ReleaseCoverChoices($key: String!, $drawn: CoverUrl) {
+  releaseCoverChoices(key: $key, drawn: $drawn) {
+    source
+    url
+    current
+  }
+}
+
+# A cover picked for a book nobody here holds, drawn for every reader. Answers
+# the cover now drawn.
+mutation ChooseReleaseCover($key: String!, $url: CoverUrl!) {
+  chooseReleaseCover(key: $key, url: $url)
+}

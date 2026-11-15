@@ -7,6 +7,8 @@ struct SuggestionScreen: View {
     /// The opener's own way of asking the server, the home's; nil, the page's.
     private let onChoice: ((Suggestion, DiscoveryChoice) async -> Bool)?
 
+    private let coverClient: ReleaseCoverClient
+    @State private var choosesCover = false
     @State private var viewModel: SuggestionViewModel
     @State private var choices: DiscoveryChoices
     @State private var openReference: SuggestionReference?
@@ -22,9 +24,11 @@ struct SuggestionScreen: View {
         suggestion: Suggestion,
         client: DiscoverClient = .live,
         choices: DiscoveryChoices = DiscoveryChoices(),
+        coverClient: ReleaseCoverClient = .live,
         onChoice: ((Suggestion, DiscoveryChoice) async -> Bool)? = nil
     ) {
         self.onChoice = onChoice
+        self.coverClient = coverClient
         _choices = State(initialValue: choices)
         _viewModel = State(initialValue: SuggestionViewModel(suggestion: suggestion, client: client))
     }
@@ -43,6 +47,8 @@ struct SuggestionScreen: View {
                 dismiss()
             case let .openReference(reference):
                 openReference = reference
+            case .chooseCover:
+                choosesCover = true
             }
         }
         .alert(
@@ -54,6 +60,13 @@ struct SuggestionScreen: View {
             Text(viewModel.actionError ?? "")
         }
         .task { await viewModel.describe() }
+        .releaseCoverPicker(
+            isPresented: $choosesCover,
+            book: viewModel.shown,
+            releaseKey: viewModel.releaseKey,
+            client: coverClient,
+            onChosen: viewModel.drawCover
+        )
         // A saga cited by name opens the saga's page; a book, its own.
         .pushesDetail(item: $openReference) { reference in
             if reference.citesSaga, let seriesId = reference.seriesId {
@@ -67,6 +80,6 @@ struct SuggestionScreen: View {
 
 #Preview("Smoke") {
     NavigationStack {
-        SuggestionScreen(suggestion: .preview, client: .preview)
+        SuggestionScreen(suggestion: .preview, client: .preview, coverClient: .preview)
     }
 }

@@ -181,6 +181,38 @@ enum ReleaseAPI {
         )
         return Release(fields: data.describeReleaseOf.fragments.releaseFields)
     }
+
+    /// The covers any reader may pick for the release, the one its page draws
+    /// now first: what the release knows and what Amazon and Open Library have
+    /// for it. Free — no AI, no scan spent.
+    static func coverChoices(key: String, drawn: URL?) async throws -> [CoverChoice] {
+        #if DEBUG
+        if Showcase.isOn {
+            return CoverChoice.previews
+        }
+        #endif
+        let data = try await GraphQLHelpers.fetch(
+            GraphQLClient.shared.apollo,
+            query: ShioriGraphQL.ReleaseCoverChoicesQuery(
+                key: key,
+                drawn: GraphQLHelpers.graphQLNullable(drawn?.absoluteString)
+            )
+        )
+        return data.releaseCoverChoices.compactMap {
+            CoverChoice(source: $0.source, url: $0.url, current: $0.current)
+        }
+    }
+
+    /// Draws the release with the cover picked, in every list and on every
+    /// page, for every reader. Answers the cover now drawn. Every open list
+    /// reloads on the notice, its tile drawn anew.
+    static func chooseCover(key: String, url: URL) async throws -> URL {
+        let data = try await GraphQLHelpers.perform(
+            GraphQLClient.shared.apollo,
+            mutation: ShioriGraphQL.ChooseReleaseCoverMutation(key: key, url: url.absoluteString)
+        )
+        return URL(string: data.chooseReleaseCover) ?? url
+    }
 }
 
 private extension ReleaseItem {

@@ -47,4 +47,10 @@ final class ReleaseDescriber {
             _ = reportError(error)
         }
     }
+
+    /// The cover a reader picked for it, as the server answered it: drawn at
+    /// once, as every list will draw it on its next load.
+    func drawCover(_ url: URL) {
+        withAnimation(.smooth) { release.coverURL = url }
+    }
 }

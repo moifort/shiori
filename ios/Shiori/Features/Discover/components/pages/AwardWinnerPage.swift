@@ -5,6 +5,8 @@ enum AwardWinnerAction {
     case close
     /// Another winner, from the row at the foot of the page.
     case openWinner(AwardWinner)
+    /// Another cover picked for it, for every reader.
+    case chooseCover
 }
 
 /// One winner, in the suggestion's page's grammar: the hero over the cover's
@@ -62,6 +64,9 @@ struct AwardWinnerPage: View {
                 }
                 .disabled(choices.marks[winner.id] != nil || choices.working[winner.id] != nil)
                 .accessibilityIdentifier("award-winner-menu")
+            }
+            ToolbarItem(placement: .primaryAction) {
+                UnownedBookActionsMenu { act(.chooseCover) }
             }
         }
     }

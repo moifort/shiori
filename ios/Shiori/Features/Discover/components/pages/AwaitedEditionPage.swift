@@ -11,6 +11,8 @@ enum AwaitedEditionAction {
     /// The reader's copy, or another of their volumes, in the saga's row.
     case openVolume(Book)
     case openSaga(String)
+    /// Another cover picked for it, for every reader.
+    case chooseCover
 }
 
 /// One awaited edition — a translation or a recording of a book the reader
@@ -59,7 +61,8 @@ struct AwaitedEditionPage: View {
             onOpenSaga: { if let id = shown.series?.id { act(.openSaga(id)) } },
             onOpenVolume: { act(.openVolume($0)) },
             // Once out, no bell is left to give the wait up: the button says it.
-            onNoLongerInterested: { await onAction(.stopAwaiting) }
+            onNoLongerInterested: { await onAction(.stopAwaiting) },
+            onChooseCover: { act(.chooseCover) }
         )
     }
 

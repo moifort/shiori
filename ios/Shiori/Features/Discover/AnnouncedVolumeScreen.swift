@@ -9,6 +9,8 @@ struct AnnouncedVolumeScreen: View {
     /// screen, which is right under it.
     private let linksToSaga: Bool
 
+    private let coverClient: ReleaseCoverClient
+    @State private var choosesCover = false
     @State private var viewModel: AnnouncedVolumeViewModel
     @State private var showsSaga = false
     @State private var openedVolume: Book?
@@ -20,7 +22,14 @@ struct AnnouncedVolumeScreen: View {
     private func dismiss() { closing.close(dismissPresentation) }
 
 
-    init(saga: SagaDiscovery, volume: DiscoveredVolume, linksToSaga: Bool = true, client: DiscoverClient = .live) {
+    init(
+        saga: SagaDiscovery,
+        volume: DiscoveredVolume,
+        linksToSaga: Bool = true,
+        client: DiscoverClient = .live,
+        coverClient: ReleaseCoverClient = .live
+    ) {
+        self.coverClient = coverClient
         self.linksToSaga = linksToSaga
         _viewModel = State(initialValue: AnnouncedVolumeViewModel(
             opened: DiscoveryVolume(saga: saga, volume: volume),
@@ -41,6 +50,7 @@ struct AnnouncedVolumeScreen: View {
         ) { action in
             switch action {
             case .close: dismiss()
+            case .chooseCover: choosesCover = true
             case let .add(addition): await viewModel.add(addition)
             case .openSaga: showsSaga = true
             case .toggleFollowed: await viewModel.toggleFollowed()
@@ -48,6 +58,13 @@ struct AnnouncedVolumeScreen: View {
             }
         }
         .task { await viewModel.describe() }
+        .releaseCoverPicker(
+            isPresented: $choosesCover,
+            book: viewModel.shown,
+            releaseKey: viewModel.releaseKey,
+            client: coverClient,
+            onChosen: viewModel.drawCover
+        )
         .task { await viewModel.loadSaga() }
         .reloadsOnWideChange { await viewModel.loadSaga() }
         .navigationDestination(item: $openedVolume) { book in
@@ -71,6 +88,11 @@ struct AnnouncedVolumeScreen: View {
 
 #Preview("Smoke") {
     NavigationStack {
-        AnnouncedVolumeScreen(saga: .preview, volume: SagaDiscovery.preview.releases.next!, client: .preview)
+        AnnouncedVolumeScreen(
+            saga: .preview,
+            volume: SagaDiscovery.preview.releases.next!,
+            client: .preview,
+            coverClient: .preview
+        )
     }
 }

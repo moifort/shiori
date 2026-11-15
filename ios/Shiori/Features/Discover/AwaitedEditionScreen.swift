@@ -8,6 +8,8 @@ import SwiftUI
 struct AwaitedEditionScreen: View {
     private let onStop: (() -> Void)?
 
+    private let coverClient: ReleaseCoverClient
+    @State private var choosesCover = false
     @State private var viewModel: AwaitedEditionViewModel
     @State private var openedVolume: Book?
     @State private var openedSaga: SeriesDestination?
@@ -19,8 +21,14 @@ struct AwaitedEditionScreen: View {
     private func dismiss() { closing.close(dismissPresentation) }
 
 
-    init(edition: AwaitedEdition, client: DiscoverClient = .live, onStop: (() -> Void)? = nil) {
+    init(
+        edition: AwaitedEdition,
+        client: DiscoverClient = .live,
+        coverClient: ReleaseCoverClient = .live,
+        onStop: (() -> Void)? = nil
+    ) {
         self.onStop = onStop
+        self.coverClient = coverClient
         _viewModel = State(initialValue: AwaitedEditionViewModel(edition: edition, client: client))
     }
 
@@ -49,9 +57,18 @@ struct AwaitedEditionScreen: View {
                 openedVolume = book
             case let .openSaga(seriesId):
                 openedSaga = SeriesDestination(seriesId: seriesId)
+            case .chooseCover:
+                choosesCover = true
             }
         }
         .task { await viewModel.describe() }
+        .releaseCoverPicker(
+            isPresented: $choosesCover,
+            book: viewModel.shown,
+            releaseKey: viewModel.releaseKey,
+            client: coverClient,
+            onChosen: viewModel.drawCover
+        )
         .task { await viewModel.loadSaga() }
         .reloadsOnWideChange { await viewModel.loadSaga() }
         .navigationDestination(item: $openedVolume) { book in
@@ -75,6 +92,6 @@ struct AwaitedEditionScreen: View {
 
 #Preview("Smoke") {
     NavigationStack {
-        AwaitedEditionScreen(edition: .preview, client: .preview)
+        AwaitedEditionScreen(edition: .preview, client: .preview, coverClient: .preview)
     }
 }

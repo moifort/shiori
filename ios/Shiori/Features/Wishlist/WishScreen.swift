@@ -4,6 +4,8 @@ import SwiftUI
 /// Describes it as it opens; once added or taken off the list, the page
 /// closes on the list that no longer holds it.
 struct WishScreen: View {
+    private let coverClient: ReleaseCoverClient
+    @State private var choosesCover = false
     @State private var viewModel: WishViewModel
     @Environment(\.dismiss) private var dismissPresentation
     @Environment(\.detailClosing) private var closing
@@ -12,7 +14,13 @@ struct WishScreen: View {
     /// fills on an unfolded iPhone Duo.
     private func dismiss() { closing.close(dismissPresentation) }
 
-    init(wish: Wish, client: WishlistClient = .live, discover: DiscoverClient = .live) {
+    init(
+        wish: Wish,
+        client: WishlistClient = .live,
+        discover: DiscoverClient = .live,
+        coverClient: ReleaseCoverClient = .live
+    ) {
+        self.coverClient = coverClient
         _viewModel = State(initialValue: WishViewModel(wish: wish, client: client, discover: discover))
     }
 
@@ -25,9 +33,17 @@ struct WishScreen: View {
             showsClose: closing.showsCloseButton,
             onClose: dismiss,
             onAdd: { status in if await viewModel.add(status: status) { dismiss() } },
-            onRemove: { if await viewModel.remove() { dismiss() } }
+            onRemove: { if await viewModel.remove() { dismiss() } },
+            onChooseCover: { choosesCover = true }
         )
         .task { await viewModel.describe() }
+        .releaseCoverPicker(
+            isPresented: $choosesCover,
+            book: viewModel.shown,
+            releaseKey: viewModel.releaseKey,
+            client: coverClient,
+            onChosen: viewModel.drawCover
+        )
         .alert(
             "Action impossible",
             isPresented: .init(get: { viewModel.actionError != nil }, set: { if !$0 { viewModel.actionError = nil } })
@@ -41,6 +57,6 @@ struct WishScreen: View {
 
 #Preview("Smoke") {
     NavigationStack {
-        WishScreen(wish: Wish.previews[0], client: .preview, discover: .preview)
+        WishScreen(wish: Wish.previews[0], client: .preview, discover: .preview, coverClient: .preview)
     }
 }

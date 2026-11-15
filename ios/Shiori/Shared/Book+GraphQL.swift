@@ -298,9 +298,15 @@ extension ShioriGraphQL.SeriesOpinionFields {
 extension ShioriGraphQL.BookCoverChoicesQuery.Data.BookCoverChoice {
     /// A source added after this build shipped, or an address that is no URL,
     /// is a cover left out rather than guessed.
-    var asDomain: CoverChoice? {
+    var asDomain: CoverChoice? { CoverChoice(source: source, url: url, current: current) }
+}
+
+extension CoverChoice {
+    /// A source added after this build shipped, or an address that is no URL,
+    /// is a cover left out rather than guessed.
+    init?(source: GraphQLEnum<ShioriGraphQL.CoverSource>, url: String, current: Bool) {
         guard case let .case(source) = source, let url = URL(string: url) else { return nil }
-        let domainSource: CoverChoice.Source = switch source {
+        let domainSource: Source = switch source {
         case .kindle: .kindle
         case .photo: .photo
         case .amazon: .amazon
@@ -308,7 +314,7 @@ extension ShioriGraphQL.BookCoverChoicesQuery.Data.BookCoverChoice {
         case .otherEdition: .otherEdition
         case .web: .web
         }
-        return CoverChoice(source: domainSource, url: url, isCurrent: current)
+        self.init(source: domainSource, url: url, isCurrent: current)
     }
 }
 

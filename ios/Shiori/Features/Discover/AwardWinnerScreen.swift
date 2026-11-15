@@ -8,6 +8,8 @@ struct AwardWinnerScreen: View {
     private let others: [AwardWinner]
     private let client: DiscoverClient
 
+    private let coverClient: ReleaseCoverClient
+    @State private var choosesCover = false
     @State private var viewModel: AwardWinnerViewModel
     @State private var choices = DiscoveryChoices()
     @State private var openWinner: AwardWinner?
@@ -18,8 +20,14 @@ struct AwardWinnerScreen: View {
     /// fills on an unfolded iPhone Duo.
     private func dismiss() { closing.close(dismissPresentation) }
 
-    init(winner: AwardWinner, others: [AwardWinner] = [], client: DiscoverClient = .live) {
+    init(
+        winner: AwardWinner,
+        others: [AwardWinner] = [],
+        client: DiscoverClient = .live,
+        coverClient: ReleaseCoverClient = .live
+    ) {
         self.others = others
+        self.coverClient = coverClient
         self.client = client
         _viewModel = State(initialValue: AwardWinnerViewModel(winner: winner, client: client))
     }
@@ -37,6 +45,7 @@ struct AwardWinnerScreen: View {
             switch action {
             case .close: dismiss()
             case let .openWinner(winner): openWinner = winner
+            case .chooseCover: choosesCover = true
             }
         }
         .alert(
@@ -48,14 +57,21 @@ struct AwardWinnerScreen: View {
             Text(viewModel.actionError ?? "")
         }
         .task { await viewModel.describe() }
+        .releaseCoverPicker(
+            isPresented: $choosesCover,
+            book: viewModel.shown,
+            releaseKey: viewModel.releaseKey,
+            client: coverClient,
+            onChosen: viewModel.drawCover
+        )
         .pushesDetail(item: $openWinner) { winner in
-            AwardWinnerScreen(winner: winner, others: others, client: client)
+            AwardWinnerScreen(winner: winner, others: others, client: client, coverClient: coverClient)
         }
     }
 }
 
 #Preview("Smoke") {
     NavigationStack {
-        AwardWinnerScreen(winner: .preview, others: [.goncourtPreview], client: .preview)
+        AwardWinnerScreen(winner: .preview, others: [.goncourtPreview], client: .preview, coverClient: .preview)
     }
 }

@@ -29,6 +29,11 @@ final class AnnouncedVolumeViewModel {
     /// The volume as its list drew it, then as the server described it.
     var shown: Book { opened.book(of: describer.release) }
     var isDescribing: Bool { describer.isDescribing }
+    /// The release the page shows: its cover is picked for every reader.
+    var releaseKey: String { describer.release.key }
+
+    /// The cover picked for it, drawn at once.
+    func drawCover(_ url: URL) { describer.drawCover(url) }
 
     func describe() async { await describer.describe() }
 
