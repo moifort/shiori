@@ -106,4 +106,45 @@ struct PileViewModelTests {
 
         #expect(viewModel.pile.sections.map(\.kind) == [.toFinish])
     }
+
+    @Test func noLongerInterestedTakesAWishOffTheRail() async {
+        let calls = Calls()
+        var client = LibraryClient(wishlist: { .preview })
+        client.removeWish = { calls.record("remove \($0)") }
+        let viewModel = PileViewModel(client: client, caching: false)
+        await viewModel.load()
+        let wish = Wish.previews[0]
+
+        await viewModel.dropWished(wish.cover)
+
+        #expect(calls.all == ["remove \(wish.id)"])
+        #expect(!viewModel.wished.contains { $0.id == wish.cover.id })
+    }
+
+    @Test func noLongerInterestedStopsAnEditionOut() async {
+        let calls = Calls()
+        var client = LibraryClient(wishlist: { .preview })
+        client.stopAwaiting = { calls.record("stop \($0)") }
+        let viewModel = PileViewModel(client: client, caching: false)
+        await viewModel.load()
+        let edition = Wishlist.preview.released[0]
+
+        await viewModel.dropWished(edition.cover)
+
+        #expect(calls.all == ["stop \(edition.id)"])
+        #expect(!viewModel.wished.contains { $0.id == edition.cover.id })
+    }
+
+    @Test func aFailedDropSaysWhyAndKeepsTheCover() async {
+        var client = LibraryClient(wishlist: { .preview })
+        client.removeWish = { _ in throw Boom() }
+        let viewModel = PileViewModel(client: client, caching: false)
+        await viewModel.load()
+        let wish = Wish.previews[0]
+
+        await viewModel.dropWished(wish.cover)
+
+        #expect(viewModel.actionError != nil)
+        #expect(viewModel.wished.contains { $0.id == wish.cover.id })
+    }
 }

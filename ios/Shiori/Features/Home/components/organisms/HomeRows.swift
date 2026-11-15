@@ -183,13 +183,17 @@ struct PosterRow: View {
         /// What a tap opens, when it is not the book itself: a release, a
         /// friend's favourite.
         var open: (() -> Void)?
+        /// "Plus intéressé" on the long press, for a cover of the wishlist:
+        /// what takes it off the list, when it is not the row's own.
+        var dropWished: (() -> Void)?
         var id: String { book.id }
         var caption: String { label.caption }
 
-        init(book: Book, caption: String, open: (() -> Void)? = nil) {
+        init(book: Book, caption: String, open: (() -> Void)? = nil, dropWished: (() -> Void)? = nil) {
             self.book = book
             label = PosterLabel(caption: caption)
             self.open = open
+            self.dropWished = dropWished
         }
 
         init(book: Book, label: PosterLabel, open: (() -> Void)? = nil) {
@@ -207,6 +211,8 @@ struct PosterRow: View {
     let onOpen: (Book) -> Void
     /// The long press on a cover; nil leaves the covers without one.
     var onMenu: ((Book, BookQuickAction) -> Void)?
+    /// The long press on a cover of the wishlist: "Plus intéressé" alone.
+    var onDropWished: ((Book) -> Void)?
 
     var body: some View {
         ScrollView(.horizontal) {
@@ -239,6 +245,7 @@ struct PosterRow: View {
             .accessibilityAddTraits(.isButton)
             .accessibilityIdentifier("book-tile")
             .bookContextMenu(item.book, onAction: onMenu.map { menu in { menu(item.book, $0) } })
+            .wishContextMenu(item.book, onDrop: item.dropWished ?? onDropWished.map { drop in { drop(item.book) } })
             .transition(.homeCard)
         }
     }

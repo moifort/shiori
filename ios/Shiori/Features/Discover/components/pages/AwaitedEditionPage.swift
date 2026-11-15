@@ -5,7 +5,8 @@ enum AwaitedEditionAction {
     case close
     /// On the pile, filed in the saga of the reader's copy.
     case add
-    /// Given up, once confirmed: the page closes behind it.
+    /// Given up, by the bell once confirmed or by "Plus intéressé": the page
+    /// closes behind it.
     case stopAwaiting
     /// The reader's copy, or another of their volumes, in the saga's row.
     case openVolume(Book)
@@ -17,7 +18,8 @@ enum AwaitedEditionAction {
 /// book to come is (`UnownedBookPage`): the reader's own book page, its day
 /// pinned in the hero's corner, the saga of their copy under it, their copy
 /// ringed. Only what is known is drawn. The bell gives the wait up, asked for
-/// twice as a saga's deletion is; the Audible sync brings a recording bought
+/// twice as a saga's deletion is, and "Plus intéressé" once the edition is
+/// out and nothing is left to alert on; the Audible sync brings a recording bought
 /// into the library by itself, which ends the wait.
 struct AwaitedEditionPage: View {
     let edition: AwaitedEdition
@@ -55,7 +57,9 @@ struct AwaitedEditionPage: View {
             onAdd: { _ in await onAction(.add) },
             onToggleBell: { act(.stopAwaiting) },
             onOpenSaga: { if let id = shown.series?.id { act(.openSaga(id)) } },
-            onOpenVolume: { act(.openVolume($0)) }
+            onOpenVolume: { act(.openVolume($0)) },
+            // Once out, no bell is left to give the wait up: the button says it.
+            onNoLongerInterested: { await onAction(.stopAwaiting) }
         )
     }
 

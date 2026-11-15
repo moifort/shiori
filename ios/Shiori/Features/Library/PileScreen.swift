@@ -37,9 +37,7 @@ struct PileScreen: View {
         .performsBookQuickActions($quick, client: client) { destination = $0 }
         .pushesDetail(item: $volume) { AnnouncedVolumeScreen(saga: $0.saga, volume: $0.volume) }
         .pushesDetail(item: $wish) { WishScreen(wish: $0) }
-        .pushesDetail(item: $edition) { edition in
-            AwaitedEditionScreen(edition: edition) { Task { await viewModel.load() } }
-        }
+        .pushesDetail(item: $edition) { AwaitedEditionScreen(edition: $0) }
         .task { await viewModel.loadOnAppear() }
         .task { await series.loadOnAppear() }
         .onReceive(NotificationCenter.default.publisher(for: .shioriDataDidChange)) { _ in
@@ -48,6 +46,17 @@ struct PileScreen: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .shioriWishlistDidChange)) { _ in
             Task { await viewModel.load() }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .shioriAwaitedEditionsDidChange)) { _ in
+            Task { await viewModel.load() }
+        }
+        .alert(
+            "Action impossible",
+            isPresented: .init(get: { viewModel.actionError != nil }, set: { if !$0 { viewModel.actionError = nil } })
+        ) {
+            Button("OK", role: .cancel) { viewModel.actionError = nil }
+        } message: {
+            Text(viewModel.actionError ?? "")
         }
     }
 
@@ -59,6 +68,7 @@ struct PileScreen: View {
         case let .selectGenre(genre): Task { await viewModel.select(genre: genre) }
         case let .menu(book, action): quick = BookQuickRequest(book: book, action: action)
         case .openWishlist: destination = .wishlist
+        case let .dropWished(book): Task { await viewModel.dropWished(book) }
         case let .openWished(book):
             if let wished = viewModel.wishlist.wish(for: book) {
                 wish = wished

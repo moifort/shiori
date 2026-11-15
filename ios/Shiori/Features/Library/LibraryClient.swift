@@ -20,6 +20,10 @@ struct LibraryClient: Sendable {
     var delete: @Sendable (_ id: String) async throws -> Void = { _ in }
     /// The wishlist, for the pile's rail of what can be had now.
     var wishlist: @Sendable () async throws -> Wishlist = { Wishlist() }
+    /// The rail's long press, "Plus intéressé": a book wished for off the list,
+    /// an edition no longer awaited.
+    var removeWish: @Sendable (_ wishId: String) async throws -> Void = { _ in }
+    var stopAwaiting: @Sendable (_ editionId: String) async throws -> Void = { _ in }
 }
 
 extension LibraryClient {
@@ -32,7 +36,9 @@ extension LibraryClient {
         setFavorite: { try await BookAPI.setFavorite(id: $0, favorite: $1) },
         rate: { try await BookAPI.rate(id: $0, stars: $1) },
         delete: { try await BookAPI.delete(id: $0) },
-        wishlist: { try await WishlistAPI.wishlist() }
+        wishlist: { try await WishlistAPI.wishlist() },
+        removeWish: { try await WishlistAPI.remove(id: $0) },
+        stopAwaiting: { try await AwaitedAPI.stop(id: $0) }
     )
 }
 

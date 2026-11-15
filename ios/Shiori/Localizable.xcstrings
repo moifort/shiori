@@ -11637,6 +11637,22 @@
         }
       }
     },
+    "Plus intéressé" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Plus intéressé"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not interested"
+          }
+        }
+      }
+    },
     "Plus tard" : {
       "localizations" : {
         "en" : {

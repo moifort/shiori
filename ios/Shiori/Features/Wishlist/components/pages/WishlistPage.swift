@@ -4,6 +4,9 @@ import SwiftUI
 enum WishlistAction {
     case openEdition(AwaitedEdition)
     case chooseWish(Wish)
+    /// "Plus intéressé", from a cover's long press: off the list.
+    case dropWish(Wish)
+    case dropEdition(AwaitedEdition)
     case selectFormat(BookFormat?)
     case refresh
 }
@@ -12,7 +15,8 @@ enum WishlistAction {
 /// awaited announced for a day, as its "Prochaines sorties" cards; then a
 /// rail per way the books came — the editions out, a friend's, the
 /// discoveries, the scans — and the editions nobody announced yet. Each cover
-/// says where it came from. A section with nothing in it is not drawn.
+/// says where it came from, and a long press on it offers "Plus intéressé". A
+/// section with nothing in it is not drawn.
 struct WishlistPage: View {
     let wishlist: Wishlist
     var formats: [BookFormat] = []
@@ -107,9 +111,12 @@ struct WishlistPage: View {
     ) -> some View {
         if !editions.isEmpty {
             rail(title, items: editions.map { edition in
-                PosterRow.Item(book: edition.cover, caption: caption(edition)) {
-                    onAction(.openEdition(edition))
-                }
+                PosterRow.Item(
+                    book: edition.cover,
+                    caption: caption(edition),
+                    open: { onAction(.openEdition(edition)) },
+                    dropWished: { onAction(.dropEdition(edition)) }
+                )
             })
         }
     }
@@ -118,7 +125,12 @@ struct WishlistPage: View {
     private func wishRail(_ title: LocalizedStringKey, _ wishes: [Wish], caption: @escaping (Wish) -> String) -> some View {
         if !wishes.isEmpty {
             rail(title, items: wishes.map { wish in
-                PosterRow.Item(book: wish.cover, caption: caption(wish)) { onAction(.chooseWish(wish)) }
+                PosterRow.Item(
+                    book: wish.cover,
+                    caption: caption(wish),
+                    open: { onAction(.chooseWish(wish)) },
+                    dropWished: { onAction(.dropWish(wish)) }
+                )
             })
         }
     }

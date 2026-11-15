@@ -26,6 +26,8 @@ struct WishlistScreen: View {
             switch action {
             case let .openEdition(edition): openedEdition = edition
             case let .chooseWish(wish): chosen = wish
+            case let .dropWish(wish): Task { await viewModel.remove(wish) }
+            case let .dropEdition(edition): Task { await viewModel.stopAwaiting(edition) }
             case let .selectFormat(format): withAnimation(.smooth) { viewModel.format = format }
             case .refresh: Task { await viewModel.load() }
             }
@@ -39,7 +41,7 @@ struct WishlistScreen: View {
         ) { wish in
             Button("À lire") { Task { await viewModel.add(wish, status: .toRead) } }
             Button("Déjà lu") { Task { await viewModel.add(wish, status: .read) } }
-            Button("Retirer", role: .destructive) { Task { await viewModel.remove(wish) } }
+            Button("Plus intéressé", role: .destructive) { Task { await viewModel.remove(wish) } }
         }
         .alert(
             "Action impossible",
@@ -48,7 +50,7 @@ struct WishlistScreen: View {
             Text(viewModel.actionError ?? "")
         }
         .pushesDetail(item: $openedEdition) { edition in
-            AwaitedEditionScreen(edition: edition) { Task { await viewModel.load() } }
+            AwaitedEditionScreen(edition: edition)
         }
         .task { await viewModel.loadOnAppear() }
         .onReceive(NotificationCenter.default.publisher(for: .shioriWishlistDidChange)) { _ in

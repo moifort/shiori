@@ -73,6 +73,17 @@ final class WishlistViewModel {
         await act(dropping: wish) { try await self.client.remove(wish.id) }
     }
 
+    /// An edition awaited, off the list from the long press: no longer watched.
+    func stopAwaiting(_ edition: AwaitedEdition) async {
+        do {
+            try await client.stopAwaiting(edition.id)
+            withAnimation(.smooth) { wishlist.awaited.removeAll { $0.id == edition.id } }
+        } catch {
+            guard !isCancellation(error) else { return }
+            actionError = reportError(error)
+        }
+    }
+
     private func act(dropping wish: Wish, _ work: @escaping () async throws -> Void) async {
         do {
             try await work()

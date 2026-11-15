@@ -203,7 +203,30 @@ struct AwaitedEditionAdditionTests {
         await viewModel.add()
 
         #expect(viewModel.added == false)
-        #expect(viewModel.addFailed != nil)
+        #expect(viewModel.actionError != nil)
+    }
+
+    @Test func givingItUpFromThePageStopsTheWait() async {
+        let calls = Calls()
+        var client = DiscoverClient.preview
+        client.stopAwaiting = { id in calls.record(id) }
+        let viewModel = AwaitedEditionViewModel(edition: .preview, client: client)
+
+        let stopped = await viewModel.stopAwaiting()
+
+        #expect(stopped)
+        #expect(calls.all == [AwaitedEdition.preview.id])
+    }
+
+    @Test func aFailedGiveUpSaysWhyAndKeepsThePage() async {
+        var client = DiscoverClient.preview
+        client.stopAwaiting = { _ in throw APIError.domain(code: "BAD_USER_INPUT", messages: ["Refusé"]) }
+        let viewModel = AwaitedEditionViewModel(edition: .preview, client: client)
+
+        let stopped = await viewModel.stopAwaiting()
+
+        #expect(stopped == false)
+        #expect(viewModel.actionError != nil)
     }
 }
 

@@ -1,10 +1,12 @@
 import SwiftUI
 
-/// An awaited edition, connected: opened from Découvrir, the home page, an
-/// author's page or a book's. Describes it as it opens; giving it up is the
-/// opener's, which holds the list it leaves.
+/// An awaited edition, connected: opened from the home page, "Actualités",
+/// the pile, the wishlist, an author's page or a book's. Describes it as it
+/// opens. Giving it up is the opener's when it holds the list the edition
+/// leaves and passes `onStop`; otherwise the screen gives it up itself, and
+/// the lists read it again on the notice the call posts.
 struct AwaitedEditionScreen: View {
-    private let onStop: () -> Void
+    private let onStop: (() -> Void)?
 
     @State private var viewModel: AwaitedEditionViewModel
     @State private var openedVolume: Book?
@@ -17,7 +19,7 @@ struct AwaitedEditionScreen: View {
     private func dismiss() { closing.close(dismissPresentation) }
 
 
-    init(edition: AwaitedEdition, client: DiscoverClient = .live, onStop: @escaping () -> Void) {
+    init(edition: AwaitedEdition, client: DiscoverClient = .live, onStop: (() -> Void)? = nil) {
         self.onStop = onStop
         _viewModel = State(initialValue: AwaitedEditionViewModel(edition: edition, client: client))
     }
@@ -37,8 +39,12 @@ struct AwaitedEditionScreen: View {
             case .add:
                 await viewModel.add()
             case .stopAwaiting:
-                onStop()
-                dismiss()
+                if let onStop {
+                    onStop()
+                    dismiss()
+                } else if await viewModel.stopAwaiting() {
+                    dismiss()
+                }
             case let .openVolume(book):
                 openedVolume = book
             case let .openSaga(seriesId):
@@ -57,18 +63,18 @@ struct AwaitedEditionScreen: View {
                 .closesAsPushed()
         }
         .alert(
-            "Ajout impossible",
-            isPresented: .init(get: { viewModel.addFailed != nil }, set: { if !$0 { viewModel.addFailed = nil } })
+            "Action impossible",
+            isPresented: .init(get: { viewModel.actionError != nil }, set: { if !$0 { viewModel.actionError = nil } })
         ) {
-            Button("OK", role: .cancel) { viewModel.addFailed = nil }
+            Button("OK", role: .cancel) { viewModel.actionError = nil }
         } message: {
-            Text(viewModel.addFailed ?? "")
+            Text(viewModel.actionError ?? "")
         }
     }
 }
 
 #Preview("Smoke") {
     NavigationStack {
-        AwaitedEditionScreen(edition: .preview, client: .preview) {}
+        AwaitedEditionScreen(edition: .preview, client: .preview)
     }
 }

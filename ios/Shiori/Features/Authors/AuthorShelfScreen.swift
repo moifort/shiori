@@ -61,11 +61,14 @@ struct AuthorShelfScreen: View {
         .pushesDetail(item: $destination) { LibraryDestinationScreen(destination: $0, client: library) }
         .performsBookQuickActions($quick, client: library) { destination = $0 }
         .pushesDetail(item: $announced) { AnnouncedVolumeScreen(saga: $0.saga, volume: $0.volume) }
-        .pushesDetail(item: $awaited) { AwaitedEditionScreen(edition: $0) {} }
+        .pushesDetail(item: $awaited) { AwaitedEditionScreen(edition: $0) }
         .task { await viewModel.loadOnAppear() }
         .task { await loadReleases() }
         .onReceive(NotificationCenter.default.publisher(for: .shioriDataDidChange)) { _ in
             Task { await viewModel.load(keepingDepth: true) }
+            Task { await loadReleases() }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .shioriAwaitedEditionsDidChange)) { _ in
             Task { await loadReleases() }
         }
     }

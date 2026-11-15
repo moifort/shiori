@@ -41,6 +41,9 @@ struct NewsScreen: View {
         .onReceive(NotificationCenter.default.publisher(for: .shioriDataDidChange)) { _ in
             Task { await viewModel.load() }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .shioriAwaitedEditionsDidChange)) { _ in
+            Task { await viewModel.load() }
+        }
     }
 
     @ViewBuilder
@@ -57,7 +60,7 @@ struct NewsScreen: View {
         case let .announced(volume):
             AnnouncedVolumeScreen(saga: volume.saga, volume: volume.volume)
         case let .awaited(edition):
-            AwaitedEditionScreen(edition: edition) { Task { await viewModel.load() } }
+            AwaitedEditionScreen(edition: edition)
         case let .suggestion(suggestion):
             SuggestionScreen(suggestion: suggestion)
         case let .award(winner):
@@ -169,7 +172,7 @@ private struct UpcomingReleasesScreen: View {
             AnnouncedVolumeScreen(saga: volume.saga, volume: volume.volume)
         }
         .pushesDetail(item: $awaited) { edition in
-            AwaitedEditionScreen(edition: edition) {}
+            AwaitedEditionScreen(edition: edition)
         }
         .pushesDetail(item: $narrator) { narrator in
             NarratorScreen(key: narrator.key, name: narrator.name)

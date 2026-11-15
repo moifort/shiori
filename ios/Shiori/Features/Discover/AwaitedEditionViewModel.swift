@@ -34,8 +34,8 @@ final class AwaitedEditionViewModel {
     var isDescribing: Bool { describer.isDescribing }
 
     private(set) var added = false
-    /// Why the addition failed, for the alert; nil once read.
-    var addFailed: String?
+    /// Why adding it or giving it up failed, for the alert; nil once read.
+    var actionError: String?
 
     func describe() async { await describer.describe() }
 
@@ -56,12 +56,25 @@ final class AwaitedEditionViewModel {
     /// Onto the pile, as the page shows it, filed in the saga of the reader's
     /// copy. Once held, the edition is no longer awaited: the server lets the
     /// wait go on the next reading of the list.
+    /// No longer awaited, given up from the page itself. Says whether it went;
+    /// a failure is said in the alert.
+    func stopAwaiting() async -> Bool {
+        do {
+            try await client.stopAwaiting(edition.id)
+            return true
+        } catch {
+            guard !isCancellation(error) else { return false }
+            actionError = reportError(error)
+            return false
+        }
+    }
+
     func add() async {
         do {
             try await client.addBook(edition.draft(from: shown))
             added = true
         } catch {
-            addFailed = reportError(error)
+            actionError = reportError(error)
         }
     }
 }
