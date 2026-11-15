@@ -5,7 +5,7 @@ import { ReleaseFormatEnum } from '~/domain/discovery/infrastructure/graphql/typ
 import { DiscoveryUseCase } from '~/domain/discovery/use-case'
 import { ReleaseType } from '~/domain/release/infrastructure/graphql/types'
 import type { ReleaseView } from '~/domain/release/types'
-import type { DescribeRefusal } from '~/domain/release/use-case'
+import { type DescribeRefusal, ReleaseUseCase } from '~/domain/release/use-case'
 import { seriesReferenceOf } from '~/domain/series/primitives'
 import { builder } from '~/domain/shared/graphql/builder'
 import { aiUnavailable, badUserInput, domainError, notFound } from '~/domain/shared/graphql/errors'
@@ -61,6 +61,29 @@ const answered = (outcome: ReleaseView | DescribeRefusal | 'not-found') =>
     .exhaustive()
 
 builder.mutationFields((t) => ({
+  chooseReleaseCover: t.field({
+    type: 'CoverUrl',
+    description:
+      'Draw a book nobody here holds with the cover the reader picked — one ' +
+      '`releaseCoverChoices` offered, or an address they pasted — before any other source, ' +
+      'in every list and on every page, for every reader: a shared correction, logged with ' +
+      'who made it. A book added from it keeps that cover. Answers the cover now drawn. ' +
+      'Free. NOT_FOUND while no page of the release was ever described; ' +
+      'COVER_NOT_AN_IMAGE when `url` does not serve an image.',
+    args: {
+      key: t.arg.string({ required: true, description: '`Release.key`.' }),
+      url: t.arg({ type: 'CoverUrl', required: true }),
+    },
+    resolve: async (_root, args, context) =>
+      match(await ReleaseUseCase.chooseCover(context.userId, args.key, args.url))
+        .with('not-found', () => notFound('Release not found'))
+        .with('not-an-image', () =>
+          domainError('COVER_NOT_AN_IMAGE', 'This address does not lead to an image'),
+        )
+        .with('chosen', () => args.url)
+        .exhaustive(),
+  }),
+
   describeReleaseOf: t.field({
     type: ReleaseType,
     description:

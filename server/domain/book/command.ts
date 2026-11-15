@@ -98,6 +98,9 @@ export type NewBook = {
   series?: SeriesEntry
   coverPath?: ObjectPath
   publishedCoverUrl?: CoverUrl
+  /** The cover a reader picked for the book before it was theirs — on its
+   *  release, shown to every reader — drawn before any other. */
+  chosenCover?: ChosenCover
   /** Only a book added from a shelf photo, saved before anything looked it up. */
   awaitingDescription?: true
   status?: ReadingStatus
@@ -207,6 +210,7 @@ const recordOf = (userId: UserId, input: NewBook, now: Date): Book => {
       membershipIn(input.series, input.format ?? 'book', input.language ?? DEFAULT_BOOK_LANGUAGE),
     coverPath: input.coverPath,
     publishedCoverUrl: input.publishedCoverUrl,
+    chosenCover: input.chosenCover,
     awaitingDescription: input.awaitingDescription,
     // A book lands on the "to read" pile unless the reader says otherwise. It is
     // the only status that is true of every book the moment it is catalogued.

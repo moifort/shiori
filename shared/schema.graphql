@@ -3111,6 +3111,15 @@ type Mutation {
   chooseBookCover(id: BookId!, url: CoverUrl): Book!
 
   """
+  Draw a book nobody here holds with the cover the reader picked — one `releaseCoverChoices` offered, or an address they pasted — before any other source, in every list and on every page, for every reader: a shared correction, logged with who made it. A book added from it keeps that cover. Answers the cover now drawn. Free. NOT_FOUND while no page of the release was ever described; COVER_NOT_AN_IMAGE when `url` does not serve an image.
+  """
+  chooseReleaseCover(
+    """`Release.key`."""
+    key: String!
+    url: CoverUrl!
+  ): CoverUrl!
+
+  """
   Register the device with the authorization code the web view caught, and link the account.
   
   The credentials are sealed before they reach storage and never leave the server. Fails with `AUDIBLE_NO_PENDING_LOGIN` when no sign-in was started, `AUDIBLE_LOGIN_EXPIRED` past the thirty-minute window — start over in both cases — and `AUDIBLE_UNAVAILABLE` when Amazon refuses the registration.
@@ -4589,6 +4598,16 @@ type Query {
   ```
   """
   quota: Quota!
+
+  """
+  The covers any reader may pick for a book they do not hold, for `chooseReleaseCover`: `drawn`, the cover its page draws now, first, then what the release knows — a cover picked before, the edition’s, its descriptions’ — and what Amazon and Open Library have for its ISBN and for up to three other editions in its language. Each image once. Free: no model call, no scan spent; a source that does not answer within a few seconds is a cover not offered. NOT_FOUND while no page of the release was ever described.
+  """
+  releaseCoverChoices(
+    drawn: CoverUrl
+
+    """`Release.key`."""
+    key: String!
+  ): [CoverChoice!]!
 
   """
   What the saga screen shows under its introduction: the next volume announced the reader does not hold, in the edition they opened. Empty, and not `watched`, for an edition nobody looked up yet: `lookUpSagaReleases` does.

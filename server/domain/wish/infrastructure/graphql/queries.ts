@@ -1,5 +1,6 @@
 import { AwaitedEditionUseCase } from '~/domain/awaited-edition/use-case'
 import { builder } from '~/domain/shared/graphql/builder'
+import { languageOf } from '~/domain/shared/language'
 import { WishlistType } from '~/domain/wish/infrastructure/graphql/types'
 import { WishUseCase } from '~/domain/wish/use-case'
 
@@ -12,7 +13,7 @@ builder.queryFields((t) => ({
       'documents and the shared release watches: no web lookup.',
     resolve: async (_root, _args, context) => {
       const [wishes, awaited] = await Promise.all([
-        WishUseCase.wishes(context.userId),
+        WishUseCase.wishes(context.userId, languageOf(context.event)),
         AwaitedEditionUseCase.everyAwaited(context.userId),
       ])
       return { wishes, awaited }

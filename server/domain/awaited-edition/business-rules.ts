@@ -15,7 +15,7 @@ import type { Book, BookFormat, BookLanguage } from '~/domain/book/types'
 import { lastDayOf, releaseFormatOf } from '~/domain/discovery/business-rules'
 import type { ReleaseFormat } from '~/domain/discovery/types'
 import { releaseKeyOf } from '~/domain/release/business-rules'
-import type { Release, ReleaseShown } from '~/domain/release/types'
+import type { Release, ReleaseIdentity, ReleaseShown } from '~/domain/release/types'
 import { AMAZON_STORES } from '~/domain/shared/amazon-stores'
 import type { Language } from '~/domain/shared/language'
 import type { UserId } from '~/domain/shared/types'
@@ -127,7 +127,7 @@ export const releaseIdentityOf = ({
   source,
   format,
   language,
-}: AwaitedEdition): Omit<Release, 'descriptions' | 'checkedAt' | 'found'> => ({
+}: AwaitedEdition): ReleaseIdentity => ({
   key: watchKey,
   title: source.title,
   ...(source.authors[0] ? { author: source.authors[0] } : {}),

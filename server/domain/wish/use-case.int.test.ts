@@ -34,20 +34,20 @@ describe('the wishlist', () => {
     await wish('Piranesi', new Date('2026-11-01'))
     await wish('Jonathan Strange', new Date('2026-11-02'))
 
-    const titles = (await WishUseCase.wishes(bob)).map((wish) => wish.title)
+    const titles = (await WishUseCase.wishes(bob, 'fr')).map((wish) => wish.title)
 
     expect(titles).toEqual([BookTitle('Jonathan Strange'), BookTitle('Piranesi')])
   })
 
-  test('reads the wishes and the library in one query each', async () => {
+  test('reads the wishes and the library in one query each, and one release per wish', async () => {
     await wish('Piranesi', new Date('2026-11-01'))
     startFakeRequest()
     const before = { docs: fake.docReads, queries: fake.queryReads }
 
-    await WishUseCase.wishes(bob)
+    await WishUseCase.wishes(bob, 'fr')
 
     expect(fake.queryReads - before.queries).toBe(2)
-    expect(fake.docReads - before.docs).toBe(0)
+    expect(fake.docReads - before.docs).toBe(1)
   })
 })
 
@@ -61,14 +61,14 @@ describe('a story the library comes to hold', () => {
     const book = await BookCommand.add(bob, { title: BookTitle('Piranesi'), authors: clarke })
     await BookCommand.remove(bob, book.id)
 
-    const titles = (await WishUseCase.wishes(bob)).map((wish) => wish.title)
+    const titles = (await WishUseCase.wishes(bob, 'fr')).map((wish) => wish.title)
     expect(titles).toEqual([BookTitle('Jonathan Strange')])
   })
 
   test('deletes its wish when an edit names the book after it', async () => {
     await wish('Piranesi', new Date('2026-11-01'))
     const book = await BookCommand.add(bob, { title: BookTitle('Piranessi'), authors: clarke })
-    expect(await WishUseCase.wishes(bob)).toHaveLength(1)
+    expect(await WishUseCase.wishes(bob, 'fr')).toHaveLength(1)
 
     await BookCommand.edit(bob, book.id, { title: BookTitle('Piranesi') })
 
@@ -99,7 +99,7 @@ describe('a story the library comes to hold', () => {
       wishedAt: new Date('2026-11-01'),
     })
 
-    expect(await WishUseCase.wishes(bob)).toEqual([])
+    expect(await WishUseCase.wishes(bob, 'fr')).toEqual([])
     expect(fake.snapshot('wishes').size).toBe(1)
   })
 })

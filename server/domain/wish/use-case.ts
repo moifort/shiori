@@ -1,4 +1,5 @@
 import { BookQuery } from '~/domain/book/query'
+import { ReleaseQuery } from '~/domain/release/query'
 import type { ReleaseView } from '~/domain/release/types'
 import { type DescribeRefusal, ReleaseUseCase } from '~/domain/release/use-case'
 import type { Language } from '~/domain/shared/language'
@@ -51,11 +52,20 @@ export namespace WishUseCase {
    *  longer wished for: the book's arrival deleted its wish
    *  (`WishCommand.forgetHeld`), and one the library held before that rule is
    *  left out here all the same. */
-  export const wishes = async (userId: UserId): Promise<Wish[]> => {
+  export const wishes = async (userId: UserId, appLanguage: Language): Promise<Wish[]> => {
     const all = await WishQuery.byUser(userId)
     if (all.length === 0) return []
     const shelfKeys = await BookQuery.shelfKeys(userId)
-    return newestFirst(all.filter((wish) => !isHeld(wish, shelfKeys)))
+    const wished = all.filter((wish) => !isHeld(wish, shelfKeys))
+    // A cover picked for its release is drawn on the wish too, as on its page.
+    const keyOf = (wish: Wish) => releaseIdentityOf(wish, appLanguage).key
+    const releases = await ReleaseQuery.byKeys(wished.map(keyOf))
+    return newestFirst(
+      wished.map((wish) => {
+        const chosen = releases.get(keyOf(wish))?.chosenCover
+        return chosen ? { ...wish, coverUrl: chosen.url } : wish
+      }),
+    )
   }
 
   /** Describe a wish for its page, as a discovery is: the shared release of

@@ -1,7 +1,7 @@
 import type { UserId } from '~/domain/shared/types'
 
 /** The shared catalogues a reader may correct by hand. */
-export type CorrectedCatalogue = 'series' | 'author' | 'narrator'
+export type CorrectedCatalogue = 'series' | 'author' | 'narrator' | 'release'
 
 /** A value a correction wrote over, or wrote: a text or a year. Null when the
  *  field was empty, or was cleared. */

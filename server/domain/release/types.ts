@@ -56,7 +56,13 @@ export type Release = {
   found?: FoundEdition
   /** Its page's description, in each language of the app it was asked in. */
   descriptions?: Partial<Record<Language, KeptDescription>>
+  /** The cover a reader picked for it by hand, drawn before any other for
+   *  every reader: a shared correction, logged apart with who made it. */
+  chosenCover?: ChosenReleaseCover
 }
+
+/** A cover picked by hand for a release, and when. */
+export type ChosenReleaseCover = { url: CoverUrl; chosenAt: Date }
 
 /** A release as one reader is shown it, in a list and on its page alike: what
  *  the app knows of it — the seed — completed by its description. Built once,
@@ -81,6 +87,8 @@ export type ReleaseView = {
   date?: ReleaseDate
   isbn13?: Isbn13
   asin?: AudibleAsin
+  /** The cover a reader picked for it, drawn before any other. */
+  chosenCoverUrl?: CoverUrl
   /** The edition's cover once found, else the shown book's. */
   coverUrl?: CoverUrl
   /** The reader's own photo of the book it is awaited from, signed when drawn. */
@@ -126,4 +134,4 @@ export type ReleaseShown = {
 
 /** The book a release is of, written beside its description when the release
  *  held nothing yet. */
-export type ReleaseIdentity = Omit<Release, 'descriptions' | 'checkedAt' | 'found'>
+export type ReleaseIdentity = Omit<Release, 'descriptions' | 'checkedAt' | 'found' | 'chosenCover'>

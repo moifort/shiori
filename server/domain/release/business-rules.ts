@@ -1,6 +1,7 @@
 import type { EditionWatch } from '~/domain/awaited-edition/types'
+import { type CoversFound, coverSourceOfAddress } from '~/domain/book/business-rules'
 import { shelfKeyOf } from '~/domain/book/copies'
-import type { BookLanguage } from '~/domain/book/types'
+import type { BookLanguage, CoverChoice, CoverUrl, Isbn13 } from '~/domain/book/types'
 import { lastDayOf } from '~/domain/discovery/business-rules'
 import type { ReleaseFormat, ReleaseSeed } from '~/domain/discovery/types'
 import type { KeptDescription, Release, ReleaseShown, ReleaseView } from '~/domain/release/types'
@@ -60,13 +61,13 @@ export const isDescriptionFresh = (
   now.getTime() - kept.describedAt.getTime() < DESCRIPTION_KEPT_DAYS * 86_400_000
 
 /** The release as one reader is shown it, in a list and on its page alike: the
- *  edition found first, then what the app knew of the book, then what its page
+ *  cover a reader picked by hand first, then the edition found, then what the app knew of the book, then what its page
  *  described. The book stays the one shown — its title, format, edition, saga
  *  and date — whatever the description says. A recording has no pages, and
  *  the ISBN of the print is not its own. */
 export const releaseViewOf = (
   shown: ReleaseShown,
-  release: Pick<Release, 'descriptions'> | undefined,
+  release: Pick<Release, 'descriptions' | 'chosenCover'> | undefined,
   appLanguage: Language,
   now: Date,
 ): ReleaseView => {
@@ -96,6 +97,7 @@ export const releaseViewOf = (
     ...(date ? { date } : {}),
     ...(isbn13 ? { isbn13 } : {}),
     ...(found?.asin ? { asin: found.asin } : {}),
+    ...(release?.chosenCover ? { chosenCoverUrl: release.chosenCover.url } : {}),
     ...(coverUrl ? { coverUrl } : {}),
     ...(shown.coverPath ? { coverPath: shown.coverPath } : {}),
     ...(book?.coverUrl ? { describedCoverUrl: book.coverUrl } : {}),
@@ -112,4 +114,53 @@ export const releaseViewOf = (
     described: kept !== undefined && isDescriptionFresh(kept, now, date),
     ...(found ? { found } : {}),
   }
+}
+
+/** The covers a release already knows: the one picked for it, its edition's,
+ *  and those its descriptions found, each once. */
+export const knownCoversOf = (
+  release: Pick<Release, 'chosenCover' | 'found' | 'descriptions'>,
+): CoverUrl[] => [
+  ...new Set(
+    [
+      release.chosenCover?.url,
+      release.found?.coverUrl,
+      ...Object.values(release.descriptions ?? {}).map((kept) => kept?.description.book?.coverUrl),
+    ].filter((url): url is CoverUrl => url !== undefined),
+  ),
+]
+
+/** The ISBN a release's covers are sought by: its edition's once found, else
+ *  the one a description found. A recording has none of its own. */
+export const coverIsbnOf = (
+  release: Pick<Release, 'format' | 'found' | 'descriptions'>,
+): Isbn13 | undefined =>
+  release.format === 'audiobook'
+    ? undefined
+    : (release.found?.isbn13 ??
+      Object.values(release.descriptions ?? {}).find((kept) => kept?.description.book?.isbn13)
+        ?.description.book?.isbn13)
+
+/** The covers a reader may pick for a release, each image once, the one drawn
+ *  now first: what the release knows, then what the sources found by its ISBN
+ *  and for its other editions in its language. */
+export const releaseCoverChoicesOf = (
+  drawn: CoverUrl | undefined,
+  known: readonly CoverUrl[],
+  found: CoversFound,
+): CoverChoice[] => {
+  const offered: CoverChoice[] = []
+  const seen = new Set<string>()
+  const offer = (source: CoverChoice['source'], url: CoverUrl | undefined) => {
+    if (!url || seen.has(url)) return
+    seen.add(url)
+    offered.push({ source, url, current: url === drawn })
+  }
+  if (drawn) offer(coverSourceOfAddress(drawn), drawn)
+  for (const url of known) offer(coverSourceOfAddress(url), url)
+  offer('amazon', found.amazon)
+  offer('open-library', found.openLibrary)
+  offer('web', found.epagine)
+  for (const url of found.otherEditions) offer('other-edition', url)
+  return offered
 }

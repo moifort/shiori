@@ -33,9 +33,12 @@ import type {
   StarRating,
 } from '~/domain/book/types'
 import { DEFAULT_BOOK_LANGUAGE } from '~/domain/book/types'
+import { releaseFormatOf } from '~/domain/discovery/business-rules'
 import { exhausted } from '~/domain/quota/business-rules'
 import { QuotaCommand } from '~/domain/quota/command'
 import { QuotaQuery } from '~/domain/quota/query'
+import { releaseKeyOf } from '~/domain/release/business-rules'
+import { ReleaseQuery } from '~/domain/release/query'
 import type { ScanResult } from '~/domain/scan/types'
 import { ScanUseCase } from '~/domain/scan/use-case'
 import { seriesKeyOf } from '~/domain/series/primitives'
@@ -65,6 +68,21 @@ export type ShelfPick = {
  *
  *  The book and the view's stale flag land in one batch: the view can never look
  *  fresh while a book it does not reflect is already stored. */
+/** A new book with the cover a reader picked for its release while nobody
+ *  here held it — on a wish, a discovery, an announced volume — so the cover
+ *  drawn there follows it onto the shelf. */
+const withReleaseCover = async (book: NewBook, format: BookFormat): Promise<NewBook> => {
+  if (book.chosenCover) return book
+  const key = releaseKeyOf(
+    book.title,
+    book.authors?.[0],
+    releaseFormatOf(format),
+    book.language ?? DEFAULT_BOOK_LANGUAGE,
+  )
+  const chosen = (await ReleaseQuery.byKeys([key])).get(key)?.chosenCover
+  return chosen ? { ...book, chosenCover: { source: 'url', url: chosen.url } } : book
+}
+
 export namespace BookUseCase {
   /** The saga is named as its catalogue names it, when it has one.
    *
@@ -87,7 +105,8 @@ export namespace BookUseCase {
         series: named.series,
       })
     return withAnalytics(userId, async (batch) => {
-      if (!joined) return BookCommand.add(userId, named, undefined, batch)
+      if (!joined)
+        return BookCommand.add(userId, await withReleaseCover(named, format), undefined, batch)
       const book = await BookCommand.join(userId, joined.id, named, undefined, batch)
       if (book === 'not-found') throw new Error('a book just read from the library is gone')
       return book

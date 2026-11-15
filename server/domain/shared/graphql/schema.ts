@@ -130,6 +130,7 @@ import '~/domain/suggestion/infrastructure/graphql/mutations'
 
 // Releases (what every list and its page draw of a book the reader does not
 // hold). After the four kinds of item that show one, whose types it describes.
+import '~/domain/release/infrastructure/graphql/queries'
 import '~/domain/release/infrastructure/graphql/mutations'
 
 // Changelog (application release notes)

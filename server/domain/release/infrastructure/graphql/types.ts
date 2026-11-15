@@ -34,10 +34,11 @@ const ReleaseSeriesType = builder
     }),
   })
 
-/** The cover a release is drawn with, in a list and on its page alike: the
- *  edition's own once found, else the book shown's, else the one its page's
- *  description found. */
+/** The cover a release is drawn with, in a list and on its page alike: the one
+ *  a reader picked by hand, else the edition's own once found, else the book
+ *  shown's, else the one its page's description found. */
 export const releaseCoverUrlOf = async (view: ReleaseView) =>
+  view.chosenCoverUrl ??
   view.coverUrl ??
   (view.coverPath ? await objectStore().downloadUrl(view.coverPath) : null) ??
   view.describedCoverUrl ??

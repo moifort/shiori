@@ -1,10 +1,13 @@
 import { describe, expect, test } from 'bun:test'
+import type { CoverUrl } from '~/domain/book/types'
 import type { ReleaseDescription } from '~/domain/discovery/types'
 import {
   DESCRIPTION_KEPT_DAYS,
   describedFromOf,
   isDescriptionFresh,
   keptDescriptionOf,
+  knownCoversOf,
+  releaseCoverChoicesOf,
   releaseKeyOf,
   releaseViewOf,
 } from '~/domain/release/business-rules'
@@ -178,5 +181,58 @@ describe('isDescriptionFresh', () => {
   test('keeps the sixty days for a book with no date', () => {
     expect(isDescriptionFresh(kept, later)).toBe(false)
     expect(isDescriptionFresh(kept, new Date(describedAt.getTime() + day))).toBe(true)
+  })
+})
+
+describe('a cover picked for a release', () => {
+  const picked = 'https://covers.example/picked.jpg' as CoverUrl
+
+  test('is what the view draws first, whatever the edition found', () => {
+    const view = releaseViewOf(
+      shown({ found: { coverUrl: 'https://covers.example/found.jpg' } as never }),
+      { chosenCover: { url: picked, chosenAt: now } },
+      'fr',
+      now,
+    )
+    expect(view.chosenCoverUrl).toBe(picked)
+    expect(view.coverUrl).toBe('https://covers.example/found.jpg' as CoverUrl)
+  })
+
+  test('is absent from a view of a release nobody picked a cover for', () => {
+    expect(releaseViewOf(shown(), undefined, 'fr', now).chosenCoverUrl).toBeUndefined()
+  })
+
+  test('is among the covers the release knows, each image once', () => {
+    expect(
+      knownCoversOf({
+        chosenCover: { url: picked, chosenAt: now },
+        found: { coverUrl: picked } as never,
+        descriptions: { fr: kept() },
+      }),
+    ).toEqual([picked, 'https://covers.example/described.jpg' as CoverUrl])
+  })
+})
+
+describe('releaseCoverChoicesOf', () => {
+  const drawn = 'https://covers.openlibrary.org/b/isbn/1-L.jpg' as CoverUrl
+  const amazon = 'https://m.media-amazon.com/images/I/a.jpg' as CoverUrl
+  const other = 'https://covers.example/other.jpg' as CoverUrl
+
+  test('offers the cover drawn first, marked current, then each other image once', () => {
+    const choices = releaseCoverChoicesOf(drawn, [drawn, other], {
+      amazon,
+      openLibrary: drawn,
+      otherEditions: [other],
+    })
+    expect(choices).toEqual([
+      { source: 'open-library', url: drawn, current: true },
+      { source: 'web', url: other, current: false },
+      { source: 'amazon', url: amazon, current: false },
+    ])
+  })
+
+  test('marks none current when the page draws no cover', () => {
+    const choices = releaseCoverChoicesOf(undefined, [], { amazon, otherEditions: [] })
+    expect(choices).toEqual([{ source: 'amazon', url: amazon, current: false }])
   })
 })
