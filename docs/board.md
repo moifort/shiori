@@ -15,6 +15,19 @@ https://claude.ai/artifact/LEGLY8VDYdRDs7gc2dsrhn. It is neither a design-system
 - Layout lives in `project/canvas.json` (`boards`, `order`). A new artboard sits 80 px from its
   siblings in the same row, with its `boards` entry and `order` slot.
 
+## Keeping the board alive
+
+The Shiori Board vanished on 2026-11-15 ("artifact not found", gone from the gallery) without
+anyone deleting it. About two weeks earlier, on 2026-10-29, the session that had created it
+(`3e1f8cf1-b14a-48bd-b598-06c5f5fb138c`) was deleted. An artifact belongs to the session that
+first published it, so the deletion probably took the board with it some time later. Support
+conversation 215476858736725 is open, and the cause is not confirmed.
+
+- The session that creates a board is never deleted. Archiving it is fine.
+- A new board is created in a session kept for that purpose ("Shiori Board · ne pas
+  supprimer"), whose id is written here next to the link.
+- Before deleting sessions in bulk, check that none of them created a board.
+
 ## Board first, then code
 
 SwiftUI and the board are always in sync.
