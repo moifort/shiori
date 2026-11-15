@@ -277,6 +277,9 @@ struct ContentView: View {
                 Color.clear
             }
         }
+        // The bar folds away while a page scrolls down and comes back on the
+        // way up, as in Vinarium.
+        .tabBarMinimizeBehavior(.onScrollDown)
     }
 
     /// A book awaited from a scan's review: the wishlist, where its edition
