@@ -433,11 +433,12 @@ export namespace ScanCommand {
 
   /** Every reader's volumes of a saga just catalogued in one edition take the
    *  name that edition's catalogue gives it, as the saga screen shows it — and
-   *  only those: the same saga is called otherwise in another language. A
-   *  failure leaves them named as they were, and the catalogue stands. */
+   *  only those: the same saga is called otherwise in another language. Those
+   *  held unnumbered take the number it lists them at. A failure leaves them
+   *  as they were, and the catalogue stands. */
   const nameBooksAfter = async (series: Series) => {
     try {
-      await BookUseCase.nameSeries(series.id, series.name)
+      await BookUseCase.nameSeries(series.id, series.name, series)
     } catch (error) {
       logger.warn('saga name not written into its books', { error, series: series.id })
     }

@@ -738,18 +738,28 @@ export namespace BookCommand {
    *  edition's catalogue gives it: a book carries whatever a scan or an import
    *  wrote — "Red Rising [French Edition]" — where the saga screen shows the
    *  catalogue's "Red Rising". Volumes in another language keep theirs, as
-   *  their own catalogue names the saga. Only the name moves; the book is
-   *  otherwise untouched, `updatedAt` too: every reader's books are rewritten
-   *  at once, and none of them did anything. Answers the readers whose volumes
-   *  were renamed, each once, for their views to be flagged: `BookUseCase.
-   *  nameSeries` does both. */
-  export const nameSeries = async (seriesId: SeriesId, name: SeriesName): Promise<UserId[]> => {
-    const renamed = (await repository.findInSeries(seriesId)).filter(
-      (book) => book.series && book.series.name !== name,
-    )
-    for (const book of renamed)
-      if (book.series) await repository.save({ ...book, series: { ...book.series, name } })
-    return [...new Set(renamed.map((book) => book.userId))]
+   *  their own catalogue names the saga. A volume held with no number takes
+   *  the one `numberOf` finds for it, when it finds one: a book shelved before
+   *  its saga was catalogued was never filed at its place. Only the name and
+   *  that number move; the book is otherwise untouched, `updatedAt` too: every
+   *  reader's books are rewritten at once, and none of them did anything.
+   *  Answers the readers whose volumes were rewritten, each once, for their
+   *  views to be flagged: `BookUseCase.nameSeries` does both. */
+  export const nameSeries = async (
+    seriesId: SeriesId,
+    name: SeriesName,
+    numberOf: (book: Book) => VolumeNumber | undefined = () => undefined,
+  ): Promise<UserId[]> => {
+    const rewritten = (await repository.findInSeries(seriesId)).flatMap((book) => {
+      if (!book.series) return []
+      const volume = book.series.volume ?? numberOf(book)
+      if (book.series.name === name && volume === book.series.volume) return []
+      return [
+        { ...book, series: { ...book.series, name, ...(volume !== undefined ? { volume } : {}) } },
+      ]
+    })
+    for (const book of rewritten) await repository.save(book)
+    return [...new Set(rewritten.map((book) => book.userId))]
   }
 
   /** The removals a sync has to honour are forgotten once it brings the title

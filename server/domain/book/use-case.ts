@@ -41,8 +41,9 @@ import { releaseKeyOf } from '~/domain/release/business-rules'
 import { ReleaseQuery } from '~/domain/release/query'
 import type { ScanResult } from '~/domain/scan/types'
 import { ScanUseCase } from '~/domain/scan/use-case'
+import { numberInCatalogue } from '~/domain/series/business-rules'
 import { seriesKeyOf } from '~/domain/series/primitives'
-import type { SeriesId, SeriesName, VolumeNumber } from '~/domain/series/types'
+import type { Series, SeriesId, SeriesName, VolumeNumber } from '~/domain/series/types'
 import { SeriesUseCase } from '~/domain/series/use-case'
 import type { Language } from '~/domain/shared/language'
 import type { AuthorName, BookTitle, UserId } from '~/domain/shared/types'
@@ -285,13 +286,25 @@ export namespace BookUseCase {
     withAnalytics(userId, (batch) => BookCommand.remove(userId, bookId, new Date(), batch))
 
   /** Give every reader's volumes of a saga in one edition the name its
-   *  catalogue gives it, and flag the view of each reader renamed: what they
-   *  and their friends are shown names the saga too. Across readers, so not
+   *  catalogue gives it — and, given the catalogue, the number it lists a
+   *  volume held unnumbered at (`numberInCatalogue`): a saga catalogued after
+   *  its volumes were shelved, by an import above all, would otherwise count
+   *  them nowhere, and show finished on its screen but two of three on the
+   *  home. Flags the view of each reader rewritten: what they and their
+   *  friends are shown names and counts the saga too. Across readers, so not
    *  one batch: each view is flagged once its reader's volumes are written, and
    *  a rebuild that ran meanwhile is flagged again by it. Answers how many
-   *  readers were renamed. */
-  export const nameSeries = async (seriesId: SeriesId, name: SeriesName): Promise<number> => {
-    const readers = await BookCommand.nameSeries(seriesId, name)
+   *  readers were rewritten. */
+  export const nameSeries = async (
+    seriesId: SeriesId,
+    name: SeriesName,
+    catalogue?: Pick<Series, 'name' | 'volumes'>,
+  ): Promise<number> => {
+    const readers = await BookCommand.nameSeries(
+      seriesId,
+      name,
+      (book) => catalogue && numberInCatalogue(catalogue, book, book.language),
+    )
     await Promise.all(readers.map((reader) => AnalyticsUseCase.markStale(reader)))
     return readers.length
   }

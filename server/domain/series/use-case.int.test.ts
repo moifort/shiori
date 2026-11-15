@@ -401,6 +401,54 @@ describe('the name a saga goes by', () => {
     expect(fake.data('shared-hearts', 'reader-2')?.writes).toBe(1)
     expect(fake.data('analytics', 'reader-3')?.stale).toBe(false)
   })
+
+  // A saga catalogued after its volumes were shelved — an import brings them
+  // first — files the ones held unnumbered at the place it lists them, or the
+  // home would count them nowhere while the saga screen places them by title.
+  test('files a volume held unnumbered at the number its catalogue lists it at', async () => {
+    const unnumbered = await BookCommand.add(
+      reader,
+      {
+        title: BookTitle('Golden Son'),
+        format: 'audiobook',
+        series: { saga: redRising, name: SeriesName('Red Rising'), kind: 'main' },
+      },
+      NOW,
+    )
+    const numbered = await volumeOf('Red Rising', 'reader-2' as UserId, 1)
+    const untitled = await BookCommand.add(
+      reader,
+      {
+        title: BookTitle('Red Rising'),
+        format: 'audiobook',
+        series: { saga: redRising, name: SeriesName('Red Rising'), kind: 'main' },
+      },
+      NOW,
+    )
+    const catalogue = {
+      name: SeriesName('Red Rising'),
+      volumes: [
+        { number: VolumeNumber(1), title: BookTitle('Red Rising'), kind: 'main' as const },
+        { number: VolumeNumber(2), title: BookTitle('Golden Son'), kind: 'main' as const },
+      ],
+    }
+
+    expect(
+      await BookUseCase.nameSeries(
+        seriesIdOf(redRising, 'fr'),
+        SeriesName('Red Rising'),
+        catalogue,
+      ),
+    ).toBe(1)
+
+    expect(fake.data('books', unnumbered.id)?.series).toMatchObject({ volume: 2 })
+    expect(fake.data('books', numbered.id)?.series).toMatchObject({ volume: 1 })
+    // The saga's own name tells no volume apart.
+    expect(
+      (fake.data('books', untitled.id)?.series as { volume?: number } | undefined)?.volume,
+    ).toBeUndefined()
+    expect(fake.data('analytics', reader)?.stale).toBe(true)
+  })
 })
 
 describe('a saga held in two languages', () => {

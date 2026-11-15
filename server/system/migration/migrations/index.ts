@@ -33,6 +33,7 @@ import { initialsDrawnAtRandom } from '~/system/migration/migrations/035-initial
 import { releasesHoldTheirDescriptions } from '~/system/migration/migrations/036-releases-hold-their-descriptions'
 import { idsTakeOneSeparator } from '~/system/migration/migrations/037-ids-take-one-separator'
 import { heldWishesForgotten } from '~/system/migration/migrations/038-held-wishes-forgotten'
+import { unnumberedVolumesFiled } from '~/system/migration/migrations/039-unnumbered-volumes-filed'
 import type { Migration } from '~/system/migration/types'
 
 // Forward-only, sequential, no rollback. Adding a new optional field or a new
@@ -78,4 +79,5 @@ export const migrations: Migration[] = [
   releasesHoldTheirDescriptions,
   idsTakeOneSeparator,
   heldWishesForgotten,
+  unnumberedVolumesFiled,
 ]
