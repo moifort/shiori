@@ -7,7 +7,7 @@ the rest of the board's working rules.
 ## What the board is
 
 "The board" / "the canvas" is the **Shiori Board**, a Design (canvas) artifact:
-https://claude.ai/artifact/LEGLY8VDYdRDs7gc2dsrhn. It is neither a design-system artifact (the
+https://claude.ai/artifact/3zk9AtzsPsT3G32zpQbJxQ, created on 2026-11-15 in the session `405a183e-410b-4f3b-a71b-e2af0c4ac311`, which is never deleted. It is neither a design-system artifact (the
 "Shiori" design systems were deleted on 2026-10-28) nor the SwiftUI previews.
 
 - One `project/<Name>.dc.html` artboard per screen: home (`Accueil-*`), library (`Lib-*`), book
@@ -26,6 +26,9 @@ conversation 215476858736725 is open, and the cause is not confirmed.
 - The session that creates a board is never deleted. Archiving it is fine.
 - A new board is created in a session kept for that purpose ("Shiori Board · ne pas
   supprimer"), whose id is written here next to the link.
+- The board was rebuilt on 2026-11-15 from production (SwiftUI, simulator captures) and the local
+  backup of 114 artboards; the 202 artboards with no backup are lost. The old board was
+  `9bb7c155-a600-46f1-b3c1-da1cace9d311` (LEGLY8VDYdRDs7gc2dsrhn).
 - Before deleting sessions in bulk, check that none of them created a board.
 
 ## Board first, then code
