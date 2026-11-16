@@ -4249,6 +4249,16 @@
         }
       }
     },
+    "Ces séries ne sont plus suivies : elles n'apparaissent ni dans « À suivre », ni dans les sorties, ni sur l'accueil. Leurs tomes restent dans la bibliothèque." : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ces séries ne sont plus suivies : elles n'apparaissent ni dans « À suivre », ni dans les sorties, ni sur l'accueil. Leurs tomes restent dans la bibliothèque."
+          }
+        }
+      }
+    },
     "Cette adresse mène à une page, pas à une image. Ouvrez l'image de la couverture seule, puis copiez son adresse." : {
       "localizations" : {
         "en" : {
@@ -6411,16 +6421,16 @@
     },
     "Envie" : {
       "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Envie"
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Wish"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Envie"
           }
         }
       }
@@ -6549,22 +6559,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Essai gratuit"
-          }
-        }
-      }
-    },
-    "Explorer Découvrir" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Explore Discover"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Explorer Découvrir"
           }
         }
       }
@@ -7003,16 +6997,16 @@
     },
     "Guetter" : {
       "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Guetter"
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Watch"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guetter"
           }
         }
       }
@@ -12807,16 +12801,16 @@
     },
     "Retirer de la liste d'envies ?" : {
       "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Retirer de la liste d'envies ?"
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Remove from your wishlist?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Retirer de la liste d'envies ?"
           }
         }
       }
@@ -14101,22 +14095,6 @@
         }
       }
     },
-    "Sorties et découvertes" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Releases and discoveries"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sorties et découvertes"
-          }
-        }
-      }
-    },
     "Sources" : {
       "localizations" : {
         "en" : {
@@ -15205,22 +15183,6 @@
         }
       }
     },
-    "Tous les livres" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "All Books"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tous les livres"
-          }
-        }
-      }
-    },
     "Tous les narrateurs" : {
       "localizations" : {
         "en" : {
@@ -16241,22 +16203,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vous"
-          }
-        }
-      }
-    },
-    "Vous avez fait le tour" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You’ve seen them all"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vous avez fait le tour"
           }
         }
       }
@@ -17319,16 +17265,16 @@
     },
     "titre et auteur" : {
       "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "titre et auteur"
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "title and author"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "titre et auteur"
           }
         }
       }
@@ -17521,6 +17467,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "À lire"
+          }
+        }
+      }
+    },
+    "À suivre" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "À suivre"
           }
         }
       }
