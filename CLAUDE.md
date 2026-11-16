@@ -149,9 +149,10 @@ Runtime: always `bun` / `bunx`, never `npm` / `npx`.
    and one build broke on another's half-edited `NewsShelves.swift`.
    **The parent keeps it clean.** Once a child is done, the parent checks that its worktree and
    branch are gone and `main` is clean (`git worktree list`, `git branch`, `git status`), and
-   cleans up whatever the child left. On each of the user's messages it sweeps every worktree:
-   one with no live session and nothing unmerged is removed, while one holding unmerged or
-   uncommitted work is reported to the user and never deleted.
+   cleans up whatever the child left. On each of the user's messages it sweeps every worktree,
+   and removes any with no live session **without asking**: the user gave that standing OK on
+   2026-11-16. Uncommitted or unmerged work is first saved as a patch under
+   `build/stale-worktrees/`, and the user hears of it in one line.
 
 ## Paid API calls
 
