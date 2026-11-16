@@ -19,8 +19,8 @@ struct LaunchCurtain: View {
 
     var body: some View {
         ZStack {
-            // The asset the system launch screen is painted with too: a cream
-            // by day, a warm ink at night.
+            // The asset the system launch screen is painted with too: black, by
+            // day as by night.
             Color.launchBackground
             CoverDrift(covers: covers, moving: !reduceMotion)
                 // The system launch screen is the bare colour: the covers fade
