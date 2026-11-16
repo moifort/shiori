@@ -41,6 +41,7 @@ struct InvitationSheet: View {
                         .padding(.vertical, 6)
                 }
                 .buttonStyle(.borderedProminent)
+                .foregroundStyle(Color(.systemBackground))
 
                 Spacer(minLength: 0)
             }

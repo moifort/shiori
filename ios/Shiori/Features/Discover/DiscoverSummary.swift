@@ -25,13 +25,8 @@ enum DiscoverCategory: Hashable {
         }
     }
 
-    var tint: Color {
-        switch self {
-        case .soon: .orange
-        case .awards: .yellow
-        case .friends: .red
-        }
-    }
+    /// Every category's symbol in the text's colour: icons stay monochrome.
+    var tint: Color { .primary }
 }
 
 /// The line under a category's name, saying at a glance what it holds.

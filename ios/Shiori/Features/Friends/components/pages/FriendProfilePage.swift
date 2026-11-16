@@ -63,7 +63,7 @@ struct FriendProfilePage: View {
                     DiscoverSummaryRow(
                         title: isPreview ? "Mes favoris" : "Ses favoris",
                         systemImage: "heart.fill",
-                        tint: .red,
+                        tint: .primary,
                         line: countLine(friend.favoriteCount)
                     ) {
                         covers(profile.favorites)
@@ -74,7 +74,7 @@ struct FriendProfilePage: View {
                     DiscoverSummaryRow(
                         title: isPreview ? "Ma pile à lire" : "Sa pile à lire",
                         systemImage: "bookmark.fill",
-                        tint: ReadingStatus.toRead.tint,
+                        tint: .primary,
                         line: countLine(friend.toReadCount)
                     ) {
                         covers(profile.pile)

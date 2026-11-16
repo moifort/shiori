@@ -118,13 +118,13 @@ struct SuggestionReasonCard: View {
         .accessibilityIdentifier("suggestion-reference")
     }
 
-    /// The heart for a favourite, else the stars, white as the hero's rating
+    /// The heart for a favourite, else the stars, both white as the hero's rating
     /// button draws them — the saga's when the book has none of its own.
     @ViewBuilder private func mark(_ reference: SuggestionReference) -> some View {
         if reference.favorite {
             Image(systemName: "heart.fill")
                 .font(.subheadline)
-                .foregroundStyle(.red)
+                .foregroundStyle(.primary)
                 .accessibilityLabel(Text("Favori"))
         } else if let rating = reference.rating {
             RatingStars(rating: rating, font: .caption2, monochrome: true)

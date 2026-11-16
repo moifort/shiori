@@ -30,6 +30,7 @@ struct InvitationAcceptPage: View {
                 Spacer(minLength: 0)
                 AsyncButton("Parfait") { await onAction(.close) }
                     .buttonStyle(.borderedProminent)
+                    .foregroundStyle(Color(.systemBackground))
                     .frame(maxWidth: .infinity)
             } else {
                 Text("Vous partagerez vos livres")
@@ -41,6 +42,7 @@ struct InvitationAcceptPage: View {
                 Spacer(minLength: 0)
                 AsyncButton("Accepter") { await onAction(.accept) }
                     .buttonStyle(.borderedProminent)
+                    .foregroundStyle(Color(.systemBackground))
                     .frame(maxWidth: .infinity)
                     .accessibilityIdentifier("invitation-accept")
                 AsyncButton("Pas maintenant") { await onAction(.close) }

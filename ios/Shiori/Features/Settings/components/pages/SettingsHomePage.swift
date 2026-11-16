@@ -36,8 +36,7 @@ struct SettingsHomePage: View {
                     SettingsRow(
                         icon: "person.crop.circle.fill",
                         title: "Profil",
-                        subtitle: profileSubtitle,
-                        tint: .blue
+                        subtitle: profileSubtitle
                     )
                 }
                 .accessibilityIdentifier("settings-profile")
@@ -48,8 +47,7 @@ struct SettingsHomePage: View {
                     SettingsRow(
                         icon: "sparkles",
                         title: isPremium == true ? "Shiori Premium" : "Découvrir Premium",
-                        subtitle: subscriptionSubtitle,
-                        tint: .orange
+                        subtitle: subscriptionSubtitle
                     )
                 }
                 .buttonStyle(.plain)
@@ -61,8 +59,7 @@ struct SettingsHomePage: View {
                         title: "Notifications",
                         subtitle: notificationsBlocked
                             ? String(localized: "Désactivées dans les réglages de l'iPhone")
-                            : String(localized: "Prochaine sortie et nouvelle disponibilité"),
-                        tint: .red
+                            : String(localized: "Prochaine sortie et nouvelle disponibilité")
                     )
                 }
                 .accessibilityIdentifier("settings-notifications")
@@ -76,8 +73,7 @@ struct SettingsHomePage: View {
                         SettingsRow(
                             icon: source.symbol,
                             title: LocalizedStringKey(source.label),
-                            subtitle: source.subtitle,
-                            tint: .teal
+                            subtitle: source.subtitle
                         )
                     }
                     .buttonStyle(.plain)
@@ -90,8 +86,7 @@ struct SettingsHomePage: View {
                     SettingsRow(
                         icon: "doc.text.fill",
                         title: "Version et nouveautés",
-                        subtitle: "v\(appVersion) (\(buildNumber))",
-                        tint: .indigo
+                        subtitle: "v\(appVersion) (\(buildNumber))"
                     )
                 }
                 .accessibilityIdentifier("settings-changelog")
@@ -101,8 +96,7 @@ struct SettingsHomePage: View {
                     SettingsRow(
                         icon: "envelope.fill",
                         title: "Nous écrire",
-                        subtitle: String(localized: "Signaler un problème ou proposer une idée"),
-                        tint: .pink
+                        subtitle: String(localized: "Signaler un problème ou proposer une idée")
                     )
                 }
                 .buttonStyle(.plain)

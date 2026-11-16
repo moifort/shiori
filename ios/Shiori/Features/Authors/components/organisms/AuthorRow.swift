@@ -44,13 +44,13 @@ struct AuthorRow: View {
         Group {
             if author.favoriteCount > 0 {
                 Image(systemName: "heart.fill")
-                    .foregroundStyle(.red)
+                    .foregroundStyle(.primary)
                     .accessibilityLabel(Text("Coup de cœur"))
             } else if let rating = author.averageRating {
                 Label {
                     Text(rating, format: .number.precision(.fractionLength(1)))
                 } icon: {
-                    Image(systemName: "star.fill").foregroundStyle(.yellow)
+                    Image(systemName: "star.fill").foregroundStyle(.primary)
                 }
                 .accessibilityLabel(Text("Note moyenne \(rating.formatted(.number.precision(.fractionLength(1))))"))
             }

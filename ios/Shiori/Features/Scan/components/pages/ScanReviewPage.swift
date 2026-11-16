@@ -485,7 +485,7 @@ private struct OwnedCopyBlock: View {
             HStack(alignment: .top, spacing: 12) {
                 Group {
                     if joining.isEmpty {
-                        Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+                        Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.primary)
                     } else {
                         Image(systemName: "link").foregroundStyle(.tint)
                     }

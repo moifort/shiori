@@ -92,6 +92,7 @@ struct EmptyState: View {
                     label(of: primary)
                 }
                 .buttonStyle(.borderedProminent)
+                .foregroundStyle(Color(.systemBackground))
                 .accessibilityIdentifier("empty-primary")
             }
             if let secondary {

@@ -116,7 +116,7 @@ struct AudibleLibraryPage: View {
                 HStack {
                     Spacer()
                     if isImporting {
-                        ProgressView().tint(.white)
+                        ProgressView().tint(Color(.systemBackground))
                     } else {
                         Text(importLabel)
                     }
@@ -125,6 +125,7 @@ struct AudibleLibraryPage: View {
                 .padding(.vertical, 6)
             }
             .buttonStyle(.borderedProminent)
+            .foregroundStyle(Color(.systemBackground))
             .disabled(!canImport)
             .accessibilityIdentifier("audible-import")
 

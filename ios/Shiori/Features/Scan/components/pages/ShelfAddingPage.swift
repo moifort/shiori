@@ -50,6 +50,7 @@ struct ShelfAddingPage: View {
                     Text("Voir ma bibliothèque").frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
+                .foregroundStyle(Color(.systemBackground))
                 .controlSize(.large)
                 .accessibilityIdentifier("shelf-done")
             }
@@ -69,9 +70,9 @@ struct ShelfAddingPage: View {
         case .adding:
             ProgressView()
         case .added:
-            Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
+            Image(systemName: "checkmark.circle.fill").foregroundStyle(.primary)
         case .failed:
-            Image(systemName: "exclamationmark.circle.fill").foregroundStyle(.red)
+            Image(systemName: "exclamationmark.circle.fill").foregroundStyle(.primary)
         }
     }
 }

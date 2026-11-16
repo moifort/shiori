@@ -17,6 +17,7 @@ struct ScanNoResultPage: View {
         } actions: {
             Button("Reprendre une photo", action: onRetake)
                 .buttonStyle(.borderedProminent)
+                .foregroundStyle(Color(.systemBackground))
             Button("Ajouter à la main", action: onDismiss)
         }
         .navigationBarBackButtonHidden()

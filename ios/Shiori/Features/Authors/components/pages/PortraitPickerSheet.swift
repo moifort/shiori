@@ -128,7 +128,7 @@ struct PortraitPickerSheet: View {
                         if isPicked {
                             Image(systemName: "checkmark")
                                 .font(.system(size: 12, weight: .bold))
-                                .foregroundStyle(.white)
+                                .foregroundStyle(Color(.systemBackground))
                                 .frame(width: 26, height: 26)
                                 .background(Color.accentColor, in: Circle())
                                 .overlay(Circle().strokeBorder(Color(.systemGroupedBackground), lineWidth: 2.5))

@@ -2,7 +2,7 @@ import SwiftUI
 
 /// Stars as a row draws them, half stars included. Inherited ones — a saga's
 /// rating lent to a volume the reader left unrated — are grey rather than
-/// yellow, so a judgement given is told from one lent at a glance. Monochrome
+/// in the text's colour, so a judgement given is told from one lent at a glance. Monochrome
 /// ones take the text's colour, for a button that keeps to one colour.
 struct RatingStars: View {
     let rating: Double
@@ -14,7 +14,7 @@ struct RatingStars: View {
 
     private var filled: AnyShapeStyle {
         if monochrome { return AnyShapeStyle(.primary) }
-        return inherited ? AnyShapeStyle(.secondary) : AnyShapeStyle(.yellow)
+        return inherited ? AnyShapeStyle(.secondary) : AnyShapeStyle(.primary)
     }
 
     private var empty: AnyShapeStyle {

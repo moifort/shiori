@@ -1,24 +1,22 @@
 import SwiftUI
 
-/// One entry of the settings list: a tinted badge, a title, and under it a
+/// One entry of the settings list: a grey badge, a title, and under it a
 /// value read at runtime — an email, a version, a store — which the caller
 /// localizes since it is data, not a key.
 struct SettingsRow: View {
     let icon: String
     let title: LocalizedStringKey
     let subtitle: String?
-    let tint: Color
 
     /// The badge box scales with Dynamic Type; the glyph is sized to a fixed
     /// fraction of it, so its inset stays constant at every text size.
     @ScaledMetric(relativeTo: .body) private var iconBadgeSize: CGFloat = 28
     private var glyphSize: CGFloat { iconBadgeSize * 0.5 }
 
-    init(icon: String, title: LocalizedStringKey, subtitle: String? = nil, tint: Color = .accentColor) {
+    init(icon: String, title: LocalizedStringKey, subtitle: String? = nil) {
         self.icon = icon
         self.title = title
         self.subtitle = subtitle
-        self.tint = tint
     }
 
     var body: some View {
@@ -34,10 +32,11 @@ struct SettingsRow: View {
         } icon: {
             Image(systemName: icon)
                 .font(.system(size: glyphSize))
-                .foregroundStyle(.white)
+                // Monochrome like every icon: the glyph in the text's colour.
+                .foregroundStyle(.primary)
                 .frame(width: iconBadgeSize, height: iconBadgeSize)
                 .background(
-                    tint,
+                    Color(.tertiarySystemFill),
                     in: RoundedRectangle(cornerRadius: iconBadgeSize * 6 / 28, style: .continuous)
                 )
         }
@@ -50,7 +49,7 @@ struct SettingsRow: View {
 
 #Preview {
     List {
-        SettingsRow(icon: "person.crop.circle.fill", title: "Profil", subtitle: "thibaut@example.com", tint: .blue)
-        SettingsRow(icon: "sparkles", title: "Découvrir Premium", tint: .orange)
+        SettingsRow(icon: "person.crop.circle.fill", title: "Profil", subtitle: "thibaut@example.com")
+        SettingsRow(icon: "sparkles", title: "Découvrir Premium")
     }
 }

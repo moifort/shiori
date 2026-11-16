@@ -28,6 +28,7 @@ struct ScanFailedPage: View {
         } actions: {
             Button("Relancer l'analyse", action: onRetry)
                 .buttonStyle(.borderedProminent)
+                .foregroundStyle(Color(.systemBackground))
                 .accessibilityIdentifier("scan-retry")
             Button("Reprendre une photo", action: onRetake)
         }

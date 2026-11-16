@@ -136,10 +136,7 @@ struct SeriesRow: View {
         // out says it can be added to the library, an announced one that it is
         // not out yet — its day hangs underneath.
         .overlay(alignment: .topTrailing) {
-            CoverBadge(
-                systemImage: forthcoming ? "clock" : "plus",
-                tint: forthcoming ? .orange : .accentColor
-            )
+            CoverBadge(systemImage: forthcoming ? "clock" : "plus")
             .offset(x: 5, y: -5)
         }
     }

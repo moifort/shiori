@@ -92,7 +92,7 @@ struct ShelfChecklistPage: View {
             Button { onAction(.toggle(book.id)) } label: {
                 Image(systemName: isTicked ? "checkmark.circle.fill" : "circle")
                     .font(.title2)
-                    .foregroundStyle(isTicked ? Color.accentColor : .secondary)
+                    .foregroundStyle(isTicked ? Color.primary : .secondary)
             }
             .buttonStyle(.plain)
             .accessibilityLabel(isTicked ? "Décocher" : "Cocher")
@@ -135,8 +135,8 @@ struct ShelfChecklistPage: View {
                     .font(.caption)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 3)
-                    .background(Color.green.opacity(0.15), in: .capsule)
-                    .foregroundStyle(.green)
+                    .background(Color(.tertiarySystemFill), in: .capsule)
+                    .foregroundStyle(.secondary)
             }
         }
         .contentShape(.rect)
@@ -155,6 +155,7 @@ struct ShelfChecklistPage: View {
                 .frame(maxWidth: .infinity)
         }
         .buttonStyle(.borderedProminent)
+        .foregroundStyle(Color(.systemBackground))
         .controlSize(.large)
         .disabled(ticked.isEmpty)
         .padding()
