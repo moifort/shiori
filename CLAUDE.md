@@ -147,6 +147,11 @@ Runtime: always `bun` / `bunx`, never `npm` / `npx`.
    validation reads « Valider et fusionner dans main ». On that yes it rebases, fast-forwards
    `main`, removes its worktree, and never pushes. On 2026-11-16 three reserves shared `main`,
    and one build broke on another's half-edited `NewsShelves.swift`.
+   **The parent keeps it clean.** Once a child is done, the parent checks that its worktree and
+   branch are gone and `main` is clean (`git worktree list`, `git branch`, `git status`), and
+   cleans up whatever the child left. On each of the user's messages it sweeps every worktree:
+   one with no live session and nothing unmerged is removed, while one holding unmerged or
+   uncommitted work is reported to the user and never deleted.
 
 ## Paid API calls
 
