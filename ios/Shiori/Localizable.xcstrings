@@ -1981,6 +1981,22 @@
         }
       }
     },
+    "Activité des amis" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Friends' activity"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Activité des amis"
+          }
+        }
+      }
+    },
     "Actu" : {
       "localizations" : {
         "en" : {
@@ -2073,6 +2089,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Admin"
+          }
+        }
+      }
+    },
+    "Adoré" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loved"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adoré"
           }
         }
       }
@@ -13969,6 +14001,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sorti le %@"
+          }
+        }
+      }
+    },
+    "Sorti · %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Out · %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sorti · %@"
           }
         }
       }

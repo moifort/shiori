@@ -89,20 +89,37 @@ struct NewsAgendaTests {
         #expect(agenda.days.first?.cards.map(\.id) == ["upcoming-thursday"])
     }
 
-    @Test func theHeadlinesAreTheNearestReleasesEitherSideOfTodayAndTheFriendsLatestOpeningOnTheNextOne() {
+    @Test func theHeadlinesRunTwentyDaysBackNewestFirstThenThirtyAheadSoonestFirst() {
         let agenda = agenda(
-            released: (1...6).map { release("out\($0)", String(format: "2026-11-%02d", $0)) },
+            released: [release("recent", "2026-11-08"), release("older", "2026-10-25"), release("stale", "2026-10-15")],
             events: [event("friend", at: day("2026-11-09"))],
             upcoming: [
-                release("soon", "2026-11-12"), release("month", "2026-12"), release("far", "2027-01-20"),
+                release("later", "2026-12-05"), release("soon", "2026-11-12"), release("month", "2026-12"),
+                release("far", "2026-12-20"),
             ]
         )
 
-        #expect(agenda.highlights.map(\.id) == [
-            "release-out3", "release-out4", "release-out5", "release-out6", "friend-friend", "upcoming-soon",
+        #expect(agenda.headlines.map(\.id) == [
+            "friend-friend", "release-recent", "release-older", "upcoming-soon", "upcoming-later",
         ])
-        #expect(agenda.highlights.last?.day == day("2026-11-12"))
-        #expect(agenda.openingHighlight == "upcoming-soon")
+    }
+
+    @Test func theAgendaAndTheHeadlinesHoldNoPrize() {
+        let base = AwardWinner.preview
+        let winner = AwardWinner(
+            id: "prize", format: base.format, title: "prize", originalTitle: "prize", originalLanguage: nil, authors: [],
+            mentions: [AwardMention(award: .hugo, year: 2026)], state: base.state, watched: false,
+            date: nil, coverURL: nil, storeURL: nil, awaitableFormats: base.awaitableFormats,
+            awaitedEditionId: nil, key: "prize"
+        )
+        let agenda = NewsAgenda(
+            released: [], events: [], upcoming: [], suggestions: [],
+            awards: [AwardSection(genre: .fantasy, winners: [winner])], now: now, calendar: calendar
+        )
+
+        #expect(agenda.days.flatMap(\.cards).isEmpty)
+        #expect(agenda.headlines.isEmpty)
+        #expect(agenda.prizes.map(\.id) == ["award-prize"])
     }
 
     @Test func theYearsPrizesAreOnlyThisYearsWinnersBarTheDismissed() {
@@ -131,18 +148,36 @@ struct NewsAgendaTests {
         #expect(none.prizes.isEmpty)
     }
 
-    @Test func onlyTwoOfTheFriendsLatestFavouritesOrFinishedBooksMakeTheHeadlines() {
-        var started = event("started", at: day("2026-11-10"))
-        started = FeedEvent(
-            id: started.id, kind: .started, at: started.at, friendId: "lea", friendName: "Léa", bookId: "started",
-            title: "started", authors: [], format: .book, coverURL: nil, rating: nil, alsoStartedBy: 0, inLibrary: false
+    private func move(_ id: String, _ kind: FeedEventKind, friend: String, at: Date, rating: Double? = nil) -> FeedEvent {
+        FeedEvent(
+            id: id, kind: kind, at: at, friendId: friend, friendName: friend, bookId: id, title: id,
+            authors: [], format: .book, coverURL: nil, rating: rating, alsoStartedBy: 0, inLibrary: false
         )
+    }
+
+    @Test func theActivityShowsEachFriendsLatestMoveHoweverOld() {
         let agenda = agenda(events: [
-            started,
-            event("new", at: day("2026-11-09")), event("mid", at: day("2026-11-08")), event("old", at: day("2026-11-07")),
+            move("leaOld", .loved, friend: "lea", at: day("2025-06-01")),
+            move("marcNew", .started, friend: "marc", at: day("2026-11-09")),
+            move("marcOld", .finished, friend: "marc", at: day("2026-11-01"), rating: 4),
+            move("sophie", .finished, friend: "sophie", at: day("2026-11-05"), rating: 5),
+        ])
+        let activity = agenda.shelves.activity
+
+        #expect(activity.map(\.id) == ["friend-marcNew", "friend-sophie", "friend-leaOld"])
+        #expect(activity[0].caption == String(localized: "Commencé"))
+        #expect(activity[0].pillName == "marc")
+        #expect(activity[1].rating == 5)
+    }
+
+    @Test func theFavouritesSayHowLongAgo() {
+        let agenda = agenda(events: [
+            move("yesterday", .loved, friend: "marc", at: day("2026-11-09")),
+            move("lastYear", .loved, friend: "lea", at: day("2025-10-01")),
         ])
 
-        #expect(agenda.highlights.map(\.id) == ["friend-mid", "friend-new"])
+        #expect(agenda.shelves.loves.map(\.caption) == ["Hier", "Il y a 1 an"])
+        #expect(agenda.shelves.loves.allSatisfy { $0.rating == nil })
     }
 
     private func followed(
@@ -155,6 +190,23 @@ struct NewsAgendaTests {
             author: .init(key: "wells", name: "Martha Wells", favorite: favorite, portraitURL: nil),
             sagaRating: nil, sagaFavorite: false, narrator: narrator
         )
+    }
+
+    @Test func theWishListHoldsOnlyWhatIsToComeTheDatedFirst() {
+        let wishes = NewsAgenda(
+            released: NewsFeedLayout.released(
+                releases: [followed("out", .awaited, "2026-11-05")], narrator: [], format: nil, now: now, calendar: calendar
+            ),
+            events: [], upcoming: [],
+            announced: [
+                followed("undated", .awaited, nil), followed("december", .awaited, "2026-12-03"),
+                followed("soon", .awaited, "2026-11-14"),
+            ],
+            suggestions: [], awards: [], now: now, calendar: calendar
+        ).shelves.wishes
+
+        #expect(wishes.map(\.id) == ["upcoming-soon", "upcoming-december", "upcoming-undated"])
+        #expect(wishes.last?.caption == String(localized: "En vue"))
     }
 
     @Test func theShelvesSortEachFollowOutFirstThenToCome() {
@@ -185,7 +237,7 @@ struct NewsAgendaTests {
         #expect(shelves.authors.first?.person == "Martha Wells")
         #expect(shelves.narrators.map(\.id) == ["upcoming-voice"])
         #expect(shelves.narrators.first?.person == "Bernard Gabay")
-        #expect(shelves.wishes.map(\.id) == ["release-wishOut", "upcoming-wishNext"])
+        #expect(shelves.wishes.map(\.id) == ["upcoming-wishNext"])
         #expect(shelves.wishes.last?.caption == String(localized: "En vue"))
     }
 
@@ -198,7 +250,7 @@ struct NewsAgendaTests {
         )
         let agenda = agenda(events: [event("loved", at: day("2026-11-08")), finished])
 
-        #expect(agenda.shelves.loves.map(\.lead.id) == ["loved"])
+        #expect(agenda.shelves.loves.map(\.id) == ["friend-loved"])
     }
 
     @Test func aPersonsNameShortensToItsInitialAndLastName() {

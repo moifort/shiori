@@ -68,16 +68,6 @@ struct NewsAgendaDay: Identifiable, Hashable, Sendable {
     var id: Date { day }
 }
 
-/// One of the page's headlines, "À la une": a release among what the reader
-/// follows, out lately or announced for a day soon, or a friend's latest
-/// favourite or finished book, and that day.
-struct NewsHighlight: Identifiable, Hashable, Sendable {
-    let day: Date
-    let card: NewsCard
-
-    var id: String { card.id }
-}
-
 /// The Découvrir page as an agenda: "À la une" first, the releases of what
 /// the reader follows a few days back and ahead mixed with the friends' latest
 /// moves; then only the days that bring something, a month back and a month
@@ -89,9 +79,11 @@ struct NewsAgenda: Hashable, Sendable {
     /// to the last day announced within `futureDays`.
     let days: [NewsAgendaDay]
     let today: Date
-    /// The releases of what the reader follows nearest today, out lately then
-    /// announced, oldest first.
-    let highlights: [NewsHighlight]
+    /// "À la une": the friends' coups de cœur and the releases of what the
+    /// reader follows out in the last `headlinePastDays`, newest first, then
+    /// what is announced for a day within `headlineFutureDays`, soonest
+    /// first. No prize: they have their own section.
+    let headlines: [NewsShelfItem]
     /// The winners crowned this year, the latest prize first; none hides the
     /// section.
     let prizes: [NewsCard]
@@ -102,16 +94,16 @@ struct NewsAgenda: Hashable, Sendable {
     /// page invites a friend.
     let hasFriends: Bool
 
-    /// How many headlines the page shows on either side of today.
-    static let highlightsEachSide = 4
-    /// How many of the friends' latest moves join the headlines.
-    static let friendHighlights = 2
+    /// How far back the headlines reach.
+    static let headlinePastDays = 20
+    /// How far ahead the headlines reach.
+    static let headlineFutureDays = 30
     /// How far back the agenda reaches.
     static let pastDays = 30
     /// How far ahead the agenda reaches.
     static let futureDays = 31
 
-    var isEmpty: Bool { days.isEmpty && highlights.isEmpty && prizes.isEmpty && shelves == .empty }
+    var isEmpty: Bool { days.isEmpty && headlines.isEmpty && prizes.isEmpty && shelves == .empty }
 
     /// The day the page opens on: today when it holds news, else the nearest
     /// day that does, the one to come on a tie.
@@ -122,23 +114,17 @@ struct NewsAgenda: Hashable, Sendable {
         }?.day
     }
 
-    /// The headline the rail opens on: the nearest to come, else the last
-    /// one out.
-    var openingHighlight: String? {
-        (highlights.first { $0.day > today } ?? highlights.last)?.id
-    }
-
     init(
         days: [NewsAgendaDay],
         today: Date,
-        highlights: [NewsHighlight],
+        headlines: [NewsShelfItem],
         prizes: [NewsCard],
         shelves: NewsShelves = .empty,
         hasFriends: Bool
     ) {
         self.days = days
         self.today = today
-        self.highlights = highlights
+        self.headlines = headlines
         self.prizes = prizes
         self.shelves = shelves
         self.hasFriends = hasFriends
@@ -186,38 +172,18 @@ struct NewsAgenda: Hashable, Sendable {
             guard let day = Self.exactDay(release.date, calendar: calendar), day > today else { continue }
             ahead[day, default: []].append(.upcoming(release))
         }
-        // Today opens on the prizes, then the month's discoveries, before its
-        // own news: they have no day, and today is when they are read.
-        let prizes = NewsDiscoverPicks.winners(awards).map(NewsCard.award).filter { !dismissed.contains($0.key) }
+        // The month's discovery closes today: it has no day, and today is
+        // when it is read. The prizes stay in their own section.
         let picks = suggestions.map(NewsCard.suggestion).filter { !dismissed.contains($0.key) }
-        byDay[today] = Array(prizes.prefix(2)) + (byDay[today] ?? []) + Array(picks.prefix(1))
+        byDay[today] = (byDay[today] ?? []) + Array(picks.prefix(1))
 
         let past = byDay.filter { !$0.value.isEmpty }.map { NewsAgendaDay(day: $0.key, cards: $0.value) }
         let future = ahead.filter { $0.key <= until }.map { NewsAgendaDay(day: $0.key, cards: $0.value) }
         days = (past + future).sorted { $0.day < $1.day }
         self.today = today
-        var out: [NewsHighlight] = []
-        for item in released {
-            let day = calendar.startOfDay(for: item.day)
-            if day >= since, day <= today { out.append(NewsHighlight(day: day, card: .released(item))) }
-        }
-        out.sort { $0.day < $1.day }
-        // The friends' latest favourites and finished books join what came out.
-        let friends = moves
-            .filter { $0.lead.kind != .started }
-            .compactMap { move -> NewsHighlight? in
-                let day = calendar.startOfDay(for: move.lead.at)
-                return day >= since && day <= today ? NewsHighlight(day: day, card: .friend(move)) : nil
-            }
-            .sorted { $0.card.date ?? .distantPast > $1.card.date ?? .distantPast }
-            .prefix(Self.friendHighlights)
-        let before = (Array(out.suffix(Self.highlightsEachSide)) + friends).sorted { $0.day < $1.day }
-        var coming: [NewsHighlight] = []
-        for (day, cards) in ahead where day <= until {
-            coming += cards.map { NewsHighlight(day: day, card: $0) }
-        }
-        coming.sort { $0.day == $1.day ? $0.id < $1.id : $0.day < $1.day }
-        highlights = before + Array(coming.prefix(Self.highlightsEachSide))
+        headlines = Self.headlines(
+            released: released, moves: moves, upcoming: upcoming, today: today, calendar: calendar
+        )
         let year = calendar.component(.year, from: now)
         self.prizes = NewsDiscoverPicks.winners(awards)
             .filter { $0.mentions.first?.year == year }
@@ -227,6 +193,33 @@ struct NewsAgenda: Hashable, Sendable {
             released: released, moves: moves, upcoming: announced ?? upcoming, today: today, calendar: calendar
         )
         hasFriends = !moves.isEmpty
+    }
+
+    /// The friends' coups de cœur and the releases out lately, newest first,
+    /// then the releases announced for a day soon, soonest first.
+    static func headlines(
+        released: [ReleasedItem], moves: [FriendMove], upcoming: [UpcomingRelease], today: Date, calendar: Calendar
+    ) -> [NewsShelfItem] {
+        let since = calendar.date(byAdding: .day, value: -headlinePastDays, to: today) ?? today
+        let until = calendar.date(byAdding: .day, value: headlineFutureDays, to: today) ?? today
+        let past = (moves.filter { $0.lead.kind == .loved }.map(NewsCard.friend) + released.map(NewsCard.released))
+            .compactMap { card -> (Date, NewsCard)? in
+                guard let date = card.date, calendar.startOfDay(for: date) >= since else { return nil }
+                return (date, card)
+            }
+            .sorted { $0.0 > $1.0 }
+            .map(\.1)
+        let ahead = upcoming
+            .compactMap { release -> (Date, NewsCard)? in
+                guard let day = exactDay(release.date, calendar: calendar), day > today, day <= until else { return nil }
+                return (day, .upcoming(release))
+            }
+            .sorted { $0.0 == $1.0 ? $0.1.id < $1.1.id : $0.0 < $1.0 }
+            .map(\.1)
+        var seen = Set<String>()
+        return (past + ahead)
+            .filter { seen.insert($0.key).inserted }
+            .map { NewsShelves.item($0, calendar: calendar) }
     }
 
     /// The day of a `YYYY-MM-DD` date; nil for a month or a year alone.

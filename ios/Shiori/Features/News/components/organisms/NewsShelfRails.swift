@@ -32,25 +32,41 @@ struct NewsShelfHeader: View {
     }
 }
 
-/// "Coups de cœur des amis": the books the friends hearted lately, as the
-/// home's posters, the friend's name in the cover's foot after a heart.
-struct NewsLovesRail: View {
-    let moves: [FriendMove]
+/// A rail of covers under its title, "Coups de cœur des amis ›": each cover
+/// names its friend, author or narrator in a pill on its top corner and says
+/// its news in its foot. The agenda's day, "À la une" and the follows' shelves
+/// all draw their books with it.
+struct NewsTileRail: View {
+    let title: LocalizedStringKey
+    let items: [NewsShelfItem]
+    var onMore: (() -> Void)?
     let onAction: (NewsAction) async -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            NewsShelfHeader(title: "Coups de cœur des amis")
-            PosterRow(
-                items: moves.map { move in
-                    PosterRow.Item(book: move.lead.cover, caption: "\u{2665}\u{FE0E} \(move.lead.friendName)") {
-                        Task { await onAction(.open(.friend(move))) }
-                    }
-                },
-                onOpen: { _ in }
-            )
-            .contentMargins(.horizontal, 20, for: .scrollContent)
+            NewsShelfHeader(title: title, onMore: onMore)
+            NewsTileRow(items: items, onAction: onAction)
         }
+    }
+}
+
+/// The covers of a rail, side by side, scrolling sideways.
+struct NewsTileRow: View {
+    let items: [NewsShelfItem]
+    let onAction: (NewsAction) async -> Void
+
+    var body: some View {
+        ScrollView(.horizontal) {
+            LazyHStack(alignment: .top, spacing: 13) {
+                ForEach(items) { item in
+                    NewsPersonTile(item: item) { Task { await onAction(.open(item.card)) } }
+                }
+            }
+            .scrollTargetLayout()
+        }
+        .contentMargins(.horizontal, 20, for: .scrollContent)
+        .scrollTargetBehavior(.viewAligned)
+        .scrollIndicators(.hidden)
     }
 }
 
@@ -99,33 +115,10 @@ struct NewsSeriesRail: View {
     }
 }
 
-/// "Auteurs préférés" and "Narrateurs préférés": the new book's cover, the
-/// person's face on its corner, their name and the book's news under it.
-struct NewsPeopleRail: View {
-    let title: LocalizedStringKey
-    let items: [NewsShelfItem]
-    let onAction: (NewsAction) async -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            NewsShelfHeader(title: title) { Task { await onAction(.openUpcoming) } }
-            ScrollView(.horizontal) {
-                LazyHStack(alignment: .top, spacing: 13) {
-                    ForEach(items) { item in
-                        NewsPersonTile(item: item) { Task { await onAction(.open(item.card)) } }
-                    }
-                }
-                .scrollTargetLayout()
-            }
-            .contentMargins(.horizontal, 20, for: .scrollContent)
-            .scrollTargetBehavior(.viewAligned)
-            .scrollIndicators(.hidden)
-        }
-    }
-}
-
-/// One cover of a person's shelf: the book as a poster, the person's portrait
-/// or initials on its lower corner, "M. Wells" and "Tome 8 annoncé" under it.
+/// One cover of a rail: the book as a poster, its news in the foot, and the
+/// person it is shown for — a friend's face and first name, an author's or a
+/// narrator's portrait and "M. Wells" — in a white pill on glass on its top
+/// corner. Nothing under the cover.
 struct NewsPersonTile: View {
     let item: NewsShelfItem
     var width: CGFloat = 102
@@ -133,54 +126,61 @@ struct NewsPersonTile: View {
 
     var body: some View {
         Button(action: onOpen) {
-            VStack(alignment: .leading, spacing: 0) {
-                PosterCover(book: item.card.cover, caption: "", width: width)
-                    .overlay(alignment: .bottomLeading) {
-                        AuthorAvatar(initials: initials(of: item.person), portraitURL: item.portraitURL, size: 30)
-                            .overlay { Circle().strokeBorder(.white.opacity(0.3), lineWidth: 1) }
-                            .background(Circle().fill(Color(.systemBackground)).padding(-2))
-                            .padding(.leading, 8)
-                            .offset(y: 13)
+            PosterCover(book: item.card.cover, label: PosterLabel(caption: item.caption, rating: item.rating), width: width)
+                .overlay(alignment: .topLeading) {
+                    if let name = item.pillName {
+                        pill(name).padding(6)
                     }
-                Text(Self.shortName(item.person))
-                    .font(.footnote.weight(.semibold))
-                    .lineLimit(1)
-                    .padding(.top, 20)
-                Text(item.caption)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    // "Annoncé · 22 déc." whole, a touch smaller.
-                    .minimumScaleFactor(0.85)
-                    .padding(.top, 2)
-            }
-            .frame(width: width, alignment: .leading)
-            .contentShape(.rect)
+                }
+                .contentShape(.rect)
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text("\(item.person ?? ""), \(item.card.cover.title), \(item.caption)"))
+        .accessibilityLabel(Text([item.person, item.card.cover.title, item.caption].compactMap(\.self).joined(separator: ", ")))
         .accessibilityAddTraits(.isButton)
     }
 
-    /// "Martha Wells" → "M. Wells", so the name holds on one line under the
-    /// cover; a single name stays whole.
-    static func shortName(_ name: String?) -> String {
+    private func pill(_ name: String) -> some View {
+        HStack(spacing: 5) {
+            Group {
+                if let avatar = item.avatar {
+                    AccountAvatarView(avatar: avatar, firstName: item.person, size: 18)
+                } else {
+                    AuthorAvatar(initials: initials(of: item.person), portraitURL: item.portraitURL, size: 18)
+                }
+            }
+            .clipShape(.circle)
+            Text(name)
+                .font(.caption2.weight(.semibold))
+                .lineLimit(1)
+        }
+        .padding(.leading, 4)
+        .padding(.trailing, 9)
+        .frame(height: 26)
+        .foregroundStyle(.white)
+        .glassEffect(.regular, in: .capsule)
+        .environment(\.colorScheme, .dark)
+        .frame(maxWidth: width - 12, alignment: .leading)
+    }
+
+    /// "Martha Wells" → "M. Wells", so the name holds in the pill; a single
+    /// name stays whole.
+    nonisolated static func shortName(_ name: String?) -> String {
         let words = (name ?? "").split(separator: " ")
         guard words.count > 1, let first = words.first?.first, let last = words.last else { return name ?? "" }
         return "\(first). \(last)"
     }
 }
 
-/// "Vos envies": the editions the reader awaits, as posters, their day or
-/// "Sorti" in the cover's foot, "Audio" in its corner.
+/// "Liste d'envies": the editions the reader awaits still to come, as
+/// posters, their day or "En vue" in the cover's foot, "Audio" in its corner.
 struct NewsWishesRail: View {
     let items: [NewsShelfItem]
     let onAction: (NewsAction) async -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            NewsShelfHeader(title: "Vos envies") { Task { await onAction(.openUpcoming) } }
+            NewsShelfHeader(title: "Liste d'envies") { Task { await onAction(.openUpcoming) } }
             PosterRow(
                 items: items.map { item in
                     PosterRow.Item(book: item.card.cover, caption: item.caption) {
@@ -204,10 +204,11 @@ struct NewsWishesRail: View {
     )
     ScrollView {
         VStack(alignment: .leading, spacing: 30) {
-            NewsLovesRail(moves: shelves.loves) { _ in }
+            NewsTileRail(title: "Activité des amis", items: shelves.activity) { _ in }
+            NewsTileRail(title: "Coups de cœur des amis", items: shelves.loves) { _ in }
             NewsSeriesRail(items: shelves.series) { _ in }
-            NewsPeopleRail(title: "Auteurs préférés", items: shelves.authors) { _ in }
-            NewsPeopleRail(title: "Narrateurs préférés", items: shelves.narrators) { _ in }
+            NewsTileRail(title: "Auteurs préférés", items: shelves.authors) { _ in }
+            NewsTileRail(title: "Narrateurs préférés", items: shelves.narrators) { _ in }
             NewsWishesRail(items: shelves.wishes) { _ in }
         }
     }

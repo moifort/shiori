@@ -25,7 +25,8 @@ struct AuthorAvatar: View {
     /// member it has no photograph of.
     private var monogram: some View {
         Text(initials)
-            .font(.system(size: max(13, size / 3.4), weight: .semibold))
+            // A pill's tiny face keeps its initials inside the circle.
+            .font(.system(size: size < 24 ? size * 0.42 : max(13, size / 3.4), weight: .semibold))
             .foregroundStyle(.white.opacity(0.9))
             .frame(width: size, height: size)
             .background(

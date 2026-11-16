@@ -16,15 +16,14 @@ enum NewsAction {
 }
 
 /// The Découvrir tab, pure: an agenda of what the book world brought the
-/// reader. At the top "À la une", a rail of the releases of what the reader
-/// follows, out lately or soon, mixed with the friends' latest favourites;
-/// then a strip of the days that bring something, a month back and a month
-/// ahead, each with a dot per piece of news; under it the day picked, its
-/// first news as a large card over its cover's colours, the rest as rows;
-/// then a shelf per follow — the friends' coups de cœur, the followed series,
-/// the favourite authors and narrators, the wish list — each left out when
-/// empty; then the year's prizes, one winner a page, left out once each is
-/// added or turned down.
+/// reader. At the top "À la une", a rail of covers: the friends' coups de
+/// cœur and the releases of what the reader follows, out in the last twenty
+/// days or due in the next thirty; then a strip of the days that bring
+/// something, a month back and a month ahead, each with a dot per piece of
+/// news, and the day picked as a rail of covers; then what each friend did
+/// last, the friends' coups de cœur, the year's prizes one winner a page, and
+/// a shelf per follow — the followed series, the favourite authors and
+/// narrators, the wish list. Every rail is left out when empty.
 struct NewsPage: View {
     let agenda: NewsAgenda
     /// The cards' books just wished for, by `NewsCard.key`.
@@ -84,14 +83,9 @@ struct NewsPage: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
                     VStack(alignment: .leading, spacing: 0) {
-                        if !agenda.highlights.isEmpty {
-                            NewsHighlights(
-                                highlights: agenda.highlights,
-                                today: agenda.today,
-                                opening: agenda.openingHighlight,
-                                onAction: onAction
-                            )
-                            .padding(.bottom, 30)
+                        if !agenda.headlines.isEmpty {
+                            NewsTileRail(title: "À la une", items: agenda.headlines, onAction: onAction)
+                                .padding(.bottom, 30)
                         }
                         if let pickedDay {
                             NewsDayStrip(
@@ -101,7 +95,7 @@ struct NewsPage: View {
                             )
                         }
                         if let day {
-                            NewsDaySection(day: day, today: agenda.today, wished: wished, onAction: onAction)
+                            NewsDaySection(day: day, today: agenda.today, onAction: onAction)
                                 .padding(.top, 22)
                         }
                     }
@@ -110,8 +104,7 @@ struct NewsPage: View {
                     // fade into the page.
                     .background(alignment: .top) {
                         CoverBackdrop(
-                            url: (agenda.highlights.first { $0.id == agenda.openingHighlight }?.card ?? day?.cards.first)?
-                                .cover.coverURL,
+                            url: (agenda.headlines.first?.card ?? day?.cards.first)?.cover.coverURL,
                             fadeHeight: 160,
                             ground: Color(.systemBackground)
                         )
@@ -120,10 +113,6 @@ struct NewsPage: View {
                         .animation(.smooth, value: day?.id)
                     }
                     shelves
-                    if !prizes.isEmpty {
-                        NewsPrizesSlider(cards: prizes, wished: wished, onAction: onAction)
-                            .padding(.top, 30)
-                    }
                     if !agenda.hasFriends {
                         invitation.padding(.top, 30)
                     }
@@ -139,21 +128,30 @@ struct NewsPage: View {
         agenda.prizes.filter { !wished.contains($0.key) }
     }
 
-    /// A rail per follow, each left out when it holds nothing.
+    /// The friends, the prizes, then a rail per follow, each left out when it
+    /// holds nothing.
     @ViewBuilder
     private var shelves: some View {
         let shelves = agenda.shelves
+        if !shelves.activity.isEmpty {
+            NewsTileRail(title: "Activité des amis", items: shelves.activity, onAction: onAction).padding(.top, 30)
+        }
         if !shelves.loves.isEmpty {
-            NewsLovesRail(moves: shelves.loves, onAction: onAction).padding(.top, 30)
+            NewsTileRail(title: "Coups de cœur des amis", items: shelves.loves, onAction: onAction).padding(.top, 30)
+        }
+        if !prizes.isEmpty {
+            NewsPrizesSlider(cards: prizes, wished: wished, onAction: onAction).padding(.top, 30)
         }
         if !shelves.series.isEmpty {
             NewsSeriesRail(items: shelves.series, onAction: onAction).padding(.top, 30)
         }
         if !shelves.authors.isEmpty {
-            NewsPeopleRail(title: "Auteurs préférés", items: shelves.authors, onAction: onAction).padding(.top, 30)
+            NewsTileRail(title: "Auteurs préférés", items: shelves.authors, onMore: { act(.openUpcoming) }, onAction: onAction)
+                .padding(.top, 30)
         }
         if !shelves.narrators.isEmpty {
-            NewsPeopleRail(title: "Narrateurs préférés", items: shelves.narrators, onAction: onAction).padding(.top, 30)
+            NewsTileRail(title: "Narrateurs préférés", items: shelves.narrators, onMore: { act(.openUpcoming) }, onAction: onAction)
+                .padding(.top, 30)
         }
         if !shelves.wishes.isEmpty {
             NewsWishesRail(items: shelves.wishes, onAction: onAction).padding(.top, 30)
@@ -291,32 +289,28 @@ private struct NewsDayLeaf: View {
 
 // MARK: - Le jour
 
-/// The day picked: its name and how much it holds, its first news as a large
-/// card, the rest as rows; a quiet day says so.
+/// The day picked: its name over its news as a rail of covers; a quiet day
+/// says so.
 struct NewsDaySection: View {
     let day: NewsAgendaDay
     let today: Date
-    var wished: Set<String> = []
     let onAction: (NewsAction) async -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 12) {
             Text(Self.title(day.day, today: today))
                 .font(.title2.weight(.bold))
                 .foregroundStyle(.white)
-                .padding(.bottom, 2)
-            if let first = day.cards.first {
-                NewsAgendaLead(card: first, isWished: wished.contains(first.key), onAction: onAction)
-                ForEach(day.cards.dropFirst()) { card in
-                    NewsAgendaRow(card: card, isWished: wished.contains(card.key), onAction: onAction)
-                }
-            } else {
+                .padding(.horizontal, 20)
+            if day.cards.isEmpty {
                 Text(day.day > today ? "Rien d'annoncé ce jour-là." : "Rien de neuf ce jour-là.")
                     .font(.subheadline)
                     .foregroundStyle(.white.opacity(0.7))
+                    .padding(.horizontal, 20)
+            } else {
+                NewsTileRow(items: day.cards.map { NewsShelves.item($0, calendar: .current) }, onAction: onAction)
             }
         }
-        .padding(.horizontal, 20)
     }
 
     /// "Aujourd'hui", "Hier", "Demain", else "Jeudi 12 novembre".
@@ -410,40 +404,6 @@ private struct NewsAgendaLead: View {
     }
 }
 
-/// The day's other news, a row each: the cover on the leading side, what
-/// brought it, the title, the author, the "+" at the trailing end.
-private struct NewsAgendaRow: View {
-    let card: NewsCard
-    let isWished: Bool
-    let onAction: (NewsAction) async -> Void
-
-    var body: some View {
-        HStack(spacing: 14) {
-            NewsAgendaCover(book: card.cover, width: 61)
-            VStack(alignment: .leading, spacing: 0) {
-                NewsCardKicker(card: card, style: .fiche)
-                Text(card.cover.title)
-                    .font(.headline)
-                    .lineLimit(1)
-                    .padding(.top, 4)
-                Text(card.cover.authors.joined(separator: ", "))
-                    .font(.caption)
-                    .foregroundStyle(.white.opacity(0.75))
-                    .lineLimit(1)
-                    .padding(.top, 1)
-            }
-            .foregroundStyle(.white)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.vertical, 10)
-            NewsWishButton(card: card, isWished: isWished, size: 34, onAction: onAction)
-                .padding(.trailing, 12)
-        }
-        .frame(minHeight: 92)
-        .fixedSize(horizontal: false, vertical: true)
-        .modifier(NewsAgendaCard(card: card, onAction: onAction))
-    }
-}
-
 /// A cover filling its card's height on the leading side, cropped at its
 /// foot rather than letterboxed.
 private struct NewsAgendaCover: View {
@@ -502,112 +462,6 @@ private struct NewsCardEmblem: View {
     }
 }
 
-// MARK: - À la une
-
-/// The releases of what the reader follows nearest today and the friends'
-/// latest favourites, oldest first, as a rail of the day's large cards; it
-/// opens on the nearest to come. A pill on each says how far it stands from
-/// today.
-struct NewsHighlights: View {
-    let highlights: [NewsHighlight]
-    let today: Date
-    var opening: String?
-    let onAction: (NewsAction) async -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("À la une")
-                .font(.title2.weight(.bold))
-                .foregroundStyle(.white)
-                .padding(.horizontal, 20)
-            ScrollViewReader { proxy in
-                ScrollView(.horizontal) {
-                    HStack(spacing: 12) {
-                        ForEach(highlights) { highlight in
-                            NewsHighlightCard(highlight: highlight, today: today, onAction: onAction)
-                                .frame(width: 300)
-                                .id(highlight.id)
-                        }
-                    }
-                    .scrollTargetLayout()
-                }
-                .contentMargins(.horizontal, 20, for: .scrollContent)
-                .scrollTargetBehavior(.viewAligned)
-                .scrollIndicators(.hidden)
-                .onAppear {
-                    if let opening, highlights.count > 1 { proxy.scrollTo(opening, anchor: .leading) }
-                }
-            }
-        }
-    }
-
-    /// "Aujourd'hui", "Hier", "Demain", "Il y a 7 jours", "Dans 2 jours".
-    static func distance(_ day: Date, today: Date, calendar: Calendar = .current) -> String {
-        let offset = calendar.dateComponents([.day], from: today, to: day).day ?? 0
-        switch offset {
-        case 0: return String(localized: "Aujourd'hui")
-        case -1: return String(localized: "Hier")
-        case 1: return String(localized: "Demain")
-        case ..<0: return String(localized: "Il y a \(-offset) jours")
-        default: return String(localized: "Dans \(offset) jours")
-        }
-    }
-}
-
-/// One headline: its cover edge to edge, over the cover's colours the follow
-/// or the friend that brought it, the title, the author and, at the foot, how
-/// far it stands from today.
-private struct NewsHighlightCard: View {
-    let highlight: NewsHighlight
-    let today: Date
-    let onAction: (NewsAction) async -> Void
-
-    private var card: NewsCard { highlight.card }
-
-    var body: some View {
-        HStack(alignment: .top, spacing: 14) {
-            NewsAgendaCover(book: card.cover, width: 100)
-            VStack(alignment: .leading, spacing: 0) {
-                if case .friend = card {
-                    NewsCardKicker(card: card, style: .fiche)
-                } else if let follow = NewsCardText.follow(card) {
-                    HStack(spacing: 6) {
-                        Image(systemName: follow.symbol)
-                            .font(.system(size: 11, weight: .semibold))
-                            .frame(width: 22, height: 22)
-                            .background(.white.opacity(0.16), in: .circle)
-                        Text(follow.text.capitalizedFirst)
-                    }
-                    .font(.footnote.weight(.semibold))
-                    .lineLimit(1)
-                    .frame(minHeight: 25)
-                }
-                Text(card.cover.title)
-                    .font(.headline)
-                    .lineLimit(2)
-                    .padding(.top, 7)
-                Text(card.cover.authors.joined(separator: ", "))
-                    .font(.caption)
-                    .foregroundStyle(.white.opacity(0.75))
-                    .lineLimit(1)
-                    .padding(.top, 1)
-                Spacer(minLength: 8)
-                Text(NewsHighlights.distance(highlight.day, today: today))
-                    .font(.caption.weight(.semibold))
-                    .padding(.horizontal, 9)
-                    .frame(height: 22)
-                    .glassEffect(.regular, in: .capsule)
-            }
-            .foregroundStyle(.white)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.vertical, 12)
-            .padding(.trailing, 12)
-        }
-        .frame(height: 150)
-        .modifier(NewsAgendaCard(card: card, onAction: onAction))
-    }
-}
-
 // MARK: - Prix de l'année
 
 /// The year's prizes, one winner a page: the day's large card, its cover the
@@ -656,29 +510,6 @@ struct NewsPrizesSlider: View {
 }
 
 // MARK: - The parts every card shares
-
-/// The "+" on a tile's foot, a tick once the book is wished for.
-private struct NewsWishButton: View {
-    let card: NewsCard
-    let isWished: Bool
-    let size: CGFloat
-    let onAction: (NewsAction) async -> Void
-
-    var body: some View {
-        Button {
-            Task { await onAction(.wish(card)) }
-        } label: {
-            Image(systemName: isWished ? "checkmark" : "plus")
-                .font(.footnote.weight(.bold))
-                .foregroundStyle(.white)
-                .frame(width: size, height: size)
-                .glassEffect(.regular.interactive(), in: .circle)
-        }
-        .buttonStyle(.plain)
-        .disabled(isWished)
-        .accessibilityLabel(isWished ? "Dans vos envies" : "Ajouter à vos envies")
-    }
-}
 
 /// Who or what brought a card, in white: a friend's face and name, a prize
 /// between laurels, a release's day, the month's "comme …".
