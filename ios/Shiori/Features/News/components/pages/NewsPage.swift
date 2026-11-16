@@ -8,8 +8,10 @@ enum NewsAction {
     case wish(NewsCard)
     /// "Pas intéressé" on a discovery or a prize.
     case dismiss(NewsCard)
-    /// Everything announced, from "Sorties et découvertes ›".
-    case openUpcoming
+    /// A rail's title: the Library view that answers it, already filtered —
+    /// "Séries suivies ›" the series, "Auteurs préférés ›" and "Narrateurs
+    /// préférés ›" the hearted ones, "Liste d'envies ›" the wish list.
+    case openLibrary(LibraryDestination)
     case invite
     case openAlerts
     case refresh
@@ -146,11 +148,11 @@ struct NewsPage: View {
             NewsSeriesRail(items: shelves.series, onAction: onAction).padding(.top, 30)
         }
         if !shelves.authors.isEmpty {
-            NewsTileRail(title: "Auteurs préférés", items: shelves.authors, onMore: { act(.openUpcoming) }, onAction: onAction)
+            NewsTileRail(title: "Auteurs préférés", items: shelves.authors, onMore: { act(.openLibrary(.authors(.loved))) }, onAction: onAction)
                 .padding(.top, 30)
         }
         if !shelves.narrators.isEmpty {
-            NewsTileRail(title: "Narrateurs préférés", items: shelves.narrators, onMore: { act(.openUpcoming) }, onAction: onAction)
+            NewsTileRail(title: "Narrateurs préférés", items: shelves.narrators, onMore: { act(.openLibrary(.narrators(.loved))) }, onAction: onAction)
                 .padding(.top, 30)
         }
         if !shelves.wishes.isEmpty {

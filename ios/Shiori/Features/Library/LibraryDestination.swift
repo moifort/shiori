@@ -9,9 +9,10 @@ enum LibraryDestination: Identifiable, Hashable {
     case seriesShelf(SeriesShelfFilter = .all)
     case setAsideSeries
     case series(String)
-    case authors
+    /// The authors, in the order asked: Découvrir opens them on "Préférés".
+    case authors(AuthorListOrder = .recent)
     case author(AuthorDestination)
-    case narrators
+    case narrators(AuthorListOrder = .recent)
     case narrator(NarratorDestination)
     case genre(BookGenre)
     case wishlist
@@ -23,9 +24,9 @@ enum LibraryDestination: Identifiable, Hashable {
         case let .seriesShelf(filter): "series-shelf-\(filter.rawValue)"
         case .setAsideSeries: "series-set-aside"
         case let .series(id): "series-\(id)"
-        case .authors: "authors"
+        case let .authors(order): "authors-\(order.rawValue)"
         case let .author(author): "author-\(author.key)"
-        case .narrators: "narrators"
+        case let .narrators(order): "narrators-\(order.rawValue)"
         case let .narrator(narrator): "narrator-\(narrator.key)"
         case let .genre(genre): "genre-\(genre.rawValue)"
         case .wishlist: "wishlist"
@@ -71,12 +72,12 @@ struct LibraryDestinationScreen: View {
             SetAsideSeriesScreen()
         case let .series(id):
             SeriesScreen(seriesId: id)
-        case .authors:
-            AuthorShelfScreen()
+        case let .authors(order):
+            AuthorShelfScreen(order: order)
         case let .author(author):
             AuthorScreen(key: author.key, name: author.name)
-        case .narrators:
-            NarratorShelfScreen(library: client)
+        case let .narrators(order):
+            NarratorShelfScreen(order: order, library: client)
         case let .narrator(narrator):
             NarratorScreen(key: narrator.key, name: narrator.name)
         case let .genre(genre):

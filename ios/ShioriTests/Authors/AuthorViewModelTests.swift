@@ -145,6 +145,23 @@ struct AuthorListViewModelTests {
         #expect(viewModel.people.map(\.key) == FollowedAuthor.previews.map(\.key))
     }
 
+    /// Découvrir's "Auteurs préférés ›" opens the shelf on "Préférés": the
+    /// first page is asked in that order.
+    @Test func opensInTheOrderAsked() async {
+        let asked = OrderRecorder()
+        var client = AuthorsClient.preview
+        client.list = { limit, after, order in
+            await asked.record(order)
+            return try await AuthorsClient.preview.list(limit, after, order)
+        }
+        let viewModel = AuthorListViewModel(client: client, order: .loved, caching: false)
+
+        await viewModel.load()
+
+        #expect(viewModel.order == .loved)
+        #expect(await asked.orders == [.loved])
+    }
+
     @Test func failureOverRowsKeepsThem() async {
         let fails = Flag()
         var client = AuthorsClient.preview
@@ -176,4 +193,10 @@ struct AuthorListViewModelTests {
         #expect(ids.count == FollowedAuthor.previews.count)
         #expect(cursors.all == ["top"] + ids.dropLast())
     }
+}
+
+/// The orders a shelf asked its pages in.
+private actor OrderRecorder {
+    private(set) var orders: [AuthorListOrder] = []
+    func record(_ order: AuthorListOrder) { orders.append(order) }
 }

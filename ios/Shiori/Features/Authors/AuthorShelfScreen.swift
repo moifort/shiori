@@ -16,11 +16,16 @@ struct AuthorShelfScreen: View {
     @State private var openedRelease: UpcomingRelease?
     var news: NewsClient = .live
 
-    init(client: AuthorsClient = .live, library: LibraryClient = .live, news: NewsClient = .live) {
+    init(
+        order: AuthorListOrder = .recent,
+        client: AuthorsClient = .live,
+        library: LibraryClient = .live,
+        news: NewsClient = .live
+    ) {
         self.client = client
         self.library = library
         self.news = news
-        _viewModel = State(initialValue: AuthorListViewModel(client: client))
+        _viewModel = State(initialValue: AuthorListViewModel(client: client, order: order))
         let cached = Self.releasesCache.read() ?? []
         _releases = State(initialValue: FavoriteAuthorReleases.stillAhead(cached))
     }

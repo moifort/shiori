@@ -78,7 +78,7 @@ struct NewsSeriesRail: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            NewsShelfHeader(title: "Séries suivies") { Task { await onAction(.openUpcoming) } }
+            NewsShelfHeader(title: "Séries suivies") { Task { await onAction(.openLibrary(.seriesShelf(.all))) } }
             ScrollView(.horizontal) {
                 LazyHStack(spacing: 13) {
                     ForEach(items) { item in
@@ -180,7 +180,7 @@ struct NewsWishesRail: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            NewsShelfHeader(title: "Liste d'envies") { Task { await onAction(.openUpcoming) } }
+            NewsShelfHeader(title: "Liste d'envies") { Task { await onAction(.openLibrary(.wishlist)) } }
             PosterRow(
                 items: items.map { item in
                     PosterRow.Item(book: item.card.cover, caption: item.caption) {

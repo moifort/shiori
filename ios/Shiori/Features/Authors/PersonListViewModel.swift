@@ -61,14 +61,14 @@ typealias AuthorListViewModel = PersonListViewModel<FollowedAuthor>
 typealias NarratorListViewModel = PersonListViewModel<FollowedNarrator>
 
 extension PersonListViewModel where Person == FollowedAuthor {
-    convenience init(client: AuthorsClient, caching: Bool = true) {
-        self.init(cacheName: "authors", caching: caching, list: client.list)
+    convenience init(client: AuthorsClient, order: AuthorListOrder = .recent, caching: Bool = true) {
+        self.init(cacheName: "authors", order: order, caching: caching, list: client.list)
     }
 }
 
 extension PersonListViewModel where Person == FollowedNarrator {
-    convenience init(client: NarratorsClient, caching: Bool = true) {
-        self.init(cacheName: "narrators", caching: caching, list: client.list)
+    convenience init(client: NarratorsClient, order: AuthorListOrder = .recent, caching: Bool = true) {
+        self.init(cacheName: "narrators", order: order, caching: caching, list: client.list)
     }
 }
 
@@ -83,13 +83,16 @@ final class PersonListViewModel<Person: ShelvedPerson> {
     typealias List = @Sendable (_ limit: Int, _ after: String?, AuthorListOrder)
         async throws -> CursorPage<Person>
 
-    /// Opens by date, as the Books and Series shelves do.
+    /// Opens by date, as the Books and Series shelves do, unless the opener
+    /// asks for another order: Découvrir's "Auteurs préférés ›" opens on
+    /// "Préférés".
     /// - Parameters:
     ///   - cacheName: what the snapshots on disk are named after.
     ///   - caching: off in tests, which must neither read nor leave a
     ///     snapshot on disk.
-    init(cacheName: String, caching: Bool = true, list: @escaping List) {
+    init(cacheName: String, order: AuthorListOrder = .recent, caching: Bool = true, list: @escaping List) {
         self.list = list
+        self.order = order
         self.cacheName = cacheName
         self.caching = caching
         people = cache?.read() ?? []

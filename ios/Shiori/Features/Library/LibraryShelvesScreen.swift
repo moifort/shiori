@@ -67,9 +67,9 @@ struct LibraryShelvesScreen: View {
                 destination = .shelf(shelf, viewModel.view, formats: viewModel.formats)
             case .openSeriesShelf: destination = .seriesShelf()
             case let .openSeries(series): destination = .series(series.seriesId)
-            case .openAuthors: destination = .authors
+            case .openAuthors: destination = .authors()
             case let .openAuthor(author): destination = .author(AuthorDestination(author))
-            case .openNarrators: destination = .narrators
+            case .openNarrators: destination = .narrators()
             case let .openNarrator(narrator):
                 destination = .narrator(NarratorDestination(key: narrator.key, name: narrator.name))
             case .openWishlist: destination = .wishlist

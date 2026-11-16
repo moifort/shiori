@@ -55,8 +55,8 @@ struct NewsScreen: View {
             AuthorScreen(key: author.key, name: author.name, isOffered: false)
         case let .narrator(narrator):
             NarratorScreen(key: narrator.key, name: narrator.name)
-        case .upcoming:
-            UpcomingReleasesScreen(releases: viewModel.calendar().releases)
+        case let .library(destination):
+            LibraryDestinationScreen(destination: destination)
         case let .release(release):
             UpcomingReleaseScreen(release: release)
         case let .suggestion(suggestion):
@@ -71,7 +71,7 @@ struct NewsScreen: View {
         case let .open(card): openCard(card)
         case let .wish(card): await viewModel.wish(card)
         case let .dismiss(card): await viewModel.dismiss(card)
-        case .openUpcoming: open(.upcoming)
+        case let .openLibrary(destination): open(.library(destination))
         case .invite: await viewModel.invite()
         case .openAlerts: showsAlerts = true
         case .refresh: await viewModel.load()
@@ -102,14 +102,14 @@ private enum NewsDetail: Identifiable {
     case friendBook(FeedEvent)
     case author(AuthorDestination)
     case narrator(NarratorDestination)
-    case upcoming
+    case library(LibraryDestination)
     case release(UpcomingRelease)
     case suggestion(Suggestion)
     case award(AwardWinner)
 
     var id: String {
         switch self {
-        case .upcoming: "upcoming"
+        case let .library(destination): "library-\(destination.id)"
         case let .release(release): "release-\(release.id)"
         case let .friendBook(event): "friend-book-\(event.id)"
         case let .author(author): "author-\(author.id)"
@@ -117,30 +117,6 @@ private enum NewsDetail: Identifiable {
         case let .suggestion(suggestion): "suggestion-\(suggestion.id)"
         case let .award(winner): "award-\(winner.id)"
         }
-    }
-}
-
-/// The full list of what is announced, opened from the head of Actualités'
-/// "À venir" title alone: a row pushes on the list's own stack the page its
-/// card opens, in the frame of the tap.
-private struct UpcomingReleasesScreen: View {
-    let releases: [UpcomingRelease]
-    @State private var opened: UpcomingRelease?
-    @Environment(\.dismiss) private var dismissPresentation
-    @Environment(\.detailClosing) private var closing
-
-    var body: some View {
-        UpcomingReleasesPage(releases: releases) { opened = $0 }
-        .toolbar {
-            if closing.showsCloseButton {
-                ToolbarItem(placement: .cancellationAction) {
-                    ToolbarIconButton(title: "Fermer", systemImage: "xmark", role: .cancel) {
-                        closing.close(dismissPresentation)
-                    }
-                }
-            }
-        }
-        .pushesDetail(item: $opened) { UpcomingReleaseScreen(release: $0) }
     }
 }
 

@@ -17,11 +17,16 @@ struct NarratorShelfScreen: View {
     @State private var releases: [UpcomingRelease]
     var news: NewsClient = .live
 
-    init(client: NarratorsClient = .live, library: LibraryClient = .live, news: NewsClient = .live) {
+    init(
+        order: AuthorListOrder = .recent,
+        client: NarratorsClient = .live,
+        library: LibraryClient = .live,
+        news: NewsClient = .live
+    ) {
         self.client = client
         self.library = library
         self.news = news
-        _viewModel = State(initialValue: NarratorListViewModel(client: client))
+        _viewModel = State(initialValue: NarratorListViewModel(client: client, order: order))
         let cached = Self.releasesCache.read() ?? []
         _releases = State(initialValue: FavoriteAuthorReleases.stillAhead(cached))
     }
