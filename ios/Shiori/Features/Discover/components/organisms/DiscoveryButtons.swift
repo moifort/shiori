@@ -95,9 +95,9 @@ struct DiscoveryButtons<Item: Discovery>: View {
             .sensoryFeedback(.success, trigger: mark == .added)
             .accessibilityIdentifier("discovery-menu")
         // The closed eye opens a choice, and gives way to the one made: turned
-        // down, a filled thumb pressing down on white; read, a check on
-        // white: buttons keep to one colour. Pressed again, it takes the
-        // choice back. Never disabled once done: dimmed, the white went unseen.
+        // down, the eye filled on white; read, a check on white: buttons
+        // keep to one colour. Pressed again, it takes the choice back. Never
+        // disabled once done: dimmed, the white went unseen.
         switch mark {
         case .notInterested:
             Button {
@@ -129,7 +129,7 @@ struct DiscoveryButtons<Item: Discovery>: View {
             .accessibilityIdentifier("discovery-dismiss")
         case .added, nil:
             Menu {
-                Button("Pas intéressé", systemImage: "hand.thumbsdown", role: .destructive) {
+                Button("Pas intéressé", systemImage: "eye.slash", role: .destructive) {
                     choose(.notInterested, from: .eye, leaving: .notInterested)
                 }
                 .accessibilityIdentifier("discovery-not-interested")
@@ -196,7 +196,7 @@ struct DiscoveryButtons<Item: Discovery>: View {
     private func eyeLabel(turnedDown: Bool) -> some View {
         Label(
             turnedDown ? "Écarté" : "Pas intéressé",
-            systemImage: turnedDown ? "hand.thumbsdown.fill" : "eye.slash"
+            systemImage: turnedDown ? "eye.slash.fill" : "eye.slash"
         )
         .labelStyle(.iconOnly)
         .font(.headline)

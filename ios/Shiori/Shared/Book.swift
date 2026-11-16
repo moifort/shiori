@@ -231,13 +231,14 @@ enum SeriesState: String, Codable, CaseIterable, Identifiable, Sendable {
     }
 
     /// The same symbols as the reading statuses they mirror; a saga set aside
-    /// has no reading status to mirror, and says it is no longer followed.
+    /// has no reading status to mirror, and says it is no longer followed:
+    /// the bell, as for an awaited edition, since following means being told.
     var symbol: String {
         switch self {
         case .notStarted: ReadingStatus.toRead.symbol
         case .inProgress: ReadingStatus.reading.symbol
         case .complete: ReadingStatus.read.symbol
-        case .unfollowed: "eye.slash"
+        case .unfollowed: "bell.slash"
         }
     }
 }

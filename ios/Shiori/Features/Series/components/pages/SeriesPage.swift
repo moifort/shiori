@@ -5,7 +5,7 @@ enum SeriesAction {
     case openBook(Book)
     case rate
     case editGenre
-    /// The eye: the saga followed again, or set aside.
+    /// The bell: the saga followed again, or set aside.
     case setFollowed(Bool)
     case openAuthor(AuthorDestination)
     /// A volume the reader lacks, announced or out, on its own page.
@@ -20,7 +20,7 @@ enum SeriesAction {
 /// One saga in the TV app's grammar, as the book page is drawn: a hero of
 /// three covers fanned over the colours of the first volume, the
 /// saga's name and its author; where the reader stands in the white capsule
-/// of the home's saga card, the saga's own stars and the eye that follows it
+/// of the home's saga card, the saga's own stars and the bell that follows it
 /// on Liquid Glass. Then, without cards around them: the next volume announced
 /// as the home's lead card, the saga in figures, its summary, its volumes and
 /// its annexes as rows of posters, and its facts as the book page's table.
@@ -52,7 +52,7 @@ struct SeriesPage: View {
     var unownedVolume: (Volume) -> DiscoveredVolume? = { _ in nil }
     let onAction: (SeriesAction) async -> Void
 
-    /// Bumped on each tap of the eye, which swings as it changes.
+    /// Bumped on each tap of the bell, which swings as it changes.
     @State private var taps = 0
 
     private var currentYear: Int { Calendar.current.component(.year, from: .now) }
@@ -180,14 +180,15 @@ struct SeriesPage: View {
         }
     }
 
-    /// The eye says where the saga stands: open while it is followed,
-    /// crossed out once set aside, as the "Non suivies" filter draws it.
+    /// The bell says where the saga stands: plain while it is followed,
+    /// crossed out once set aside, as the "Non suivies" filter draws it. The
+    /// eye is for what the reader no longer wants shown ("Pas intéressé").
     static func followSymbol(isFollowed: Bool) -> String {
-        isFollowed ? "eye" : SeriesState.unfollowed.symbol
+        isFollowed ? "bell" : SeriesState.unfollowed.symbol
     }
 
-    /// The only way to follow the saga or set it aside: a tap swings the eye
-    /// and opens or crosses it out.
+    /// The only way to follow the saga or set it aside: a tap swings the bell
+    /// and crosses it out or back.
     private var followButton: some View {
         Button {
             taps += 1

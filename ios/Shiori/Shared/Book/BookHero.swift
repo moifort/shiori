@@ -228,7 +228,7 @@ struct BookHero<Actions: View>: View {
     /// the first button's to say.
     @ViewBuilder private var marks: some View {
         if book.hidden {
-            Image(systemName: "eye.slash")
+            Image(systemName: "lock")
                 .foregroundStyle(.white.opacity(0.7))
                 .fixedSize()
                 .accessibilityLabel(Text("Non partagé"))

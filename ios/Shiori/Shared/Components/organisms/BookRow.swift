@@ -207,7 +207,7 @@ struct BookRow: View {
                 // Says the book is excluded from sharing. Only ever an icon,
                 // tucked in the corner: spelling it out on every row would
                 // shout a private choice at anyone glancing over a shoulder.
-                Image(systemName: "eye.slash")
+                Image(systemName: "lock")
                     .foregroundStyle(.secondary)
                     .accessibilityLabel(Text("Non partagé"))
             }

@@ -77,7 +77,7 @@ struct BookActionsMenu: View {
 
             // Kept out of every library a friend sees, the counts included.
             Toggle(isOn: Binding(get: { book.hidden }, set: { _ in onAction(.toggleHidden) })) {
-                Label("Ne pas partager", systemImage: "eye.slash")
+                Label("Ne pas partager", systemImage: "lock")
             }
             .accessibilityIdentifier("book-hidden")
 

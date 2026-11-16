@@ -385,7 +385,7 @@ private struct NewsAgendaLead: View {
                         Button {
                             Task { await onAction(.dismiss(card)) }
                         } label: {
-                            Image(systemName: "hand.thumbsdown")
+                            Image(systemName: "eye.slash")
                                 .font(.footnote.weight(.semibold))
                                 .foregroundStyle(.white)
                                 .frame(width: 30, height: 30)

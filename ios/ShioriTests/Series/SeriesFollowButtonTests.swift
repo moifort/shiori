@@ -2,12 +2,12 @@ import Testing
 @testable import Shiori
 
 struct SeriesFollowButtonTests {
-    @Test func followedSagaShowsAnOpenEye() {
-        #expect(SeriesPage.followSymbol(isFollowed: true) == "eye")
+    @Test func followedSagaShowsTheBell() {
+        #expect(SeriesPage.followSymbol(isFollowed: true) == "bell")
     }
 
-    @Test func sagaSetAsideShowsTheCrossedOutEyeOfItsFilter() {
-        #expect(SeriesPage.followSymbol(isFollowed: false) == "eye.slash")
+    @Test func sagaSetAsideShowsTheCrossedOutBellOfItsFilter() {
+        #expect(SeriesPage.followSymbol(isFollowed: false) == "bell.slash")
         #expect(SeriesPage.followSymbol(isFollowed: false) == SeriesState.unfollowed.symbol)
     }
 
