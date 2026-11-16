@@ -85,9 +85,6 @@ struct DiscoveryButtons<Item: Discovery>: View {
     /// "+": on the page, where nothing else leads.
     var addsInFull = false
 
-    /// The eye's button once a discovery is turned down.
-    private var turnedDownRed: Color { Color(red: 0.78, green: 0.2, blue: 0.2) }
-
     private var mark: DiscoveryMark? { choices.marks[item.id] }
     private var working: DiscoveryButton? { choices.working[item.id] }
     private var isWorking: Bool { working != nil }
@@ -98,9 +95,9 @@ struct DiscoveryButtons<Item: Discovery>: View {
             .sensoryFeedback(.success, trigger: mark == .added)
             .accessibilityIdentifier("discovery-menu")
         // The closed eye opens a choice, and gives way to the one made: turned
-        // down, a filled thumb pressing down as the button turns red; read, a
-        // check on white. Pressed again, it takes the choice back. Never
-        // disabled once done: dimmed, the colour went unseen.
+        // down, a filled thumb pressing down on white; read, a check on
+        // white: buttons keep to one colour. Pressed again, it takes the
+        // choice back. Never disabled once done: dimmed, the white went unseen.
         switch mark {
         case .notInterested:
             Button {
@@ -109,7 +106,7 @@ struct DiscoveryButtons<Item: Discovery>: View {
                 eyeLabel(turnedDown: true)
                     .modifier(WorkingLabel(isWorking: working == .eye))
             }
-            .buttonStyle(.glass(.regular.tint(turnedDownRed)))
+            .buttonStyle(.glass(.regular.tint(.white)))
             .buttonBorderShape(.circle)
             .disabled(isWorking)
             .sensoryFeedback(.impact(weight: .medium), trigger: mark == .notInterested)
@@ -203,7 +200,7 @@ struct DiscoveryButtons<Item: Discovery>: View {
         )
         .labelStyle(.iconOnly)
         .font(.headline)
-        .foregroundStyle(.white)
+        .foregroundStyle(turnedDown ? .black : .white)
         .contentTransition(.symbolEffect(.replace))
         // Down when turned down, back up when taken back.
         .symbolEffect(turnedDown ? .bounce.down.byLayer : .bounce.up.byLayer, value: turnedDown)
