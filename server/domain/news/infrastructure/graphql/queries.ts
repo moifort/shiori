@@ -33,7 +33,7 @@ builder.queryFields((t) => ({
     type: [NarratorNewsType],
     description:
       'The recordings the narrators the reader follows lent their voice to in the last ' +
-      'month, the newest first, the ones the reader holds left out. Read off the shared ' +
+      'year, the newest first, the ones the reader holds left out. Read off the shared ' +
       'narrator watches a quarterly pass keeps: no web lookup.',
     resolve: (_root, _args, context) => NewsUseCase.narratorNews(context.userId),
   }),

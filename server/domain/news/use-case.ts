@@ -75,7 +75,7 @@ export namespace NewsUseCase {
   }
 
   /** The recordings the narrators the reader hearted lent their voice to
-   *  lately, the newest first. Read off the shared narrator watches the
+   *  in the last year, the newest first. Read off the shared narrator watches the
    *  quarterly pass keeps: no web lookup happens here. */
   export const narratorNews = async (userId: UserId, now = new Date()): Promise<NarratorNews[]> =>
     (await narratedOf(userId, now)).recent

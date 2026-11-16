@@ -293,7 +293,7 @@ export const yearReleasesOf = (
 // MARK: - Narrators
 
 /** How long a recording stays news after it came out. */
-const NARRATOR_NEWS_DAYS = 30
+const NARRATOR_NEWS_DAYS = 365
 
 const dayOf = (date: string): string =>
   date.length === 10 ? date : date.length === 7 ? `${date}-01` : `${date}-01-01`
@@ -302,7 +302,7 @@ const daysBefore = (today: string, days: number): string =>
   new Date(Date.parse(`${today}T00:00:00Z`) - days * 86_400_000).toISOString().slice(0, 10)
 
 /** The recordings the narrators the reader follows lent their voice to, that
- *  the reader does not hold: the ones out in the last month are the feed's
+ *  the reader does not hold: the ones out in the last year are the activity's
  *  news, the ones still to come the calendar's. Dated works only — a
  *  recording with no date is neither news nor a release. `held` holds the shelf
  *  keys of the stories the reader already has. */

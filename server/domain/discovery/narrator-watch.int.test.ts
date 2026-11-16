@@ -22,7 +22,7 @@ mock.module('~/system/gemini', () => ({
               { title: 'Fondation', authors: ['Isaac Asimov'], date: '2026-10-20' },
               { title: 'Terre et Fondation', authors: ['Isaac Asimov'], date: '2026-12-02' },
               { title: 'Déjà chez vous', authors: ['Isaac Asimov'], date: '2026-10-25' },
-              { title: 'Trop ancien', authors: ['Isaac Asimov'], date: '2026-06-01' },
+              { title: 'Trop ancien', authors: ['Isaac Asimov'], date: '2025-06-01' },
               { title: 'Sans date', authors: ['Isaac Asimov'] },
               { title: 'Sans auteur', authors: [], date: '2026-10-26' },
             ],
@@ -109,7 +109,7 @@ describe('the narrators’ watch', () => {
 })
 
 describe('the narrators’ news', () => {
-  test('tells the recordings out this month the reader does not hold, newest first', async () => {
+  test('tells the recordings out this year the reader does not hold, newest first', async () => {
     await DiscoveryUseCase.watchDueSagas(now)
 
     const news = await NewsUseCase.narratorNews(reader, now)

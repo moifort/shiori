@@ -4526,7 +4526,7 @@ type Query {
   myShelf: FriendProfile!
 
   """
-  The recordings the narrators the reader follows lent their voice to in the last month, the newest first, the ones the reader holds left out. Read off the shared narrator watches a quarterly pass keeps: no web lookup.
+  The recordings the narrators the reader follows lent their voice to in the last year, the newest first, the ones the reader holds left out. Read off the shared narrator watches a quarterly pass keeps: no web lookup.
   """
   narratorNews: [NarratorNews!]!
 
