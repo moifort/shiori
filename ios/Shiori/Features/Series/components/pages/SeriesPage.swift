@@ -99,16 +99,23 @@ struct SeriesPage: View {
                 VStack(alignment: .leading, spacing: 28) {
                     VStack(spacing: 22) {
                         releaseCard(series)
+                            .saturation(isSetAside ? 0 : 1)
                         figures(series, standing: standing)
                     }
                     if let description = series.description {
                         BookSynopsisBlock(synopsis: description)
                     }
-                    rail("Tomes", posters: posters(series.spine), author: series.author)
-                    let annexes = annexPosters(series.relatedWorks)
-                    if !annexes.isEmpty {
-                        rail("Hors-série", posters: annexes, author: series.author)
+                    // Set aside, every cover of the saga turns black and white,
+                    // the hero's and the volumes' alike.
+                    Group {
+                        rail("Tomes", posters: posters(series.spine), author: series.author)
+                        let annexes = annexPosters(series.relatedWorks)
+                        if !annexes.isEmpty {
+                            rail("Hors-série", posters: annexes, author: series.author)
+                        }
                     }
+                    .saturation(isSetAside ? 0 : 1)
+                    .animation(.easeInOut(duration: 0.35), value: isSetAside)
                     facts(series)
                 }
                 .padding(.horizontal, 20)
@@ -129,14 +136,15 @@ struct SeriesPage: View {
             fan: fan(series),
             language: language,
             onOpenAuthor: author.map { author in { Task { await onAction(.openAuthor(author)) } } },
-            status: followsHere && !isFollowed ? .unfollowed : nil
+            status: isSetAside ? .unfollowed : nil,
+            isSetAside: isSetAside
         ) {
             GlassEffectContainer(spacing: 10) {
                 HStack(spacing: 10) {
                     ProgressCapsule(read: standing.read, total: standing.published)
                     // Set aside, "Suivre" takes the stars' room, as the board
                     // draws it: the saga is rated again once followed.
-                    if !followsHere || isFollowed { ratingButton }
+                    if !isSetAside { ratingButton }
                     // Following is the reader's: not on a friend's shelf, nor
                     // over a saga they hold nothing of.
                     if followsHere { followButton }
@@ -193,6 +201,10 @@ struct SeriesPage: View {
     /// Following is the reader's: not on a friend's shelf, nor over a saga
     /// they hold nothing of.
     private var followsHere: Bool { friend == nil && !owned.isEmpty }
+
+    /// The reader stopped following the saga: said in the hero's pill, and in
+    /// black and white on every cover.
+    private var isSetAside: Bool { followsHere && !isFollowed }
 
     /// The only way to follow the saga or set it aside. Followed, the bell
     /// alone; set aside, the button says what a tap does, "Suivre", while the

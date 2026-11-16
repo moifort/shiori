@@ -44,6 +44,9 @@ struct BookHero<Actions: View>: View {
     /// What the reader decided of it, in words under the detail line —
     /// "Pas intéressé" — while the button under says what a tap does.
     var status: HeroStatus? = nil
+    /// Turned down by the reader: the cover and its colours turn black and
+    /// white, as a saga set aside does.
+    var isSetAside = false
     @ViewBuilder var actions: Actions
 
     /// The text's height and the cover's, to tell whether the text climbs
@@ -66,6 +69,7 @@ struct BookHero<Actions: View>: View {
             HStack(alignment: .bottom, spacing: 16) {
                 // No format badge: the outlined tag on the detail line says it.
                 BookCover(book: book, width: coverWidth, showsFormatBadge: false)
+                    .saturation(isSetAside ? 0 : 1)
                     .shadow(color: .black.opacity(0.45), radius: 16, y: 10)
                     .accessibilityHidden(true)
                     .onGeometryChange(for: CGFloat.self, of: \.size.height) { coverHeight = $0 }
@@ -91,8 +95,10 @@ struct BookHero<Actions: View>: View {
         .padding(.top, 12)
         .padding(.bottom, 28)
         .environment(\.colorScheme, .dark)
+        .animation(.easeInOut(duration: 0.35), value: isSetAside)
         .background {
             CoverBackdrop(url: book.coverURL, fadeHeight: Self.fadeHeight, tint: book.coverGround)
+                .saturation(isSetAside ? 0 : 1)
                 // Up under the bars, the toolbar's glass floating over it,
                 // and on under the first block, which draws over it.
                 .padding(.top, -400)

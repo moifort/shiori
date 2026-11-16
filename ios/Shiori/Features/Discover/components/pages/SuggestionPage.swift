@@ -89,7 +89,8 @@ struct SuggestionPage: View {
             stateTag: suggestion.watched && suggestion.state == .unannounced ? String(localized: "Pas annoncé") : nil,
             isAwaited: suggestion.awaitedEditionId != nil,
             showsLength: false,
-            status: choices.marks[suggestion.id] == .notInterested ? .notInterested : nil
+            status: choices.marks[suggestion.id] == .notInterested ? .notInterested : nil,
+            isSetAside: choices.marks[suggestion.id] == .notInterested
         ) {
             HStack(spacing: 12) {
                 DiscoveryButtons(item: suggestion, choices: choices, onChoice: onChoice, addsInFull: true)
