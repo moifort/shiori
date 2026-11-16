@@ -44,3 +44,9 @@ struct HeroStatus: Equatable {
     .padding()
     .background(.green.gradient)
 }
+
+extension Animation {
+    /// How a page fades to black and white once the reader turns its book
+    /// down or stops following its saga: slow enough to watch the colour go.
+    static var setAside: Animation { .easeInOut(duration: 1.2) }
+}

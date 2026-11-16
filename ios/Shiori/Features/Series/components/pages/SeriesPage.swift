@@ -100,6 +100,7 @@ struct SeriesPage: View {
                     VStack(spacing: 22) {
                         releaseCard(series)
                             .saturation(isSetAside ? 0 : 1)
+                            .animation(.setAside, value: isSetAside)
                         figures(series, standing: standing)
                     }
                     if let description = series.description {
@@ -115,7 +116,7 @@ struct SeriesPage: View {
                         }
                     }
                     .saturation(isSetAside ? 0 : 1)
-                    .animation(.easeInOut(duration: 0.35), value: isSetAside)
+                    .animation(.setAside, value: isSetAside)
                     facts(series)
                 }
                 .padding(.horizontal, 20)

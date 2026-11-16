@@ -36,6 +36,7 @@ struct SeriesHero<Actions: View>: View {
         VStack(spacing: 0) {
             covers
                 .saturation(isSetAside ? 0 : 1)
+                .animation(.setAside, value: isSetAside)
                 .padding(.top, 8)
                 .padding(.bottom, 22)
             identity
@@ -46,10 +47,10 @@ struct SeriesHero<Actions: View>: View {
         .padding(.horizontal, 20)
         .padding(.bottom, 24)
         .environment(\.colorScheme, .dark)
-        .animation(.easeInOut(duration: 0.35), value: isSetAside)
         .background {
             CoverBackdrop(url: fan.middle?.coverURL, fadeHeight: Self.fadeHeight)
                 .saturation(isSetAside ? 0 : 1)
+                .animation(.setAside, value: isSetAside)
                 // Up under the bars, the toolbar's glass floating over it,
                 // and on under the first block, which draws over it.
                 .padding(.top, -400)

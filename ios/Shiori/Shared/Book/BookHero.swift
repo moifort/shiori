@@ -70,6 +70,7 @@ struct BookHero<Actions: View>: View {
                 // No format badge: the outlined tag on the detail line says it.
                 BookCover(book: book, width: coverWidth, showsFormatBadge: false)
                     .saturation(isSetAside ? 0 : 1)
+                    .animation(.setAside, value: isSetAside)
                     .shadow(color: .black.opacity(0.45), radius: 16, y: 10)
                     .accessibilityHidden(true)
                     .onGeometryChange(for: CGFloat.self, of: \.size.height) { coverHeight = $0 }
@@ -95,10 +96,10 @@ struct BookHero<Actions: View>: View {
         .padding(.top, 12)
         .padding(.bottom, 28)
         .environment(\.colorScheme, .dark)
-        .animation(.easeInOut(duration: 0.35), value: isSetAside)
         .background {
             CoverBackdrop(url: book.coverURL, fadeHeight: Self.fadeHeight, tint: book.coverGround)
                 .saturation(isSetAside ? 0 : 1)
+                .animation(.setAside, value: isSetAside)
                 // Up under the bars, the toolbar's glass floating over it,
                 // and on under the first block, which draws over it.
                 .padding(.top, -400)
