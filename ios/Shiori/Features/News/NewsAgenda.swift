@@ -70,13 +70,13 @@ struct NewsAgendaDay: Identifiable, Hashable, Sendable {
 
 /// The Découvrir page as an agenda: "À la une" first, the releases of what
 /// the reader follows a few days back and ahead mixed with the friends' latest
-/// moves; then only the days that bring something, a month back and a month
-/// ahead — a quiet week leaves no empty leaf; then the shelves of each follow,
+/// moves; then only the days that bring something, a month back and every
+/// announced day ahead — a quiet week leaves no empty leaf; then the shelves of each follow,
 /// and the year's prizes. Pure: the same loads and the same day
 /// always give the same agenda.
 struct NewsAgenda: Hashable, Sendable {
     /// The days with news, oldest first: back to the oldest news loaded, on
-    /// to the last day announced within `futureDays`.
+    /// to the last day announced, however far ahead.
     let days: [NewsAgendaDay]
     let today: Date
     /// "À la une": the friends' coups de cœur and the releases of what the
@@ -98,10 +98,9 @@ struct NewsAgenda: Hashable, Sendable {
     static let headlinePastDays = 20
     /// How far ahead the headlines reach.
     static let headlineFutureDays = 30
-    /// How far back the agenda reaches.
+    /// How far back the agenda reaches. Ahead it has no end: every day a
+    /// release is announced for is in the strip.
     static let pastDays = 30
-    /// How far ahead the agenda reaches.
-    static let futureDays = 31
 
     var isEmpty: Bool { days.isEmpty && headlines.isEmpty && prizes.isEmpty && shelves == .empty }
 
@@ -153,7 +152,6 @@ struct NewsAgenda: Hashable, Sendable {
     ) {
         let today = calendar.startOfDay(for: now)
         let since = calendar.date(byAdding: .day, value: -Self.pastDays, to: today) ?? today
-        let until = calendar.date(byAdding: .day, value: Self.futureDays, to: today) ?? today
         let moves = NewsFeedLayout.friendSections(events: events, now: now, calendar: calendar)
             .flatMap(\.moves)
         var byDay: [Date: [NewsCard]] = [:]
@@ -178,7 +176,7 @@ struct NewsAgenda: Hashable, Sendable {
         byDay[today] = (byDay[today] ?? []) + Array(picks.prefix(1))
 
         let past = byDay.filter { !$0.value.isEmpty }.map { NewsAgendaDay(day: $0.key, cards: $0.value) }
-        let future = ahead.filter { $0.key <= until }.map { NewsAgendaDay(day: $0.key, cards: $0.value) }
+        let future = ahead.map { NewsAgendaDay(day: $0.key, cards: $0.value) }
         days = (past + future).sorted { $0.day < $1.day }
         self.today = today
         headlines = Self.headlines(

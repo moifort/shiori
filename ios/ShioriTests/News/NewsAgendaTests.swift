@@ -79,13 +79,13 @@ struct NewsAgendaTests {
         #expect(agenda.openingDay == day("2026-11-13"))
     }
 
-    @Test func daysToComeHoldWhatIsAnnouncedForThemAMonthAhead() {
+    @Test func daysToComeHoldEveryDayAnnouncedHoweverFar() {
         let agenda = agenda(upcoming: [
             release("thursday", "2026-11-12"), release("nextWeek", "2026-11-18"),
             release("month", "2026-12"), release("past", "2026-11-08"), release("far", "2027-01-20"),
         ])
 
-        #expect(agenda.days.map(\.day) == [day("2026-11-12"), day("2026-11-18")])
+        #expect(agenda.days.map(\.day) == [day("2026-11-12"), day("2026-11-18"), day("2027-01-20")])
         #expect(agenda.days.first?.cards.map(\.id) == ["upcoming-thursday"])
     }
 

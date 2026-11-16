@@ -19,7 +19,7 @@ enum NewsAction {
 /// reader. At the top "À la une", a rail of covers: the friends' coups de
 /// cœur and the releases of what the reader follows, out in the last twenty
 /// days or due in the next thirty; then a strip of the days that bring
-/// something, a month back and a month ahead, each with a dot per piece of
+/// something, a month back and every announced day ahead, each with a dot per piece of
 /// news, and the day picked as a rail of covers; then what each friend did
 /// last, the friends' coups de cœur, the year's prizes one winner a page, and
 /// a shelf per follow — the followed series, the favourite authors and
