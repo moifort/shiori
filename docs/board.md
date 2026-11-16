@@ -98,6 +98,10 @@ whatever it says, is the go-ahead: the parent starts every waiting child first (
 or `user_asked` with the same brief when nothing could be proposed), then answers the message.
 It never asks for a keyword.
 
+**One standby on `main`, the others in worktrees** (CLAUDE.md, Workflow rule 12). When a
+standby is handed code work while another already changes code, its brief tells it to work in
+its own worktree; the board stays shared, and a refused publish is merged with the live version.
+
 **The parent checks that every ticket it hands out is handled** (CLAUDE.md, Workflow rule 6).
 A child often receives a ticket and never acts on it: the message waits in a queue, or it
 handles one request out of several. The parent keeps the list of the tickets it sent (thread or

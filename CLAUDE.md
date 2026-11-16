@@ -138,6 +138,15 @@ Runtime: always `bun` / `bunx`, never `npm` / `npx`.
    reader. The report says where it looked, what it fixed and what was clean. On 2026-11-14 a
    wishlist cover fixed alone left the same gap in the suggestions and announced volumes, whose
    pages merge a second source in the app.
+12. **One session on `main`, the others in worktrees.** As soon as more than one session changes
+   code, only the first stays in `/Users/thibaut/Code/shiori`. The parent tells every other one,
+   in its brief, to work in `build/wt-<session>` on its own branch. A session that already
+   edited `main` moves only its own files there (`git diff -- <its files>` applied in the
+   worktree, then `git checkout -- <its files>` on `main`). It builds with
+   `-derivedDataPath <worktree>/build/dd` and the main DerivedData's `SourcePackages`. Its iOS
+   validation reads « Valider et fusionner dans main ». On that yes it rebases, fast-forwards
+   `main`, removes its worktree, and never pushes. On 2026-11-16 three reserves shared `main`,
+   and one build broke on another's half-edited `NewsShelves.swift`.
 
 ## Paid API calls
 
