@@ -102,6 +102,11 @@ It never asks for a keyword.
 standby is handed code work while another already changes code, its brief tells it to work in
 its own worktree; the board stays shared, and a refused publish is merged with the live version.
 
+**Only the board session listens to the board.** A standby keeps no board watch with
+automatic replies: a publish arms one, so it turns it off after each publish (`ArtifactComments`
+`watch`, `on: false`). On 2026-11-16 a freed standby's watch posted « C'est noté, je m'en occupe »
+on three threads of another standby's theme.
+
 **The parent checks that every ticket it hands out is handled** (CLAUDE.md, Workflow rule 6).
 A child often receives a ticket and never acts on it: the message waits in a queue, or it
 handles one request out of several. The parent keeps the list of the tickets it sent (thread or
