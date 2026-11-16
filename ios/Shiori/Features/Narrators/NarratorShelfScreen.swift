@@ -82,13 +82,12 @@ struct NarratorShelfScreen: View {
     }
 
     /// Opens what the release opens in Actualités: a recording on its narrator.
+    /// Named by the release itself: pushed in the frame of the tap.
     private func open(_ release: UpcomingRelease) {
-        Task {
-            switch await UpcomingReleaseDestination.of(release) {
-            case let .narrator(narrator): destination = .narrator(narrator)
-            case let .author(author): destination = .author(author)
-            case .announced, .awaited, nil: break
-            }
+        switch UpcomingReleaseDestination.immediate(release) {
+        case let .narrator(narrator): destination = .narrator(narrator)
+        case let .author(author): destination = .author(author)
+        case .announced, .awaited, nil: break
         }
     }
 }

@@ -4323,6 +4323,22 @@
         }
       }
     },
+    "Cette sortie n'est plus annoncée." : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cette sortie n'est plus annoncée."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This release is no longer announced."
+          }
+        }
+      }
+    },
     "Cette version de Shiori n'est plus compatible avec le serveur. La dernière version est disponible sur l'App Store." : {
       "localizations" : {
         "en" : {
@@ -14091,6 +14107,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sortie hier"
+          }
+        }
+      }
+    },
+    "Sortie indisponible" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sortie indisponible"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Release unavailable"
+          }
+        }
+      }
+    },
+    "Sortie introuvable" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sortie introuvable"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Release not found"
           }
         }
       }

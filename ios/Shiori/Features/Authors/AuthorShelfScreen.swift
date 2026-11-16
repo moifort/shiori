@@ -13,8 +13,7 @@ struct AuthorShelfScreen: View {
     /// What the hearted authors announced: "Prochaines sorties", opened on
     /// last session's snapshot and brought up to date underneath.
     @State private var releases: [UpcomingRelease]
-    @State private var announced: DiscoveryVolume?
-    @State private var awaited: AwaitedEdition?
+    @State private var openedRelease: UpcomingRelease?
     var news: NewsClient = .live
 
     init(client: AuthorsClient = .live, library: LibraryClient = .live, news: NewsClient = .live) {
@@ -60,8 +59,7 @@ struct AuthorShelfScreen: View {
         .scrollAwayBar(String(localized: "Auteurs"))
         .pushesDetail(item: $destination) { LibraryDestinationScreen(destination: $0, client: library) }
         .performsBookQuickActions($quick, client: library) { destination = $0 }
-        .pushesDetail(item: $announced) { AnnouncedVolumeScreen(saga: $0.saga, volume: $0.volume) }
-        .pushesDetail(item: $awaited) { AwaitedEditionScreen(edition: $0) }
+        .pushesDetail(item: $openedRelease) { UpcomingReleaseScreen(release: $0) }
         .task { await viewModel.loadOnAppear() }
         .task { await loadReleases() }
         .onReceive(NotificationCenter.default.publisher(for: .shioriDataDidChange)) { _ in
@@ -89,16 +87,9 @@ struct AuthorShelfScreen: View {
     }
 
     /// Opens what the release opens in Actualités: the announced volume, the
-    /// awaited edition, the author's page.
+    /// awaited edition, the author's page, pushed in the frame of the tap.
     private func open(_ release: UpcomingRelease) {
-        Task {
-            switch await UpcomingReleaseDestination.of(release) {
-            case let .announced(volume): announced = volume
-            case let .awaited(edition): awaited = edition
-            case let .author(author): destination = .author(author)
-            case .narrator, nil: break
-            }
-        }
+        openedRelease = release
     }
 }
 

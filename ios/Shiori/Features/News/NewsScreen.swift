@@ -57,10 +57,8 @@ struct NewsScreen: View {
             NarratorScreen(key: narrator.key, name: narrator.name)
         case .upcoming:
             UpcomingReleasesScreen(releases: viewModel.calendar().releases)
-        case let .announced(volume):
-            AnnouncedVolumeScreen(saga: volume.saga, volume: volume.volume)
-        case let .awaited(edition):
-            AwaitedEditionScreen(edition: edition)
+        case let .release(release):
+            UpcomingReleaseScreen(release: release)
         case let .suggestion(suggestion):
             SuggestionScreen(suggestion: suggestion)
         case let .award(winner):
@@ -70,7 +68,7 @@ struct NewsScreen: View {
 
     private func handle(_ action: NewsAction) async {
         switch action {
-        case let .open(card): await openCard(card)
+        case let .open(card): openCard(card)
         case let .wish(card): await viewModel.wish(card)
         case let .dismiss(card): await viewModel.dismiss(card)
         case .openUpcoming: open(.upcoming)
@@ -82,12 +80,13 @@ struct NewsScreen: View {
 
     /// A card's book on the page the rest of the app opens it on: a friend's
     /// on its read-only page, a release on the volume, edition, author or
-    /// narrator it came from, a discovery or a prize on its own.
-    private func openCard(_ card: NewsCard) async {
+    /// narrator it came from, a discovery or a prize on its own. Pushed in
+    /// the frame of the tap: a release looks itself up behind its loader.
+    private func openCard(_ card: NewsCard) {
         switch card {
         case let .friend(move): open(.friendBook(move.lead))
         case let .released(.release(release, _)), let .upcoming(release):
-            if let destination = await UpcomingReleaseDestination.of(release) { open(NewsDetail(destination)) }
+            open(.release(release))
         case let .released(.narrator(news, _)): open(.narrator(.init(key: news.narratorKey, name: news.narrator)))
         case let .suggestion(suggestion): open(.suggestion(suggestion))
         case let .award(winner): open(.award(winner))
@@ -104,25 +103,14 @@ private enum NewsDetail: Identifiable {
     case author(AuthorDestination)
     case narrator(NarratorDestination)
     case upcoming
-    case announced(DiscoveryVolume)
-    case awaited(AwaitedEdition)
+    case release(UpcomingRelease)
     case suggestion(Suggestion)
     case award(AwardWinner)
-
-    init(_ destination: UpcomingReleaseDestination) {
-        switch destination {
-        case let .announced(volume): self = .announced(volume)
-        case let .awaited(edition): self = .awaited(edition)
-        case let .author(author): self = .author(author)
-        case let .narrator(narrator): self = .narrator(narrator)
-        }
-    }
 
     var id: String {
         switch self {
         case .upcoming: "upcoming"
-        case let .announced(volume): "announced-\(volume.id)"
-        case let .awaited(edition): "awaited-\(edition.id)"
+        case let .release(release): "release-\(release.id)"
         case let .friendBook(event): "friend-book-\(event.id)"
         case let .author(author): "author-\(author.id)"
         case let .narrator(narrator): "narrator-\(narrator.id)"
@@ -134,28 +122,15 @@ private enum NewsDetail: Identifiable {
 
 /// The full list of what is announced, opened from the head of Actualités'
 /// "À venir" title alone: a row pushes on the list's own stack the page its
-/// card opens.
+/// card opens, in the frame of the tap.
 private struct UpcomingReleasesScreen: View {
     let releases: [UpcomingRelease]
-    @State private var announced: DiscoveryVolume?
-    @State private var awaited: AwaitedEdition?
-    @State private var author: AuthorDestination?
-    @State private var narrator: NarratorDestination?
+    @State private var opened: UpcomingRelease?
     @Environment(\.dismiss) private var dismissPresentation
     @Environment(\.detailClosing) private var closing
 
     var body: some View {
-        UpcomingReleasesPage(releases: releases) { release in
-            Task {
-                switch await UpcomingReleaseDestination.of(release) {
-                case let .announced(volume): announced = volume
-                case let .awaited(edition): awaited = edition
-                case let .author(destination): author = destination
-                case let .narrator(destination): narrator = destination
-                case nil: break
-                }
-            }
-        }
+        UpcomingReleasesPage(releases: releases) { opened = $0 }
         .toolbar {
             if closing.showsCloseButton {
                 ToolbarItem(placement: .cancellationAction) {
@@ -165,18 +140,7 @@ private struct UpcomingReleasesScreen: View {
                 }
             }
         }
-        .pushesDetail(item: $author) { author in
-            AuthorScreen(key: author.key, name: author.name, isOffered: false)
-        }
-        .pushesDetail(item: $announced) { volume in
-            AnnouncedVolumeScreen(saga: volume.saga, volume: volume.volume)
-        }
-        .pushesDetail(item: $awaited) { edition in
-            AwaitedEditionScreen(edition: edition)
-        }
-        .pushesDetail(item: $narrator) { narrator in
-            NarratorScreen(key: narrator.key, name: narrator.name)
-        }
+        .pushesDetail(item: $opened) { UpcomingReleaseScreen(release: $0) }
     }
 }
 

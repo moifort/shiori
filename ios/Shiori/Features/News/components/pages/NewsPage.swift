@@ -163,16 +163,19 @@ struct NewsPage: View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Vos amis")
                 .font(.title2.weight(.bold))
-            Button {
-                act(.invite)
+            // The invitation is made on the server before its sheet opens:
+            // the capsule turns meanwhile, as on Partagé.
+            AsyncButton {
+                await onAction(.invite)
             } label: {
                 Label("Inviter un ami", systemImage: "person.badge.plus")
                     .font(.subheadline.weight(.semibold))
                     .padding(.horizontal, 16)
                     .frame(height: 40)
-                    .glassEffect(.regular.interactive(), in: .capsule)
+                    .contentShape(.capsule)
             }
             .buttonStyle(.plain)
+            .glassEffect(.regular.interactive(), in: .capsule)
             Text("Ce que lisent et aiment vos amis s'affichera ici.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
