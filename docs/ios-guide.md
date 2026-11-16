@@ -241,6 +241,10 @@ final class DiscoverViewModel {
 - A button that triggers a mutation shows its progress and is disabled while it runs
   (`AsyncButton`, `AsyncToolbarButton`).
 - The launch shows `LaunchCurtain`, held until `AuthRoot` has something settled behind it.
+- **A tap navigates at once.** Tapping a cover, a row or a link pushes the page in the same
+  frame, with what the list already knows (cover, title) and a loader for the rest; the page
+  loads itself, nothing is awaited before the push. A tap that seems to do nothing is a bug: on
+  2026-11-16 a cover in Actualités waited for its book before opening.
 
 ### Failures
 
