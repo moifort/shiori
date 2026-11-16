@@ -12655,6 +12655,22 @@
         }
       }
     },
+    "Reconsidérer" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reconsider"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reconsidérer"
+          }
+        }
+      }
+    },
     "Records par genre" : {
       "localizations" : {
         "en" : {

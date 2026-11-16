@@ -41,6 +41,9 @@ struct BookHero<Actions: View>: View {
     var onOpenProgress: (() -> Void)? = nil
     /// Set over the title, above the saga: a prize between its laurels.
     var overTitle: AnyView? = nil
+    /// What the reader decided of it, in words under the detail line —
+    /// "Pas intéressé" — while the button under says what a tap does.
+    var status: HeroStatus? = nil
     @ViewBuilder var actions: Actions
 
     /// The text's height and the cover's, to tell whether the text climbs
@@ -130,6 +133,11 @@ struct BookHero<Actions: View>: View {
             narratorLine
             detailLine
                 .padding(.top, 5)
+            if let status {
+                StatusPill(text: status.text, systemImage: status.systemImage)
+                    .padding(.top, 8)
+                    .accessibilityIdentifier("book-status-pill")
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .copyable([

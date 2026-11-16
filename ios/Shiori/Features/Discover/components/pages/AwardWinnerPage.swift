@@ -87,7 +87,8 @@ struct AwardWinnerPage: View {
             state: state,
             stateTag: winner.watched && winner.state == .unannounced ? String(localized: "Pas annoncé") : nil,
             isAwaited: winner.awaitedEditionId != nil,
-            overTitle: winner.mentions.first.map { AnyView(AwardLaurels(mention: $0)) }
+            overTitle: winner.mentions.first.map { AnyView(AwardLaurels(mention: $0)) },
+            status: choices.marks[winner.id] == .notInterested ? .notInterested : nil
         ) {
             HStack(spacing: 12) {
                 DiscoveryButtons(item: winner, choices: choices, onChoice: onChoice, addsInFull: true)

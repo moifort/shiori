@@ -71,7 +71,7 @@ final class DiscoveryChoices {
     }
 }
 
-/// A discovery's "+" and closed eye, side by side in whatever row holds them,
+/// A discovery's "+" and crossed-out eye, side by side in whatever row holds them,
 /// on the home's hero and on a suggestion's or a winner's page alike. No
 /// GlassEffectContainer around them: a menu opened from inside one loses a
 /// moving tap on a row over a neighbouring button.
@@ -94,20 +94,26 @@ struct DiscoveryButtons<Item: Discovery>: View {
             .disabled(addIsOff)
             .sensoryFeedback(.success, trigger: mark == .added)
             .accessibilityIdentifier("discovery-menu")
-        // The closed eye opens a choice, and gives way to the one made: turned
-        // down, the eye filled on white; read, a check on white: buttons
-        // keep to one colour. Pressed again, it takes the choice back. Never
-        // disabled once done: dimmed, the white went unseen.
+        // The crossed-out eye opens a choice, and gives way to the one made:
+        // turned down, "Reconsidérer" in words; read, a check on white.
+        // Pressed again, it takes the choice back. Never disabled once done:
+        // dimmed, the white went unseen.
         switch mark {
         case .notInterested:
+            // The button says what a tap does; the hero's pill says where the
+            // book stands, "Pas intéressé".
             Button {
                 choose(.reconsider, from: .eye, leaving: nil)
             } label: {
-                eyeLabel(turnedDown: true)
+                Label("Reconsidérer", systemImage: "arrow.uturn.backward")
+                    .font(.headline)
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .fixedSize()
                     .modifier(WorkingLabel(isWorking: working == .eye))
             }
-            .buttonStyle(.glass(.regular.tint(.white)))
-            .buttonBorderShape(.circle)
+            .buttonStyle(.glass)
+            .buttonBorderShape(.capsule)
             .disabled(isWorking)
             .sensoryFeedback(.impact(weight: .medium), trigger: mark == .notInterested)
             .accessibilityIdentifier("discovery-dismiss")
@@ -138,7 +144,7 @@ struct DiscoveryButtons<Item: Discovery>: View {
                 }
                 .accessibilityIdentifier("discovery-already-read")
             } label: {
-                eyeLabel(turnedDown: false)
+                eyeLabel
                     .modifier(WorkingLabel(isWorking: working == .eye))
             }
             .buttonStyle(.glass)
@@ -193,17 +199,11 @@ struct DiscoveryButtons<Item: Discovery>: View {
         choices.choose(choice, for: item, from: button, leaving: mark, ask: onChoice)
     }
 
-    private func eyeLabel(turnedDown: Bool) -> some View {
-        Label(
-            turnedDown ? "Écarté" : "Pas intéressé",
-            systemImage: turnedDown ? "eye.slash.fill" : "eye.slash"
-        )
-        .labelStyle(.iconOnly)
-        .font(.headline)
-        .foregroundStyle(turnedDown ? .black : .white)
-        .contentTransition(.symbolEffect(.replace))
-        // Down when turned down, back up when taken back.
-        .symbolEffect(turnedDown ? .bounce.down.byLayer : .bounce.up.byLayer, value: turnedDown)
+    private var eyeLabel: some View {
+        Label("Pas intéressé", systemImage: "eye.slash")
+            .labelStyle(.iconOnly)
+            .font(.headline)
+            .foregroundStyle(.white)
     }
 }
 
