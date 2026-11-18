@@ -5,6 +5,7 @@ import {
   audibleLinksFor,
   audibleProductUrlOf,
   bookFrom,
+  booksFollowed,
   boughtSince,
   editionYearsFor,
   genresFor,
@@ -20,6 +21,7 @@ import {
   shelfOf,
   statusOf,
   titleOf,
+  titlesToFollow,
 } from '~/domain/audible/business-rules'
 import type {
   AudibleAsin as AudibleAsinValue,
@@ -1109,5 +1111,52 @@ describe('the sagas heard a sync lists from Audible', () => {
         }),
       ]),
     ).toEqual([])
+  })
+})
+
+describe('titlesToFollow', () => {
+  const shelf = [
+    aBook({ id: bookId('pile'), audibleAsin: asin('B000000001') }),
+    aBook({ id: bookId('started'), audibleAsin: asin('B000000002') }),
+    aBook({ id: bookId('reading'), audibleAsin: asin('B000000003'), status: 'reading' }),
+    aBook({ id: bookId('read'), audibleAsin: asin('B000000004'), status: 'read' }),
+    aBook({ id: bookId('dropped'), audibleAsin: asin('B000000005'), status: 'dropped' }),
+  ]
+  const library = [
+    anItem({ asin: 'B000000001', listeningStatus: { percentComplete: 0 } }),
+    anItem({ asin: 'B000000002', listeningStatus: { percentComplete: 12 } }),
+    anItem({ asin: 'B000000003' }),
+    anItem({ asin: 'B000000004' }),
+    anItem({ asin: 'B000000005' }),
+    anItem({ asin: 'B000000006' }),
+  ]
+
+  test('follows the books under way, those Audible says were started, and the titles not held', () => {
+    expect(titlesToFollow(library, shelf)).toEqual(['B000000002', 'B000000003', 'B000000006'])
+  })
+
+  test('follows every title on a pass the reader asked for', () => {
+    expect(titlesToFollow(library, shelf, true)).toHaveLength(library.length)
+  })
+})
+
+describe('booksFollowed', () => {
+  test('keeps the books asked for and those Audible reports finished, and those with no ASIN', () => {
+    const books = [
+      aBook({ id: bookId('asked'), audibleAsin: asin('B000000001') }),
+      aBook({ id: bookId('finished'), audibleAsin: asin('B000000002') }),
+      aBook({ id: bookId('unasked'), audibleAsin: asin('B000000003'), status: 'dropped' }),
+      aBook({ id: bookId('paper') }),
+    ]
+    const items = [
+      anItem({ asin: 'B000000001' }),
+      anItem({ asin: 'B000000002', listeningStatus: { isFinished: true } }),
+      anItem({ asin: 'B000000003', listeningStatus: { percentComplete: 40 } }),
+    ]
+    expect(booksFollowed(books, items, ['B000000001']).map(({ id }) => id)).toEqual([
+      bookId('asked'),
+      bookId('finished'),
+      bookId('paper'),
+    ])
   })
 })

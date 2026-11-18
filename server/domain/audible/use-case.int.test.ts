@@ -699,10 +699,8 @@ describe('the nightly sync', () => {
 
   // A book the old rule left on the pile, and one the reader started since:
   // both move on the position, dated on the day the player last heard them.
-  test('starts a book on the pile once the player has stopped well into it', async () => {
-    await connect()
-    await AudibleCommand.recordImport(reader, NOW)
-    await BookCommand.add(
+  const aBookOnThePile = () =>
+    BookCommand.add(
       reader,
       {
         title: BookTitle('Le Nom du vent'),
@@ -712,14 +710,42 @@ describe('the nightly sync', () => {
       },
       NOW,
     )
-    const lastHeard = new Date('2026-09-24T20:55:15.357Z')
-    items = [anItem({ listeningStatus: { percentComplete: 0 } })]
-    positions = [{ asin: 'B002V1OF70', positionMs: 138 * 60 * 1000, lastUpdatedAt: lastHeard }]
+  const lastHeard = new Date('2026-09-24T20:55:15.357Z')
+  const heardWellInto = () => [
+    { asin: 'B002V1OF70', positionMs: 138 * 60 * 1000, lastUpdatedAt: lastHeard },
+  ]
 
-    expect(await AudibleUseCase.syncLibrary(reader, LATER)).toMatchObject({ moved: 1 })
+  test('starts a book on the pile once the player has stopped well into it', async () => {
+    await connect()
+    await AudibleCommand.recordImport(reader, NOW)
+    await aBookOnThePile()
+    items = [anItem({ listeningStatus: { percentComplete: 0 } })]
+    positions = heardWellInto()
+
+    expect(await AudibleUseCase.syncLibrary(reader, LATER, true)).toMatchObject({ moved: 1 })
     const [book] = await BookQuery.all(reader)
     expect(book?.status).toBe('reading')
     expect(book?.startedAt).toEqual(lastHeard)
+  })
+
+  // Every title's position would cost the nightly pass a call per 25 titles,
+  // for a pile that mostly sits still: it asks only where Audible's own
+  // percentage says the player moved.
+  test('asks the nightly pass for a book on the pile only once Audible says it was started', async () => {
+    await connect()
+    await AudibleCommand.recordImport(reader, NOW)
+    await aBookOnThePile()
+    items = [anItem({ listeningStatus: { percentComplete: 0 } })]
+    positions = heardWellInto()
+
+    expect(await AudibleUseCase.syncLibrary(reader, LATER)).toMatchObject({ moved: 0 })
+    expect(positionCalls.at(-1)).toEqual([])
+    expect((await BookQuery.all(reader))[0]?.status).toBe('to-read')
+
+    items = [anItem({ listeningStatus: { percentComplete: 23 } })]
+    expect(await AudibleUseCase.syncLibrary(reader, LATER)).toMatchObject({ moved: 1 })
+    expect(positionCalls.at(-1)).toEqual(['B002V1OF70'])
+    expect((await BookQuery.all(reader))[0]?.startedAt).toEqual(lastHeard)
   })
 
   test('follows how far the player got, and finishes a title three minutes from its end', async () => {

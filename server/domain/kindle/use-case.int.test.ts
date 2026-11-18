@@ -541,11 +541,23 @@ describe('the Kindle position', () => {
 
   test('a book on the pile stays there on a first position, and leaves it when the reader reads on', async () => {
     const id = await importedBook()
-    await KindleUseCase.syncLibrary(reader, NIGHT)
+    await KindleUseCase.syncLibrary(reader, NIGHT, true)
     expect(await read(id)).toMatchObject({ status: 'to-read' })
 
     positions = { [ASIN]: positionAtPage(120) }
+    await KindleUseCase.syncLibrary(reader, new Date('2026-10-03T04:30:00.000Z'), true)
+    expect(await read(id)).toMatchObject({ status: 'reading', currentPage: 120 })
+  })
+
+  test('the nightly pass leaves the pile to a sync the reader asks for', async () => {
+    const id = await importedBook()
+    await KindleUseCase.syncLibrary(reader, NIGHT, true)
+
+    positions = { [ASIN]: positionAtPage(120) }
     await KindleUseCase.syncLibrary(reader, new Date('2026-10-03T04:30:00.000Z'))
+    expect(await read(id)).toMatchObject({ status: 'to-read' })
+
+    await KindleUseCase.syncLibrary(reader, new Date('2026-10-03T12:00:00.000Z'), true)
     expect(await read(id)).toMatchObject({ status: 'reading', currentPage: 120 })
   })
 
@@ -596,7 +608,7 @@ describe('the Kindle position', () => {
   test('a title Amazon will not answer for costs the book its night, not the pass', async () => {
     const id = await importedBook()
     positionRefusals.add(ASIN)
-    expect(typeof (await KindleUseCase.syncLibrary(reader, NIGHT))).toBe('object')
+    expect(typeof (await KindleUseCase.syncLibrary(reader, NIGHT, true))).toBe('object')
     expect((await read(id))?.status).toBe('to-read')
   })
 })

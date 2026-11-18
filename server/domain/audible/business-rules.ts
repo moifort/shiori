@@ -431,6 +431,52 @@ export const listeningChangesFor = (
   })
 }
 
+/** The titles whose saved position a pass asks Audible for.
+ *
+ *  On a nightly pass, the books under way, and the titles the reader does not
+ *  hold yet — a purchase is catalogued with how far it was heard, and a title
+ *  they deleted comes back only on news of it. A book on the pile is asked for
+ *  only when the library's own percentage says it was started: that figure is
+ *  stale, so it misses some starts, but it is the only sign of one Audible gives
+ *  without asking for every title (no "changed since" on either call). A book
+ *  read or dropped is the reader's word. `everyTitle`, on a pass the reader
+ *  asked for, asks for the whole library as before. */
+export const titlesToFollow = (
+  items: readonly AudibleItem[],
+  books: readonly Book[],
+  everyTitle = false,
+): string[] => {
+  if (everyTitle) return items.map(({ asin }) => asin)
+  const held = new Map<string, Book>(
+    books.flatMap((book) => (book.audibleAsin ? [[book.audibleAsin, book] as const] : [])),
+  )
+  return items
+    .filter((item) => {
+      const book = held.get(item.asin)
+      if (!book) return true
+      if (book.status === 'reading') return true
+      return book.status === 'to-read' && (item.listeningStatus?.percentComplete ?? 0) > 0
+    })
+    .map(({ asin }) => asin)
+}
+
+/** The books a pass may move: those whose position it asked for, and those
+ *  Audible reports finished, which the library says without one. A book whose
+ *  position was not asked for would otherwise read as never opened. */
+export const booksFollowed = <T extends Pick<Book, 'audibleAsin'>>(
+  books: readonly T[],
+  items: readonly AudibleItem[],
+  followed: readonly string[],
+): T[] => {
+  const asked = new Set(followed)
+  const finished = new Set(
+    items.filter((item) => item.listeningStatus?.isFinished).map(({ asin }) => asin),
+  )
+  return books.filter(
+    (book) => !book.audibleAsin || asked.has(book.audibleAsin) || finished.has(book.audibleAsin),
+  )
+}
+
 /** Whether Audible knows something about a book the reader's own status does
  *  not already answer.
  *

@@ -12,6 +12,7 @@ import {
   importableFrom,
   isCataloguable,
   kindleLinksFor,
+  positionsToWatch,
   readAsinsOf,
   readersDueForSync,
   readingChangesFor,
@@ -493,6 +494,29 @@ describe('readingChangesFor', () => {
 
   test('touches no book without a Kindle title', () => {
     expect(readingChangesFor([aBook({ status: 'reading' })], read, [])).toEqual([])
+  })
+})
+
+describe('positionsToWatch', () => {
+  const books = (['to-read', 'reading', 'read', 'dropped'] as ReadingStatus[]).map(
+    (status, index) =>
+      aBook({ id: BookId(`book-${index}`), status, kindleAsin: KindleAsin(`B0TESTAAA${index}`) }),
+  )
+  const titles = books.map((book) => aTitle({ asin: book.kindleAsin }))
+  const watched = (pile?: boolean) =>
+    positionsToWatch(books, titles, pile).map((book) => book.status)
+
+  test('watches only the books under way on a nightly pass', () => {
+    expect(watched()).toEqual(['reading'])
+  })
+
+  test('watches the pile too on a pass the reader asked for', () => {
+    expect(watched(true)).toEqual(['to-read', 'reading'])
+  })
+
+  test('leaves a title Amazon reports read', () => {
+    const read = titles.map((title) => ({ ...title, readStatus: 'READ' as const }))
+    expect(positionsToWatch(books, read, true)).toEqual([])
   })
 })
 

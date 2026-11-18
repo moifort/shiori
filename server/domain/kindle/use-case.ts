@@ -127,11 +127,12 @@ export namespace KindleUseCase {
    *  newly reports read move to read, dated tonight — the sync hears of a
    *  finished book within a day. Then titles acquired since the last pass are
    *  catalogued, and only those: everything older was on offer when the reader
-   *  last chose. Last, the books left to finish take their Kindle position: one
+   *  last chose. Last, the books under way take their Kindle position: one
    *  Amazon call each, no paid API, and it moves the page the reader sees.
    *
    *  `autoSync` governs the nightly pass, not a button: `onDemand` walks past
-   *  it. */
+   *  it, and asks for the pile's positions too, which is how a book started on
+   *  the Kindle leaves it (`positionsToWatch`). */
   export const syncLibrary = async (
     userId: UserId,
     now = new Date(),
@@ -180,6 +181,7 @@ export namespace KindleUseCase {
       positionsToWatch(
         linked.filter((book) => !moves.includes(book.id)),
         titles,
+        onDemand,
       ),
     )
 

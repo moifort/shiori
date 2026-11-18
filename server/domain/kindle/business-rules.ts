@@ -428,13 +428,21 @@ export const readingChangesFor = (
     .map((book) => book.id)
 }
 
-/** The books whose Kindle position is worth asking for: those the reader has yet
- *  to finish, on a title still on the account that Amazon does not report read.
- *  A book read or dropped in the app is the app's word, whatever the Kindle does
- *  next, and a position it would move is left unread. */
+/** The books whose Kindle position is worth asking for: those under way, on a
+ *  title still on the account that Amazon does not report read. A book read or
+ *  dropped in the app is the app's word, whatever the Kindle does next, and a
+ *  position it would move is left unread.
+ *
+ *  The pile is asked for only with `pile`, on a pass the reader asked for. Amazon
+ *  says neither when a title was last opened nor how far it got anywhere but in
+ *  each title's own sidecar, one call per book: a nightly pass over a pile of 273
+ *  took a minute for two books under way (2026-11-18). A book started on the
+ *  Kindle therefore leaves the pile when the reader syncs by hand, sets it under
+ *  way, or Amazon reports it read. */
 export const positionsToWatch = (
   books: readonly Book[],
   titles: readonly KindleTitle[],
+  pile = false,
 ): (Book & { kindleAsin: KindleAsinValue })[] => {
   const unread = new Set(
     titles.filter(({ readStatus }) => readStatus !== 'READ').map(({ asin }) => asin),
@@ -442,7 +450,7 @@ export const positionsToWatch = (
   return books.flatMap((book) =>
     book.kindleAsin &&
     unread.has(book.kindleAsin) &&
-    (book.status === 'to-read' || book.status === 'reading')
+    (book.status === 'reading' || (pile && book.status === 'to-read'))
       ? [{ ...book, kindleAsin: book.kindleAsin }]
       : [],
   )

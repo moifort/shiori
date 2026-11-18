@@ -3,6 +3,7 @@ import { AnalyticsUseCase } from '~/domain/analytics/use-case'
 import {
   audibleLinksFor,
   bookFrom,
+  booksFollowed,
   editionYearsFor,
   genresFor,
   heardByAsin,
@@ -15,6 +16,7 @@ import {
   recordingOfVolume,
   seriesVolumesFor,
   shelfOf,
+  titlesToFollow,
   volumeBookFrom,
 } from '~/domain/audible/business-rules'
 import { AudibleCommand } from '~/domain/audible/command'
@@ -117,6 +119,10 @@ export namespace AudibleUseCase {
    *  looked are catalogued — and only those: everything older was on offer when
    *  they last chose what to import, and importing it now would overrule them.
    *
+   *  Positions are asked for the titles `titlesToFollow` picks: on the nightly
+   *  pass, the books under way and the titles not yet held rather than the
+   *  whole library; a pass the reader asked for still asks for every title.
+   *
    *  Unlike `importBooks`, this writes books nobody ticked. That is what the
    *  reader asked for by leaving the sync on, and `autoSync` is how they take it
    *  back — except when they asked for this pass themselves, which is what
@@ -136,20 +142,21 @@ export namespace AudibleUseCase {
     // switch rather than reporting a setting back at them.
     if (!onDemand && account.autoSync === false) return 'sync-disabled'
 
-    const fetched = await fetchLibrary(userId)
-    if (fetched === 'not-connected') return fetched
-    const { items, positions } = fetched
-
+    // The shelf first: it decides which titles' positions are worth a call.
     const [owned, removals] = await Promise.all([
       BookQuery.all(userId),
       BookQuery.syncRemovals(userId, 'audible'),
     ])
+    const fetched = await fetchLibrary(userId, (items) => titlesToFollow(items, owned, onDemand))
+    if (fetched === 'not-connected') return fetched
+    const { items, positions, followed } = fetched
+
     const links = audibleLinksFor(owned, items)
     const linked = owned.map((book) => {
       const link = links.find((candidate) => candidate.bookId === book.id)
       return link ? { ...book, audibleAsin: link.audibleAsin } : book
     })
-    const moves = listeningChangesFor(linked, items, positions)
+    const moves = listeningChangesFor(booksFollowed(linked, items, followed), items, positions)
     const listened = listenedMinutesFor(linked, positions)
     const redates = purchaseDatesFor(linked, items)
     const renumbers = seriesVolumesFor(linked, items)
@@ -300,21 +307,23 @@ export namespace AudibleUseCase {
  *  The client refreshes an expired token on its own and hands the new
  *  credentials back; storing them is what keeps the next import from paying for
  *  that refresh again. */
-const fetchLibrary = async (userId: UserId) => {
+const fetchLibrary = async (
+  userId: UserId,
+  follow: (items: readonly AudibleItem[]) => string[] = (items) => items.map(({ asin }) => asin),
+) => {
   const connected = await connectedCredentials(userId)
   if (connected === 'not-connected') return connected
   const { account, credentials } = connected
 
   const { items, credentials: rotated } = await api.library(credentials)
-  // Where the player last stopped in every title, in one pass: the library's
-  // own percentage is stale, and this is what decides which titles are being
-  // read. Both trips can rotate the token; the last word is what is kept.
-  const { positions, credentials: rotatedAgain } = await api.lastPositions(
-    rotated,
-    items.map((item) => item.asin),
-  )
+  // Where the player last stopped in the titles `follow` picks, every one of
+  // them by default, in one pass: the library's own percentage is stale, and
+  // this is what decides which titles are being read. Both trips can rotate
+  // the token; the last word is what is kept.
+  const followed = follow(items)
+  const { positions, credentials: rotatedAgain } = await api.lastPositions(rotated, followed)
   await AudibleCommand.rememberRotatedCredentials(userId, rotatedAgain)
-  return { items, positions, account }
+  return { items, positions, followed, account }
 }
 
 /** The reader's account and its credentials, opened: see `openedConnection`. */
