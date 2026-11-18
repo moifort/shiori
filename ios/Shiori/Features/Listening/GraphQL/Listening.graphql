@@ -1,5 +1,5 @@
-mutation StartAudiblePlayback($asin: AudibleAsin!) {
-  startAudiblePlayback(asin: $asin) {
+mutation StartAudiblePlayback($asin: AudibleAsin!, $offline: Boolean) {
+  startAudiblePlayback(asin: $asin, offline: $offline) {
     asin
     contentReference
     streamUrl
@@ -17,8 +17,8 @@ mutation StartAudiblePlayback($asin: AudibleAsin!) {
   }
 }
 
-mutation AudibleFairPlayKey($asin: AudibleAsin!, $spc: String!) {
-  audibleFairPlayKey(asin: $asin, spc: $spc)
+mutation AudibleFairPlayKey($asin: AudibleAsin!, $spc: String!, $offline: Boolean) {
+  audibleFairPlayKey(asin: $asin, spc: $spc, offline: $offline)
 }
 
 mutation SaveAudiblePosition($asin: AudibleAsin!, $contentReference: String!, $positionMs: Int!) {

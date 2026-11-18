@@ -25,6 +25,8 @@ struct Playback: Sendable {
     let chapters: [ListeningChapter]
     /// Where the reader stopped last, on any of their Audible players.
     let resumeAt: TimeInterval?
+    /// When that position was saved.
+    var resumeSavedAt: Date? = nil
 }
 
 /// The title being listened to, as the player draws it: what the list it was

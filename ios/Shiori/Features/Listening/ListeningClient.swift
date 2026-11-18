@@ -2,7 +2,9 @@ import Foundation
 
 /// What the player asks of the server.
 struct ListeningClient: Sendable {
+    /// A download licence: the title is kept on the iPhone as it plays.
     var start: @Sendable (_ asin: String) async throws -> Playback
+    /// A content key the iPhone may keep.
     var contentKey: @Sendable (_ asin: String, _ spc: Data) async throws -> Data
     var savePosition: @Sendable (_ asin: String, _ contentReference: String, _ position: TimeInterval) async throws -> Void
     /// The audiobook to play once this one ends: the Audible title the reader
@@ -13,8 +15,8 @@ struct ListeningClient: Sendable {
 
 extension ListeningClient {
     static let live = ListeningClient(
-        start: { try await ListeningAPI.start(asin: $0) },
-        contentKey: { try await ListeningAPI.contentKey(asin: $0, request: $1) },
+        start: { try await ListeningAPI.start(asin: $0, offline: true) },
+        contentKey: { try await ListeningAPI.contentKey(asin: $0, request: $1, offline: true) },
         savePosition: { try await ListeningAPI.savePosition(asin: $0, contentReference: $1, at: $2) },
         nextInProgress: { asin in
             // The home's "En cours", the last one started first, then its pile,

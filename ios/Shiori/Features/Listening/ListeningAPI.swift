@@ -5,10 +5,12 @@ import Foundation
 /// The Audible player's three calls. None changes the library: a licence, a
 /// content key and a saved position are Audible's, not Shiori's.
 enum ListeningAPI {
-    static func start(asin: String) async throws -> Playback {
+    /// A licence for one title. `offline` asks for a download licence, whose
+    /// key the iPhone may keep: the title then plays with no network.
+    static func start(asin: String, offline: Bool) async throws -> Playback {
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
-            mutation: ShioriGraphQL.StartAudiblePlaybackMutation(asin: asin),
+            mutation: ShioriGraphQL.StartAudiblePlaybackMutation(asin: asin, offline: .some(offline)),
             changesLibrary: false
         )
         let playback = data.startAudiblePlayback
@@ -28,16 +30,20 @@ enum ListeningAPI {
                     length: TimeInterval($0.lengthMs) / 1000
                 )
             },
-            resumeAt: playback.position.map { TimeInterval($0.positionMs) / 1000 }
+            resumeAt: playback.position.map { TimeInterval($0.positionMs) / 1000 },
+            resumeSavedAt: playback.position.flatMap { GraphQLHelpers.parseISO8601($0.savedAt) }
         )
     }
 
-    static func contentKey(asin: String, request spc: Data) async throws -> Data {
+    /// The content key for a key request. `offline` asks for one the iPhone
+    /// may keep, for a title started with a download licence.
+    static func contentKey(asin: String, request spc: Data, offline: Bool) async throws -> Data {
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
             mutation: ShioriGraphQL.AudibleFairPlayKeyMutation(
                 asin: asin,
-                spc: spc.base64EncodedString()
+                spc: spc.base64EncodedString(),
+                offline: .some(offline)
             ),
             changesLibrary: false
         )

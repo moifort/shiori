@@ -1,5 +1,6 @@
 import AVFoundation
 import MediaPlayer
+import Network
 import Observation
 import SwiftUI
 import UIKit
@@ -14,6 +15,12 @@ import UIKit
 /// stopped on any Audible player, and saves the position back to Audible
 /// while it plays.
 ///
+/// A title downloads as it plays, under a download licence whose key the
+/// iPhone keeps, and is removed once finished: from then on it plays with no
+/// network. Before that, a cut shows as a wait for the network, which takes
+/// the listening up again by itself, and a position saved offline waits on
+/// the iPhone until Audible can have it.
+///
 /// Created once by the app and handed down through the environment; no view
 /// reads a shared instance.
 @MainActor @Observable
@@ -22,6 +29,9 @@ final class AudiblePlayer {
         /// The licence is being asked for, or the stream is buffering its start.
         case loading
         case ready
+        /// No network, and nothing on the iPhone to play from here: the
+        /// listening starts again by itself once the network is back.
+        case waiting
         /// Amazon refused or the stream failed: the message says which.
         case failed(String)
     }
@@ -35,6 +45,11 @@ final class AudiblePlayer {
     private(set) var chapters: [ListeningChapter] = []
     /// When the sleep timer pauses the player, and what it was set to.
     private(set) var sleepTimer: (minutes: Int, endsAt: Date)?
+    /// Playing, or meaning to, with no network to go on: the stream ran past
+    /// what the iPhone holds, or could not be asked for.
+    private(set) var isWaitingForNetwork = false
+    /// The titles kept on the iPhone, and how far the one under way has come.
+    let downloads: AudibleDownloads
 
     var progress: ListeningProgress {
         ListeningProgress(elapsed: elapsed, duration: duration, chapters: chapters)
@@ -48,6 +63,12 @@ final class AudiblePlayer {
     static let sleepChoices = [15, 20, 30]
 
     private let client: ListeningClient
+    private let positions = ListeningPositions()
+    private let pathMonitor = NWPathMonitor()
+    private var isOnline = true
+    /// Whether the listening takes up again once the network is back: a tap
+    /// while it waits says no.
+    private var resumesOnReconnect = true
     private var playback: Playback?
     private let player = AVPlayer()
     private var keys: FairPlayKeys?
@@ -70,9 +91,11 @@ final class AudiblePlayer {
     private var hasRetried = false
     private var artwork: MPMediaItemArtwork?
 
-    init(client: ListeningClient = .live) {
+    init(client: ListeningClient = .live, downloads: AudibleDownloads? = nil) {
         self.client = client
+        self.downloads = downloads ?? AudibleDownloads()
         player.automaticallyWaitsToMinimizeStalling = true
+        observeNetwork()
         observePlayer()
         observeApp()
         configureRemoteCommands()
@@ -98,12 +121,21 @@ final class AudiblePlayer {
         artwork = nil
         hasPlayed = false
         hasRetried = false
+        resumesOnReconnect = true
+        isWaitingForNetwork = false
         lastSaved = nil
         loadArtwork(for: title)
         start(at: fromStart ? 0 : nil)
     }
 
     func togglePlayPause() {
+        if phase == .waiting {
+            resumesOnReconnect.toggle()
+            isPlaying = resumesOnReconnect
+            refreshWaiting()
+            updateNowPlaying()
+            return
+        }
         if case .failed = phase, let title {
             self.title = nil
             play(title)
@@ -244,20 +276,93 @@ final class AudiblePlayer {
     private func start(at position: TimeInterval?) {
         guard let title else { return }
         startTask?.cancel()
+        if let local = downloads.localAsset(title.asin), let record = downloads.record(title.asin) {
+            startDownloaded(title, asset: local, record: record, at: position)
+            return
+        }
         startTask = Task { [weak self, client] in
             do {
                 let playback = try await client.start(title.asin)
                 guard let self, !Task.isCancelled, self.title?.asin == title.asin else { return }
-                self.open(playback, at: position ?? playback.resumeAt ?? 0)
+                let resume = ListeningPositions.resume(
+                    audible: playback.resumeAt,
+                    savedAt: playback.resumeSavedAt,
+                    local: self.positions.entry(title.asin)
+                )
+                self.open(playback, at: position ?? resume ?? 0)
             } catch {
                 guard let self, !Task.isCancelled, !isCancellation(error) else { return }
+                if isConnectivityLoss(error as NSError) || !self.isOnline {
+                    self.waitForNetwork(at: position ?? self.positions.entry(title.asin)?.position)
+                    return
+                }
                 self.phase = .failed(Self.message(for: error))
                 _ = reportError(error)
             }
         }
     }
 
-    private func open(_ playback: Playback, at position: TimeInterval) {
+    /// A title wholly on the iPhone plays from there at once. With a network,
+    /// Audible is asked first, briefly, whether another player went further.
+    private func startDownloaded(
+        _ title: ListeningTitle,
+        asset: AVURLAsset,
+        record: AudibleDownloads.Record,
+        at position: TimeInterval?
+    ) {
+        startTask = Task { [weak self, client] in
+            var audible: Playback?
+            if position == nil, self?.isOnline == true {
+                audible = await Self.withDeadline(seconds: 4) { try await client.start(title.asin) }
+            }
+            guard let self, !Task.isCancelled, self.title?.asin == title.asin else { return }
+            let local = self.positions.entry(title.asin)
+            let resume = position
+                ?? ListeningPositions.resume(audible: audible?.resumeAt, savedAt: audible?.resumeSavedAt, local: local)
+            let playback = Playback(
+                asin: record.asin,
+                contentReference: record.contentReference,
+                streamURL: asset.url,
+                certificate: record.certificate,
+                duration: record.duration,
+                chapters: record.chapters,
+                resumeAt: resume
+            )
+            self.open(playback, asset: asset, at: resume ?? 0)
+        }
+    }
+
+    /// The value of `work` if it answers within the deadline, nil otherwise.
+    private nonisolated static func withDeadline<T: Sendable>(
+        seconds: Double,
+        _ work: @escaping @Sendable () async throws -> T
+    ) async -> T? {
+        await withTaskGroup(of: T?.self) { group in
+            group.addTask { try? await work() }
+            group.addTask {
+                try? await Task.sleep(for: .seconds(seconds))
+                return nil
+            }
+            let first = await group.next() ?? nil
+            group.cancelAll()
+            return first
+        }
+    }
+
+    /// No stream and no network: the title stays, its position too, and the
+    /// listening starts again by itself once the network is back.
+    private func waitForNetwork(at position: TimeInterval?) {
+        let wasPlaying = isPlaying || phase == .loading
+        teardownStream()
+        if let position { elapsed = position }
+        phase = .waiting
+        resumesOnReconnect = wasPlaying && resumesOnReconnect
+        isPlaying = resumesOnReconnect
+        refreshWaiting()
+        updateNowPlaying()
+    }
+
+    private func open(_ playback: Playback, asset local: AVURLAsset? = nil, at position: TimeInterval) {
         self.playback = playback
         duration = playback.duration
         chapters = playback.chapters
@@ -267,10 +372,14 @@ final class AudiblePlayer {
         let keys = FairPlayKeys(asin: playback.asin, certificate: playback.certificate, client: client)
         let session = AVContentKeySession(keySystem: .fairPlayStreaming)
         session.setDelegate(keys, queue: FairPlayKeys.queue)
-        let asset = AVURLAsset(url: playback.streamURL)
+        let asset = local ?? AVURLAsset(url: playback.streamURL)
         session.addContentKeyRecipient(asset)
         self.keys = keys
         keySession = session
+        // The same asset downloads as it plays, so the two share what arrived.
+        if local == nil, let title {
+            downloads.download(asset, of: playback, title: title.title)
+        }
 
         let item = AVPlayerItem(asset: asset)
         // Spoken word: keep the voice's pitch when the rate changes.
@@ -299,6 +408,8 @@ final class AudiblePlayer {
         guard let playback else { return }
         elapsed = duration
         saveNow()
+        // Listened to the end: the download has done its work.
+        downloads.remove(playback.asin)
         Task { [weak self, client] in
             let next = try? await client.nextInProgress(playback.asin)
             guard let self, self.playback?.asin == playback.asin else { return }
@@ -314,11 +425,17 @@ final class AudiblePlayer {
             }
             phase = .ready
             let start = CMTime(seconds: elapsed, preferredTimescale: 1000)
+            let autoplay = resumesOnReconnect
             player.seek(to: start, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] _ in
-                Task { @MainActor in self?.resume() }
+                Task { @MainActor in if autoplay { self?.resume() } }
             }
             updateNowPlaying()
         case .failed:
+            // The network went: wait for it rather than give up.
+            if !isOnline || (error.map { isConnectivityLoss($0 as NSError) } ?? false) {
+                waitForNetwork(at: elapsed)
+                return
+            }
             // The signed link expires: a stream that played once is asked
             // again, from where it stopped, before giving up.
             if hasPlayed, !hasRetried {
@@ -365,20 +482,37 @@ final class AudiblePlayer {
 
     // MARK: - Position
 
-    /// Save the position on Audible, if it moved since the last save.
+    /// Save the position, if it moved since the last save: on the iPhone
+    /// first, then on Audible. One Audible cannot have yet waits on the iPhone
+    /// and goes once the network is back.
     private func saveNow() {
-        guard let playback, phase == .ready else { return }
+        guard let playback, phase == .ready || phase == .waiting else { return }
         let position = elapsed
         if let lastSaved, abs(lastSaved - position) < 1 { return }
         lastSaved = position
         lastSaveAt = .now
-        Task { [client] in
+        let savedAt = Date.now
+        positions.record(playback.asin, at: position, contentReference: playback.contentReference, now: savedAt)
+        guard isOnline else { return }
+        send(playback.asin, contentReference: playback.contentReference, position: position, savedAt: savedAt)
+    }
+
+    private func send(_ asin: String, contentReference: String, position: TimeInterval, savedAt: Date) {
+        Task { [client, positions] in
             do {
-                try await client.savePosition(playback.asin, playback.contentReference, position)
+                try await client.savePosition(asin, contentReference, position)
+                positions.markSent(asin, savedAt: savedAt)
             } catch {
                 guard !isCancellation(error) else { return }
                 _ = reportError(error)
             }
+        }
+    }
+
+    /// Every position saved with no network, now that there is one.
+    private func sendPendingPositions() {
+        for (asin, entry) in positions.pending() {
+            send(asin, contentReference: entry.contentReference, position: entry.position, savedAt: entry.savedAt)
         }
     }
 
@@ -404,11 +538,44 @@ final class AudiblePlayer {
         rateObservation = player.observe(\.timeControlStatus) { @Sendable [weak self] player, _ in
             let playing = player.timeControlStatus != .paused
             Task { @MainActor in
-                guard let self, self.isPlaying != playing else { return }
+                guard let self, self.phase != .waiting else { return }
+                self.refreshWaiting()
+                guard self.isPlaying != playing else { return }
                 self.isPlaying = playing
                 self.updateNowPlaying()
             }
         }
+    }
+
+    /// The network, as the system sees it: its return sends the positions
+    /// that waited and takes a waiting listening up again.
+    private func observeNetwork() {
+        pathMonitor.pathUpdateHandler = { @Sendable [weak self] path in
+            let online = path.status == .satisfied
+            Task { @MainActor in self?.networkChanged(online: online) }
+        }
+        pathMonitor.start(queue: DispatchQueue(label: "com.polyforms.shiori.player-network"))
+    }
+
+    private func networkChanged(online: Bool) {
+        guard isOnline != online else { return }
+        isOnline = online
+        refreshWaiting()
+        guard online else { return }
+        sendPendingPositions()
+        if phase == .waiting {
+            phase = .loading
+            start(at: elapsed)
+        }
+    }
+
+    /// Whether the player waits on the network: a stream stalled with none, or
+    /// no stream at all until it returns.
+    private func refreshWaiting() {
+        let stalled = phase == .ready && !isOnline
+            && player.timeControlStatus == .waitingToPlayAtSpecifiedRate
+        let waiting = (phase == .waiting && isPlaying) || stalled
+        if isWaitingForNetwork != waiting { isWaitingForNetwork = waiting }
     }
 
     private var rateObservation: NSKeyValueObservation?
@@ -419,6 +586,14 @@ final class AudiblePlayer {
             forName: UIApplication.didEnterBackgroundNotification, object: nil, queue: .main
         ) { [weak self] _ in
             MainActor.assumeIsolated { self?.saveNow() }
+        }
+        center.addObserver(
+            forName: UIApplication.willEnterForegroundNotification, object: nil, queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self, self.isOnline else { return }
+                self.sendPendingPositions()
+            }
         }
         center.addObserver(
             forName: AVAudioSession.interruptionNotification, object: nil, queue: .main
@@ -559,6 +734,9 @@ final class AudiblePlayer {
 /// Answers AVFoundation's FairPlay key requests: the SPC is built from the
 /// licence's certificate and the `skd://` URI without its scheme, traded for
 /// the CKC through the server, and handed back to the player.
+///
+/// Every key is asked as one the iPhone may keep, and kept: a downloaded
+/// title then plays from it with no network, and no second call to Audible.
 private final class FairPlayKeys: NSObject, AVContentKeySessionDelegate, @unchecked Sendable {
     static let queue = DispatchQueue(label: "com.polyforms.shiori.fairplay")
 
@@ -573,18 +751,49 @@ private final class FairPlayKeys: NSObject, AVContentKeySessionDelegate, @unchec
     }
 
     func contentKeySession(_ session: AVContentKeySession, didProvide keyRequest: AVContentKeyRequest) {
-        answer(keyRequest)
+        do {
+            try keyRequest.respondByRequestingPersistableContentKeyRequest()
+        } catch {
+            // No key to keep on this device: a streaming key still plays.
+            answerStreaming(keyRequest)
+        }
     }
 
     func contentKeySession(_ session: AVContentKeySession, didProvideRenewingContentKeyRequest keyRequest: AVContentKeyRequest) {
-        answer(keyRequest)
+        answerStreaming(keyRequest)
+    }
+
+    func contentKeySession(_ session: AVContentKeySession, didProvide keyRequest: AVPersistableContentKeyRequest) {
+        if let stored = AudibleDownloads.storedKey(asin) {
+            keyRequest.processContentKeyResponse(AVContentKeyResponse(fairPlayStreamingKeyResponseData: stored))
+            return
+        }
+        exchange(keyRequest) { [asin] ckc in
+            let key = try keyRequest.persistableContentKey(fromKeyVendorResponse: ckc, options: nil)
+            AudibleDownloads.storeKey(key, for: asin)
+            return key
+        }
+    }
+
+    func contentKeySession(
+        _ session: AVContentKeySession,
+        didUpdatePersistableContentKey persistableContentKey: Data,
+        forContentKeyIdentifier keyIdentifier: Any
+    ) {
+        AudibleDownloads.storeKey(persistableContentKey, for: asin)
     }
 
     func contentKeySession(_ session: AVContentKeySession, contentKeyRequest keyRequest: AVContentKeyRequest, didFailWithError err: Error) {
         _ = reportError(err)
     }
 
-    private func answer(_ keyRequest: AVContentKeyRequest) {
+    private func answerStreaming(_ keyRequest: AVContentKeyRequest) {
+        exchange(keyRequest) { $0 }
+    }
+
+    /// SPC out, CKC back through the server, then `response` makes of the CKC
+    /// what the player is handed.
+    private func exchange(_ keyRequest: AVContentKeyRequest, response: @escaping @Sendable (Data) throws -> Data) {
         let uri = (keyRequest.identifier as? String) ?? ""
         let assetID = Data(uri.replacingOccurrences(of: "skd://", with: "").utf8)
         keyRequest.makeStreamingContentKeyRequestData(
@@ -598,7 +807,7 @@ private final class FairPlayKeys: NSObject, AVContentKeySessionDelegate, @unchec
                 do {
                     let ckc = try await client.contentKey(asin, spc)
                     keyRequest.processContentKeyResponse(
-                        AVContentKeyResponse(fairPlayStreamingKeyResponseData: ckc)
+                        AVContentKeyResponse(fairPlayStreamingKeyResponseData: try response(ckc))
                     )
                 } catch {
                     keyRequest.processContentKeyResponseError(error)

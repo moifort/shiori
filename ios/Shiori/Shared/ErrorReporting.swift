@@ -26,7 +26,7 @@ func isCancellation(_ error: Error) -> Bool {
 /// The reader is told; Sentry has nothing to fix. The URL error may come
 /// wrapped: offline, the Firebase ID token fetch fails first, with its own
 /// network error carrying the URL one as its underlying error.
-private func isConnectivityLoss(_ error: NSError) -> Bool {
+func isConnectivityLoss(_ error: NSError) -> Bool {
     if error.domain == NSURLErrorDomain && [
         NSURLErrorTimedOut,
         NSURLErrorNetworkConnectionLost,

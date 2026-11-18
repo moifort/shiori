@@ -16095,6 +16095,22 @@
         }
       }
     },
+    "Téléchargement, %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Downloading, %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Téléchargement, %@"
+          }
+        }
+      }
+    },
     "Ukrainien" : {
       "localizations" : {
         "en" : {

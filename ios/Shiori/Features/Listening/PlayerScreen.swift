@@ -61,7 +61,9 @@ extension PlayerPage.Item {
             isLoading: player.phase == .loading,
             failure: failure,
             sleepMinutes: player.sleepTimer?.minutes,
-            hasBook: title.bookID != nil
+            hasBook: title.bookID != nil,
+            isWaitingForNetwork: player.isWaitingForNetwork,
+            downloadProgress: player.downloads.progress(of: title.asin)
         )
     }
 }
@@ -71,7 +73,7 @@ extension PlayerAccessory.Item {
         guard let title = player.title else { return nil }
         let line: String? = switch player.phase {
         case .loading: player.duration > 0 ? ListeningText.accessoryLine(player.progress) : title.subtitle
-        case .ready: ListeningText.accessoryLine(player.progress)
+        case .ready, .waiting: ListeningText.accessoryLine(player.progress)
         case let .failed(message): message
         }
         self.init(
@@ -80,7 +82,8 @@ extension PlayerAccessory.Item {
             shortLine: player.phase == .ready ? ListeningText.shortLine(player.progress) : nil,
             coverURL: title.coverURL,
             isPlaying: player.isPlaying,
-            isLoading: player.phase == .loading
+            isLoading: player.phase == .loading,
+            isWaitingForNetwork: player.isWaitingForNetwork
         )
     }
 }
