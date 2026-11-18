@@ -109,10 +109,10 @@ on three threads of another standby's theme.
 
 **The parent orchestrates and never codes** (CLAUDE.md, Workflow rule 13). It runs on Fable 5.2
 and only hands out tickets, checks them, recycles the standbys and keeps the checkout clean: no
-app code, no build, no simulator, no artboard render. The standbys run on Sonnet 5.5; the parent
-sets the model with `set_session_model`, raises one standby to Opus or Fable for a hard ticket
-(performance, a bug across features, a data migration) and puts Sonnet back when it recycles
-it. One ticket at a time per standby; when all are busy the parent keeps the queue. A session
+app code, no build, no simulator, no artboard render. The standbys run on Opus 5.5, never on
+Sonnet (tried on 2026-11-18: its first screen was not acceptable); the parent sets the model
+with `set_session_model`, raises one standby to Fable for a hard ticket (performance, a bug
+across features, a data migration) and puts Opus back when it recycles it. One ticket at a time per standby; when all are busy the parent keeps the queue. A session
 cannot change its own model: the parent's is picked in the app's model menu.
 
 **The parent keeps its context small.** Every child turn and every board comment wakes it and
