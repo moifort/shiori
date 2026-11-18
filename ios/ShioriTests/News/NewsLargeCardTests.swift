@@ -16,7 +16,7 @@ struct NewsLargeCardTests {
         let card = item(.upcoming(berserk))
 
         #expect(card.word == String(localized: "Tome \(43)"))
-        #expect(card.releaseDate == berserk.date)
+        #expect(card.day == berserk.date)
     }
 
     @Test func anAwaitedEditionIsInTheWishListAlready() {
@@ -26,7 +26,7 @@ struct NewsLargeCardTests {
         #expect(dated.word == String(localized: "À paraître"))
         #expect(dated.isAwaited)
         #expect(undated.word == String(localized: "En vue"))
-        #expect(undated.releaseDate == nil)
+        #expect(undated.day == nil)
     }
 
     @Test func anAuthorsBookIsAnnounced() {
@@ -45,12 +45,16 @@ struct NewsLargeCardTests {
         #expect(NewsShelfItem.isoDay(day, calendar: calendar) == "2026-10-03")
     }
 
-    @Test func aFriendsMoveSaysWhatTheyDid() {
+    @Test func aFriendsMoveSaysWhatTheyDidAndOnWhichDay() {
         let move = NewsFeedLayout.friendSections(events: FeedEvent.previews).flatMap(\.moves)
             .first { $0.lead.kind == .loved }!
         let card = item(.friend(move))
 
         #expect(card.word == NewsShelves.action(move.lead))
-        #expect(card.releaseDate == nil)
+        #expect(card.day == NewsShelfItem.isoDay(move.lead.at))
+    }
+
+    @Test func aPrizeHasNoDay() {
+        #expect(item(.award(.preview)).day == nil)
     }
 }

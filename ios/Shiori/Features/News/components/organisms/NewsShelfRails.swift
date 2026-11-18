@@ -82,7 +82,7 @@ struct NewsSeriesRail: View {
             ScrollView(.horizontal) {
                 LazyHStack(spacing: 13) {
                     ForEach(items) { item in
-                        SeriesShowCard(series: Self.series(item), tag: item.word, isCompact: true, releaseDate: item.releaseDate) {
+                        SeriesShowCard(series: Self.series(item), tag: item.word, isCompact: true, releaseDate: item.day) {
                             Task { await onAction(.open(item.card)) }
                         }
                         .frame(width: 200, height: 128)

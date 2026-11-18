@@ -90,13 +90,13 @@ struct NewsLargeCard: View {
                 Text(card.cover.title)
                     .font(.title3.weight(.bold))
                     .lineLimit(2)
-                    .padding(.trailing, item.releaseDate == nil ? 0 : Self.leafRoom)
+                    .padding(.trailing, item.day == nil ? 0 : Self.leafRoom)
                 Text(card.cover.authors.joined(separator: ", "))
                     .font(.subheadline)
                     .foregroundStyle(.white.opacity(0.85))
                     .lineLimit(1)
                     .padding(.top, 2)
-                    .padding(.trailing, item.releaseDate == nil ? 0 : Self.leafRoom)
+                    .padding(.trailing, item.day == nil ? 0 : Self.leafRoom)
                 if !tags.isEmpty {
                     HStack(spacing: 6) {
                         ForEach(tags, id: \.self) { OutlinedTag(text: $0, isFrosted: false) }
@@ -118,7 +118,7 @@ struct NewsLargeCard: View {
         .frame(height: Self.height)
         .frame(maxWidth: .infinity, alignment: .leading)
         .overlay(alignment: .topTrailing) {
-            if let date = item.releaseDate {
+            if let date = item.day {
                 ReleaseDateBadge(date: date, onGlass: true)
                     .padding(10)
             }
@@ -137,7 +137,7 @@ struct NewsLargeCard: View {
     /// language when it is not the phone's.
     private var tags: [String] {
         var tags: [String] = []
-        if let date = item.releaseDate, let countdown = ReleaseDateText.countdown(date) { tags.append(countdown) }
+        if let date = item.day, let countdown = ReleaseDateText.countdown(date) { tags.append(countdown) }
         if card.cover.format == .audiobook { tags.append(String(localized: "Audio")) }
         if let language = card.cover.language, language.isForeign { tags.append(language.code) }
         return tags

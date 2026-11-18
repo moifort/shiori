@@ -67,7 +67,7 @@ system bars, the share sheet, permissions, date pickers.
 
 The design conventions of [ios-guide.md](ios-guide.md#design-conventions) hold on Android
 word for word — large cards at one fixed height, a card never growing past its frame, the date
-box on every Actualité card, a series' day on one line, and the rest: a port follows them, and
+box on every Actualité card, a series' countdown over its name, and the rest: a port follows them, and
 a rule added there is a rule here.
 
 ## Checking a screen

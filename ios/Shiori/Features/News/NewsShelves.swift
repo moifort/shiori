@@ -310,14 +310,17 @@ extension NewsShelfItem {
         }
     }
 
-    /// The day the release came or comes out, as `YYYY-MM-DD` — or `YYYY-MM`,
-    /// `YYYY` for what is announced that loosely: the date leaf in the corner
-    /// and, when ahead, how long is left. Nil for what has no release day.
-    var releaseDate: String? {
+    /// The card's day, as `YYYY-MM-DD` — or `YYYY-MM`, `YYYY` for what is
+    /// announced that loosely: when a release came or comes out, when a
+    /// friend made their move. The date leaf in the corner, past days
+    /// included since the page is news, and how long is left when ahead.
+    /// Nil for the prizes, the month's discovery and what has no date.
+    var day: String? {
         switch card {
         case let .released(item): Self.isoDay(item.day)
         case let .upcoming(release): release.date
-        default: nil
+        case let .friend(move): Self.isoDay(move.lead.at)
+        case .suggestion, .award: nil
         }
     }
 

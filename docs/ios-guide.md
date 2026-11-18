@@ -403,8 +403,9 @@ Previews check how a view looks; unit tests check what the app decides. They do 
 - **Every Actualité card shows its day** in a date box, past days included, since the page is
   news: the day a release came or comes out, the day of a friend's move. The prizes have
   none, and neither does what is announced with no date at all.
-- **A series card says its day on one line**: the day and month, then how long is left, as
-  outlined tags in a row just above the series' name, on the leading side.
+- **A series card keeps its date box** in the top corner, past days included; how long is left
+  before a volume ahead is an outlined tag just above the series' name, on the leading side,
+  and only for a day to come.
 - **Sections stay simple** (base rules, for now): a section's header is its title alone, with
   no subtitle under it; a rail of covers shows the covers alone, with no title or author under
   them (what a cover must say, a date for instance, sits in its foot); and a section with
