@@ -4,6 +4,8 @@ struct AsyncToolbarButton: View {
     let title: LocalizedStringKey
     let systemImage: String
     var role: ButtonRole? = nil
+    /// What the icon does once the call changed it: a heart beats.
+    var gesture: IconGesture? = nil
     let action: () async -> Void
 
     @State private var isInProgress = false
@@ -19,6 +21,9 @@ struct AsyncToolbarButton: View {
         } label: {
             if isInProgress {
                 ProgressView()
+            } else if let gesture {
+                Label(title, systemImage: systemImage)
+                    .iconGesture(gesture, trigger: systemImage)
             } else {
                 Label(title, systemImage: systemImage)
             }

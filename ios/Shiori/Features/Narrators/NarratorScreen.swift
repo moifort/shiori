@@ -78,7 +78,8 @@ struct NarratorScreen: View {
                 ToolbarItem(placement: .primaryAction) {
                     AsyncToolbarButton(
                         title: viewModel.isFavorite ? "Retirer des préférés" : "Préféré",
-                        systemImage: viewModel.isFavorite ? "heart.fill" : "heart"
+                        systemImage: viewModel.isFavorite ? "heart.fill" : "heart",
+                        gesture: .beat
                     ) {
                         await viewModel.toggleFavorite()
                     }

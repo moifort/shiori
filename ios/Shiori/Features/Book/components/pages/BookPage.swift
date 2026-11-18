@@ -308,6 +308,7 @@ struct BookPage: View {
                 // title bar is: the hero keeps to white on glass.
                 RatingStars(rating: rating, font: .footnote, monochrome: true)
                     .frame(height: HeroButtonLabel.height)
+                    .iconGesture(.hop, trigger: rating)
             } else {
                 HeroButtonLabel(title: "Noter", systemImage: "star")
             }

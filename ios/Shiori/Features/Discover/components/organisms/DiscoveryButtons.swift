@@ -159,10 +159,10 @@ struct DiscoveryButtons<Item: Discovery>: View {
             Button {
                 choose(.undoAlreadyRead, from: .eye, leaving: nil)
             } label: {
-                Label("Déjà lu", systemImage: "checkmark")
-                    .labelStyle(.iconOnly)
+                Image(systemName: "checkmark")
                     .font(.headline)
-                    .contentTransition(.symbolEffect(.replace))
+                    .transition(.symbolEffect(.drawOn))
+                    .accessibilityLabel("Déjà lu")
                     .modifier(WorkingLabel(isWorking: working == .eye))
             }
             .buttonStyle(.actionRound(isOn: true))

@@ -398,8 +398,8 @@ struct UnownedBookPage: View {
 
     private var bellSymbol: some View {
         Image(systemName: isAlerted ? "bell" : "bell.slash")
-            .symbolEffect(.wiggle, value: rings)
-            .contentTransition(.symbolEffect(.replace))
+            .contentTransition(.symbolEffect(.replace.magic(fallback: .downUp)))
+            .iconGesture(.swing, trigger: rings)
     }
 
     /// The bell is the row's only button: nothing to buy yet.
@@ -484,6 +484,13 @@ private struct AsyncRoundButton: View {
 
     @State private var isInProgress = false
     @State private var confirms = false
+    /// The slash taken off for a frame, so the tap draws it again.
+    @State private var redraws = false
+
+    /// The symbol drawn: a slashed one loses its slash for a frame on the tap.
+    private var shownSymbol: String {
+        redraws && systemImage.hasSuffix(".slash") ? String(systemImage.dropLast(6)) : systemImage
+    }
 
     var body: some View {
         Button {
@@ -495,8 +502,8 @@ private struct AsyncRoundButton: View {
                     if isInProgress {
                         ProgressView()
                     } else {
-                        Image(systemName: systemImage)
-                            .contentTransition(.symbolEffect(.replace))
+                        Image(systemName: shownSymbol)
+                            .contentTransition(.symbolEffect(.replace.magic(fallback: .downUp)))
                     }
                     Text(title)
                 }
@@ -508,9 +515,9 @@ private struct AsyncRoundButton: View {
                     if isInProgress {
                         ProgressView()
                     } else {
-                        Image(systemName: systemImage)
+                        Image(systemName: shownSymbol)
                             .font(.title3.weight(.medium))
-                            .contentTransition(.symbolEffect(.replace))
+                            .contentTransition(.symbolEffect(.replace.magic(fallback: .downUp)))
                     }
                 }
             }
@@ -528,6 +535,11 @@ private struct AsyncRoundButton: View {
     }
 
     private func run() {
+        redraws = true
+        Task {
+            try? await Task.sleep(for: .milliseconds(40))
+            withAnimation(.snappy) { redraws = false }
+        }
         isInProgress = true
         Task {
             await action()

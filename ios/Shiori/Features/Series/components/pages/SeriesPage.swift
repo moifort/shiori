@@ -161,6 +161,7 @@ struct SeriesPage: View {
         let label = HStack(spacing: 6) {
             if let rating = opinion?.rating {
                 RatingStars(rating: rating, font: .subheadline, monochrome: true)
+                    .iconGesture(.hop, trigger: rating)
             } else if friend == nil {
                 Image(systemName: "star")
                 Text("Noter")
@@ -216,7 +217,7 @@ struct SeriesPage: View {
             turnOnLabel: "Suivre",
             turnOffLabel: "Ne plus suivre",
             size: ProgressCapsule.height,
-            wiggles: true
+            gesture: .swing
         ) { followed in
             await onAction(.setFollowed(followed))
         }

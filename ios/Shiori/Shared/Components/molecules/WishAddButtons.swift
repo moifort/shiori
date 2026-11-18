@@ -23,6 +23,16 @@ enum TakenState: Equatable, Sendable {
         }
     }
 
+    /// What the capsule's icon does as it appears: the bookmark slips into
+    /// the book, the check hops, the binoculars sweep the horizon.
+    var gesture: IconGesture {
+        switch self {
+        case .toRead: .slip
+        case .read: .hop
+        case .awaited: .sweep
+        }
+    }
+
     /// Taken: on the shelf, so "Envies" has nothing left to do. Awaiting an
     /// edition takes nothing.
     var takesTheBook: Bool { self != .awaited }
@@ -80,6 +90,9 @@ struct WishAddButtons<MenuItems: View>: View {
     var onUndo: () -> Void = {}
     @ViewBuilder let menu: () -> MenuItems
 
+    /// Bumped as the capsule appears: its icon plays its gesture then.
+    @State private var capsuleShown = 0
+
     var body: some View {
         HStack(spacing: size == .card ? 8 : 12) {
             if !(besideStore && taken?.takesTheBook == true) {
@@ -91,6 +104,7 @@ struct WishAddButtons<MenuItems: View>: View {
                     .transition(.scale(scale: 0.6, anchor: .leading).combined(with: .opacity))
             } else if showsMenu {
                 addMenu
+                    .transition(.quarterTurn)
             }
         }
         .animation(.bouncy(duration: 0.35), value: taken)
@@ -140,7 +154,7 @@ struct WishAddButtons<MenuItems: View>: View {
     private var wishSymbol: some View {
         Image(systemName: isWished ? "checkmark" : "bookmark")
             .contentTransition(.symbolEffect(.replace.magic(fallback: .downUp)))
-            .symbolEffect(.bounce, options: .nonRepeating, value: isWished)
+            .iconGesture(.slip, trigger: isWished)
     }
 
     private var addMenu: some View {
@@ -168,7 +182,7 @@ struct WishAddButtons<MenuItems: View>: View {
             ZStack {
                 HStack(spacing: size == .card ? 6 : 8) {
                     Image(systemName: taken.symbol)
-                        .symbolEffect(.bounce, options: .nonRepeating, value: taken)
+                        .iconGesture(taken.gesture, trigger: capsuleShown)
                     if !isCompact { Text(taken.title) }
                 }
                 .lineLimit(1)
@@ -180,6 +194,7 @@ struct WishAddButtons<MenuItems: View>: View {
         }
         .buttonStyle(ActionButtonStyle(fill: .glass, shape: isCompact ? .circle : .capsule, height: height))
         .disabled(isWorking)
+        .onAppear { capsuleShown += 1 }
         .accessibilityLabel(Text(taken.title))
         .accessibilityHint("Annule ce choix")
         .accessibilityIdentifier("add-taken")

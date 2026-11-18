@@ -226,6 +226,7 @@ struct PlayerPage: View {
         HStack(spacing: 12) {
             Image(systemName: "moon")
                 .font(.system(size: 20, weight: .medium))
+                .iconGesture(.rock, trigger: item.sleepMinutes)
                 .padding(.trailing, 4)
                 .accessibilityHidden(true)
             ForEach(AudiblePlayer.sleepChoices, id: \.self) { minutes in

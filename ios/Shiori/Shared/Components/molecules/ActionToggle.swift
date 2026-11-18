@@ -20,8 +20,9 @@ struct ActionToggle: View {
     let turnOnLabel: LocalizedStringKey
     let turnOffLabel: LocalizedStringKey
     var size: CGFloat = 50
-    /// Wiggles rather than bounces when turned over: a bell.
-    var wiggles = false
+    /// What the symbol does once turned over, as it says it: a bell swings,
+    /// an eye blinks. Nil bounces.
+    var gesture: IconGesture? = nil
     let onToggle: (Bool) async -> Void
 
     /// The state as last drawn, read once the call settled: the struct's
@@ -47,8 +48,8 @@ struct ActionToggle: View {
         } label: {
             Image(systemName: isShownOn ? symbol : (offSymbol ?? "\(symbol).slash"))
                 .font(size >= 44 ? .title3.weight(.medium) : .subheadline.weight(.semibold))
-                .contentTransition(.symbolEffect(.replace))
-                .modifier(TurnEffect(wiggles: wiggles, turns: turns))
+                .contentTransition(.symbolEffect(.replace.magic(fallback: .downUp)))
+                .modifier(TurnEffect(gesture: gesture, turns: turns))
         }
         .buttonStyle(ActionButtonStyle(fill: isShownOn ? .white : .glass, shape: .circle, height: size))
         .animation(.snappy, value: isShownOn)
@@ -60,14 +61,14 @@ struct ActionToggle: View {
     }
 }
 
-/// The symbol's move once turned over: a bounce, or a bell's wiggle.
+/// The symbol's move once turned over: its own gesture, else a bounce.
 private struct TurnEffect: ViewModifier {
-    let wiggles: Bool
+    let gesture: IconGesture?
     let turns: Int
 
     func body(content: Content) -> some View {
-        if wiggles {
-            content.symbolEffect(.wiggle, options: .nonRepeating, value: turns)
+        if let gesture {
+            content.iconGesture(gesture, trigger: turns)
         } else {
             content.symbolEffect(.bounce, options: .nonRepeating, value: turns)
         }
@@ -77,7 +78,7 @@ private struct TurnEffect: ViewModifier {
 #Preview {
     @Previewable @State var on = false
     HStack(spacing: 16) {
-        ActionToggle(isOn: on, symbol: "bell", turnOnLabel: "Suivre", turnOffLabel: "Ne plus suivre") {
+        ActionToggle(isOn: on, symbol: "bell", turnOnLabel: "Suivre", turnOffLabel: "Ne plus suivre", gesture: .swing) {
             on = $0
         }
         ActionToggle(isOn: true, symbol: "eye", turnOnLabel: "Marquer comme vu", turnOffLabel: "Marquer comme non vu") { _ in }

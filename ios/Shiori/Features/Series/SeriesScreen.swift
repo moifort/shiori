@@ -261,7 +261,8 @@ struct SeriesScreen: View {
         ToolbarItem(placement: .primaryAction) {
             AsyncToolbarButton(
                 title: viewModel.isFavorite ? "Retirer des favoris" : "Ajouter aux favoris",
-                systemImage: viewModel.isFavorite ? "heart.fill" : "heart"
+                systemImage: viewModel.isFavorite ? "heart.fill" : "heart",
+                gesture: .beat
             ) {
                 await viewModel.setFavorite(!viewModel.isFavorite)
             }

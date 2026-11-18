@@ -291,7 +291,8 @@ struct HomeHeroCarousel: View {
                         isOn: isSeen,
                         symbol: "eye",
                         turnOnLabel: "Marquer comme vu",
-                        turnOffLabel: "Marquer comme non vu"
+                        turnOffLabel: "Marquer comme non vu",
+                        gesture: .blink
                     ) { seen in
                         if seen {
                             withAnimation(.snappy) { _ = self.seen.insert(release.id) }
@@ -418,7 +419,8 @@ struct HomeHeroCarousel: View {
                         symbol: "eye.slash",
                         offSymbol: "eye",
                         turnOnLabel: "Pas intéressé",
-                        turnOffLabel: "Plus intéressé"
+                        turnOffLabel: "Plus intéressé",
+                        gesture: .blink
                     ) { dismissed in
                         if dismissed {
                             withAnimation(.snappy) { _ = dismissedPrompts.insert(prompt) }

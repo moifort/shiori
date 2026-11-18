@@ -1,8 +1,8 @@
 import SwiftUI
 
 /// "+" that puts a friend's book — or the first volume of their saga — on the
-/// reader's pile: a spinner while it goes, dimmed on one they already own.
-/// Round glass, as every icon-only action button.
+/// reader's pile: a spinner while it goes, a check that bounces on white on
+/// one they own. Round glass, as every icon-only action button.
 ///
 /// It asks how the reader takes the story in, since that need not be how the
 /// friend did: a reader who never listens takes a friend's recording as a book.
@@ -28,14 +28,18 @@ struct TakeButton: View {
                     .accessibilityIdentifier("friend-take-\(taken.rawValue)")
                 }
             } label: {
-                Image(systemName: "plus")
+                Image(systemName: owned ? "checkmark" : "plus")
                     .font(.caption.weight(.semibold))
+                    .contentTransition(.symbolEffect(.replace.magic(fallback: .downUp)))
+                    .symbolEffect(.bounce, options: .nonRepeating, value: owned)
             }
             .menuStyle(.button)
-            .buttonStyle(.actionGlass)
-            .actionShape(.circle)
+            .buttonStyle(.actionRound(isOn: owned))
             .controlSize(.small)
-            .disabled(owned)
+            // Taken, the check stays bright and does nothing more: disabled,
+            // it would dim and read as off.
+            .allowsHitTesting(!owned)
+            .accessibilityAddTraits(owned ? .isSelected : [])
             .accessibilityLabel(Text(owned ? ownedLabel : addLabel))
             .accessibilityIdentifier(owned ? "friend-take-owned" : "friend-take-add")
         }
