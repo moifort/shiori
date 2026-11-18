@@ -10,7 +10,6 @@ enum PlayerAction {
     case sleep(minutes: Int)
     /// The three dots: the player gives way to the book's page.
     case openBook
-    case stop
 }
 
 /// The full-screen player, over its cover's colours: the cover, the title and
@@ -100,7 +99,6 @@ struct PlayerPage: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            // A tap opens the book's page; stopping is a long press away.
             Button { onAction(.openBook) } label: {
                 Image(systemName: "ellipsis")
                     .font(.system(size: 16, weight: .semibold))
@@ -109,9 +107,6 @@ struct PlayerPage: View {
             }
             .buttonStyle(.plain)
             .disabled(!item.hasBook)
-            .contextMenu {
-                Button("Arrêter", systemImage: "stop.fill") { onAction(.stop) }
-            }
             .accessibilityLabel(Text("Fiche du livre"))
         }
     }

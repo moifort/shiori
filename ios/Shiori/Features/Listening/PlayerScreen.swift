@@ -21,9 +21,6 @@ struct PlayerScreen: View {
                     guard let bookID = player.title?.bookID else { return }
                     dismiss()
                     onOpenBook(bookID)
-                case .stop:
-                    dismiss()
-                    player.stop()
                 }
             }
         } else {

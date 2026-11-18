@@ -2969,22 +2969,6 @@
         }
       }
     },
-    "Arrêter" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Stop"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Arrêter"
-          }
-        }
-      }
-    },
     "Arrêter dans %lld minutes" : {
       "localizations" : {
         "en" : {
