@@ -348,7 +348,8 @@ struct SeriesShowCard: View {
     /// A saga set aside: the card greyed, to say it sleeps.
     var isSetAside = false
     /// The volume's day, `YYYY-MM-DD` or looser: a calendar leaf in the top
-    /// corner, the tag then naming the volume alone.
+    /// corner, how long is left under it when it is ahead, the tag then naming
+    /// the volume alone.
     var releaseDate: String?
     let onOpen: () -> Void
 
@@ -389,6 +390,10 @@ struct SeriesShowCard: View {
                 if let releaseDate {
                     VStack(alignment: .trailing, spacing: 6) {
                         ReleaseDateBadge(date: releaseDate, onGlass: true)
+                        // How long until it comes out, flush with the leaf.
+                        if let countdown = ReleaseDateText.countdown(releaseDate) {
+                            OutlinedTag(text: countdown)
+                        }
                         CoverTags(language: series.language, isAudio: series.isAudio)
                     }
                     .padding(8)
