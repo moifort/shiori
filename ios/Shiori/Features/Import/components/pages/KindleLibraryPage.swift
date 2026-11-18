@@ -28,6 +28,7 @@ struct KindleLibraryPage: View {
                     title: "Bibliothèque vide",
                     message: "Aucun livre Kindle sur ce compte."
                 )
+                .assetSymbol(ImportSource.kindle.logo)
             } else {
                 list
             }

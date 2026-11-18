@@ -5,6 +5,8 @@ import SwiftUI
 /// localizes since it is data, not a key.
 struct SettingsRow: View {
     let icon: String
+    /// A logo of the asset catalogue drawn in place of `icon`.
+    private var logo: String?
     let title: LocalizedStringKey
     let subtitle: String?
 
@@ -19,6 +21,12 @@ struct SettingsRow: View {
         self.subtitle = subtitle
     }
 
+    /// A row for a service, its logo in the badge.
+    init(logo: String, title: LocalizedStringKey, subtitle: String? = nil) {
+        self.init(icon: "", title: title, subtitle: subtitle)
+        self.logo = logo
+    }
+
     var body: some View {
         Label {
             VStack(alignment: .leading, spacing: 2) {
@@ -30,7 +38,7 @@ struct SettingsRow: View {
                 }
             }
         } icon: {
-            Image(systemName: icon)
+            glyph
                 .font(.system(size: glyphSize))
                 // Monochrome like every icon: the glyph in the text's colour.
                 .foregroundStyle(.primary)
@@ -44,6 +52,17 @@ struct SettingsRow: View {
         // shaped, the whole row is the target, not just its title.
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(.rect)
+    }
+
+    @ViewBuilder private var glyph: some View {
+        if let logo {
+            Image(logo)
+                .resizable()
+                .scaledToFit()
+                .frame(width: glyphSize * 1.2, height: glyphSize * 1.2)
+        } else {
+            Image(systemName: icon)
+        }
     }
 }
 

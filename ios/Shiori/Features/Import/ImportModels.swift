@@ -204,19 +204,13 @@ enum ImportSource: String, CaseIterable, Identifiable, Sendable {
         }
     }
 
-    var symbol: String {
+    /// The service's logo in the asset catalogue, a template image drawn in
+    /// the text's colour: the one mark the app shows for the service,
+    /// wherever it names it.
+    var logo: String {
         switch self {
-        case .audible: "headphones"
-        case .kindle: "ipad"
-        }
-    }
-
-    /// The source's own iOS app icon, as the App Store serves it: what a
-    /// reader recognises the service by.
-    var appIcon: String {
-        switch self {
-        case .audible: "audible-app"
-        case .kindle: "kindle-app"
+        case .audible: "audible-logo"
+        case .kindle: "kindle-logo"
         }
     }
 

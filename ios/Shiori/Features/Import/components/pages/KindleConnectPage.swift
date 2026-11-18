@@ -14,8 +14,10 @@ struct KindleConnectPage: View {
         List {
             Section {
                 VStack(alignment: .leading, spacing: 12) {
-                    Image(systemName: "book.closed")
-                        .font(.largeTitle)
+                    Image("kindle-logo")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 40, height: 40)
                         .foregroundStyle(.tint)
                     Text("Importez votre bibliothèque Kindle")
                         .font(.title3.bold())

@@ -135,6 +135,13 @@ must exist. A ticket with no trace goes back to its child, and the user hears of
 A child that sends "Réserve libérée" with a ticket untouched is not cleared until that ticket is
 handled.
 
+## Logos
+
+The services' logos are files, never redrawn: `project/logos/audible.svg` and
+`project/logos/kindle.svg` on the board, the same SVGs as the iOS asset catalogue's
+`audible-logo` and `kindle-logo` ([ios-guide.md](ios-guide.md#design-conventions)). An
+artboard inlines their paths in white, at the size the screen draws them.
+
 ## Capturing artboards
 
 Artboards reference images as `/_blob/<id>`, served only by the board's frame origin.

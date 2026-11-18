@@ -14,7 +14,7 @@ struct ImportSourcesRow: View {
         HStack(alignment: .top, spacing: 12) {
             ForEach(ImportSource.allCases) { source in
                 StartCard(
-                    mark: .appIcon(source.appIcon),
+                    mark: .logo(source.logo),
                     title: source.label,
                     text: Self.line(source),
                     tint: Self.tint(source)
@@ -104,7 +104,8 @@ struct FriendsInviteCard: View {
 private struct StartCard<Buttons: View>: View {
     enum Mark {
         case symbol(String)
-        case appIcon(String)
+        /// A service's logo of the asset catalogue.
+        case logo(String)
     }
 
     let mark: Mark
@@ -154,27 +155,31 @@ private struct StartCard<Buttons: View>: View {
 
     @ViewBuilder private var markView: some View {
         switch mark {
-        case let .appIcon(name):
-            // The home screen's own rounding: about a fifth of the side.
-            Image(name)
-                .resizable()
-                .clipShape(.rect(cornerRadius: 10, style: .continuous))
-                .overlay {
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .strokeBorder(.white.opacity(0.14), lineWidth: 0.5)
-                }
-                .shadow(color: .black.opacity(0.3), radius: 4, y: 2)
+        case let .logo(name):
+            badge {
+                Image(name)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 26, height: 26)
+            }
         case let .symbol(name):
-            Image(systemName: name)
-                .font(.title3.weight(.semibold))
-                .foregroundStyle(tint)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(.white.opacity(0.1), in: .rect(cornerRadius: 12, style: .continuous))
-                .overlay {
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .strokeBorder(.white.opacity(0.14), lineWidth: 1)
-                }
+            badge {
+                Image(systemName: name)
+                    .font(.title3.weight(.semibold))
+            }
         }
+    }
+
+    /// The mark in the card's colour, on a glass tile.
+    private func badge(@ViewBuilder _ glyph: () -> some View) -> some View {
+        glyph()
+            .foregroundStyle(tint)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(.white.opacity(0.1), in: .rect(cornerRadius: 12, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .strokeBorder(.white.opacity(0.14), lineWidth: 1)
+            }
     }
 }
 

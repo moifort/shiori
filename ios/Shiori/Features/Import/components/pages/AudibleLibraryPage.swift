@@ -32,6 +32,7 @@ struct AudibleLibraryPage: View {
                     title: "Bibliothèque vide",
                     message: "Aucun livre audio sur ce compte."
                 )
+                .assetSymbol(ImportSource.audible.logo)
             } else {
                 list
             }

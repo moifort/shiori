@@ -45,7 +45,7 @@ struct LibrariesOfferPage: View {
             VStack(spacing: 0) {
                 sourceToggle(
                     isOn: $connectsAudible,
-                    symbol: "headphones",
+                    logo: ImportSource.audible.logo,
                     title: "Audible",
                     detail: "Vos livres audio, avec ce que vous avez déjà écouté.",
                     identifier: "onboarding-connect-audible"
@@ -53,7 +53,7 @@ struct LibrariesOfferPage: View {
                 Divider().padding(.leading, 44)
                 sourceToggle(
                     isOn: $connectsKindle,
-                    symbol: "book.closed",
+                    logo: ImportSource.kindle.logo,
                     title: "Kindle",
                     detail: "Vos livres numériques, avec ceux que vous avez finis.",
                     identifier: "onboarding-connect-kindle"
@@ -112,16 +112,18 @@ struct LibrariesOfferPage: View {
 
     private func sourceToggle(
         isOn: Binding<Bool>,
-        symbol: String,
+        logo: String,
         title: LocalizedStringKey,
         detail: LocalizedStringKey,
         identifier: String
     ) -> some View {
         Toggle(isOn: isOn) {
             HStack(alignment: .top, spacing: 12) {
-                Image(systemName: symbol)
-                    .font(.title3)
+                Image(logo)
+                    .resizable()
+                    .scaledToFit()
                     .foregroundStyle(.tint)
+                    .frame(width: 26, height: 26)
                     .frame(width: 32)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title)

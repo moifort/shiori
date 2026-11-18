@@ -15,8 +15,10 @@ struct AudibleConnectPage: View {
         List {
             Section {
                 VStack(alignment: .leading, spacing: 12) {
-                    Image(systemName: "headphones")
-                        .font(.largeTitle)
+                    Image("audible-logo")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 40, height: 40)
                         .foregroundStyle(.tint)
                     Text("Importez votre bibliothèque Audible")
                         .font(.title3.bold())

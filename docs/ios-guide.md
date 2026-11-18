@@ -423,6 +423,15 @@ Previews check how a view looks; unit tests check what the app decides. They do 
   `.contentShape(.rect)`, set in the row view so every caller inherits it. Never
   `onTapGesture` in place of a button.
 
+- **A service has one logo, everywhere.** Audible and Kindle are drawn with the template SVGs
+  of the asset catalogue, `audible-logo` and `kindle-logo` (`ImportSource.logo`), tinted like
+  text: settings rows, the empty shelf's cards, onboarding, the connection and import screens,
+  the store links, the home's prompts. Never an SF Symbol (`headphones`, `book.closed`), a
+  PNG app icon or a hand-drawn mark in their place, and never a new copy: the sources are
+  Simple Icons' `audible` (https://simpleicons.org/?q=audible) and Iconify's `arcticons:kindle`
+  (https://icon-sets.iconify.design/arcticons/kindle/). The board uses the same files, under
+  `project/logos/`. Amazon keeps `amazon-logo`.
+
 ## Localisation
 
 Strings are written in French in Swift and are the catalogue keys (`sourceLanguage: fr`); the

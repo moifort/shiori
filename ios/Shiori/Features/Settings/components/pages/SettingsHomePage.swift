@@ -71,7 +71,7 @@ struct SettingsHomePage: View {
                         onAction(.openSource(source))
                     } label: {
                         SettingsRow(
-                            icon: source.symbol,
+                            logo: source.logo,
                             title: LocalizedStringKey(source.label),
                             subtitle: source.subtitle
                         )
