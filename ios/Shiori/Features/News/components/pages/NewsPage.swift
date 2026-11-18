@@ -98,6 +98,7 @@ struct NewsPage: View {
                                 today: agenda.today,
                                 opening: agenda.openingDay,
                                 lead: $lead,
+                                wished: wished,
                                 onAction: onAction
                             )
                         }
@@ -197,7 +198,7 @@ struct NewsPage: View {
 /// The agenda: its title, the strip of the days that bring something — the
 /// month over the first leaf of each, a dot under each leaf for its news — and
 /// under the strip every day's covers in one rail, oldest first, with no end
-/// ahead. The rail opens on the opening day's covers; as it scrolls, the days
+/// ahead — up to three, large cards as on the other shelves. The rail opens on the opening day's covers; as it scrolls, the days
 /// whose covers are on screen turn white in the strip, which follows it; a
 /// leaf brings the rail to its day.
 struct NewsAgendaSection: View {
@@ -206,6 +207,8 @@ struct NewsAgendaSection: View {
     let opening: Date?
     /// The first day on screen, for the backdrop's colours.
     @Binding var lead: Date?
+    /// The cards' books just wished for, by `NewsCard.key`.
+    var wished: Set<String> = []
     let onAction: (NewsAction) async -> Void
 
     /// The days whose covers are on screen.
@@ -267,10 +270,18 @@ struct NewsAgendaSection: View {
             .scrollPosition($strip)
             .scrollIndicators(.hidden)
             ScrollView(.horizontal) {
-                LazyHStack(alignment: .top, spacing: 13) {
+                LazyHStack(alignment: .top, spacing: entries.count <= NewsShelf.cardLimit ? 12 : 13) {
                     ForEach(entries) { entry in
-                        NewsPersonTile(item: entry.item) { Task { await onAction(.open(entry.item.card)) } }
-                            .id(entry.id)
+                        if entries.count <= NewsShelf.cardLimit {
+                            NewsLargeCard(item: entry.item, isWished: wished.contains(entry.item.card.key), onAction: onAction)
+                                .containerRelativeFrame(.horizontal) { width, _ in
+                                    SeriesReleaseCard.railWidth(width, count: entries.count)
+                                }
+                                .id(entry.id)
+                        } else {
+                            NewsPersonTile(item: entry.item) { Task { await onAction(.open(entry.item.card)) } }
+                                .id(entry.id)
+                        }
                     }
                 }
                 .scrollTargetLayout()
@@ -704,16 +715,39 @@ enum NewsCardText {
 
 // MARK: - Previews
 
+extension NewsAgenda {
+    /// The agenda alone, its releases cut to the `cards` nearest the opening
+    /// day, for the previews of a short agenda.
+    func agendaOnly(cards: Int) -> NewsAgenda {
+        let opening = openingDay ?? today
+        let kept = days
+            .flatMap { day in day.cards.map { (day: day.day, card: $0) } }
+            .sorted { abs($0.day.timeIntervalSince(opening)) < abs($1.day.timeIntervalSince(opening)) }
+            .prefix(cards)
+        let short = Dictionary(grouping: kept, by: \.day)
+            .map { NewsAgendaDay(day: $0.key, cards: $0.value.map(\.card)) }
+            .sorted { $0.day < $1.day }
+        return NewsAgenda(days: short, today: today, headlines: [], prizes: [], hasFriends: true)
+    }
+}
+
 private struct NewsPagePreview: View {
     var events: [FeedEvent] = FeedEvent.previews + FeedEvent.sameStartPreviews
     var released = true
     var isLoading = false
     var errorMessage: String?
     var empty = false
+    /// Keeps only the agenda, cut to this many releases.
+    var agendaCards: Int?
 
     private var agenda: NewsAgenda {
         guard !empty else { return .empty() }
-        return NewsAgenda(
+        guard let agendaCards else { return full }
+        return full.agendaOnly(cards: agendaCards)
+    }
+
+    private var full: NewsAgenda {
+        NewsAgenda(
             released: NewsFeedLayout.released(
                 releases: released ? UpcomingRelease.releasedPreviews : [],
                 narrator: released ? [.preview] : [],
@@ -742,6 +776,8 @@ private struct NewsPagePreview: View {
 
 #Preview("Découvrir") { NewsPagePreview() }
 #Preview("Sans amis") { NewsPagePreview(events: []) }
+#Preview("Agenda, une sortie") { NewsPagePreview(agendaCards: 1) }
+#Preview("Agenda, trois sorties") { NewsPagePreview(agendaCards: 3) }
 #Preview("Vide") { NewsPagePreview(empty: true) }
 #Preview("Loading") { NewsPagePreview(isLoading: true, empty: true) }
 #Preview("Failed") { NewsPagePreview(errorMessage: "Le réseau est indisponible.", empty: true) }
