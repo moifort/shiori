@@ -13,8 +13,10 @@ enum DiscoveryChoice {
     case add
     case await(ReleaseFormat)
     case alreadyRead
-    /// Onto the reader's wishlist, from the "+".
+    /// Onto the reader's wishlist, from "Envies" (the home's "+" on the hero).
     case wish
+    /// "Envies" tapped again: off the wishlist.
+    case unwish
     /// The check pressed again on a book said read: it leaves the shelf.
     case undoAlreadyRead
     case notInterested
@@ -26,6 +28,8 @@ enum DiscoveryChoice {
 enum DiscoveryMark {
     /// Added or awaited from the "+".
     case added
+    /// On the wishlist, from "Envies".
+    case wished
     /// Read already, from the eye.
     case read
     /// Turned down from the eye.
@@ -71,8 +75,11 @@ final class DiscoveryChoices {
     }
 }
 
-/// A discovery's "+" and crossed-out eye, side by side in whatever row holds them,
-/// on the home's hero and on a suggestion's or a winner's page alike. No
+/// A discovery's buttons, side by side in whatever row holds them: on its
+/// page the pair every book page shares, "Envies" and the "+" of the page's
+/// add menu (WishAddButtons), then the crossed-out eye; on the home's hero,
+/// which leads with "Découvrir", the round "+" alone, wish list included,
+/// then the eye. No
 /// GlassEffectContainer around them: a menu opened from inside one loses a
 /// moving tap on a row over a neighbouring button.
 struct DiscoveryButtons<Item: Discovery>: View {
@@ -90,10 +97,28 @@ struct DiscoveryButtons<Item: Discovery>: View {
     private var isWorking: Bool { working != nil }
 
     var body: some View {
-        addMenu
-            .disabled(addIsOff)
-            .sensoryFeedback(.success, trigger: mark == .added)
+        if addsInFull {
+            WishAddButtons(
+                isWished: mark == .wished,
+                size: .page,
+                isDisabled: isWorking || mark == .added || mark == .read || mark == .notInterested,
+                onToggle: {
+                    if mark == .wished {
+                        choose(.unwish, from: .add, leaving: nil)
+                    } else {
+                        choose(.wish, from: .add, leaving: .wished)
+                    }
+                }
+            ) {
+                DiscoveryAddActions(item: item, showsWish: false) { choose($0, from: .add, leaving: $1) }
+            }
             .accessibilityIdentifier("discovery-menu")
+        } else {
+            addMenu
+                .disabled(addIsOff)
+                .sensoryFeedback(.success, trigger: mark == .added)
+                .accessibilityIdentifier("discovery-menu")
+        }
         // The crossed-out eye opens a choice, and gives way to the one made:
         // turned down, "Reconsidérer" in words; read, a check on white.
         // Pressed again, it takes the choice back. Never disabled once done:
@@ -133,7 +158,7 @@ struct DiscoveryButtons<Item: Discovery>: View {
             .disabled(isWorking)
             .sensoryFeedback(.success, trigger: mark == .read)
             .accessibilityIdentifier("discovery-dismiss")
-        case .added, nil:
+        case .added, .wished, nil:
             Menu {
                 Button("Pas intéressé", systemImage: "eye.slash", role: .destructive) {
                     choose(.notInterested, from: .eye, leaving: .notInterested)
@@ -149,10 +174,13 @@ struct DiscoveryButtons<Item: Discovery>: View {
             }
             .buttonStyle(.glass)
             .buttonBorderShape(.circle)
-            .disabled(isWorking || mark == .added)
+            .disabled(isWorking || mark == .added || mark == .wished)
             .accessibilityIdentifier("discovery-dismiss")
         }
     }
+
+    /// Added or wished: the home's "+" shows a tick either way.
+    private var isTaken: Bool { mark == .added || mark == .wished }
 
     private var addIsOff: Bool { isWorking || mark == .read || mark == .notInterested }
 
@@ -188,8 +216,8 @@ struct DiscoveryButtons<Item: Discovery>: View {
 
     private var addLabel: some View {
         Label(
-            mark == .added ? "Ajouté" : "Ajouter",
-            systemImage: mark == .added ? "checkmark" : "plus"
+            isTaken ? "Ajouté" : "Ajouter",
+            systemImage: isTaken ? "checkmark" : "plus"
         )
         .font(.headline)
         .contentTransition(.symbolEffect(.replace.magic(fallback: .downUp)))

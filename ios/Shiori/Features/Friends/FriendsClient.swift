@@ -21,7 +21,10 @@ struct FriendsClient: Sendable {
     var accept: @Sendable (_ code: String) async throws -> Friend
     var remove: @Sendable (_ userId: String) async throws -> Void
     /// Onto the reader's wishlist: the server re-reads the friend's book.
-    var wish: @Sendable (_ friendId: String, _ bookId: String) async throws -> Void = { _, _ in }
+    /// Answers the wish's id, which "Envies" tapped again takes back.
+    var wish: @Sendable (_ friendId: String, _ bookId: String) async throws -> String = { _, _ in "" }
+    /// A wish taken back, from "Envies" tapped again.
+    var removeWish: @Sendable (_ wishId: String) async throws -> Void = { _ in }
 }
 
 extension FriendsClient {
@@ -40,7 +43,8 @@ extension FriendsClient {
         invite: { try await FriendsAPI.invite() },
         accept: { try await FriendsAPI.accept(code: $0) },
         remove: { try await FriendsAPI.remove(userId: $0) },
-        wish: { try await WishlistAPI.wish(friendId: $0, bookId: $1) }
+        wish: { try await WishlistAPI.wish(friendId: $0, bookId: $1).id },
+        removeWish: { try await WishlistAPI.remove(id: $0) }
     )
 
     /// Answers from the fixtures, at once, and accepts every write.

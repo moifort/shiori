@@ -151,6 +151,8 @@ struct SuggestionPage: View {
 /// buttons.
 struct DiscoveryAddActions<Item: Discovery>: View {
     let item: Item
+    /// Off beside "Envies", which holds the wish list on a discovery's page.
+    var showsWish = true
     let onChoose: (DiscoveryChoice, DiscoveryMark) -> Void
 
     var body: some View {
@@ -158,9 +160,11 @@ struct DiscoveryAddActions<Item: Discovery>: View {
             .accessibilityIdentifier("suggestion-add")
         Button("Déjà lu", systemImage: "checkmark") { onChoose(.alreadyRead, .read) }
             .accessibilityIdentifier("suggestion-read")
-        Section {
-            Button("Liste d'envies", systemImage: "bookmark") { onChoose(.wish, .added) }
-                .accessibilityIdentifier("suggestion-wish")
+        if showsWish {
+            Section {
+                Button("Liste d'envies", systemImage: "bookmark") { onChoose(.wish, .added) }
+                    .accessibilityIdentifier("suggestion-wish")
+            }
         }
         if !item.awaitableFormats.isEmpty {
             Section {

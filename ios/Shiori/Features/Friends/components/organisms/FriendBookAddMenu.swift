@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// The first button of a friend's book hero, where the reader's own book has
-/// its next step: onto the pile, or among the books read, in print or as a
+/// The first buttons of a friend's book hero, where the reader's own book has
+/// its next step: "Envies" and the "+" beside it, onto the pile, or among the books read, in print or as a
 /// recording — a reader who never listens takes a friend's recording as a
 /// book, and a printed book is offered heard once Audible confirms it sells
 /// it. Its edition in the app's language, translated or recorded, may be
@@ -21,6 +21,32 @@ struct FriendBookAddMenu: View {
     var onWish: () async -> Void = {}
 
     var body: some View {
+        if owned {
+            heldMenu
+        } else {
+            // The pair every book page shares: "Envies", a second tap taking
+            // the book back off, and the "+" of the same items, wish list aside.
+            WishAddButtons(
+                isWished: wished,
+                size: .page,
+                showsMenu: !formats.isEmpty || !awaitable.isEmpty,
+                onToggle: { Task { await onWish() } }
+            ) {
+                BookAddMenuItems(
+                    formats: formats,
+                    owned: false,
+                    awaitable: awaitable,
+                    onAdd: onAdd,
+                    onAwait: onAwait,
+                    showsWish: false
+                )
+            }
+            .accessibilityIdentifier("friend-book-add-menu")
+        }
+    }
+
+    /// The book held: "✓ Chez vous", which still opens what is left to await.
+    private var heldMenu: some View {
         Menu {
             BookAddMenuItems(
                 formats: formats,

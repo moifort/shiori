@@ -402,6 +402,8 @@ final class HomeViewModel {
     /// The books said read from a discovery's buttons, by the discovery they
     /// came from: the check pressed again takes them off the shelf.
     private var booksRead: [Suggestion.ID: String] = [:]
+    /// The wishes made from a discovery, which "Envies" on its page takes back.
+    private var wishIds: [String: String] = [:]
 
     /// A choice from a discovery's "+" or eye. The discovery stays on
     /// screen until the reader leaves the page. Says whether the server took
@@ -417,7 +419,10 @@ final class HomeViewModel {
             case .alreadyRead:
                 booksRead[suggestion.id] = try await client.addBook(suggestion.shelfDraft(status: .read))
             case .wish:
-                try await client.wish(suggestion.shelfDraft(status: .toRead))
+                wishIds[suggestion.id] = try await client.wish(suggestion.shelfDraft(status: .toRead))
+            case .unwish:
+                if let wishId = wishIds[suggestion.id] { try await client.removeWish(wishId) }
+                wishIds[suggestion.id] = nil
             case .undoAlreadyRead:
                 if let book = booksRead[suggestion.id] { try await client.deleteBook(book) }
                 booksRead[suggestion.id] = nil

@@ -16,6 +16,8 @@ final class FriendBookViewModel {
     private(set) var added: CopiedStatus?
     /// Put on the reader's wishlist from the hero's menu.
     private(set) var wished = false
+    /// The wish made here, which "Envies" tapped again takes back.
+    private var wishId: String?
     /// Whether Audible sells the book, for a printed one: until it answers,
     /// and when it cannot, the reader may still take it heard.
     private(set) var audio: AudioAvailability?
@@ -89,11 +91,20 @@ final class FriendBookViewModel {
     }
 
     /// Puts the book on the reader's wishlist.
+    /// "Envies": onto the wish list, or off it again on a second tap. Shown
+    /// at once, back if the server refused.
     func wish() async {
+        let wasWished = wished
+        wished.toggle()
         do {
-            try await client.wish(friendId, bookId)
-            wished = true
+            if wasWished {
+                if let wishId { try await client.removeWish(wishId) }
+                wishId = nil
+            } else {
+                wishId = try await client.wish(friendId, bookId)
+            }
         } catch {
+            wished = wasWished
             guard !isCancellation(error) else { return }
             addFailed = reportError(error)
         }

@@ -37,6 +37,8 @@ final class AwardWinnerViewModel {
     /// The book said read here, which the check pressed again takes off the
     /// shelf.
     private var bookRead: String?
+    /// The wish made here, which "Envies" tapped again takes back.
+    private var wishId: String?
     /// Why a choice could not be made, said in an alert.
     var actionError: String?
 
@@ -54,7 +56,10 @@ final class AwardWinnerViewModel {
                 draft.status = .read
                 bookRead = try await client.addSuggestion(draft)
             case .wish:
-                try await client.wish(winner.pileDraft, .award, winner.mentions.first?.award.name)
+                wishId = try await client.wish(winner.pileDraft, .award, winner.mentions.first?.award.name)
+            case .unwish:
+                if let wishId { try await client.removeWish(wishId) }
+                wishId = nil
             case .undoAlreadyRead:
                 if let bookRead { try await client.deleteBook(bookRead) }
                 bookRead = nil

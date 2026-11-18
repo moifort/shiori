@@ -18,7 +18,10 @@ struct DiscoverClient: Sendable {
     /// A suggestion put on the shelf from its page: the book's id.
     var addSuggestion: @Sendable (BookDraft) async throws -> String = { _ in "" }
     /// Onto the wishlist, with where it was seen and what labels it.
-    var wish: @Sendable (BookDraft, Wish.Origin, _ label: String?) async throws -> Void = { _, _, _ in }
+    /// Answers the wish's id, which "Envies" tapped again takes back.
+    var wish: @Sendable (BookDraft, Wish.Origin, _ label: String?) async throws -> String = { _, _, _ in "" }
+    /// A wish taken back, from "Envies" tapped again.
+    var removeWish: @Sendable (_ wishId: String) async throws -> Void = { _ in }
     /// A book said read by mistake from its suggestion, off the shelf again.
     var deleteBook: @Sendable (_ id: String) async throws -> Void = { _ in }
     /// A dismissal taken back from the red thumb.
@@ -51,7 +54,8 @@ extension DiscoverClient {
         describe: { try await ReleaseAPI.describe($0) },
         addBook: { _ = try await BookAddition.add($0, source: .discover) },
         addSuggestion: { try await BookAddition.add($0, source: .discover).id },
-        wish: { try await WishlistAPI.wish($0, origin: $1, label: $2) },
+        wish: { try await WishlistAPI.wish($0, origin: $1, label: $2).id },
+        removeWish: { try await WishlistAPI.remove(id: $0) },
         deleteBook: { try await BookAPI.delete(id: $0) },
         reconsiderSuggestion: { try await SuggestionsAPI.reconsider(id: $0) },
         dismissWinner: { try await AwardsAPI.dismiss(key: $0) },

@@ -145,13 +145,12 @@ struct NewsLargeCard: View {
     }
 }
 
-/// The foot of a large card: "Envies" in white — on glass with a check once
-/// there, the same word at the same width, which a second tap takes back —, the "+" that opens the book
-/// page's own add menu, and for a prize or a discovery "Pas intéressé". The
-/// wish answers its tap at once: the bookmark fills and bounces, gives way
-/// to the check, and the phone taps back; nothing else pops up. Where the
-/// three do not fit beside a rail card's cover, the wish keeps its colour but
-/// loses its words, so the card never grows past its frame over the next one.
+/// The foot of a large card: the pair "Envies" and "+" every book page
+/// shares (WishAddButtons), and for a prize or a discovery "Pas intéressé".
+/// The "+" opens the book page's add menu without the wish list: each format
+/// the book may be taken in, then the editions to await. Where the three do
+/// not fit beside a rail card's cover, the wish keeps its colour but loses
+/// its words, so the card never grows past its frame over the next one.
 struct NewsCardButtons: View {
     let card: NewsCard
     var isWished = false
@@ -162,67 +161,24 @@ struct NewsCardButtons: View {
             row(isCompact: false)
             row(isCompact: true)
         }
-        .sensoryFeedback(trigger: isWished) { _, wished in
-            wished ? .success : .impact(weight: .light)
-        }
     }
 
     private func row(isCompact: Bool) -> some View {
         HStack(spacing: 8) {
-            Button {
-                Task { await onAction(isWished ? .unwish(card) : .wish(card)) }
-            } label: {
-                Group {
-                    if isCompact {
-                        wishSymbol
-                            .frame(width: 30, height: 30)
-                    } else {
-                        HStack(spacing: 6) {
-                            wishSymbol
-                            Text("Envies")
-                        }
-                        .lineLimit(1)
-                        .fixedSize()
-                        .padding(.horizontal, 13)
-                        .frame(height: 30)
-                    }
-                }
-                .font(.footnote.weight(.semibold))
-                .foregroundStyle(isWished ? .white : .black)
-                .background {
-                    if isWished {
-                        Capsule().fill(.white.opacity(0.16))
-                            .overlay(Capsule().strokeBorder(.white.opacity(0.3), lineWidth: 1))
-                    } else {
-                        Capsule().fill(.white)
-                    }
-                }
-                .animation(.bouncy(duration: 0.35), value: isWished)
-            }
-            .buttonStyle(NewsWishButtonStyle())
-            .accessibilityLabel(isWished ? "Dans vos envies" : "Envies")
-            .accessibilityHint(isWished ? "Retire le livre de vos envies" : "Ajoute le livre à vos envies")
-            .accessibilityIdentifier("news-card-wish")
-            if !formats.isEmpty || !awaitable.isEmpty {
-                // The book page's add menu as it stands — the friend's book
-                // hero opens the same items —, the wish included.
-                Menu {
-                    BookAddMenuItems(
-                        formats: formats,
-                        owned: false,
-                        awaitable: awaitable,
-                        onAdd: { status, format in await onAction(.add(card, status, format)) },
-                        wished: isWished,
-                        onAwait: { format in Task { await onAction(.awaitEdition(card, format)) } },
-                        onWish: { await onAction(.wish(card)) }
-                    )
-                } label: {
-                    circle("plus")
-                }
-                .menuStyle(.button)
-                .buttonStyle(.plain)
-                .accessibilityLabel("Ajouter")
-                .accessibilityIdentifier("news-card-add")
+            WishAddButtons(
+                isWished: isWished,
+                isCompact: isCompact,
+                showsMenu: !formats.isEmpty || !awaitable.isEmpty,
+                onToggle: { Task { await onAction(isWished ? .unwish(card) : .wish(card)) } }
+            ) {
+                BookAddMenuItems(
+                    formats: formats,
+                    owned: false,
+                    awaitable: awaitable,
+                    onAdd: { status, format in await onAction(.add(card, status, format)) },
+                    onAwait: { format in Task { await onAction(.awaitEdition(card, format)) } },
+                    showsWish: false
+                )
             }
             if card.isDismissable {
                 Button {
@@ -236,14 +192,6 @@ struct NewsCardButtons: View {
         }
     }
 
-    /// The bookmark, filled as the finger lands, then the check: one symbol
-    /// replaced in place, with a bounce on each change.
-    private var wishSymbol: some View {
-        Image(systemName: isWished ? "checkmark" : "bookmark")
-            .contentTransition(.symbolEffect(.replace.magic(fallback: .downUp)))
-            .symbolEffect(.bounce, options: .nonRepeating, value: isWished)
-    }
-
     private func circle(_ symbol: String) -> some View {
         Image(systemName: symbol)
             .font(.footnote.weight(.semibold))
@@ -253,11 +201,16 @@ struct NewsCardButtons: View {
             .contentShape(.circle)
     }
 
-    /// The formats the book may be taken in: its own; nothing for a book not
-    /// out yet, which only the wish list holds.
+    /// The formats the book may be taken in, as the page it opens offers
+    /// them; nothing for a book not out yet, which only the wish list holds.
     private var formats: [BookFormat] {
-        if case .upcoming = card { return [] }
-        return [card.cover.format]
+        switch card {
+        case .upcoming: return []
+        // A discovery's or a prize's page offers its own format alone.
+        case .suggestion, .award: return [card.cover.format]
+        // A friend's book or a release, as the friend's book page offers it.
+        case .friend, .released: return card.cover.format.takenAs
+        }
     }
 
     /// The editions that may be awaited: those the page of a discovery or a
@@ -301,15 +254,5 @@ struct NewsPersonPill: View {
         .glassEffect(.regular, in: .capsule)
         .environment(\.colorScheme, .dark)
         .frame(maxWidth: maxWidth, alignment: .leading)
-    }
-}
-
-/// The wish capsule pressed: it sinks a little under the finger and springs
-/// back, so the tap is felt before the server answers.
-private struct NewsWishButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(configuration.isPressed ? 0.92 : 1)
-            .animation(.bouncy(duration: 0.3), value: configuration.isPressed)
     }
 }
