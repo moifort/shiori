@@ -31,7 +31,7 @@ struct DiscoverClient: Sendable {
     /// The same taken back from the red thumb.
     var reconsiderWinner: @Sendable (_ key: String) async throws -> Void = { _ in }
     /// A saga's recording through the reader's Audible account.
-    var addAudibleVolume: @Sendable (_ seriesId: String, _ volume: Int) async throws -> Void
+    var addAudibleVolume: @Sendable (_ seriesId: String, _ volume: Int) async throws -> String
     /// Whether nothing can reach the reader: the system said no, or every
     /// alert is off.
     var alertsSilenced: @Sendable () async -> Bool
@@ -61,8 +61,9 @@ extension DiscoverClient {
         dismissWinner: { try await AwardsAPI.dismiss(key: $0) },
         reconsiderWinner: { try await AwardsAPI.reconsider(key: $0) },
         addAudibleVolume: { seriesId, volume in
-            _ = try await SeriesAPI.addAudibleVolume(seriesId: seriesId, volume: volume)
+            let book = try await SeriesAPI.addAudibleVolume(seriesId: seriesId, volume: volume)
             track(.bookAdded(source: .discover))
+            return book.id
         },
         alertsSilenced: {
             let denied = await PushRegistrar.shared.authorizationStatus() == .denied
@@ -82,7 +83,7 @@ extension DiscoverClient {
         dismissSuggestion: { _, _ in },
         describe: { _ in .preview },
         addBook: { _ in },
-        addAudibleVolume: { _, _ in },
+        addAudibleVolume: { _, _ in "" },
         alertsSilenced: { false }
     )
 }

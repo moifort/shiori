@@ -46,6 +46,9 @@ struct AnnouncedVolumeScreen: View {
             added: viewModel.added,
             linksToSaga: linksToSaga,
             isFollowed: viewModel.isFollowed,
+            taken: viewModel.taken,
+            isWished: viewModel.isWished,
+            refusals: viewModel.refusals,
             sagaVolumes: viewModel.sagaVolumes,
             showsClose: closing.showsCloseButton
         ) { action in
@@ -53,6 +56,8 @@ struct AnnouncedVolumeScreen: View {
             case .close: dismiss()
             case .chooseCover: choosesCover = true
             case let .add(addition): await viewModel.add(addition)
+            case .undoAdd: await viewModel.undoAdd()
+            case .toggleWish: await viewModel.toggleWish()
             case .openSaga: showsSaga = true
             case .toggleFollowed: await viewModel.toggleFollowed()
             case let .openVolume(book): openedVolume = book

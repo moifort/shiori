@@ -17,6 +17,16 @@ final class AnnouncedVolumeViewModel {
     private let describer: ReleaseDescriber
 
     private(set) var added = false
+    /// What the "+" made of the volume, said in its capsule.
+    private(set) var taken: TakenState?
+    /// On the wishlist, from "Envies".
+    private(set) var isWished = false
+    /// Bumped on each refusal: the hero's buttons shake.
+    private(set) var refusals = 0
+    /// The book put on the shelf and the wish made here, which a second tap
+    /// takes back.
+    private var bookAdded: String?
+    private var wishId: String?
     /// Whether the saga alerts on its volumes' days: it is followed, or the
     /// volume would not be shown. Turned at once on a tap, the call made
     /// behind it, as on the saga's page.
@@ -65,18 +75,14 @@ final class AnnouncedVolumeViewModel {
     func add(_ addition: UnownedBookAddition = .pile) async {
         let series = opened.saga.series
         if addition == .wishlist {
-            do {
-                try await client.wish(opened.draft(from: shown), .discovery, nil)
-                added = true
-            } catch {
-                addFailed = reportError(error)
-            }
+            await toggleWish()
             return
         }
+        let state: TakenState = addition == .read ? .read(isAudio: series.isAudio) : .toRead(isAudio: series.isAudio)
         if addition == .pile, series.isAudio {
             do {
-                try await client.addAudibleVolume(series.seriesId, opened.volume.number)
-                added = true
+                bookAdded = try await client.addAudibleVolume(series.seriesId, opened.volume.number)
+                took(state)
                 return
             } catch {
                 let code = (error as? APIError)?.domainCode
@@ -86,10 +92,46 @@ final class AnnouncedVolumeViewModel {
         do {
             var draft = opened.draft(from: shown)
             if addition == .read { draft.status = .read }
-            try await client.addBook(draft)
-            added = true
+            bookAdded = try await client.addSuggestion(draft)
+            took(state)
         } catch {
+            refusals += 1
             addFailed = reportError(error)
         }
+    }
+
+    /// The capsule pressed again: the volume leaves the shelf.
+    func undoAdd() async {
+        do {
+            if let bookAdded { try await client.deleteBook(bookAdded) }
+            bookAdded = nil
+            taken = nil
+            added = false
+        } catch {
+            refusals += 1
+            addFailed = reportError(error)
+        }
+    }
+
+    /// "Envies": onto the wishlist, or off it again.
+    func toggleWish() async {
+        do {
+            if let wishId {
+                try await client.removeWish(wishId)
+                self.wishId = nil
+                isWished = false
+            } else {
+                wishId = try await client.wish(opened.draft(from: shown), .discovery, nil)
+                isWished = true
+            }
+        } catch {
+            refusals += 1
+            addFailed = reportError(error)
+        }
+    }
+
+    private func took(_ state: TakenState) {
+        taken = state
+        added = true
     }
 }

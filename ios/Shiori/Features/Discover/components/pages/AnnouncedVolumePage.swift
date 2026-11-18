@@ -6,6 +6,10 @@ enum AnnouncedVolumeAction {
     /// On the pile, read already or on the wishlist, filed in its saga at
     /// its number.
     case add(UnownedBookAddition)
+    /// The "+"'s capsule pressed again: off the shelf.
+    case undoAdd
+    /// "Envies": onto the wishlist, or off it.
+    case toggleWish
     case openSaga
     /// The saga's alerts on or off, from the bell.
     case toggleFollowed
@@ -34,6 +38,10 @@ struct AnnouncedVolumePage: View {
     /// the saga's page, which is right under it: the row leads back.
     let linksToSaga: Bool
     var isFollowed = true
+    /// What the "+" made of it, "Envies" and the refusals that shake them.
+    var taken: TakenState? = nil
+    var isWished = false
+    var refusals = 0
     var sagaVolumes: [SeriesStripItem] = []
     /// False when the page is pushed: Back closes it, not a Close button.
     var showsClose = true
@@ -52,8 +60,13 @@ struct AnnouncedVolumePage: View {
             sagaVolumes: sagaVolumes,
             showsClose: showsClose,
             onClose: { act(.close) },
-            additions: UnownedBookAddition.allCases,
+            additions: [.pile, .read],
             onAdd: { await onAction(.add($0)) },
+            isWished: isWished,
+            onToggleWish: { await onAction(.toggleWish) },
+            taken: taken,
+            onUndo: { await onAction(.undoAdd) },
+            refusals: refusals,
             onToggleBell: { act(.toggleFollowed) },
             onOpenSaga: { act(linksToSaga ? .openSaga : .close) },
             onOpenVolume: { act(.openVolume($0)) },

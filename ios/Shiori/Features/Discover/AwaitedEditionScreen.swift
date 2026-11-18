@@ -39,14 +39,21 @@ struct AwaitedEditionScreen: View {
             shown: viewModel.shown,
             isDescribing: viewModel.isDescribing,
             added: viewModel.added,
+            taken: viewModel.taken,
+            isWished: viewModel.isWished,
+            refusals: viewModel.refusals,
             sagaVolumes: viewModel.sagaVolumes,
             showsClose: closing.showsCloseButton
         ) { action in
             switch action {
             case .close:
                 dismiss()
-            case .add:
-                await viewModel.add()
+            case let .add(addition):
+                await viewModel.add(addition)
+            case .undoAdd:
+                await viewModel.undoAdd()
+            case .toggleWish:
+                await viewModel.toggleWish()
             case .stopAwaiting:
                 if let onStop {
                     onStop()

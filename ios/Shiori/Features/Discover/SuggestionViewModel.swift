@@ -32,6 +32,11 @@ final class SuggestionViewModel {
     private var bookRead: String?
     /// The wish made here, which "Envies" tapped again takes back.
     private var wishId: String?
+    /// The book put on the pile here, which its capsule pressed again takes
+    /// off the shelf.
+    private var bookAdded: String?
+    /// The edition awaited here, which its capsule pressed again stops.
+    private var awaitedId: String?
     /// Why a choice could not be made, said in an alert.
     var actionError: String?
 
@@ -41,9 +46,9 @@ final class SuggestionViewModel {
         do {
             switch choice {
             case .add:
-                _ = try await client.addSuggestion(suggestion.shelfDraft(status: .toRead))
+                bookAdded = try await client.addSuggestion(suggestion.shelfDraft(status: .toRead))
             case let .await(format):
-                _ = try await client.awaitEdition(suggestion.draft, format)
+                awaitedId = try await client.awaitEdition(suggestion.draft, format).id
             case .alreadyRead:
                 bookRead = try await client.addSuggestion(suggestion.shelfDraft(status: .read))
             case .wish:
@@ -54,6 +59,12 @@ final class SuggestionViewModel {
             case .undoAlreadyRead:
                 if let bookRead { try await client.deleteBook(bookRead) }
                 bookRead = nil
+            case .undoAdd:
+                if let bookAdded { try await client.deleteBook(bookAdded) }
+                bookAdded = nil
+            case .unawait:
+                if let awaitedId { try await client.stopAwaiting(awaitedId) }
+                awaitedId = nil
             case .notInterested:
                 try await client.dismissSuggestion(suggestion.id, .notInterested)
             case .reconsider:

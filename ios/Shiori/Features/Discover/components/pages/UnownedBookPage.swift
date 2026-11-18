@@ -79,6 +79,16 @@ struct UnownedBookPage: View {
     /// What the "+" offers: one, it adds at once; more, it opens a menu.
     var additions: [UnownedBookAddition] = [.pile]
     var onAdd: (UnownedBookAddition) async -> Void = { _ in }
+    /// "Envies" beside the "+", once the book is out: whether it is on the
+    /// wishlist. Nil draws the "+" alone (a book wished for already).
+    var isWished: Bool? = nil
+    var onToggleWish: () async -> Void = {}
+    /// What the "+" made of the book, said in its capsule; a second tap
+    /// undoes it.
+    var taken: TakenState? = nil
+    var onUndo: () async -> Void = {}
+    /// Bumped by the caller on each refusal: the hero's buttons shake.
+    var refusals = 0
     let onToggleBell: () -> Void
     var onOpenSaga: () -> Void = {}
     var onOpenVolume: (Book) -> Void = { _ in }
@@ -131,12 +141,12 @@ struct UnownedBookPage: View {
                 ToolbarItem(placement: .primaryAction) {
                     if additions.count > 1 {
                         Menu {
-                            additionButtons
+                            additionButtons(withWish: isWished == nil)
                         } label: {
                             Label("Ajouter", systemImage: "plus")
                                 .labelStyle(.iconOnly)
                         }
-                        .disabled(isAdded || adding)
+                        .disabled(isAdded || adding || taken != nil)
                         .accessibilityIdentifier("unowned-toolbar-add")
                     } else {
                         AsyncToolbarButton(title: "Ajouter à ma pile", systemImage: "plus") { await onAdd(.pile) }
@@ -168,15 +178,19 @@ struct UnownedBookPage: View {
                 GlassEffectContainer(spacing: 10) {
                     HStack(spacing: 10) {
                         if let store { storeButton(store) }
-                        if let isAdded = offeredAddition, additions.count == 1 { addButton(isAdded) }
+                        if let isAdded = offeredAddition, additions.count == 1, isWished == nil { addButton(isAdded) }
                         // Nothing left to alert on once it is out.
                         if isUpcoming { bell }
                     }
                 }
                 // Outside the glass container: a menu inside one loses the
                 // taps that move over a neighbouring button.
-                if let isAdded = offeredAddition, additions.count > 1 { addMenu(isAdded) }
-                if let onNoLongerInterested, !isUpcoming {
+                if offeredAddition != nil, let isWished {
+                    wishAndAdd(isWished: isWished)
+                } else if let isAdded = offeredAddition, additions.count > 1 {
+                    addMenu(isAdded)
+                }
+                if let onNoLongerInterested, !isUpcoming, taken == nil {
                     AsyncRoundButton(
                         title: "Retirer",
                         systemImage: "bookmark.slash",
@@ -188,6 +202,32 @@ struct UnownedBookPage: View {
                     .accessibilityIdentifier("unowned-remove")
                 }
             }
+            .refusalShake(trigger: refusals)
+        }
+    }
+
+    /// "Envies" and the "+", as on a prize's page: once a choice of the "+"
+    /// went through, its capsule says it ("À lire", "Lu") and a second tap
+    /// undoes it. Beside a store, which keeps the white and the room,
+    /// "Envies" is round, the bookmark alone, and leaves once the book is
+    /// taken.
+    private func wishAndAdd(isWished: Bool) -> some View {
+        WishAddButtons(
+            isWished: isWished,
+            size: .page,
+            taken: taken,
+            isWorking: adding,
+            besideStore: store != nil,
+            onToggle: { Task { await onToggleWish() } },
+            onUndo: {
+                adding = true
+                Task {
+                    await onUndo()
+                    adding = false
+                }
+            }
+        ) {
+            additionButtons(withWish: false)
         }
     }
 
@@ -205,14 +245,10 @@ struct UnownedBookPage: View {
                     .accessibilityHidden(true)
             }
             .font(.headline)
-            .foregroundStyle(.black)
             .lineLimit(1)
             .fixedSize()
-            .padding(.horizontal, 22)
-            .frame(height: Self.buttonHeight)
-            .background(.white, in: .capsule)
-            .shadow(color: .black.opacity(0.45), radius: 11, y: 8)
         }
+        .buttonStyle(ActionButtonStyle(fill: .white, height: Self.buttonHeight, isRaised: true))
         .accessibilityIdentifier("unowned-store")
     }
 
@@ -246,19 +282,21 @@ struct UnownedBookPage: View {
     /// round on glass beside the store; a tick once added.
     private func addMenu(_ isAdded: Bool) -> some View {
         Menu {
-            additionButtons
+            additionButtons(withWish: true)
         } label: {
             if lead == .add {
                 HStack(spacing: 8) {
                     if adding {
-                        ProgressView().tint(.black)
+                        ProgressView()
                     } else {
                         Image(systemName: isAdded ? "checkmark" : "plus")
                             .contentTransition(.symbolEffect(.replace))
                     }
                     Text(isAdded ? "Ajouté" : "Ajouter")
                 }
-                .heroPrimary(height: Self.buttonHeight)
+                .font(.headline)
+                .lineLimit(1)
+                .fixedSize()
             } else {
                 Group {
                     if adding {
@@ -269,21 +307,20 @@ struct UnownedBookPage: View {
                             .contentTransition(.symbolEffect(.replace))
                     }
                 }
-                .foregroundStyle(.white)
-                .frame(width: Self.buttonHeight, height: Self.buttonHeight)
-                .contentShape(.circle)
-                .glassEffect(.regular.interactive(), in: .circle)
             }
         }
         .menuStyle(.button)
-        .buttonStyle(.plain)
+        .buttonStyle(lead == .add
+            ? ActionButtonStyle(fill: .white, height: Self.buttonHeight, isRaised: true)
+            : ActionButtonStyle(fill: .glass, shape: .circle, height: Self.buttonHeight))
         .disabled(isAdded || adding)
         .accessibilityLabel(Text(isAdded ? "Ajouté" : "Ajouter"))
         .accessibilityIdentifier("unowned-add")
     }
 
-    /// The choices of the "+", in the hero and in the bar.
-    @ViewBuilder private var additionButtons: some View {
+    /// The choices of the "+", in the hero and in the bar: the wishlist only
+    /// where no "Envies" holds it.
+    @ViewBuilder private func additionButtons(withWish: Bool) -> some View {
         if additions.contains(.pile) {
             Button(book.format == .audiobook ? "À écouter" : "À lire", systemImage: "bookmark.fill") { add(.pile) }
                 .accessibilityIdentifier("unowned-add-pile")
@@ -292,7 +329,7 @@ struct UnownedBookPage: View {
             Button(book.format == .audiobook ? "Déjà écouté" : "Déjà lu", systemImage: "checkmark") { add(.read) }
                 .accessibilityIdentifier("unowned-add-read")
         }
-        if additions.contains(.wishlist) {
+        if withWish, additions.contains(.wishlist) {
             Section {
                 Button("Liste d'envies", systemImage: "bookmark") { add(.wishlist) }
                     .accessibilityIdentifier("unowned-add-wishlist")
@@ -326,25 +363,20 @@ struct UnownedBookPage: View {
                     Text(isAlerted ? "Suivi" : "Suivre")
                 }
                 .font(.headline)
-                .foregroundStyle(.black)
                 .lineLimit(1)
                 .fixedSize()
-                .padding(.horizontal, 22)
-                .frame(height: Self.buttonHeight)
-                .background(.white, in: .capsule)
-                .contentShape(.capsule)
-                .shadow(color: .black.opacity(0.45), radius: 11, y: 8)
             } else {
                 bellSymbol
                     .font(.title3.weight(.medium))
-                    .foregroundStyle(.white)
-                    .frame(width: Self.buttonHeight, height: Self.buttonHeight)
-                    .contentShape(.circle)
-                    .glassEffect(.regular.interactive(), in: .circle)
             }
         }
-        .buttonStyle(.plain)
-        .sensoryFeedback(.selection, trigger: rings)
+        // Alone, the white lead in words; round beside a store, the bell on
+        // white while it alerts and slashed on glass once silent.
+        .buttonStyle(bellIsAlone
+            ? ActionButtonStyle(fill: .white, height: Self.buttonHeight, isRaised: true)
+            : ActionButtonStyle(fill: isAlerted ? .white : .glass, shape: .circle, height: Self.buttonHeight))
+        .animation(.snappy, value: isAlerted)
+        .sensoryFeedback(trigger: isAlerted) { _, alerted in alerted ? .success : .impact(weight: .light) }
         .accessibilityLabel(Text(isAlerted ? "Ne plus être prévenu" : "Être prévenu de la sortie"))
         .accessibilityIdentifier(isAlerted ? "unowned-silence" : "unowned-alert")
         // Attached to the bell, as a saga's deletion is: the dialog rises
@@ -461,14 +493,16 @@ private struct AsyncRoundButton: View {
             if isPrimary {
                 HStack(spacing: 8) {
                     if isInProgress {
-                        ProgressView().tint(.black)
+                        ProgressView()
                     } else {
                         Image(systemName: systemImage)
                             .contentTransition(.symbolEffect(.replace))
                     }
                     Text(title)
                 }
-                .heroPrimary(height: side)
+                .font(.headline)
+                .lineLimit(1)
+                .fixedSize()
             } else {
                 Group {
                     if isInProgress {
@@ -479,13 +513,11 @@ private struct AsyncRoundButton: View {
                             .contentTransition(.symbolEffect(.replace))
                     }
                 }
-                .foregroundStyle(.white)
-                .frame(width: side, height: side)
-                .contentShape(.circle)
-                .glassEffect(.regular.interactive(), in: .circle)
             }
         }
-        .buttonStyle(.plain)
+        .buttonStyle(isPrimary
+            ? ActionButtonStyle(fill: .white, height: side, isRaised: true)
+            : ActionButtonStyle(fill: .glass, shape: .circle, height: side))
         .accessibilityLabel(Text(title))
         // Attached to the button, as the bell's: the dialog rises from it.
         .confirmationDialog(confirmation ?? "", isPresented: $confirms, titleVisibility: .visible) {
@@ -501,21 +533,6 @@ private struct AsyncRoundButton: View {
             await action()
             isInProgress = false
         }
-    }
-}
-
-private extension View {
-    /// The hero's first button, as the store's: white, black label, shadowed.
-    func heroPrimary(height: CGFloat) -> some View {
-        font(.headline)
-            .foregroundStyle(.black)
-            .lineLimit(1)
-            .fixedSize()
-            .padding(.horizontal, 22)
-            .frame(height: height)
-            .background(.white, in: .capsule)
-            .contentShape(.capsule)
-            .shadow(color: .black.opacity(0.45), radius: 11, y: 8)
     }
 }
 

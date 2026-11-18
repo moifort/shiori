@@ -173,7 +173,7 @@ struct DiscoveryAddActions<Item: Discovery>: View {
                         format.awaitLabel,
                         systemImage: format == .audiobook ? "headphones" : "binoculars"
                     ) {
-                        onChoose(.await(format), .added)
+                        onChoose(.await(format), .awaited)
                     }
                     .accessibilityIdentifier("suggestion-await-\(format.rawValue)")
                 }

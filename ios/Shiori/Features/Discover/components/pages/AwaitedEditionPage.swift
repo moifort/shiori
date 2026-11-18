@@ -3,8 +3,12 @@ import SwiftUI
 /// Everything an awaited edition's page can ask for.
 enum AwaitedEditionAction {
     case close
-    /// On the pile, filed in the saga of the reader's copy.
-    case add
+    /// On the pile, filed in the saga of the reader's copy, or read already.
+    case add(UnownedBookAddition)
+    /// The "+"'s capsule pressed again: off the shelf.
+    case undoAdd
+    /// "Envies": onto the wishlist, or off it.
+    case toggleWish
     /// Given up, by the bell once confirmed or by "Retirer": the page
     /// closes behind it.
     case stopAwaiting
@@ -31,6 +35,10 @@ struct AwaitedEditionPage: View {
     let shown: Book
     let isDescribing: Bool
     var added = false
+    /// What the "+" made of it, "Envies" and the refusals that shake them.
+    var taken: TakenState? = nil
+    var isWished = false
+    var refusals = 0
     var sagaVolumes: [SeriesStripItem] = []
     /// False when the page is pushed: Back closes it, not a Close button.
     var showsClose = true
@@ -58,7 +66,13 @@ struct AwaitedEditionPage: View {
             currentVolumeId: edition.bookId,
             showsClose: showsClose,
             onClose: { act(.close) },
-            onAdd: { _ in await onAction(.add) },
+            additions: [.pile, .read],
+            onAdd: { await onAction(.add($0)) },
+            isWished: isWished,
+            onToggleWish: { await onAction(.toggleWish) },
+            taken: taken,
+            onUndo: { await onAction(.undoAdd) },
+            refusals: refusals,
             onToggleBell: { act(.stopAwaiting) },
             onOpenSaga: { if let id = shown.series?.id { act(.openSaga(id)) } },
             onOpenVolume: { act(.openVolume($0)) },

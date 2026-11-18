@@ -19,6 +19,10 @@ enum DiscoveryChoice {
     case unwish
     /// The check pressed again on a book said read: it leaves the shelf.
     case undoAlreadyRead
+    /// The "À lire" capsule pressed again: the book leaves the pile.
+    case undoAdd
+    /// The "Guetté" capsule pressed again: the edition is no longer awaited.
+    case unawait
     case notInterested
     /// The red thumb pressed again: the reader changed their mind.
     case reconsider
@@ -26,8 +30,10 @@ enum DiscoveryChoice {
 
 /// What a discovery's buttons say of the reader's choice.
 enum DiscoveryMark {
-    /// Added or awaited from the "+".
+    /// On the pile from the "+".
     case added
+    /// An edition awaited from the "+".
+    case awaited
     /// On the wishlist, from "Envies".
     case wished
     /// Read already, from the eye.
@@ -50,6 +56,8 @@ final class DiscoveryChoices {
     private(set) var marks: [String: DiscoveryMark] = [:]
     /// The button whose choice the server is answering, with its spinner.
     private(set) var working: [String: DiscoveryButton] = [:]
+    /// Bumped each time the server refused a choice: the buttons shake.
+    private(set) var refusals: [String: Int] = [:]
 
     /// Sends a choice and sets the mark it leaves once the server took it, and
     /// not before the menu has closed: drawn while it folds back into the
@@ -69,7 +77,7 @@ final class DiscoveryChoices {
             _ = await folded
             withAnimation(.snappy) {
                 working[item.id] = nil
-                if accepted { marks[item.id] = mark }
+                if accepted { marks[item.id] = mark } else { refusals[item.id, default: 0] += 1 }
             }
         }
     }
@@ -101,13 +109,19 @@ struct DiscoveryButtons<Item: Discovery>: View {
             WishAddButtons(
                 isWished: mark == .wished,
                 size: .page,
-                isDisabled: isWorking || mark == .added || mark == .read || mark == .notInterested,
+                isDisabled: isWorking || mark == .read || mark == .notInterested,
+                taken: taken,
+                isWorking: working == .add,
+                refusals: choices.refusals[item.id] ?? 0,
                 onToggle: {
                     if mark == .wished {
                         choose(.unwish, from: .add, leaving: nil)
                     } else {
                         choose(.wish, from: .add, leaving: .wished)
                     }
+                },
+                onUndo: {
+                    choose(mark == .awaited ? .unawait : .undoAdd, from: .add, leaving: nil)
                 }
             ) {
                 DiscoveryAddActions(item: item, showsWish: false) { choose($0, from: .add, leaving: $1) }
@@ -116,7 +130,8 @@ struct DiscoveryButtons<Item: Discovery>: View {
         } else {
             addMenu
                 .disabled(addIsOff)
-                .sensoryFeedback(.success, trigger: mark == .added)
+                .sensoryFeedback(.success, trigger: isTaken)
+                .refusalShake(trigger: choices.refusals[item.id] ?? 0)
                 .accessibilityIdentifier("discovery-menu")
         }
         // The crossed-out eye opens a choice, and gives way to the one made:
@@ -132,13 +147,11 @@ struct DiscoveryButtons<Item: Discovery>: View {
             } label: {
                 Label("Reconsidérer", systemImage: "arrow.uturn.backward")
                     .font(.headline)
-                    .foregroundStyle(.white)
                     .lineLimit(1)
                     .fixedSize()
                     .modifier(WorkingLabel(isWorking: working == .eye))
             }
-            .buttonStyle(.glass)
-            .buttonBorderShape(.capsule)
+            .buttonStyle(.actionGlass)
             .disabled(isWorking)
             .sensoryFeedback(.impact(weight: .medium), trigger: mark == .notInterested)
             .accessibilityIdentifier("discovery-dismiss")
@@ -149,16 +162,14 @@ struct DiscoveryButtons<Item: Discovery>: View {
                 Label("Déjà lu", systemImage: "checkmark")
                     .labelStyle(.iconOnly)
                     .font(.headline)
-                    .foregroundStyle(.black)
                     .contentTransition(.symbolEffect(.replace))
                     .modifier(WorkingLabel(isWorking: working == .eye))
             }
-            .buttonStyle(.glass(.regular.tint(.white)))
-            .buttonBorderShape(.circle)
+            .buttonStyle(.actionRound(isOn: true))
             .disabled(isWorking)
             .sensoryFeedback(.success, trigger: mark == .read)
             .accessibilityIdentifier("discovery-dismiss")
-        case .added, .wished, nil:
+        case .added, .awaited, .wished, nil:
             Menu {
                 Button("Pas intéressé", systemImage: "eye.slash", role: .destructive) {
                     choose(.notInterested, from: .eye, leaving: .notInterested)
@@ -172,15 +183,25 @@ struct DiscoveryButtons<Item: Discovery>: View {
                 eyeLabel
                     .modifier(WorkingLabel(isWorking: working == .eye))
             }
-            .buttonStyle(.glass)
-            .buttonBorderShape(.circle)
+            .menuStyle(.button)
+            .buttonStyle(.actionRound())
             .disabled(isWorking || mark == .added || mark == .wished)
             .accessibilityIdentifier("discovery-dismiss")
         }
     }
 
-    /// Added or wished: the home's "+" shows a tick either way.
-    private var isTaken: Bool { mark == .added || mark == .wished }
+    /// Added, awaited or wished: the home's "+" shows a tick either way.
+    private var isTaken: Bool { mark == .added || mark == .awaited || mark == .wished }
+
+    /// What the page's "+" made of the book, said in its capsule. "Déjà lu"
+    /// keeps the eye's white check rather, which undoes it.
+    private var taken: TakenState? {
+        switch mark {
+        case .added: .toRead(isAudio: false)
+        case .awaited: .awaited
+        default: nil
+        }
+    }
 
     private var addIsOff: Bool { isWorking || mark == .read || mark == .notInterested }
 
@@ -205,8 +226,8 @@ struct DiscoveryButtons<Item: Discovery>: View {
                     .labelStyle(.iconOnly)
                     .modifier(WorkingLabel(isWorking: working == .add))
             }
-            .buttonStyle(.glass)
-            .buttonBorderShape(.circle)
+            .menuStyle(.button)
+            .buttonStyle(.actionRound())
         }
     }
 
@@ -231,7 +252,6 @@ struct DiscoveryButtons<Item: Discovery>: View {
         Label("Pas intéressé", systemImage: "eye.slash")
             .labelStyle(.iconOnly)
             .font(.headline)
-            .foregroundStyle(.white)
     }
 }
 

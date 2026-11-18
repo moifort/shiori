@@ -49,6 +49,16 @@ final class AwaitedEditionViewModel {
     func drawCover(_ url: URL) { describer.drawCover(url) }
 
     private(set) var added = false
+    /// What the "+" made of the edition, said in its capsule.
+    private(set) var taken: TakenState?
+    /// On the wishlist, from "Envies".
+    private(set) var isWished = false
+    /// Bumped on each refusal: the hero's buttons shake.
+    private(set) var refusals = 0
+    /// The book put on the shelf and the wish made here, which a second tap
+    /// takes back.
+    private var bookAdded: String?
+    private var wishId: String?
     /// Why adding it or giving it up failed, for the alert; nil once read.
     var actionError: String?
 
@@ -85,11 +95,51 @@ final class AwaitedEditionViewModel {
         }
     }
 
-    func add() async {
+    /// Onto the pile as shown, or read already.
+    func add(_ addition: UnownedBookAddition = .pile) async {
+        if addition == .wishlist {
+            await toggleWish()
+            return
+        }
         do {
-            try await client.addBook(edition.draft(from: shown))
+            var draft = edition.draft(from: shown)
+            if addition == .read { draft.status = .read }
+            bookAdded = try await client.addSuggestion(draft)
+            let isAudio = edition.format == .audiobook
+            taken = addition == .read ? .read(isAudio: isAudio) : .toRead(isAudio: isAudio)
             added = true
         } catch {
+            refusals += 1
+            actionError = reportError(error)
+        }
+    }
+
+    /// The capsule pressed again: the edition leaves the shelf.
+    func undoAdd() async {
+        do {
+            if let bookAdded { try await client.deleteBook(bookAdded) }
+            bookAdded = nil
+            taken = nil
+            added = false
+        } catch {
+            refusals += 1
+            actionError = reportError(error)
+        }
+    }
+
+    /// "Envies": onto the wishlist, or off it again.
+    func toggleWish() async {
+        do {
+            if let wishId {
+                try await client.removeWish(wishId)
+                self.wishId = nil
+                isWished = false
+            } else {
+                wishId = try await client.wish(edition.draft(from: shown), .discovery, nil)
+                isWished = true
+            }
+        } catch {
+            refusals += 1
             actionError = reportError(error)
         }
     }

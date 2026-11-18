@@ -186,7 +186,10 @@ struct AwaitedEditionAdditionTests {
     @Test func theEditionGoesOnThePileAsShown() async {
         let calls = Calls()
         var client = DiscoverClient.preview
-        client.addBook = { draft in calls.record("\(draft.title) \(draft.format) \(draft.status)") }
+        client.addSuggestion = { draft in
+            calls.record("\(draft.title) \(draft.format) \(draft.status)")
+            return "book"
+        }
         let viewModel = AwaitedEditionViewModel(edition: .preview, client: client)
 
         await viewModel.add()
@@ -197,7 +200,7 @@ struct AwaitedEditionAdditionTests {
 
     @Test func aRefusalSaysWhyAndAddsNothing() async {
         var client = DiscoverClient.preview
-        client.addBook = { _ in throw APIError.domain(code: "BAD_USER_INPUT", messages: ["Refusé"]) }
+        client.addSuggestion = { _ in throw APIError.domain(code: "BAD_USER_INPUT", messages: ["Refusé"]) }
         let viewModel = AwaitedEditionViewModel(edition: .preview, client: client)
 
         await viewModel.add()

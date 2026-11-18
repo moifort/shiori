@@ -2873,6 +2873,22 @@
         }
       }
     },
+    "Annule ce choix" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Undoes this choice"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Annule ce choix"
+          }
+        }
+      }
+    },
     "Annuler" : {
       "localizations" : {
         "en" : {
@@ -18309,6 +18325,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Écouter sur Audible"
+          }
+        }
+      }
+    },
+    "Écouté" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Listened"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Écouté"
           }
         }
       }
