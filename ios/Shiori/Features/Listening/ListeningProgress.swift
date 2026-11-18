@@ -91,6 +91,17 @@ enum ListeningText {
         return String(localized: "Chapitre \(number) · \(remaining)")
     }
 
+    /// "Chap. 12 · 11h47", the folded bar's second line: the time left with
+    /// no word, which the bar has no room for.
+    static func shortLine(_ progress: ListeningProgress) -> String {
+        let minutes = Int((max(0, progress.remaining) / 60).rounded(.up))
+        let left = minutes >= 60
+            ? "\(minutes / 60)h\(String(format: "%02d", minutes % 60))"
+            : String(localized: "\(minutes) min")
+        guard let number = progress.chapterNumber else { return left }
+        return String(localized: "Chap. \(number) · \(left)")
+    }
+
     /// "Chapitre 12 sur 40".
     static func chapterOfCount(_ progress: ListeningProgress) -> String? {
         progress.chapterNumber.map {

@@ -2029,22 +2029,6 @@
         }
       }
     },
-    "Actions" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Actions"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Actions"
-          }
-        }
-      }
-    },
     "Activité des amis" : {
       "localizations" : {
         "en" : {
@@ -4527,6 +4511,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Cette version de Shiori n'est plus compatible avec le serveur. La dernière version est disponible sur l'App Store."
+          }
+        }
+      }
+    },
+    "Chap. %lld · %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ch. %lld · %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Chap. %1$lld · %2$@"
           }
         }
       }
@@ -7039,6 +7039,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Fermer"
+          }
+        }
+      }
+    },
+    "Fiche du livre" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Book page"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fiche du livre"
           }
         }
       }

@@ -8,6 +8,8 @@ enum PlayerAction {
     case nextChapter
     case seek(TimeInterval)
     case sleep(minutes: Int)
+    /// The three dots: the player gives way to the book's page.
+    case openBook
     case stop
 }
 
@@ -27,6 +29,8 @@ struct PlayerPage: View {
         let failure: String?
         /// The sleep timer's choice, while it runs.
         let sleepMinutes: Int?
+        /// Whether the title has a book in the library to open.
+        var hasBook = true
     }
 
     let item: Item
@@ -96,15 +100,19 @@ struct PlayerPage: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            Menu {
-                Button("Arrêter", systemImage: "stop.fill") { onAction(.stop) }
-            } label: {
+            // A tap opens the book's page; stopping is a long press away.
+            Button { onAction(.openBook) } label: {
                 Image(systemName: "ellipsis")
                     .font(.system(size: 16, weight: .semibold))
                     .frame(width: 36, height: 36)
                     .glassEffect(.regular.interactive(), in: .circle)
             }
-            .accessibilityLabel(Text("Actions"))
+            .buttonStyle(.plain)
+            .disabled(!item.hasBook)
+            .contextMenu {
+                Button("Arrêter", systemImage: "stop.fill") { onAction(.stop) }
+            }
+            .accessibilityLabel(Text("Fiche du livre"))
         }
     }
 

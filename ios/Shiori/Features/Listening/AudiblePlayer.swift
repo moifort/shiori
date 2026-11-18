@@ -56,6 +56,12 @@ final class AudiblePlayer {
     private var lastSaved: TimeInterval?
     private var lastSaveAt = Date.distantPast
     private var sleepTask: Task<Void, Never>?
+    /// The timer's last choice and when it paused the player: a headset press
+    /// or a shake soon after takes the listening up for as long again.
+    private var lastSleepMinutes: Int?
+    private var sleptAt: Date?
+    /// How long after the timer paused that a press or a shake still restarts it.
+    static let sleepRestartWindow: TimeInterval = 30 * 60
     private var startTask: Task<Void, Never>?
     /// The stream once played: a failure after that is an expired signed link
     /// rather than a refusal, and asking for a fresh licence fixes it once.
@@ -142,16 +148,43 @@ final class AudiblePlayer {
         sleepTask?.cancel()
         if sleepTimer?.minutes == minutes {
             sleepTimer = nil
+            lastSleepMinutes = nil
             return
         }
+        startSleepTimer(minutes: minutes)
+    }
+
+    private func startSleepTimer(minutes: Int) {
+        sleepTask?.cancel()
+        lastSleepMinutes = minutes
+        sleptAt = nil
         let endsAt = Date.now.addingTimeInterval(TimeInterval(minutes * 60))
         sleepTimer = (minutes, endsAt)
         sleepTask = Task { [weak self] in
             try? await Task.sleep(for: .seconds(minutes * 60))
             guard !Task.isCancelled, let self else { return }
             self.sleepTimer = nil
+            self.sleptAt = .now
             self.pause()
         }
+    }
+
+    /// A headset press or a shake: the timer starts over for as long as it
+    /// was set, and a listening it just paused plays again. Answers whether
+    /// it did anything.
+    @discardableResult
+    func restartSleepTimer() -> Bool {
+        if let sleepTimer {
+            startSleepTimer(minutes: sleepTimer.minutes)
+            return true
+        }
+        if let minutes = lastSleepMinutes, let sleptAt,
+           Date.now.timeIntervalSince(sleptAt) < Self.sleepRestartWindow {
+            startSleepTimer(minutes: minutes)
+            resume()
+            return true
+        }
+        return false
     }
 
     /// Stop listening: the position is saved and the accessory goes.
@@ -224,7 +257,28 @@ final class AudiblePlayer {
             let failure = item.error
             Task { @MainActor in self?.itemStatusChanged(status, error: failure) }
         })
+        endObserver = NotificationCenter.default.addObserver(
+            forName: AVPlayerItem.didPlayToEndTimeNotification, object: item, queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated { self?.finished() }
+        }
         player.replaceCurrentItem(with: item)
+    }
+
+    private var endObserver: NSObjectProtocol?
+
+    /// The book is over: its end is saved on Audible — the nightly sync then
+    /// files it as read — and the audiobook started most recently among those
+    /// under way follows, as the next episode does.
+    private func finished() {
+        guard let playback else { return }
+        elapsed = duration
+        saveNow()
+        Task { [weak self, client] in
+            let next = try? await client.nextInProgress(playback.asin)
+            guard let self, self.playback?.asin == playback.asin else { return }
+            if let next { self.play(next) }
+        }
     }
 
     private func itemStatusChanged(_ status: AVPlayerItem.Status, error: Error?) {
@@ -261,6 +315,8 @@ final class AudiblePlayer {
 
     private func teardownStream() {
         startTask?.cancel()
+        if let endObserver { NotificationCenter.default.removeObserver(endObserver) }
+        endObserver = nil
         observations.removeAll()
         player.pause()
         player.replaceCurrentItem(with: nil)
@@ -355,6 +411,14 @@ final class AudiblePlayer {
                 }
             }
         }
+        // A shake, as in Audible's own app: the sleep timer starts over.
+        center.addObserver(forName: .deviceDidShake, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated {
+                if self?.restartSleepTimer() == true {
+                    UINotificationFeedbackGenerator().notificationOccurred(.success)
+                }
+            }
+        }
         // Headphones pulled out: AVPlayer pauses itself; the position follows.
         center.addObserver(
             forName: AVAudioSession.routeChangeNotification, object: nil, queue: .main
@@ -379,7 +443,10 @@ final class AudiblePlayer {
     private func configureRemoteCommands() {
         let center = MPRemoteCommandCenter.shared()
         center.playCommand.addTarget { [weak self] _ in
-            MainActor.assumeIsolated { self?.resume() }
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                if !self.restartSleepTimer() { self.resume() }
+            }
             return .success
         }
         center.pauseCommand.addTarget { [weak self] _ in
@@ -387,7 +454,12 @@ final class AudiblePlayer {
             return .success
         }
         center.togglePlayPauseCommand.addTarget { [weak self] _ in
-            MainActor.assumeIsolated { self?.togglePlayPause() }
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                // While the timer runs, a press on the headset gives it its
+                // minutes back rather than pausing; once it paused, it plays.
+                if !self.restartSleepTimer() { self.togglePlayPause() }
+            }
             return .success
         }
         center.skipForwardCommand.preferredIntervals = [NSNumber(value: Self.skipInterval)]

@@ -72,6 +72,9 @@ struct ContentView: View {
     /// one for the whole app, so the title plays on whatever tab is open.
     @State private var player: AudiblePlayer? = AudiblePlayerGate.isOpen ? AudiblePlayer() : nil
     @State private var showPlayer = false
+    /// The book the player's three dots asked for, opened once it has closed.
+    @State private var pendingPlayerBook: String?
+    @State private var playerBook: PlayerBook?
     @Namespace private var playerTransition
 
     /// The trailing "Scanner" entry must stay detached from the content tabs.
@@ -291,10 +294,17 @@ struct ContentView: View {
             PlayerAccessoryScreen(onOpen: { showPlayer = true })
                 .matchedTransitionSource(id: "player", in: playerTransition)
         })
-        .sheet(isPresented: $showPlayer) {
-            PlayerScreen()
+        .sheet(isPresented: $showPlayer, onDismiss: {
+            playerBook = pendingPlayerBook.map(PlayerBook.init)
+            pendingPlayerBook = nil
+        }) {
+            PlayerScreen(onOpenBook: { pendingPlayerBook = $0 })
                 .presentationDragIndicator(.visible)
                 .navigationTransition(.zoom(sourceID: "player", in: playerTransition))
+                .environment(player)
+        }
+        .sheet(item: $playerBook) { book in
+            NavigationStack { BookScreen(bookId: book.id) }
                 .environment(player)
         }
         // A book page starts a title from here.
@@ -363,4 +373,9 @@ struct ContentView: View {
         case .manual: showManualAdd = true
         }
     }
+}
+
+/// The book the full-screen player opened, shown over the tabs.
+private struct PlayerBook: Identifiable {
+    let id: String
 }

@@ -70,6 +70,11 @@ struct ListeningTextTests {
         #expect(ListeningText.clock(3725) == "1:02:05")
     }
 
+    @Test("the folded bar's line: the chapter, short, and the time left with no word")
+    func shortLine() {
+        #expect(ListeningText.shortLine(.preview) == String(localized: "Chap. \(12) · \("11h47")"))
+    }
+
     @Test("what is left, in hours and minutes, or minutes alone")
     func remaining() {
         #expect(ListeningText.remaining(42420) == String(localized: "\(11)h\("47") restantes"))

@@ -11,6 +11,8 @@ struct PlayerAccessory: View {
         let title: String
         /// "Chapitre 12 · 11h47 restantes", or why it does not play.
         let line: String?
+        /// "Chap. 12 · 11h47", under the title once the bar has folded.
+        var shortLine: String? = nil
         let coverURL: URL?
         let isPlaying: Bool
         let isLoading: Bool
@@ -28,15 +30,20 @@ struct PlayerAccessory: View {
     var body: some View {
         HStack(spacing: isInline ? 10 : 11) {
             Button(action: onOpen) {
-                HStack(spacing: isInline ? 10 : 11) {
-                    PlayerArtwork(url: item.coverURL, size: isInline ? 30 : 40, cornerRadius: isInline ? 6 : 8)
-                    VStack(alignment: .leading, spacing: 1) {
+                HStack(spacing: isInline ? 8 : 10) {
+                    // Close to the capsule's edge, round as its end is.
+                    GeometryReader { proxy in
+                        PlayerArtwork(url: item.coverURL, size: proxy.size.height, isRound: true)
+                    }
+                    .aspectRatio(1, contentMode: .fit)
+                    .padding(.vertical, 4)
+                    VStack(alignment: .leading, spacing: isInline ? 0 : 1) {
                         Text(item.title)
-                            .font(.subheadline.weight(.semibold))
+                            .font(isInline ? .footnote.weight(.semibold) : .subheadline.weight(.semibold))
                             .lineLimit(1)
-                        if !isInline, let line = item.line {
+                        if let line = isInline ? item.shortLine ?? item.line : item.line {
                             Text(line)
-                                .font(.caption)
+                                .font(isInline ? .caption2 : .caption)
                                 .foregroundStyle(.secondary)
                                 .lineLimit(1)
                         }
@@ -78,7 +85,7 @@ struct PlayerAccessory: View {
                 .accessibilityLabel(Text("Avancer de 30 secondes"))
             }
         }
-        .padding(.leading, 8)
+        .padding(.leading, 4)
         .padding(.trailing, isInline ? 4 : 8)
     }
 }
@@ -87,6 +94,7 @@ extension PlayerAccessory.Item {
     static let preview = PlayerAccessory.Item(
         title: ListeningTitle.preview.title,
         line: ListeningText.accessoryLine(.preview),
+        shortLine: ListeningText.shortLine(.preview),
         coverURL: ListeningTitle.preview.coverURL,
         isPlaying: true,
         isLoading: false

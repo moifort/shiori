@@ -4,6 +4,8 @@ import SwiftUI
 struct PlayerScreen: View {
     @Environment(AudiblePlayer.self) private var player
     @Environment(\.dismiss) private var dismiss
+    /// The book of the title playing, once the player has closed.
+    let onOpenBook: (String) -> Void
 
     var body: some View {
         if let item = PlayerPage.Item(player: player) {
@@ -15,6 +17,10 @@ struct PlayerScreen: View {
                 case .nextChapter: player.nextChapter()
                 case let .seek(position): player.seek(to: position)
                 case let .sleep(minutes): player.toggleSleepTimer(minutes: minutes)
+                case .openBook:
+                    guard let bookID = player.title?.bookID else { return }
+                    dismiss()
+                    onOpenBook(bookID)
                 case .stop:
                     dismiss()
                     player.stop()
@@ -57,7 +63,8 @@ extension PlayerPage.Item {
             isPlaying: player.isPlaying,
             isLoading: player.phase == .loading,
             failure: failure,
-            sleepMinutes: player.sleepTimer?.minutes
+            sleepMinutes: player.sleepTimer?.minutes,
+            hasBook: title.bookID != nil
         )
     }
 }
@@ -73,6 +80,7 @@ extension PlayerAccessory.Item {
         self.init(
             title: title.title,
             line: line,
+            shortLine: player.phase == .ready ? ListeningText.shortLine(player.progress) : nil,
             coverURL: title.coverURL,
             isPlaying: player.isPlaying,
             isLoading: player.phase == .loading
