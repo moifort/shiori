@@ -17,6 +17,10 @@ struct ReadingFeatureCard: View {
     var onProgress: () -> Void = {}
     /// Opens the book's saga. Nil for a standalone book, which draws no button.
     var onOpenSeries: (() -> Void)?
+    /// The play button of an Audible audiobook, in a build with the player:
+    /// it takes the place of "Marquer lu". Nil keeps the next step.
+    var listening: ListeningButtonState? = nil
+    var onListen: () -> Void = {}
 
     /// The text's and the buttons' heights, which the cover stretches to.
     @State private var leadHeight: CGFloat = 0
@@ -131,11 +135,21 @@ struct ReadingFeatureCard: View {
     private var actions: some View {
         GlassEffectContainer(spacing: 8) {
             HStack(spacing: 8) {
-                Button(action: book.tracksPages ? onProgress : onFinish) {
-                    Label(
-                        book.tracksPages ? "Progression" : "Marquer lu",
-                        systemImage: book.tracksPages ? "bookmark.fill" : "checkmark"
-                    )
+                Button(action: listening != nil ? onListen : book.tracksPages ? onProgress : onFinish) {
+                    Group {
+                        if let listening {
+                            Label {
+                                Text(listening.title)
+                            } icon: {
+                                Image(systemName: listening.systemImage)
+                            }
+                        } else {
+                            Label(
+                                book.tracksPages ? "Progression" : "Marquer lu",
+                                systemImage: book.tracksPages ? "bookmark.fill" : "checkmark"
+                            )
+                        }
+                    }
                         .labelStyle(.caption)
                         .font(.caption.weight(.semibold))
                         .lineLimit(1)
@@ -170,6 +184,21 @@ struct ReadingFeatureCard: View {
         ),
         caption: "depuis 2j",
         onOpen: {}, onFinish: {}, onOpenSeries: {}
+    )
+    .padding()
+}
+
+#Preview("Audible, under way") {
+    ReadingFeatureCard(
+        book: Book(
+            id: "1", title: "Endymion", authors: ["Dan Simmons"], format: .audiobook,
+            durationMinutes: 1310, listeningProgress: 46,
+            series: SeriesMembership(id: "h", name: "Les Cantos d'Hypérion", volume: 3, kind: .main),
+            coverURL: Book.preview.coverURL, status: .reading
+        ),
+        caption: "depuis 2j",
+        onOpen: {}, onFinish: {}, onOpenSeries: {},
+        listening: .resume
     )
     .padding()
 }

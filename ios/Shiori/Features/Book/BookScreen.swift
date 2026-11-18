@@ -36,6 +36,8 @@ struct BookScreen: View {
     @State private var openAuthor: AuthorDestination?
     @State private var openNarrator: NarratorDestination?
     @Environment(\.dismiss) private var dismissPresentation
+    /// The Audible player, in a build that carries it.
+    @Environment(AudiblePlayer.self) private var player: AudiblePlayer?
     @Environment(\.detailClosing) private var closing
 
     /// Pops the screen, closes its sheet, or empties the detail column it
@@ -101,7 +103,13 @@ struct BookScreen: View {
                     secondPage: showEditor && isSpread
                         ? AnyView(editor(book, onClose: { showEditor = false }))
                         : nil,
-                    isComposingNote: isComposingNote
+                    isComposingNote: isComposingNote,
+                    listening: ListeningButtonState.of(book, player: player),
+                    onListen: {
+                        if let state = ListeningButtonState.of(book, player: player) {
+                            player?.press(state, on: book)
+                        }
+                    }
                 )
                 .safeAreaInset(edge: .bottom) {
                     if isComposingNote {

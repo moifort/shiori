@@ -104,3 +104,34 @@ struct ListeningTitleTests {
         #expect(ListeningTitle(book: book(format: .audiobook, audible: "https://www.audible.fr/pd/")) == nil)
     }
 }
+
+@Suite("What an audiobook's play button says")
+struct ListeningButtonStateTests {
+    private func state(_ status: ReadingStatus, progress: Int? = nil, current: Bool = false, playing: Bool = false) -> ListeningButtonState {
+        ListeningButtonState.of(status: status, progress: progress, isCurrent: current, isPlaying: playing)
+    }
+
+    @Test("never opened: listen")
+    func never() {
+        #expect(state(.toRead) == .listen)
+        #expect(state(.toRead, progress: 0) == .listen)
+    }
+
+    @Test("under way, here or on Audible: resume")
+    func underWay() {
+        #expect(state(.reading) == .resume)
+        #expect(state(.toRead, progress: 12) == .resume)
+    }
+
+    @Test("finished: hear it again")
+    func finished() {
+        #expect(state(.read, progress: 100) == .relisten)
+    }
+
+    @Test("playing in Shiori: pause, whatever the status; paused there: resume")
+    func current() {
+        #expect(state(.read, current: true, playing: true) == .pause)
+        #expect(state(.toRead, current: true, playing: true) == .pause)
+        #expect(state(.read, current: true) == .resume)
+    }
+}

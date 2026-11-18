@@ -47,6 +47,11 @@ struct BookPage: View {
     /// keyboard: the page shows where it will stand, and their bubble fades
     /// while its words are in the field.
     var isComposingNote = false
+    /// The play button of an Audible audiobook, in a build with the player:
+    /// it leads the hero, and the next step, the rating and the remarks fold
+    /// into round buttons beside it. Nil draws the hero as for any book.
+    var listening: ListeningButtonState? = nil
+    var onListen: () -> Void = {}
 
     /// The comment the page holding it scrolls to: the reader's remarks on
     /// "Remarques" once written, rather than the form again, and a comment
@@ -190,35 +195,63 @@ struct BookPage: View {
         // No GlassEffectContainer: a menu opened from inside one loses a moving
         // tap on a row over a neighbouring button.
         HStack(spacing: 8) {
-            if book.tracksPages {
-                progressButton
-            } else if let step = NextStep(status: book.status) {
-                primaryButton(step)
+            if let listening {
+                listenButton(listening)
+                // A finished book needs no "Marquer lu": it is read.
+                Group {
+                    if let step = NextStep(status: book.status) {
+                        primaryButton(step, iconOnly: true)
+                    } else if book.status == .dropped {
+                        statusButton(iconOnly: true)
+                    }
+                    ratingButton(prominent: false, iconOnly: true)
+                        .buttonBorderShape(book.rating == nil ? .circle : .capsule)
+                    noteButton(iconOnly: true)
+                }
+                .buttonBorderShape(.circle)
             } else {
-                statusButton
+                if book.tracksPages {
+                    progressButton
+                } else if let step = NextStep(status: book.status) {
+                    primaryButton(step)
+                } else {
+                    statusButton()
+                }
+                ratingButton(prominent: false)
+                noteButton()
             }
-            ratingButton(prominent: false)
-            noteButton
         }
         .font(.subheadline.weight(.semibold))
         .controlSize(.regular)
         .fixedSize()
     }
 
+    /// Listen, take up, pause or hear again an Audible audiobook, white at
+    /// the head of the hero.
+    private func listenButton(_ state: ListeningButtonState) -> some View {
+        Button(action: onListen) {
+            HeroButtonLabel(title: LocalizedStringKey(String(localized: state.title)), systemImage: state.systemImage)
+                .contentTransition(.symbolEffect(.replace))
+        }
+        .buttonStyle(.glassProminent)
+        .tint(.white)
+        .foregroundStyle(.black)
+        .accessibilityIdentifier("book-listen")
+    }
+
     /// The next step the book is waiting for on a tap, and every state it
-    /// moves through on a long press, the one it is in ticked.
-    private func primaryButton(_ step: NextStep) -> some View {
+    /// moves through on a long press, the one it is in ticked. Round and
+    /// wordless beside the play button.
+    private func primaryButton(_ step: NextStep, iconOnly: Bool = false) -> some View {
         Menu {
             statusPicker
         } label: {
-            HeroButtonLabel(title: step.title, systemImage: step.systemImage)
+            HeroButtonLabel(title: step.title, systemImage: step.systemImage, iconOnly: iconOnly)
         } primaryAction: {
             onSetStatus(step.status)
         }
         .menuStyle(.button)
-        .buttonStyle(.glassProminent)
-        .tint(.white)
-        .foregroundStyle(.black)
+        .heroButtonStyle(prominent: !iconOnly)
         .accessibilityIdentifier("book-next-step")
     }
 
@@ -242,16 +275,14 @@ struct BookPage: View {
     /// Where a book read or given up stands, in the place of the next step:
     /// "✓ Lu" or "👎 Abandonné", which opens the full choice of status, for a
     /// book read again or picked up after all.
-    private var statusButton: some View {
+    private func statusButton(iconOnly: Bool = false) -> some View {
         Menu {
             statusPicker
         } label: {
-            HeroButtonLabel(title: LocalizedStringKey(book.status.label), systemImage: book.status.symbol)
+            HeroButtonLabel(title: LocalizedStringKey(book.status.label), systemImage: book.status.symbol, iconOnly: iconOnly)
         }
         .menuStyle(.button)
-        .buttonStyle(.glassProminent)
-        .tint(.white)
-        .foregroundStyle(.black)
+        .heroButtonStyle(prominent: !iconOnly)
         .accessibilityIdentifier(book.status == .dropped ? "book-dropped-status" : "book-read-status")
     }
 
@@ -272,9 +303,11 @@ struct BookPage: View {
     /// The stars once given, else the way to give them. The saga's stars lent
     /// to a volume are not drawn here: grey on glass they read as five empty
     /// stars, and the button's work is to rate this book.
-    private func ratingButton(prominent: Bool) -> some View {
+    private func ratingButton(prominent: Bool, iconOnly: Bool = false) -> some View {
         let label = Group {
-            if let rating = book.rating {
+            if iconOnly, book.rating == nil {
+                HeroButtonLabel(title: "Noter", systemImage: "star", iconOnly: true)
+            } else if let rating = book.rating {
                 // In the button's own colour, as the heart beside the
                 // title bar is: the hero keeps to white on glass.
                 RatingStars(rating: rating, font: .footnote, monochrome: true)
@@ -300,7 +333,7 @@ struct BookPage: View {
     /// The reader's remarks on the book, whatever its status: what they
     /// thought of it so far, or once read. Once written, the button takes the
     /// reader to them; their bubble opens the field over the keyboard.
-    private var noteButton: some View {
+    private func noteButton(iconOnly: Bool = false) -> some View {
         Button {
             if book.note == nil {
                 onEditNote()
@@ -308,7 +341,7 @@ struct BookPage: View {
                 commentRequest = CommentRequest(anchor: Self.noteAnchor, count: commentRequest.count + 1)
             }
         } label: {
-            HeroButtonLabel(title: "Remarques", systemImage: "text.bubble")
+            HeroButtonLabel(title: "Remarques", systemImage: "text.bubble", iconOnly: iconOnly)
         }
         .buttonStyle(.glass)
         .accessibilityIdentifier("book-hero-note")
@@ -516,22 +549,42 @@ struct NextStep: Equatable {
 private struct HeroButtonLabel: View {
     let title: LocalizedStringKey
     let systemImage: String
+    /// The symbol alone, in a round button: the title stays for VoiceOver.
+    var iconOnly = false
 
     /// The label's height, which the stars match: a little taller than the
     /// regular glass button's own.
     static let height: CGFloat = 24
 
     var body: some View {
-        HStack(spacing: 6) {
+        if iconOnly {
             Image(systemName: systemImage)
                 .imageScale(.medium)
-                .accessibilityHidden(true)
-            Text(title)
+                .frame(width: Self.height, height: Self.height)
+                .accessibilityLabel(Text(title))
+        } else {
+            HStack(spacing: 6) {
+                Image(systemName: systemImage)
+                    .imageScale(.medium)
+                    .accessibilityHidden(true)
+                Text(title)
+            }
+            .lineLimit(1)
+            .fixedSize()
+            .padding(.horizontal, 2)
+            .frame(height: Self.height)
         }
-        .lineLimit(1)
-        .fixedSize()
-        .padding(.horizontal, 2)
-        .frame(height: Self.height)
+    }
+}
+
+private extension View {
+    /// White for the hero's lead button, glass for the others.
+    @ViewBuilder func heroButtonStyle(prominent: Bool) -> some View {
+        if prominent {
+            buttonStyle(.glassProminent).tint(.white).foregroundStyle(.black)
+        } else {
+            buttonStyle(.glass)
+        }
     }
 }
 

@@ -44,6 +44,8 @@ struct HomeScreen: View {
     /// account sees.
     @State private var showAdmin = false
     @Environment(\.isAdmin) private var isAdmin
+    /// The Audible player, in a build that carries it.
+    @Environment(AudiblePlayer.self) private var player: AudiblePlayer?
     @Environment(\.accountAvatar) private var accountAvatar
     @Environment(\.accountFirstName) private var accountFirstName
     /// The Audible and Kindle passes started at onboarding, still bringing the
@@ -318,7 +320,8 @@ struct HomeScreen: View {
                     isCompact: !isSplit,
                     onBarCalled: { bar.call($0) },
                     onDiscoveryChoice: viewModel.choose,
-                    discoveryChoices: viewModel.discoveryChoices
+                    discoveryChoices: viewModel.discoveryChoices,
+                    listeningState: { ListeningButtonState.of($0, player: player) }
                 ) { action in
                     switch action {
                     case let .showLibrary(request): onShowLibrary(request)
@@ -332,6 +335,7 @@ struct HomeScreen: View {
                         pendingFinish = nil
                         finishedBook = book
                     case let .rateBook(book): ratedBook = book
+                    case let .listen(book, state): player?.press(state, on: book)
                     case let .recordProgress(book): progressBook = book
                     case .scan: onScan()
                     case let .connectSource(source): openSource = source

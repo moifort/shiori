@@ -13647,6 +13647,22 @@
         }
       }
     },
+    "Réécouter" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Listen again"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Réécouter"
+          }
+        }
+      }
+    },
     "SF" : {
       "localizations" : {
         "en" : {
@@ -18021,6 +18037,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Économie"
+          }
+        }
+      }
+    },
+    "Écouter" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Listen"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Écouter"
           }
         }
       }

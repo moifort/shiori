@@ -75,8 +75,9 @@ final class AudiblePlayer {
 
     /// Play a title, from where the reader stopped on any Audible player. The
     /// accessory shows it at once, with a loader, while the licence is asked.
-    func play(_ title: ListeningTitle) {
+    func play(_ title: ListeningTitle, fromStart: Bool = false) {
         if title.asin == self.title?.asin, phase == .ready {
+            if fromStart { seek(to: 0) }
             resume()
             return
         }
@@ -92,7 +93,7 @@ final class AudiblePlayer {
         hasRetried = false
         lastSaved = nil
         loadArtwork(for: title)
-        start(at: nil)
+        start(at: fromStart ? 0 : nil)
     }
 
     func togglePlayPause() {

@@ -20,6 +20,8 @@ enum HomeAction {
     case recordProgress(Book)
     /// The book read now, rated from its card.
     case rateBook(Book)
+    /// The play button of an Audible audiobook's card, in the state it showed.
+    case listen(Book, ListeningButtonState)
     /// The prompt that leads an empty library.
     case scan
     /// An empty library's start rows: Audible or Kindle to connect.
@@ -74,6 +76,9 @@ struct HomePage: View {
     /// the answer.
     var onDiscoveryChoice: (Suggestion, DiscoveryChoice) async -> Bool = { _, _ in true }
     var discoveryChoices = DiscoveryChoices()
+    /// The play button of each audiobook open, in a build with the Audible
+    /// player; nil for a book that plays nothing.
+    var listeningState: (Book) -> ListeningButtonState? = { _ in nil }
     let onAction: (HomeAction) -> Void
 
     /// How far the page is pulled down past its top.
@@ -347,7 +352,11 @@ struct HomePage: View {
                                     onOpen: { onAction(.openBook(book)) },
                                     onFinish: { onAction(.finishBook(book)) },
                                     onProgress: { onAction(.recordProgress(book)) },
-                                    onOpenSeries: book.series.map { series in { onAction(.openSeries(series.id)) } }
+                                    onOpenSeries: book.series.map { series in { onAction(.openSeries(series.id)) } },
+                                    listening: listeningState(book),
+                                    onListen: {
+                                        if let state = listeningState(book) { onAction(.listen(book, state)) }
+                                    }
                                 )
                                 // The next card shows past the edge, so the row
                                 // reads as scrolling; a lone one takes the width.
