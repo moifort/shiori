@@ -419,6 +419,18 @@ Previews check how a view looks; unit tests check what the app decides. They do 
   A text-only item never moves into the iPhone Duo's vertical bar. Close or cancel is
   `.cancellationAction`, confirm is `.confirmingAction` (pinned trailing from iOS 27, so it
   heads the Duo's vertical bar and never overflows).
+- **Every round or capsule action button uses `ActionButtonStyle`** (`.actionPrimary` white,
+  `.actionGlass` glass, `.actionRound()`, `.actionWide` across a sheet, `.heroProminent`), never
+  `.glassProminent`, `.glass`, `.borderedProminent` or a hand-made `glassEffect` capsule: one
+  press for the whole app (sunk to 0.92, 0.96 across the screen, a bounce back; dimmed only
+  under "Reduce Motion"). `.actionShape(.circle)` turns a group round. Top bars, the tab bar
+  and menu rows keep the system's. Monochrome: white, glass and black, never a colour for
+  "done" or "refused".
+- **A button says what its tap did.** A call it waits on goes through `AsyncButton`: a spinner
+  in place of the label; with `outcome:`, a success tap once done, a shake and an error tap
+  once refused. A two-state button is an `ActionToggle`: it shows the state, not the action —
+  on, its symbol on white; off, the same symbol slashed, on glass — turns over at once, and
+  shakes back if the server refuses. VoiceOver says the action.
 - **A tappable row answers on its whole width**: a `.plain` `Button` whose label carries
   `.contentShape(.rect)`, set in the row view so every caller inherits it. Never
   `onTapGesture` in place of a button.

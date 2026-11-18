@@ -25,9 +25,7 @@ struct ImportSourcesRow: View {
                             .lineLimit(1)
                             .fixedSize()
                     }
-                    .buttonStyle(.glassProminent)
-                    .tint(.white)
-                    .foregroundStyle(.black)
+                    .buttonStyle(.actionPrimary)
                     .accessibilityIdentifier("home-connect-\(source.rawValue)")
                 }
                 .frame(maxWidth: .infinity)
@@ -80,9 +78,7 @@ struct FriendsInviteCard: View {
                 .lineLimit(1)
                 .fixedSize()
         }
-        .buttonStyle(.glassProminent)
-        .tint(.white)
-        .foregroundStyle(.black)
+        .buttonStyle(.actionPrimary)
         .accessibilityIdentifier("home-invite")
         Button(action: onEnterInvitation) {
             Text("J'ai reçu une invitation")
@@ -90,7 +86,7 @@ struct FriendsInviteCard: View {
                 .lineLimit(1)
                 .fixedSize()
         }
-        .buttonStyle(.glass)
+        .buttonStyle(.actionGlass)
         .accessibilityIdentifier("home-enter-invitation")
     }
 }

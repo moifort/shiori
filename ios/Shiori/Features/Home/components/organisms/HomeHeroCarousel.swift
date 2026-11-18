@@ -282,34 +282,24 @@ struct HomeHeroCarousel: View {
                             .font(.headline)
                             .frame(maxWidth: .infinity)
                     }
-                    .buttonStyle(.glassProminent)
-                    .tint(.white)
-                    .foregroundStyle(.black)
-                    // Seen, the eye fills white; pressed again, the release
+                    .buttonStyle(.actionPrimary)
+                    // Seen, the eye on white; not seen, the eye slashed on
+                    // glass. Pressed again, the release
                     // comes back. It leaves the line once the reader leaves
                     // the page, as a discovery turned down does.
-                    Button {
-                        if isSeen {
-                            withAnimation(.snappy) { _ = seen.remove(release.id) }
-                            onUnseeRelease(release)
-                        } else {
-                            withAnimation(.snappy) { _ = seen.insert(release.id) }
+                    ActionToggle(
+                        isOn: isSeen,
+                        symbol: "eye",
+                        turnOnLabel: "Marquer comme vu",
+                        turnOffLabel: "Marquer comme non vu"
+                    ) { seen in
+                        if seen {
+                            withAnimation(.snappy) { _ = self.seen.insert(release.id) }
                             onSeeRelease(release)
+                        } else {
+                            withAnimation(.snappy) { _ = self.seen.remove(release.id) }
+                            onUnseeRelease(release)
                         }
-                    } label: {
-                        Label(
-                            isSeen ? "Vu" : "Marquer comme vu",
-                            systemImage: isSeen ? "eye.slash.fill" : "eye.slash"
-                        )
-                        .labelStyle(.iconOnly)
-                        .font(.headline)
-                        .foregroundStyle(isSeen ? .black : .white)
-                        .contentTransition(.symbolEffect(.replace))
-                    }
-                    .buttonStyle(.glass(isSeen ? .regular.tint(.white) : .regular))
-                    .buttonBorderShape(.circle)
-                    .sensoryFeedback(trigger: isSeen) { _, marked in
-                        .impact(weight: marked ? .medium : .light)
                     }
                     .accessibilityIdentifier("home-release-seen")
                 }
@@ -376,9 +366,7 @@ struct HomeHeroCarousel: View {
                     .font(.headline)
                     .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.glassProminent)
-            .tint(.white)
-            .foregroundStyle(.black)
+            .buttonStyle(.actionPrimary)
             .controlSize(.large)
             .accessibilityIdentifier("home-needs-ratings-rate")
         }
@@ -420,35 +408,25 @@ struct HomeHeroCarousel: View {
                             .font(.headline)
                             .frame(maxWidth: .infinity)
                     }
-                    .buttonStyle(.glassProminent)
-                    .tint(.white)
-                    .foregroundStyle(.black)
+                    .buttonStyle(.actionPrimary)
                     .accessibilityIdentifier("home-prompt-action")
                     // Turned down, the eye fills white; pressed again, the
                     // prompt comes back. It leaves the line once the reader
                     // leaves the page, as a release seen does.
-                    Button {
-                        if isDismissed {
-                            withAnimation(.snappy) { _ = dismissedPrompts.remove(prompt) }
-                            onUndismissPrompt(prompt)
-                        } else {
+                    ActionToggle(
+                        isOn: isDismissed,
+                        symbol: "eye.slash",
+                        offSymbol: "eye",
+                        turnOnLabel: "Pas intéressé",
+                        turnOffLabel: "Plus intéressé"
+                    ) { dismissed in
+                        if dismissed {
                             withAnimation(.snappy) { _ = dismissedPrompts.insert(prompt) }
                             onDismissPrompt(prompt)
+                        } else {
+                            withAnimation(.snappy) { _ = dismissedPrompts.remove(prompt) }
+                            onUndismissPrompt(prompt)
                         }
-                    } label: {
-                        Label(
-                            isDismissed ? "Plus intéressé" : "Pas intéressé",
-                            systemImage: isDismissed ? "eye.slash.fill" : "eye.slash"
-                        )
-                        .labelStyle(.iconOnly)
-                        .font(.headline)
-                        .foregroundStyle(isDismissed ? .black : .white)
-                        .contentTransition(.symbolEffect(.replace))
-                    }
-                    .buttonStyle(.glass(isDismissed ? .regular.tint(.white) : .regular))
-                    .buttonBorderShape(.circle)
-                    .sensoryFeedback(trigger: isDismissed) { _, marked in
-                        .impact(weight: marked ? .medium : .light)
                     }
                     .accessibilityIdentifier("home-prompt-dismiss")
                 }

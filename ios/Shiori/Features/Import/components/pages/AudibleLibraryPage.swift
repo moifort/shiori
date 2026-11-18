@@ -125,8 +125,7 @@ struct AudibleLibraryPage: View {
                 }
                 .padding(.vertical, 6)
             }
-            .buttonStyle(.borderedProminent)
-            .foregroundStyle(Color(.systemBackground))
+            .buttonStyle(.actionPrimary)
             .disabled(!canImport)
             .accessibilityIdentifier("audible-import")
 

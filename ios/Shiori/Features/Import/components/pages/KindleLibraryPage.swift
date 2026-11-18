@@ -121,8 +121,7 @@ struct KindleLibraryPage: View {
                 }
                 .padding(.vertical, 6)
             }
-            .buttonStyle(.borderedProminent)
-            .foregroundStyle(Color(.systemBackground))
+            .buttonStyle(.actionPrimary)
             .disabled(!canImport)
             .accessibilityIdentifier("kindle-import")
 

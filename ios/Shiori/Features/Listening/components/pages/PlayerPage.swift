@@ -233,13 +233,9 @@ struct PlayerPage: View {
                 Button { onAction(.sleep(minutes: minutes)) } label: {
                     Text("\(minutes) min")
                         .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(isOn ? .black : .white)
-                        .padding(.horizontal, 18)
-                        .frame(height: 40)
-                        .background(isOn ? AnyShapeStyle(.white) : AnyShapeStyle(.clear), in: .capsule)
-                        .glassEffect(.regular.interactive(), in: .capsule)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.action(isOn ? .white : .glass, height: 40))
+                .animation(.snappy, value: isOn)
                 .accessibilityLabel(Text("Arrêter dans \(minutes) minutes"))
                 .accessibilityAddTraits(isOn ? .isSelected : [])
             }

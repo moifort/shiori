@@ -88,7 +88,7 @@ struct LibrariesOfferPage: View {
                     .frame(maxWidth: .infinity)
                 }
                 .disabled(isWorking || !hasChoice)
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(.actionWide)
                 .controlSize(.large)
                 .tint(.white)
                 .foregroundStyle(.black)
@@ -99,7 +99,7 @@ struct LibrariesOfferPage: View {
                         .frame(maxWidth: .infinity)
                 }
                 .disabled(isWorking)
-                .buttonStyle(.bordered)
+                .buttonStyle(.actionGlass)
                 .controlSize(.large)
                 .accessibilityIdentifier("onboarding-libraries-skip")
             }

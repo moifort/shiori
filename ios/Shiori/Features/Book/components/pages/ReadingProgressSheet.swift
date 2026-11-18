@@ -153,7 +153,7 @@ struct ReadingProgressSheet: View {
                 .accessibilityIdentifier("progress-dropped")
             }
             .font(.subheadline.weight(.semibold))
-            .buttonStyle(.glass)
+            .buttonStyle(.actionGlass)
             .controlSize(.large)
         }
     }

@@ -362,9 +362,9 @@ extension BookState {
         BookHero(book: .preview, state: .reading(of: .preview)) {
             HStack {
                 Button("Marquer lu", systemImage: "checkmark") {}
-                    .buttonStyle(.glassProminent)
+                    .buttonStyle(.actionPrimary)
                 Button("Noter", systemImage: "star") {}
-                    .buttonStyle(.glass)
+                    .buttonStyle(.actionGlass)
             }
         }
     }

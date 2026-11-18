@@ -29,9 +29,7 @@ struct HomeEmptyHero: View {
                     .font(.headline)
                     .frame(width: 200)
             }
-            .buttonStyle(.glassProminent)
-            .tint(.white)
-            .foregroundStyle(.black)
+            .buttonStyle(.actionPrimary)
             .controlSize(.extraLarge)
             .padding(.top, 20)
             .accessibilityIdentifier("home-scan")

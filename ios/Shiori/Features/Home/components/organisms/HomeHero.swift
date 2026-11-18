@@ -98,9 +98,7 @@ struct HomeHero: View {
                     .font(.subheadline.weight(.semibold))
                     .padding(.horizontal, 4)
             }
-            .buttonStyle(.glassProminent)
-            .tint(.white)
-            .foregroundStyle(.black)
+            .buttonStyle(.actionPrimary)
             .controlSize(.large)
         }
     }

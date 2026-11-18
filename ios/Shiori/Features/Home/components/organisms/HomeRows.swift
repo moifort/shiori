@@ -145,9 +145,7 @@ struct ReadingLeadCard: View {
                         .lineLimit(1)
                         .fixedSize()
                 }
-                .buttonStyle(.glassProminent)
-                .tint(.white)
-                .foregroundStyle(.black)
+                .buttonStyle(.actionPrimary)
                 Button(action: onRate) {
                     Group {
                         if ratingLabelled {
@@ -160,7 +158,7 @@ struct ReadingLeadCard: View {
                     .lineLimit(1)
                     .fixedSize()
                 }
-                .buttonStyle(.glass)
+                .buttonStyle(.actionGlass)
             }
             .controlSize(.small)
         }

@@ -7,12 +7,19 @@ import SwiftUI
 ///
 /// The label keeps its width while the spinner shows, so a row of buttons does
 /// not shuffle when one of them is working.
+///
+/// An action that says how it went (`ActionOutcome`) is answered too: a
+/// success tap once done, the button's own state taking over from there (its
+/// label and symbol, drawn by the caller); a shake and an error tap once
+/// refused, the label back as it was.
 struct AsyncButton<Label: View>: View {
     var role: ButtonRole? = nil
-    let action: () async -> Void
+    let action: () async -> ActionOutcome?
     @ViewBuilder let label: () -> Label
 
     @State private var isInProgress = false
+    @State private var successes = 0
+    @State private var refusals = 0
 
     init(
         role: ButtonRole? = nil,
@@ -20,7 +27,21 @@ struct AsyncButton<Label: View>: View {
         @ViewBuilder label: @escaping () -> Label
     ) {
         self.role = role
-        self.action = action
+        self.action = {
+            await action()
+            return nil
+        }
+        self.label = label
+    }
+
+    /// A button whose call says whether it went through.
+    init(
+        role: ButtonRole? = nil,
+        outcome: @escaping () async -> ActionOutcome,
+        @ViewBuilder label: @escaping () -> Label
+    ) {
+        self.role = role
+        self.action = { await outcome() }
         self.label = label
     }
 
@@ -29,8 +50,13 @@ struct AsyncButton<Label: View>: View {
             guard !isInProgress else { return }
             isInProgress = true
             Task {
-                await action()
-                isInProgress = false
+                let outcome = await action()
+                withAnimation(.snappy) { isInProgress = false }
+                switch outcome {
+                case .done: successes += 1
+                case .refused: refusals += 1
+                case nil: break
+                }
             }
         } label: {
             ZStack {
@@ -41,6 +67,8 @@ struct AsyncButton<Label: View>: View {
             }
         }
         .disabled(isInProgress)
+        .refusalShake(trigger: refusals)
+        .sensoryFeedback(.success, trigger: successes)
     }
 }
 
@@ -67,7 +95,15 @@ extension AsyncButton where Label == SwiftUI.Label<Text, Image> {
         AsyncButton("Synchroniser", systemImage: "arrow.triangle.2.circlepath") {
             try? await Task.sleep(for: .seconds(2))
         }
-        .buttonStyle(.borderedProminent)
+        .buttonStyle(.actionPrimary)
+        AsyncButton(outcome: {
+            try? await Task.sleep(for: .seconds(1))
+            return .refused
+        }) {
+            Label("Ajouter", systemImage: "plus")
+        }
+        .buttonStyle(.actionGlass)
     }
     .padding()
+    .background(.black)
 }

@@ -39,8 +39,8 @@ struct MessageComposer: View {
                     .font(.body.weight(.semibold))
                     .frame(width: 24, height: 24)
             }
-            .buttonStyle(.glass)
-            .buttonBorderShape(.circle)
+            .buttonStyle(.actionGlass)
+            .actionShape(.circle)
             .accessibilityLabel("Annuler")
             .accessibilityIdentifier("composer-cancel")
 

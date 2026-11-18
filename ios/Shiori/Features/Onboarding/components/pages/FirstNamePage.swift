@@ -50,7 +50,7 @@ struct FirstNamePage: View {
                 Text("Continuer")
                     .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.borderedProminent)
+            .buttonStyle(.actionWide)
             .controlSize(.large)
             .tint(.white)
             .foregroundStyle(.black)

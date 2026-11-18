@@ -49,8 +49,7 @@ struct ShelfAddingPage: View {
                 Button(action: onDone) {
                     Text("Voir ma bibliothèque").frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.borderedProminent)
-                .foregroundStyle(Color(.systemBackground))
+                .buttonStyle(.actionWide)
                 .controlSize(.large)
                 .accessibilityIdentifier("shelf-done")
             }

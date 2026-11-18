@@ -205,10 +205,10 @@ struct BookPage: View {
                         statusButton(iconOnly: true)
                     }
                     ratingButton(prominent: false, iconOnly: true)
-                        .buttonBorderShape(book.rating == nil ? .circle : .capsule)
+                        .actionShape(book.rating == nil ? .circle : .capsule)
                     noteButton(iconOnly: true)
                 }
-                .buttonBorderShape(.circle)
+                .actionShape(.circle)
             } else {
                 if book.tracksPages {
                     progressButton
@@ -233,9 +233,7 @@ struct BookPage: View {
             HeroButtonLabel(title: LocalizedStringKey(String(localized: state.title)), systemImage: state.systemImage)
                 .contentTransition(.symbolEffect(.replace))
         }
-        .buttonStyle(.glassProminent)
-        .tint(.white)
-        .foregroundStyle(.black)
+        .buttonStyle(.actionPrimary)
         .accessibilityIdentifier("book-listen")
     }
 
@@ -266,9 +264,7 @@ struct BookPage: View {
             onOpenProgress()
         }
         .menuStyle(.button)
-        .buttonStyle(.glassProminent)
-        .tint(.white)
-        .foregroundStyle(.black)
+        .buttonStyle(.actionPrimary)
         .accessibilityIdentifier("book-progress")
     }
 
@@ -319,12 +315,10 @@ struct BookPage: View {
         return Group {
             if prominent {
                 Button(action: onRate) { label }
-                    .buttonStyle(.glassProminent)
-                    .tint(.white)
-                    .foregroundStyle(.black)
+                    .buttonStyle(.actionPrimary)
             } else {
                 Button(action: onRate) { label }
-                    .buttonStyle(.glass)
+                    .buttonStyle(.actionGlass)
             }
         }
         .accessibilityIdentifier(book.rating != nil ? "book-rating" : "book-rate")
@@ -343,7 +337,7 @@ struct BookPage: View {
         } label: {
             HeroButtonLabel(title: "Remarques", systemImage: "text.bubble", iconOnly: iconOnly)
         }
-        .buttonStyle(.glass)
+        .buttonStyle(.actionGlass)
         .accessibilityIdentifier("book-hero-note")
     }
 

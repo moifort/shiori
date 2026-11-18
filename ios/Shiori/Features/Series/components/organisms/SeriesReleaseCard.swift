@@ -166,9 +166,7 @@ struct SeriesReleaseCard: View {
             .lineLimit(1)
             .fixedSize()
         }
-        .buttonStyle(.glassProminent)
-        .tint(.white)
-        .foregroundStyle(.black)
+        .buttonStyle(.actionPrimary)
         .controlSize(.small)
         .accessibilityIdentifier("series-release-preorder")
     }

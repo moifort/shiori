@@ -1,9 +1,8 @@
 import SwiftUI
 
 /// "+" that puts a friend's book — or the first volume of their saga — on the
-/// reader's pile: a spinner while it goes, greyed out on one they already own.
-/// Disabled alone would leave the plus in the accent colour, so it is greyed
-/// throughout and reads as inert at a glance.
+/// reader's pile: a spinner while it goes, dimmed on one they already own.
+/// Round glass, as every icon-only action button.
 ///
 /// It asks how the reader takes the story in, since that need not be how the
 /// friend did: a reader who never listens takes a friend's recording as a book.
@@ -33,10 +32,9 @@ struct TakeButton: View {
                     .font(.caption.weight(.semibold))
             }
             .menuStyle(.button)
-            .buttonStyle(.bordered)
-            .buttonBorderShape(.circle)
+            .buttonStyle(.actionGlass)
+            .actionShape(.circle)
             .controlSize(.small)
-            .foregroundStyle(owned ? AnyShapeStyle(.tertiary) : AnyShapeStyle(.tint))
             .disabled(owned)
             .accessibilityLabel(Text(owned ? ownedLabel : addLabel))
             .accessibilityIdentifier(owned ? "friend-take-owned" : "friend-take-add")

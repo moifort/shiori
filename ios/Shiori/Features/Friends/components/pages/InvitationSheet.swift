@@ -40,8 +40,7 @@ struct InvitationSheet: View {
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 6)
                 }
-                .buttonStyle(.borderedProminent)
-                .foregroundStyle(Color(.systemBackground))
+                .buttonStyle(.actionPrimary)
 
                 Spacer(minLength: 0)
             }

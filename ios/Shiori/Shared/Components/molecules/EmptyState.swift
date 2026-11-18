@@ -91,8 +91,7 @@ struct EmptyState: View {
                 } label: {
                     label(of: primary)
                 }
-                .buttonStyle(.borderedProminent)
-                .foregroundStyle(Color(.systemBackground))
+                .buttonStyle(.actionPrimary)
                 .accessibilityIdentifier("empty-primary")
             }
             if let secondary {
@@ -101,7 +100,7 @@ struct EmptyState: View {
                 } label: {
                     label(of: secondary)
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(.actionGlass)
                 .accessibilityIdentifier("empty-secondary")
             }
         }

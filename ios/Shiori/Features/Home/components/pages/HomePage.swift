@@ -563,7 +563,7 @@ struct HomePage: View {
                 Label("Scanner un livre", systemImage: "camera")
                     .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.glassProminent)
+            .buttonStyle(.actionPrimary)
             .controlSize(.large)
             .accessibilityIdentifier("home-scan")
         }

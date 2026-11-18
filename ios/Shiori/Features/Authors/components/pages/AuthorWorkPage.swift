@@ -33,7 +33,7 @@ struct AuthorWorkPage: View {
                         .font(.headline)
                         .frame(maxWidth: 260)
                 }
-                .buttonStyle(.glassProminent)
+                .buttonStyle(.actionPrimary)
                 .controlSize(.large)
                 .disabled(isAdding)
                 .padding(.top, 8)

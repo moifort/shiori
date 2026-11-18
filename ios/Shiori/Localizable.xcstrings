@@ -9999,6 +9999,22 @@
         }
       }
     },
+    "Marquer comme non vu" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mark as unseen"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marquer comme non vu"
+          }
+        }
+      }
+    },
     "Marquer comme vu" : {
       "localizations" : {
         "en" : {

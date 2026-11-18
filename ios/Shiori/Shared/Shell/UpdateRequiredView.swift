@@ -13,8 +13,7 @@ struct UpdateRequiredView: View {
         } actions: {
             Link("Mettre à jour", destination: appStoreURL)
                 .font(.headline)
-                .buttonStyle(.borderedProminent)
-                .foregroundStyle(Color(.systemBackground))
+                .buttonStyle(.actionWide)
                 .controlSize(.large)
         }
     }

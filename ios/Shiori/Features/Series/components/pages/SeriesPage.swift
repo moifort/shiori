@@ -53,7 +53,6 @@ struct SeriesPage: View {
     let onAction: (SeriesAction) async -> Void
 
     /// Bumped on each tap of the bell, which swings as it changes.
-    @State private var taps = 0
 
     private var currentYear: Int { Calendar.current.component(.year, from: .now) }
 
@@ -180,9 +179,8 @@ struct SeriesPage: View {
         // A saga hearted already says what the reader thinks of it: no
         // prompt to rate it beside the heart, only the stars once given.
         if friend == nil, opinion?.rating != nil || opinion?.favorite != true {
-            Button { Task { await onAction(.rate) } } label: { label.contentShape(.capsule) }
-                .buttonStyle(.plain)
-                .glassEffect(.regular.interactive(), in: .capsule)
+            Button { Task { await onAction(.rate) } } label: { label }
+                .buttonStyle(ActionButtonStyle(fill: .glass, isBare: true))
                 .accessibilityIdentifier(opinion?.rating != nil ? "series-rating" : "series-rate")
         } else if friend != nil, opinion?.rating != nil || opinion?.favorite == true {
             label
@@ -207,33 +205,21 @@ struct SeriesPage: View {
     /// black and white on every cover.
     private var isSetAside: Bool { followsHere && !isFollowed }
 
-    /// The only way to follow the saga or set it aside. Followed, the bell
-    /// alone; set aside, the button says what a tap does, "Suivre", while the
-    /// hero's pill says "Non suivie".
+    /// The only way to follow the saga or set it aside: the bell on white
+    /// while it is followed, slashed on glass once set aside, as the "Non
+    /// suivies" filter draws it. The hero's pill says "Non suivie".
     private var followButton: some View {
-        Button {
-            taps += 1
-            Task { await onAction(.setFollowed(!isFollowed)) }
-        } label: {
-            HStack(spacing: 6) {
-                Image(systemName: isFollowed ? Self.followSymbol(isFollowed: true) : "bell")
-                    .symbolEffect(.wiggle, value: taps)
-                    .contentTransition(.symbolEffect(.replace))
-                if !isFollowed {
-                    Text("Suivre").font(.body.weight(.semibold))
-                }
-            }
-            .font(.title3.weight(.medium))
-            .foregroundStyle(.white)
-            .padding(.horizontal, isFollowed ? 0 : 18)
-            .frame(minWidth: ProgressCapsule.height, minHeight: ProgressCapsule.height)
-            .fixedSize()
-            .contentShape(.capsule)
+        ActionToggle(
+            isOn: isFollowed,
+            symbol: "bell",
+            offSymbol: Self.followSymbol(isFollowed: false),
+            turnOnLabel: "Suivre",
+            turnOffLabel: "Ne plus suivre",
+            size: ProgressCapsule.height,
+            wiggles: true
+        ) { followed in
+            await onAction(.setFollowed(followed))
         }
-        .buttonStyle(.plain)
-        .glassEffect(.regular.interactive(), in: .capsule)
-        .sensoryFeedback(.selection, trigger: taps)
-        .accessibilityLabel(Text(isFollowed ? "Ne plus suivre" : "Suivre"))
         .accessibilityIdentifier(isFollowed ? "series-unfollow" : "series-follow")
     }
 

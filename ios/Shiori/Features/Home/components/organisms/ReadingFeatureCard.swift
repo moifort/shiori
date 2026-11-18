@@ -156,9 +156,7 @@ struct ReadingFeatureCard: View {
                         .lineLimit(1)
                         .fixedSize()
                 }
-                .buttonStyle(.glassProminent)
-                .tint(.white)
-                .foregroundStyle(.black)
+                .buttonStyle(.actionPrimary)
                 if let onOpenSeries {
                     Button(action: onOpenSeries) {
                         Text("Voir la série")
@@ -166,7 +164,7 @@ struct ReadingFeatureCard: View {
                             .lineLimit(1)
                             .fixedSize()
                     }
-                    .buttonStyle(.glass)
+                    .buttonStyle(.actionGlass)
                 }
             }
             .controlSize(.small)

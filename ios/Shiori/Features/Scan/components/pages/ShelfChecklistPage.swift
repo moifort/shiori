@@ -154,8 +154,7 @@ struct ShelfChecklistPage: View {
             Text("Ajouter \(ticked.count) livres · \(ticked.count) scans")
                 .frame(maxWidth: .infinity)
         }
-        .buttonStyle(.borderedProminent)
-        .foregroundStyle(Color(.systemBackground))
+        .buttonStyle(.actionWide)
         .controlSize(.large)
         .disabled(ticked.isEmpty)
         .padding()
