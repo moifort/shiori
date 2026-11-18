@@ -42,7 +42,7 @@ struct PlayerAccessoryScreen: View {
                 item: item,
                 onOpen: onOpen,
                 onTogglePlay: { player.togglePlayPause() },
-                onSkipForward: { player.skip(by: AudiblePlayer.skipInterval) }
+                onSkipBack: { player.skip(by: -AudiblePlayer.skipInterval) }
             )
         }
     }

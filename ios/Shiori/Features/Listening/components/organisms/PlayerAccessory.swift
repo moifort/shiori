@@ -21,14 +21,14 @@ struct PlayerAccessory: View {
     let item: Item
     let onOpen: () -> Void
     let onTogglePlay: () -> Void
-    let onSkipForward: () -> Void
+    let onSkipBack: () -> Void
 
     @Environment(\.tabViewBottomAccessoryPlacement) private var placement
 
     private var isInline: Bool { placement == .inline }
 
     var body: some View {
-        HStack(spacing: isInline ? 10 : 11) {
+        HStack(spacing: isInline ? 4 : 8) {
             Button(action: onOpen) {
                 HStack(spacing: isInline ? 8 : 10) {
                     // Close to the capsule's edge, round as its end is.
@@ -36,7 +36,6 @@ struct PlayerAccessory: View {
                         PlayerArtwork(url: item.coverURL, size: proxy.size.height, isRound: true)
                     }
                     .aspectRatio(1, contentMode: .fit)
-                    .padding(.vertical, 4)
                     VStack(alignment: .leading, spacing: isInline ? 0 : 1) {
                         Text(item.title)
                             .font(isInline ? .footnote.weight(.semibold) : .subheadline.weight(.semibold))
@@ -66,26 +65,26 @@ struct PlayerAccessory: View {
                             .contentTransition(.symbolEffect(.replace))
                     }
                 }
-                .frame(width: 40, height: 40)
+                .frame(width: isInline ? 32 : 40, height: 40)
                 .contentShape(.rect)
             }
             .buttonStyle(.plain)
             .disabled(item.isLoading)
             .accessibilityLabel(Text(item.isPlaying ? "Pause" : "Lecture"))
 
+            // Room for it only over the bar: folded, pause alone.
             if !isInline {
-                Button(action: onSkipForward) {
-                    Image(systemName: "goforward.30")
+                Button(action: onSkipBack) {
+                    Image(systemName: "gobackward.30")
                         .font(.system(size: 22))
                         .frame(width: 40, height: 40)
                         .contentShape(.rect)
                 }
                 .buttonStyle(.plain)
                 .disabled(item.isLoading)
-                .accessibilityLabel(Text("Avancer de 30 secondes"))
+                .accessibilityLabel(Text("Reculer de 30 secondes"))
             }
         }
-        .padding(.leading, 4)
         .padding(.trailing, isInline ? 4 : 8)
     }
 }
@@ -110,6 +109,6 @@ extension PlayerAccessory.Item {
     }
     .tabBarMinimizeBehavior(.onScrollDown)
     .tabViewBottomAccessory {
-        PlayerAccessory(item: .preview, onOpen: {}, onTogglePlay: {}, onSkipForward: {})
+        PlayerAccessory(item: .preview, onOpen: {}, onTogglePlay: {}, onSkipBack: {})
     }
 }
