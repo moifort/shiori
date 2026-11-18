@@ -393,6 +393,18 @@ Previews check how a view looks; unit tests check what the app decides. They do 
   blue unless coloured.
 - **A rail holding one card draws it full width**: the screen's width less its 20 pt margins,
   with no page dots. From two cards on, each is 10 pt narrower so the next one peeks in.
+- **Large cards keep one fixed height.** Every large card of a page — the shelves', the
+  agenda's, the prizes' — stands at `NewsLargeCard.height` (159 pt), and every card of a
+  release rail at `SeriesReleaseCard`'s 150 pt, whatever their title or tags say: a fixed
+  `frame(height:)`, never `minHeight` plus `fixedSize`. A long title closes on an ellipsis.
+- **A card never grows past its frame.** What sits in a row of fixed width (a card's buttons)
+  falls back to a narrower form when it does not fit (`ViewThatFits`): the wish capsule loses
+  its words before the card overflows onto its neighbour.
+- **Every Actualité card shows its day** in a date box, past days included, since the page is
+  news: the day a release came or comes out, the day of a friend's move. The prizes have
+  none, and neither does what is announced with no date at all.
+- **A series card says its day on one line**: the day and month, then how long is left, as
+  outlined tags in a row just above the series' name, on the leading side.
 - **Sections stay simple** (base rules, for now): a section's header is its title alone, with
   no subtitle under it; a rail of covers shows the covers alone, with no title or author under
   them (what a cover must say, a date for instance, sits in its foot); and a section with

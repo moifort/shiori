@@ -65,6 +65,11 @@ translucent fills (`styles/Glass.kt`), the floating tab bar and the floating bar
 screen. Android conventions win only where the platform imposes them: the back gesture,
 system bars, the share sheet, permissions, date pickers.
 
+The design conventions of [ios-guide.md](ios-guide.md#design-conventions) hold on Android
+word for word — large cards at one fixed height, a card never growing past its frame, the date
+box on every Actualité card, a series' day on one line, and the rest: a port follows them, and
+a rule added there is a rule here.
+
 ## Checking a screen
 
 A debug build opens a page from its fixtures:
