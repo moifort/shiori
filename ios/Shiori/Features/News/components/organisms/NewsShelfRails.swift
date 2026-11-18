@@ -82,7 +82,7 @@ struct NewsSeriesRail: View {
             ScrollView(.horizontal) {
                 LazyHStack(spacing: 13) {
                     ForEach(items) { item in
-                        SeriesShowCard(series: Self.series(item), tag: item.caption, isCompact: true) {
+                        SeriesShowCard(series: Self.series(item), tag: item.word, isCompact: true, releaseDate: item.releaseDate) {
                             Task { await onAction(.open(item.card)) }
                         }
                         .frame(width: 200, height: 128)
@@ -128,8 +128,8 @@ struct NewsPersonTile: View {
         Button(action: onOpen) {
             PosterCover(book: item.card.cover, label: PosterLabel(caption: item.caption, rating: item.rating), width: width)
                 .overlay(alignment: .topLeading) {
-                    if let name = item.pillName {
-                        pill(name).padding(6)
+                    if item.pillName != nil {
+                        NewsPersonPill(item: item, maxWidth: width - 12).padding(6)
                     }
                 }
                 .contentShape(.rect)
@@ -138,29 +138,6 @@ struct NewsPersonTile: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text([item.person, item.card.cover.title, item.caption].compactMap(\.self).joined(separator: ", ")))
         .accessibilityAddTraits(.isButton)
-    }
-
-    private func pill(_ name: String) -> some View {
-        HStack(spacing: 5) {
-            Group {
-                if let avatar = item.avatar {
-                    AccountAvatarView(avatar: avatar, firstName: item.person, size: 18)
-                } else {
-                    AuthorAvatar(initials: initials(of: item.person), portraitURL: item.portraitURL, size: 18)
-                }
-            }
-            .clipShape(.circle)
-            Text(name)
-                .font(.caption2.weight(.semibold))
-                .lineLimit(1)
-        }
-        .padding(.leading, 4)
-        .padding(.trailing, 9)
-        .frame(height: 26)
-        .foregroundStyle(.white)
-        .glassEffect(.regular, in: .capsule)
-        .environment(\.colorScheme, .dark)
-        .frame(maxWidth: width - 12, alignment: .leading)
     }
 
     /// "Martha Wells" → "M. Wells", so the name holds in the pill; a single

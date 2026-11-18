@@ -285,3 +285,51 @@ private extension String {
         return String(head).localizedUppercase + dropFirst()
     }
 }
+
+extension NewsShelfItem {
+    /// A large card's word on the foot of its cover: what happened, without
+    /// the day the date leaf says — "♥ Adoré", "Tome 9", "Sorti", "Annoncé",
+    /// "À paraître".
+    var word: String {
+        switch card {
+        case let .friend(move):
+            return NewsShelves.action(move.lead)
+        case let .released(.release(release, _)):
+            if release.source == .saga, let volume = release.volume { return String(localized: "Tome \(volume)") }
+            return String(localized: "Sorti")
+        case .released(.narrator):
+            return String(localized: "Sorti")
+        case let .upcoming(release):
+            switch release.source {
+            case .saga: return release.volume.map { String(localized: "Tome \($0)") } ?? String(localized: "Annoncé")
+            case .awaited: return release.date == nil ? String(localized: "En vue") : String(localized: "À paraître")
+            case .author, .narrator: return String(localized: "Annoncé")
+            }
+        case .suggestion, .award:
+            return caption
+        }
+    }
+
+    /// The day the release came or comes out, as `YYYY-MM-DD` — or `YYYY-MM`,
+    /// `YYYY` for what is announced that loosely: the date leaf in the corner
+    /// and, when ahead, how long is left. Nil for what has no release day.
+    var releaseDate: String? {
+        switch card {
+        case let .released(item): Self.isoDay(item.day)
+        case let .upcoming(release): release.date
+        default: nil
+        }
+    }
+
+    /// An edition the reader awaits already: its card says it is in the wish
+    /// list rather than offering it.
+    var isAwaited: Bool {
+        if case let .upcoming(release) = card { return release.source == .awaited }
+        return false
+    }
+
+    static func isoDay(_ day: Date, calendar: Calendar = .current) -> String {
+        let parts = calendar.dateComponents([.year, .month, .day], from: day)
+        return String(format: "%04d-%02d-%02d", parts.year ?? 0, parts.month ?? 1, parts.day ?? 1)
+    }
+}

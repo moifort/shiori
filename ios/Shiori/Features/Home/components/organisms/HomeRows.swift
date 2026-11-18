@@ -347,6 +347,9 @@ struct SeriesShowCard: View {
     var isCompact = false
     /// A saga set aside: the card greyed, to say it sleeps.
     var isSetAside = false
+    /// The volume's day, `YYYY-MM-DD` or looser: a calendar leaf in the top
+    /// corner, the tag then naming the volume alone.
+    var releaseDate: String?
     let onOpen: () -> Void
 
     var body: some View {
@@ -383,8 +386,16 @@ struct SeriesShowCard: View {
             // A saga heard says so in the corner, as the posters above do,
             // and an edition in another language than the phone's beside it.
             .overlay(alignment: .topTrailing) {
-                CoverTags(language: series.language, isAudio: series.isAudio)
-                    .padding(10)
+                if let releaseDate {
+                    VStack(alignment: .trailing, spacing: 6) {
+                        ReleaseDateBadge(date: releaseDate, onGlass: true)
+                        CoverTags(language: series.language, isAudio: series.isAudio)
+                    }
+                    .padding(8)
+                } else {
+                    CoverTags(language: series.language, isAudio: series.isAudio)
+                        .padding(10)
+                }
             }
             .clipShape(.rect(cornerRadius: 18))
             // The thin light rim inside the edge, as the posters carry.

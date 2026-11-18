@@ -328,6 +328,52 @@ final class NewsViewModel {
         }
     }
 
+    /// The "+" of a large card: onto the pile or among the books read,
+    /// whatever brought the book.
+    func add(_ card: NewsCard, _ status: CopiedStatus, as format: BookFormat) async {
+        switch card {
+        case let .friend(move): await add(move.lead, status, as: format)
+        case let .released(item): await add(item, status, as: format)
+        case let .upcoming(release): await add(ReleasedItem.release(release, day: .now), status, as: format)
+        case let .suggestion(suggestion):
+            var draft = suggestion.draft
+            draft.coverURL = suggestion.coverURL
+            await add(draft, of: card, status, as: format)
+        case let .award(winner):
+            var draft = winner.draft
+            draft.coverURL = winner.coverURL
+            await add(draft, of: card, status, as: format)
+        }
+    }
+
+    private func add(_ draft: BookDraft, of card: NewsCard, _ status: CopiedStatus, as format: BookFormat) async {
+        var draft = draft
+        draft.format = format
+        draft.media = format == .audiobook ? [] : [.print]
+        draft.status = status == .read ? .read : .toRead
+        if await perform({ try await client.addReleased(draft) }) {
+            taken.insert(card.key)
+        }
+    }
+
+    /// The "+" of a large card: the edition in the phone's language awaited.
+    func awaitEdition(_ card: NewsCard, _ format: ReleaseFormat) async {
+        switch card {
+        case let .friend(move): await awaitEdition(move.lead, format)
+        case let .released(item): await awaitEdition(item, format)
+        case let .upcoming(release): await awaitEdition(ReleasedItem.release(release, day: .now), format)
+        case let .suggestion(suggestion): await awaitEdition(suggestion.draft, of: card, format)
+        case let .award(winner): await awaitEdition(winner.draft, of: card, format)
+        }
+    }
+
+    private func awaitEdition(_ draft: BookDraft, of card: NewsCard, _ format: ReleaseFormat) async {
+        awaited.insert(card.key)
+        if !(await perform({ try await client.awaitReleased(draft, format) })) {
+            awaited.remove(card.key)
+        }
+    }
+
     /// Runs a write, reporting a failure. True once it went through.
     private func perform(_ write: () async throws -> Void) async -> Bool {
         do {

@@ -8,6 +8,11 @@ enum NewsAction {
     case wish(NewsCard)
     /// "Pas intéressé" on a discovery or a prize.
     case dismiss(NewsCard)
+    /// The "+" of a large card: onto the pile or among the books read, in
+    /// the format given.
+    case add(NewsCard, CopiedStatus, BookFormat)
+    /// The "+" of a large card: the edition in the phone's language awaited.
+    case awaitEdition(NewsCard, ReleaseFormat)
     /// A rail's title: the Library view that answers it, already filtered —
     /// "Séries suivies ›" the series, "Auteurs préférés ›" and "Narrateurs
     /// préférés ›" the hearted ones, "Liste d'envies ›" the wish list.
@@ -84,7 +89,7 @@ struct NewsPage: View {
                 VStack(alignment: .leading, spacing: 0) {
                     VStack(alignment: .leading, spacing: 0) {
                         if !agenda.headlines.isEmpty {
-                            NewsTileRail(title: "À la une", items: agenda.headlines, onAction: onAction)
+                            NewsShelf(title: "À la une", items: agenda.headlines, wished: wished, onAction: onAction)
                                 .padding(.bottom, 30)
                         }
                         if !agenda.days.isEmpty {
@@ -132,10 +137,10 @@ struct NewsPage: View {
     private var shelves: some View {
         let shelves = agenda.shelves
         if !shelves.activity.isEmpty {
-            NewsTileRail(title: "Activité des amis", items: shelves.activity, onAction: onAction).padding(.top, 30)
+            NewsShelf(title: "Activité des amis", items: shelves.activity, wished: wished, onAction: onAction).padding(.top, 30)
         }
         if !shelves.loves.isEmpty {
-            NewsTileRail(title: "Coups de cœur des amis", items: shelves.loves, onAction: onAction).padding(.top, 30)
+            NewsShelf(title: "Coups de cœur des amis", items: shelves.loves, wished: wished, onAction: onAction).padding(.top, 30)
         }
         if !prizes.isEmpty {
             NewsPrizesSlider(cards: prizes, wished: wished, onAction: onAction).padding(.top, 30)
@@ -144,15 +149,20 @@ struct NewsPage: View {
             NewsSeriesRail(items: shelves.series, onAction: onAction).padding(.top, 30)
         }
         if !shelves.authors.isEmpty {
-            NewsTileRail(title: "Auteurs préférés", items: shelves.authors, onMore: { act(.openLibrary(.authors(.loved))) }, onAction: onAction)
+            NewsShelf(title: "Auteurs préférés", items: shelves.authors, onMore: { act(.openLibrary(.authors(.loved))) }, wished: wished, onAction: onAction)
                 .padding(.top, 30)
         }
         if !shelves.narrators.isEmpty {
-            NewsTileRail(title: "Narrateurs préférés", items: shelves.narrators, onMore: { act(.openLibrary(.narrators(.loved))) }, onAction: onAction)
+            NewsShelf(title: "Narrateurs préférés", items: shelves.narrators, onMore: { act(.openLibrary(.narrators(.loved))) }, wished: wished, onAction: onAction)
                 .padding(.top, 30)
         }
         if !shelves.wishes.isEmpty {
-            NewsWishesRail(items: shelves.wishes, onAction: onAction).padding(.top, 30)
+            if shelves.wishes.count <= NewsShelf.cardLimit {
+                NewsShelf(title: "Liste d'envies", items: shelves.wishes, onMore: { act(.openLibrary(.wishlist)) }, wished: wished, onAction: onAction)
+                    .padding(.top, 30)
+            } else {
+                NewsWishesRail(items: shelves.wishes, onAction: onAction).padding(.top, 30)
+            }
         }
     }
 
@@ -371,7 +381,8 @@ private struct NewsDayLeaf: View {
 /// A day's first news, large: its cover edge to edge on the leading side,
 /// over the cover's own colours the emblem of what brought it — the prize
 /// between its laurels, the friend, the follow — the title, the author, and
-/// at the foot "Ajouter", as the series page draws its next volume.
+/// at the foot the large cards' buttons: "Liste d'envies", "+", and "Pas
+/// intéressé" for a prize.
 private struct NewsAgendaLead: View {
     let card: NewsCard
     let isWished: Bool
@@ -393,33 +404,7 @@ private struct NewsAgendaLead: View {
                     .lineLimit(1)
                     .padding(.top, 1)
                 Spacer(minLength: 8)
-                HStack(spacing: 8) {
-                    Button {
-                        Task { await onAction(.wish(card)) }
-                    } label: {
-                        Label(isWished ? "Dans vos envies" : "Ajouter", systemImage: isWished ? "checkmark" : "plus")
-                            .font(.footnote.weight(.semibold))
-                            .foregroundStyle(.black)
-                            .padding(.horizontal, 13)
-                            .frame(height: 30)
-                            .background(.white, in: .capsule)
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(isWished)
-                    if card.isDismissable {
-                        Button {
-                            Task { await onAction(.dismiss(card)) }
-                        } label: {
-                            Image(systemName: "eye.slash")
-                                .font(.footnote.weight(.semibold))
-                                .foregroundStyle(.white)
-                                .frame(width: 30, height: 30)
-                                .glassEffect(.regular.interactive(), in: .circle)
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel("Pas intéressé")
-                    }
-                }
+                NewsCardButtons(card: card, isWished: isWished, onAction: onAction)
             }
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -494,15 +479,12 @@ private struct NewsCardEmblem: View {
 
 /// The year's prizes, one winner a page: the day's large card, its cover the
 /// card's height, the prize between its laurels — both, when it won two —
-/// "Ajouter" and "Pas intéressé"; the next card peeks at the edge, dots under.
+/// "Liste d'envies", "+" and "Pas intéressé"; the next card peeks at the edge,
+/// which says enough that more follow.
 struct NewsPrizesSlider: View {
     let cards: [NewsCard]
     var wished: Set<String> = []
     let onAction: (NewsAction) async -> Void
-
-    @State private var selected: String?
-
-    private var current: String? { selected ?? cards.first?.id }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -511,7 +493,9 @@ struct NewsPrizesSlider: View {
                 LazyHStack(spacing: 12) {
                     ForEach(cards) { card in
                         NewsAgendaLead(card: card, isWished: wished.contains(card.key), coverWidth: 106, onAction: onAction)
-                            .containerRelativeFrame(.horizontal) { width, _ in width - 40 }
+                            .containerRelativeFrame(.horizontal) { width, _ in
+                                SeriesReleaseCard.railWidth(width, count: cards.count)
+                            }
                     }
                 }
                 .scrollTargetLayout()
@@ -519,20 +503,7 @@ struct NewsPrizesSlider: View {
             .contentMargins(.horizontal, 20, for: .scrollContent)
             .scrollTargetBehavior(.viewAligned)
             .scrollIndicators(.hidden)
-            .scrollPosition(id: $selected)
             .environment(\.colorScheme, .dark)
-            if cards.count > 1 {
-                HStack(spacing: 7) {
-                    ForEach(cards) { card in
-                        Capsule()
-                            .fill(.primary.opacity(card.id == current ? 1 : 0.35))
-                            .frame(width: card.id == current ? 22 : 7, height: 7)
-                    }
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.top, 6)
-                .accessibilityHidden(true)
-            }
         }
     }
 }

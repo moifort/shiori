@@ -30,6 +30,8 @@ struct PosterCover: View {
     /// An outlined word drawn in the corner in place of "Audio": a
     /// release's date.
     var cornerTag: String?
+    /// The corners' radius: square inside a card whose own corners round it.
+    var corner: CGFloat = PosterCover.cornerRadius
 
     static let cornerRadius: CGFloat = 8
 
@@ -38,7 +40,7 @@ struct PosterCover: View {
             // Dimmed a little, as the TV app's posters are: a white cover no
             // longer glares beside a dark one.
             .overlay {
-                RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous)
+                RoundedRectangle(cornerRadius: corner, style: .continuous)
                     .fill(.black.opacity(dimming))
             }
             .overlay { footBlur }
@@ -80,14 +82,15 @@ struct PosterCover: View {
             }
             // The thin light rim inside the edge the TV app's posters carry.
             .overlay {
-                RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous)
+                RoundedRectangle(cornerRadius: corner, style: .continuous)
                     .strokeBorder(.white.opacity(0.22), lineWidth: 1)
             }
     }
 
     /// A poster with the line and marks the Library tab gives it.
-    init(book: Book, label: PosterLabel, width: CGFloat = 102, showsEditionTags: Bool = true) {
+    init(book: Book, label: PosterLabel, width: CGFloat = 102, showsEditionTags: Bool = true, corner: CGFloat = PosterCover.cornerRadius) {
         self.book = book
+        self.corner = corner
         caption = label.caption
         self.width = width
         self.showsEditionTags = showsEditionTags
@@ -122,7 +125,7 @@ struct PosterCover: View {
             book: book,
             width: width,
             showsFormatBadge: false,
-            cornerRadius: Self.cornerRadius,
+            cornerRadius: corner,
             showsPlaceholderAuthor: false
         )
         .saturation(isGreyed ? 0 : 1)
@@ -150,7 +153,7 @@ struct PosterCover: View {
             }
             .frame(width: width, height: width * 1.5)
             .saturation(isGreyed ? 0 : 1)
-            .clipShape(.rect(cornerRadius: Self.cornerRadius, style: .continuous))
+            .clipShape(.rect(cornerRadius: corner, style: .continuous))
             .allowsHitTesting(false)
         } else {
             standInBlur
@@ -169,10 +172,10 @@ struct PosterCover: View {
                     .blur(radius: 10, opaque: true)
             }
             .overlay {
-                RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous)
+                RoundedRectangle(cornerRadius: corner, style: .continuous)
                     .fill(.black.opacity(dimming))
             }
-            .clipShape(.rect(cornerRadius: Self.cornerRadius, style: .continuous))
+            .clipShape(.rect(cornerRadius: corner, style: .continuous))
             .mask {
                 // Eased from the middle of the cover to its foot: a short
                 // straight ramp showed where the blur began.

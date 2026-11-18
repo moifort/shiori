@@ -61,6 +61,9 @@ struct BookAddMenuItems: View {
     var wished = false
     let onAwait: (ReleaseFormat) -> Void
     var onWish: () async -> Void = {}
+    /// Off where the wish list is a button of its own beside the menu:
+    /// Découvrir's large cards.
+    var showsWish = true
 
     var body: some View {
         if !owned {
@@ -83,7 +86,7 @@ struct BookAddMenuItems: View {
                 }
             }
         }
-        if !owned {
+        if !owned, showsWish {
             Section {
                 Button("Liste d'envies", systemImage: wished ? "checkmark" : "bookmark") {
                     Task { await onWish() }

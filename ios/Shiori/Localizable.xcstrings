@@ -17567,6 +17567,22 @@
         }
       }
     },
+    "À paraître" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Coming soon"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "À paraître"
+          }
+        }
+      }
+    },
     "À suivre" : {
       "localizations" : {
         "fr" : {
