@@ -57,7 +57,7 @@ struct AwardWinnerPage: View {
             // The hero's "+" again, within reach once it has scrolled away.
             ToolbarItem(placement: .primaryAction) {
                 Menu {
-                    DiscoveryAddActions(item: winner) { choose($0, leaving: $1) }
+                    DiscoveryAddActions(item: winner, showsAwait: choices.watch(of: winner).isEmpty) { choose($0, leaving: $1) }
                 } label: {
                     Label("Ajouter", systemImage: "plus")
                         .labelStyle(.iconOnly)
@@ -66,7 +66,9 @@ struct AwardWinnerPage: View {
                 .accessibilityIdentifier("award-winner-menu")
             }
             ToolbarItem(placement: .primaryAction) {
-                UnownedBookActionsMenu { act(.chooseCover) }
+                UnownedBookActionsMenu(onChooseCover: { act(.chooseCover) }) {
+                    DiscoveryDismissActions(item: winner, choices: choices, onChoice: onChoice)
+                }
             }
         }
     }
@@ -86,7 +88,7 @@ struct AwardWinnerPage: View {
             book: shown,
             state: state,
             stateTag: winner.watched && winner.state == .unannounced ? String(localized: "Pas annoncé") : nil,
-            isAwaited: winner.awaitedEditionId != nil,
+            isAwaited: !choices.watch(of: winner).awaited.isEmpty,
             overTitle: winner.mentions.first.map { AnyView(AwardLaurels(mention: $0)) },
             status: choices.marks[winner.id] == .notInterested ? .notInterested : nil,
             isSetAside: choices.marks[winner.id] == .notInterested

@@ -407,7 +407,7 @@ final class HomeViewModel {
     /// The books put on the pile from a discovery, and the editions awaited
     /// from one, which their capsule on its page takes back.
     private var booksAdded: [Suggestion.ID: String] = [:]
-    private var awaitedIds: [Suggestion.ID: String] = [:]
+    private var awaitedIds: [Suggestion.ID: [ReleaseFormat: String]] = [:]
 
     /// A choice from a discovery's "+" or eye. The discovery stays on
     /// screen until the reader leaves the page. Says whether the server took
@@ -419,7 +419,7 @@ final class HomeViewModel {
             case .add:
                 booksAdded[suggestion.id] = try await client.addBook(suggestion.shelfDraft(status: .toRead))
             case let .await(format):
-                awaitedIds[suggestion.id] = try await client.awaitEdition(suggestion.draft, format)
+                awaitedIds[suggestion.id, default: [:]][format] = try await client.awaitEdition(suggestion.draft, format)
             case .alreadyRead:
                 booksRead[suggestion.id] = try await client.addBook(suggestion.shelfDraft(status: .read))
             case .wish:
@@ -433,9 +433,12 @@ final class HomeViewModel {
             case .undoAdd:
                 if let book = booksAdded[suggestion.id] { try await client.deleteBook(book) }
                 booksAdded[suggestion.id] = nil
-            case .unawait:
-                if let edition = awaitedIds[suggestion.id] { try await client.stopAwaiting(edition) }
-                awaitedIds[suggestion.id] = nil
+            case let .unawait(format):
+                // Awaited here, or already when the page opened.
+                let id = awaitedIds[suggestion.id]?[format]
+                    ?? (suggestion.format == format ? suggestion.awaitedEditionId : nil)
+                if let id { try await client.stopAwaiting(id) }
+                awaitedIds[suggestion.id]?[format] = nil
             case .notInterested:
                 try await client.dismissSuggestion(suggestion.id, .notInterested)
                 await loadDiscoveries()

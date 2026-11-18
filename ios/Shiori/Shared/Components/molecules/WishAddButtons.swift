@@ -55,6 +55,9 @@ enum TakenState: Equatable, Sendable {
 /// "Envies" fades then, the book being taken, except for "Guetté". A second
 /// tap on the capsule undoes the choice and gives the "+" back. While the
 /// server answers, a spinner holds the "+"'s place; refused, the pair shakes.
+/// Where an edition of the book may be awaited, "Guetter" sits between the
+/// two (`AwaitEditionButton`) and the "+" offers none: the page then says
+/// which edition is awaited rather than a bare "Guetté".
 /// No GlassEffectContainer around the pair: a menu opened from inside one
 /// loses a moving tap on a row over a neighbouring button.
 struct WishAddButtons<MenuItems: View>: View {
@@ -84,6 +87,13 @@ struct WishAddButtons<MenuItems: View>: View {
     /// once wished, as a round toggle), and leaves once the book is taken
     /// rather than fading. The "+"'s capsule keeps its words.
     var besideStore = false
+    /// What may be awaited of the book, drawn as "Guetter" between "Envies"
+    /// and the "+", whose menu then offers no edition. Nil, or nothing on
+    /// offer, leaves it out.
+    var watch: EditionWatch? = nil
+    /// The server is answering "Guetter": a spinner in its label's place.
+    var isAwaitWorking = false
+    var onAwait: (ReleaseFormat) -> Void = { _ in }
     /// Bumped by the caller when the server refused a choice: the pair shakes.
     var refusals = 0
     let onToggle: () -> Void
@@ -95,9 +105,18 @@ struct WishAddButtons<MenuItems: View>: View {
 
     var body: some View {
         HStack(spacing: size == .card ? 8 : 12) {
-            if !(besideStore && taken?.takesTheBook == true) {
+            if !((besideStore || showsWatch) && taken?.takesTheBook == true) {
                 wishButton
                     .transition(.scale.combined(with: .opacity))
+            }
+            if showsWatch, let watch {
+                AwaitEditionButton(
+                    watch: watch,
+                    height: height,
+                    isWorking: isAwaitWorking,
+                    onToggle: onAwait
+                )
+                .disabled(isDisabled)
             }
             if let taken {
                 takenCapsule(taken)
@@ -118,6 +137,10 @@ struct WishAddButtons<MenuItems: View>: View {
     }
 
     private var height: CGFloat { size == .card ? 28 : 50 }
+
+    /// "Guetter" drawn: something is on offer. Taken, the book leaves
+    /// "Envies" out, as beside a store, for the three to fit.
+    private var showsWatch: Bool { watch.map { !$0.isEmpty } ?? false }
     private var font: Font { size == .card ? .caption.weight(.semibold) : .headline }
 
     private var wishButton: some View {
@@ -208,6 +231,11 @@ struct WishAddButtons<MenuItems: View>: View {
         WishAddButtons(isWished: false, size: .page, onToggle: {}) { Button("À lire") {} }
         WishAddButtons(isWished: false, size: .page, taken: .toRead(isAudio: false), onToggle: {}) { Button("À lire") {} }
         WishAddButtons(isWished: true, size: .page, taken: .awaited, onToggle: {}) { Button("À lire") {} }
+        WishAddButtons(
+            isWished: false, size: .page,
+            watch: EditionWatch(offered: [.book, .audiobook], awaited: [.book]),
+            onToggle: {}
+        ) { Button("À lire") {} }
     }
     .padding()
     .background(.black)

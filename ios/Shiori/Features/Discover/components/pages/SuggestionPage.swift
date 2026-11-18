@@ -58,7 +58,7 @@ struct SuggestionPage: View {
             // The hero's "+" again, within reach once it has scrolled away.
             ToolbarItem(placement: .primaryAction) {
                 Menu {
-                    DiscoveryAddActions(item: suggestion) { choose($0, leaving: $1) }
+                    DiscoveryAddActions(item: suggestion, showsAwait: choices.watch(of: suggestion).isEmpty) { choose($0, leaving: $1) }
                 } label: {
                     Label("Ajouter", systemImage: "plus")
                         .labelStyle(.iconOnly)
@@ -67,7 +67,9 @@ struct SuggestionPage: View {
                 .accessibilityIdentifier("suggestion-toolbar-add")
             }
             ToolbarItem(placement: .primaryAction) {
-                UnownedBookActionsMenu { act(.chooseCover) }
+                UnownedBookActionsMenu(onChooseCover: { act(.chooseCover) }) {
+                    DiscoveryDismissActions(item: suggestion, choices: choices, onChoice: onChoice)
+                }
             }
         }
     }
@@ -87,7 +89,7 @@ struct SuggestionPage: View {
             book: shown,
             state: state,
             stateTag: suggestion.watched && suggestion.state == .unannounced ? String(localized: "Pas annoncé") : nil,
-            isAwaited: suggestion.awaitedEditionId != nil,
+            isAwaited: !choices.watch(of: suggestion).awaited.isEmpty,
             showsLength: false,
             status: choices.marks[suggestion.id] == .notInterested ? .notInterested : nil,
             isSetAside: choices.marks[suggestion.id] == .notInterested
@@ -153,6 +155,8 @@ struct DiscoveryAddActions<Item: Discovery>: View {
     let item: Item
     /// Off beside "Envies", which holds the wish list on a discovery's page.
     var showsWish = true
+    /// Off beside "Guetter", which holds the editions on a discovery's page.
+    var showsAwait = true
     let onChoose: (DiscoveryChoice, DiscoveryMark) -> Void
 
     var body: some View {
@@ -166,7 +170,7 @@ struct DiscoveryAddActions<Item: Discovery>: View {
                     .accessibilityIdentifier("suggestion-wish")
             }
         }
-        if !item.awaitableFormats.isEmpty {
+        if showsAwait, !item.awaitableFormats.isEmpty {
             Section {
                 ForEach(item.awaitableFormats) { format in
                     Button(
@@ -203,5 +207,39 @@ struct DiscoveryAddActions<Item: Discovery>: View {
             choices: DiscoveryChoices(),
             onChoice: { _, _ in true }
         ) { _ in }
+    }
+}
+
+/// The eye's choices in the bar's "…", on a discovery's page where "Guetter"
+/// took its place in the hero: turned down or read already, and the way back
+/// once chosen.
+struct DiscoveryDismissActions<Item: Discovery>: View {
+    let item: Item
+    let choices: DiscoveryChoices
+    let onChoice: (Item, DiscoveryChoice) async -> Bool
+
+    var body: some View {
+        if !choices.watch(of: item).isEmpty {
+            Section {
+                switch choices.marks[item.id] {
+                case .notInterested:
+                    Button("Reconsidérer", systemImage: "arrow.uturn.backward") {
+                        choose(.reconsider, leaving: nil)
+                    }
+                    .accessibilityIdentifier("discovery-reconsider")
+                case .added, .read, .wished:
+                    EmptyView()
+                case .awaited, nil:
+                    Button("Pas intéressé", systemImage: "eye.slash", role: .destructive) {
+                        choose(.notInterested, leaving: .notInterested)
+                    }
+                    .accessibilityIdentifier("discovery-not-interested")
+                }
+            }
+        }
+    }
+
+    private func choose(_ choice: DiscoveryChoice, leaving mark: DiscoveryMark?) {
+        choices.choose(choice, for: item, from: .eye, leaving: mark, ask: onChoice)
     }
 }

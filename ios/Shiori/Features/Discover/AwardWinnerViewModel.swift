@@ -42,8 +42,9 @@ final class AwardWinnerViewModel {
     /// The book put on the pile here, which its capsule pressed again takes
     /// off the shelf.
     private var bookAdded: String?
-    /// The edition awaited here, which its capsule pressed again stops.
-    private var awaitedId: String?
+    /// The editions awaited here, which "Guetter" or its capsule pressed
+    /// again stops.
+    private var awaitedIds: [ReleaseFormat: String] = [:]
     /// Why a choice could not be made, said in an alert.
     var actionError: String?
 
@@ -55,7 +56,7 @@ final class AwardWinnerViewModel {
             case .add:
                 bookAdded = try await client.addSuggestion(winner.pileDraft)
             case let .await(format):
-                awaitedId = try await client.awaitEdition(winner.draft, format).id
+                awaitedIds[format] = try await client.awaitEdition(winner.draft, format).id
             case .alreadyRead:
                 var draft = winner.pileDraft
                 draft.status = .read
@@ -71,9 +72,11 @@ final class AwardWinnerViewModel {
             case .undoAdd:
                 if let bookAdded { try await client.deleteBook(bookAdded) }
                 bookAdded = nil
-            case .unawait:
-                if let awaitedId { try await client.stopAwaiting(awaitedId) }
-                awaitedId = nil
+            case let .unawait(format):
+                // Awaited here, or already when the page opened.
+                let id = awaitedIds[format] ?? (winner.format == format ? winner.awaitedEditionId : nil)
+                if let id { try await client.stopAwaiting(id) }
+                awaitedIds[format] = nil
             case .notInterested:
                 if let key = winner.key { try await client.dismissWinner(key) }
             case .reconsider:

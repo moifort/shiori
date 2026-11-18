@@ -38,6 +38,9 @@ struct FriendBookPage: View {
     var formats: [BookFormat] = []
     /// The editions the reader may await from here.
     var awaitable: [ReleaseFormat] = []
+    /// Every edition that may be awaited of it, awaited or not: "Guetter"
+    /// in the hero.
+    var awaitFormats: [ReleaseFormat] = []
     /// On the reader's wishlist already.
     var wished = false
     let onAction: (FriendBookAction) async -> Void
@@ -143,7 +146,15 @@ struct FriendBookPage: View {
                 onAdd: { status, format in await onAction(.add(status, format)) },
                 wished: wished,
                 onAwait: { format in Task { await onAction(.awaitEdition(format)) } },
-                onWish: { await onAction(.wish) }
+                onWish: { await onAction(.wish) },
+                watch: EditionWatch(offered: awaitFormats, awaited: Set(awaited.map(\.format))),
+                onStopAwaiting: { format in
+                    guard let edition = awaited.first(where: { $0.format == format }) else { return }
+                    Task { await onAction(.stopAwaiting(edition)) }
+                },
+                // The friend's mark beside "Guetter": "Envies" draws its
+                // bookmark alone, for the row to fit.
+                isCompact: !awaitFormats.isEmpty && (book.favorite || book.rating != nil)
             )
             // One or the other: a heart is the top mark, so it stands
             // in for the stars rather than sitting beside them.
@@ -276,7 +287,7 @@ struct FriendBookPage: View {
     return NavigationStack {
         FriendBookPage(
             entry: entry, friendId: "preview", friendName: "Camille", added: nil, awaited: [],
-            formats: [.book, .audiobook], awaitable: [.audiobook]
+            formats: [.book, .audiobook], awaitable: [.audiobook], awaitFormats: [.audiobook]
         ) { _ in }
     }
 }

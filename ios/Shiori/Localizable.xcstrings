@@ -3641,6 +3641,22 @@
         }
       }
     },
+    "Audio guetté" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Audio awaited"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Audio guetté"
+          }
+        }
+      }
+    },
     "Aujourd'hui" : {
       "localizations" : {
         "en" : {
@@ -8723,6 +8739,22 @@
         }
       }
     },
+    "L'audio" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The audio"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'audio"
+          }
+        }
+      }
+    },
     "La Créature" : {
       "localizations" : {
         "en" : {
@@ -8831,6 +8863,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "La suite"
+          }
+        }
+      }
+    },
+    "La traduction" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The translation"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La traduction"
           }
         }
       }
@@ -16011,6 +16059,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Traduction"
+          }
+        }
+      }
+    },
+    "Traduction et audio guettés" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Translation and audio awaited"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Traduction et audio guettés"
+          }
+        }
+      }
+    },
+    "Traduction guettée" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Translation awaited"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Traduction guettée"
           }
         }
       }

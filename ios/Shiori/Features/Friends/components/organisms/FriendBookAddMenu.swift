@@ -19,6 +19,15 @@ struct FriendBookAddMenu: View {
     var wished = false
     let onAwait: (ReleaseFormat) -> Void
     var onWish: () async -> Void = {}
+    /// What may be awaited and what is, drawn as "Guetter" beside "Envies"
+    /// while the reader does not hold the book; nil keeps the editions in the
+    /// "+".
+    var watch: EditionWatch? = nil
+    /// "Guetter" pressed on an edition awaited: it is given up.
+    var onStopAwaiting: (ReleaseFormat) -> Void = { _ in }
+    /// "Envies" as the bookmark alone, for a row that holds the friend's
+    /// mark beside "Guetter".
+    var isCompact = false
 
     var body: some View {
         if owned {
@@ -29,13 +38,18 @@ struct FriendBookAddMenu: View {
             WishAddButtons(
                 isWished: wished,
                 size: .page,
-                showsMenu: !formats.isEmpty || !awaitable.isEmpty,
+                isCompact: isCompact,
+                showsMenu: !formats.isEmpty || (watch == nil && !awaitable.isEmpty),
+                watch: watch,
+                onAwait: { format in
+                    if watch?.awaited.contains(format) == true { onStopAwaiting(format) } else { onAwait(format) }
+                },
                 onToggle: { Task { await onWish() } }
             ) {
                 BookAddMenuItems(
                     formats: formats,
                     owned: false,
-                    awaitable: awaitable,
+                    awaitable: watch == nil ? awaitable : [],
                     onAdd: onAdd,
                     onAwait: onAwait,
                     showsWish: false

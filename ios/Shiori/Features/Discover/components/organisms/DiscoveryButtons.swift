@@ -2,8 +2,20 @@ import SwiftUI
 
 /// What a discovery's buttons decide on: a suggestion, an award winner.
 protocol Discovery: Identifiable, Sendable where ID == String {
+    /// The format it is listed in.
+    var format: ReleaseFormat { get }
     /// The formats "Guetter" is offered in.
     var awaitableFormats: [ReleaseFormat] { get }
+    /// The edition the reader awaits already in `format`, when they do.
+    var awaitedEditionId: String? { get }
+}
+
+extension Discovery {
+    /// What its page may await, as the server listed it: the format shown
+    /// awaited already counts among the editions offered.
+    var serverWatch: EditionWatch {
+        EditionWatch(offered: awaitableFormats, awaited: awaitedEditionId == nil ? [] : [format])
+    }
 }
 
 extension Suggestion: Discovery {}
@@ -21,8 +33,8 @@ enum DiscoveryChoice {
     case undoAlreadyRead
     /// The "À lire" capsule pressed again: the book leaves the pile.
     case undoAdd
-    /// The "Guetté" capsule pressed again: the edition is no longer awaited.
-    case unawait
+    /// An edition awaited given up, from the "Guetté" capsule or "Guetter".
+    case unawait(ReleaseFormat)
     case notInterested
     /// The red thumb pressed again: the reader changed their mind.
     case reconsider
@@ -46,6 +58,8 @@ enum DiscoveryMark {
 enum DiscoveryButton {
     case add
     case eye
+    /// "Guetter", on the page.
+    case await
 }
 
 /// What the reader decided about each discovery, held apart from the views so
@@ -58,6 +72,13 @@ final class DiscoveryChoices {
     private(set) var working: [String: DiscoveryButton] = [:]
     /// Bumped each time the server refused a choice: the buttons shake.
     private(set) var refusals: [String: Int] = [:]
+    /// The editions awaited or given up here, over what the server listed.
+    private var watches: [String: EditionWatch] = [:]
+
+    /// What the page's "Guetter" offers and what it awaits.
+    func watch<Item: Discovery>(of item: Item) -> EditionWatch {
+        watches[item.id] ?? item.serverWatch
+    }
 
     /// Sends a choice and sets the mark it leaves once the server took it, and
     /// not before the menu has closed: drawn while it folds back into the
@@ -77,7 +98,16 @@ final class DiscoveryChoices {
             _ = await folded
             withAnimation(.snappy) {
                 working[item.id] = nil
-                if accepted { marks[item.id] = mark } else { refusals[item.id, default: 0] += 1 }
+                if accepted {
+                    marks[item.id] = mark
+                    switch choice {
+                    case let .await(format): watches[item.id, default: item.serverWatch].awaited.insert(format)
+                    case let .unawait(format): watches[item.id, default: item.serverWatch].awaited.remove(format)
+                    default: break
+                    }
+                } else {
+                    refusals[item.id, default: 0] += 1
+                }
             }
         }
     }
@@ -112,6 +142,12 @@ struct DiscoveryButtons<Item: Discovery>: View {
                 isDisabled: isWorking || mark == .read || mark == .notInterested,
                 taken: taken,
                 isWorking: working == .add,
+                watch: watch,
+                isAwaitWorking: working == .await,
+                onAwait: { format in
+                    let awaiting = !watch.awaited.contains(format)
+                    choose(awaiting ? .await(format) : .unawait(format), from: .await, leaving: mark)
+                },
                 refusals: choices.refusals[item.id] ?? 0,
                 onToggle: {
                     if mark == .wished {
@@ -121,10 +157,16 @@ struct DiscoveryButtons<Item: Discovery>: View {
                     }
                 },
                 onUndo: {
-                    choose(mark == .awaited ? .unawait : .undoAdd, from: .add, leaving: nil)
+                    switch mark {
+                    case .read: choose(.undoAlreadyRead, from: .add, leaving: nil)
+                    case .awaited: choose(.unawait(item.format), from: .add, leaving: nil)
+                    default: choose(.undoAdd, from: .add, leaving: nil)
+                    }
                 }
             ) {
-                DiscoveryAddActions(item: item, showsWish: false) { choose($0, from: .add, leaving: $1) }
+                DiscoveryAddActions(item: item, showsWish: false, showsAwait: watch.isEmpty) {
+                    choose($0, from: .add, leaving: $1)
+                }
             }
             .accessibilityIdentifier("discovery-menu")
         } else {
@@ -137,7 +179,18 @@ struct DiscoveryButtons<Item: Discovery>: View {
         // The crossed-out eye opens a choice, and gives way to the one made:
         // turned down, "Reconsidérer" in words; read, a check on white.
         // Pressed again, it takes the choice back. Never disabled once done:
-        // dimmed, the white went unseen.
+        // dimmed, the white went unseen. On a page with "Guetter", where
+        // three buttons fill the row, it moves to the bar's "…"
+        // (DiscoveryDismissActions).
+        if !eyeInBar { eye }
+    }
+
+    /// "Guetter" on the page takes the eye's room: the eye goes to the bar.
+    private var eyeInBar: Bool { addsInFull && !watch.isEmpty }
+
+    private var watch: EditionWatch { choices.watch(of: item) }
+
+    @ViewBuilder private var eye: some View {
         switch mark {
         case .notInterested:
             // The button says what a tap does; the hero's pill says where the
@@ -199,6 +252,8 @@ struct DiscoveryButtons<Item: Discovery>: View {
         switch mark {
         case .added: .toRead(isAudio: false)
         case .awaited: .awaited
+        // The eye gone to the bar, the "+"'s capsule says it instead.
+        case .read where eyeInBar: .read(isAudio: false)
         default: nil
         }
     }

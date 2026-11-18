@@ -50,6 +50,7 @@ struct FriendBookScreen: View {
                     awaited: viewModel.offer.awaited,
                     formats: entry.book.format.takenAs.filter { $0 != .audiobook || viewModel.audio != .unavailable },
                     awaitable: viewModel.offer.awaitable,
+                    awaitFormats: viewModel.offer.formats,
                     wished: viewModel.wished
                 ) { action in
                     switch action {
