@@ -1,20 +1,34 @@
 import Foundation
 
-/// Fixtures draw the typographic stand-in: a preview needs no network.
-private func openLibraryCover(_ isbn: String) -> URL? { nil }
+/// Real covers, so a preview or a simulator capture looks like the app in
+/// use; a few fixtures keep none and draw the typeset stand-in. Each address
+/// was checked to show the right book (Open Library by ISBN-13 or by cover
+/// id, Amazon by ISBN-10).
+private func openLibraryCover(_ isbn: String) -> URL? {
+    URL(string: "https://covers.openlibrary.org/b/isbn/\(isbn)-L.jpg")
+}
+
+private func amazonCover(_ isbn10: String) -> URL? {
+    URL(string: "https://m.media-amazon.com/images/P/\(isbn10).01._SCLZZZZZZZ_.jpg")
+}
+
+/// An Open Library cover by its own id, for an edition found by title.
+private func openLibraryCover(id: Int) -> URL? {
+    URL(string: "https://covers.openlibrary.org/b/id/\(id)-L.jpg")
+}
 
 extension FeedEvent {
     static let previews: [FeedEvent] = [
         FeedEvent(
             id: "marc~loved~arabe", kind: .loved, at: .now.addingTimeInterval(-3 * 3600),
             friendId: "marc", friendName: "Marc", avatarHero: .gandalf, bookId: "arabe", title: "L'Arabe du futur",
-            authors: ["Riad Sattouf"], format: .bandeDessinee, coverURL: openLibraryCover("9782370730008"),
+            authors: ["Riad Sattouf"], format: .bandeDessinee, coverURL: openLibraryCover(id: 12636991),
             rating: 5, alsoStartedBy: 0, inLibrary: true
         ),
         FeedEvent(
             id: "sophie~started~vagabond", kind: .started, at: .now.addingTimeInterval(-5 * 3600),
             friendId: "sophie", friendName: "Sophie", avatarHero: .katniss, bookId: "vagabond", title: "Vagabond",
-            authors: ["Takehiko Inoue"], format: .manga, coverURL: openLibraryCover("9782845386143"),
+            authors: ["Takehiko Inoue"], format: .manga, coverURL: openLibraryCover(id: 863044),
             rating: nil, alsoStartedBy: 3, inLibrary: false
         ),
         FeedEvent(
@@ -30,13 +44,13 @@ extension FeedEvent {
         FeedEvent(
             id: "marc~started~vagabond", kind: .started, at: .now.addingTimeInterval(-6 * 3600),
             friendId: "marc", friendName: "Marc", avatarHero: .gandalf, bookId: "vagabond-marc", title: "Vagabond",
-            authors: ["Takehiko Inoue"], format: .manga, coverURL: nil,
+            authors: ["Takehiko Inoue"], format: .manga, coverURL: openLibraryCover(id: 863044),
             rating: nil, alsoStartedBy: 3, inLibrary: false
         ),
         FeedEvent(
             id: "hugo~started~vagabond", kind: .started, at: .now.addingTimeInterval(-7 * 3600),
             friendId: "hugo", friendName: "Hugo", bookId: "vagabond-hugo", title: "Vagabond",
-            authors: ["Takehiko Inoue"], format: .manga, coverURL: nil,
+            authors: ["Takehiko Inoue"], format: .manga, coverURL: openLibraryCover(id: 863044),
             rating: nil, alsoStartedBy: 3, inLibrary: false
         ),
     ]
@@ -46,7 +60,7 @@ extension NarratorNews {
     static let preview = NarratorNews(
         id: "gabay~fondation", narratorKey: "bernard-gabay", narrator: "Bernard Gabay", title: "Fondation",
         authors: ["Isaac Asimov"], date: Date.now.formatted(.iso8601.year().month().day()),
-        coverURL: openLibraryCover("9782072911538"), format: .audiobook
+        coverURL: amazonCover("2070360539"), format: .audiobook
     )
 }
 
@@ -56,7 +70,7 @@ extension UpcomingRelease {
     /// The favourite author's announcement, the feed's spotlight.
     static let authorPreview = UpcomingRelease(
         id: "saga~red-rising~6", source: .saga, format: .book, title: "Light Bringer",
-        authors: ["Pierce Brown"], date: Self.isoDay(daysAhead: 48), coverURL: openLibraryCover("9780593157459"),
+        authors: ["Pierce Brown"], date: Self.isoDay(daysAhead: 48), coverURL: openLibraryCover(id: 15157697),
         seriesName: "Red Rising", volume: 6, author: pierce, sagaRating: 5, sagaFavorite: true
     )
 
@@ -64,12 +78,12 @@ extension UpcomingRelease {
     static let releasedPreviews: [UpcomingRelease] = [
         UpcomingRelease(
             id: "saga~berserk~42", source: .saga, format: .manga, title: "Berserk, tome 42",
-            authors: ["Kentaro Miura"], date: isoDay(daysAhead: -6), coverURL: openLibraryCover("9782344040003"),
+            authors: ["Kentaro Miura"], date: isoDay(daysAhead: -6), coverURL: openLibraryCover(id: 15166261),
             seriesName: "Berserk", volume: 42, author: nil, sagaRating: nil, sagaFavorite: true
         ),
         UpcomingRelease(
             id: "awaited~projet-derniere-chance", source: .awaited, format: .audiobook, title: "Projet Dernière Chance",
-            authors: ["Andy Weir"], date: isoDay(daysAhead: -12), coverURL: nil,
+            authors: ["Andy Weir"], date: isoDay(daysAhead: -12), coverURL: openLibraryCover("9780593135204"),
             seriesName: nil, volume: nil, author: nil, sagaRating: nil, sagaFavorite: false
         ),
         UpcomingRelease(
@@ -91,12 +105,12 @@ extension UpcomingRelease {
         ),
         UpcomingRelease(
             id: "saga~berserk~43", source: .saga, format: .manga, title: "Berserk, tome 43",
-            authors: ["Kentaro Miura"], date: isoThisMonth(day: 4), coverURL: openLibraryCover("9782344040003"),
+            authors: ["Kentaro Miura"], date: isoThisMonth(day: 4), coverURL: openLibraryCover(id: 15166261),
             seriesName: "Berserk", volume: 43, author: nil, sagaRating: nil, sagaFavorite: true
         ),
         UpcomingRelease(
             id: "awaited~seul-sur-mars", source: .awaited, format: .audiobook, title: "Seul sur Mars",
-            authors: ["Andy Weir"], date: isoThisMonth(day: 20), coverURL: openLibraryCover("9782266250115"),
+            authors: ["Andy Weir"], date: isoThisMonth(day: 20), coverURL: openLibraryCover("9780553418026"),
             seriesName: nil, volume: nil, author: nil, sagaRating: nil, sagaFavorite: false
         ),
         UpcomingRelease(
