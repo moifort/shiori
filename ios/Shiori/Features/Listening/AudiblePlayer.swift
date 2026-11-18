@@ -1,6 +1,7 @@
 import AVFoundation
 import MediaPlayer
 import Observation
+import SwiftUI
 import UIKit
 
 /// The Audible player: one title at a time, for the whole app.
@@ -135,13 +136,37 @@ final class AudiblePlayer {
         seek(to: start)
     }
 
+    /// Move to a position. The bar slides there at once; the clock the
+    /// player reports is ignored until the seek lands, so it never jumps back
+    /// in between; and Audible hears of it once the taps have settled, not
+    /// once per tap.
     func seek(to seconds: TimeInterval) {
         guard phase == .ready else { return }
         let target = min(max(0, seconds), max(0, duration - 1))
-        elapsed = target
-        player.seek(to: CMTime(seconds: target, preferredTimescale: 1000), toleranceBefore: .zero, toleranceAfter: .zero)
+        withAnimation(.smooth(duration: 0.35)) { elapsed = target }
+        pendingSeeks += 1
+        player.seek(
+            to: CMTime(seconds: target, preferredTimescale: 1000),
+            toleranceBefore: .zero,
+            toleranceAfter: CMTime(seconds: 0.5, preferredTimescale: 1000)
+        ) { [weak self] _ in
+            Task { @MainActor in self?.pendingSeeks -= 1 }
+        }
         updateNowPlaying()
+        seekSaveTask?.cancel()
+        seekSaveTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(Self.seekSaveDelay))
+            guard !Task.isCancelled else { return }
+            self?.saveNow()
+        }
     }
+
+    /// Seeks still on their way: until they land, the player's clock still
+    /// says where it was.
+    private var pendingSeeks = 0
+    private var seekSaveTask: Task<Void, Never>?
+    /// How long the taps have to settle before the position goes to Audible.
+    static let seekSaveDelay: TimeInterval = 2
 
     /// Pause in `minutes`, or turn the timer off when that choice is the one set.
     func toggleSleepTimer(minutes: Int) {
@@ -358,8 +383,9 @@ final class AudiblePlayer {
     }
 
     private func tick(_ time: CMTime) {
-        guard phase == .ready, time.isNumeric else { return }
-        elapsed = time.seconds
+        guard phase == .ready, time.isNumeric, pendingSeeks == 0 else { return }
+        // Over the half second to the next tick, so the bar glides.
+        withAnimation(isPlaying ? .linear(duration: 0.5) : nil) { elapsed = time.seconds }
         if isPlaying { hasPlayed = true }
         if isPlaying, Date.now.timeIntervalSince(lastSaveAt) >= Self.saveInterval {
             saveNow()
