@@ -146,36 +146,53 @@ struct NewsLargeCard: View {
 
 /// The foot of a large card: "Liste d'envies" in white — "Dans vos envies"
 /// once there —, the "+" of the other ways to take the book, and for a prize
-/// or a discovery "Pas intéressé".
+/// or a discovery "Pas intéressé". Where the three do not fit beside a rail
+/// card's cover, the wish keeps its white but loses its words, so the card
+/// never grows past its frame over the next one.
 struct NewsCardButtons: View {
     let card: NewsCard
     var isWished = false
     let onAction: (NewsAction) async -> Void
 
     var body: some View {
+        ViewThatFits(in: .horizontal) {
+            row(isCompact: false)
+            row(isCompact: true)
+        }
+    }
+
+    private func row(isCompact: Bool) -> some View {
         HStack(spacing: 8) {
             Button {
                 Task { await onAction(.wish(card)) }
             } label: {
-                Label(isWished ? "Dans vos envies" : "Liste d'envies", systemImage: isWished ? "checkmark" : "bookmark")
-                    .font(.footnote.weight(.semibold))
-                    .lineLimit(1)
-                    .fixedSize()
-                    .foregroundStyle(isWished ? .white : .black)
-                    .padding(.horizontal, 13)
-                    .frame(height: 30)
-                    .background {
-                        if isWished {
-                            Capsule().fill(.white.opacity(0.16))
-                                .overlay(Capsule().strokeBorder(.white.opacity(0.3), lineWidth: 1))
-                        } else {
-                            Capsule().fill(.white)
-                        }
+                Group {
+                    if isCompact {
+                        Image(systemName: isWished ? "checkmark" : "bookmark")
+                            .frame(width: 30, height: 30)
+                    } else {
+                        Label(isWished ? "Dans vos envies" : "Liste d'envies", systemImage: isWished ? "checkmark" : "bookmark")
+                            .lineLimit(1)
+                            .fixedSize()
+                            .padding(.horizontal, 13)
+                            .frame(height: 30)
                     }
+                }
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(isWished ? .white : .black)
+                .background {
+                    if isWished {
+                        Capsule().fill(.white.opacity(0.16))
+                            .overlay(Capsule().strokeBorder(.white.opacity(0.3), lineWidth: 1))
+                    } else {
+                        Capsule().fill(.white)
+                    }
+                }
             }
             .buttonStyle(.plain)
             // Not greyed: the wish is made, and the capsule says so in white.
             .allowsHitTesting(!isWished)
+            .accessibilityLabel(isWished ? "Dans vos envies" : "Liste d'envies")
             .accessibilityAddTraits(isWished ? .isStaticText : [])
             .accessibilityIdentifier("news-card-wish")
             if !formats.isEmpty || !awaitable.isEmpty {

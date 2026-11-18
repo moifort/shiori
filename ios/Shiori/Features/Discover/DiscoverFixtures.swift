@@ -141,7 +141,7 @@ extension AwardWinner {
         originalTitle: "La Maison vide",
         originalLanguage: .fr,
         authors: ["Laurent Mauvignier"],
-        mentions: [AwardMention(award: .goncourt, year: 2025)],
+        mentions: [AwardMention(award: .goncourt, year: 2026)],
         state: .available,
         watched: false,
         date: nil,

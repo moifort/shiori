@@ -501,7 +501,7 @@ struct NewsPrizesSlider: View {
         VStack(alignment: .leading, spacing: 12) {
             NewsShelfHeader(title: "Prix de l'année")
             ScrollView(.horizontal) {
-                LazyHStack(spacing: 12) {
+                LazyHStack(alignment: .top, spacing: 12) {
                     ForEach(cards) { card in
                         NewsAgendaLead(card: card, isWished: wished.contains(card.key), coverWidth: 106, onAction: onAction)
                             .containerRelativeFrame(.horizontal) { width, _ in
