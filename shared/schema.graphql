@@ -2594,6 +2594,20 @@ type GenreTaste {
 }
 
 """
+Something the home screen’s hero asks the reader to set up, until it is done or they turn it down. A build that does not know a newer prompt leaves it out.
+"""
+enum HomePrompt {
+  """Connect the Audible library."""
+  AUDIBLE
+
+  """Invite a first friend."""
+  FRIENDS
+
+  """Connect the Kindle library."""
+  KINDLE
+}
+
+"""
 One audiobook of the Audible library, as it would be catalogued.
 
 A proposal, not a record — the same contract `scanBook` has. Nothing is saved until `importAudibleBooks` is called with the ASINs the reader ticked. Every imported book is catalogued as an `AUDIOBOOK`.
@@ -2992,6 +3006,11 @@ type Me {
   firstName: PersonName
 
   """
+  What the home screen’s hero asks the reader to set up, in the order it asks: Audible and Kindle until each is connected, a first friend until they have one, less what they turned down with `dismissHomePrompt`. Empty once all is done or declined. Reads both connections and the friendships.
+  """
+  homePrompts: [HomePrompt!]!
+
+  """
   Whether this account may open the in-app admin screen (`adminMetrics`). Set by hand on the profile document, false for everyone else.
   """
   isAdmin: Boolean!
@@ -3341,6 +3360,19 @@ type Mutation {
     """`AwardWinner.key`."""
     key: String!
   ): Boolean!
+
+  """
+  Say the reader is not interested in a home prompt, so the hero stops asking, on every device; with `dismissed: false`, take that back.
+  
+  Returns the updated `Me`, whose `homePrompts` no longer holds it. Needs a finished onboarding (`NOT_FOUND` before it).
+  """
+  dismissHomePrompt(
+    """False to ask again. Defaults to true."""
+    dismissed: Boolean = true
+
+    """The prompt."""
+    prompt: HomePrompt!
+  ): Me!
 
   """
   "Pas intéressé" or "Je n’aime pas": the suggestion leaves the discoveries for good, and the model is told why next month. `NOT_FOUND` when the reader has no such suggestion.

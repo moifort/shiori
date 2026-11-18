@@ -1,5 +1,5 @@
 import { builder } from '~/domain/shared/graphql/builder'
-import { AVATAR_COLORS, AVATAR_HEROES } from '~/domain/user/types'
+import { AVATAR_COLORS, AVATAR_HEROES, type HOME_PROMPTS } from '~/domain/user/types'
 
 export const AvatarHeroEnum = builder.enumType('AvatarHero', {
   description:
@@ -25,4 +25,15 @@ export const AvatarColorEnum = builder.enumType('AvatarColor', {
       { value: color, description: `Initials on ${color}.` },
     ]),
   ) as Record<string, { value: (typeof AVATAR_COLORS)[number]; description: string }>,
+})
+
+export const HomePromptEnum = builder.enumType('HomePrompt', {
+  description:
+    'Something the home screen’s hero asks the reader to set up, until it is done or ' +
+    'they turn it down. A build that does not know a newer prompt leaves it out.',
+  values: {
+    AUDIBLE: { value: 'audible', description: 'Connect the Audible library.' },
+    KINDLE: { value: 'kindle', description: 'Connect the Kindle library.' },
+    FRIENDS: { value: 'friends', description: 'Invite a first friend.' },
+  } satisfies Record<string, { value: (typeof HOME_PROMPTS)[number]; description: string }>,
 })

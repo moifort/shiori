@@ -40,6 +40,8 @@ struct HomeClient: Sendable {
     var recordPage: @Sendable (_ bookId: String, _ page: Int?, ReadingStatus?) async throws -> Void = { _, _, _ in }
     /// The book read now, rated from its card: which marks it read.
     var rate: @Sendable (_ bookId: String, _ stars: Double) async throws -> Void = { _, _ in }
+    /// A hero prompt turned down from its closed eye, or taken back.
+    var dismissPrompt: @Sendable (HomePrompt, _ dismissed: Bool) async throws -> Void = { _, _ in }
 }
 
 extension HomeClient {
@@ -64,7 +66,8 @@ extension HomeClient {
             if let page { _ = try await BookAPI.recordPage(id: id, page: page) }
             if let status { _ = try await BookAPI.setStatus(id: id, status: status) }
         },
-        rate: { _ = try await BookAPI.rate(id: $0, stars: $1) }
+        rate: { _ = try await BookAPI.rate(id: $0, stars: $1) },
+        dismissPrompt: { try await HomeAPI.dismiss($0, dismissed: $1) }
     )
 }
 

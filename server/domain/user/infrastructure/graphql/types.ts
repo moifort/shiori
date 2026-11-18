@@ -1,6 +1,11 @@
 import { builder } from '~/domain/shared/graphql/builder'
-import { AvatarColorEnum, AvatarHeroEnum } from '~/domain/user/infrastructure/graphql/enums'
+import {
+  AvatarColorEnum,
+  AvatarHeroEnum,
+  HomePromptEnum,
+} from '~/domain/user/infrastructure/graphql/enums'
 import type { MeView } from '~/domain/user/types'
+import { UserUseCase } from '~/domain/user/use-case'
 import { objectStore } from '~/system/object-store'
 
 export const MeType = builder.objectRef<MeView>('Me').implement({
@@ -60,6 +65,15 @@ export const MeType = builder.objectRef<MeView>('Me').implement({
         'with a hero or no avatar.',
       resolve: async (me) =>
         me.avatar?.kind === 'photo' ? objectStore().downloadUrl(me.avatar.path) : null,
+    }),
+    homePrompts: t.field({
+      type: [HomePromptEnum],
+      description:
+        'What the home screen’s hero asks the reader to set up, in the order it asks: ' +
+        'Audible and Kindle until each is connected, a first friend until they have ' +
+        'one, less what they turned down with `dismissHomePrompt`. Empty once all is ' +
+        'done or declined. Reads both connections and the friendships.',
+      resolve: (me) => UserUseCase.homePrompts(me),
     }),
     isAdmin: t.expose('admin', {
       type: 'Boolean',

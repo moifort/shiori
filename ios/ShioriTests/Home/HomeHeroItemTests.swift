@@ -71,6 +71,18 @@ struct HomeHeroItemTests {
         #expect(done.doneMonth(today: today) == "2026-10")
     }
 
+    @Test func aPromptClosesTheLineAndStandsAloneWhenNothingElseDoes() {
+        let items = HomeHeroItem.items(
+            releases: [release(1, "2026-10-26")],
+            discoveries: MonthlyDiscoveries.preview.suggestions,
+            prompt: .kindle,
+            today: today
+        )
+        #expect(items.map(\.id).last == "prompt-kindle")
+        let alone = HomeHeroItem.items(releases: [], discoveries: [], prompt: .friends, today: today)
+        #expect(alone.map(\.id) == ["prompt-friends"])
+    }
+
     @Test func keepsLastWeekAcrossTheTurnOfTheMonth() {
         let november = Calendar.current.date(from: DateComponents(year: 2026, month: 11, day: 2, hour: 12))!
         let items = HomeHeroItem.items(

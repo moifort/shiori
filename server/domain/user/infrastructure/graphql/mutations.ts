@@ -1,6 +1,8 @@
 import { match, P } from 'ts-pattern'
 import { builder } from '~/domain/shared/graphql/builder'
 import { badUserInput, notFound } from '~/domain/shared/graphql/errors'
+import { UserCommand } from '~/domain/user/command'
+import { HomePromptEnum } from '~/domain/user/infrastructure/graphql/enums'
 import {
   ChangeAvatarInput,
   CompleteOnboardingInput,
@@ -74,6 +76,31 @@ builder.mutationField('deleteAccount', (t) =>
     resolve: async (_root, _args, { userId }) => {
       await UserUseCase.deleteAccount(userId)
       return true
+    },
+  }),
+)
+
+builder.mutationField('dismissHomePrompt', (t) =>
+  t.field({
+    type: MeType,
+    description:
+      'Say the reader is not interested in a home prompt, so the hero stops asking, ' +
+      'on every device; with `dismissed: false`, take that back.\n\n' +
+      'Returns the updated `Me`, whose `homePrompts` no longer holds it. Needs a ' +
+      'finished onboarding (`NOT_FOUND` before it).',
+    args: {
+      prompt: t.arg({ type: HomePromptEnum, required: true, description: 'The prompt.' }),
+      dismissed: t.arg.boolean({
+        defaultValue: true,
+        description: 'False to ask again. Defaults to true.',
+      }),
+    },
+    resolve: async (_root, { prompt, dismissed }, { userId }) => {
+      const outcome = await UserCommand.dismissPrompt(userId, prompt, dismissed ?? true)
+      return match(outcome)
+        .with('no-profile', () => notFound('No profile: finish onboarding first'))
+        .with(P.not(P.string), () => UserQuery.me(userId))
+        .exhaustive()
     },
   }),
 )

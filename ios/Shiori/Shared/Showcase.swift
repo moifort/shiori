@@ -28,6 +28,16 @@ enum Showcase {
     static let isOn = ProcessInfo.processInfo.arguments.contains("-showcase")
         || UserDefaults.standard.bool(forKey: "showcase")
 
+    /// The home prompts the hero shows, named after `-showcase-prompts`
+    /// (`audible,kindle,friends`) to capture them: none by default, the App
+    /// Store captures show a reader with everything set up.
+    static var prompts: [HomePrompt] {
+        let arguments = ProcessInfo.processInfo.arguments
+        guard let index = arguments.firstIndex(of: "-showcase-prompts"), index + 1 < arguments.count
+        else { return [] }
+        return arguments[index + 1].split(separator: ",").compactMap { HomePrompt(rawValue: String($0)) }
+    }
+
     /// The language the app runs in, which the captures are taken in.
     private static let isEnglish = Bundle.main.preferredLocalizations.first == "en"
 

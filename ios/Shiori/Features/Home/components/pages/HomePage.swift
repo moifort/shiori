@@ -36,6 +36,11 @@ enum HomeAction {
     case seeRelease(HomeRelease)
     /// The eye pressed again: the release put forward again.
     case unseeRelease(HomeRelease)
+    /// A hero prompt's button: the connection or the invitation.
+    case openPrompt(HomePrompt)
+    /// A hero prompt turned down, or taken back.
+    case dismissPrompt(HomePrompt)
+    case undismissPrompt(HomePrompt)
 }
 
 /// The home screen in the TV app's grammar: a hero with the month's discovery
@@ -57,6 +62,8 @@ struct HomePage: View {
     var releases: [HomeRelease] = []
     /// The releases the reader marked seen: the carousel leaves them out.
     var seenReleases: Set<HomeRelease.ID> = []
+    /// The one thing the hero asks the reader to set up, after its pages.
+    var prompt: HomePrompt?
     /// The month's discoveries, chosen for the reader.
     var discoveries: MonthlyDiscoveries?
     /// The month's selection is being made: a phone's hero waits on it.
@@ -123,6 +130,9 @@ struct HomePage: View {
                         onSeeRelease: { onAction(.seeRelease($0)) },
                         onUnseeRelease: { onAction(.unseeRelease($0)) },
                         onRate: { onAction(.showLibrary(LibraryRequest(filter: .status(.read)))) },
+                        onPrompt: { onAction(.openPrompt($0)) },
+                        onDismissPrompt: { onAction(.dismissPrompt($0)) },
+                        onUndismissPrompt: { onAction(.undismissPrompt($0)) },
                         backdropCover: dashboard.leadCoverURL,
                         discoveryMonth: discoveries?.month ?? MonthlyDiscoveries.month(of: today),
                         pull: pull
@@ -232,6 +242,7 @@ struct HomePage: View {
             discoveries: shownDiscoveries,
             needsRatingsMonth: discoveries?.needsRatingsMonth,
             seen: seenReleases,
+            prompt: prompt,
             today: today
         )
     }
@@ -264,6 +275,7 @@ struct HomePage: View {
             discoveries: discoveries,
             isSearchingDiscoveries: isSearchingDiscoveries,
             isCompact: isCompact,
+            prompt: prompt,
             today: today
         )
     }
@@ -279,6 +291,7 @@ struct HomePage: View {
         discoveries: MonthlyDiscoveries?,
         isSearchingDiscoveries: Bool,
         isCompact: Bool,
+        prompt: HomePrompt? = nil,
         today: Date = .now
     ) -> Bool {
         guard isCompact, let dashboard else { return false }
@@ -288,6 +301,7 @@ struct HomePage: View {
             discoveries: discoveries?.shownOnHome ?? [],
             needsRatingsMonth: discoveries?.needsRatingsMonth,
             seen: seenReleases,
+            prompt: prompt,
             today: today
         )
         return !items.isEmpty || isSearchingDiscoveries || discoveries?.doneMonth(today: today) != nil

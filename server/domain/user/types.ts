@@ -58,6 +58,12 @@ export const AVATAR_HEROES = [
 ] as const
 export type AvatarHero = (typeof AVATAR_HEROES)[number]
 
+// What the home screen's hero may ask the reader to set up, in the order it
+// asks: their Audible library, their Kindle library, a first friend. Appended,
+// never renamed: installed builds draw the names they know.
+export const HOME_PROMPTS = ['audible', 'kindle', 'friends'] as const
+export type HomePrompt = (typeof HOME_PROMPTS)[number]
+
 // The backgrounds the reader's initials may be drawn on. The slate the app
 // draws by default is not among them: it is no avatar at all.
 export const AVATAR_COLORS = ['pink', 'green', 'blue', 'orange', 'purple', 'red'] as const
@@ -80,6 +86,9 @@ export type UserProfile = {
   onboardingCompletedAt: Date
   admin?: boolean
   avatar?: Avatar
+  /** The home prompts the reader said they are not interested in. Absent on
+   *  every profile written before them: none turned down. */
+  dismissedPrompts?: HomePrompt[]
 }
 
 // The signed-in user's identity and onboarding state — every field but the id is
@@ -90,4 +99,5 @@ export type MeView = {
   onboardingCompletedAt?: Date
   admin: boolean
   avatar?: Avatar
+  dismissedPrompts: HomePrompt[]
 }

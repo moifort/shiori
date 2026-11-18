@@ -14,6 +14,7 @@ export namespace UserQuery {
       onboardingCompletedAt: profile?.onboardingCompletedAt,
       admin: profile?.admin === true,
       avatar: profile?.avatar,
+      dismissedPrompts: profile?.dismissedPrompts ?? [],
     }
   }
 

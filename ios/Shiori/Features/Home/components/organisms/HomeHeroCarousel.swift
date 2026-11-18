@@ -4,19 +4,23 @@ import SwiftUI
 /// lately, then what comes out within the week, then the month's discoveries —
 /// or, once the reader took or turned down every one, the page that says the
 /// month is done; or, when nothing on the shelf is rated, the page that asks
-/// for a rating, without which no selection is made.
+/// for a rating, without which no selection is made. Last, one thing the
+/// reader has not set up yet: Audible, Kindle or a first friend.
 enum HomeHeroItem: Identifiable {
     case release(HomeRelease)
     case discovery(Suggestion)
     /// Nothing on the shelf rated, so no selection made for the month,
     /// `YYYY-MM`.
     case needsRatings(String)
+    /// Something to set up, after every other page.
+    case prompt(HomePrompt)
 
     var id: String {
         switch self {
         case let .release(release): "release-\(release.id)"
         case let .discovery(suggestion): "discovery-\(suggestion.id)"
         case let .needsRatings(month): "needs-ratings-\(month)"
+        case let .prompt(prompt): "prompt-\(prompt.rawValue)"
         }
     }
 
@@ -38,6 +42,7 @@ enum HomeHeroItem: Identifiable {
         discoveries: [Suggestion],
         needsRatingsMonth: String? = nil,
         seen: Set<HomeRelease.ID> = [],
+        prompt: HomePrompt? = nil,
         today: Date = .now
     ) -> [HomeHeroItem] {
         let month = localMonth(today)
@@ -67,6 +72,7 @@ enum HomeHeroItem: Identifiable {
             ? needsRatingsMonth.map { [HomeHeroItem.needsRatings($0)] } ?? []
             : []
         return lined.map(HomeHeroItem.release) + discoveries.map(HomeHeroItem.discovery) + done
+            + (prompt.map { [HomeHeroItem.prompt($0)] } ?? [])
     }
 
     /// What a release's badge says, as near as the day allows: "Sortie
@@ -139,6 +145,12 @@ struct HomeHeroCarousel: View {
     var onUnseeRelease: (HomeRelease) -> Void = { _ in }
     /// The books read, to rate them, from the page that asks for a rating.
     var onRate: () -> Void = {}
+    /// A prompt's button: the connection or the invitation it asks for.
+    var onPrompt: (HomePrompt) -> Void = { _ in }
+    /// A prompt turned down from its closed eye.
+    var onDismissPrompt: (HomePrompt) -> Void = { _ in }
+    /// The eye pressed again: the prompt is asked again.
+    var onUndismissPrompt: (HomePrompt) -> Void = { _ in }
     /// The cover whose colours the month's last page takes: the library's,
     /// as the wait on the selection does.
     var backdropCover: URL?
@@ -152,6 +164,8 @@ struct HomeHeroCarousel: View {
     /// The releases just marked seen, whose eye fills to say so: they leave
     /// the line once the reader leaves the page.
     @State private var seen: Set<HomeRelease.ID> = []
+    /// The prompts just turned down, whose eye fills to say so.
+    @State private var dismissedPrompts: Set<HomePrompt> = []
     /// How tall each page's cover and text stand: the page shown sets the
     /// carousel's height, so a why is never cut and the buttons always sit
     /// as close under the cover as the dots under them.
@@ -199,6 +213,7 @@ struct HomeHeroCarousel: View {
                         case let .release(release): releasePage(release, id: item.id)
                         case let .discovery(suggestion): discoveryPage(suggestion, id: item.id)
                         case let .needsRatings(month): needsRatingsPage(month, id: item.id)
+                        case let .prompt(prompt): promptPage(prompt, id: item.id)
                         }
                     }
                     // As tall as the carousel, which follows the page shown.
@@ -372,6 +387,79 @@ struct HomeHeroCarousel: View {
         .accessibilityIdentifier("home-needs-ratings")
     }
 
+    /// Something the reader has not set up yet, sold in a line: where the
+    /// cover would stand, the blank covers carrying the service's logo or the
+    /// friend's symbol; beside it what it brings; under both, the way to it
+    /// and the closed eye that turns it down for good, on every device.
+    private func promptPage(_ prompt: HomePrompt, id: HomeHeroItem.ID) -> some View {
+        let isDismissed = dismissedPrompts.contains(prompt)
+        return layout(id: id) {
+            DoneStack(mark: prompt.mark)
+                .scaleEffect(0.84)
+                .frame(width: Self.coverWidth, height: Self.coverHeight)
+        } side: {
+            Text(prompt.badge)
+                .font(.footnote.weight(.semibold))
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .glassEffect(.clear, in: .capsule)
+            Text(prompt.title)
+                .font(.title2.weight(.bold))
+                .padding(.top, 10)
+            Text(prompt.pitch)
+                .font(.subheadline)
+                .foregroundStyle(.white.opacity(0.75))
+                // Always in full: the carousel grows to the page's height.
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 8)
+        } buttons: {
+            GlassEffectContainer(spacing: 12) {
+                HStack(spacing: 12) {
+                    Button { onPrompt(prompt) } label: {
+                        Text(prompt.action)
+                            .font(.headline)
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.glassProminent)
+                    .tint(.white)
+                    .foregroundStyle(.black)
+                    .accessibilityIdentifier("home-prompt-action")
+                    // Turned down, the eye fills white; pressed again, the
+                    // prompt comes back. It leaves the line once the reader
+                    // leaves the page, as a release seen does.
+                    Button {
+                        if isDismissed {
+                            withAnimation(.snappy) { _ = dismissedPrompts.remove(prompt) }
+                            onUndismissPrompt(prompt)
+                        } else {
+                            withAnimation(.snappy) { _ = dismissedPrompts.insert(prompt) }
+                            onDismissPrompt(prompt)
+                        }
+                    } label: {
+                        Label(
+                            isDismissed ? "Plus intéressé" : "Pas intéressé",
+                            systemImage: isDismissed ? "eye.slash.fill" : "eye.slash"
+                        )
+                        .labelStyle(.iconOnly)
+                        .font(.headline)
+                        .foregroundStyle(isDismissed ? .black : .white)
+                        .contentTransition(.symbolEffect(.replace))
+                    }
+                    .buttonStyle(.glass(isDismissed ? .regular.tint(.white) : .regular))
+                    .buttonBorderShape(.circle)
+                    .sensoryFeedback(trigger: isDismissed) { _, marked in
+                        .impact(weight: marked ? .medium : .light)
+                    }
+                    .accessibilityIdentifier("home-prompt-dismiss")
+                }
+                .controlSize(.large)
+            }
+        }
+        .background { pageBackdrop(backdropCover) }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("home-prompt-\(prompt.rawValue)")
+    }
+
     /// A page as the book page draws its head: the cover, and beside it the
     /// badge, the title, what it is and why, then the buttons under both,
     /// over the cover's colours.
@@ -543,9 +631,19 @@ private struct PageColumn: Shape {
 
 /// The month's covers gone through, in the cover's room: three glass covers
 /// fanned out as the empty shelf draws its stack, a check on the front one —
-/// or a star, when the month waits on a rating.
+/// or a star, when the month waits on a rating, or what a prompt sets up.
 private struct DoneStack: View {
-    var symbol = "checkmark"
+    /// What the front cover carries.
+    enum Mark {
+        case symbol(String)
+        /// A service's logo of the asset catalogue.
+        case logo(String)
+    }
+
+    var mark: Mark = .symbol("checkmark")
+
+    init(symbol: String = "checkmark") { mark = .symbol(symbol) }
+    init(mark: Mark) { self.mark = mark }
 
     var body: some View {
         ZStack {
@@ -553,9 +651,19 @@ private struct DoneStack: View {
             cover.rotationEffect(.degrees(6)).offset(x: 14, y: 6)
             cover
                 .overlay {
-                    Image(systemName: symbol)
-                        .font(.system(size: 40, weight: .semibold))
-                        .foregroundStyle(.white.opacity(0.92))
+                    Group {
+                        switch mark {
+                        case let .symbol(name):
+                            Image(systemName: name)
+                                .font(.system(size: 40, weight: .semibold))
+                        case let .logo(name):
+                            Image(name)
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 60, height: 60)
+                        }
+                    }
+                    .foregroundStyle(.white.opacity(0.92))
                 }
                 .shadow(color: .black.opacity(0.45), radius: 18, y: 12)
         }
@@ -608,6 +716,66 @@ private struct PageDots: View {
             onOpen: { _ in },
             onChoice: { _, _ in true },
             choices: DiscoveryChoices()
+        )
+        Color.clear.frame(height: 600)
+    }
+    .background(Color(.systemGroupedBackground))
+}
+
+private extension HomePrompt {
+    var mark: DoneStack.Mark {
+        switch self {
+        case .audible: .logo(ImportSource.audible.logo)
+        case .kindle: .logo(ImportSource.kindle.logo)
+        case .friends: .symbol("person.badge.plus")
+        }
+    }
+
+    var badge: String {
+        switch self {
+        case .audible: "Audible"
+        case .kindle: "Kindle"
+        case .friends: String(localized: "Amis")
+        }
+    }
+
+    var title: String {
+        switch self {
+        case .audible: String(localized: "Vos livres audio, ici")
+        case .kindle: String(localized: "Votre Kindle, rangé")
+        case .friends: String(localized: "Lisez avec vos amis")
+        }
+    }
+
+    var pitch: String {
+        switch self {
+        case .audible:
+            String(localized: "Connectez Audible : vos écoutes rejoignent la bibliothèque avec leur série et l'avancement, sans rien scanner.")
+        case .kindle:
+            String(localized: "Connectez Kindle : vos ebooks arrivent avec couverture et série, et ceux que vous avez finis sont marqués lus.")
+        case .friends:
+            String(localized: "Invitez un ami : voyez ce qu'il lit et ses coups de cœur, et piochez dans sa bibliothèque.")
+        }
+    }
+
+    var action: String {
+        switch self {
+        case .audible: String(localized: "Connecter Audible")
+        case .kindle: String(localized: "Connecter Kindle")
+        case .friends: String(localized: "Inviter")
+        }
+    }
+}
+
+#Preview("Prompts") {
+    ScrollView {
+        HomeHeroCarousel(
+            items: HomePrompt.allCases.map(HomeHeroItem.prompt),
+            onOpenRelease: { _ in },
+            onOpen: { _ in },
+            onChoice: { _, _ in true },
+            choices: DiscoveryChoices(),
+            backdropCover: Book.preview.coverURL
         )
         Color.clear.frame(height: 600)
     }

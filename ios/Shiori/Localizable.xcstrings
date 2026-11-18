@@ -2729,6 +2729,22 @@
         }
       }
     },
+    "Amis" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Friends"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Amis"
+          }
+        }
+      }
+    },
     "Amis indisponibles" : {
       "localizations" : {
         "en" : {
@@ -5155,6 +5171,38 @@
         }
       }
     },
+    "Connecter Audible" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect Audible"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connecter Audible"
+          }
+        }
+      }
+    },
+    "Connecter Kindle" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect Kindle"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connecter Kindle"
+          }
+        }
+      }
+    },
     "Connecter mon compte Amazon" : {
       "localizations" : {
         "en" : {
@@ -5167,6 +5215,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Connecter mon compte Amazon"
+          }
+        }
+      }
+    },
+    "Connectez Audible : vos écoutes rejoignent la bibliothèque avec leur série et l'avancement, sans rien scanner." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect Audible: your listens join the library with their series and progress, no scanning needed."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connectez Audible : vos écoutes rejoignent la bibliothèque avec leur série et l'avancement, sans rien scanner."
+          }
+        }
+      }
+    },
+    "Connectez Kindle : vos ebooks arrivent avec couverture et série, et ceux que vous avez finis sont marqués lus." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect Kindle: your ebooks arrive with their cover and series, and the ones you finished are marked read."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connectez Kindle : vos ebooks arrivent avec couverture et série, et ceux que vous avez finis sont marqués lus."
           }
         }
       }
@@ -8147,6 +8227,22 @@
         }
       }
     },
+    "Inviter" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invite"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inviter"
+          }
+        }
+      }
+    },
     "Inviter un ami" : {
       "localizations" : {
         "en" : {
@@ -8191,6 +8287,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Invitez un ami : vous verrez sa bibliothèque et il verra la vôtre. Chacun pourra piocher des livres chez l'autre."
+          }
+        }
+      }
+    },
+    "Invitez un ami : voyez ce qu'il lit et ses coups de cœur, et piochez dans sa bibliothèque." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invite a friend: see what they read and love, and pick from their library."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invitez un ami : voyez ce qu'il lit et ses coups de cœur, et piochez dans sa bibliothèque."
           }
         }
       }
@@ -9243,6 +9355,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Lisbeth Salander"
+          }
+        }
+      }
+    },
+    "Lisez avec vos amis" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Read with your friends"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lisez avec vos amis"
           }
         }
       }
@@ -11979,6 +12107,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Plus de découvertes ce mois-ci : prochaines en %@."
+          }
+        }
+      }
+    },
+    "Plus intéressé" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No longer interested"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Plus intéressé"
           }
         }
       }
@@ -16319,6 +16463,22 @@
         }
       }
     },
+    "Vos livres audio, ici" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your audiobooks, here"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vos livres audio, ici"
+          }
+        }
+      }
+    },
     "Vos livres de %@ arrivent" : {
       "localizations" : {
         "en" : {
@@ -16427,6 +16587,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vos tomes prendront leur place dans la série, et ceux qui vous manquent seront listés par leur numéro. Le catalogue complet remplacera ce décompte dès que Shiori pourra le constituer."
+          }
+        }
+      }
+    },
+    "Votre Kindle, rangé" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your Kindle, sorted"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Votre Kindle, rangé"
           }
         }
       }

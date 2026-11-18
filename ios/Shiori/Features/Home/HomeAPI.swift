@@ -22,7 +22,11 @@ enum HomeAPI {
     static func opening() async throws -> HomeOpening {
         #if DEBUG
         if Showcase.isOn {
-            return HomeOpening(dashboard: Showcase.dashboard, discoveries: Showcase.monthlyDiscoveries)
+            return HomeOpening(
+                dashboard: Showcase.dashboard,
+                discoveries: Showcase.monthlyDiscoveries,
+                prompts: Showcase.prompts
+            )
         }
         #endif
         let data = try await GraphQLHelpers.fetch(
@@ -31,7 +35,24 @@ enum HomeAPI {
         )
         return HomeOpening(
             dashboard: Dashboard(fields: data.dashboard.fragments.dashboardFields),
-            discoveries: MonthlyDiscoveries(fields: data.monthlyDiscoveries.fragments.monthlyDiscoveriesFields)
+            discoveries: MonthlyDiscoveries(fields: data.monthlyDiscoveries.fragments.monthlyDiscoveriesFields),
+            // A prompt a newer server names and this build does not know is
+            // left out.
+            prompts: data.me.homePrompts.compactMap { $0.value.flatMap { HomePrompt(rawValue: $0.rawValue.lowercased()) } }
+        )
+    }
+
+    /// A prompt turned down, or taken back: kept on the account, so it holds
+    /// on every device.
+    static func dismiss(_ prompt: HomePrompt, dismissed: Bool) async throws {
+        let value: ShioriGraphQL.HomePrompt = switch prompt {
+        case .audible: .audible
+        case .kindle: .kindle
+        case .friends: .friends
+        }
+        _ = try await GraphQLHelpers.perform(
+            GraphQLClient.shared.apollo,
+            mutation: ShioriGraphQL.DismissHomePromptMutation(prompt: .case(value), dismissed: dismissed)
         )
     }
 

@@ -37,6 +37,22 @@ final class HomeViewModel {
     var hiddenReleases: Set<HomeRelease.ID> { seenReleases.subtracting(heldReleases) }
 
     private(set) var dashboard: Dashboard?
+    /// What the hero asks the reader to set up, as the server last said.
+    private(set) var prompts: [HomePrompt] = []
+    /// The prompts turned down since the page opened: kept on screen, their
+    /// eye filled, until the reader leaves the page.
+    private var heldPrompts: Set<HomePrompt> = []
+    /// The prompts turned down here, until the server's next answer says so.
+    private var dismissedPrompts: Set<HomePrompt> = []
+
+    /// The one prompt the hero shows, after its other pages: the first the
+    /// reader has not turned down, or the one just turned down while the
+    /// page is open. Never before the first book: the empty shelf offers the
+    /// same in its own rows.
+    var shownPrompt: HomePrompt? {
+        guard dashboard?.libraryIsEmpty == false else { return nil }
+        return prompts.first { !dismissedPrompts.contains($0) || heldPrompts.contains($0) }
+    }
     /// What is new in the sagas followed, read or heard: the volumes just out,
     /// the newest first, then what is announced, the soonest first — the next
     /// volume of each saga, both formats together, and the recordings the
@@ -152,6 +168,7 @@ final class HomeViewModel {
                 let top = try await opening()
                 discoveriesRead = true
                 show(top.discoveries)
+                withAnimation(.smooth) { prompts = top.prompts }
                 return top.dashboard
             } catch where GraphQLHelpers.answeredWithErrors(error) {
                 // Asked again section by section below.
@@ -232,6 +249,7 @@ final class HomeViewModel {
     /// they saw leave the line, out of sight, before they come back.
     func releaseTaken() async {
         heldReleases = []
+        heldPrompts = []
         guard !taken.isEmpty else { return }
         taken = []
         await loadDiscoveries()
@@ -243,6 +261,30 @@ final class HomeViewModel {
         heldReleases.insert(release.id)
         seenReleases.insert(release.id)
         seenStore.see(release.id)
+    }
+
+    /// A prompt turned down from the hero's closed eye: kept on the account,
+    /// and on screen until the reader leaves the page.
+    func dismiss(_ prompt: HomePrompt) {
+        heldPrompts.insert(prompt)
+        dismissedPrompts.insert(prompt)
+        Task { await send(prompt, dismissed: true) }
+    }
+
+    /// The eye pressed again: the prompt is asked again.
+    func undismiss(_ prompt: HomePrompt) {
+        dismissedPrompts.remove(prompt)
+        Task { await send(prompt, dismissed: false) }
+    }
+
+    /// Tells the server, which keeps the answer for every device. A failure
+    /// puts the prompt back as it stood: the next opening would anyway.
+    private func send(_ prompt: HomePrompt, dismissed: Bool) async {
+        do {
+            try await client.dismissPrompt(prompt, dismissed)
+        } catch {
+            if dismissed { dismissedPrompts.remove(prompt) } else { dismissedPrompts.insert(prompt) }
+        }
     }
 
     /// The eye pressed again: the release is put forward again.

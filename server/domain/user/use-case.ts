@@ -1,5 +1,6 @@
 import { AnalyticsCommand } from '~/domain/analytics/command'
 import { AudibleCommand } from '~/domain/audible/command'
+import { AudibleQuery } from '~/domain/audible/query'
 import { AuthorCommand } from '~/domain/author/command'
 import { AwaitedEditionCommand } from '~/domain/awaited-edition/command'
 import { AwardCommand } from '~/domain/award/command'
@@ -9,7 +10,9 @@ import { CatalogueCorrectionCommand } from '~/domain/catalogue-correction/comman
 import { DiscoveryCommand } from '~/domain/discovery/command'
 import { EntitlementCommand } from '~/domain/entitlement/command'
 import { FriendshipCommand } from '~/domain/friendship/command'
+import { FriendshipQuery } from '~/domain/friendship/query'
 import { KindleCommand } from '~/domain/kindle/command'
+import { KindleQuery } from '~/domain/kindle/query'
 import { NarratorCommand } from '~/domain/narrator/command'
 import { NotificationCommand } from '~/domain/notification/command'
 import { QuotaCommand } from '~/domain/quota/command'
@@ -21,10 +24,11 @@ import {
   avatarPrefixOf,
   isJpeg,
   MAX_AVATAR_BYTES,
+  promptsToShow,
 } from '~/domain/user/business-rules'
 import { UserCommand } from '~/domain/user/command'
 import { UserQuery } from '~/domain/user/query'
-import type { Avatar, AvatarColor, AvatarHero } from '~/domain/user/types'
+import type { Avatar, AvatarColor, AvatarHero, HomePrompt, MeView } from '~/domain/user/types'
 import { WishCommand } from '~/domain/wish/command'
 import { objectStore } from '~/system/object-store'
 import { ContentType } from '~/system/object-store/primitives'
@@ -40,6 +44,24 @@ export namespace UserUseCase {
   // name they are addressed by), and re-granting there would turn a one-off gift
   // into a renewable one. The read is the one the auth gate already did,
   // memoized, so it costs nothing.
+  // What the home hero asks the reader to set up: their Audible and Kindle
+  // libraries until each is connected, a first friend until they have one,
+  // less what they turned down. Three reads: both connections and the
+  // friendships.
+  export const homePrompts = async (me: MeView): Promise<HomePrompt[]> => {
+    const [audible, kindle, friends] = await Promise.all([
+      AudibleQuery.accountOf(me.userId),
+      KindleQuery.accountOf(me.userId),
+      FriendshipQuery.friendsOf(me.userId),
+    ])
+    return promptsToShow({
+      audibleConnected: audible !== undefined,
+      kindleConnected: kindle !== undefined,
+      hasFriend: friends.length > 0,
+      dismissed: me.dismissedPrompts,
+    })
+  }
+
   export const completeOnboarding = async (userId: UserId, input: { firstName: PersonName }) => {
     const firstTime = (await UserQuery.me(userId)).onboardingCompletedAt === undefined
     return atomically(async (batch) => {

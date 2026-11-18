@@ -17,6 +17,16 @@ query HomeOpening($timeZone: TimeZone!) {
   monthlyDiscoveries(format: BOOK, lookUp: false) {
     ...MonthlyDiscoveriesFields
   }
+  me {
+    homePrompts
+  }
+}
+
+# A home prompt turned down from the hero's closed eye, or taken back.
+mutation DismissHomePrompt($prompt: HomePrompt!, $dismissed: Boolean!) {
+  dismissHomePrompt(prompt: $prompt, dismissed: $dismissed) {
+    homePrompts
+  }
 }
 
 # The home's releases, in a second request so the figures above never wait on

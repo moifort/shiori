@@ -107,8 +107,9 @@ struct HomeScreen: View {
         .sheet(isPresented: $showSettings) {
             SettingsHomeScreen()
         }
-        // The import lands through the change notice, as every write does.
-        .sheet(item: $openSource) { source in
+        // The import lands through the change notice, as every write does;
+        // a connection alone does not, and takes its prompt off the hero.
+        .sheet(item: $openSource, onDismiss: { Task { await viewModel.load() } }) { source in
             switch source {
             case .audible: AudibleImportScreen(onImported: { _ in openSource = nil })
             case .kindle: KindleImportScreen(onImported: { _ in openSource = nil })
@@ -254,7 +255,8 @@ struct HomeScreen: View {
             seenReleases: viewModel.hiddenReleases,
             discoveries: viewModel.discoveries,
             isSearchingDiscoveries: viewModel.isSearchingDiscoveries,
-            isCompact: true
+            isCompact: true,
+            prompt: viewModel.shownPrompt
         )
     }
 
@@ -314,6 +316,7 @@ struct HomeScreen: View {
                     dashboard: dashboard,
                     releases: viewModel.releases,
                     seenReleases: viewModel.hiddenReleases,
+                    prompt: viewModel.shownPrompt,
                     discoveries: viewModel.discoveries,
                     isSearchingDiscoveries: viewModel.isSearchingDiscoveries,
                     isSideBySide: isSplit && detail == nil,
@@ -345,6 +348,11 @@ struct HomeScreen: View {
                     case let .openDiscovery(suggestion): detail = .discovery(suggestion)
                     case let .seeRelease(release): viewModel.see(release)
                     case let .unseeRelease(release): viewModel.unsee(release)
+                    case .openPrompt(.audible): openSource = .audible
+                    case .openPrompt(.kindle): openSource = .kindle
+                    case .openPrompt(.friends): onShowShared()
+                    case let .dismissPrompt(prompt): viewModel.dismiss(prompt)
+                    case let .undismissPrompt(prompt): viewModel.undismiss(prompt)
                     }
                 }
                 .refreshable { await viewModel.load() }

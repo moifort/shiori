@@ -1,4 +1,5 @@
 import type { UserId } from '~/domain/shared/types'
+import { HOME_PROMPTS, type HomePrompt } from '~/domain/user/types'
 import { ObjectPath } from '~/system/object-store/primitives'
 import type { ObjectPath as ObjectPathValue } from '~/system/object-store/types'
 
@@ -17,3 +18,20 @@ export const isJpeg = (bytes: Buffer): boolean =>
 
 /** 2 MB decoded. The app sends a 512-point square, a few dozen kilobytes. */
 export const MAX_AVATAR_BYTES = 2 * 1024 * 1024
+
+/** What the home hero asks the reader to set up, in the order it asks: what
+ *  they have not set up yet and did not turn down. Audible and Kindle until an
+ *  account is connected, a friend until they have one. */
+export const promptsToShow = (state: {
+  audibleConnected: boolean
+  kindleConnected: boolean
+  hasFriend: boolean
+  dismissed: readonly HomePrompt[]
+}): HomePrompt[] => {
+  const missing: Record<HomePrompt, boolean> = {
+    audible: !state.audibleConnected,
+    kindle: !state.kindleConnected,
+    friends: !state.hasFriend,
+  }
+  return HOME_PROMPTS.filter((prompt) => missing[prompt] && !state.dismissed.includes(prompt))
+}

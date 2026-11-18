@@ -116,6 +116,17 @@ extension Date {
 struct HomeOpening: Sendable {
     let dashboard: Dashboard
     let discoveries: MonthlyDiscoveries
+    /// What the hero asks the reader to set up, in the order it asks.
+    var prompts: [HomePrompt] = []
+}
+
+/// Something the home's hero asks the reader to set up until it is done or
+/// they turn it down: their Audible library, their Kindle library, a first
+/// friend. The server decides which, from the connections and friendships.
+enum HomePrompt: String, Sendable, Hashable, CaseIterable {
+    case audible
+    case kindle
+    case friends
 }
 
 /// What the home's releases are drawn from, asked in one request: Découvrir's
