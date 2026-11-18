@@ -348,7 +348,7 @@ struct SeriesShowCard: View {
     /// A saga set aside: the card greyed, to say it sleeps.
     var isSetAside = false
     /// The volume's day, `YYYY-MM-DD` or looser: a calendar leaf in the top
-    /// corner, past days included, and how long is left over the name when it
+    /// corner, past days included, and over the name "Audio" and how long is left when it
     /// is ahead; the tag then names the volume alone.
     var releaseDate: String?
     let onOpen: () -> Void
@@ -357,11 +357,15 @@ struct SeriesShowCard: View {
         Button(action: onOpen) {
             VStack(alignment: .leading, spacing: 3) {
                 Spacer(minLength: 0)
-                // How long is left before a volume ahead, over the name; a
-                // volume out says nothing of how long ago.
-                if let releaseDate, let countdown = ReleaseDateText.countdown(releaseDate) {
-                    OutlinedTag(text: countdown)
-                        .padding(.bottom, 3)
+                // Over the name, on one line from the left: "Audio" first for
+                // a saga heard, how long is left before a volume ahead — a
+                // volume out says nothing of how long ago —, then a language
+                // other than the phone's.
+                if releaseDate != nil, !footTags.isEmpty {
+                    HStack(spacing: 4) {
+                        ForEach(footTags, id: \.self) { OutlinedTag(text: $0) }
+                    }
+                    .padding(.bottom, 3)
                 }
                 Text(series.name)
                     .font(isCompact ? .subheadline.weight(.semibold) : .headline)
@@ -394,11 +398,8 @@ struct SeriesShowCard: View {
             // and an edition in another language than the phone's beside it.
             .overlay(alignment: .topTrailing) {
                 if let releaseDate {
-                    VStack(alignment: .trailing, spacing: 6) {
-                        ReleaseDateBadge(date: releaseDate, onGlass: true)
-                        CoverTags(language: series.language, isAudio: series.isAudio)
-                    }
-                    .padding(8)
+                    ReleaseDateBadge(date: releaseDate, onGlass: true)
+                        .padding(8)
                 } else {
                     CoverTags(language: series.language, isAudio: series.isAudio)
                         .padding(10)
@@ -468,6 +469,16 @@ struct SeriesShowCard: View {
 
     /// How far the reader is through the saga, as the TV app sets an
     /// episode's: a short white bar, then "3 sur 10 lus" beside it.
+    /// The tags of a card with a release day, as the large cards of
+    /// Actualité write them: "Audio", the countdown, a foreign language.
+    private var footTags: [String] {
+        var tags: [String] = []
+        if series.isAudio { tags.append(String(localized: "Audio")) }
+        if let releaseDate, let countdown = ReleaseDateText.countdown(releaseDate) { tags.append(countdown) }
+        if let language = series.language, language.isForeign { tags.append(language.code) }
+        return tags
+    }
+
     private var progressLine: some View {
         HStack(spacing: isCompact ? 6 : 8) {
             ProgressBar(fraction: Double(fraction), width: isCompact ? 24 : 40)

@@ -133,12 +133,13 @@ struct NewsLargeCard: View {
         .accessibilityAddTraits(.isButton)
     }
 
-    /// How long is left before a release ahead, "Audio" for a recording, the
-    /// language when it is not the phone's.
+    /// "Audio" first for a recording, what matters most, then how long is
+    /// left before a release ahead, then the language when it is not the
+    /// phone's.
     private var tags: [String] {
         var tags: [String] = []
-        if let date = item.day, let countdown = ReleaseDateText.countdown(date) { tags.append(countdown) }
         if card.cover.format == .audiobook { tags.append(String(localized: "Audio")) }
+        if let date = item.day, let countdown = ReleaseDateText.countdown(date) { tags.append(countdown) }
         if let language = card.cover.language, language.isForeign { tags.append(language.code) }
         return tags
     }
