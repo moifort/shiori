@@ -224,6 +224,7 @@ extension ShioriGraphQL.BookDetail {
             narratorKeys: narratorKeys,
             listeningProgress: listeningProgress.map { Int($0) },
             audibleURL: audibleUrl.flatMap(URL.init(string:)),
+            audibleAsin: audibleAsin,
             amazonURL: URL(string: amazonUrl),
             isbn13: isbn13,
             language: language?.asDomain,

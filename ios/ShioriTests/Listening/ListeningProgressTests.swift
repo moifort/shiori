@@ -79,29 +79,21 @@ struct ListeningTextTests {
 
 @Suite("What an audiobook plays")
 struct ListeningTitleTests {
-    private func book(format: BookFormat, audible: String?) -> Book {
-        Book(
-            id: "b1",
-            title: "Endymion",
-            authors: ["Dan Simmons"],
-            format: format,
-            audibleURL: audible.flatMap(URL.init(string:)),
-            status: .toRead
-        )
+    private func book(format: BookFormat, asin: String?) -> Book {
+        Book(id: "b1", title: "Endymion", authors: ["Dan Simmons"], format: format, audibleAsin: asin, status: .toRead)
     }
 
     @Test("an audiobook imported from Audible plays its ASIN")
     func playable() {
-        let title = ListeningTitle(book: book(format: .audiobook, audible: "https://www.audible.fr/pd/B077PLB5KD"))
+        let title = ListeningTitle(book: book(format: .audiobook, asin: "B077PLB5KD"))
         #expect(title?.asin == "B077PLB5KD")
         #expect(title?.bookID == "b1")
     }
 
-    @Test("a paper book, or an audiobook with no Audible page, plays nothing")
+    @Test("a paper book, or an audiobook with no linked Audible account, plays nothing")
     func notPlayable() {
-        #expect(ListeningTitle(book: book(format: .book, audible: "https://www.audible.fr/pd/B077PLB5KD")) == nil)
-        #expect(ListeningTitle(book: book(format: .audiobook, audible: nil)) == nil)
-        #expect(ListeningTitle(book: book(format: .audiobook, audible: "https://www.audible.fr/pd/")) == nil)
+        #expect(ListeningTitle(book: book(format: .book, asin: "B077PLB5KD")) == nil)
+        #expect(ListeningTitle(book: book(format: .audiobook, asin: nil)) == nil)
     }
 }
 

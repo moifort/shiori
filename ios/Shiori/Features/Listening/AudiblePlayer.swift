@@ -217,7 +217,9 @@ final class AudiblePlayer {
         let item = AVPlayerItem(asset: asset)
         // Spoken word: keep the voice's pitch when the rate changes.
         item.audioTimePitchAlgorithm = .timeDomain
-        observations.append(item.observe(\.status) { [weak self] item, _ in
+        // @Sendable: KVO calls back on whatever queue changed the value, and a
+        // closure bound to the main actor traps there.
+        observations.append(item.observe(\.status) { @Sendable [weak self] item, _ in
             let status = item.status
             let failure = item.error
             Task { @MainActor in self?.itemStatusChanged(status, error: failure) }
@@ -317,7 +319,7 @@ final class AudiblePlayer {
         ) { [weak self] time in
             MainActor.assumeIsolated { self?.tick(time) }
         }
-        rateObservation = player.observe(\.timeControlStatus) { [weak self] player, _ in
+        rateObservation = player.observe(\.timeControlStatus) { @Sendable [weak self] player, _ in
             let playing = player.timeControlStatus != .paused
             Task { @MainActor in
                 guard let self, self.isPlaying != playing else { return }
@@ -436,6 +438,13 @@ final class AudiblePlayer {
         MPNowPlayingInfoCenter.default().nowPlayingInfo = info
     }
 
+    /// The lock screen's cover. Built away from the main actor: the system
+    /// asks for the image on a queue of its own, and a closure made on the
+    /// main actor traps there (it did on 2026-11-18).
+    nonisolated private static func artwork(of image: UIImage) -> MPMediaItemArtwork {
+        MPMediaItemArtwork(boundsSize: image.size) { _ in image }
+    }
+
     private func loadArtwork(for title: ListeningTitle) {
         guard let url = title.coverURL else { return }
         Task { [weak self] in
@@ -443,7 +452,7 @@ final class AudiblePlayer {
                   let image = UIImage(data: data)
             else { return }
             guard let self, self.title?.asin == title.asin else { return }
-            self.artwork = MPMediaItemArtwork(boundsSize: image.size) { _ in image }
+            self.artwork = Self.artwork(of: image)
             self.updateNowPlaying()
         }
     }

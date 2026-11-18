@@ -60,7 +60,7 @@ const TOP_GENRES = 4
 /** Bumped whenever the view gains a figure or a rule changes, so a view stored
  *  by an older bundle is rebuilt on its next read instead of answering with a
  *  field it never computed. */
-export const VIEW_VERSION = 22
+export const VIEW_VERSION = 23
 
 // MARK: - Calendar
 
@@ -137,6 +137,7 @@ export const analyticsViewOf = (input: {
     pageCount: book.pageCount,
     currentPage: book.currentPage,
     durationMinutes: book.durationMinutes,
+    audibleAsin: book.audibleAsin,
   })
 
   const finishes = finished.map((book): Finish => {

@@ -353,6 +353,9 @@ struct Book: Identifiable, Hashable, Codable, Sendable {
     /// imported from Audible, and once the account is unlinked. Only the
     /// book's own screen carries it.
     var audibleURL: URL?
+    /// The recording's ASIN, for an audiobook imported from a linked Audible
+    /// account: what the Audible player plays. Nil on anything else.
+    var audibleAsin: String?
     /// Where the book is bought on amazon.fr, carrying Shiori's Associates
     /// tag: the Kindle title, the edition its ISBN names, or a search. Only
     /// the book's own screen and a friend's carry it.

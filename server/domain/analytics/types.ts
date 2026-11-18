@@ -13,7 +13,7 @@ import type {
   Subgenre,
 } from '~/domain/book/types'
 import type { SagaKey, SeriesId, SeriesName } from '~/domain/series/types'
-import type { AuthorName, BookTitle, UserId } from '~/domain/shared/types'
+import type { AudibleAsin, AuthorName, BookTitle, UserId } from '~/domain/shared/types'
 import type { ObjectPath, SignedUrl } from '~/system/object-store/types'
 
 /** An IANA time zone identifier the runtime knows, such as "Europe/Paris". Every
@@ -53,6 +53,9 @@ export type BookCard = {
   /** The page the reader last said they reached. Never on an audiobook. */
   currentPage?: PageCount
   durationMinutes?: ListeningMinutes
+  /** The recording's ASIN, for an audiobook imported from Audible: what the
+   *  card's play button plays. Absent on a view stored before the button. */
+  audibleAsin?: AudibleAsin
 }
 
 /** One finished book, reduced to what the statistics read. Dates are local days

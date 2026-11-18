@@ -115,6 +115,7 @@ fragment DashboardBookCard on DashboardBook {
   pageCount
   currentPage
   durationMinutes
+  audibleAsin
 }
 
 # What the reader's genres say about their tastes: the page the genre card opens.

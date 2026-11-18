@@ -33,7 +33,7 @@ import {
 import type { Book, Genre } from '~/domain/book/types'
 import { SeriesName, seriesIdOf, VolumeNumber } from '~/domain/series/primitives'
 import type { SagaKey, Series } from '~/domain/series/types'
-import { AuthorName, BookTitle, Year } from '~/domain/shared/primitives'
+import { AudibleAsin, AuthorName, BookTitle, Year } from '~/domain/shared/primitives'
 import type { UserId } from '~/domain/shared/types'
 
 const paris = TimeZone('Europe/Paris')
@@ -589,12 +589,17 @@ describe('building the view', () => {
           pageCount: PageCount(1000),
           currentPage: PageCount(214),
         }),
-        book('heard', { durationMinutes: ListeningMinutes(600) }),
+        book('heard', {
+          durationMinutes: ListeningMinutes(600),
+          audibleAsin: AudibleAsin('B077PLB5KD'),
+        }),
       ],
     })
 
     expect(view.reading[0]).toMatchObject({ series: membership, pageCount: 1000, currentPage: 214 })
     expect(view.toRead[0]?.durationMinutes).toBe(ListeningMinutes(600))
+    // What the card's play button plays.
+    expect(view.toRead[0]?.audibleAsin).toBe(AudibleAsin('B077PLB5KD'))
   })
 
   // The dashboard shelf and the Library tab must agree on where a book sits:

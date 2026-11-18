@@ -164,6 +164,7 @@ private extension ShioriGraphQL.DashboardBookCard {
             currentPage: currentPage,
             durationMinutes: durationMinutes,
             listeningProgress: listeningProgress.map { Int($0) },
+            audibleAsin: audibleAsin,
             series: series.map {
                 SeriesMembership(id: $0.id, name: $0.name, volume: $0.volume, kind: $0.kind.asDomain)
             },

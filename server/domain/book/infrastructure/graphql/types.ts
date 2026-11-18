@@ -225,6 +225,16 @@ export const BookType = builder.objectRef<BookView>('Book').implement({
           ? ((await AudibleQuery.recordingUrlOf(book.userId, book.audibleAsin)) ?? null)
           : null,
     }),
+    audibleAsin: t.field({
+      type: 'AudibleAsin',
+      nullable: true,
+      description:
+        "The recording's ASIN, for an audiobook imported from Audible: what " +
+        '`startAudiblePlayback` plays. Null on anything else and once the account is ' +
+        'unlinked, when there is nothing to play it with.',
+      resolve: async (book) =>
+        book.audibleAsin && (await AudibleQuery.accountOf(book.userId)) ? book.audibleAsin : null,
+    }),
     narrators: t.field({
       type: ['NarratorName'],
       description:

@@ -45,7 +45,7 @@ extension ListeningTitle {
     /// The title an audiobook of the library plays, or nil when it has none:
     /// only a recording imported from a linked Audible account can be played.
     init?(book: Book) {
-        guard let asin = book.audibleAsin else { return nil }
+        guard book.format == .audiobook, let asin = book.audibleAsin else { return nil }
         let series = book.series.map { membership in
             membership.volume.map { "\(membership.name) · \(String(localized: "Tome \($0)"))" }
                 ?? membership.name
@@ -57,16 +57,5 @@ extension ListeningTitle {
             coverURL: book.coverURL,
             bookID: book.id
         )
-    }
-}
-
-extension Book {
-    /// The ASIN of an audiobook imported from Audible. The server hands its
-    /// recording page out as `https://www.audible.{store}/pd/{asin}`, and only
-    /// while the account is linked — exactly when it can be played.
-    var audibleAsin: String? {
-        guard format == .audiobook, let url = audibleURL else { return nil }
-        let asin = url.lastPathComponent
-        return asin.count == 10 && asin.allSatisfy({ $0.isLetter || $0.isNumber }) ? asin : nil
     }
 }

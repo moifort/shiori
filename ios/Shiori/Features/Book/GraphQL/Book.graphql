@@ -132,6 +132,7 @@ fragment BookDetail on Book {
   narrators
   narratorKeys
   audibleUrl
+  audibleAsin
   amazonUrl
   language
   isbn13
