@@ -3,7 +3,7 @@ import SwiftUI
 /// Everything the wishlist's page can ask for.
 enum WishlistAction {
     case openEdition(AwaitedEdition)
-    case chooseWish(Wish)
+    case openWish(Wish)
     /// "Retirer", from a cover's long press: off the list.
     case dropWish(Wish)
     case dropEdition(AwaitedEdition)
@@ -128,7 +128,7 @@ struct WishlistPage: View {
                 PosterRow.Item(
                     book: wish.cover,
                     caption: caption(wish),
-                    open: { onAction(.chooseWish(wish)) },
+                    open: { onAction(.openWish(wish)) },
                     dropWished: { onAction(.dropWish(wish)) }
                 )
             })

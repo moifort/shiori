@@ -4,6 +4,8 @@ import SwiftUI
 enum AuthorAction {
     case openBook(Book)
     case openSeries(SeriesDestination)
+    /// A volume announced of one of their sagas, on its own page.
+    case openVolume(DiscoveryVolume)
     /// A book of theirs the reader does not hold, opened to be added.
     case openWork(AuthorWork)
     case menu(Book, BookQuickAction)
@@ -184,6 +186,20 @@ struct AuthorDetailPage: View {
         }
     }
 
+    /// An announced volume's cover opens its own page, as everywhere a cover
+    /// opens its book; one with no number to be filed at opens its saga.
+    private static func open(_ release: FollowedSeries.Release, of saga: FollowedSeries) -> AuthorAction {
+        guard let number = release.number else {
+            return .openSeries(SeriesDestination(seriesId: saga.seriesId))
+        }
+        let volume = saga.announced.flatMap { $0.number == number ? $0 : nil }
+            ?? DiscoveredVolume(number: number, title: release.title, date: release.date, isbn13: nil, coverURL: release.coverURL)
+        return .openVolume(DiscoveryVolume(
+            saga: SagaDiscovery(series: saga, releases: SagaReleases(watched: true, next: volume)),
+            volume: volume
+        ))
+    }
+
     private func discoveries(_ page: AuthorPage) -> [PosterRow.Item] {
         let author = page.author.name
         let announced: [PosterRow.Item] = page.sagas.compactMap { saga in
@@ -199,7 +215,7 @@ struct AuthorDetailPage: View {
             return PosterRow.Item(
                 book: book,
                 label: PosterLabel(caption: ReleaseDateText.short(release.date), dimming: PosterLabel.setAsideDimming),
-                open: { send(.openSeries(SeriesDestination(seriesId: saga.seriesId))) }
+                open: { send(Self.open(release, of: saga)) }
             )
         }
         let sagas: [PosterRow.Item] = page.sagasNotHeld.map { saga in

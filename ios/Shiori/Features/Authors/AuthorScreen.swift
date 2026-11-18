@@ -14,6 +14,7 @@ struct AuthorScreen: View {
     @State private var selectedBook: Book?
     @State private var openSeries: SeriesDestination?
     @State private var openWork: AuthorWork?
+    @State private var openVolume: DiscoveryVolume?
     @State private var destination: LibraryDestination?
     @State private var quick: BookQuickRequest?
     /// The form correcting the author's facts and biography.
@@ -46,6 +47,7 @@ struct AuthorScreen: View {
             case let .openBook(book): selectedBook = book
             case let .openSeries(destination): openSeries = destination
             case let .openWork(work): openWork = work
+            case let .openVolume(volume): openVolume = volume
             case let .menu(book, action): quick = BookQuickRequest(book: book, action: action)
             case .refresh: await viewModel.load()
             }
@@ -62,6 +64,7 @@ struct AuthorScreen: View {
                 onDeleted: { _ in Task { await viewModel.load() } }
             )
         }
+        .pushesDetail(item: $openVolume) { AnnouncedVolumeScreen(saga: $0.saga, volume: $0.volume) }
         .pushesDetail(item: $openWork) { work in
             AuthorWorkPage(
                 work: work,

@@ -11,6 +11,8 @@ enum AwaitedEditionAction {
     /// The reader's copy, or another of their volumes, in the saga's row.
     case openVolume(Book)
     case openSaga(String)
+    /// A volume of the saga the reader lacks, in the saga's row.
+    case openLacking(DiscoveredVolume)
     /// Another cover picked for it, for every reader.
     case chooseCover
 }
@@ -60,6 +62,7 @@ struct AwaitedEditionPage: View {
             onToggleBell: { act(.stopAwaiting) },
             onOpenSaga: { if let id = shown.series?.id { act(.openSaga(id)) } },
             onOpenVolume: { act(.openVolume($0)) },
+            onOpenLacking: { act(.openLacking($0)) },
             // Once out, no bell is left to give the wait up: the button says it.
             onNoLongerInterested: { await onAction(.stopAwaiting) },
             onChooseCover: { act(.chooseCover) }

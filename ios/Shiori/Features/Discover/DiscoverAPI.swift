@@ -90,6 +90,27 @@ struct SagaDiscovery: Identifiable, Codable, Sendable {
     var id: String { series.id }
 }
 
+extension SagaDiscovery {
+    /// The saga of a book the reader holds, as the page of a volume of it
+    /// they lack reads it: the edition of their copy, followed as the saga's
+    /// screen opens one.
+    init(holding book: Book, in series: SeriesMembership, ownedCount: Int) {
+        self.init(
+            series: FollowedSeries(
+                seriesId: series.id,
+                name: series.name,
+                isAudio: book.format == .audiobook,
+                author: book.authors.first,
+                language: book.language,
+                state: nil,
+                genre: book.genre,
+                ownedCount: ownedCount
+            ),
+            releases: SagaReleases(watched: true, next: nil)
+        )
+    }
+}
+
 /// A work of an author the reader does not hold, announced or just out,
 /// outside the sagas they hold, as the web search found it.
 struct DiscoveredWork: Identifiable, Hashable, Codable, Sendable {

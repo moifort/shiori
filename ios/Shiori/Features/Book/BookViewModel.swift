@@ -27,6 +27,10 @@ final class BookViewModel {
     /// What the page offers to await in the app's language, and what it awaits.
     private(set) var offer = EditionOffer()
     /// The volumes of its saga, held or lacking, for the row on its page.
+    /// How many volumes of the saga the reader holds, as the row has them.
+    var ownedVolumeCount: Int {
+        sagaVolumes.count { if case .owned = $0 { true } else { false } }
+    }
     private(set) var sagaVolumes: [SeriesStripItem] = [] {
         didSet { keepSnapshot() }
     }

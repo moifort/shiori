@@ -31,6 +31,8 @@ struct BookScreen: View {
     @State private var openAwaited: AwaitedEdition?
     /// Another volume of the saga, from the row of volumes.
     @State private var openVolume: Book?
+    /// A volume of the saga the reader lacks, from the row of volumes.
+    @State private var openLacking: DiscoveryVolume?
     @State private var openAuthor: AuthorDestination?
     @State private var openNarrator: NarratorDestination?
     @Environment(\.dismiss) private var dismissPresentation
@@ -83,6 +85,14 @@ struct BookScreen: View {
                         if case let .owned(volume) = item, volume.id == book.id { .owned(book) } else { item }
                     },
                     onOpenVolume: { openVolume = $0 },
+                    onOpenLacking: { volume in
+                        openLacking = book.series.map { series in
+                            DiscoveryVolume(
+                                saga: SagaDiscovery(holding: book, in: series, ownedCount: viewModel.ownedVolumeCount),
+                                volume: volume
+                            )
+                        }
+                    },
                     onOpenAuthor: { openAuthor = $0 },
                     onOpenNarrator: { openNarrator = $0 },
                     awaited: viewModel.offer.awaited,
@@ -230,6 +240,9 @@ struct BookScreen: View {
         }
         .pushesDetail(item: $openSeries) { destination in
             SeriesScreen(seriesId: destination.seriesId)
+        }
+        .pushesDetail(item: $openLacking) { lacking in
+            AnnouncedVolumeScreen(saga: lacking.saga, volume: lacking.volume)
         }
         .pushesDetail(item: $openVolume) { volume in
             BookScreen(bookId: volume.id, client: client)

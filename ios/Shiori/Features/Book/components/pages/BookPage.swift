@@ -29,6 +29,8 @@ struct BookPage: View {
     /// while they are on their way: the row then holds this volume alone.
     var seriesVolumes: [SeriesStripItem] = []
     var onOpenVolume: (Book) -> Void = { _ in }
+    /// The page of a volume of the saga the reader lacks.
+    var onOpenLacking: ((DiscoveredVolume) -> Void)? = nil
     /// An author's page, from the hero's author line.
     var onOpenAuthor: ((AuthorDestination) -> Void)? = nil
     /// A narrator's page, from the hero's "Lu par" line.
@@ -423,8 +425,8 @@ struct BookPage: View {
 
     /// The saga under its own name, as the TV app heads a season, and its
     /// volumes as covers, the ones the reader lacks dimmed — this one alone
-    /// until the others arrive. A lacking volume opens the saga's screen,
-    /// where it is added.
+    /// until the others arrive. Every cover opens its volume's page, a lacking
+    /// one too.
     @ViewBuilder private var series: some View {
         if let membership = book.series {
             SeriesVolumesRow(
@@ -432,7 +434,8 @@ struct BookPage: View {
                 volumes: seriesVolumes.isEmpty ? [.owned(book)] : seriesVolumes,
                 currentId: book.id,
                 onOpenSeries: onOpenSeries,
-                onOpenVolume: onOpenVolume
+                onOpenVolume: onOpenVolume,
+                onOpenLacking: onOpenLacking
             )
         }
     }

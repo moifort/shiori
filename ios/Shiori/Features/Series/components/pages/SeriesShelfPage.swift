@@ -73,7 +73,17 @@ struct SeriesShelfPage: View {
                             author: entry.series.author ?? entry.series.name,
                             isAudio: entry.series.isAudio,
                             language: entry.series.language
-                        ) { onAction(.openSeries(entry.series)) }
+                        ) {
+                            // The volume's page, as the card says: its saga is
+                            // a tap away from there.
+                            onAction(.openVolume(DiscoveryVolume(
+                                saga: SagaDiscovery(
+                                    series: entry.series,
+                                    releases: SagaReleases(watched: true, next: entry.volume)
+                                ),
+                                volume: entry.volume
+                            )))
+                        }
                         .containerRelativeFrame(.horizontal) { width, _ in
                             SeriesReleaseCard.railWidth(width, count: releases.count)
                         }

@@ -14,6 +14,7 @@ struct AnnouncedVolumeScreen: View {
     @State private var viewModel: AnnouncedVolumeViewModel
     @State private var showsSaga = false
     @State private var openedVolume: Book?
+    @State private var openedLacking: DiscoveredVolume?
     @Environment(\.dismiss) private var dismissPresentation
     @Environment(\.detailClosing) private var closing
 
@@ -55,6 +56,7 @@ struct AnnouncedVolumeScreen: View {
             case .openSaga: showsSaga = true
             case .toggleFollowed: await viewModel.toggleFollowed()
             case let .openVolume(book): openedVolume = book
+            case let .openLacking(volume): openedLacking = volume
             }
         }
         .task { await viewModel.describe() }
@@ -69,6 +71,10 @@ struct AnnouncedVolumeScreen: View {
         .reloadsOnWideChange { await viewModel.loadSaga() }
         .navigationDestination(item: $openedVolume) { book in
             BookScreen(bookId: book.id)
+                .closesAsPushed()
+        }
+        .navigationDestination(item: $openedLacking) { volume in
+            AnnouncedVolumeScreen(saga: viewModel.opened.saga, volume: volume, linksToSaga: linksToSaga)
                 .closesAsPushed()
         }
         .navigationDestination(isPresented: $showsSaga) {

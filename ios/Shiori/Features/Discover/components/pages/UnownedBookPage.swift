@@ -82,6 +82,8 @@ struct UnownedBookPage: View {
     let onToggleBell: () -> Void
     var onOpenSaga: () -> Void = {}
     var onOpenVolume: (Book) -> Void = { _ in }
+    /// The page of a volume of the saga the reader lacks. Nil opens the saga.
+    var onOpenLacking: ((DiscoveredVolume) -> Void)? = nil
     /// "Retirer", at the end of the hero's row, asked first: a book wished for
     /// leaves the list, an edition awaited stops being watched. Nil draws no
     /// button; none either beside the bell, which already says it.
@@ -403,7 +405,8 @@ struct UnownedBookPage: View {
                 volumes: rowVolumes,
                 currentId: currentVolumeId ?? book.id,
                 onOpenSeries: onOpenSaga,
-                onOpenVolume: onOpenVolume
+                onOpenVolume: onOpenVolume,
+                onOpenLacking: onOpenLacking
             )
         }
     }

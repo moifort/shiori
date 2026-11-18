@@ -23,6 +23,16 @@ final class AwaitedEditionViewModel {
     /// over its title.
     private(set) var series: SeriesMembership?
     var sagaName: String? { series?.name }
+    /// The reader's copy, read for its saga's row.
+    private var copy: Book?
+
+    /// The saga of the reader's copy, as the page of a volume of it they lack
+    /// reads it.
+    var lackingSaga: SagaDiscovery? {
+        guard let copy, let series else { return nil }
+        let owned = sagaVolumes.count { if case .owned = $0 { true } else { false } }
+        return SagaDiscovery(holding: copy, in: series, ownedCount: owned)
+    }
 
     /// The edition as its list drew it, then as the server described it, in
     /// the saga of the reader's copy.
@@ -54,6 +64,7 @@ final class AwaitedEditionViewModel {
         else { return }
         withAnimation(.snappy) {
             self.series = series
+            copy = book
             sagaVolumes = volumes
         }
     }

@@ -8,7 +8,7 @@ struct WishlistScreen: View {
 
     @State private var viewModel: WishlistViewModel
     @State private var openedEdition: AwaitedEdition?
-    @State private var chosen: Wish?
+    @State private var openedWish: Wish?
 
     init(client: WishlistClient = .live) {
         self.client = client
@@ -25,7 +25,7 @@ struct WishlistScreen: View {
         ) { action in
             switch action {
             case let .openEdition(edition): openedEdition = edition
-            case let .chooseWish(wish): chosen = wish
+            case let .openWish(wish): openedWish = wish
             case let .dropWish(wish): Task { await viewModel.remove(wish) }
             case let .dropEdition(edition): Task { await viewModel.stopAwaiting(edition) }
             case let .selectFormat(format): withAnimation(.smooth) { viewModel.format = format }
@@ -33,22 +33,14 @@ struct WishlistScreen: View {
             }
         }
         .scrollAwayBar(String(localized: "Liste d'envies"))
-        .confirmationDialog(
-            chosen?.title ?? "",
-            isPresented: Binding(get: { chosen != nil }, set: { if !$0 { chosen = nil } }),
-            titleVisibility: .visible,
-            presenting: chosen
-        ) { wish in
-            Button("À lire") { Task { await viewModel.add(wish, status: .toRead) } }
-            Button("Déjà lu") { Task { await viewModel.add(wish, status: .read) } }
-            Button("Retirer", role: .destructive) { Task { await viewModel.remove(wish) } }
-        }
         .alert(
             "Action impossible",
             isPresented: Binding(get: { viewModel.actionError != nil }, set: { if !$0 { viewModel.actionError = nil } })
         ) {} message: {
             Text(viewModel.actionError ?? "")
         }
+        // A book wished for opens its own page, as from the pile.
+        .pushesDetail(item: $openedWish) { WishScreen(wish: $0) }
         .pushesDetail(item: $openedEdition) { edition in
             AwaitedEditionScreen(edition: edition)
         }

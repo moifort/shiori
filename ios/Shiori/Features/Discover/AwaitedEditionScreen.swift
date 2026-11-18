@@ -13,6 +13,7 @@ struct AwaitedEditionScreen: View {
     @State private var viewModel: AwaitedEditionViewModel
     @State private var openedVolume: Book?
     @State private var openedSaga: SeriesDestination?
+    @State private var openedLacking: DiscoveredVolume?
     @Environment(\.dismiss) private var dismissPresentation
     @Environment(\.detailClosing) private var closing
 
@@ -55,6 +56,8 @@ struct AwaitedEditionScreen: View {
                 }
             case let .openVolume(book):
                 openedVolume = book
+            case let .openLacking(volume):
+                openedLacking = volume
             case let .openSaga(seriesId):
                 openedSaga = SeriesDestination(seriesId: seriesId)
             case .chooseCover:
@@ -74,6 +77,12 @@ struct AwaitedEditionScreen: View {
         .navigationDestination(item: $openedVolume) { book in
             BookScreen(bookId: book.id)
                 .closesAsPushed()
+        }
+        .navigationDestination(item: $openedLacking) { volume in
+            if let saga = viewModel.lackingSaga {
+                AnnouncedVolumeScreen(saga: saga, volume: volume)
+                    .closesAsPushed()
+            }
         }
         .navigationDestination(item: $openedSaga) { destination in
             SeriesScreen(seriesId: destination.seriesId)

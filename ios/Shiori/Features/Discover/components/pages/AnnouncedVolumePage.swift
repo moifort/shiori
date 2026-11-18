@@ -11,6 +11,8 @@ enum AnnouncedVolumeAction {
     case toggleFollowed
     /// One of the reader's own volumes in the saga's row.
     case openVolume(Book)
+    /// A volume of the saga the reader lacks, in the saga's row.
+    case openLacking(DiscoveredVolume)
     /// Another cover picked for it, for every reader.
     case chooseCover
 }
@@ -55,6 +57,7 @@ struct AnnouncedVolumePage: View {
             onToggleBell: { act(.toggleFollowed) },
             onOpenSaga: { act(linksToSaga ? .openSaga : .close) },
             onOpenVolume: { act(.openVolume($0)) },
+            onOpenLacking: { act(.openLacking($0)) },
             onChooseCover: { act(.chooseCover) }
         )
     }

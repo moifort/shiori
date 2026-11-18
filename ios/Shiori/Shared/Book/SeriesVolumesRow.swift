@@ -5,8 +5,10 @@ import SwiftUI
 /// its screen, then each volume as the home's pile sets its covers — the
 /// number inside the cover's blurred foot — the volume open on the page
 /// ringed. The volumes the reader lacks sit between theirs, dimmed — an
-/// announced one with its day in place of its number — and open the saga's screen,
-/// where they are added. They come from a catalogue
+/// announced one with its day in place of its number — and open their own
+/// page, as the saga's screen opens them: a cover always opens its book. Only
+/// a row that has no page to give them falls back on the saga's screen. They
+/// come from a catalogue
 /// already built: building one costs a model call this row must never make.
 struct SeriesVolumesRow: View {
     let name: String
@@ -16,6 +18,9 @@ struct SeriesVolumesRow: View {
     let currentId: String
     let onOpenSeries: () -> Void
     let onOpenVolume: (Book) -> Void
+    /// The page of a volume the reader lacks, as the list knows it. Nil where
+    /// the row has none to give, a lacking cover then opening the saga.
+    var onOpenLacking: ((DiscoveredVolume) -> Void)? = nil
 
     /// The cover the row is scrolled to: the volume open on the page, deep
     /// in a long saga too.
@@ -96,7 +101,14 @@ struct SeriesVolumesRow: View {
         let caption = number.map { String(localized: "Tome \($0)") } ?? title
         // An announced volume shows its day, or "Annoncé" before it has one.
         let day = forthcoming ? date.map(ReleaseDateText.short) ?? String(localized: "Annoncé") : nil
-        return Button(action: onOpenSeries) {
+        // Its own page when the row has one to give and it has a number to be
+        // filed at; else the saga's screen, where it is added.
+        let page = number.flatMap { number in
+            onOpenLacking.map { open in
+                { open(DiscoveredVolume(number: number, title: title, date: date, isbn13: nil, coverURL: coverURL)) }
+            }
+        }
+        return Button(action: page ?? onOpenSeries) {
             PosterCover(
                     book: Book(id: id, title: title, authors: [], coverURL: coverURL, status: .toRead),
                     caption: day ?? caption,
