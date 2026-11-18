@@ -177,3 +177,32 @@ export type ImportableBook = {
    *  ticked for them: they took it out once. */
   removedByReader?: boolean
 }
+
+/** A chapter of a recording, in playing order. */
+export type PlaybackChapter = {
+  title: string
+  /** Milliseconds from the start of the recording. */
+  startMs: number
+  lengthMs: number
+}
+
+/** What the app's player needs to play one title of the reader's Audible library.
+ *
+ *  A FairPlay stream that Apple's player plays as it is: nothing is decrypted
+ *  outside it, and the device credentials that obtained it stay here. The key
+ *  for the stream is traded through the server too (`fairPlayKey`), since the
+ *  call is signed with those credentials. */
+export type AudiblePlayback = {
+  asin: AudibleAsin
+  /** What a saved position is written against. Opaque to the app, handed back
+   *  with every position it saves. */
+  contentReference: string
+  /** The HLS playlist, signed by Amazon for a limited time. */
+  streamUrl: string
+  /** The FairPlay application certificate, base64. */
+  certificate: string
+  durationMs: number
+  chapters: PlaybackChapter[]
+  /** Where the reader stopped last, on any of their Audible players. */
+  position?: { positionMs: number; savedAt: Date }
+}

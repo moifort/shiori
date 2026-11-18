@@ -1,3 +1,4 @@
+import { LicenseDeniedError } from 'audible-api-ts'
 import type * as AudibleApi from '~/domain/audible/infrastructure/audible-api'
 
 /** Stands in for `~/domain/audible/infrastructure/audible-api` in every test file
@@ -7,7 +8,7 @@ import type * as AudibleApi from '~/domain/audible/infrastructure/audible-api'
  *  the module first may be the one the domain binds to for the whole run. So every
  *  file registers this same object, whose functions dispatch to what the running
  *  file staged — the binding no longer depends on the order files are picked in. */
-type Surface = keyof typeof AudibleApi
+type Surface = Exclude<keyof typeof AudibleApi, 'LicenseDeniedError'>
 type Stand = (...args: never[]) => unknown
 type Staged = Partial<Record<Surface, Stand>>
 
@@ -35,4 +36,10 @@ export const fakeAudibleApi = {
   product: dispatch('product'),
   search: dispatch('search'),
   landingUrlOf: dispatch('landingUrlOf'),
-} satisfies Record<Surface, unknown>
+  playbackLicense: dispatch('playbackLicense'),
+  fairPlayKey: dispatch('fairPlayKey'),
+  savePosition: dispatch('savePosition'),
+  // The real class, not a stand-in: the domain tells a refusal apart with
+  // `instanceof`, and a test throws one to say Amazon refused.
+  LicenseDeniedError,
+} satisfies Record<Surface | 'LicenseDeniedError', unknown>

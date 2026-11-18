@@ -12,6 +12,7 @@ import {
   itemsToCatalogue,
   listenedMinutesFor,
   listeningChangesFor,
+  playbackOf,
   purchaseDatesFor,
   recordingOfVolume,
   seriesVolumesFor,
@@ -23,7 +24,13 @@ import { AudibleCommand } from '~/domain/audible/command'
 import * as api from '~/domain/audible/infrastructure/audible-api'
 import { openReadableCredentials } from '~/domain/audible/infrastructure/credentials-vault'
 import { AudibleQuery } from '~/domain/audible/query'
-import type { AudibleAsin, ImportableBook, LibrarySync, SyncRun } from '~/domain/audible/types'
+import type {
+  AudibleAsin,
+  AudiblePlayback,
+  ImportableBook,
+  LibrarySync,
+  SyncRun,
+} from '~/domain/audible/types'
 import { markedRemovedByReader } from '~/domain/book/business-rules'
 import { BookCommand } from '~/domain/book/command'
 import { BookQuery } from '~/domain/book/query'
@@ -286,6 +293,57 @@ export namespace AudibleUseCase {
     return BookUseCase.add(userId, volumeBookFrom(recording, membership, language))
   }
 
+  /** What the app's player needs to play one title: a FairPlay licence, asked
+   *  of Amazon when the reader presses play and never ahead — Amazon counts the
+   *  licences a device takes.
+   *
+   *  `denied` when Amazon grants none: a title the account does not own, or a
+   *  device past its licence quota. */
+  export const playback = async (
+    userId: UserId,
+    asin: AudibleAsin,
+  ): Promise<AudiblePlayback | 'not-connected' | 'denied'> =>
+    withCredentials<AudiblePlayback | 'denied'>(userId, async (credentials) => {
+      try {
+        const { license, credentials: rotated } = await api.playbackLicense(credentials, asin)
+        return { value: playbackOf(asin, license), credentials: rotated }
+      } catch (error) {
+        if (!(error instanceof api.LicenseDeniedError)) throw error
+        // Audible's own reasons can name the customer: the status is enough to
+        // tell a quota from an ownership refusal.
+        logger.warn('Audible licence denied', { status: error.status, asin })
+        return { value: 'denied' as const, credentials }
+      }
+    })
+
+  /** Trade the player's FairPlay key request for the content key. Relayed
+   *  rather than asked by the app: the call is signed with the device
+   *  credentials, which never leave the server. */
+  export const fairPlayKey = async (
+    userId: UserId,
+    asin: AudibleAsin,
+    spc: string,
+  ): Promise<string | 'not-connected'> =>
+    withCredentials(userId, async (credentials) => {
+      const { ckc, credentials: rotated } = await api.fairPlayKey(credentials, asin, spc)
+      return { value: ckc, credentials: rotated }
+    })
+
+  /** Save where the reader stopped, on Audible itself: their other players —
+   *  the Audible app, an Echo — resume there, and so does the nightly sync. */
+  export const savePosition = async (
+    userId: UserId,
+    position: { asin: AudibleAsin; contentReference: string; positionMs: number },
+  ): Promise<'saved' | 'not-connected'> =>
+    withCredentials(userId, async (credentials) => {
+      const { credentials: rotated } = await api.savePosition(credentials, {
+        asin: position.asin,
+        acr: position.contentReference,
+        positionMs: position.positionMs,
+      })
+      return { value: 'saved' as const, credentials: rotated }
+    })
+
   /** The nightly job: every reader who left the sync on, stalest first. See
    *  `syncEveryConnectedReader`. */
   export const syncEveryReader = async (
@@ -324,6 +382,23 @@ const fetchLibrary = async (
   const { positions, credentials: rotatedAgain } = await api.lastPositions(rotated, followed)
   await AudibleCommand.rememberRotatedCredentials(userId, rotatedAgain)
   return { items, positions, followed, account }
+}
+
+/** One call to Amazon with the reader's opened credentials, the rotated access
+ *  token written back only when it did rotate: a playing title saves its
+ *  position every half minute, and a write each time would be a write for
+ *  nothing. */
+const withCredentials = async <T>(
+  userId: UserId,
+  call: (credentials: Credentials) => Promise<{ value: T; credentials: Credentials }>,
+): Promise<T | 'not-connected'> => {
+  const connected = await connectedCredentials(userId)
+  if (connected === 'not-connected') return connected
+  const { value, credentials } = await call(connected.credentials)
+  if (credentials.accessToken !== connected.credentials.accessToken) {
+    await AudibleCommand.rememberRotatedCredentials(userId, credentials)
+  }
+  return value
 }
 
 /** The reader's account and its credentials, opened: see `openedConnection`. */

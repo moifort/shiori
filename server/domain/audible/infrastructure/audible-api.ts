@@ -1,10 +1,14 @@
 import {
   AUDIBLE_LOCALES,
+  fairPlayKey,
+  LicenseDeniedError,
   lastPositions,
   library,
   login,
+  playbackLicense,
   product,
   register,
+  savePosition,
   search,
 } from 'audible-api-ts'
 import type { AudibleMarketplace } from '~/domain/audible/types'
@@ -15,7 +19,18 @@ import type { AudibleMarketplace } from '~/domain/audible/types'
  *  device key and would need a real account to answer. Tests replace this module
  *  and nothing else, so the mapping, the sealing and the write paths are all
  *  exercised for real. */
-export { lastPositions, library, login, product, register, search }
+export {
+  fairPlayKey,
+  LicenseDeniedError,
+  lastPositions,
+  library,
+  login,
+  playbackLicense,
+  product,
+  register,
+  savePosition,
+  search,
+}
 
 /** Where Amazon sends the browser back once the reader has signed in. The
  *  authorization code rides on it as a query parameter, and the app watches for

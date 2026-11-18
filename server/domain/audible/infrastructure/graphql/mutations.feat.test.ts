@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test'
 import { randomBytes } from 'node:crypto'
-import type { AudibleItem } from 'audible-api-ts'
+import { type AudibleItem, LicenseDeniedError } from 'audible-api-ts'
 import { graphql } from 'graphql'
 import type { UserId } from '~/domain/shared/types'
 import { fakeDb, resetFakeFirestore } from '~/test/fake-firestore'
@@ -16,6 +16,8 @@ mock.module('~/system/object-store', () => ({
 
 let items: AudibleItem[] = []
 let libraryFails: Error | undefined
+let licenseDenied = false
+const savedPositions: unknown[] = []
 
 mock.module('~/domain/audible/infrastructure/audible-api', () => ({
   login: async (marketplace: string) => ({
@@ -39,6 +41,27 @@ mock.module('~/domain/audible/infrastructure/audible-api', () => ({
   // Nobody has stopped anywhere: the statuses under test come off the library.
   lastPositions: async (credentials: unknown) => ({ positions: [], credentials }),
   landingUrlOf: (marketplace: string) => `https://www.amazon.${marketplace}/ap/maplanding`,
+  playbackLicense: async (credentials: unknown, asin: string) => {
+    if (licenseDenied) throw new LicenseDeniedError(asin, 'Denied', [])
+    return {
+      license: {
+        asin,
+        acr: 'CR!ACR',
+        streamUrl: 'https://example.cloudfront.net/title.m3u8',
+        certificate: 'Q0VSVA==',
+        durationMs: 3_000_000,
+        chapters: [{ title: 'Chapitre 1', startMs: 0, lengthMs: 3_000_000 }],
+        lastPosition: { positionMs: 61_000, lastUpdatedAt: new Date('2026-11-18T10:04:01Z') },
+      },
+      credentials,
+    }
+  },
+  fairPlayKey: async (credentials: unknown) => ({ ckc: 'Q0tD', credentials }),
+  savePosition: async (credentials: unknown, position: unknown) => {
+    savedPositions.push(position)
+    return { credentials }
+  },
+  LicenseDeniedError,
 }))
 
 const { schema } = await import('~/domain/shared/graphql/schema')
@@ -65,6 +88,8 @@ beforeEach(() => {
   resetFakeFirestore()
   items = []
   libraryFails = undefined
+  licenseDenied = false
+  savedPositions.length = 0
 })
 
 const execute = (source: string) => graphql({ schema, source, contextValue: { event: {}, userId } })
@@ -410,5 +435,73 @@ describe('asking for a pass right now', () => {
     const result = await execute('mutation { syncAudibleNow { imported } }')
 
     expect(codeOf(result)).toBe('AUDIBLE_UNAVAILABLE')
+  })
+})
+
+describe('playing a title', () => {
+  const start =
+    'mutation { startAudiblePlayback(asin: "B0H95GDVTN") { asin contentReference streamUrl certificate durationMs chapters { title startMs lengthMs } position { positionMs savedAt } } }'
+
+  test('answers what the player needs', async () => {
+    await connect()
+    const result = await execute(start)
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.startAudiblePlayback).toEqual({
+      asin: 'B0H95GDVTN',
+      contentReference: 'CR!ACR',
+      streamUrl: 'https://example.cloudfront.net/title.m3u8',
+      certificate: 'Q0VSVA==',
+      durationMs: 3_000_000,
+      chapters: [{ title: 'Chapitre 1', startMs: 0, lengthMs: 3_000_000 }],
+      position: { positionMs: 61_000, savedAt: '2026-11-18T10:04:01.000Z' },
+    })
+  })
+
+  test('fails with AUDIBLE_NOT_CONNECTED without an account', async () => {
+    expect(codeOf(await execute(start))).toBe('AUDIBLE_NOT_CONNECTED')
+  })
+
+  test('fails with AUDIBLE_LICENSE_DENIED when Amazon grants none', async () => {
+    await connect()
+    licenseDenied = true
+
+    expect(codeOf(await execute(start))).toBe('AUDIBLE_LICENSE_DENIED')
+  })
+
+  test('relays the FairPlay key', async () => {
+    await connect()
+    const result = await execute('mutation { audibleFairPlayKey(asin: "B0H95GDVTN", spc: "U1BD") }')
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.audibleFairPlayKey).toBe('Q0tD')
+  })
+
+  test('refuses an empty key request', async () => {
+    await connect()
+    const result = await execute('mutation { audibleFairPlayKey(asin: "B0H95GDVTN", spc: " ") }')
+
+    expect(codeOf(result)).toBe('BAD_USER_INPUT')
+  })
+
+  test('saves a position', async () => {
+    await connect()
+    const result = await execute(
+      'mutation { saveAudiblePosition(asin: "B0H95GDVTN", contentReference: "CR!ACR", positionMs: 61000) }',
+    )
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.saveAudiblePosition).toBe(true)
+    expect(savedPositions).toEqual([{ asin: 'B0H95GDVTN', acr: 'CR!ACR', positionMs: 61_000 }])
+  })
+
+  test('refuses a negative position', async () => {
+    await connect()
+    const result = await execute(
+      'mutation { saveAudiblePosition(asin: "B0H95GDVTN", contentReference: "CR!ACR", positionMs: -1) }',
+    )
+
+    expect(codeOf(result)).toBe('BAD_USER_INPUT')
+    expect(savedPositions).toEqual([])
   })
 })

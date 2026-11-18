@@ -3,9 +3,11 @@ import { AudibleMarketplaceEnum } from '~/domain/audible/infrastructure/graphql/
 import { audibleUnavailable, notConnected } from '~/domain/audible/infrastructure/graphql/errors'
 import type {
   AudibleLogin,
+  AudiblePlayback,
   ConnectedAccount,
   ImportableBook,
   LibrarySync,
+  PlaybackChapter,
 } from '~/domain/audible/types'
 import { AudibleUseCase } from '~/domain/audible/use-case'
 import { ReadingStatusEnum } from '~/domain/book/infrastructure/graphql/enums'
@@ -195,6 +197,55 @@ export const ImportableBookType = builder.objectRef<ImportableBook>('ImportableB
         'it unticked: the nightly sync keeps it out until the title itself has news. ' +
         'Importing it by hand takes the deletion back.',
       resolve: (importable) => importable.removedByReader ?? false,
+    }),
+  }),
+})
+
+const PlaybackChapterType = builder.objectRef<PlaybackChapter>('AudibleChapter').implement({
+  description: 'A chapter of a recording, in playing order.',
+  fields: (t) => ({
+    title: t.exposeString('title'),
+    startMs: t.exposeInt('startMs', {
+      description: 'Milliseconds from the start of the recording.',
+    }),
+    lengthMs: t.exposeInt('lengthMs'),
+  }),
+})
+
+const PlaybackPositionType = builder
+  .objectRef<NonNullable<AudiblePlayback['position']>>('AudiblePosition')
+  .implement({
+    description: 'Where the reader stopped last, on any of their Audible players.',
+    fields: (t) => ({
+      positionMs: t.exposeInt('positionMs'),
+      savedAt: t.field({ type: 'DateTime', resolve: (position) => position.savedAt }),
+    }),
+  })
+
+export const AudiblePlaybackType = builder.objectRef<AudiblePlayback>('AudiblePlayback').implement({
+  description:
+    'Everything the player needs to play one title of the Audible library.\n\n' +
+    'The stream is HLS encrypted with FairPlay, played by AVFoundation as it is: ' +
+    'add the asset to an `AVContentKeySession`, build each SPC from `certificate` ' +
+    'and the `skd://` URI without its scheme, and trade it with ' +
+    '`audibleFairPlayKey`. `streamUrl` is signed by Amazon for a limited time: ' +
+    'ask again rather than keep it.',
+  fields: (t) => ({
+    asin: t.field({ type: 'AudibleAsin', resolve: (playback) => playback.asin }),
+    contentReference: t.exposeString('contentReference', {
+      description: 'Opaque. Handed back with every `saveAudiblePosition`.',
+    }),
+    streamUrl: t.exposeString('streamUrl', { description: 'The HLS playlist.' }),
+    certificate: t.exposeString('certificate', {
+      description: 'The FairPlay application certificate, base64.',
+    }),
+    durationMs: t.exposeInt('durationMs'),
+    chapters: t.field({ type: [PlaybackChapterType], resolve: (playback) => playback.chapters }),
+    position: t.field({
+      type: PlaybackPositionType,
+      nullable: true,
+      description: 'Null on a title the reader never opened.',
+      resolve: (playback) => playback.position ?? null,
     }),
   }),
 })

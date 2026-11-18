@@ -1,10 +1,15 @@
 import { match } from 'ts-pattern'
 import { AudibleCommand } from '~/domain/audible/command'
 import { AudibleMarketplaceEnum } from '~/domain/audible/infrastructure/graphql/enums'
-import { audibleUnavailable, notConnected } from '~/domain/audible/infrastructure/graphql/errors'
+import {
+  audibleUnavailable,
+  licenseDenied,
+  notConnected,
+} from '~/domain/audible/infrastructure/graphql/errors'
 import {
   AudibleAccountType,
   AudibleLoginType,
+  AudiblePlaybackType,
   AudibleSyncType,
 } from '~/domain/audible/infrastructure/graphql/types'
 import { AudibleQuery } from '~/domain/audible/query'
@@ -217,5 +222,83 @@ builder.mutationFields((t) => ({
       'false when there was nothing to disconnect.',
     resolve: async (_root, _args, context) =>
       (await AudibleCommand.disconnect(context.userId)) === 'disconnected',
+  }),
+
+  startAudiblePlayback: t.field({
+    type: AudiblePlaybackType,
+    description:
+      'Ask Amazon for a FairPlay licence to play one title of the Audible library, ' +
+      'with its chapters and where the reader stopped last.\n\n' +
+      'A mutation because Amazon counts the licences a device takes: call it when ' +
+      'the reader presses play, never ahead. Fails with `AUDIBLE_NOT_CONNECTED` when ' +
+      'no account is linked, `AUDIBLE_LICENSE_DENIED` when Amazon grants no licence ' +
+      '(a title the account does not own, a licence quota), and `AUDIBLE_UNAVAILABLE` ' +
+      'when Amazon refuses the call.',
+    args: { asin: t.arg({ type: 'AudibleAsin', required: true }) },
+    resolve: async (_root, args, context) => {
+      const result = await AudibleUseCase.playback(context.userId, args.asin).catch(
+        audibleUnavailable,
+      )
+      return match(result)
+        .with('not-connected', notConnected)
+        .with('denied', licenseDenied)
+        .otherwise((playback) => playback)
+    },
+  }),
+
+  audibleFairPlayKey: t.string({
+    description:
+      "Trade the player's FairPlay key request (SPC) for the content key (CKC), " +
+      'both base64.\n\n' +
+      'Relayed by the server because the call is signed with the device ' +
+      'credentials, which never leave it. Fails with `AUDIBLE_NOT_CONNECTED` and ' +
+      '`AUDIBLE_UNAVAILABLE` as `startAudiblePlayback` does.',
+    args: {
+      asin: t.arg({ type: 'AudibleAsin', required: true }),
+      spc: t.arg.string({ required: true, description: 'The SPC, base64.' }),
+    },
+    resolve: async (_root, args, context) => {
+      const spc = args.spc.trim()
+      if (!spc) return badUserInput('The key request is empty')
+      const result = await AudibleUseCase.fairPlayKey(context.userId, args.asin, spc).catch(
+        audibleUnavailable,
+      )
+      return match(result)
+        .with('not-connected', notConnected)
+        .otherwise((ckc) => ckc)
+    },
+  }),
+
+  saveAudiblePosition: t.boolean({
+    description:
+      'Save where the reader stopped in a title, on Audible itself: the Audible ' +
+      'app and every other player on the account resume there.\n\n' +
+      'Fails with `AUDIBLE_NOT_CONNECTED` and `AUDIBLE_UNAVAILABLE` as ' +
+      '`startAudiblePlayback` does.',
+    args: {
+      asin: t.arg({ type: 'AudibleAsin', required: true }),
+      contentReference: t.arg.string({
+        required: true,
+        description: "The `contentReference` of the title's `startAudiblePlayback`.",
+      }),
+      positionMs: t.arg.int({
+        required: true,
+        description: 'Milliseconds from the start of the recording.',
+      }),
+    },
+    resolve: async (_root, args, context) => {
+      const contentReference = args.contentReference.trim()
+      if (!contentReference) return badUserInput('The content reference is empty')
+      if (args.positionMs < 0) return badUserInput('A position cannot be negative')
+      const result = await AudibleUseCase.savePosition(context.userId, {
+        asin: args.asin,
+        contentReference,
+        positionMs: args.positionMs,
+      }).catch(audibleUnavailable)
+      return match(result)
+        .with('not-connected', notConnected)
+        .with('saved', () => true)
+        .exhaustive()
+    },
   }),
 }))

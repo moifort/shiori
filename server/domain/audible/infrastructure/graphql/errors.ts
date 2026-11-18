@@ -18,3 +18,6 @@ export const audibleUnavailable = (error: unknown): never => {
 
 export const notConnected = (): never =>
   domainError('AUDIBLE_NOT_CONNECTED', 'No Audible account is connected')
+
+export const licenseDenied = (): never =>
+  domainError('AUDIBLE_LICENSE_DENIED', 'Audible grants no licence to play this title')

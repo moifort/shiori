@@ -1,9 +1,10 @@
-import type { AudibleItem, LastPosition } from 'audible-api-ts'
+import type { AudibleItem, LastPosition, PlaybackLicense } from 'audible-api-ts'
 import { genreFrom, subgenresFrom } from '~/domain/audible/genre-mapping'
 import type {
   AudibleAsin as AudibleAsinValue,
   AudibleConnection,
   AudibleMarketplace,
+  AudiblePlayback,
   ImportableBook,
 } from '~/domain/audible/types'
 import {
@@ -717,4 +718,18 @@ export const volumeBookFrom = (
   addedAt: undefined,
   listenedMinutes: undefined,
   listenedAt: undefined,
+})
+
+/** A granted licence, as the app's player reads it. */
+export const playbackOf = (asin: AudibleAsinValue, license: PlaybackLicense): AudiblePlayback => ({
+  asin,
+  contentReference: license.acr,
+  streamUrl: license.streamUrl,
+  certificate: license.certificate,
+  durationMs: license.durationMs,
+  chapters: license.chapters.map(({ title, startMs, lengthMs }) => ({ title, startMs, lengthMs })),
+  position: license.lastPosition && {
+    positionMs: license.lastPosition.positionMs,
+    savedAt: license.lastPosition.lastUpdatedAt,
+  },
 })
