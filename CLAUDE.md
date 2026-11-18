@@ -153,6 +153,19 @@ Runtime: always `bun` / `bunx`, never `npm` / `npx`.
    and removes any with no live session **without asking**: the user gave that standing OK on
    2026-11-16. Uncommitted or unmerged work is first saved as a patch under
    `build/stale-worktrees/`, and the user hears of it in one line.
+13. **The parent orchestrates on Fable and never codes; the standbys code on Sonnet.** The parent
+   session runs on the most capable model (Fable 5.2), because its mistakes are the expensive
+   ones: a ticket forgotten, two sessions on `main`, a worktree left behind. It hands out
+   tickets, checks them, recycles the standbys and keeps the checkout clean. It edits no app
+   code, builds nothing and opens no simulator; the only files it writes are the rules and docs
+   of this workflow. The standbys run on Sonnet 5.5 (`set_session_model`). The parent raises one
+   to Opus or Fable only for a hard ticket (a performance hunt, a bug that crosses features, a
+   data migration) and puts Sonnet back when it recycles it. A standby holds one ticket at a
+   time; when all are busy the parent keeps the queue and says so in one line. The parent keeps
+   its own context small, since every child turn wakes it: it checks a ticket with the commits
+   first, then the thread, then only the last events of the child's transcript, and never reads
+   a whole transcript, renders an artboard or takes a capture
+   ([docs/board.md](docs/board.md)).
 
 ## Paid API calls
 

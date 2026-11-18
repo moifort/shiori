@@ -107,6 +107,19 @@ automatic replies: a publish arms one, so it turns it off after each publish (`A
 `watch`, `on: false`). On 2026-11-16 a freed standby's watch posted « C'est noté, je m'en occupe »
 on three threads of another standby's theme.
 
+**The parent orchestrates and never codes** (CLAUDE.md, Workflow rule 13). It runs on Fable 5.2
+and only hands out tickets, checks them, recycles the standbys and keeps the checkout clean: no
+app code, no build, no simulator, no artboard render. The standbys run on Sonnet 5.5; the parent
+sets the model with `set_session_model`, raises one standby to Opus or Fable for a hard ticket
+(performance, a bug across features, a data migration) and puts Sonnet back when it recycles
+it. One ticket at a time per standby; when all are busy the parent keeps the queue. A session
+cannot change its own model: the parent's is picked in the app's model menu.
+
+**The parent keeps its context small.** Every child turn and every board comment wakes it and
+re-reads its context, so that is what its own cost depends on. It checks a ticket with the
+cheapest proof first: `git log`, then the thread, then the last few events of the child's
+transcript (`list_events` with a small limit), never a whole transcript.
+
 **The parent checks that every ticket it hands out is handled** (CLAUDE.md, Workflow rule 6).
 A child often receives a ticket and never acts on it: the message waits in a queue, or it
 handles one request out of several. The parent keeps the list of the tickets it sent (thread or
