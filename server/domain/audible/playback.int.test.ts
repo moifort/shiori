@@ -45,6 +45,7 @@ let answeredToken = 'access-1'
 let refusal: Error | undefined
 const keyCalls: string[] = []
 const savedPositions: unknown[] = []
+const consumptions: (string | undefined)[] = []
 
 beforeEach(() => {
   resetFakeFirestore()
@@ -53,6 +54,7 @@ beforeEach(() => {
   refusal = undefined
   keyCalls.length = 0
   savedPositions.length = 0
+  consumptions.length = 0
   stageAudibleApi({
     login: async () => ({
       loginUrl: 'https://www.amazon.fr/ap/signin',
@@ -61,12 +63,23 @@ beforeEach(() => {
     }),
     register: async () => credentialsWith('access-1'),
     landingUrlOf: () => 'https://www.amazon.fr/ap/maplanding',
-    playbackLicense: async () => {
+    playbackLicense: async (
+      _credentials: unknown,
+      _asin: string,
+      options?: { consumption?: string },
+    ) => {
+      consumptions.push(options?.consumption)
       if (refusal) throw refusal
       return { license, credentials: credentialsWith(answeredToken) }
     },
-    fairPlayKey: async (_credentials: unknown, _asin: string, spc: string) => {
+    fairPlayKey: async (
+      _credentials: unknown,
+      _asin: string,
+      spc: string,
+      options?: { consumption?: string },
+    ) => {
       keyCalls.push(spc)
+      consumptions.push(options?.consumption)
       return { ckc: 'Q0tD', credentials: credentialsWith(answeredToken) }
     },
     savePosition: async (_credentials: unknown, position: unknown) => {
@@ -133,6 +146,15 @@ describe('playing a title', () => {
 
     expect(await AudibleUseCase.fairPlayKey(reader, asin, 'U1BD')).toBe('Q0tD')
     expect(keyCalls).toEqual(['U1BD'])
+  })
+
+  test('asks for a download licence and a key to keep when offline', async () => {
+    await connect()
+    await AudibleUseCase.playback(reader, asin)
+    await AudibleUseCase.playback(reader, asin, { offline: true })
+    await AudibleUseCase.fairPlayKey(reader, asin, 'U1BD', { offline: true })
+
+    expect(consumptions).toEqual(['Streaming', 'Download', 'Download'])
   })
 
   test('saves the position against the licence’s content reference', async () => {

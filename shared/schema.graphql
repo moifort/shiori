@@ -3149,6 +3149,11 @@ type Mutation {
   audibleFairPlayKey(
     asin: AudibleAsin!
 
+    """
+    Ask for a key the device may keep, for a title started with `offline`. False by default.
+    """
+    offline: Boolean
+
     """The SPC, base64."""
     spc: String!
   ): String!
@@ -3732,8 +3737,15 @@ type Mutation {
   Ask Amazon for a FairPlay licence to play one title of the Audible library, with its chapters and where the reader stopped last.
   
   A mutation because Amazon counts the licences a device takes: call it when the reader presses play, never ahead. Fails with `AUDIBLE_NOT_CONNECTED` when no account is linked, `AUDIBLE_LICENSE_DENIED` when Amazon grants no licence (a title the account does not own, a licence quota), and `AUDIBLE_UNAVAILABLE` when Amazon refuses the call.
+  
+  With `offline`, the licence is a download licence: the same stream, whose content key the device may keep (`audibleFairPlayKey` with `offline` too), so the title plays with no network once downloaded.
   """
-  startAudiblePlayback(asin: AudibleAsin!): AudiblePlayback!
+  startAudiblePlayback(
+    asin: AudibleAsin!
+
+    """Ask for a licence the title can be downloaded under. False by default."""
+    offline: Boolean
+  ): AudiblePlayback!
 
   """
   Open an Amazon sign-in for a Kindle library on the given store.

@@ -233,12 +233,21 @@ builder.mutationFields((t) => ({
       'the reader presses play, never ahead. Fails with `AUDIBLE_NOT_CONNECTED` when ' +
       'no account is linked, `AUDIBLE_LICENSE_DENIED` when Amazon grants no licence ' +
       '(a title the account does not own, a licence quota), and `AUDIBLE_UNAVAILABLE` ' +
-      'when Amazon refuses the call.',
-    args: { asin: t.arg({ type: 'AudibleAsin', required: true }) },
+      'when Amazon refuses the call.\n\n' +
+      'With `offline`, the licence is a download licence: the same stream, whose ' +
+      'content key the device may keep (`audibleFairPlayKey` with `offline` too), so ' +
+      'the title plays with no network once downloaded.',
+    args: {
+      asin: t.arg({ type: 'AudibleAsin', required: true }),
+      offline: t.arg.boolean({
+        required: false,
+        description: 'Ask for a licence the title can be downloaded under. False by default.',
+      }),
+    },
     resolve: async (_root, args, context) => {
-      const result = await AudibleUseCase.playback(context.userId, args.asin).catch(
-        audibleUnavailable,
-      )
+      const result = await AudibleUseCase.playback(context.userId, args.asin, {
+        offline: args.offline ?? false,
+      }).catch(audibleUnavailable)
       return match(result)
         .with('not-connected', notConnected)
         .with('denied', licenseDenied)
@@ -256,13 +265,19 @@ builder.mutationFields((t) => ({
     args: {
       asin: t.arg({ type: 'AudibleAsin', required: true }),
       spc: t.arg.string({ required: true, description: 'The SPC, base64.' }),
+      offline: t.arg.boolean({
+        required: false,
+        description:
+          'Ask for a key the device may keep, for a title started with `offline`. ' +
+          'False by default.',
+      }),
     },
     resolve: async (_root, args, context) => {
       const spc = args.spc.trim()
       if (!spc) return badUserInput('The key request is empty')
-      const result = await AudibleUseCase.fairPlayKey(context.userId, args.asin, spc).catch(
-        audibleUnavailable,
-      )
+      const result = await AudibleUseCase.fairPlayKey(context.userId, args.asin, spc, {
+        offline: args.offline ?? false,
+      }).catch(audibleUnavailable)
       return match(result)
         .with('not-connected', notConnected)
         .otherwise((ckc) => ckc)

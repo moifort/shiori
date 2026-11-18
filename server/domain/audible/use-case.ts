@@ -298,14 +298,20 @@ export namespace AudibleUseCase {
    *  licences a device takes.
    *
    *  `denied` when Amazon grants none: a title the account does not own, or a
-   *  device past its licence quota. */
+   *  device past its licence quota.
+   *
+   *  `offline` asks for a download licence: the same FairPlay stream, whose key
+   *  the device may keep, so the title plays with no network once downloaded. */
   export const playback = async (
     userId: UserId,
     asin: AudibleAsin,
+    { offline = false }: { offline?: boolean } = {},
   ): Promise<AudiblePlayback | 'not-connected' | 'denied'> =>
     withCredentials<AudiblePlayback | 'denied'>(userId, async (credentials) => {
       try {
-        const { license, credentials: rotated } = await api.playbackLicense(credentials, asin)
+        const { license, credentials: rotated } = await api.playbackLicense(credentials, asin, {
+          consumption: consumptionOf(offline),
+        })
         return { value: playbackOf(asin, license), credentials: rotated }
       } catch (error) {
         if (!(error instanceof api.LicenseDeniedError)) throw error
@@ -318,14 +324,18 @@ export namespace AudibleUseCase {
 
   /** Trade the player's FairPlay key request for the content key. Relayed
    *  rather than asked by the app: the call is signed with the device
-   *  credentials, which never leave the server. */
+   *  credentials, which never leave the server. `offline` asks for a key the
+   *  device may keep, for a title played from a download licence. */
   export const fairPlayKey = async (
     userId: UserId,
     asin: AudibleAsin,
     spc: string,
+    { offline = false }: { offline?: boolean } = {},
   ): Promise<string | 'not-connected'> =>
     withCredentials(userId, async (credentials) => {
-      const { ckc, credentials: rotated } = await api.fairPlayKey(credentials, asin, spc)
+      const { ckc, credentials: rotated } = await api.fairPlayKey(credentials, asin, spc, {
+        consumption: consumptionOf(offline),
+      })
       return { value: ckc, credentials: rotated }
     })
 
@@ -469,3 +479,7 @@ const recordingOf = async (
   }
   return { credentials: current }
 }
+
+/** How Audible is asked to license a title: kept on the device, or streamed. */
+const consumptionOf = (offline: boolean) =>
+  offline ? ('Download' as const) : ('Streaming' as const)
