@@ -37,8 +37,11 @@ final class NewsViewModel {
     /// Books the reader just took, greyed out at once: a friend's by its book
     /// id, a release by its row id.
     private(set) var taken: Set<String> = []
-    /// Rows whose book the reader just wished for or awaited, by the same keys.
-    private(set) var wished: Set<String> = []
+    /// Rows whose book the reader just wished for or awaited, by the same
+    /// keys, and the awaited editions just taken off the wish list.
+    private(set) var wished = NewsWishes()
+    /// The wish each key's book became, so a second tap takes it back.
+    private var wishIds: [String: String] = [:]
     private(set) var awaited: Set<String> = []
     private(set) var alertsSilenced = false
     private(set) var isInviting = false
@@ -249,9 +252,7 @@ final class NewsViewModel {
     }
 
     func wish(_ event: FeedEvent) async {
-        if await perform({ try await client.wishFriendBook(event.friendId, event.bookId) }) {
-            wished.insert(event.bookId)
-        }
+        await wish(key: event.bookId) { try await $0.wishFriendBook(event.friendId, event.bookId) }
     }
 
     /// Shown awaited at once: the server looks the edition up on the web behind.
@@ -275,8 +276,19 @@ final class NewsViewModel {
     }
 
     func wish(_ item: ReleasedItem) async {
-        if await perform({ try await client.wishReleased(item.draft) }) {
-            wished.insert(item.id)
+        await wish(key: item.id) { try await $0.wishReleased(item.draft) }
+    }
+
+    /// Shown wished at once, as the button's check answers the tap; back if
+    /// the server refused. The wish's id is kept for a second tap.
+    private func wish(key: String, _ write: @escaping (NewsClient) async throws -> String) async {
+        wished.insert(key)
+        let client = client
+        var wishId: String?
+        if await perform({ wishId = try await write(client) }) {
+            wishIds[key] = wishId
+        } else {
+            wished.remove(key)
         }
     }
 
@@ -295,17 +307,38 @@ final class NewsViewModel {
         case let .friend(move): await wish(move.lead)
         case let .released(item): await wish(item)
         case let .upcoming(release):
-            if await perform({ try await client.wishReleased(ReleasedItem.release(release, day: .now).draft) }) {
-                wished.insert(card.key)
-            }
+            let draft = ReleasedItem.release(release, day: .now).draft
+            await wish(key: card.key) { try await $0.wishReleased(draft) }
         case let .suggestion(suggestion):
             var draft = suggestion.draft
             draft.coverURL = suggestion.coverURL
-            if await perform({ try await client.wishDiscovery(draft, .discovery) }) { wished.insert(card.key) }
+            await wish(key: card.key) { [draft] in try await $0.wishDiscovery(draft, .discovery) }
         case let .award(winner):
             var draft = winner.draft
             draft.coverURL = winner.coverURL
-            if await perform({ try await client.wishDiscovery(draft, .award) }) { wished.insert(card.key) }
+            await wish(key: card.key) { [draft] in try await $0.wishDiscovery(draft, .award) }
+        }
+    }
+
+    /// A second tap on the wished "Envies": the wish made here is taken back,
+    /// an edition of the wish list's rail stops being awaited — as "Retirer"
+    /// does on the wish list. The button turns back at once; back again if
+    /// the server refused.
+    func unwish(_ card: NewsCard) async {
+        let key = card.key
+        let client = client
+        if let wishId = wishIds[key] {
+            wished.remove(key)
+            if await perform({ try await client.removeWish(wishId) }) {
+                wishIds[key] = nil
+            } else {
+                wished.insert(key)
+            }
+        } else if let editionId = card.awaitedEditionId {
+            wished.drop(key)
+            if !(await perform({ try await client.stopAwaiting(editionId) })) {
+                wished.restore(key)
+            }
         }
     }
 

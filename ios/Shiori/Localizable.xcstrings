@@ -2265,6 +2265,22 @@
         }
       }
     },
+    "Ajoute le livre à vos envies" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adds the book to your wishlist"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajoute le livre à vos envies"
+          }
+        }
+      }
+    },
     "Ajouter" : {
       "localizations" : {
         "en" : {
@@ -6751,6 +6767,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Envie"
+          }
+        }
+      }
+    },
+    "Envies" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wishlist"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Envies"
           }
         }
       }
@@ -13291,6 +13323,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Restaurer mes achats"
+          }
+        }
+      }
+    },
+    "Retire le livre de vos envies" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Removes the book from your wishlist"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Retire le livre de vos envies"
           }
         }
       }

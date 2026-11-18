@@ -4,8 +4,10 @@ import SwiftUI
 enum NewsAction {
     /// A card's book, on the page the rest of the app opens it on.
     case open(NewsCard)
-    /// "+": the card's book onto the wish list.
+    /// "Envies": the card's book onto the wish list.
     case wish(NewsCard)
+    /// "Dans vos envies" tapped again: off the wish list.
+    case unwish(NewsCard)
     /// "Pas intéressé" on a discovery or a prize.
     case dismiss(NewsCard)
     /// The "+" of a large card: onto the pile or among the books read, in
@@ -34,7 +36,7 @@ enum NewsAction {
 struct NewsPage: View {
     let agenda: NewsAgenda
     /// The cards' books just wished for, by `NewsCard.key`.
-    var wished: Set<String> = []
+    var wished: NewsWishes = []
     let isLoading: Bool
     let errorMessage: String?
     let alertsSilenced: Bool
@@ -127,10 +129,9 @@ struct NewsPage: View {
         }
     }
 
-    /// The winners still to decide on: one added or turned down leaves.
-    private var prizes: [NewsCard] {
-        agenda.prizes.filter { !wished.contains($0.key) }
-    }
+    /// The winners still to decide on. One wished for stays, "Dans vos
+    /// envies", so a second tap can take it back.
+    private var prizes: [NewsCard] { agenda.prizes }
 
     /// The friends, the prizes, then a rail per follow, each left out when it
     /// holds nothing.
@@ -208,7 +209,7 @@ struct NewsAgendaSection: View {
     /// The first day on screen, for the backdrop's colours.
     @Binding var lead: Date?
     /// The cards' books just wished for, by `NewsCard.key`.
-    var wished: Set<String> = []
+    var wished: NewsWishes = []
     let onAction: (NewsAction) async -> Void
 
     /// The days whose covers are on screen.
@@ -273,7 +274,7 @@ struct NewsAgendaSection: View {
                 LazyHStack(alignment: .top, spacing: entries.count <= NewsShelf.cardLimit ? 12 : 13) {
                     ForEach(entries) { entry in
                         if entries.count <= NewsShelf.cardLimit {
-                            NewsLargeCard(item: entry.item, isWished: wished.contains(entry.item.card.key), onAction: onAction)
+                            NewsLargeCard(item: entry.item, isWished: wished.isWished(entry.item), onAction: onAction)
                                 .containerRelativeFrame(.horizontal) { width, _ in
                                     SeriesReleaseCard.railWidth(width, count: entries.count)
                                 }
@@ -392,7 +393,7 @@ private struct NewsDayLeaf: View {
 /// A day's first news, large: its cover edge to edge on the leading side,
 /// over the cover's own colours the emblem of what brought it — the prize
 /// between its laurels, the friend, the follow — the title, the author, and
-/// at the foot the large cards' buttons: "Liste d'envies", "+", and "Pas
+/// at the foot the large cards' buttons: "Envies", "+", and "Pas
 /// intéressé" for a prize.
 private struct NewsAgendaLead: View {
     let card: NewsCard
@@ -491,11 +492,11 @@ private struct NewsCardEmblem: View {
 
 /// The year's prizes, one winner a page: the day's large card, its cover the
 /// card's height, the prize between its laurels — both, when it won two —
-/// "Liste d'envies", "+" and "Pas intéressé"; the next card peeks at the edge,
+/// "Envies", "+" and "Pas intéressé"; the next card peeks at the edge,
 /// which says enough that more follow.
 struct NewsPrizesSlider: View {
     let cards: [NewsCard]
-    var wished: Set<String> = []
+    var wished: NewsWishes = []
     let onAction: (NewsAction) async -> Void
 
     var body: some View {

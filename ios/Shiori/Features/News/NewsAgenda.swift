@@ -50,6 +50,14 @@ enum NewsCard: Identifiable, Hashable, Sendable {
     }
 
     /// A "Pas intéressé" the server keeps: the month's discovery and a prize.
+    /// The awaited edition an announced card of the wish list's rail stands
+    /// for: its id is the server's `awaited~<editionId>`.
+    var awaitedEditionId: String? {
+        guard case let .upcoming(release) = self, release.source == .awaited else { return nil }
+        let parts = release.id.split(separator: "~", maxSplits: 1)
+        return parts.count == 2 && parts[0] == "awaited" ? String(parts[1]) : nil
+    }
+
     var isDismissable: Bool {
         switch self {
         case .suggestion, .award: true
@@ -236,4 +244,31 @@ enum NewsDiscoverPicks {
             .sorted { ($0.mentions.first?.year ?? 0) > ($1.mentions.first?.year ?? 0) }
             .filter { seen.insert($0.id).inserted }
     }
+}
+
+/// What the reader made of the cards' wish button on this visit: the books
+/// just wished for, by `NewsCard.key`, and the awaited editions of the wish
+/// list's rail just taken off it, which their card no longer shows wished.
+struct NewsWishes: Equatable, ExpressibleByArrayLiteral {
+    private var added: Set<String> = []
+    private var dropped: Set<String> = []
+
+    init(arrayLiteral keys: String...) { added = Set(keys) }
+
+    func contains(_ key: String) -> Bool { added.contains(key) }
+
+    /// A large card's state: wished here, or awaited already and not taken off.
+    func isWished(_ item: NewsShelfItem) -> Bool {
+        let key = item.card.key
+        return added.contains(key) || (item.isAwaited && !dropped.contains(key))
+    }
+
+    mutating func insert(_ key: String) {
+        added.insert(key)
+        dropped.remove(key)
+    }
+
+    mutating func remove(_ key: String) { added.remove(key) }
+    mutating func drop(_ key: String) { dropped.insert(key) }
+    mutating func restore(_ key: String) { dropped.remove(key) }
 }

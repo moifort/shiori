@@ -8,7 +8,7 @@ struct NewsShelf: View {
     let items: [NewsShelfItem]
     var onMore: (() -> Void)?
     /// The cards' books just wished for, by `NewsCard.key`.
-    var wished: Set<String> = []
+    var wished: NewsWishes = []
     let onAction: (NewsAction) async -> Void
 
     /// How many books a shelf still draws as large cards.
@@ -30,14 +30,14 @@ struct NewsShelf: View {
 /// from two on each is narrower so the next one peeks in.
 struct NewsCardRow: View {
     let items: [NewsShelfItem]
-    var wished: Set<String> = []
+    var wished: NewsWishes = []
     let onAction: (NewsAction) async -> Void
 
     var body: some View {
         ScrollView(.horizontal) {
             LazyHStack(alignment: .top, spacing: 12) {
                 ForEach(items) { item in
-                    NewsLargeCard(item: item, isWished: wished.contains(item.card.key), onAction: onAction)
+                    NewsLargeCard(item: item, isWished: wished.isWished(item), onAction: onAction)
                         .containerRelativeFrame(.horizontal) { width, _ in
                             SeriesReleaseCard.railWidth(width, count: items.count)
                         }
@@ -56,7 +56,7 @@ struct NewsCardRow: View {
 /// side, the person it is shown for in a pill on the cover's top and what
 /// happened at its foot, as the covers of a rail say it; beside it the title,
 /// the author, the outlined tags — how long is left, "Audio", a foreign
-/// language — and at the foot "Liste d'envies" and the "+" of the other ways
+/// language — and at the foot "Envies" and the "+" of the other ways
 /// to take it. A release's day sits in the corner as a calendar leaf.
 struct NewsLargeCard: View {
     let item: NewsShelfItem
@@ -106,7 +106,7 @@ struct NewsLargeCard: View {
                 Spacer(minLength: 8)
                 NewsCardButtons(
                     card: card,
-                    isWished: isWished || item.isAwaited,
+                    isWished: isWished,
                     onAction: onAction
                 )
             }
@@ -144,11 +144,13 @@ struct NewsLargeCard: View {
     }
 }
 
-/// The foot of a large card: "Liste d'envies" in white — "Dans vos envies"
-/// once there —, the "+" of the other ways to take the book, and for a prize
-/// or a discovery "Pas intéressé". Where the three do not fit beside a rail
-/// card's cover, the wish keeps its white but loses its words, so the card
-/// never grows past its frame over the next one.
+/// The foot of a large card: "Envies" in white — on glass with a check once
+/// there, the same word at the same width, which a second tap takes back —, the "+" that opens the book
+/// page's own add menu, and for a prize or a discovery "Pas intéressé". The
+/// wish answers its tap at once: the bookmark fills and bounces, gives way
+/// to the check, and the phone taps back; nothing else pops up. Where the
+/// three do not fit beside a rail card's cover, the wish keeps its colour but
+/// loses its words, so the card never grows past its frame over the next one.
 struct NewsCardButtons: View {
     let card: NewsCard
     var isWished = false
@@ -159,23 +161,29 @@ struct NewsCardButtons: View {
             row(isCompact: false)
             row(isCompact: true)
         }
+        .sensoryFeedback(trigger: isWished) { _, wished in
+            wished ? .success : .impact(weight: .light)
+        }
     }
 
     private func row(isCompact: Bool) -> some View {
         HStack(spacing: 8) {
             Button {
-                Task { await onAction(.wish(card)) }
+                Task { await onAction(isWished ? .unwish(card) : .wish(card)) }
             } label: {
                 Group {
                     if isCompact {
-                        Image(systemName: isWished ? "checkmark" : "bookmark")
+                        wishSymbol
                             .frame(width: 30, height: 30)
                     } else {
-                        Label(isWished ? "Dans vos envies" : "Liste d'envies", systemImage: isWished ? "checkmark" : "bookmark")
-                            .lineLimit(1)
-                            .fixedSize()
-                            .padding(.horizontal, 13)
-                            .frame(height: 30)
+                        HStack(spacing: 6) {
+                            wishSymbol
+                            Text("Envies")
+                        }
+                        .lineLimit(1)
+                        .fixedSize()
+                        .padding(.horizontal, 13)
+                        .frame(height: 30)
                     }
                 }
                 .font(.footnote.weight(.semibold))
@@ -188,22 +196,24 @@ struct NewsCardButtons: View {
                         Capsule().fill(.white)
                     }
                 }
+                .animation(.bouncy(duration: 0.35), value: isWished)
             }
-            .buttonStyle(.plain)
-            // Not greyed: the wish is made, and the capsule says so in white.
-            .allowsHitTesting(!isWished)
-            .accessibilityLabel(isWished ? "Dans vos envies" : "Liste d'envies")
-            .accessibilityAddTraits(isWished ? .isStaticText : [])
+            .buttonStyle(NewsWishButtonStyle())
+            .accessibilityLabel(isWished ? "Dans vos envies" : "Envies")
+            .accessibilityHint(isWished ? "Retire le livre de vos envies" : "Ajoute le livre à vos envies")
             .accessibilityIdentifier("news-card-wish")
             if !formats.isEmpty || !awaitable.isEmpty {
+                // The book page's add menu as it stands — the friend's book
+                // hero opens the same items —, the wish included.
                 Menu {
                     BookAddMenuItems(
                         formats: formats,
                         owned: false,
                         awaitable: awaitable,
                         onAdd: { status, format in await onAction(.add(card, status, format)) },
+                        wished: isWished,
                         onAwait: { format in Task { await onAction(.awaitEdition(card, format)) } },
-                        showsWish: false
+                        onWish: { await onAction(.wish(card)) }
                     )
                 } label: {
                     circle("plus")
@@ -225,6 +235,14 @@ struct NewsCardButtons: View {
         }
     }
 
+    /// The bookmark, filled as the finger lands, then the check: one symbol
+    /// replaced in place, with a bounce on each change.
+    private var wishSymbol: some View {
+        Image(systemName: isWished ? "checkmark" : "bookmark")
+            .contentTransition(.symbolEffect(.replace.magic(fallback: .downUp)))
+            .symbolEffect(.bounce, options: .nonRepeating, value: isWished)
+    }
+
     private func circle(_ symbol: String) -> some View {
         Image(systemName: symbol)
             .font(.footnote.weight(.semibold))
@@ -241,9 +259,15 @@ struct NewsCardButtons: View {
         return [card.cover.format]
     }
 
-    /// The edition in the phone's language, awaited: offered for a book read
+    /// The editions that may be awaited: those the page of a discovery or a
+    /// prize offers, otherwise the one in the phone's language for a book read
     /// in another.
     private var awaitable: [ReleaseFormat] {
+        switch card {
+        case let .suggestion(suggestion): return suggestion.awaitableFormats
+        case let .award(winner): return winner.awaitableFormats
+        default: break
+        }
         guard let language = card.cover.language, language.isForeign else { return [] }
         return [card.cover.format == .audiobook ? .audiobook : .book]
     }
@@ -276,5 +300,15 @@ struct NewsPersonPill: View {
         .glassEffect(.regular, in: .capsule)
         .environment(\.colorScheme, .dark)
         .frame(maxWidth: maxWidth, alignment: .leading)
+    }
+}
+
+/// The wish capsule pressed: it sinks a little under the finger and springs
+/// back, so the tap is felt before the server answers.
+private struct NewsWishButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.92 : 1)
+            .animation(.bouncy(duration: 0.3), value: configuration.isPressed)
     }
 }

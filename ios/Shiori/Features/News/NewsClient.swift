@@ -12,12 +12,14 @@ struct NewsClient: Sendable {
     /// A friend's book onto the reader's pile or among the books read, in the
     /// format they take it in.
     var addFriendBook: @Sendable (_ friendId: String, _ bookId: String, CopiedStatus, BookFormat) async throws -> Void
-    var wishFriendBook: @Sendable (_ friendId: String, _ bookId: String) async throws -> Void
+    /// A friend's book onto the wish list; answers the wish's id, which a
+    /// second tap on the wished "Envies" takes back.
+    var wishFriendBook: @Sendable (_ friendId: String, _ bookId: String) async throws -> String
     /// The friend's book's edition awaited in the app's language.
     var awaitFriendBook: @Sendable (_ friendId: String, _ bookId: String, ReleaseFormat) async throws -> Void
     /// A book out lately onto the shelf, as its row describes it.
     var addReleased: @Sendable (BookDraft) async throws -> Void
-    var wishReleased: @Sendable (BookDraft) async throws -> Void
+    var wishReleased: @Sendable (BookDraft) async throws -> String
     var awaitReleased: @Sendable (BookDraft, ReleaseFormat) async throws -> Void
     /// Whether nothing can reach the reader: the bell is struck through.
     var alertsSilenced: @Sendable () async -> Bool
@@ -33,7 +35,11 @@ struct NewsClient: Sendable {
     /// error, and each section is asked alone through the closures above.
     var opening: (@Sendable (_ limit: Int) async throws -> NewsOpening)? = nil
     /// A discovery or a prize onto the wish list.
-    var wishDiscovery: @Sendable (BookDraft, Wish.Origin) async throws -> Void = { _, _ in }
+    var wishDiscovery: @Sendable (BookDraft, Wish.Origin) async throws -> String = { _, _ in "" }
+    /// A wish taken back, from a second tap on the wished "Envies".
+    var removeWish: @Sendable (_ wishId: String) async throws -> Void = { _ in }
+    /// An awaited edition of the wish list's rail no longer awaited.
+    var stopAwaiting: @Sendable (_ editionId: String) async throws -> Void = { _ in }
     /// "Pas intéressé" on the month's discovery.
     var dismissSuggestion: @Sendable (_ id: String) async throws -> Void = { _ in }
     /// "Pas intéressé" on a prize's winner.
@@ -50,20 +56,22 @@ extension NewsClient {
             _ = try await FriendsAPI.addBook(friendId: friendId, bookId: bookId, status: status, format: format)
         },
         wishFriendBook: { friendId, bookId in
-            _ = try await WishlistAPI.wish(friendId: friendId, bookId: bookId)
+            try await WishlistAPI.wish(friendId: friendId, bookId: bookId).id
         },
         awaitFriendBook: { friendId, bookId, format in
             _ = try await AwaitedAPI.awaitEdition(friendId: friendId, bookId: bookId, format: format)
         },
         addReleased: { draft in _ = try await BookAddition.add(draft, source: .discover) },
-        wishReleased: { draft in _ = try await WishlistAPI.wish(draft, origin: .discovery) },
+        wishReleased: { draft in try await WishlistAPI.wish(draft, origin: .discovery).id },
         awaitReleased: { draft, format in _ = try await AwaitedAPI.awaitScanned(draft, format: format) },
         alertsSilenced: { await DiscoverClient.live.alertsSilenced() },
         invite: { try await FriendsAPI.invite() },
         awards: { try await AwardsAPI.sections(format: .book) },
         discoveries: { try await SuggestionsAPI.monthly(format: .book, lookUp: false).suggestions },
         opening: { try await NewsAPI.opening(limit: $0) },
-        wishDiscovery: { draft, origin in _ = try await WishlistAPI.wish(draft, origin: origin) },
+        wishDiscovery: { draft, origin in try await WishlistAPI.wish(draft, origin: origin).id },
+        removeWish: { try await WishlistAPI.remove(id: $0) },
+        stopAwaiting: { try await AwaitedAPI.stop(id: $0) },
         dismissSuggestion: { try await SuggestionsAPI.dismiss(id: $0, reason: .notInterested) },
         dismissWinner: { try await AwardsAPI.dismiss(key: $0) }
     )
@@ -76,10 +84,10 @@ extension NewsClient {
         yearReleases: { UpcomingRelease.previews },
         narratorNews: { [.preview] },
         addFriendBook: { _, _, _, _ in },
-        wishFriendBook: { _, _ in },
+        wishFriendBook: { _, _ in "preview-wish" },
         awaitFriendBook: { _, _, _ in },
         addReleased: { _ in },
-        wishReleased: { _ in },
+        wishReleased: { _ in "preview-wish" },
         awaitReleased: { _, _ in },
         alertsSilenced: { false },
         invite: { .preview },

@@ -70,6 +70,7 @@ struct NewsScreen: View {
         switch action {
         case let .open(card): openCard(card)
         case let .wish(card): await viewModel.wish(card)
+        case let .unwish(card): await viewModel.unwish(card)
         case let .dismiss(card): await viewModel.dismiss(card)
         case let .add(card, status, format): await viewModel.add(card, status, as: format)
         case let .awaitEdition(card, format): await viewModel.awaitEdition(card, format)

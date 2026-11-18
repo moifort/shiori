@@ -177,6 +177,48 @@ struct NewsViewModelTests {
         #expect(viewModel.wished.contains(item.id))
     }
 
+    @Test func aSecondTapTakesTheWishBack() async {
+        let removed = Calls()
+        var client = NewsClient.preview
+        client.wishReleased = { _ in "wish-1" }
+        client.removeWish = { removed.record($0) }
+        let viewModel = NewsViewModel(client: client, caching: false)
+        let card = NewsCard.upcoming(UpcomingRelease.authorPreview)
+
+        await viewModel.wish(card)
+        #expect(viewModel.wished.contains(card.key))
+
+        await viewModel.unwish(card)
+        #expect(!viewModel.wished.contains(card.key))
+        #expect(removed.all == ["wish-1"])
+    }
+
+    @Test func aRefusedWishTurnsTheButtonBack() async {
+        var client = NewsClient.preview
+        client.wishReleased = { _ in throw Boom() }
+        let viewModel = NewsViewModel(client: client, caching: false)
+        let card = NewsCard.upcoming(UpcomingRelease.authorPreview)
+
+        await viewModel.wish(card)
+
+        #expect(!viewModel.wished.contains(card.key))
+    }
+
+    @Test func anAwaitedEditionLeavesTheWishListOnASecondTap() async {
+        let stopped = Calls()
+        var client = NewsClient.preview
+        client.stopAwaiting = { stopped.record($0) }
+        let viewModel = NewsViewModel(client: client, caching: false)
+        let release = UpcomingRelease.releasedPreviews[1]
+        let item = NewsShelfItem(card: .upcoming(release), caption: "")
+        #expect(viewModel.wished.isWished(item))
+
+        await viewModel.unwish(item.card)
+
+        #expect(!viewModel.wished.isWished(item))
+        #expect(stopped.all == ["projet-derniere-chance"])
+    }
+
     @Test func invitingHandsTheInvitationOver() async {
         let viewModel = NewsViewModel(client: .preview, caching: false)
 
