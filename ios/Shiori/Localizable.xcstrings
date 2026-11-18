@@ -2029,6 +2029,38 @@
         }
       }
     },
+    "Actualité" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "News"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Actualité"
+          }
+        }
+      }
+    },
+    "Actualité indisponible" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "News unavailable"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Actualité indisponible"
+          }
+        }
+      }
+    },
     "Actuel" : {
       "localizations" : {
         "en" : {
@@ -4325,16 +4357,16 @@
     },
     "Cette sortie n'est plus annoncée." : {
       "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cette sortie n'est plus annoncée."
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "This release is no longer announced."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cette sortie n'est plus annoncée."
           }
         }
       }
@@ -14129,32 +14161,32 @@
     },
     "Sortie indisponible" : {
       "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sortie indisponible"
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Release unavailable"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sortie indisponible"
           }
         }
       }
     },
     "Sortie introuvable" : {
       "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sortie introuvable"
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Release not found"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sortie introuvable"
           }
         }
       }

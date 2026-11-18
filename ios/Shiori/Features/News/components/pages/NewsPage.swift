@@ -48,10 +48,10 @@ struct NewsPage: View {
 
     var body: some View {
         content
-            .navigationTitle("Découvrir")
+            .navigationTitle("Actualité")
             // The home's bar: the name on the left, the buttons on the right,
             // sent away together by scrolling down.
-            .scrollAwayBar(String(localized: "Découvrir")) {
+            .scrollAwayBar(String(localized: "Actualité")) {
                 ScrollBarButton(
                     title: "Notifications",
                     systemImage: alertsSilenced ? "bell.slash" : "bell"
@@ -67,7 +67,7 @@ struct NewsPage: View {
     @ViewBuilder
     private var content: some View {
         if let errorMessage, agenda.isEmpty, !isLoading {
-            EmptyState.failure("Découvrir indisponible", message: errorMessage) {
+            EmptyState.failure("Actualité indisponible", message: errorMessage) {
                 await onAction(.refresh)
             }
         } else if isLoading, agenda.isEmpty {
