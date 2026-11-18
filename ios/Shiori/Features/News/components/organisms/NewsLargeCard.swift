@@ -67,7 +67,7 @@ struct NewsLargeCard: View {
     /// large card of Actualité stands at, whatever its title or its tags say.
     static let height: CGFloat = 149
     /// The "En cours" card's cover width.
-    static let coverWidth: CGFloat = 96
+    static let coverWidth: CGFloat = ReadingFeatureCard.coverWidth
     /// The calendar leaf's width and its margin, kept clear by the text.
     private static let leafRoom: CGFloat = 58
 
@@ -80,7 +80,10 @@ struct NewsLargeCard: View {
                 label: PosterLabel(caption: item.word, rating: item.rating),
                 width: Self.coverWidth,
                 showsEditionTags: false,
-                corner: 0
+                // Edge to edge over the card's whole height, no rim, as the
+                // "En cours" card: its own corners round it.
+                corner: 0,
+                height: Self.height
             )
             .overlay(alignment: .topLeading) {
                 if item.pillName != nil {

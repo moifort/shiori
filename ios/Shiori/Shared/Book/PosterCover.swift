@@ -32,6 +32,12 @@ struct PosterCover: View {
     var cornerTag: String?
     /// The corners' radius: square inside a card whose own corners round it.
     var corner: CGFloat = PosterCover.cornerRadius
+    /// Stretched to a card's whole height rather than its 2:3 shape, as the
+    /// home's "En cours" card stands its cover: nil keeps the poster's.
+    var height: CGFloat?
+
+    /// The poster's height: its 2:3 shape, or the card's when taller.
+    private var drawnHeight: CGFloat { max(width * 1.5, height ?? 0) }
 
     static let cornerRadius: CGFloat = 8
 
@@ -80,17 +86,28 @@ struct PosterCover: View {
                 .padding(.horizontal, 6)
                 .padding(.bottom, 9)
             }
-            // The thin light rim inside the edge the TV app's posters carry.
+            // The thin light rim inside the edge the TV app's posters carry;
+            // none for a cover set edge to edge in a card, as "En cours" has.
             .overlay {
-                RoundedRectangle(cornerRadius: corner, style: .continuous)
-                    .strokeBorder(.white.opacity(0.22), lineWidth: 1)
+                if corner > 0 {
+                    RoundedRectangle(cornerRadius: corner, style: .continuous)
+                        .strokeBorder(.white.opacity(0.22), lineWidth: 1)
+                }
             }
     }
 
     /// A poster with the line and marks the Library tab gives it.
-    init(book: Book, label: PosterLabel, width: CGFloat = 102, showsEditionTags: Bool = true, corner: CGFloat = PosterCover.cornerRadius) {
+    init(
+        book: Book,
+        label: PosterLabel,
+        width: CGFloat = 102,
+        showsEditionTags: Bool = true,
+        corner: CGFloat = PosterCover.cornerRadius,
+        height: CGFloat? = nil
+    ) {
         self.book = book
         self.corner = corner
+        self.height = height
         caption = label.caption
         self.width = width
         self.showsEditionTags = showsEditionTags
@@ -125,6 +142,7 @@ struct PosterCover: View {
             book: book,
             width: width,
             showsFormatBadge: false,
+            minHeight: height,
             cornerRadius: corner,
             showsPlaceholderAuthor: false
         )
@@ -142,7 +160,7 @@ struct PosterCover: View {
                 url: url,
                 effect: .melt(
                     width: Int(width),
-                    height: Int(width * 1.5),
+                    height: Int(drawnHeight),
                     blur: 20,
                     fadeStart: 0.4,
                     fadeEnd: 0.92,
@@ -151,7 +169,7 @@ struct PosterCover: View {
             ) {
                 standInBlur
             }
-            .frame(width: width, height: width * 1.5)
+            .frame(width: width, height: drawnHeight)
             .saturation(isGreyed ? 0 : 1)
             .clipShape(.rect(cornerRadius: corner, style: .continuous))
             .allowsHitTesting(false)

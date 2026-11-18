@@ -442,7 +442,9 @@ private struct NewsAgendaCover: View {
             .frame(width: width)
             .frame(maxHeight: .infinity)
             .overlay(alignment: .top) {
-                BookCover(book: book, width: width, showsFormatBadge: false, minHeight: width * 1.5, cornerRadius: 0)
+                // The card's whole height, as the "En cours" card stretches its
+                // cover: at its 2:3 alone it stopped short of the foot.
+                BookCover(book: book, width: width, showsFormatBadge: false, minHeight: NewsLargeCard.height, cornerRadius: 0)
             }
             .clipped()
             .accessibilityHidden(true)

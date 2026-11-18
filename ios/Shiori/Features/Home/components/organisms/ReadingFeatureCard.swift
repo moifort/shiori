@@ -29,7 +29,8 @@ struct ReadingFeatureCard: View {
     private static let actionsSpacing: CGFloat = 12
     private static let verticalPadding: CGFloat = 14
 
-    private static let coverWidth: CGFloat = 96
+    /// Its cover's width, which Actualité's large cards share.
+    static let coverWidth: CGFloat = 96
 
     var body: some View {
         HStack(alignment: .top, spacing: 14) {
