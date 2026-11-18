@@ -6,7 +6,8 @@ struct ListeningClient: Sendable {
     var contentKey: @Sendable (_ asin: String, _ spc: Data) async throws -> Data
     var savePosition: @Sendable (_ asin: String, _ contentReference: String, _ position: TimeInterval) async throws -> Void
     /// The audiobook to play once this one ends: the Audible title the reader
-    /// started most recently among those under way, this one aside.
+    /// started most recently among those under way, this one aside; with none
+    /// under way, the one shelved most recently on the pile.
     var nextInProgress: @Sendable (_ after: String) async throws -> ListeningTitle?
 }
 
@@ -16,8 +17,10 @@ extension ListeningClient {
         contentKey: { try await ListeningAPI.contentKey(asin: $0, request: $1) },
         savePosition: { try await ListeningAPI.savePosition(asin: $0, contentReference: $1, at: $2) },
         nextInProgress: { asin in
-            // The home's "En cours", the last one started first.
-            try await HomeAPI.dashboard().reading
+            // The home's "En cours", the last one started first, then its pile,
+            // the last one shelved first.
+            let dashboard = try await HomeAPI.dashboard()
+            return (dashboard.reading + dashboard.toRead)
                 .compactMap(ListeningTitle.init(book:))
                 .first { $0.asin != asin }
         }
