@@ -166,7 +166,12 @@ Runtime: always `bun` / `bunx`, never `npm` / `npx`.
    its own context small, since every child turn wakes it: it checks a ticket with the commits
    first, then the thread, then only the last events of the child's transcript, and never reads
    a whole transcript, renders an artboard or takes a capture
-   ([docs/board.md](docs/board.md)).
+   ([docs/board.md](docs/board.md)). **It clears its own conversation at every lull, and at
+   least once a day**: when no standby is working and no ticket is half handed out, it rewrites
+   its state (the memory file `orchestrator-state.md`: standbys and ids, open tickets, questions
+   waiting on the user), then clears itself and starts again from that file. A standby is
+   briefed with one line pointing at [docs/reserve-brief.md](docs/reserve-brief.md), never the
+   whole text, and ends a turn only when it has something to show or to ask.
 
 ## Paid API calls
 

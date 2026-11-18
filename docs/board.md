@@ -120,6 +120,19 @@ re-reads its context, so that is what its own cost depends on. It checks a ticke
 cheapest proof first: `git log`, then the thread, then the last few events of the child's
 transcript (`list_events` with a small limit), never a whole transcript.
 
+**The parent clears itself at every lull, and at least once a day.** A lull is a moment when no
+standby is working and no ticket is half handed out. Before clearing it rewrites its state in
+the memory file `orchestrator-state.md` (standbys and their ids, open tickets, what waits on the
+user), the first line of the memory index, then clears its own conversation (`clear_session`,
+`self`) and starts again from that file, CLAUDE.md and the memory. Nothing it needs may live only
+in its conversation. What enters it is kept small as well:
+
+- the standby brief is a file, [reserve-brief.md](reserve-brief.md): starting or recycling a
+  standby sends one line pointing at it;
+- only the board session relays board comments; a standby that receives one off its theme does
+  not forward it;
+- a standby ends a turn only for a result or a question, since each turn it ends wakes the parent.
+
 **The parent checks that every ticket it hands out is handled** (CLAUDE.md, Workflow rule 6).
 A child often receives a ticket and never acts on it: the message waits in a queue, or it
 handles one request out of several. The parent keeps the list of the tickets it sent (thread or
