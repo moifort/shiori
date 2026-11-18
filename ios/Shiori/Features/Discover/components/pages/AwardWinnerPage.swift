@@ -54,17 +54,6 @@ struct AwardWinnerPage: View {
                     ToolbarIconButton(title: "Fermer", systemImage: "xmark", role: .cancel) { act(.close) }
                 }
             }
-            // The hero's "+" again, within reach once it has scrolled away.
-            ToolbarItem(placement: .primaryAction) {
-                Menu {
-                    DiscoveryAddActions(item: winner, showsAwait: choices.watch(of: winner).isEmpty) { choose($0, leaving: $1) }
-                } label: {
-                    Label("Ajouter", systemImage: "plus")
-                        .labelStyle(.iconOnly)
-                }
-                .disabled(choices.marks[winner.id] != nil || choices.working[winner.id] != nil)
-                .accessibilityIdentifier("award-winner-menu")
-            }
             ToolbarItem(placement: .primaryAction) {
                 UnownedBookActionsMenu(onChooseCover: { act(.chooseCover) }) {
                     DiscoveryDismissActions(item: winner, choices: choices, onChoice: onChoice)
@@ -75,10 +64,6 @@ struct AwardWinnerPage: View {
 
     private func act(_ action: AwardWinnerAction) {
         Task { await onAction(action) }
-    }
-
-    private func choose(_ choice: DiscoveryChoice, leaving mark: DiscoveryMark) {
-        choices.choose(choice, for: winner, from: .add, leaving: mark, ask: onChoice)
     }
 
     // MARK: - Hero

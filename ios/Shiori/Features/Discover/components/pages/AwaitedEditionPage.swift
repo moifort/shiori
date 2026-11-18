@@ -7,8 +7,6 @@ enum AwaitedEditionAction {
     case add(UnownedBookAddition)
     /// The "+"'s capsule pressed again: off the shelf.
     case undoAdd
-    /// "Envies": onto the wishlist, or off it.
-    case toggleWish
     /// Given up, by the bell once confirmed or by "Retirer": the page
     /// closes behind it.
     case stopAwaiting
@@ -28,7 +26,9 @@ enum AwaitedEditionAction {
 /// ringed. Only what is known is drawn. The bell gives the wait up, asked for
 /// twice as a saga's deletion is, and "Retirer" once the edition is
 /// out and nothing is left to alert on; the Audible sync brings a recording bought
-/// into the library by itself, which ends the wait.
+/// into the library by itself, which ends the wait. No "Envies": an edition
+/// awaited is on the wish list already, and "Retirer" takes it off, ending the
+/// wait with it.
 struct AwaitedEditionPage: View {
     let edition: AwaitedEdition
     /// The edition once described, as a book's page draws it.
@@ -37,7 +37,6 @@ struct AwaitedEditionPage: View {
     var added = false
     /// What the "+" made of it, "Envies" and the refusals that shake them.
     var taken: TakenState? = nil
-    var isWished = false
     var refusals = 0
     var sagaVolumes: [SeriesStripItem] = []
     /// False when the page is pushed: Back closes it, not a Close button.
@@ -68,8 +67,6 @@ struct AwaitedEditionPage: View {
             onClose: { act(.close) },
             additions: [.pile, .read],
             onAdd: { await onAction(.add($0)) },
-            isWished: isWished,
-            onToggleWish: { await onAction(.toggleWish) },
             taken: taken,
             onUndo: { await onAction(.undoAdd) },
             refusals: refusals,

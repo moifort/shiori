@@ -40,7 +40,6 @@ struct AwaitedEditionScreen: View {
             isDescribing: viewModel.isDescribing,
             added: viewModel.added,
             taken: viewModel.taken,
-            isWished: viewModel.isWished,
             refusals: viewModel.refusals,
             sagaVolumes: viewModel.sagaVolumes,
             showsClose: closing.showsCloseButton
@@ -52,8 +51,6 @@ struct AwaitedEditionScreen: View {
                 await viewModel.add(addition)
             case .undoAdd:
                 await viewModel.undoAdd()
-            case .toggleWish:
-                await viewModel.toggleWish()
             case .stopAwaiting:
                 if let onStop {
                     onStop()

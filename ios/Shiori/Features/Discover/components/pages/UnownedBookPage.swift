@@ -136,25 +136,6 @@ struct UnownedBookPage: View {
                     ToolbarIconButton(title: "Fermer", systemImage: "xmark", role: .cancel, action: onClose)
                 }
             }
-            // The hero's "+" again, within reach once it has scrolled away.
-            if let isAdded = offeredAddition {
-                ToolbarItem(placement: .primaryAction) {
-                    if additions.count > 1 {
-                        Menu {
-                            additionButtons(withWish: isWished == nil)
-                        } label: {
-                            Label("Ajouter", systemImage: "plus")
-                                .labelStyle(.iconOnly)
-                        }
-                        .disabled(isAdded || adding || taken != nil)
-                        .accessibilityIdentifier("unowned-toolbar-add")
-                    } else {
-                        AsyncToolbarButton(title: "Ajouter à ma pile", systemImage: "plus") { await onAdd(.pile) }
-                            .disabled(isAdded)
-                            .accessibilityIdentifier("unowned-toolbar-add")
-                    }
-                }
-            }
             if let onChooseCover {
                 ToolbarItem(placement: .primaryAction) {
                     UnownedBookActionsMenu(onChooseCover: onChooseCover)
@@ -171,8 +152,10 @@ struct UnownedBookPage: View {
             state: state,
             stateTag: stateTag,
             showsLength: false,
-            releaseDate: releaseDate,
-            countdown: releaseDate.flatMap { ReleaseDateText.countdown($0) }
+            // The day pinned in the corner while it is to come only: once
+            // out, the detail line says when.
+            releaseDate: isUpcoming ? releaseDate : nil,
+            countdown: isUpcoming ? releaseDate.flatMap { ReleaseDateText.countdown($0) } : nil
         ) {
             HStack(spacing: 10) {
                 GlassEffectContainer(spacing: 10) {

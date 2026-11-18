@@ -55,17 +55,6 @@ struct SuggestionPage: View {
                     ToolbarIconButton(title: "Fermer", systemImage: "xmark", role: .cancel) { act(.close) }
                 }
             }
-            // The hero's "+" again, within reach once it has scrolled away.
-            ToolbarItem(placement: .primaryAction) {
-                Menu {
-                    DiscoveryAddActions(item: suggestion, showsAwait: choices.watch(of: suggestion).isEmpty) { choose($0, leaving: $1) }
-                } label: {
-                    Label("Ajouter", systemImage: "plus")
-                        .labelStyle(.iconOnly)
-                }
-                .disabled(choices.marks[suggestion.id] != nil || choices.working[suggestion.id] != nil)
-                .accessibilityIdentifier("suggestion-toolbar-add")
-            }
             ToolbarItem(placement: .primaryAction) {
                 UnownedBookActionsMenu(onChooseCover: { act(.chooseCover) }) {
                     DiscoveryDismissActions(item: suggestion, choices: choices, onChoice: onChoice)
@@ -76,10 +65,6 @@ struct SuggestionPage: View {
 
     private func act(_ action: SuggestionAction) {
         Task { await onAction(action) }
-    }
-
-    private func choose(_ choice: DiscoveryChoice, leaving mark: DiscoveryMark) {
-        choices.choose(choice, for: suggestion, from: .add, leaving: mark, ask: onChoice)
     }
 
     // MARK: - Hero
