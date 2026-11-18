@@ -22,7 +22,7 @@ enum NewsAction {
 /// cœur and the releases of what the reader follows, out in the last twenty
 /// days or due in the next thirty; then a strip of the days that bring
 /// something, a month back and every announced day ahead, each with a dot per piece of
-/// news, and the day picked as a rail of covers; then what each friend did
+/// news, over every day's covers in one rail the strip follows; then what each friend did
 /// last, the friends' coups de cœur, the year's prizes one winner a page, and
 /// a shelf per follow — the followed series, the favourite authors and
 /// narrators, the wish list. Every rail is left out when empty.
@@ -35,17 +35,15 @@ struct NewsPage: View {
     let alertsSilenced: Bool
     let onAction: (NewsAction) async -> Void
 
-    @State private var picked: Date?
+    /// The first day whose covers are on the agenda's rail.
+    @State private var lead: Date?
 
     private func act(_ action: NewsAction) {
         Task { await onAction(action) }
     }
 
-    private var pickedDay: Date? {
-        agenda.days.contains { $0.day == picked } ? picked : agenda.openingDay
-    }
     private var day: NewsAgendaDay? {
-        agenda.days.first { $0.day == pickedDay }
+        agenda.days.first { $0.day == (lead ?? agenda.openingDay) }
     }
 
     var body: some View {
@@ -89,16 +87,14 @@ struct NewsPage: View {
                             NewsTileRail(title: "À la une", items: agenda.headlines, onAction: onAction)
                                 .padding(.bottom, 30)
                         }
-                        if let pickedDay {
-                            NewsDayStrip(
+                        if !agenda.days.isEmpty {
+                            NewsAgendaSection(
                                 days: agenda.days,
                                 today: agenda.today,
-                                picked: Binding(get: { pickedDay }, set: { picked = $0 })
+                                opening: agenda.openingDay,
+                                lead: $lead,
+                                onAction: onAction
                             )
-                        }
-                        if let day {
-                            NewsDaySection(day: day, today: agenda.today, onAction: onAction)
-                                .padding(.top, 22)
                         }
                     }
                     .environment(\.colorScheme, .dark)
@@ -188,49 +184,123 @@ struct NewsPage: View {
 
 // MARK: - L'agenda
 
-/// The days that bring something, oldest first, drawn as a release's calendar
-/// leaf: the day picked in white, today ringed, a dot under each for its news,
-/// the month over the first leaf of each. It scrolls sideways and opens on the
-/// day picked.
-struct NewsDayStrip: View {
+/// The agenda: its title, the strip of the days that bring something — the
+/// month over the first leaf of each, a dot under each leaf for its news — and
+/// under the strip every day's covers in one rail, oldest first, with no end
+/// ahead. The rail opens on the opening day's covers; as it scrolls, the days
+/// whose covers are on screen turn white in the strip, which follows it; a
+/// leaf brings the rail to its day.
+struct NewsAgendaSection: View {
     let days: [NewsAgendaDay]
     let today: Date
-    @Binding var picked: Date
+    let opening: Date?
+    /// The first day on screen, for the backdrop's colours.
+    @Binding var lead: Date?
+    let onAction: (NewsAction) async -> Void
+
+    /// The days whose covers are on screen.
+    @State private var shown: Set<Date> = []
+    /// Whether the rail has been moved by the reader: until then it rests on
+    /// the opening day, whatever the first layout passes report.
+    @State private var isMoved = false
+    @State private var rail = ScrollPosition(idType: String.self)
+    @State private var strip = ScrollPosition(idType: Date.self)
+
+    struct Entry: Identifiable {
+        let id: String
+        let day: Date
+        let item: NewsShelfItem
+    }
+
+    /// Every day's covers in a row, each keyed by its day so a card news on
+    /// two days keeps two places.
+    static func entries(_ days: [NewsAgendaDay]) -> [Entry] {
+        days.flatMap { day in
+            day.cards.map { card in
+                Entry(
+                    id: "\(Int(day.day.timeIntervalSinceReferenceDate))~\(card.id)",
+                    day: day.day,
+                    item: NewsShelves.item(card, calendar: .current)
+                )
+            }
+        }
+    }
 
     var body: some View {
+        let entries = Self.entries(days)
         VStack(alignment: .leading, spacing: 10) {
             Text("L'agenda")
                 .font(.title2.weight(.bold))
+                .foregroundStyle(.white)
                 .padding(.horizontal, 20)
-            .foregroundStyle(.white)
-            ScrollViewReader { proxy in
-                ScrollView(.horizontal) {
-                    HStack(alignment: .top, spacing: 10) {
-                        ForEach(Array(days.enumerated()), id: \.element.id) { index, day in
-                            VStack(alignment: .leading, spacing: 6) {
-                                Text(Self.opensMonth(index, in: days) ? Self.month(day.day) : " ")
-                                    .font(.system(size: 11, weight: .bold))
-                                    .tracking(0.6)
-                                    .foregroundStyle(.white.opacity(0.6))
-                                    .fixedSize()
-                                    .frame(width: 45, alignment: .leading)
-                                    .accessibilityHidden(true)
-                                NewsDayLeaf(
-                                    day: day,
-                                    isToday: day.day == today,
-                                    isPicked: day.day == picked
-                                ) { picked = day.day }
+            ScrollView(.horizontal) {
+                HStack(alignment: .top, spacing: 10) {
+                    ForEach(Array(days.enumerated()), id: \.element.id) { index, day in
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text(Self.opensMonth(index, in: days) ? Self.month(day.day) : " ")
+                                .font(.system(size: 11, weight: .bold))
+                                .tracking(0.6)
+                                .foregroundStyle(.white.opacity(0.6))
+                                .fixedSize()
+                                .frame(width: 45, alignment: .leading)
+                                .accessibilityHidden(true)
+                            NewsDayLeaf(day: day, isToday: day.day == today, isPicked: shown.contains(day.day)) {
+                                bring(day.day, entries: entries)
                             }
-                            .id(day.day)
                         }
+                        .id(day.day)
                     }
-                    .padding(.horizontal, 20)
-                    .scrollTargetLayout()
                 }
-                .scrollIndicators(.hidden)
-                .onAppear { proxy.scrollTo(picked, anchor: .center) }
+                .scrollTargetLayout()
+            }
+            .contentMargins(.horizontal, 20, for: .scrollContent)
+            .scrollPosition($strip)
+            .scrollIndicators(.hidden)
+            ScrollView(.horizontal) {
+                LazyHStack(alignment: .top, spacing: 13) {
+                    ForEach(entries) { entry in
+                        NewsPersonTile(item: entry.item) { Task { await onAction(.open(entry.item.card)) } }
+                            .id(entry.id)
+                    }
+                }
+                .scrollTargetLayout()
+            }
+            .contentMargins(.horizontal, 20, for: .scrollContent)
+            .scrollTargetBehavior(.viewAligned)
+            .scrollPosition($rail)
+            .scrollIndicators(.hidden)
+            .onScrollPhaseChange { _, phase in
+                if phase == .interacting { isMoved = true }
+            }
+            .onScrollTargetVisibilityChange(idType: String.self, threshold: 0.5) { ids in
+                guard isMoved else { return }
+                let visible = Set(ids)
+                let onScreen = Set(entries.filter { visible.contains($0.id) }.map(\.day))
+                guard !onScreen.isEmpty, onScreen != shown else { return }
+                shown = onScreen
+                lead = onScreen.min()
+                if let first = onScreen.min() {
+                    withAnimation(.smooth) { strip.scrollTo(id: first, anchor: .leading) }
+                }
+            }
+            .padding(.top, 4)
+        }
+        .onAppear {
+            guard shown.isEmpty, let opening else { return }
+            shown = [opening]
+            lead = opening
+            strip.scrollTo(id: opening, anchor: .leading)
+            if let first = entries.first(where: { $0.day == opening }) {
+                rail.scrollTo(id: first.id, anchor: .leading)
             }
         }
+    }
+
+    /// Brings the rail to the day's first cover.
+    private func bring(_ day: Date, entries: [Entry]) {
+        guard let first = entries.first(where: { $0.day == day }) else { return }
+        isMoved = true
+        withAnimation(.smooth) { rail.scrollTo(id: first.id, anchor: .leading) }
     }
 
     /// Whether the leaf at `index` is the first of its month.
@@ -241,6 +311,12 @@ struct NewsDayStrip: View {
     /// "NOV.", over the month's first leaf.
     static func month(_ day: Date) -> String {
         day.formatted(.dateTime.month(.abbreviated)).localizedUppercase
+    }
+
+    /// "3 nouvelles", "1 nouvelle", for VoiceOver on the strip's leaf.
+    static func count(_ day: NewsAgendaDay) -> String {
+        let count = day.cards.count
+        return count == 1 ? String(localized: "1 nouvelle") : String(localized: "\(count) nouvelles")
     }
 }
 
@@ -287,61 +363,8 @@ private struct NewsDayLeaf: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text(day.day.formatted(.dateTime.weekday(.wide).day().month(.wide))))
-        .accessibilityValue(Text(NewsDaySection.count(day, isFuture: false)))
+        .accessibilityValue(Text(NewsAgendaSection.count(day)))
         .accessibilityAddTraits(isPicked ? .isSelected : [])
-    }
-}
-
-// MARK: - Le jour
-
-/// The day picked: its name over its news as a rail of covers; a quiet day
-/// says so.
-struct NewsDaySection: View {
-    let day: NewsAgendaDay
-    let today: Date
-    let onAction: (NewsAction) async -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(Self.title(day.day, today: today))
-                .font(.title2.weight(.bold))
-                .foregroundStyle(.white)
-                .padding(.horizontal, 20)
-            if day.cards.isEmpty {
-                Text(day.day > today ? "Rien d'annoncé ce jour-là." : "Rien de neuf ce jour-là.")
-                    .font(.subheadline)
-                    .foregroundStyle(.white.opacity(0.7))
-                    .padding(.horizontal, 20)
-            } else {
-                NewsTileRow(items: day.cards.map { NewsShelves.item($0, calendar: .current) }, onAction: onAction)
-            }
-        }
-    }
-
-    /// "Aujourd'hui", "Hier", "Demain", else "Jeudi 12 novembre".
-    static func title(_ day: Date, today: Date, calendar: Calendar = .current) -> String {
-        let offset = calendar.dateComponents([.day], from: today, to: day).day ?? 0
-        switch offset {
-        case 0: return String(localized: "Aujourd'hui")
-        case -1: return String(localized: "Hier")
-        case 1: return String(localized: "Demain")
-        default: return day.formatted(.dateTime.weekday(.wide).day().month(.wide)).capitalizedFirst
-        }
-    }
-
-    /// "3 nouvelles", "1 sortie", for VoiceOver on the strip's leaf.
-    static func count(_ day: NewsAgendaDay, isFuture: Bool) -> String {
-        let count = day.cards.count
-        if isFuture { return count == 1 ? String(localized: "1 sortie") : String(localized: "\(count) sorties") }
-        return count == 1 ? String(localized: "1 nouvelle") : String(localized: "\(count) nouvelles")
-    }
-}
-
-private extension String {
-    /// The weekday's capital a French date leaves out: "jeudi" → "Jeudi".
-    var capitalizedFirst: String {
-        guard let head = first else { return self }
-        return String(head).localizedUppercase + dropFirst()
     }
 }
 
