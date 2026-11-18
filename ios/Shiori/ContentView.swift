@@ -68,6 +68,11 @@ struct ContentView: View {
     /// When the app last left the screen, so that a return after a while asks
     /// every list again. Nil while the app is in front.
     @State private var backgroundedAt: Date?
+    /// The Audible player, in a build that carries it (`AudiblePlayerGate`):
+    /// one for the whole app, so the title plays on whatever tab is open.
+    @State private var player: AudiblePlayer? = AudiblePlayerGate.isOpen ? AudiblePlayer() : nil
+    @State private var showPlayer = false
+    @Namespace private var playerTransition
 
     /// The trailing "Scanner" entry must stay detached from the content tabs.
     /// iOS 26 separates the `.search` role; iOS 27 folded `.search` back into the
@@ -280,6 +285,20 @@ struct ContentView: View {
         // The bar folds away while a page scrolls down and comes back on the
         // way up, as in Vinarium.
         .tabBarMinimizeBehavior(.onScrollDown)
+        // The title playing floats over the bar, and slides between the active
+        // tab and the scan button when the bar folds away, as in Music.
+        .modifier(PlayerAccessorySlot(player: player) {
+            PlayerAccessoryScreen(onOpen: { showPlayer = true })
+                .matchedTransitionSource(id: "player", in: playerTransition)
+        })
+        .sheet(isPresented: $showPlayer) {
+            PlayerScreen()
+                .presentationDragIndicator(.visible)
+                .navigationTransition(.zoom(sourceID: "player", in: playerTransition))
+                .environment(player)
+        }
+        // A book page starts a title from here.
+        .environment(player)
     }
 
     /// A book awaited from a scan's review: the wishlist, where its edition

@@ -19,7 +19,8 @@
       "Shiori/Features/News/GraphQL/*.graphql",
       "Shiori/Features/Admin/GraphQL/*.graphql",
       "Shiori/Features/Search/GraphQL/*.graphql",
-      "Shiori/Features/Wishlist/GraphQL/*.graphql"
+      "Shiori/Features/Wishlist/GraphQL/*.graphql",
+      "Shiori/Features/Listening/GraphQL/*.graphql"
     ]
   },
   "output": {

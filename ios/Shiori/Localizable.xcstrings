@@ -1069,6 +1069,38 @@
         }
       }
     },
+    "%lld min" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld min"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld min"
+          }
+        }
+      }
+    },
+    "%lld min restantes" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld min left"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld min restantes"
+          }
+        }
+      }
+    },
     "%lld mois" : {
       "localizations" : {
         "en" : {
@@ -1581,6 +1613,22 @@
         }
       }
     },
+    "%lldh%@ restantes" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lldh%@ left"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lldh%2$@ restantes"
+          }
+        }
+      }
+    },
     "%lldmin" : {
       "localizations" : {
         "en" : {
@@ -1977,6 +2025,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Action impossible"
+          }
+        }
+      }
+    },
+    "Actions" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Actions"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Actions"
           }
         }
       }
@@ -2905,6 +2969,38 @@
         }
       }
     },
+    "Arrêter" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stop"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arrêter"
+          }
+        }
+      }
+    },
+    "Arrêter dans %lld minutes" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stop in %lld minutes"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arrêter dans %lld minutes"
+          }
+        }
+      }
+    },
     "Arsène Lupin" : {
       "localizations" : {
         "en" : {
@@ -3497,6 +3593,22 @@
         }
       }
     },
+    "Audible refuse la lecture" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Audible won't play this title"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Audible refuse la lecture"
+          }
+        }
+      }
+    },
     "Audio" : {
       "localizations" : {
         "en" : {
@@ -3733,6 +3845,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Autres lauréats"
+          }
+        }
+      }
+    },
+    "Avancer de 30 secondes" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Forward 30 seconds"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avancer de 30 secondes"
           }
         }
       }
@@ -4387,6 +4515,70 @@
         }
       }
     },
+    "Chapitre %lld sur %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chapter %lld of %lld"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Chapitre %1$lld sur %2$lld"
+          }
+        }
+      }
+    },
+    "Chapitre %lld · %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chapter %lld · %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Chapitre %1$lld · %2$@"
+          }
+        }
+      }
+    },
+    "Chapitre précédent" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Previous chapter"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chapitre précédent"
+          }
+        }
+      }
+    },
+    "Chapitre suivant" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next chapter"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chapitre suivant"
+          }
+        }
+      }
+    },
     "Chargement de la suite" : {
       "localizations" : {
         "en" : {
@@ -4895,6 +5087,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Compte"
+          }
+        }
+      }
+    },
+    "Compte Audible déconnecté" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Audible account disconnected"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Compte Audible déconnecté"
           }
         }
       }
@@ -8723,6 +8931,22 @@
         }
       }
     },
+    "Lecture impossible" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Can't play"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lecture impossible"
+          }
+        }
+      }
+    },
     "Lecture terminée" : {
       "localizations" : {
         "en" : {
@@ -8955,6 +9179,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Les prochaines sorties de vos séries, de vos auteurs et de vos livres guettés s'afficheront ici."
+          }
+        }
+      }
+    },
+    "Ligne %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Row %lld"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ligne %lld"
           }
         }
       }
@@ -11039,6 +11279,22 @@
         }
       }
     },
+    "Ouvre le lecteur" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opens the player"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ouvre le lecteur"
+          }
+        }
+      }
+    },
     "Ouvrir dans %@" : {
       "localizations" : {
         "en" : {
@@ -11519,6 +11775,22 @@
         }
       }
     },
+    "Pause" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pause"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pause"
+          }
+        }
+      }
+    },
     "Photo" : {
       "localizations" : {
         "en" : {
@@ -11851,6 +12123,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Portugais"
+          }
+        }
+      }
+    },
+    "Position dans le chapitre" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Position in chapter"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Position dans le chapitre"
           }
         }
       }
@@ -12715,6 +13003,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Records par genre"
+          }
+        }
+      }
+    },
+    "Reculer de 30 secondes" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Back 30 seconds"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reculer de 30 secondes"
           }
         }
       }
@@ -18021,6 +18325,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "–"
+          }
+        }
+      }
+    },
+    "−%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "−%@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "−%@"
           }
         }
       }

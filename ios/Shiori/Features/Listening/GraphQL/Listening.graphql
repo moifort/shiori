@@ -1,0 +1,26 @@
+mutation StartAudiblePlayback($asin: AudibleAsin!) {
+  startAudiblePlayback(asin: $asin) {
+    asin
+    contentReference
+    streamUrl
+    certificate
+    durationMs
+    chapters {
+      title
+      startMs
+      lengthMs
+    }
+    position {
+      positionMs
+      savedAt
+    }
+  }
+}
+
+mutation AudibleFairPlayKey($asin: AudibleAsin!, $spc: String!) {
+  audibleFairPlayKey(asin: $asin, spc: $spc)
+}
+
+mutation SaveAudiblePosition($asin: AudibleAsin!, $contentReference: String!, $positionMs: Int!) {
+  saveAudiblePosition(asin: $asin, contentReference: $contentReference, positionMs: $positionMs)
+}
