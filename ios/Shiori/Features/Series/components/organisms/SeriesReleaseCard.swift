@@ -28,8 +28,7 @@ struct SeriesReleaseCard: View {
     /// of the button kept when a volume has neither. As tall as the cover, so
     /// the cover shows whole.
     private static let height: CGFloat = 150
-    /// A cover's 2:3 at the card's height: whole, not cropped. It grows, cropped
-    /// at its foot, only when larger text makes the card taller.
+    /// A cover's 2:3 at the card's height: whole, not cropped.
     private static let coverHeight: CGFloat = 150
     private static let coverWidth: CGFloat = 100
     /// The calendar leaf's width and its margin, kept clear by the text.
@@ -101,8 +100,8 @@ struct SeriesReleaseCard: View {
             .padding(.vertical, 12)
             .padding(.trailing, 12)
         }
-        .frame(minHeight: Self.height)
-        .fixedSize(horizontal: false, vertical: true)
+        // One height for every card of a rail, whatever its title.
+        .frame(height: Self.height)
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(.rect)
         .onTapGesture(perform: onOpen)

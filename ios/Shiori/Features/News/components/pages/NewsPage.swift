@@ -422,8 +422,9 @@ private struct NewsAgendaLead: View {
             .padding(.vertical, 12)
             .padding(.trailing, 12)
         }
-        .frame(minHeight: 150)
-        .fixedSize(horizontal: false, vertical: true)
+        // Every large card of the page stands at one height, whatever its
+        // title or its prizes say.
+        .frame(height: NewsLargeCard.height)
         .modifier(NewsAgendaCard(card: card, onAction: onAction))
     }
 }
