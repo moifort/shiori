@@ -17,7 +17,8 @@ import SwiftUI
 /// neighbouring button.
 struct WishAddButtons<MenuItems: View>: View {
     enum Size {
-        /// A large card's foot: a 30 pt capsule and circle.
+        /// A large card's foot: a 28 pt capsule and circle, as the "En cours"
+        /// card's small buttons.
         case card
         /// A book page's hero: 50 pt, beside its other round buttons.
         case page
@@ -45,7 +46,7 @@ struct WishAddButtons<MenuItems: View>: View {
         }
     }
 
-    private var height: CGFloat { size == .card ? 30 : 50 }
+    private var height: CGFloat { size == .card ? 28 : 50 }
 
     private var wishButton: some View {
         Button(action: onToggle) {
@@ -60,11 +61,11 @@ struct WishAddButtons<MenuItems: View>: View {
                     }
                     .lineLimit(1)
                     .fixedSize()
-                    .padding(.horizontal, size == .card ? 13 : 22)
+                    .padding(.horizontal, size == .card ? 11 : 22)
                     .frame(height: height)
                 }
             }
-            .font(size == .card ? .footnote.weight(.semibold) : .headline)
+            .font(size == .card ? .caption.weight(.semibold) : .headline)
             .foregroundStyle(isWished ? .white : .black)
             .background {
                 if isWished {
@@ -99,7 +100,7 @@ struct WishAddButtons<MenuItems: View>: View {
             menu()
         } label: {
             Image(systemName: "plus")
-                .font(size == .card ? .footnote.weight(.semibold) : .title3.weight(.medium))
+                .font(size == .card ? .caption.weight(.semibold) : .title3.weight(.medium))
                 .foregroundStyle(.white)
                 .frame(width: height, height: height)
                 .glassEffect(.regular.interactive(), in: .circle)

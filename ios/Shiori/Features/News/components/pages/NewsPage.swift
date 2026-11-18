@@ -398,7 +398,7 @@ private struct NewsDayLeaf: View {
 private struct NewsAgendaLead: View {
     let card: NewsCard
     let isWished: Bool
-    var coverWidth: CGFloat = 100
+    var coverWidth: CGFloat = NewsLargeCard.coverWidth
     let onAction: (NewsAction) async -> Void
 
     var body: some View {
@@ -406,22 +406,23 @@ private struct NewsAgendaLead: View {
             NewsAgendaCover(book: card.cover, width: coverWidth)
             VStack(alignment: .leading, spacing: 0) {
                 NewsCardEmblem(card: card)
-                Text(card.cover.title)
-                    .font(.headline)
-                    .lineLimit(2)
-                    .padding(.top, 7)
+                // As the "En cours" card: who wrote it over the title, the
+                // title on one line under the laurels.
                 Text(card.cover.authors.joined(separator: ", "))
-                    .font(.caption)
-                    .foregroundStyle(.white.opacity(0.75))
+                    .font(.subheadline)
+                    .foregroundStyle(.white.opacity(0.8))
                     .lineLimit(1)
-                    .padding(.top, 1)
+                    .padding(.top, 4)
+                Text(card.cover.title)
+                    .font(.title3.weight(.bold))
+                    .lineLimit(1)
                 Spacer(minLength: 8)
                 NewsCardButtons(card: card, isWished: isWished, onAction: onAction)
             }
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.vertical, 12)
-            .padding(.trailing, 12)
+            .padding(.vertical, 14)
+            .padding(.trailing, 14)
         }
         // Every large card of the page stands at one height, whatever its
         // title or its prizes say.
@@ -459,9 +460,9 @@ private struct NewsAgendaCard: ViewModifier {
             .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(.rect)
             .onTapGesture { Task { await onAction(.open(card)) } }
-            .background { CoverBackdrop(url: card.cover.coverURL, ground: .clear) }
+            .environment(\.colorScheme, .dark)
+            .background { CoverBackdrop(url: card.cover.coverURL, ground: .clear, tint: card.cover.coverGround) }
             .clipShape(.rect(cornerRadius: 18))
-            .overlay(RoundedRectangle(cornerRadius: 18).stroke(.white.opacity(0.18), lineWidth: 1))
             .accessibilityElement(children: .contain)
             .accessibilityLabel(Text(card.cover.title))
             .accessibilityAddTraits(.isButton)
@@ -505,7 +506,7 @@ struct NewsPrizesSlider: View {
             ScrollView(.horizontal) {
                 LazyHStack(alignment: .top, spacing: 12) {
                     ForEach(cards) { card in
-                        NewsAgendaLead(card: card, isWished: wished.contains(card.key), coverWidth: 106, onAction: onAction)
+                        NewsAgendaLead(card: card, isWished: wished.contains(card.key), coverWidth: NewsLargeCard.coverWidth, onAction: onAction)
                             .containerRelativeFrame(.horizontal) { width, _ in
                                 SeriesReleaseCard.railWidth(width, count: cards.count)
                             }

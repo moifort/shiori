@@ -63,15 +63,18 @@ struct NewsLargeCard: View {
     var isWished = false
     let onAction: (NewsAction) async -> Void
 
-    static let height: CGFloat = 159
-    static let coverWidth: CGFloat = 106
+    /// The home's "En cours" card's height (ReadingFeatureCard), which every
+    /// large card of Actualité stands at, whatever its title or its tags say.
+    static let height: CGFloat = 149
+    /// The "En cours" card's cover width.
+    static let coverWidth: CGFloat = 96
     /// The calendar leaf's width and its margin, kept clear by the text.
     private static let leafRoom: CGFloat = 58
 
     private var card: NewsCard { item.card }
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .top, spacing: 14) {
             PosterCover(
                 book: card.cover,
                 label: PosterLabel(caption: item.word, rating: item.rating),
@@ -87,23 +90,27 @@ struct NewsLargeCard: View {
             }
             .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 0) {
+                // As the "En cours" card: who wrote it over the title, the
+                // title on two lines at most, then the tags.
+                Text(card.cover.authors.joined(separator: ", "))
+                    .font(.subheadline)
+                    .foregroundStyle(.white.opacity(0.8))
+                    .lineLimit(1)
+                    .padding(.trailing, item.day == nil ? 0 : Self.leafRoom)
                 Text(card.cover.title)
                     .font(.title3.weight(.bold))
                     .lineLimit(2)
-                    .padding(.trailing, item.day == nil ? 0 : Self.leafRoom)
-                Text(card.cover.authors.joined(separator: ", "))
-                    .font(.subheadline)
-                    .foregroundStyle(.white.opacity(0.85))
-                    .lineLimit(1)
-                    .padding(.top, 2)
+                    .layoutPriority(1)
                     .padding(.trailing, item.day == nil ? 0 : Self.leafRoom)
                 if !tags.isEmpty {
                     HStack(spacing: 6) {
                         ForEach(tags, id: \.self) { OutlinedTag(text: $0, isFrosted: false) }
                     }
-                    .padding(.top, 7)
+                    .padding(.top, 4)
                 }
-                Spacer(minLength: 8)
+                // No floor under the gap: two lines of title and the tags
+                // keep their room at the "En cours" card's height.
+                Spacer(minLength: 0)
                 NewsCardButtons(
                     card: card,
                     isWished: isWished,
@@ -113,7 +120,7 @@ struct NewsLargeCard: View {
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.vertical, 14)
-            .padding(.trailing, 12)
+            .padding(.trailing, 14)
         }
         .frame(height: Self.height)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -125,9 +132,9 @@ struct NewsLargeCard: View {
         }
         .contentShape(.rect)
         .onTapGesture { Task { await onAction(.open(card)) } }
-        .background { CoverBackdrop(url: card.cover.coverURL, ground: .clear) }
-        .clipShape(.rect(cornerRadius: 22))
-        .overlay(RoundedRectangle(cornerRadius: 22).strokeBorder(.white.opacity(0.18), lineWidth: 1))
+        .environment(\.colorScheme, .dark)
+        .background { CoverBackdrop(url: card.cover.coverURL, ground: .clear, tint: card.cover.coverGround) }
+        .clipShape(.rect(cornerRadius: 18))
         .accessibilityElement(children: .contain)
         .accessibilityLabel(Text([item.person, card.cover.title, item.word].compactMap(\.self).joined(separator: ", ")))
         .accessibilityAddTraits(.isButton)
@@ -194,9 +201,9 @@ struct NewsCardButtons: View {
 
     private func circle(_ symbol: String) -> some View {
         Image(systemName: symbol)
-            .font(.footnote.weight(.semibold))
+            .font(.caption.weight(.semibold))
             .foregroundStyle(.white)
-            .frame(width: 30, height: 30)
+            .frame(width: 28, height: 28)
             .glassEffect(.regular.interactive(), in: .circle)
             .contentShape(.circle)
     }
