@@ -184,8 +184,7 @@ struct NewsPage: View {
                     .frame(height: 40)
                     .contentShape(.capsule)
             }
-            .buttonStyle(.plain)
-            .glassEffect(.regular.interactive(), in: .capsule)
+            .buttonStyle(ActionButtonStyle(fill: .glass, isBare: true))
             Text("Ce que lisent et aiment vos amis s'affichera ici.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)

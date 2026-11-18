@@ -38,6 +38,9 @@ struct ActionButtonStyle: ButtonStyle {
     /// The label draws its own padding and height: the style adds only the
     /// fill and the press.
     var isBare = false
+    /// White lifted off a book page's hero by a soft shadow, as its store
+    /// button is.
+    var isRaised = false
 
     func makeBody(configuration: Configuration) -> some View {
         ActionButtonBody(
@@ -65,12 +68,12 @@ private struct ActionButtonBody<Label: View>: View {
                     .padding(.horizontal, style.isBare ? 0 : horizontalPadding)
                     .frame(minHeight: style.isBare ? nil : side)
                     .contentShape(.capsule)
-                    .modifier(ActionFill(fill: style.fill, shape: Capsule()))
+                    .modifier(ActionFill(fill: style.fill, isRaised: style.isRaised, shape: Capsule()))
             case .circle:
                 label
                     .frame(minWidth: style.isBare ? nil : side, minHeight: style.isBare ? nil : side)
                     .contentShape(.circle)
-                    .modifier(ActionFill(fill: style.fill, shape: Circle()))
+                    .modifier(ActionFill(fill: style.fill, isRaised: style.isRaised, shape: Circle()))
             }
         }
         .foregroundStyle(style.fill == .white ? Color.black : Color.white)
@@ -109,11 +112,15 @@ private struct ActionButtonBody<Label: View>: View {
 /// it: in a GlassEffectContainer a glass background is drawn over its label.
 private struct ActionFill<S: Shape>: ViewModifier {
     let fill: ActionButtonStyle.Fill
+    let isRaised: Bool
     let shape: S
 
     func body(content: Content) -> some View {
         switch fill {
-        case .white: content.background(.white, in: shape)
+        case .white:
+            content.background {
+                shape.fill(.white).shadow(color: .black.opacity(isRaised ? 0.45 : 0), radius: 11, y: 8)
+            }
         case .glass: content.glassEffect(.regular, in: shape)
         }
     }

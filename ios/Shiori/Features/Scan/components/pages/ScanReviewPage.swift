@@ -320,16 +320,14 @@ struct ScanReviewPage: View {
                 add(as: .toRead)
             }
             .menuStyle(.button)
-            .buttonStyle(.glassProminent)
-            .tint(.white)
-            .foregroundStyle(.black)
+            .buttonStyle(.actionPrimary)
             .disabled(!canSave)
             .accessibilityIdentifier("review-hero-add")
 
             Button(action: wish) {
                 ReviewButtonLabel(title: "Envie", systemImage: "bookmark")
             }
-            .buttonStyle(.glass)
+            .buttonStyle(.actionGlass)
             .disabled(!canSave)
             .accessibilityIdentifier("review-hero-wish")
 
@@ -348,7 +346,7 @@ struct ScanReviewPage: View {
                         }
                     }
                 }
-                .buttonStyle(.glass)
+                .buttonStyle(.actionGlass)
                 .accessibilityIdentifier("review-hero-await")
             }
         }

@@ -194,21 +194,13 @@ struct NewsCardButtons: View {
                 Button {
                     Task { await onAction(.dismiss(card)) }
                 } label: {
-                    circle("eye.slash")
+                    Image(systemName: "eye.slash")
+                        .font(.caption.weight(.semibold))
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(ActionButtonStyle(fill: .glass, shape: .circle, height: 28))
                 .accessibilityLabel("Pas intéressé")
             }
         }
-    }
-
-    private func circle(_ symbol: String) -> some View {
-        Image(systemName: symbol)
-            .font(.caption.weight(.semibold))
-            .foregroundStyle(.white)
-            .frame(width: 28, height: 28)
-            .glassEffect(.regular.interactive(), in: .circle)
-            .contentShape(.circle)
     }
 
     /// The formats the book may be taken in, as the page it opens offers
