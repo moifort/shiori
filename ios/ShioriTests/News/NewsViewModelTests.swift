@@ -219,6 +219,39 @@ struct NewsViewModelTests {
         #expect(stopped.all == ["projet-derniere-chance"])
     }
 
+    @Test func aCardsAddSaysWhatItDidAndASecondTapTakesItBack() async {
+        let deleted = Calls()
+        var client = NewsClient.preview
+        client.addReleased = { _ in "book-1" }
+        client.deleteBook = { deleted.record($0) }
+        let viewModel = NewsViewModel(client: client, caching: false)
+        let card = NewsCard.suggestion(.preview)
+
+        await viewModel.add(card, .toRead, as: .audiobook)
+        #expect(viewModel.wished.state(of: card, isWished: false) == .toRead(isAudio: true))
+
+        await viewModel.undo(card, isWished: false)
+        #expect(viewModel.wished.state(of: card, isWished: false) == nil)
+        #expect(deleted.all == ["book-1"])
+    }
+
+    @Test func aCardTurnedDownStaysGreyUntilThePageComesBack() async {
+        let viewModel = NewsViewModel(client: .preview, caching: false)
+        let card = NewsCard.suggestion(.preview)
+
+        await viewModel.dismiss(card)
+        #expect(viewModel.wished.isTurnedDown(card))
+        #expect(!viewModel.dismissed.contains(card.key))
+
+        await viewModel.reconsider(card)
+        #expect(!viewModel.wished.isTurnedDown(card))
+
+        await viewModel.dismiss(card)
+        await viewModel.loadOnAppear()
+        #expect(viewModel.dismissed.contains(card.key))
+        #expect(!viewModel.wished.isTurnedDown(card))
+    }
+
     @Test func invitingHandsTheInvitationOver() async {
         let viewModel = NewsViewModel(client: .preview, caching: false)
 

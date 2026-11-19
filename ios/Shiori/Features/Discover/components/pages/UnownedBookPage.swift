@@ -79,8 +79,9 @@ struct UnownedBookPage: View {
     /// What the "+" offers: one, it adds at once; more, it opens a menu.
     var additions: [UnownedBookAddition] = [.pile]
     var onAdd: (UnownedBookAddition) async -> Void = { _ in }
-    /// "Envies" beside the "+", once the book is out: whether it is on the
-    /// wishlist. Nil draws the "+" alone (a book wished for already).
+    /// Whether the book is on the wishlist, once it is out: "+ Ajouter" then
+    /// offers it and says "Envie" once there. Nil draws the "+" alone (a book
+    /// wished for already).
     var isWished: Bool? = nil
     var onToggleWish: () async -> Void = {}
     /// What the "+" made of the book, said in its capsule; a second tap
@@ -207,20 +208,21 @@ struct UnownedBookPage: View {
         }
     }
 
-    /// "Envies" and the "+", as on a prize's page: once a choice of the "+"
-    /// went through, its capsule says it ("À lire", "Lu") and a second tap
-    /// undoes it. Beside a store, which keeps the white and the room,
-    /// "Envies" is round, the bookmark alone, and leaves once the book is
-    /// taken.
+    /// "+ Ajouter", as on a prize's page: its menu holds the pile, the books
+    /// read and the wish list, and once a choice went through its capsule
+    /// says it ("Envie", "À lire", "Lu"); a second tap undoes it. Beside a
+    /// store, which keeps the white and the room, it is the round "+".
     private func wishAndAdd(isWished: Bool) -> some View {
-        WishAddButtons(
-            isWished: isWished,
+        AddMenuButton(
             size: .page,
-            taken: taken,
+            isRound: store != nil,
+            done: taken ?? (isWished ? .wished : nil),
             isWorking: adding,
-            besideStore: store != nil,
-            onToggle: { Task { await onToggleWish() } },
             onUndo: {
+                if taken == nil, isWished {
+                    Task { await onToggleWish() }
+                    return
+                }
                 adding = true
                 Task {
                     await onUndo()
@@ -229,6 +231,10 @@ struct UnownedBookPage: View {
             }
         ) {
             additionButtons(withWish: false)
+            Section {
+                Button("Ajouter à la liste d'envies", systemImage: "bookmark") { Task { await onToggleWish() } }
+                    .accessibilityIdentifier("unowned-add-wishlist")
+            }
         }
     }
 
@@ -332,7 +338,7 @@ struct UnownedBookPage: View {
         }
         if withWish, additions.contains(.wishlist) {
             Section {
-                Button("Liste d'envies", systemImage: "bookmark") { add(.wishlist) }
+                Button("Ajouter à la liste d'envies", systemImage: "bookmark") { add(.wishlist) }
                     .accessibilityIdentifier("unowned-add-wishlist")
             }
         }

@@ -150,10 +150,7 @@ struct FriendBookPage: View {
                 onStopAwaiting: { format in
                     guard let edition = awaited.first(where: { $0.format == format }) else { return }
                     Task { await onAction(.stopAwaiting(edition)) }
-                },
-                // The friend's mark beside "Guetter": "Envies" draws its
-                // bookmark alone, for the row to fit.
-                isCompact: !awaitFormats.isEmpty && (book.favorite || book.rating != nil)
+                }
             )
             // One or the other: a heart is the top mark, so it stands
             // in for the stars rather than sitting beside them.

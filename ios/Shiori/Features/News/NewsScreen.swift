@@ -73,6 +73,8 @@ struct NewsScreen: View {
         case let .wish(card): await viewModel.wish(card)
         case let .unwish(card): await viewModel.unwish(card)
         case let .dismiss(card): await viewModel.dismiss(card)
+        case let .reconsider(card): await viewModel.reconsider(card)
+        case let .undo(card, isWished): await viewModel.undo(card, isWished: isWished)
         case let .add(card, status, format): await viewModel.add(card, status, as: format)
         case let .awaitEdition(card, format): await viewModel.awaitEdition(card, format)
         case let .openLibrary(destination): open(.library(destination))

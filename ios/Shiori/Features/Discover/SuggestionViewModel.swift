@@ -46,12 +46,12 @@ final class SuggestionViewModel {
     func choose(_ suggestion: Suggestion, _ choice: DiscoveryChoice) async -> Bool {
         do {
             switch choice {
-            case .add:
-                bookAdded = try await client.addSuggestion(suggestion.shelfDraft(status: .toRead))
+            case let .add(format):
+                bookAdded = try await client.addSuggestion(suggestion.shelfDraft(status: .toRead).taken(as: format, .toRead))
             case let .await(format):
                 awaitedIds[format] = try await client.awaitEdition(suggestion.draft, format).id
-            case .alreadyRead:
-                bookRead = try await client.addSuggestion(suggestion.shelfDraft(status: .read))
+            case let .alreadyRead(format):
+                bookRead = try await client.addSuggestion(suggestion.shelfDraft(status: .read).taken(as: format, .read))
             case .wish:
                 wishId = try await client.wish(suggestion.shelfDraft(status: .toRead), .discovery, nil)
             case .unwish:

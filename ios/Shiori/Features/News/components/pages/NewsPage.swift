@@ -8,8 +8,12 @@ enum NewsAction {
     case wish(NewsCard)
     /// "Dans vos envies" tapped again: off the wish list.
     case unwish(NewsCard)
-    /// "Pas intéressé" on a discovery or a prize.
+    /// "Pas intéressé" on a discovery or a prize: black and white.
     case dismiss(NewsCard)
+    /// The eye pressed again, or the greyed "+ Ajouter": in colour again.
+    case reconsider(NewsCard)
+    /// A card's capsule pressed: what its "+ Ajouter" did is taken back.
+    case undo(NewsCard, isWished: Bool)
     /// The "+" of a large card: onto the pile or among the books read, in
     /// the format given.
     case add(NewsCard, CopiedStatus, BookFormat)
@@ -275,7 +279,7 @@ struct NewsAgendaSection: View {
                         if entries.count <= NewsShelf.cardLimit {
                             NewsLargeCard(
                                 item: entry.item, isWished: wished.isWished(entry.item),
-                                isOwned: wished.isOwned(entry.item.card), onAction: onAction
+                                wishes: wished, onAction: onAction
                             )
                                 .containerRelativeFrame(.horizontal) { width, _ in
                                     SeriesReleaseCard.railWidth(width, count: entries.count)
@@ -395,12 +399,12 @@ private struct NewsDayLeaf: View {
 /// A day's first news, large: its cover edge to edge on the leading side,
 /// over the cover's own colours the emblem of what brought it — the prize
 /// between its laurels, the friend, the follow — the title, the author, and
-/// at the foot the large cards' buttons: "Envies", "+", and "Pas
-/// intéressé" for a prize.
+/// at the foot the large cards' buttons: "+ Ajouter", and the closed eye for
+/// a prize.
 private struct NewsAgendaLead: View {
     let card: NewsCard
     let isWished: Bool
-    var isOwned = false
+    var wishes: NewsWishes = []
     var coverWidth: CGFloat = NewsLargeCard.coverWidth
     let onAction: (NewsAction) async -> Void
 
@@ -420,7 +424,7 @@ private struct NewsAgendaLead: View {
                     .font(.title3.weight(.bold))
                     .lineLimit(1)
                 Spacer(minLength: 8)
-                NewsCardButtons(card: card, isWished: isWished, isOwned: isOwned, onAction: onAction)
+                NewsCardButtons(card: card, isWished: isWished, wishes: wishes, onAction: onAction)
             }
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -431,6 +435,10 @@ private struct NewsAgendaLead: View {
         // title or its prizes say.
         .frame(height: NewsLargeCard.height)
         .modifier(NewsAgendaCard(card: card, onAction: onAction))
+        // Turned down from its eye: black and white until the reader comes
+        // back to the page.
+        .saturation(wishes.isTurnedDown(card) ? 0 : 1)
+        .animation(.smooth, value: wishes.isTurnedDown(card))
     }
 }
 
@@ -498,7 +506,7 @@ private struct NewsCardEmblem: View {
 
 /// The year's prizes, one winner a page: the day's large card, its cover the
 /// card's height, the prize between its laurels — both, when it won two —
-/// "Envies", "+" and "Pas intéressé"; the next card peeks at the edge,
+/// "+ Ajouter" and the closed eye; the next card peeks at the edge,
 /// which says enough that more follow.
 struct NewsPrizesSlider: View {
     let cards: [NewsCard]
@@ -512,7 +520,7 @@ struct NewsPrizesSlider: View {
                 LazyHStack(alignment: .top, spacing: 12) {
                     ForEach(cards) { card in
                         NewsAgendaLead(
-                            card: card, isWished: wished.contains(card.key), isOwned: wished.isOwned(card),
+                            card: card, isWished: wished.contains(card.key), wishes: wished,
                             coverWidth: NewsLargeCard.coverWidth, onAction: onAction
                         )
                             .containerRelativeFrame(.horizontal) { width, _ in

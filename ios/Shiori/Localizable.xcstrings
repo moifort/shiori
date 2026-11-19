@@ -2169,22 +2169,6 @@
         }
       }
     },
-    "Ajoute le livre à vos envies" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Adds the book to your wishlist"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ajoute le livre à vos envies"
-          }
-        }
-      }
-    },
     "Ajouter" : {
       "localizations" : {
         "en" : {
@@ -2277,6 +2261,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ajouter « %@ » à ma bibliothèque"
+          }
+        }
+      }
+    },
+    "Ajouter à la liste d'envies" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add to wish list"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajouter à la liste d'envies"
           }
         }
       }
@@ -4565,22 +4565,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Chez un ami"
-          }
-        }
-      }
-    },
-    "Chez vous" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "In your library"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Chez vous"
           }
         }
       }
@@ -8665,6 +8649,22 @@
         }
       }
     },
+    "Le livre vous intéresse finalement" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The book interests you after all"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le livre vous intéresse finalement"
+          }
+        }
+      }
+    },
     "Le nombre de pages doit être un nombre positif." : {
       "localizations" : {
         "en" : {
@@ -12725,22 +12725,6 @@
         }
       }
     },
-    "Reconsidérer" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Reconsider"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Reconsidérer"
-          }
-        }
-      }
-    },
     "Records par genre" : {
       "localizations" : {
         "en" : {
@@ -12897,22 +12881,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Restaurer mes achats"
-          }
-        }
-      }
-    },
-    "Retire le livre de vos envies" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Removes the book from your wishlist"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Retire le livre de vos envies"
           }
         }
       }
@@ -15509,22 +15477,6 @@
         }
       }
     },
-    "Traduction et audio guettés" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Translation and audio awaited"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Traduction et audio guettés"
-          }
-        }
-      }
-    },
     "Traduction guettée" : {
       "localizations" : {
         "en" : {
@@ -17697,6 +17649,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "À écouter"
+          }
+        }
+      }
+    },
+    "Ça m'intéresse finalement" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Interested after all"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ça m'intéresse finalement"
           }
         }
       }

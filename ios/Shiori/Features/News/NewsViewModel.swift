@@ -44,6 +44,10 @@ final class NewsViewModel {
     private(set) var wished = NewsWishes()
     /// The wish each key's book became, so a second tap takes it back.
     private var wishIds: [String: String] = [:]
+    /// The book a card's "+ Ajouter" put on the shelf, and the edition it
+    /// awaited, by the card's key: its capsule pressed takes them back.
+    private var bookIds: [String: String] = [:]
+    private var editionIds: [String: String] = [:]
     private(set) var awaited: Set<String> = []
     private(set) var alertsSilenced = false
     private(set) var isInviting = false
@@ -163,9 +167,14 @@ final class NewsViewModel {
 
     // MARK: - Loading
 
-    /// Each visit lights the rings of who moved since the last one.
+    /// Each visit lights the rings of who moved since the last one, and lets
+    /// the cards turned down on the last one go.
     func loadOnAppear() async {
         markFriendsSeen()
+        if !wished.turnedDown.isEmpty {
+            dismissed.formUnion(wished.turnedDown)
+            wished.forgetTurnedDown()
+        }
         guard !hasLoaded else { return }
         await load()
     }
@@ -253,7 +262,7 @@ final class NewsViewModel {
     // A friend's book, from the "…" of its row.
 
     func add(_ event: FeedEvent, _ status: CopiedStatus, as format: BookFormat) async {
-        if await perform({ try await client.addFriendBook(event.friendId, event.bookId, status, format) }) {
+        if await perform({ _ = try await client.addFriendBook(event.friendId, event.bookId, status, format) }) {
             taken.insert(event.bookId)
             wished.take(event.bookId)
         }
@@ -266,7 +275,7 @@ final class NewsViewModel {
     /// Shown awaited at once: the server looks the edition up on the web behind.
     func awaitEdition(_ event: FeedEvent, _ format: ReleaseFormat) async {
         awaited.insert(event.bookId)
-        if !(await perform({ try await client.awaitFriendBook(event.friendId, event.bookId, format) })) {
+        if !(await perform({ _ = try await client.awaitFriendBook(event.friendId, event.bookId, format) })) {
             awaited.remove(event.bookId)
         }
     }
@@ -278,7 +287,7 @@ final class NewsViewModel {
         draft.format = format
         draft.media = format == .audiobook ? [] : [.print]
         draft.status = status == .read ? .read : .toRead
-        if await perform({ try await client.addReleased(draft) }) {
+        if await perform({ _ = try await client.addReleased(draft) }) {
             taken.insert(item.id)
             wished.take(item.id)
         }
@@ -303,7 +312,7 @@ final class NewsViewModel {
 
     func awaitEdition(_ item: ReleasedItem, _ format: ReleaseFormat) async {
         awaited.insert(item.id)
-        if !(await perform({ try await client.awaitReleased(item.draft, format) })) {
+        if !(await perform({ _ = try await client.awaitReleased(item.draft, format) })) {
             awaited.remove(item.id)
         }
     }
@@ -351,7 +360,9 @@ final class NewsViewModel {
         }
     }
 
-    /// "Pas intéressé": gone at once, back if the server refused.
+    /// "Pas intéressé" from a card's eye: black and white at once, back in
+    /// colour if the server refused. It leaves the page once the reader comes
+    /// back to it (`loadOnAppear`).
     func dismiss(_ card: NewsCard) async {
         let client = client
         let write: () async throws -> Void
@@ -364,56 +375,121 @@ final class NewsViewModel {
         default:
             return
         }
-        withAnimation(.smooth) { _ = dismissed.insert(card.key) }
+        withAnimation(.smooth) { wished.turnDown(card.key) }
         if !(await perform(write)) {
-            withAnimation(.smooth) { _ = dismissed.remove(card.key) }
+            withAnimation(.smooth) { wished.reconsider(card.key) }
         }
     }
 
-    /// The "+" of a large card: onto the pile or among the books read,
-    /// whatever brought the book.
-    func add(_ card: NewsCard, _ status: CopiedStatus, as format: BookFormat) async {
+    /// The eye pressed again, or the greyed "+ Ajouter": the book interests
+    /// the reader after all, back in colour and kept.
+    func reconsider(_ card: NewsCard) async {
+        let client = client
+        let write: () async throws -> Void
         switch card {
-        case let .friend(move): await add(move.lead, status, as: format)
-        case let .released(item): await add(item, status, as: format)
-        case let .upcoming(release): await add(ReleasedItem.release(release, day: .now), status, as: format)
+        case let .suggestion(suggestion):
+            write = { try await client.reconsiderSuggestion(suggestion.id) }
+        case let .award(winner):
+            guard let key = winner.key else { return }
+            write = { try await client.reconsiderWinner(key) }
+        default:
+            return
+        }
+        withAnimation(.smooth) { wished.reconsider(card.key) }
+        if !(await perform(write)) {
+            withAnimation(.smooth) { wished.turnDown(card.key) }
+        }
+    }
+
+    /// The "+ Ajouter" of a large card: onto the pile or among the books
+    /// read, in the format chosen, whatever brought the book. Its capsule
+    /// then says it.
+    func add(_ card: NewsCard, _ status: CopiedStatus, as format: BookFormat) async {
+        let client = client
+        let add: () async throws -> String
+        switch card {
+        case let .friend(move):
+            let event = move.lead
+            add = { try await client.addFriendBook(event.friendId, event.bookId, status, format) }
+        case let .released(item):
+            let draft = item.draft.taken(as: format, status == .read ? .read : .toRead)
+            add = { try await client.addReleased(draft) }
+        case let .upcoming(release):
+            let draft = ReleasedItem.release(release, day: .now).draft.taken(as: format, status == .read ? .read : .toRead)
+            add = { try await client.addReleased(draft) }
         case let .suggestion(suggestion):
             var draft = suggestion.draft
             draft.coverURL = suggestion.coverURL
-            await add(draft, of: card, status, as: format)
+            let taken = draft.taken(as: format, status == .read ? .read : .toRead)
+            add = { try await client.addReleased(taken) }
         case let .award(winner):
             var draft = winner.draft
             draft.coverURL = winner.coverURL
-            await add(draft, of: card, status, as: format)
+            let taken = draft.taken(as: format, status == .read ? .read : .toRead)
+            add = { try await client.addReleased(taken) }
+        }
+        var bookId: String?
+        if await perform({ bookId = try await add() }) {
+            bookIds[card.key] = bookId
+            let isAudio = format == .audiobook
+            withAnimation(.snappy) {
+                wished.did(status == .read ? .read(isAudio: isAudio) : .toRead(isAudio: isAudio), card.key)
+            }
         }
     }
 
-    private func add(_ draft: BookDraft, of card: NewsCard, _ status: CopiedStatus, as format: BookFormat) async {
-        var draft = draft
-        draft.format = format
-        draft.media = format == .audiobook ? [] : [.print]
-        draft.status = status == .read ? .read : .toRead
-        if await perform({ try await client.addReleased(draft) }) {
-            taken.insert(card.key)
-            wished.take(card.key)
-        }
-    }
-
-    /// The "+" of a large card: the edition in the phone's language awaited.
+    /// The "+ Ajouter" of a large card: an edition in the phone's language
+    /// awaited. Its capsule then says which.
     func awaitEdition(_ card: NewsCard, _ format: ReleaseFormat) async {
+        let client = client
+        let write: () async throws -> String
         switch card {
-        case let .friend(move): await awaitEdition(move.lead, format)
-        case let .released(item): await awaitEdition(item, format)
-        case let .upcoming(release): await awaitEdition(ReleasedItem.release(release, day: .now), format)
-        case let .suggestion(suggestion): await awaitEdition(suggestion.draft, of: card, format)
-        case let .award(winner): await awaitEdition(winner.draft, of: card, format)
+        case let .friend(move):
+            let event = move.lead
+            write = { try await client.awaitFriendBook(event.friendId, event.bookId, format) }
+        case let .released(item):
+            let draft = item.draft
+            write = { try await client.awaitReleased(draft, format) }
+        case let .upcoming(release):
+            let draft = ReleasedItem.release(release, day: .now).draft
+            write = { try await client.awaitReleased(draft, format) }
+        case let .suggestion(suggestion):
+            let draft = suggestion.draft
+            write = { try await client.awaitReleased(draft, format) }
+        case let .award(winner):
+            let draft = winner.draft
+            write = { try await client.awaitReleased(draft, format) }
+        }
+        var editionId: String?
+        if await perform({ editionId = try await write() }) {
+            editionIds[card.key] = editionId
+            withAnimation(.snappy) { wished.did(.awaited(format), card.key) }
         }
     }
 
-    private func awaitEdition(_ draft: BookDraft, of card: NewsCard, _ format: ReleaseFormat) async {
-        awaited.insert(card.key)
-        if !(await perform({ try await client.awaitReleased(draft, format) })) {
-            awaited.remove(card.key)
+    /// A card's capsule pressed: what its "+ Ajouter" did is taken back, and
+    /// "+ Ajouter" comes back.
+    func undo(_ card: NewsCard, isWished: Bool) async {
+        let key = card.key
+        switch wished.state(of: card, isWished: isWished) {
+        case .wished:
+            await unwish(card)
+        case .toRead, .read:
+            guard let bookId = bookIds[key] else { return }
+            let client = client
+            if await perform({ try await client.deleteBook(bookId) }) {
+                bookIds[key] = nil
+                withAnimation(.snappy) { wished.did(nil, key) }
+            }
+        case .awaited:
+            guard let editionId = editionIds[key] else { return }
+            let client = client
+            if await perform({ try await client.stopAwaiting(editionId) }) {
+                editionIds[key] = nil
+                withAnimation(.snappy) { wished.did(nil, key) }
+            }
+        case .owned, nil:
+            return
         }
     }
 

@@ -13,9 +13,9 @@ enum SuggestionAction {
 /// the cover's colours — where its edition stands on the detail line, the
 /// white "Ajouter" and the home hero's closed eye under it — then why it was chosen, as a card over the colours of the
 /// reader's books it draws on, the summary once written, and the facts as
-/// tiles. The "+", in the hero and in the bar, adds or awaits it; the eye turns
-/// it down or says it read. The page stays open on the choice, which the same
-/// button takes back.
+/// tiles. "+ Ajouter" adds, wishes for or awaits it, one action at a time;
+/// the eye turns it down, black and white. The page stays open on the choice,
+/// which the same button takes back.
 struct SuggestionPage: View {
     let suggestion: Suggestion
     /// The suggestion once described, as a book's page draws it.
@@ -56,9 +56,7 @@ struct SuggestionPage: View {
                 }
             }
             ToolbarItem(placement: .primaryAction) {
-                UnownedBookActionsMenu(onChooseCover: { act(.chooseCover) }) {
-                    DiscoveryDismissActions(item: suggestion, choices: choices, onChoice: onChoice)
-                }
+                UnownedBookActionsMenu(onChooseCover: { act(.chooseCover) })
             }
         }
     }
@@ -75,8 +73,8 @@ struct SuggestionPage: View {
             state: state,
             stateTag: suggestion.watched && suggestion.state == .unannounced ? String(localized: "Pas annoncé") : nil,
             showsLength: false,
-            status: choices.marks[suggestion.id] == .notInterested ? .notInterested : nil,
-            isSetAside: choices.marks[suggestion.id] == .notInterested
+            status: choices.isTurnedDown(suggestion) ? .notInterested : nil,
+            isSetAside: choices.isTurnedDown(suggestion)
         ) {
             HStack(spacing: 12) {
                 DiscoveryButtons(item: suggestion, choices: choices, onChoice: onChoice, addsInFull: true)
@@ -130,46 +128,6 @@ struct SuggestionPage: View {
     }
 }
 
-/// What a discovery's "+" offers, on its page and on the home screen's
-/// carousel — the menu a friend's book and a scan offer too: on the pile,
-/// read already, on the wishlist, or awaited in each format its edition is
-/// not out and not awaited yet in. Each choice names the mark it leaves on the
-/// buttons.
-struct DiscoveryAddActions<Item: Discovery>: View {
-    let item: Item
-    /// Off beside "Envies", which holds the wish list on a discovery's page.
-    var showsWish = true
-    /// Off beside "Guetter", which holds the editions on a discovery's page.
-    var showsAwait = true
-    let onChoose: (DiscoveryChoice, DiscoveryMark) -> Void
-
-    var body: some View {
-        Button("À lire", systemImage: "bookmark.fill") { onChoose(.add, .added) }
-            .accessibilityIdentifier("suggestion-add")
-        Button("Déjà lu", systemImage: "checkmark") { onChoose(.alreadyRead, .read) }
-            .accessibilityIdentifier("suggestion-read")
-        if showsWish {
-            Section {
-                Button("Liste d'envies", systemImage: "bookmark") { onChoose(.wish, .added) }
-                    .accessibilityIdentifier("suggestion-wish")
-            }
-        }
-        if showsAwait, !item.awaitableFormats.isEmpty {
-            Section {
-                ForEach(item.awaitableFormats) { format in
-                    Button(
-                        format.awaitLabel,
-                        systemImage: format == .audiobook ? "headphones" : "binoculars"
-                    ) {
-                        onChoose(.await(format), .awaited)
-                    }
-                    .accessibilityIdentifier("suggestion-await-\(format.rawValue)")
-                }
-            }
-        }
-    }
-}
-
 #Preview("Describing") {
     NavigationStack {
         SuggestionPage(
@@ -191,39 +149,5 @@ struct DiscoveryAddActions<Item: Discovery>: View {
             choices: DiscoveryChoices(),
             onChoice: { _, _ in true }
         ) { _ in }
-    }
-}
-
-/// The eye's choices in the bar's "…", on a discovery's page where "Guetter"
-/// took its place in the hero: turned down or read already, and the way back
-/// once chosen.
-struct DiscoveryDismissActions<Item: Discovery>: View {
-    let item: Item
-    let choices: DiscoveryChoices
-    let onChoice: (Item, DiscoveryChoice) async -> Bool
-
-    var body: some View {
-        if !choices.watch(of: item).isEmpty {
-            Section {
-                switch choices.marks[item.id] {
-                case .notInterested:
-                    Button("Reconsidérer", systemImage: "arrow.uturn.backward") {
-                        choose(.reconsider, leaving: nil)
-                    }
-                    .accessibilityIdentifier("discovery-reconsider")
-                case .added, .read, .wished:
-                    EmptyView()
-                case .awaited, nil:
-                    Button("Pas intéressé", systemImage: "eye.slash", role: .destructive) {
-                        choose(.notInterested, leaving: .notInterested)
-                    }
-                    .accessibilityIdentifier("discovery-not-interested")
-                }
-            }
-        }
-    }
-
-    private func choose(_ choice: DiscoveryChoice, leaving mark: DiscoveryMark?) {
-        choices.choose(choice, for: item, from: .eye, leaving: mark, ask: onChoice)
     }
 }

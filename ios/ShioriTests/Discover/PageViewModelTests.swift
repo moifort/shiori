@@ -13,7 +13,7 @@ struct SuggestionViewModelTests {
         }
         let viewModel = SuggestionViewModel(suggestion: .preview, client: client)
 
-        let accepted = await viewModel.choose(.preview, .alreadyRead)
+        let accepted = await viewModel.choose(.preview, .alreadyRead(.book))
 
         #expect(accepted)
         #expect(calls.all == ["add Les Salauds Gentilshommes read none"])
@@ -26,7 +26,7 @@ struct SuggestionViewModelTests {
         client.deleteBook = { calls.record("delete \($0)") }
         let viewModel = SuggestionViewModel(suggestion: .preview, client: client)
 
-        _ = await viewModel.choose(.preview, .alreadyRead)
+        _ = await viewModel.choose(.preview, .alreadyRead(.book))
         _ = await viewModel.choose(.preview, .undoAlreadyRead)
 
         #expect(calls.all == ["delete book"])

@@ -1,13 +1,13 @@
 import SwiftUI
 
-/// "Chez vous": a book the reader holds already, in any format, said in the
-/// place of "Envies" and the "+" — on a large card of Actualité, and on the
+/// "Ajouté": a book the reader holds already, in any format, said in the
+/// place of "+ Ajouter" — on a large card of Actualité, and on the
 /// page of a friend's book or a prize's winner. A glass capsule with a check,
 /// drawn as the "+"'s capsule after a choice. With nothing left to do it
 /// takes no tap; given menu items (the editions still to await from a
 /// friend's book), it opens them.
 struct OwnedCapsule<MenuItems: View>: View {
-    var size: WishAddButtons<EmptyView>.Size = .card
+    var size: AddMenuButton<EmptyView>.Size = .card
     @ViewBuilder var menu: () -> MenuItems
 
     var body: some View {
@@ -35,7 +35,7 @@ struct OwnedCapsule<MenuItems: View>: View {
     private var label: some View {
         HStack(spacing: size == .card ? 6 : 8) {
             Image(systemName: "checkmark")
-            Text("Chez vous")
+            Text("Ajouté")
         }
         .font(size == .card ? .caption.weight(.semibold) : .headline)
         .lineLimit(1)
@@ -44,7 +44,7 @@ struct OwnedCapsule<MenuItems: View>: View {
 }
 
 extension OwnedCapsule where MenuItems == EmptyView {
-    init(size: WishAddButtons<EmptyView>.Size = .card) {
+    init(size: AddMenuButton<EmptyView>.Size = .card) {
         self.init(size: size) { EmptyView() }
     }
 }

@@ -1,12 +1,12 @@
 import SwiftUI
 
 /// The first buttons of a friend's book hero, where the reader's own book has
-/// its next step: "Envies" and the "+" beside it, onto the pile, or among the books read, in print or as a
-/// recording — a reader who never listens takes a friend's recording as a
+/// its next step: "+ Ajouter", onto the pile, or among the books read, in print or as a
+/// recording, or onto the wish list — a reader who never listens takes a friend's recording as a
 /// book, and a printed book is offered heard once Audible confirms it sells
 /// it. Its edition in the app's language, translated or recorded, may be
-/// awaited from here too. Once the reader holds the book it says so, "✓ Chez
-/// vous" on glass, and still opens what is left to await.
+/// awaited from here too, one action at a time. Once the reader holds the book
+/// it says so, "✓ Ajouté" on glass, and still opens what is left to await.
 struct FriendBookAddMenu: View {
     /// The formats the reader may take the book in.
     let formats: [BookFormat]
@@ -19,47 +19,57 @@ struct FriendBookAddMenu: View {
     var wished = false
     let onAwait: (ReleaseFormat) -> Void
     var onWish: () async -> Void = {}
-    /// What may be awaited and what is, drawn as "Guetter" beside "Envies"
-    /// while the reader does not hold the book; nil keeps the editions in the
-    /// "+".
+    /// What may be awaited and what is: an edition awaited is the action the
+    /// "+ Ajouter" says.
     var watch: EditionWatch? = nil
-    /// "Guetter" pressed on an edition awaited: it is given up.
+    /// The capsule of an edition awaited pressed: it is given up.
     var onStopAwaiting: (ReleaseFormat) -> Void = { _ in }
-    /// "Envies" as the bookmark alone, for a row that holds the friend's
-    /// mark beside "Guetter".
-    var isCompact = false
 
     var body: some View {
         if owned {
             heldMenu
         } else {
-            // The pair every book page shares: "Envies", a second tap taking
-            // the book back off, and the "+" of the same items, wish list aside.
-            WishAddButtons(
-                isWished: wished,
+            // The one button every book page shares: "+ Ajouter", whose menu
+            // holds the wish list and the editions to await, and which says
+            // the one action chosen; a second tap takes it back.
+            AddMenuButton(
                 size: .page,
-                isCompact: isCompact,
-                showsMenu: !formats.isEmpty || (watch == nil && !awaitable.isEmpty),
-                watch: watch,
-                onAwait: { format in
-                    if watch?.awaited.contains(format) == true { onStopAwaiting(format) } else { onAwait(format) }
-                },
-                onToggle: { Task { await onWish() } }
+                done: done,
+                isDisabled: formats.isEmpty && awaitable.isEmpty,
+                onUndo: undo
             ) {
                 BookAddMenuItems(
                     formats: formats,
                     owned: false,
-                    awaitable: watch == nil ? awaitable : [],
+                    awaitable: awaitable,
                     onAdd: onAdd,
                     onAwait: onAwait,
-                    showsWish: false
+                    onWish: onWish
                 )
             }
             .accessibilityIdentifier("friend-book-add-menu")
         }
     }
 
-    /// The book held: "✓ Chez vous" on glass, as Actualité's cards say it,
+    /// What the reader made of the book from here: on the wish list, or an
+    /// edition awaited.
+    private var done: TakenState? {
+        if wished { return .wished }
+        if let format = watch?.offered.first(where: { watch?.awaited.contains($0) == true }) {
+            return .awaited(format)
+        }
+        return nil
+    }
+
+    private func undo() {
+        if wished {
+            Task { await onWish() }
+        } else if case let .awaited(format) = done {
+            onStopAwaiting(format)
+        }
+    }
+
+    /// The book held: "✓ Ajouté" on glass, as Actualité's cards say it,
     /// which still opens the editions left to await, and takes no tap once
     /// none is.
     @ViewBuilder
@@ -122,7 +132,7 @@ struct BookAddMenuItems: View {
         }
         if !owned, showsWish {
             Section {
-                Button("Liste d'envies", systemImage: wished ? "checkmark" : "bookmark") {
+                Button("Ajouter à la liste d'envies", systemImage: wished ? "checkmark" : "bookmark") {
                     Task { await onWish() }
                 }
                 .disabled(wished)

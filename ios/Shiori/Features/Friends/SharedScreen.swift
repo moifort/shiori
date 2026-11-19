@@ -60,7 +60,7 @@ struct SharedScreen: View {
             }
         }
         .task { await viewModel.loadOnAppear() }
-        // A book taken from a friend changes what "Chez vous" says on their
+        // A book taken from a friend changes what "Ajouté" says on their
         // shelves, and their counts move when they write: asked again on the
         // next look.
         .onReceive(NotificationCenter.default.publisher(for: .shioriDataDidChange)) { _ in

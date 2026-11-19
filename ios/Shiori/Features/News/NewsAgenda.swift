@@ -268,6 +268,12 @@ struct NewsWishes: Equatable, ExpressibleByArrayLiteral {
     private var added: Set<String> = []
     private var dropped: Set<String> = []
     private var taken: Set<String> = []
+    /// What the "+ Ajouter" of a card made of its book here, by key: on the
+    /// pile, read, an edition awaited.
+    private var done: [String: TakenState] = [:]
+    /// Cards turned down from their eye this visit: black and white, until
+    /// the reader comes back to the page.
+    private(set) var turnedDown: Set<String> = []
 
     init(arrayLiteral keys: String...) { added = Set(keys) }
 
@@ -280,10 +286,20 @@ struct NewsWishes: Equatable, ExpressibleByArrayLiteral {
     }
 
     /// A large card's book held already, as the server says, or just taken
-    /// here: "Chez vous" in place of its buttons.
+    /// from elsewhere on the page: "Ajouté" in place of its "+ Ajouter".
     func isOwned(_ card: NewsCard) -> Bool {
         card.inLibrary || taken.contains(card.key)
     }
+
+    /// What a card's "+ Ajouter" says: the action made here, else on the wish
+    /// list, else held already.
+    func state(of card: NewsCard, isWished: Bool) -> TakenState? {
+        if let done = done[card.key] { return done }
+        if isWished { return .wished }
+        return isOwned(card) ? .owned : nil
+    }
+
+    func isTurnedDown(_ card: NewsCard) -> Bool { turnedDown.contains(card.key) }
 
     mutating func take(_ key: String) { taken.insert(key) }
 
@@ -295,4 +311,8 @@ struct NewsWishes: Equatable, ExpressibleByArrayLiteral {
     mutating func remove(_ key: String) { added.remove(key) }
     mutating func drop(_ key: String) { dropped.insert(key) }
     mutating func restore(_ key: String) { dropped.remove(key) }
+    mutating func did(_ state: TakenState?, _ key: String) { done[key] = state }
+    mutating func turnDown(_ key: String) { turnedDown.insert(key) }
+    mutating func reconsider(_ key: String) { turnedDown.remove(key) }
+    mutating func forgetTurnedDown() { turnedDown = [] }
 }

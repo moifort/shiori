@@ -53,14 +53,12 @@ final class AwardWinnerViewModel {
     func choose(_ winner: AwardWinner, _ choice: DiscoveryChoice) async -> Bool {
         do {
             switch choice {
-            case .add:
-                bookAdded = try await client.addSuggestion(winner.pileDraft)
+            case let .add(format):
+                bookAdded = try await client.addSuggestion(winner.pileDraft.taken(as: format, .toRead))
             case let .await(format):
                 awaitedIds[format] = try await client.awaitEdition(winner.draft, format).id
-            case .alreadyRead:
-                var draft = winner.pileDraft
-                draft.status = .read
-                bookRead = try await client.addSuggestion(draft)
+            case let .alreadyRead(format):
+                bookRead = try await client.addSuggestion(winner.pileDraft.taken(as: format, .read))
             case .wish:
                 wishId = try await client.wish(winner.pileDraft, .award, winner.mentions.first?.award.name)
             case .unwish:

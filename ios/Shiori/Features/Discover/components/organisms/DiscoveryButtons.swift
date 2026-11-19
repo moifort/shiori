@@ -4,62 +4,99 @@ import SwiftUI
 protocol Discovery: Identifiable, Sendable where ID == String {
     /// The format it is listed in.
     var format: ReleaseFormat { get }
-    /// The formats "Guetter" is offered in.
+    /// The formats its edition may be awaited in.
     var awaitableFormats: [ReleaseFormat] { get }
     /// The edition the reader awaits already in `format`, when they do.
     var awaitedEditionId: String? { get }
 }
 
 extension Discovery {
-    /// What its page may await, as the server listed it: the format shown
-    /// awaited already counts among the editions offered.
-    var serverWatch: EditionWatch {
-        EditionWatch(offered: awaitableFormats, awaited: awaitedEditionId == nil ? [] : [format])
-    }
+    /// What the server says the reader made of it already: an edition awaited.
+    var serverMark: DiscoveryMark? { awaitedEditionId == nil ? nil : .awaited(format) }
+
+    /// The formats it may be taken in: the book and its recording, whatever
+    /// the format it is listed in.
+    var takenFormats: [BookFormat] { [.book, .audiobook] }
 }
 
 extension Suggestion: Discovery {}
 
-/// What the reader decides about a discovery from its "+" and closed eye.
+extension BookDraft {
+    /// The book as it goes onto the shelf in the format chosen: a recording
+    /// holds no medium, a printed book the paper one unless it says another.
+    func taken(as format: BookFormat, _ status: ReadingStatus) -> BookDraft {
+        var draft = self
+        draft.format = format
+        if format == .audiobook {
+            draft.media = []
+        } else if draft.media.isEmpty {
+            draft.media = [.print]
+        }
+        draft.status = status
+        return draft
+    }
+}
+
+/// What the reader decides about a discovery from its "+ Ajouter" and its
+/// closed eye: one action at a time, which the same button takes back.
 enum DiscoveryChoice {
-    case add
-    case await(ReleaseFormat)
-    case alreadyRead
-    /// Onto the reader's wishlist, from "Envies" (the home's "+" on the hero).
+    /// On the pile, in the format chosen.
+    case add(BookFormat)
+    /// Among the books read, in the format chosen.
+    case alreadyRead(BookFormat)
+    /// Onto the reader's wishlist.
     case wish
-    /// "Envies" tapped again: off the wishlist.
+    /// The "Envie" capsule pressed: off the wishlist.
     case unwish
-    /// The check pressed again on a book said read: it leaves the shelf.
+    /// The "Lu" capsule pressed: the book leaves the shelf.
     case undoAlreadyRead
-    /// The "À lire" capsule pressed again: the book leaves the pile.
+    /// The "À lire" capsule pressed: the book leaves the pile.
     case undoAdd
-    /// An edition awaited given up, from the "Guetté" capsule or "Guetter".
+    case await(ReleaseFormat)
+    /// An edition awaited given up, from its capsule.
     case unawait(ReleaseFormat)
     case notInterested
-    /// The red thumb pressed again: the reader changed their mind.
+    /// The eye pressed again, or the greyed "Ajouter": the book interests the
+    /// reader after all.
     case reconsider
 }
 
 /// What a discovery's buttons say of the reader's choice.
-enum DiscoveryMark {
-    /// On the pile from the "+".
-    case added
-    /// An edition awaited from the "+".
-    case awaited
-    /// On the wishlist, from "Envies".
+enum DiscoveryMark: Equatable {
+    case added(BookFormat)
+    case read(BookFormat)
     case wished
-    /// Read already, from the eye.
-    case read
-    /// Turned down from the eye.
+    case awaited(ReleaseFormat)
+    /// Turned down from the eye: the book goes black and white.
     case notInterested
+
+    /// Said in the "+ Ajouter"'s capsule.
+    var taken: TakenState? {
+        switch self {
+        case let .added(format): .toRead(isAudio: format == .audiobook)
+        case let .read(format): .read(isAudio: format == .audiobook)
+        case .wished: .wished
+        case let .awaited(format): .awaited(format)
+        case .notInterested: nil
+        }
+    }
+
+    /// What a tap on the capsule sends: the choice taken back.
+    var undo: DiscoveryChoice? {
+        switch self {
+        case .added: .undoAdd
+        case .read: .undoAlreadyRead
+        case .wished: .unwish
+        case let .awaited(format): .unawait(format)
+        case .notInterested: nil
+        }
+    }
 }
 
-/// The two buttons of a discovery that open a menu and ask the server.
+/// The two buttons of a discovery that ask the server.
 enum DiscoveryButton {
     case add
     case eye
-    /// "Guetter", on the page.
-    case await
 }
 
 /// What the reader decided about each discovery, held apart from the views so
@@ -67,18 +104,22 @@ enum DiscoveryButton {
 @MainActor
 @Observable
 final class DiscoveryChoices {
-    private(set) var marks: [String: DiscoveryMark] = [:]
+    /// The choices made here; a nil value is one taken back, over what the
+    /// server listed.
+    private var marks: [String: DiscoveryMark?] = [:]
     /// The button whose choice the server is answering, with its spinner.
     private(set) var working: [String: DiscoveryButton] = [:]
     /// Bumped each time the server refused a choice: the buttons shake.
     private(set) var refusals: [String: Int] = [:]
-    /// The editions awaited or given up here, over what the server listed.
-    private var watches: [String: EditionWatch] = [:]
 
-    /// What the page's "Guetter" offers and what it awaits.
-    func watch<Item: Discovery>(of item: Item) -> EditionWatch {
-        watches[item.id] ?? item.serverWatch
+    /// What the reader made of the discovery: here, else as the server listed it.
+    func mark<Item: Discovery>(of item: Item) -> DiscoveryMark? {
+        if let local = marks[item.id] { return local }
+        return item.serverMark
     }
+
+    /// Turned down here: drawn black and white.
+    func isTurnedDown<Item: Discovery>(_ item: Item) -> Bool { mark(of: item) == .notInterested }
 
     /// Sends a choice and sets the mark it leaves once the server took it, and
     /// not before the menu has closed: drawn while it folds back into the
@@ -99,12 +140,7 @@ final class DiscoveryChoices {
             withAnimation(.snappy) {
                 working[item.id] = nil
                 if accepted {
-                    marks[item.id] = mark
-                    switch choice {
-                    case let .await(format): watches[item.id, default: item.serverWatch].awaited.insert(format)
-                    case let .unawait(format): watches[item.id, default: item.serverWatch].awaited.remove(format)
-                    default: break
-                    }
+                    marks[item.id] = .some(mark)
                 } else {
                     refusals[item.id, default: 0] += 1
                 }
@@ -114,210 +150,93 @@ final class DiscoveryChoices {
 }
 
 /// A discovery's buttons, side by side in whatever row holds them: on its
-/// page the pair every book page shares, "Envies" and the "+" of the page's
-/// add menu (WishAddButtons), then the crossed-out eye; on the home's hero,
-/// which leads with "Découvrir", the round "+" alone, wish list included,
-/// then the eye. No
-/// GlassEffectContainer around them: a menu opened from inside one loses a
-/// moving tap on a row over a neighbouring button.
+/// page the white "+ Ajouter" and the closed eye; on the home's hero, which
+/// leads with "Découvrir", the round "+" and the eye. The "+" opens every way
+/// to take the book — on the pile or read, in print or as a recording, on the
+/// wish list, an edition awaited — and says the one chosen. The eye turns the
+/// book down in one tap, black and white, and a second tap, or one on the
+/// greyed "+", takes it back. No GlassEffectContainer around them: a menu
+/// opened from inside one loses a moving tap on a row over a neighbouring
+/// button.
 struct DiscoveryButtons<Item: Discovery>: View {
     let item: Item
     let choices: DiscoveryChoices
     /// Asks the server, and says whether it took the choice: the buttons
     /// change only then.
     let onChoice: (Item, DiscoveryChoice) async -> Bool
-    /// "+ Ajouter" white, as the hero's call to action, rather than a round
+    /// "+ Ajouter" white, as the page's call to action, rather than a round
     /// "+": on the page, where nothing else leads.
     var addsInFull = false
 
-    private var mark: DiscoveryMark? { choices.marks[item.id] }
+    private var mark: DiscoveryMark? { choices.mark(of: item) }
     private var working: DiscoveryButton? { choices.working[item.id] }
-    private var isWorking: Bool { working != nil }
+    private var isTurnedDown: Bool { mark == .notInterested }
 
     var body: some View {
-        if addsInFull {
-            WishAddButtons(
-                isWished: mark == .wished,
-                size: .page,
-                isDisabled: isWorking || mark == .read || mark == .notInterested,
-                taken: taken,
-                isWorking: working == .add,
-                watch: watch,
-                isAwaitWorking: working == .await,
-                onAwait: { format in
-                    let awaiting = !watch.awaited.contains(format)
-                    choose(awaiting ? .await(format) : .unawait(format), from: .await, leaving: mark)
-                },
-                refusals: choices.refusals[item.id] ?? 0,
-                onToggle: {
-                    if mark == .wished {
-                        choose(.unwish, from: .add, leaving: nil)
-                    } else {
-                        choose(.wish, from: .add, leaving: .wished)
-                    }
-                },
-                onUndo: {
-                    switch mark {
-                    case .read: choose(.undoAlreadyRead, from: .add, leaving: nil)
-                    case .awaited: choose(.unawait(item.format), from: .add, leaving: nil)
-                    default: choose(.undoAdd, from: .add, leaving: nil)
-                    }
-                }
-            ) {
-                DiscoveryAddActions(item: item, showsWish: false, showsAwait: watch.isEmpty) {
-                    choose($0, from: .add, leaving: $1)
-                }
+        AddMenuButton(
+            size: .page,
+            isRound: !addsInFull,
+            done: mark?.taken,
+            isTurnedDown: isTurnedDown,
+            onReconsider: { choose(.reconsider, from: .add, leaving: nil) },
+            isWorking: working == .add,
+            refusals: choices.refusals[item.id] ?? 0,
+            onUndo: {
+                if let undo = mark?.undo { choose(undo, from: .add, leaving: nil) }
             }
-            .accessibilityIdentifier("discovery-menu")
-        } else {
-            addMenu
-                .disabled(addIsOff)
-                .sensoryFeedback(.success, trigger: isTaken)
-                .refusalShake(trigger: choices.refusals[item.id] ?? 0)
-                .accessibilityIdentifier("discovery-menu")
+        ) {
+            DiscoveryAddActions(item: item) { choose($0, from: .add, leaving: $1) }
         }
-        // The crossed-out eye opens a choice, and gives way to the one made:
-        // turned down, "Reconsidérer" in words; read, a check on white.
-        // Pressed again, it takes the choice back. Never disabled once done:
-        // dimmed, the white went unseen. On a page with "Guetter", where
-        // three buttons fill the row, it moves to the bar's "…"
-        // (DiscoveryDismissActions).
-        if !eyeInBar { eye }
-    }
-
-    /// "Guetter" on the page takes the eye's room: the eye goes to the bar.
-    private var eyeInBar: Bool { addsInFull && !watch.isEmpty }
-
-    private var watch: EditionWatch { choices.watch(of: item) }
-
-    @ViewBuilder private var eye: some View {
-        switch mark {
-        case .notInterested:
-            // The button says what a tap does; the hero's pill says where the
-            // book stands, "Pas intéressé".
-            Button {
-                choose(.reconsider, from: .eye, leaving: nil)
-            } label: {
-                Label("Reconsidérer", systemImage: "arrow.uturn.backward")
-                    .font(.headline)
-                    .lineLimit(1)
-                    .fixedSize()
-                    .modifier(WorkingLabel(isWorking: working == .eye))
-            }
-            .buttonStyle(.actionGlass)
-            .disabled(isWorking)
-            .sensoryFeedback(.impact(weight: .medium), trigger: mark == .notInterested)
-            .accessibilityIdentifier("discovery-dismiss")
-        case .read:
-            Button {
-                choose(.undoAlreadyRead, from: .eye, leaving: nil)
-            } label: {
-                Image(systemName: "checkmark")
-                    .font(.headline)
-                    .transition(.symbolEffect(.drawOn))
-                    .accessibilityLabel("Déjà lu")
-                    .modifier(WorkingLabel(isWorking: working == .eye))
-            }
-            .buttonStyle(.actionRound(isOn: true))
-            .disabled(isWorking)
-            .sensoryFeedback(.success, trigger: mark == .read)
-            .accessibilityIdentifier("discovery-dismiss")
-        case .added, .awaited, .wished, nil:
-            Menu {
-                Button("Pas intéressé", systemImage: "eye.slash", role: .destructive) {
-                    choose(.notInterested, from: .eye, leaving: .notInterested)
-                }
-                .accessibilityIdentifier("discovery-not-interested")
-                Button("Déjà lu", systemImage: "checkmark.circle") {
-                    choose(.alreadyRead, from: .eye, leaving: .read)
-                }
-                .accessibilityIdentifier("discovery-already-read")
-            } label: {
-                eyeLabel
-                    .modifier(WorkingLabel(isWorking: working == .eye))
-            }
-            .menuStyle(.button)
-            .buttonStyle(.actionRound())
-            .disabled(isWorking || mark == .added || mark == .wished)
-            .accessibilityIdentifier("discovery-dismiss")
+        .accessibilityIdentifier("discovery-menu")
+        // Offered while nothing else was chosen: a book taken is not turned
+        // down.
+        NotInterestedToggle(isOn: isTurnedDown, size: .page) { turnDown in
+            choose(turnDown ? .notInterested : .reconsider, from: .eye, leaving: turnDown ? .notInterested : nil)
         }
-    }
-
-    /// Added, awaited or wished: the home's "+" shows a tick either way.
-    private var isTaken: Bool { mark == .added || mark == .awaited || mark == .wished }
-
-    /// What the page's "+" made of the book, said in its capsule. "Déjà lu"
-    /// keeps the eye's white check rather, which undoes it.
-    private var taken: TakenState? {
-        switch mark {
-        case .added: .toRead(isAudio: false)
-        case .awaited: .awaited
-        // The eye gone to the bar, the "+"'s capsule says it instead.
-        case .read where eyeInBar: .read(isAudio: false)
-        default: nil
-        }
-    }
-
-    private var addIsOff: Bool { isWorking || mark == .read || mark == .notInterested }
-
-    @ViewBuilder private var addMenu: some View {
-        if addsInFull {
-            Menu {
-                addActions
-            } label: {
-                addLabel
-                    .labelStyle(.titleAndIcon)
-                    .modifier(WorkingLabel(isWorking: working == .add))
-            }
-            .menuStyle(.button)
-            // Not .glassProminent: see HeroProminentButtonStyle.
-            .buttonStyle(.heroProminent)
-            .opacity(addIsOff ? 0.45 : 1)
-        } else {
-            Menu {
-                addActions
-            } label: {
-                addLabel
-                    .labelStyle(.iconOnly)
-                    .modifier(WorkingLabel(isWorking: working == .add))
-            }
-            .menuStyle(.button)
-            .buttonStyle(.actionRound())
-        }
-    }
-
-    private var addActions: some View {
-        DiscoveryAddActions(item: item) { choose($0, from: .add, leaving: $1) }
-    }
-
-    private var addLabel: some View {
-        Label(
-            isTaken ? "Ajouté" : "Ajouter",
-            systemImage: isTaken ? "checkmark" : "plus"
-        )
-        .font(.headline)
-        .contentTransition(.symbolEffect(.replace.magic(fallback: .downUp)))
+        .disabled(working != nil || (mark != nil && !isTurnedDown))
+        .opacity(mark != nil && !isTurnedDown ? 0.45 : 1)
     }
 
     private func choose(_ choice: DiscoveryChoice, from button: DiscoveryButton, leaving mark: DiscoveryMark?) {
         choices.choose(choice, for: item, from: button, leaving: mark, ask: onChoice)
     }
-
-    private var eyeLabel: some View {
-        Label("Pas intéressé", systemImage: "eye.slash")
-            .labelStyle(.iconOnly)
-            .font(.headline)
-    }
 }
 
-/// A round button's spinner, in its label's room, while the server answers.
-private struct WorkingLabel: ViewModifier {
-    let isWorking: Bool
+/// What a discovery's "+ Ajouter" offers, on its page and on the home's hero
+/// — the menu a friend's book and a large card offer too: on the pile or
+/// read, in print and as a recording, then the wish list, then each edition
+/// still to await. Each choice names the mark it leaves on the button.
+struct DiscoveryAddActions<Item: Discovery>: View {
+    let item: Item
+    let onChoose: (DiscoveryChoice, DiscoveryMark) -> Void
 
-    func body(content: Content) -> some View {
-        content
-            .opacity(isWorking ? 0 : 1)
-            .overlay { if isWorking { ProgressView().controlSize(.regular) } }
+    var body: some View {
+        ForEach(item.takenFormats, id: \.self) { format in
+            Section(format.label) {
+                Button(format == .audiobook ? "À écouter" : "À lire", systemImage: "bookmark.fill") {
+                    onChoose(.add(format), .added(format))
+                }
+                .accessibilityIdentifier("suggestion-add-\(format.rawValue)")
+                Button(format == .audiobook ? "Déjà écouté" : "Déjà lu", systemImage: "checkmark") {
+                    onChoose(.alreadyRead(format), .read(format))
+                }
+                .accessibilityIdentifier("suggestion-read-\(format.rawValue)")
+            }
+        }
+        Section {
+            Button("Ajouter à la liste d'envies", systemImage: "bookmark") { onChoose(.wish, .wished) }
+                .accessibilityIdentifier("suggestion-wish")
+        }
+        if !item.awaitableFormats.isEmpty {
+            Section {
+                ForEach(item.awaitableFormats) { format in
+                    Button(format.awaitLabel, systemImage: format == .audiobook ? "headphones" : "binoculars") {
+                        onChoose(.await(format), .awaited(format))
+                    }
+                    .accessibilityIdentifier("suggestion-await-\(format.rawValue)")
+                }
+            }
+        }
     }
 }
 
@@ -327,7 +246,7 @@ private struct WorkingLabel: ViewModifier {
         HStack(spacing: 10) {
             DiscoveryButtons(item: Suggestion.preview, choices: DiscoveryChoices()) { _, _ in true }
         }
-        // The page: "Envies", the "+" in full, then "Guetter" or the eye.
+        // The page: "+ Ajouter" in full, then the eye.
         HStack(spacing: 10) {
             DiscoveryButtons(item: Suggestion.preview, choices: DiscoveryChoices(), onChoice: { _, _ in true }, addsInFull: true)
         }

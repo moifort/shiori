@@ -317,6 +317,7 @@ struct HomeHeroCarousel: View {
             title: suggestion.title,
             meta: suggestion.authors.joined(separator: ", "),
             reason: suggestion.reason,
+            isTurnedDown: choices.isTurnedDown(suggestion),
             onOpen: { onOpen(suggestion) }
         ) {
             // No GlassEffectContainer: a menu opened from inside one loses a
@@ -452,12 +453,15 @@ struct HomeHeroCarousel: View {
         reason: String?,
         countdown: String? = nil,
         leafDate: String? = nil,
+        isTurnedDown: Bool = false,
         onOpen: @escaping () -> Void,
         @ViewBuilder buttons: () -> some View
     ) -> some View {
         layout(id: id, leafDate: leafDate) {
             Button(action: onOpen) {
                 BookCover(book: cover, width: Self.coverWidth, showsFormatBadge: false, isBound: true)
+                    // Turned down from the eye: black and white, as on its page.
+                    .saturation(isTurnedDown ? 0 : 1)
                     .shadow(color: .black.opacity(0.5), radius: 18, y: 12)
             }
             .buttonStyle(.plain)
@@ -514,7 +518,8 @@ struct HomeHeroCarousel: View {
         } buttons: {
             buttons()
         }
-        .background { pageBackdrop(cover.coverURL) }
+        .background { pageBackdrop(cover.coverURL).saturation(isTurnedDown ? 0 : 1) }
+        .animation(.smooth, value: isTurnedDown)
     }
 
     /// A page's cover colours, up under the bars and the status bar.

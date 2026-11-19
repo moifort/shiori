@@ -11,10 +11,10 @@ enum AwardWinnerAction {
 
 /// One winner, in the suggestion's page's grammar: the hero over the cover's
 /// colours, the prize between its laurels over the title and the white
-/// "Ajouter" and closed eye under it, then the summary once written, the facts
-/// as tiles and the other winners as posters. The "+", in the hero and in the
-/// bar, adds or awaits it; the eye turns it down or says it read. The page
-/// stays open on the choice, which the same button takes back.
+/// "+ Ajouter" and closed eye under it, then the summary once written, the
+/// facts as tiles and the other winners as posters. "+ Ajouter" adds, wishes
+/// for or awaits it, one action at a time; the eye turns it down, black and
+/// white. The page stays open on the choice, which the same button takes back.
 struct AwardWinnerPage: View {
     let winner: AwardWinner
     /// The winner once described, as a book's page draws it.
@@ -55,9 +55,7 @@ struct AwardWinnerPage: View {
                 }
             }
             ToolbarItem(placement: .primaryAction) {
-                UnownedBookActionsMenu(onChooseCover: { act(.chooseCover) }) {
-                    DiscoveryDismissActions(item: winner, choices: choices, onChoice: onChoice)
-                }
+                UnownedBookActionsMenu(onChooseCover: { act(.chooseCover) })
             }
         }
     }
@@ -74,13 +72,13 @@ struct AwardWinnerPage: View {
             state: state,
             stateTag: winner.watched && winner.state == .unannounced ? String(localized: "Pas annoncé") : nil,
             overTitle: winner.mentions.first.map { AnyView(AwardLaurels(mention: $0)) },
-            status: choices.marks[winner.id] == .notInterested ? .notInterested : nil,
-            isSetAside: choices.marks[winner.id] == .notInterested
+            status: choices.isTurnedDown(winner) ? .notInterested : nil,
+            isSetAside: choices.isTurnedDown(winner)
         ) {
             HStack(spacing: 12) {
                 // Held already, in any format, and nothing chosen here: no
-                // button is left to press, "Chez vous" says why.
-                if winner.inLibrary == true, choices.marks[winner.id] == nil {
+                // button is left to press, "Ajouté" says why.
+                if winner.inLibrary == true, choices.mark(of: winner) == nil {
                     OwnedCapsule(size: .page)
                 } else {
                     DiscoveryButtons(item: winner, choices: choices, onChoice: onChoice, addsInFull: true)

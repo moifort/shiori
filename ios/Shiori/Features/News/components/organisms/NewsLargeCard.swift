@@ -37,10 +37,7 @@ struct NewsCardRow: View {
         ScrollView(.horizontal) {
             LazyHStack(alignment: .top, spacing: 12) {
                 ForEach(items) { item in
-                    NewsLargeCard(
-                        item: item, isWished: wished.isWished(item), isOwned: wished.isOwned(item.card),
-                        onAction: onAction
-                    )
+                    NewsLargeCard(item: item, isWished: wished.isWished(item), wishes: wished, onAction: onAction)
                         .containerRelativeFrame(.horizontal) { width, _ in
                             SeriesReleaseCard.railWidth(width, count: items.count)
                         }
@@ -59,13 +56,15 @@ struct NewsCardRow: View {
 /// side, the person it is shown for in a pill on the cover's top and what
 /// happened at its foot, as the covers of a rail say it; beside it the title,
 /// the author, the outlined tags — how long is left, "Audio", a foreign
-/// language — and at the foot "Envies" and the "+" of the other ways
-/// to take it, or "Chez vous" for a book the reader holds already. A
+/// language — and at the foot "+ Ajouter", or "Ajouté" for a book the
+/// reader holds already. A
 /// release's day sits in the corner as a calendar leaf.
 struct NewsLargeCard: View {
     let item: NewsShelfItem
     var isWished = false
-    var isOwned = false
+    /// What the cards' buttons made of their books, and the cards turned
+    /// down, drawn black and white.
+    var wishes: NewsWishes = []
     let onAction: (NewsAction) async -> Void
 
     /// The home's "En cours" card's height (ReadingFeatureCard), which every
@@ -119,12 +118,7 @@ struct NewsLargeCard: View {
                 // No floor under the gap: two lines of title and the tags
                 // keep their room at the "En cours" card's height.
                 Spacer(minLength: 0)
-                NewsCardButtons(
-                    card: card,
-                    isWished: isWished,
-                    isOwned: isOwned,
-                    onAction: onAction
-                )
+                NewsCardButtons(card: card, isWished: isWished, wishes: wishes, onAction: onAction)
             }
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -143,6 +137,10 @@ struct NewsLargeCard: View {
         .onTapGesture { Task { await onAction(.open(card)) } }
         .environment(\.colorScheme, .dark)
         .background { CoverBackdrop(url: card.cover.coverURL, ground: .clear, tint: card.cover.coverGround) }
+        // Turned down from its eye: black and white until the reader comes
+        // back to the page.
+        .saturation(wishes.isTurnedDown(card) ? 0 : 1)
+        .animation(.smooth, value: wishes.isTurnedDown(card))
         .clipShape(.rect(cornerRadius: 18))
         .accessibilityElement(children: .contain)
         .accessibilityLabel(Text([item.person, card.cover.title, item.word].compactMap(\.self).joined(separator: ", ")))
@@ -161,75 +159,59 @@ struct NewsLargeCard: View {
     }
 }
 
-/// The foot of a large card: the pair "Envies" and "+" every book page
-/// shares (WishAddButtons), and for a prize or a discovery "Pas intéressé".
-/// A book the reader holds already, in any format, has nothing left to
-/// take: "Chez vous" stands in for the pair, "Pas intéressé" stays. One on
-/// the wish list keeps its checked "Envies".
-/// The "+" opens the book page's add menu without the wish list: each format
-/// the book may be taken in, then the editions to await. Where the three do
-/// not fit beside a rail card's cover, the wish keeps its colour but loses
-/// its words, so the card never grows past its frame over the next one.
+/// The foot of a large card: "+ Ajouter", the one button every book page
+/// shares (AddMenuButton), and for a prize or a discovery the closed eye.
+/// Its menu offers each format the book may be taken in, the wish list, then
+/// the editions to await; the action chosen is said in its place, a second
+/// tap taking it back. A book the reader holds already says "Ajouté". The
+/// eye turns the card black and white in one tap; a second, or a tap on the
+/// greyed "+ Ajouter", brings the colour back.
 struct NewsCardButtons: View {
     let card: NewsCard
     var isWished = false
-    var isOwned = false
+    var wishes: NewsWishes = []
     let onAction: (NewsAction) async -> Void
 
-    var body: some View {
-        ViewThatFits(in: .horizontal) {
-            row(isCompact: false)
-            row(isCompact: true)
-        }
-    }
+    private var isTurnedDown: Bool { wishes.isTurnedDown(card) }
+    private var done: TakenState? { wishes.state(of: card, isWished: isWished) }
 
-    private func row(isCompact: Bool) -> some View {
+    var body: some View {
         HStack(spacing: 8) {
-            if isOwned && !isWished {
-                OwnedCapsule()
-            } else {
-                wishAdd(isCompact: isCompact)
+            AddMenuButton(
+                done: done,
+                isTurnedDown: isTurnedDown,
+                onReconsider: { act(.reconsider(card)) },
+                onUndo: done == .owned ? nil : { act(.undo(card, isWished: isWished)) }
+            ) {
+                BookAddMenuItems(
+                    formats: formats,
+                    owned: false,
+                    awaitable: awaitable,
+                    onAdd: { status, format in await onAction(.add(card, status, format)) },
+                    onAwait: { format in act(.awaitEdition(card, format)) },
+                    onWish: { await onAction(.wish(card)) }
+                )
             }
             if card.isDismissable {
-                Button {
-                    Task { await onAction(.dismiss(card)) }
-                } label: {
-                    Image(systemName: "eye.slash")
-                        .font(.caption.weight(.semibold))
+                NotInterestedToggle(isOn: isTurnedDown) { turnDown in
+                    await onAction(turnDown ? .dismiss(card) : .reconsider(card))
                 }
-                .buttonStyle(ActionButtonStyle(fill: .glass, shape: .circle, height: 28))
-                .accessibilityLabel("Pas intéressé")
+                .disabled(done != nil && !isTurnedDown)
+                .opacity(done != nil && !isTurnedDown ? 0.45 : 1)
             }
         }
     }
 
-    private func wishAdd(isCompact: Bool) -> some View {
-        WishAddButtons(
-            isWished: isWished,
-            isCompact: isCompact,
-            showsMenu: !formats.isEmpty || !awaitable.isEmpty,
-            onToggle: { Task { await onAction(isWished ? .unwish(card) : .wish(card)) } }
-        ) {
-            BookAddMenuItems(
-                formats: formats,
-                owned: false,
-                awaitable: awaitable,
-                onAdd: { status, format in await onAction(.add(card, status, format)) },
-                onAwait: { format in Task { await onAction(.awaitEdition(card, format)) } },
-                showsWish: false
-            )
-        }
+    private func act(_ action: NewsAction) {
+        Task { await onAction(action) }
     }
 
-    /// The formats the book may be taken in, as the page it opens offers
-    /// them; nothing for a book not out yet, which only the wish list holds.
+    /// The formats the book may be taken in: the book and its recording
+    /// once out; nothing for a book not out yet, which the wish list holds.
     private var formats: [BookFormat] {
         switch card {
-        case .upcoming: return []
-        // A discovery's or a prize's page offers its own format alone.
-        case .suggestion, .award: return [card.cover.format]
-        // A friend's book or a release, as the friend's book page offers it.
-        case .friend, .released: return card.cover.format.takenAs
+        case .upcoming: []
+        default: card.cover.format.takenAs
         }
     }
 

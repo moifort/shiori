@@ -9,7 +9,7 @@ import SwiftUI
 struct FriendBookScreen: View {
     let friendName: String
     /// Called once the book is on the reader's shelf, so the screen that
-    /// opened this one can say "Chez vous" without asking again.
+    /// opened this one can say "Ajouté" without asking again.
     var onAdded: () -> Void = {}
 
     @Environment(\.dismiss) private var dismissPresentation

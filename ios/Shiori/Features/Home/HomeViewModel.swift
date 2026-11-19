@@ -416,12 +416,12 @@ final class HomeViewModel {
         hold(suggestion)
         do {
             switch choice {
-            case .add:
-                booksAdded[suggestion.id] = try await client.addBook(suggestion.shelfDraft(status: .toRead))
+            case let .add(format):
+                booksAdded[suggestion.id] = try await client.addBook(suggestion.shelfDraft(status: .toRead).taken(as: format, .toRead))
             case let .await(format):
                 awaitedIds[suggestion.id, default: [:]][format] = try await client.awaitEdition(suggestion.draft, format)
-            case .alreadyRead:
-                booksRead[suggestion.id] = try await client.addBook(suggestion.shelfDraft(status: .read))
+            case let .alreadyRead(format):
+                booksRead[suggestion.id] = try await client.addBook(suggestion.shelfDraft(status: .read).taken(as: format, .read))
             case .wish:
                 wishIds[suggestion.id] = try await client.wish(suggestion.shelfDraft(status: .toRead))
             case .unwish:
@@ -439,12 +439,12 @@ final class HomeViewModel {
                     ?? (suggestion.format == format ? suggestion.awaitedEditionId : nil)
                 if let id { try await client.stopAwaiting(id) }
                 awaitedIds[suggestion.id]?[format] = nil
+            // Black and white on the hero, held there until the reader leaves
+            // the page, when it leaves the line (`releaseTaken`).
             case .notInterested:
                 try await client.dismissSuggestion(suggestion.id, .notInterested)
-                await loadDiscoveries()
             case .reconsider:
                 try await client.reconsiderSuggestion(suggestion.id)
-                await loadDiscoveries()
             }
             return true
         } catch {

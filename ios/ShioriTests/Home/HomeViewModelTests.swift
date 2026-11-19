@@ -287,7 +287,7 @@ struct HomeViewModelTests {
         let viewModel = HomeViewModel(client: client, caching: false)
         let suggestion = Suggestion.preview
 
-        #expect(await viewModel.choose(suggestion, .alreadyRead))
+        #expect(await viewModel.choose(suggestion, .alreadyRead(.book)))
         #expect(await viewModel.choose(suggestion, .undoAlreadyRead))
 
         #expect(calls.all == ["add \(ReadingStatus.read)", "delete book-1"])
@@ -299,7 +299,7 @@ struct HomeViewModelTests {
         client.addBook = { _ in throw Refused() }
         let viewModel = HomeViewModel(client: client, caching: false)
 
-        #expect(await viewModel.choose(.preview, .alreadyRead) == false)
+        #expect(await viewModel.choose(.preview, .alreadyRead(.book)) == false)
         #expect(viewModel.actionError != nil)
     }
 }
