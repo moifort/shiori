@@ -161,6 +161,33 @@ export const isHeld = (
   )
 }
 
+/** The friend whose book an arriving one was awaited at, if any: an edition
+ *  awaited from a friend's shelf that tells the same story — the book as the
+ *  friend holds it, or the edition found of it, whose title a translation
+ *  changes. Whatever the format: a recording awaited and then bought in print
+ *  still came from that friend. */
+export const friendAwaitedAt = (
+  awaited: readonly AwaitedEdition[],
+  releases: ReadonlyMap<string, Pick<Release, 'found' | 'checkedAt'>>,
+  userId: UserId,
+  book: Pick<Book, 'title' | 'authors' | 'audibleAsin' | 'isbn13'>,
+): UserId | undefined => {
+  const key = shelfKeyOf(book.title, book.authors[0])
+  return awaited.find((edition) => {
+    if (edition.source.ownerId === userId) return false
+    const author = edition.source.authors[0]
+    if (shelfKeyOf(edition.source.title, author) === key) return true
+    const release = releases.get(edition.watchKey)
+    const found = release?.checkedAt ? release.found : undefined
+    return (
+      found !== undefined &&
+      ((found.asin !== undefined && book.audibleAsin === found.asin) ||
+        (found.isbn13 !== undefined && book.isbn13 === found.isbn13) ||
+        shelfKeyOf(found.title, author) === key)
+    )
+  })?.source.ownerId
+}
+
 /** Whether an edition held stops being awaited: once the library holds it,
  *  but never on the day it comes out — a recording pre-ordered reaches the
  *  library that very morning, and the home screen still says it is out

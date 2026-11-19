@@ -771,6 +771,11 @@ type AwaitedEdition {
   ownerId: UserId!
 
   """
+  The first name of the friend whose book it was awaited from: who recommended it. Null for one awaited from the reader’s own shelf or a scan.
+  """
+  recommendedBy: String
+
+  """
   The edition as every list and its page show it, described or not: what to draw.
   """
   release: Release!

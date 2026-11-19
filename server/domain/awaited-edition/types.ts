@@ -95,6 +95,10 @@ export type AwaitedEditionView = AwaitedEdition & {
   found?: FoundEdition
   /** Whether the web was ever searched for it. */
   watched: boolean
+  /** The first name of the friend whose book it was awaited from: who
+   *  recommended it. Absent for one awaited from the reader's own shelf or a
+   *  scan, and for a friend with no profile. */
+  recommendedBy?: string
 }
 
 /** What a book's page offers: the formats its edition in the app's language

@@ -51,14 +51,13 @@ describe('keeping the view in step with the library', () => {
     expect(view?.reading).toHaveLength(1)
   })
 
-  // The batch also forgets the wish for the story that arrived, read or not.
+  // A story never wished for has no wish to forget in the batch.
   test('marks the view stale in the very batch that writes the book', async () => {
     await addBook('Le Nom du vent')
 
     const [batch] = fake.batches
     expect(batch.ops.map((op) => [op.type, op.ref.collectionPath])).toEqual([
       ['set', 'books'],
-      ['delete', 'wishes'],
       ['merge', 'analytics'],
       ['merge', 'shared-hearts'],
     ])

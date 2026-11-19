@@ -142,6 +142,13 @@ export const AwaitedEditionType = builder
           'a scan’s review without being added to the library.',
         resolve: (view) => view.source.bookId ?? null,
       }),
+      recommendedBy: t.string({
+        nullable: true,
+        description:
+          'The first name of the friend whose book it was awaited from: who recommended ' +
+          'it. Null for one awaited from the reader’s own shelf or a scan.',
+        resolve: (view) => view.recommendedBy ?? null,
+      }),
       ownerId: t.field({
         type: 'UserId',
         description: 'Whose shelf that book is on: the reader’s, or a friend’s.',

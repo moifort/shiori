@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import type { WriteBatch } from 'firebase-admin/firestore'
 import type { AudibleAsin } from '~/domain/audible/types'
+import { AwaitedEditionQuery } from '~/domain/awaited-edition/query'
 import {
   datesAfterCorrection,
   datesAfterStatusChange,
@@ -50,10 +51,13 @@ import type {
 import { DEFAULT_BOOK_LANGUAGE } from '~/domain/book/types'
 import type { KindleAsin } from '~/domain/kindle/types'
 import type { SagaKey, SeriesId, SeriesName, VolumeNumber } from '~/domain/series/types'
+import { PersonName } from '~/domain/shared/primitives'
 import { favoriteAfterRating, ratingUnderHeart } from '~/domain/shared/rating'
 import { bareTitleOf } from '~/domain/shared/saga-title'
 import type { AuthorName, BookTitle, UserId, Year } from '~/domain/shared/types'
+import { UserQuery } from '~/domain/user/query'
 import { WishCommand } from '~/domain/wish/command'
+import { WishQuery } from '~/domain/wish/query'
 import type { ObjectPath } from '~/system/object-store/types'
 
 /** Everything a book can be created with. Only a title is required: a book added
@@ -252,6 +256,24 @@ const rewrite = async <Refusal extends string = never>(
   return repository.save({ ...book, ...changes, updatedAt: now }, batch)
 }
 
+/** The record as it reaches the library, saying which friend it came from: a
+ *  book wished for or awaited at a friend's is recommended by that friend
+ *  from its first day, however it arrives — a scan, an import, a sync. Read
+ *  here, before the arrival deletes the wish and ends the wait. The name is
+ *  the one the wish kept, else the friend's as it is now. A recommendation the
+ *  record already carries is the reader's own word and stays. */
+const advisedByFriend = async (userId: UserId, book: Book): Promise<Book> => {
+  if (book.recommendation) return book
+  const [wished, awaitedAt] = await Promise.all([
+    WishQuery.friendBehind(userId, book),
+    AwaitedEditionQuery.friendBehind(userId, book),
+  ])
+  const friendId = wished?.friendId ?? awaitedAt
+  const name =
+    wished?.label ?? (friendId ? (await UserQuery.namesOf([friendId])).get(friendId) : undefined)
+  return name ? { ...book, recommendation: { recommenderName: PersonName(name) } } : book
+}
+
 export namespace BookCommand {
   export const add = async (
     userId: UserId,
@@ -259,7 +281,10 @@ export namespace BookCommand {
     now = new Date(),
     batch?: WriteBatch,
   ): Promise<Book> => {
-    const book = await repository.save(recordOf(userId, input, now), batch)
+    const book = await repository.save(
+      await advisedByFriend(userId, recordOf(userId, input, now)),
+      batch,
+    )
     await WishCommand.forgetHeld(userId, [book], batch)
     return book
   }
@@ -277,7 +302,7 @@ export namespace BookCommand {
     const book = await repository.findById(userId, bookId)
     if (!book) return 'not-found'
     const joined = await repository.save(
-      mergedCopies(book, recordOf(userId, input, now), now),
+      await advisedByFriend(userId, mergedCopies(book, recordOf(userId, input, now), now)),
       batch,
     )
     await WishCommand.forgetHeld(userId, [joined], batch)

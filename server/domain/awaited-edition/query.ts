@@ -1,11 +1,27 @@
+import { friendAwaitedAt } from '~/domain/awaited-edition/business-rules'
 import * as repository from '~/domain/awaited-edition/infrastructure/repository'
 import type { AwaitedEdition, EditionPassState, EditionWatch } from '~/domain/awaited-edition/types'
+import type { Book } from '~/domain/book/types'
 import { ReleaseQuery } from '~/domain/release/query'
 import type { UserId } from '~/domain/shared/types'
 
 export namespace AwaitedEditionQuery {
   export const byUser = (userId: UserId): Promise<AwaitedEdition[]> =>
     repository.findAllByUser(userId)
+
+  /** The friend whose shelf a book now arriving was awaited at, if it was. The
+   *  releases are read only for a reader who awaits something of a friend's. */
+  export const friendBehind = async (
+    userId: UserId,
+    book: Pick<Book, 'title' | 'authors' | 'audibleAsin' | 'isbn13'>,
+  ): Promise<UserId | undefined> => {
+    const fromFriends = (await byUser(userId)).filter(
+      (edition) => edition.source.ownerId !== userId,
+    )
+    if (fromFriends.length === 0) return undefined
+    const releases = await ReleaseQuery.byKeys(fromFriends.map((edition) => edition.watchKey))
+    return friendAwaitedAt(fromFriends, releases, userId, book)
+  }
 
   export const all = (): Promise<AwaitedEdition[]> => repository.findAll()
 

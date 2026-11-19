@@ -71,7 +71,9 @@ const { BookUseCase } = await import('~/domain/book/use-case')
 const { AwaitedEditionUseCase } = await import('~/domain/awaited-edition/use-case')
 const { NotificationCommand } = await import('~/domain/notification/command')
 const { DeviceToken } = await import('~/domain/notification/primitives')
-const { AuthorName, BookTitle } = await import('~/domain/shared/primitives')
+const { AuthorName, BookTitle, PersonName } = await import('~/domain/shared/primitives')
+const { BookQuery } = await import('~/domain/book/query')
+const { BookCommand } = await import('~/domain/book/command')
 const { releaseShownOf } = await import('~/domain/awaited-edition/business-rules')
 const { releaseViewOf } = await import('~/domain/release/business-rules')
 
@@ -272,6 +274,97 @@ describe('the scheduled passes', () => {
     // Out: nothing is left to learn.
     await AwaitedEditionUseCase.watchDue(new Date('2026-11-01T08:00:00Z'))
     expect(asked).toEqual(['Wind and Truth (audio)'])
+  })
+})
+
+describe('an edition awaited at a friend’s', () => {
+  /** The friend's Wind and Truth, read in English, awaited recorded in French. */
+  const awaitedAtAFriend = async () => {
+    fake.seed('users', other, { userId: other, firstName: 'Guillaume' })
+    const bookId = await stock(other)
+    const book = await BookQuery.byId(other, bookId)
+    if (!book) throw new Error('expected the friend’s book')
+    answers = { 'Wind and Truth': recorded }
+    return AwaitedEditionUseCase.awaitBook(reader, book, other, 'audiobook', 'fr', now)
+  }
+
+  test('names the friend who recommended it', async () => {
+    const view = await awaitedAtAFriend()
+    startFakeRequest()
+
+    const [listed] = await AwaitedEditionUseCase.awaited(reader, 'audiobook', now)
+
+    expect(view).toMatchObject({ recommendedBy: 'Guillaume' })
+    expect(listed.recommendedBy).toBe('Guillaume')
+  })
+
+  test('names nobody for a book of one’s own', async () => {
+    answers = { 'Wind and Truth': recorded }
+    const view = await AwaitedEditionUseCase.awaitOwnBook(
+      reader,
+      await stock(reader),
+      'audiobook',
+      'fr',
+      now,
+    )
+
+    expect(view).not.toHaveProperty('recommendedBy')
+  })
+
+  // The recording bears the translated title: known by the edition found.
+  test('reaches the library recommended by that friend, however it arrives', async () => {
+    await awaitedAtAFriend()
+    startFakeRequest()
+
+    const book = await BookUseCase.add(reader, {
+      title: BookTitle('Vent et vérité'),
+      authors: [AuthorName('Brandon Sanderson')],
+      language: 'fr',
+      format: 'audiobook',
+      origin: { kind: 'audible' },
+    })
+
+    expect(book.recommendation).toEqual({ recommenderName: PersonName('Guillaume') })
+  })
+
+  test('recommends the story in whatever format it is bought', async () => {
+    await awaitedAtAFriend()
+    startFakeRequest()
+
+    const book = await BookUseCase.add(reader, {
+      title: BookTitle('Wind and Truth'),
+      authors: [AuthorName('Brandon Sanderson')],
+      language: 'en',
+      format: 'book',
+    })
+
+    expect(book.recommendation).toEqual({ recommenderName: PersonName('Guillaume') })
+  })
+
+  test('says nothing of another book', async () => {
+    await awaitedAtAFriend()
+    startFakeRequest()
+
+    const book = await BookUseCase.add(reader, {
+      title: BookTitle('Elantris'),
+      authors: [AuthorName('Brandon Sanderson')],
+    })
+
+    expect(book.recommendation).toBeUndefined()
+  })
+
+  test('reads nothing more at an arrival for a reader who awaits only their own', async () => {
+    answers = { 'Wind and Truth': recorded }
+    await AwaitedEditionUseCase.awaitOwnBook(reader, await stock(reader), 'audiobook', 'fr', now)
+    startFakeRequest()
+    await AwaitedEditionUseCase.awaited(reader, 'audiobook', now)
+    const before = { docs: fake.docReads, queries: fake.queryReads }
+
+    await BookCommand.add(reader, { title: BookTitle('Elantris'), authors: [] })
+
+    // The wishes, once; the editions awaited were read already.
+    expect(fake.queryReads - before.queries).toBe(1)
+    expect(fake.docReads - before.docs).toBe(0)
   })
 })
 

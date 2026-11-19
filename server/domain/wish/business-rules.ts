@@ -6,7 +6,7 @@ import type { ReleaseIdentity, ReleaseShown } from '~/domain/release/types'
 import type { Language } from '~/domain/shared/language'
 import type { UserId } from '~/domain/shared/types'
 import { WishId } from '~/domain/wish/primitives'
-import type { Wish, WishedBook } from '~/domain/wish/types'
+import type { Wish, WishedBook, WishOrigin } from '~/domain/wish/types'
 
 /** A reader wishes for as many books as they like, within reason. */
 export const MAX_WISHES = 500
@@ -19,6 +19,19 @@ export const wishIdOf = (userId: UserId, book: Pick<WishedBook, 'title' | 'autho
 /** Whether the library holds the story wished for. */
 export const isHeld = (wish: Pick<Wish, 'title' | 'authors'>, shelfKeys: ReadonlySet<string>) =>
   shelfKeys.has(shelfKeyOf(wish.title, wish.authors[0]))
+
+/** Where the wish for a story came from when a friend showed it: the friend
+ *  and their first name as the wish kept them. Nothing for a story never
+ *  wished for, or wished from anywhere else. */
+export const friendOriginOf = (
+  wishes: readonly Wish[],
+  userId: UserId,
+  book: Pick<WishedBook, 'title' | 'authors'>,
+): WishOrigin | undefined => {
+  const id = wishIdOf(userId, book)
+  const origin = wishes.find((wish) => wish.id === id)?.origin
+  return origin?.kind === 'friend' ? origin : undefined
+}
 
 /** The wishes as the list draws them: the latest wished first. */
 export const newestFirst = (wishes: readonly Wish[]): Wish[] =>

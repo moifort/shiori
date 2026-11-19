@@ -178,6 +178,9 @@ const awaits = (
   found?: { title: string; date?: string; asin?: string },
 ) => {
   const watchKey = `${original}--${format}--fr`
+  // Awaited in a request of its own, after the one that shelved the books:
+  // a book's arrival reads the list, and a request keeps what it read.
+  startFakeRequest()
   fake.seed('awaited-editions', `${reader}--${watchKey}`, {
     id: `${reader}--${watchKey}`,
     userId: reader,

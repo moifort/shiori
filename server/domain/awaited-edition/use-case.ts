@@ -44,6 +44,7 @@ import type { ReleaseView } from '~/domain/release/types'
 import { type DescribeRefusal, ReleaseUseCase } from '~/domain/release/use-case'
 import type { Language } from '~/domain/shared/language'
 import type { UserId } from '~/domain/shared/types'
+import { UserQuery } from '~/domain/user/query'
 import { generate } from '~/system/gemini'
 import { isSpendCapReached } from '~/system/gemini/spend-cap'
 import { createLogger } from '~/system/logger'
@@ -180,7 +181,7 @@ export namespace AwaitedEditionUseCase {
     const today = todayOf(now)
     const watches = await AwaitedEditionQuery.watches([watchKey])
     const known = already.find((awaited) => awaited.id === id)
-    if (known) return viewOf(known, watches.get(watchKey), today)
+    if (known) return (await named(userId, [viewOf(known, watches.get(watchKey), today)]))[0]
     if (already.length >= MAX_AWAITED) return 'too-many'
     const awaited = await AwaitedEditionCommand.save({
       id,
@@ -198,7 +199,7 @@ export namespace AwaitedEditionUseCase {
       } catch (error) {
         logger.warn('edition lookup failed', { error, watchKey })
       }
-    const view = viewOf(awaited, watch, today)
+    const [view] = await named(userId, [viewOf(awaited, watch, today)])
     if (view.state !== 'available') return view
     return { ...view, ...(await AwaitedEditionCommand.markNotified(awaited, now)) }
   }
@@ -407,7 +408,10 @@ const awaitedOf = async (userId: UserId, now: Date): Promise<AwaitedEditionView[
   if (all.length === 0) return []
   const releases = await ReleaseQuery.byKeys(all.map((awaited) => awaited.watchKey))
   const today = todayOf(now)
-  const views = all.map((awaited) => viewOf(awaited, releases.get(awaited.watchKey), today))
+  const views = await named(
+    userId,
+    all.map((awaited) => viewOf(awaited, releases.get(awaited.watchKey), today)),
+  )
   if (!views.some((view) => view.found)) return views
   const books = await BookQuery.all(userId)
   const held = views.filter((view) => isNoLongerAwaited(view, books, today))
@@ -417,6 +421,23 @@ const awaitedOf = async (userId: UserId, now: Date): Promise<AwaitedEditionView[
     held.map((view) => view.id),
   )
   return views.filter((view) => !held.includes(view))
+}
+
+/** The editions with the friend each was awaited at named: one getAll for
+ *  every friend at once, and none for a reader who awaits only their own. */
+const named = async <View extends AwaitedEditionView>(
+  userId: UserId,
+  views: readonly View[],
+): Promise<View[]> => {
+  const friendIds = [
+    ...new Set(views.map((view) => view.source.ownerId).filter((id) => id !== userId)),
+  ]
+  if (friendIds.length === 0) return [...views]
+  const names = await UserQuery.namesOf(friendIds)
+  return views.map((view) => {
+    const name = names.get(view.source.ownerId)
+    return name ? { ...view, recommendedBy: name } : view
+  })
 }
 
 /** The book as the awaited edition remembers it. The reader's own photo is

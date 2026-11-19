@@ -16,18 +16,19 @@ export namespace WishCommand {
   /** A story the library now holds is no longer wished for: its wish goes
    *  for good, even if the book leaves the library later. Called by every
    *  write that sets a book's title or first author — an arrival, a merge, an
-   *  edit — so the wishlist never deletes while it is read. A wish's id is its
-   *  story's, so nothing is read: a story never wished for costs one delete. */
-  export const forgetHeld = (
+   *  edit — so the wishlist never deletes while it is read. The reader's
+   *  wishes are read first, once a request — an arrival has read them already,
+   *  for the friend behind the wish — and only a story wished for is deleted:
+   *  a sync shelving book after book keeps the list it read. */
+  export const forgetHeld = async (
     userId: UserId,
     books: readonly Pick<Book, 'title' | 'authors'>[],
     batch?: WriteBatch,
-  ): Promise<void> =>
-    repository.remove(
-      userId,
-      books.map((book) => wishIdOf(userId, book)),
-      batch,
-    )
+  ): Promise<void> => {
+    const wished = new Set((await repository.findAllByUser(userId)).map((wish) => wish.id))
+    const held = books.map((book) => wishIdOf(userId, book)).filter((id) => wished.has(id))
+    if (held.length > 0) await repository.remove(userId, held, batch)
+  }
 
   export const deleteAllForUser = (userId: UserId): Promise<void> =>
     repository.removeAllByUser(userId)

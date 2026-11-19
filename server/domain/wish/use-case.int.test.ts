@@ -12,7 +12,7 @@ mock.module('~/system/firebase', () => ({ db: fakeDb }))
 const { WishUseCase } = await import('~/domain/wish/use-case')
 const { BookCommand } = await import('~/domain/book/command')
 const { WishCommand } = await import('~/domain/wish/command')
-const { AuthorName, BookTitle } = await import('~/domain/shared/primitives')
+const { AuthorName, BookTitle, PersonName } = await import('~/domain/shared/primitives')
 
 const bob = 'bob' as UserId
 let fake: FakeFirestore
@@ -75,16 +75,70 @@ describe('a story the library comes to hold', () => {
     expect(fake.snapshot('wishes').size).toBe(0)
   })
 
-  test('deletes nothing it did not read, and reads nothing to delete', async () => {
+  test('reads the wishes once and deletes only the one held', async () => {
     await wish('Piranesi', new Date('2026-11-01'))
     startFakeRequest()
     const before = { docs: fake.docReads, queries: fake.queryReads }
 
     await WishCommand.forgetHeld(bob, [{ title: BookTitle('Piranesi'), authors: clarke }])
 
-    expect(fake.queryReads - before.queries).toBe(0)
+    expect(fake.queryReads - before.queries).toBe(1)
     expect(fake.docReads - before.docs).toBe(0)
     expect(fake.snapshot('wishes').size).toBe(0)
+  })
+
+  // A sync shelves book after book: the wishes it read stay read.
+  test('writes nothing for a story never wished for, and keeps the list it read', async () => {
+    await wish('Piranesi', new Date('2026-11-01'))
+    startFakeRequest()
+    await WishCommand.forgetHeld(bob, [{ title: BookTitle('Dune'), authors: clarke }])
+    const before = fake.queryReads
+
+    await WishCommand.forgetHeld(bob, [{ title: BookTitle('Hyperion'), authors: clarke }])
+
+    expect(fake.queryReads - before).toBe(0)
+    expect(fake.snapshot('wishes').size).toBe(1)
+  })
+
+  test('a book wished for at a friend’s arrives recommended by that friend', async () => {
+    await WishUseCase.wish(
+      bob,
+      { title: BookTitle('Piranesi'), authors: clarke, format: 'book' },
+      { kind: 'friend', friendId: 'guillaume' as UserId, label: 'Guillaume' },
+    )
+
+    const book = await BookCommand.add(bob, {
+      title: BookTitle('Piranesi'),
+      authors: clarke,
+      format: 'audiobook',
+    })
+
+    expect(book.recommendation).toEqual({ recommenderName: PersonName('Guillaume') })
+    expect(fake.snapshot('wishes').size).toBe(0)
+  })
+
+  test('a book wished for from a discovery arrives with no recommendation', async () => {
+    await wish('Piranesi', new Date('2026-11-01'))
+
+    const book = await BookCommand.add(bob, { title: BookTitle('Piranesi'), authors: clarke })
+
+    expect(book.recommendation).toBeUndefined()
+  })
+
+  test('the reader’s own word on who recommended it is kept', async () => {
+    await WishUseCase.wish(
+      bob,
+      { title: BookTitle('Piranesi'), authors: clarke, format: 'book' },
+      { kind: 'friend', friendId: 'guillaume' as UserId, label: 'Guillaume' },
+    )
+
+    const book = await BookCommand.add(bob, {
+      title: BookTitle('Piranesi'),
+      authors: clarke,
+      recommendation: { recommenderName: PersonName('Marie') },
+    })
+
+    expect(book.recommendation).toEqual({ recommenderName: PersonName('Marie') })
   })
 
   test('leaves a wish held before the rule out of the list, without deleting it', async () => {
