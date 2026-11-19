@@ -78,7 +78,13 @@ struct AwardWinnerPage: View {
             isSetAside: choices.marks[winner.id] == .notInterested
         ) {
             HStack(spacing: 12) {
-                DiscoveryButtons(item: winner, choices: choices, onChoice: onChoice, addsInFull: true)
+                // Held already, in any format, and nothing chosen here: no
+                // button is left to press, "Chez vous" says why.
+                if winner.inLibrary == true, choices.marks[winner.id] == nil {
+                    OwnedCapsule(size: .page)
+                } else {
+                    DiscoveryButtons(item: winner, choices: choices, onChoice: onChoice, addsInFull: true)
+                }
             }
             .controlSize(.large)
         }

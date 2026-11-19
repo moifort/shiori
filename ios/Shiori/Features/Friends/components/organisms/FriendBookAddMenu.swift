@@ -6,7 +6,7 @@ import SwiftUI
 /// book, and a printed book is offered heard once Audible confirms it sells
 /// it. Its edition in the app's language, translated or recorded, may be
 /// awaited from here too. Once the reader holds the book it says so, "✓ Chez
-/// vous", and still opens what is left to await; greyed out once nothing is.
+/// vous" on glass, and still opens what is left to await.
 struct FriendBookAddMenu: View {
     /// The formats the reader may take the book in.
     let formats: [BookFormat]
@@ -59,33 +59,27 @@ struct FriendBookAddMenu: View {
         }
     }
 
-    /// The book held: "✓ Chez vous", which still opens what is left to await.
+    /// The book held: "✓ Chez vous" on glass, as Actualité's cards say it,
+    /// which still opens the editions left to await, and takes no tap once
+    /// none is.
+    @ViewBuilder
     private var heldMenu: some View {
-        Menu {
-            BookAddMenuItems(
-                formats: formats,
-                owned: owned,
-                awaitable: awaitable,
-                onAdd: onAdd,
-                wished: wished,
-                onAwait: onAwait,
-                onWish: onWish
-            )
-        } label: {
-            Label(
-                owned ? "Chez vous" : "Ajouter",
-                systemImage: owned ? "checkmark" : "plus"
-            )
-            .font(.headline)
-            .lineLimit(1)
-            .fixedSize()
+        if awaitable.isEmpty {
+            OwnedCapsule(size: .page)
+        } else {
+            OwnedCapsule(size: .page) {
+                BookAddMenuItems(
+                    formats: formats,
+                    owned: owned,
+                    awaitable: awaitable,
+                    onAdd: onAdd,
+                    wished: wished,
+                    onAwait: onAwait,
+                    onWish: onWish
+                )
+            }
+            .accessibilityIdentifier("friend-book-add-menu")
         }
-        .menuStyle(.button)
-        .buttonStyle(.heroProminent)
-        .opacity(owned && awaitable.isEmpty ? 0.45 : 1)
-        .disabled(owned && awaitable.isEmpty)
-        .accessibilityLabel(owned ? Text("Chez vous") : Text("Ajouter à ma bibliothèque"))
-        .accessibilityIdentifier("friend-book-add-menu")
     }
 }
 
