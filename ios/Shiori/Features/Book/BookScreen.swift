@@ -109,7 +109,8 @@ struct BookScreen: View {
                         if let state = ListeningButtonState.of(book, player: player) {
                             player?.press(state, on: book)
                         }
-                    }
+                    },
+                    isDownloaded: ListeningTitle(book: book).map { player?.downloads.isDownloaded($0.asin) == true } ?? false
                 )
                 .safeAreaInset(edge: .bottom) {
                     if isComposingNote {

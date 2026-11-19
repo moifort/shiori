@@ -61,9 +61,7 @@ extension PlayerPage.Item {
             isLoading: player.phase == .loading,
             failure: failure,
             sleepMinutes: player.sleepTimer?.minutes,
-            hasBook: title.bookID != nil,
-            isWaitingForNetwork: player.isWaitingForNetwork,
-            downloadProgress: player.downloads.progress(of: title.asin)
+            hasBook: title.bookID != nil
         )
     }
 }
@@ -79,11 +77,10 @@ extension PlayerAccessory.Item {
         self.init(
             title: title.title,
             line: line,
-            shortLine: player.phase == .ready ? ListeningText.shortLine(player.progress) : nil,
+            shortLine: player.phase == .ready || player.phase == .waiting ? ListeningText.shortLine(player.progress) : nil,
             coverURL: title.coverURL,
             isPlaying: player.isPlaying,
-            isLoading: player.phase == .loading,
-            isWaitingForNetwork: player.isWaitingForNetwork
+            isLoading: player.phase == .loading
         )
     }
 }

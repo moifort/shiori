@@ -24,8 +24,6 @@ final class AudibleDownloads {
         var isComplete = false
     }
 
-    /// How far each title under way has downloaded, from 0 to 1.
-    private(set) var progress: [String: Double] = [:]
     private var records: [String: Record]
     private var tasks: [String: AVAssetDownloadTask] = [:]
     @ObservationIgnored private var session: AVAssetDownloadURLSession?
@@ -68,10 +66,6 @@ final class AudibleDownloads {
 
     func record(_ asin: String) -> Record? { records[asin] }
 
-    /// How far a title under way has downloaded, from 0 to 1; nil once it is
-    /// wholly on the iPhone, or not downloading.
-    func progress(of asin: String) -> Double? { progress[asin] }
-
     // MARK: - Downloading
 
     /// Download a title as it plays: the asset handed in is the one the
@@ -91,14 +85,12 @@ final class AudibleDownloads {
         guard let task = session?.makeAssetDownloadTask(downloadConfiguration: configuration) else { return }
         task.taskDescription = asin
         tasks[asin] = task
-        progress[asin] = 0
         task.resume()
     }
 
     /// Remove a title from the iPhone: the stream, the key and the record.
     func remove(_ asin: String) {
         tasks.removeValue(forKey: asin)?.cancel()
-        progress[asin] = nil
         if let path = records.removeValue(forKey: asin)?.relativePath {
             try? FileManager.default.removeItem(
                 at: URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent(path)
@@ -127,11 +119,6 @@ final class AudibleDownloads {
         saveRecords()
     }
 
-    fileprivate func loaded(_ asin: String, fraction: Double) {
-        guard tasks[asin] != nil else { return }
-        progress[asin] = min(1, max(0, fraction))
-    }
-
     fileprivate func finished(_ asin: String, at location: URL) {
         records[asin]?.relativePath = Self.relativePath(of: location)
         saveRecords()
@@ -139,7 +126,6 @@ final class AudibleDownloads {
 
     fileprivate func completed(_ asin: String, error: Error?) {
         tasks[asin] = nil
-        progress[asin] = nil
         if let error {
             // A cancel is a removal, already done. Anything else, an expired
             // signed link above all, starts again at the next listening.
@@ -196,20 +182,6 @@ private final class DownloadRelay: NSObject, AVAssetDownloadDelegate, @unchecked
     func urlSession(_ session: URLSession, assetDownloadTask: AVAssetDownloadTask, willDownloadTo location: URL) {
         guard let asin = assetDownloadTask.taskDescription else { return }
         MainActor.assumeIsolated { owner?.willDownload(asin, to: location) }
-    }
-
-    func urlSession(
-        _ session: URLSession,
-        assetDownloadTask: AVAssetDownloadTask,
-        didLoad timeRange: CMTimeRange,
-        totalTimeRangesLoaded loadedTimeRanges: [NSValue],
-        timeRangeExpectedToLoad: CMTimeRange
-    ) {
-        guard let asin = assetDownloadTask.taskDescription else { return }
-        let expected = timeRangeExpectedToLoad.duration.seconds
-        guard expected > 0 else { return }
-        let loaded = loadedTimeRanges.reduce(0) { $0 + $1.timeRangeValue.duration.seconds }
-        MainActor.assumeIsolated { owner?.loaded(asin, fraction: loaded / expected) }
     }
 
     func urlSession(_ session: URLSession, assetDownloadTask: AVAssetDownloadTask, didFinishDownloadingTo location: URL) {

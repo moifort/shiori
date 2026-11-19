@@ -2,10 +2,10 @@ import SwiftUI
 
 /// The top of a book's page, as the TV app opens a film: the cover large over
 /// its own colours, which melt into the page well past the hero, and beside it
-/// the text as the home's "En cours" card sets it — the saga over the title,
-/// as the TV app names the show over the episode, the author and who reads a
-/// recording, then where the reader stands and how long the book runs, the
-/// format in an outlined tag, and how much of a recording is left on a small
+/// the text as the home's "En cours" card sets it — the format in outlined
+/// tags, then the saga over the title, as the TV app names the show over the
+/// episode, the author and who reads a recording, then where the reader stands
+/// and how long the book runs, and how much of a recording is left on a small
 /// bar — then the page's actions on Liquid Glass. The genre and the year are
 /// left to the facts under it. The ground runs up under the toolbar, whose
 /// glass buttons float over it; the text is drawn in the dark appearance
@@ -47,6 +47,9 @@ struct BookHero<Actions: View>: View {
     /// Turned down by the reader: the cover and its colours turn black and
     /// white, as a saga set aside does.
     var isSetAside = false
+    /// An Audible title kept on the iPhone: "Téléchargé" joins the tags. The
+    /// player itself never says so.
+    var isDownloaded = false
     @ViewBuilder var actions: Actions
 
     /// The text's height and the cover's, to tell whether the text climbs
@@ -67,7 +70,7 @@ struct BookHero<Actions: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             HStack(alignment: .bottom, spacing: 16) {
-                // No format badge: the outlined tag on the detail line says it.
+                // No format badge: the outlined tags over the saga say it.
                 BookCover(book: book, width: coverWidth, showsFormatBadge: false)
                     .saturation(isSetAside ? 0 : 1)
                     .animation(.setAside, value: isSetAside)
@@ -112,6 +115,7 @@ struct BookHero<Actions: View>: View {
             if let overTitle {
                 overTitle.padding(.bottom, 6)
             }
+            tags
             if let series = book.series {
                 // The saga's name gives way before the volume's number does.
                 HStack(spacing: 4) {
@@ -255,6 +259,25 @@ struct BookHero<Actions: View>: View {
         }
     }
 
+    /// What the edition is, in outlined tags over the saga: only a foreign
+    /// edition and a recording are tagged, paper in the phone's language being
+    /// what a book is taken to be, and a recording kept on the iPhone. Clear
+    /// over the hero's colours: no glass behind the words.
+    @ViewBuilder private var tags: some View {
+        let cover = CoverTags(book: book, isFrosted: false)
+        if !cover.isEmpty || isDownloaded {
+            HStack(spacing: 6) {
+                if !cover.isEmpty { cover }
+                if isDownloaded {
+                    OutlinedTag(text: String(localized: "Téléchargé"), isFrosted: false)
+                        .accessibilityIdentifier("book-downloaded-tag")
+                }
+            }
+            .padding(.trailing, besideLeaf)
+            .padding(.bottom, 3)
+        }
+    }
+
     /// Where the reader stands and how long the book runs, as the home's card
     /// says it — "depuis 3j · 16h09" — with the format in an outlined tag, as
     /// the TV app tags a film "4K", then a recording's time left on its bar.
@@ -273,10 +296,6 @@ struct BookHero<Actions: View>: View {
                     OutlinedTag(text: stateTag, isFrosted: false)
                         .accessibilityIdentifier("book-state-tag")
                 }
-                // Only a foreign edition and a recording are tagged: paper in
-                // the phone's language is what a book is taken to be. Clear
-                // over the hero's colours: no glass behind the words.
-                CoverTags(book: book, isFrosted: false)
                 if let countdown {
                     OutlinedTag(text: countdown, isFrosted: false)
                         .accessibilityLabel(Text("Dans \(countdown)"))
@@ -374,5 +393,13 @@ extension BookState {
 #Preview("No cover") {
     ScrollView {
         BookHero(book: .previewFromShelf, state: .reading(of: .previewFromShelf))
+    }
+}
+
+#Preview("Downloaded audiobook") {
+    var book = Book.preview
+    book.format = .audiobook
+    return ScrollView {
+        BookHero(book: book, state: .reading(of: book), isDownloaded: true) { EmptyView() }
     }
 }

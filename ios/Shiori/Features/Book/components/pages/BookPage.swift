@@ -52,6 +52,8 @@ struct BookPage: View {
     /// into round buttons beside it. Nil draws the hero as for any book.
     var listening: ListeningButtonState? = nil
     var onListen: () -> Void = {}
+    /// The audiobook is kept on the iPhone: a tag in the hero says so.
+    var isDownloaded = false
 
     /// The comment the page holding it scrolls to: the reader's remarks on
     /// "Remarques" once written, rather than the form again, and a comment
@@ -170,7 +172,8 @@ struct BookPage: View {
             isAwaited: !awaited.isEmpty,
             onOpenAuthor: onOpenAuthor,
             onOpenNarrator: onOpenNarrator,
-            onOpenProgress: onOpenProgress
+            onOpenProgress: onOpenProgress,
+            isDownloaded: isDownloaded
         ) {
             // Sideways past the width, from edge to edge, rather than a
             // label cut or an icon dropped.

@@ -16175,18 +16175,18 @@
         }
       }
     },
-    "Téléchargement, %@" : {
+    "Téléchargé" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Downloading, %@"
+            "value" : "Downloaded"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Téléchargement, %@"
+            "value" : "Téléchargé"
           }
         }
       }

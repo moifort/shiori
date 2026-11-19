@@ -45,10 +45,7 @@ final class AudiblePlayer {
     private(set) var chapters: [ListeningChapter] = []
     /// When the sleep timer pauses the player, and what it was set to.
     private(set) var sleepTimer: (minutes: Int, endsAt: Date)?
-    /// Playing, or meaning to, with no network to go on: the stream ran past
-    /// what the iPhone holds, or could not be asked for.
-    private(set) var isWaitingForNetwork = false
-    /// The titles kept on the iPhone, and how far the one under way has come.
+    /// The titles kept on the iPhone.
     let downloads: AudibleDownloads
 
     var progress: ListeningProgress {
@@ -122,7 +119,6 @@ final class AudiblePlayer {
         hasPlayed = false
         hasRetried = false
         resumesOnReconnect = true
-        isWaitingForNetwork = false
         lastSaved = nil
         loadArtwork(for: title)
         start(at: fromStart ? 0 : nil)
@@ -132,7 +128,6 @@ final class AudiblePlayer {
         if phase == .waiting {
             resumesOnReconnect.toggle()
             isPlaying = resumesOnReconnect
-            refreshWaiting()
             updateNowPlaying()
             return
         }
@@ -358,7 +353,6 @@ final class AudiblePlayer {
         phase = .waiting
         resumesOnReconnect = wasPlaying && resumesOnReconnect
         isPlaying = resumesOnReconnect
-        refreshWaiting()
         updateNowPlaying()
     }
 
@@ -539,7 +533,6 @@ final class AudiblePlayer {
             let playing = player.timeControlStatus != .paused
             Task { @MainActor in
                 guard let self, self.phase != .waiting else { return }
-                self.refreshWaiting()
                 guard self.isPlaying != playing else { return }
                 self.isPlaying = playing
                 self.updateNowPlaying()
@@ -560,22 +553,12 @@ final class AudiblePlayer {
     private func networkChanged(online: Bool) {
         guard isOnline != online else { return }
         isOnline = online
-        refreshWaiting()
         guard online else { return }
         sendPendingPositions()
         if phase == .waiting {
             phase = .loading
             start(at: elapsed)
         }
-    }
-
-    /// Whether the player waits on the network: a stream stalled with none, or
-    /// no stream at all until it returns.
-    private func refreshWaiting() {
-        let stalled = phase == .ready && !isOnline
-            && player.timeControlStatus == .waitingToPlayAtSpecifiedRate
-        let waiting = (phase == .waiting && isPlaying) || stalled
-        if isWaitingForNetwork != waiting { isWaitingForNetwork = waiting }
     }
 
     private var rateObservation: NSKeyValueObservation?

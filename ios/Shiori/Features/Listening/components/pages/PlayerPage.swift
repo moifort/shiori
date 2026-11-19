@@ -30,11 +30,6 @@ struct PlayerPage: View {
         let sleepMinutes: Int?
         /// Whether the title has a book in the library to open.
         var hasBook = true
-        /// Playing, or meaning to, with no network to go on.
-        var isWaitingForNetwork = false
-        /// How far the title has downloaded, from 0 to 1, under the time
-        /// left while it downloads. Once on the iPhone, nothing shows.
-        var downloadProgress: Double? = nil
     }
 
     let item: Item
@@ -113,34 +108,13 @@ struct PlayerPage: View {
         }
     }
 
-    /// The time left in the book, and under it how far the title has
-    /// downloaded; in their place, why it does not play. A wait for the
-    /// network shows in the play button alone.
+    /// The time left in the book, or why it does not play. Downloading
+    /// and waiting for the network show nothing: they happen in silence.
     private var summary: some View {
-        VStack(spacing: 6) {
-            Text(item.failure ?? ListeningText.summary(item.progress))
-                .contentTransition(.numericText())
-            if item.failure == nil, let fraction = item.downloadProgress {
-                inlineLabel(
-                    Text(fraction, format: .percent.precision(.fractionLength(0))),
-                    systemImage: "arrow.down.circle"
-                )
-                .contentTransition(.numericText())
-                .accessibilityLabel(Text("Téléchargement, \(fraction.formatted(.percent.precision(.fractionLength(0))))"))
-            }
-        }
-        .font(.footnote)
-        .foregroundStyle(.white.opacity(0.7))
-    }
-
-    /// An icon at the text's size, close to it, inside a line of text.
-    private func inlineLabel(_ title: Text, systemImage: String) -> some View {
-        HStack(spacing: 5) {
-            Image(systemName: systemImage)
-                .accessibilityHidden(true)
-            title
-        }
-        .accessibilityElement(children: .combine)
+        Text(item.failure ?? ListeningText.summary(item.progress))
+            .contentTransition(.numericText())
+            .font(.footnote)
+            .foregroundStyle(.white.opacity(0.7))
     }
 
     private var chapterBar: some View {
@@ -210,7 +184,7 @@ struct PlayerPage: View {
             Spacer()
             Button { onAction(.togglePlay) } label: {
                 Group {
-                    if item.isLoading || (item.isWaitingForNetwork && item.isPlaying) {
+                    if item.isLoading {
                         ProgressView().controlSize(.large).tint(.white)
                     } else {
                         Image(systemName: item.isPlaying ? "pause.fill" : "play.fill")
@@ -277,13 +251,6 @@ struct PlayerPage: View {
 }
 
 extension PlayerPage.Item {
-    func with(isWaitingForNetwork: Bool = false, downloadProgress: Double? = nil) -> Self {
-        var item = self
-        item.isWaitingForNetwork = isWaitingForNetwork
-        item.downloadProgress = downloadProgress
-        return item
-    }
-
     static let preview = PlayerPage.Item(
         title: ListeningTitle.preview.title,
         subtitle: ListeningTitle.preview.subtitle,
@@ -313,14 +280,6 @@ extension PlayerPage.Item {
             sleepMinutes: nil
         )
     ) { _ in }
-}
-
-#Preview("Downloading") {
-    PlayerPage(item: PlayerPage.Item.preview.with(downloadProgress: 0.34)) { _ in }
-}
-
-#Preview("Waiting for the network") {
-    PlayerPage(item: PlayerPage.Item.preview.with(isWaitingForNetwork: true)) { _ in }
 }
 
 #Preview("Sleep timer on") {

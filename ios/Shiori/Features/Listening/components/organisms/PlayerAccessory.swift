@@ -16,9 +16,6 @@ struct PlayerAccessory: View {
         let coverURL: URL?
         let isPlaying: Bool
         let isLoading: Bool
-        /// Playing, or meaning to, with no network to go on: a spinner that
-        /// still pauses.
-        var isWaitingForNetwork = false
     }
 
     let item: Item
@@ -60,7 +57,7 @@ struct PlayerAccessory: View {
 
             Button(action: onTogglePlay) {
                 Group {
-                    if item.isLoading || (item.isWaitingForNetwork && item.isPlaying) {
+                    if item.isLoading {
                         ProgressView()
                     } else {
                         Image(systemName: item.isPlaying ? "pause.fill" : "play.fill")
