@@ -149,15 +149,20 @@ final class BookViewModel {
         await mutate { [client, bookId] in try await client.rate(bookId, stars) }
     }
 
-    /// Saves the edit form: the corrected facts first, then the rating when it
-    /// moved. Two calls, because rating is its own mutation with its own rule —
+    /// Saves the edit form: the status when it moved, the corrected facts,
+    /// then the rating when it moved. Two calls, because rating is its own mutation with its own rule —
     /// it marks the book read — and the record the second one returns carries
     /// both changes. Returns false when a call failed, so the form stays open.
-    func save(_ correction: BookCorrection, rating: Double?) async -> Bool {
+    func save(_ correction: BookCorrection, rating: Double?, status: ReadingStatus? = nil) async -> Bool {
         guard let book else { return false }
         isSaving = true
         defer { isSaving = false }
         do {
+            // The status first: a move stamps or clears the reading dates, and
+            // the dates the form corrects are those of the status it shows.
+            if let status, status != book.status {
+                self.book = try await client.setStatus(bookId, status)
+            }
             // One request for the whole sheet: the stars ride the correction,
             // and only when they changed.
             let saved = try await client.save(bookId, correction, rating != book.rating ? .some(rating) : .none)

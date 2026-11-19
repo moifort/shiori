@@ -13013,6 +13013,22 @@
         }
       }
     },
+    "Revenir à « À lire » efface les dates de lecture et la progression à l'enregistrement." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Going back to “To read” clears the reading dates and the progress when you save."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Revenir à « À lire » efface les dates de lecture et la progression à l'enregistrement."
+          }
+        }
+      }
+    },
     "Revenus Premium" : {
       "localizations" : {
         "en" : {

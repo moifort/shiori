@@ -6,17 +6,19 @@ import SwiftUI
 /// a volume the scan missed joins its siblings rather than starting a saga of
 /// its own.
 ///
-/// The reading dates are stamped by status changes, and corrected here: only
-/// the ones the status carries are shown — a book on the pile was never
-/// opened, and only a read one was finished — and none is ever cleared, since
-/// moving the book along the pile is what does that.
+/// The status is chosen here too, for a book marked read by mistake. The
+/// reading dates are stamped by status changes, and corrected here: only the
+/// ones both the book and the chosen status carry are shown — a book on the
+/// pile was never opened, and only a read one was finished. A move saved from
+/// here stamps the dates it adds and clears those it drops, as everywhere.
 ///
 /// The form edits text as the reader sees it and works out the difference only
 /// on save, so a field left alone is never sent and one emptied is cleared.
 struct BookEditSheet: View {
     let book: Book
     /// Answers nil once saved, or the message to show when the save failed.
-    let onSave: (BookCorrection, Double?) async -> String?
+    /// The status is the one chosen, sent only when it moved.
+    let onSave: (BookCorrection, ReadingStatus?, Double?) async -> String?
     /// The reader's subgenres and saga names, offered under the fields; nil
     /// when the read failed, since the proposals are a convenience.
     let loadVocabulary: () async -> BookVocabulary?
@@ -33,6 +35,7 @@ struct BookEditSheet: View {
     @State private var authors: String
     @State private var format: BookFormat
     @State private var media: [BookMedium]
+    @State private var status: ReadingStatus
     @State private var rating: Double
     @State private var synopsis: String
     @State private var publisher: String
@@ -66,7 +69,7 @@ struct BookEditSheet: View {
         book: Book,
         loadVocabulary: @escaping () async -> BookVocabulary?,
         onClose: (() -> Void)? = nil,
-        onSave: @escaping (BookCorrection, Double?) async -> String?
+        onSave: @escaping (BookCorrection, ReadingStatus?, Double?) async -> String?
     ) {
         self.book = book
         self.onSave = onSave
@@ -76,6 +79,7 @@ struct BookEditSheet: View {
         _authors = State(initialValue: book.authors.joined(separator: ", "))
         _format = State(initialValue: book.format)
         _media = State(initialValue: book.media.isEmpty ? [.print] : book.media)
+        _status = State(initialValue: book.status)
         _rating = State(initialValue: book.rating ?? 0)
         _synopsis = State(initialValue: book.synopsis ?? "")
         _publisher = State(initialValue: book.publisher ?? "")
@@ -140,6 +144,15 @@ struct BookEditSheet: View {
                 }
 
                 Section {
+                    MenuPicker(
+                        "Statut",
+                        systemImage: "flag",
+                        selection: $status,
+                        options: ReadingStatus.progression + [.dropped],
+                        label: { $0.label },
+                        image: { Image(systemName: $0.symbol) }
+                    )
+                    .accessibilityIdentifier("edit-status")
                     VStack(alignment: .leading, spacing: 8) {
                         Label("Note", systemImage: "star")
                             .foregroundStyle(.secondary)
@@ -151,9 +164,14 @@ struct BookEditSheet: View {
                 } header: {
                     Text("Ma lecture")
                 } footer: {
-                    Text(rating == 0
-                        ? "Noter un livre le marque comme lu."
-                        : "Touchez l'étoile sélectionnée pour retirer la note.")
+                    VStack(alignment: .leading, spacing: 4) {
+                        if status == .toRead, book.status != .toRead {
+                            Text("Revenir à « À lire » efface les dates de lecture et la progression à l'enregistrement.")
+                        }
+                        Text(rating == 0
+                            ? "Noter un livre le marque comme lu."
+                            : "Touchez l'étoile sélectionnée pour retirer la note.")
+                    }
                 }
 
                 Section("Résumé") {
@@ -284,7 +302,9 @@ struct BookEditSheet: View {
                 Text(errorMessage ?? "")
             }
         }
-        .interactiveDismissDisabled(correction != BookCorrection() || (rating == 0 ? nil : rating) != book.rating)
+        .interactiveDismissDisabled(
+            correction != BookCorrection() || status != book.status || (rating == 0 ? nil : rating) != book.rating
+        )
     }
 
     /// No picker is bounded by its neighbours, only by today: the date just
@@ -301,7 +321,7 @@ struct BookEditSheet: View {
                 .onChange(of: addedAt) { align(after: .addedAt) }
                 .accessibilityIdentifier("edit-added-at")
         }
-        if book.startedAt != nil {
+        if showsStartedAt {
             DateField(
                 title: "Commencé le",
                 icon: "calendar.badge.plus",
@@ -311,7 +331,7 @@ struct BookEditSheet: View {
             .onChange(of: startedAt) { align(after: .startedAt) }
             .accessibilityIdentifier("edit-started-at")
         }
-        if book.finishedAt != nil {
+        if showsFinishedAt {
             DateField(
                 title: "Terminé le",
                 icon: "calendar.badge.checkmark",
@@ -322,6 +342,14 @@ struct BookEditSheet: View {
             .accessibilityIdentifier("edit-finished-at")
         }
     }
+
+    /// A start the book holds and the chosen status keeps: back on the pile,
+    /// it was never opened.
+    private var showsStartedAt: Bool { book.startedAt != nil && status != .toRead }
+
+    /// A finish the book holds and the chosen status keeps: only a read book
+    /// was finished.
+    private var showsFinishedAt: Bool { book.finishedAt != nil && status == .read }
 
     /// Brings the other dates in line with the one just picked: those before
     /// it no later than it, those after it no earlier. Only the dates the book
@@ -434,15 +462,15 @@ struct BookEditSheet: View {
             }
         )
         if let original = book.addedAt, addedAt != original { correction.addedAt = addedAt }
-        if let original = book.startedAt, startedAt != original { correction.startedAt = startedAt }
-        if let original = book.finishedAt, finishedAt != original { correction.finishedAt = finishedAt }
+        if showsStartedAt, let original = book.startedAt, startedAt != original { correction.startedAt = startedAt }
+        if showsFinishedAt, let original = book.finishedAt, finishedAt != original { correction.finishedAt = finishedAt }
         return correction
     }
 
     private func save() async {
         isSaving = true
         defer { isSaving = false }
-        if let failure = await onSave(correction, rating == 0 ? nil : rating) {
+        if let failure = await onSave(correction, status == book.status ? nil : status, rating == 0 ? nil : rating) {
             errorMessage = failure
         } else {
             dismiss()
@@ -554,6 +582,6 @@ struct LabeledField<Field: View>: View {
             rating: 4
         ),
         loadVocabulary: { (["Roman initiatique"], ["Chronique du tueur de roi"]) },
-        onSave: { _, _ in nil }
+        onSave: { _, _, _ in nil }
     )
 }

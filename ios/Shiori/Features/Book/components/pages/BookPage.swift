@@ -205,10 +205,11 @@ struct BookPage: View {
                 // Every button beside the play button keeps its label: the
                 // row scrolls sideways rather than leaving bare icons.
                 listenButton(listening)
-                // A finished book needs no "Marquer lu": it is read.
+                // A finished book needs no "Marquer lu": its "✓ Lu" says it
+                // is read, and opens every status, for one marked by mistake.
                 if let step = NextStep(status: book.status) {
                     primaryButton(step, prominent: false)
-                } else if book.status == .dropped {
+                } else {
                     statusButton(prominent: false)
                 }
                 ratingButton(prominent: false)

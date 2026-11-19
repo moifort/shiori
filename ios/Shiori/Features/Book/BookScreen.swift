@@ -368,8 +368,8 @@ struct BookScreen: View {
     /// The form that changes the book's title, authors and facts. `onClose`
     /// is set where it fills the second page rather than a sheet.
     private func editor(_ book: Book, onClose: (() -> Void)?) -> some View {
-        BookEditSheet(book: book, loadVocabulary: loadVocabulary, onClose: onClose) { correction, rating in
-            let saved = await viewModel.save(correction, rating: rating)
+        BookEditSheet(book: book, loadVocabulary: loadVocabulary, onClose: onClose) { correction, status, rating in
+            let saved = await viewModel.save(correction, rating: rating, status: status)
             if let book = viewModel.book { onChanged(book) }
             guard !saved else { return nil }
             // The form shows the failure itself: an alert hung on this

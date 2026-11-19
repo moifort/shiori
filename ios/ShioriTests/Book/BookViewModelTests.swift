@@ -201,6 +201,44 @@ struct BookViewModelTests {
         #expect(ratings.all == ["unchanged", "1"])
     }
 
+    @Test func saveMovesTheStatusBeforeTheCorrection() async {
+        let calls = Calls()
+        var client = BookClient.preview
+        client.setStatus = { _, status in
+            calls.record("status \(status.rawValue)")
+            var book = Book.preview
+            book.status = status
+            return book
+        }
+        client.save = { _, _, _ in
+            calls.record("save")
+            return nil
+        }
+        let viewModel = BookViewModel(bookId: "preview", client: client, caching: false)
+        await viewModel.load()
+
+        let saved = await viewModel.save(BookCorrection(), rating: viewModel.book?.rating, status: .toRead)
+
+        #expect(saved)
+        #expect(calls.all == ["status \(ReadingStatus.toRead.rawValue)", "save"])
+        #expect(viewModel.book?.status == .toRead)
+    }
+
+    @Test func saveLeavesAnUnmovedStatusAlone() async {
+        let calls = Calls()
+        var client = BookClient.preview
+        client.setStatus = { _, status in
+            calls.record("status")
+            return .preview
+        }
+        let viewModel = BookViewModel(bookId: "preview", client: client, caching: false)
+        await viewModel.load()
+
+        _ = await viewModel.save(BookCorrection(), rating: viewModel.book?.rating, status: viewModel.book?.status)
+
+        #expect(calls.all.isEmpty)
+    }
+
     @Test func refusedSaveKeepsTheFormOpen() async {
         var client = BookClient.preview
         client.save = { _, _, _ in throw Boom() }
