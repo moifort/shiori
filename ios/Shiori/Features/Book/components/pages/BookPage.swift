@@ -202,19 +202,17 @@ struct BookPage: View {
         // tap on a row over a neighbouring button.
         HStack(spacing: 8) {
             if let listening {
+                // Every button beside the play button keeps its label: the
+                // row scrolls sideways rather than leaving bare icons.
                 listenButton(listening)
                 // A finished book needs no "Marquer lu": it is read.
-                Group {
-                    if let step = NextStep(status: book.status) {
-                        primaryButton(step, iconOnly: true)
-                    } else if book.status == .dropped {
-                        statusButton(iconOnly: true)
-                    }
-                    ratingButton(prominent: false, iconOnly: true)
-                        .actionShape(book.rating == nil ? .circle : .capsule)
-                    noteButton(iconOnly: true)
+                if let step = NextStep(status: book.status) {
+                    primaryButton(step, prominent: false)
+                } else if book.status == .dropped {
+                    statusButton(prominent: false)
                 }
-                .actionShape(.circle)
+                ratingButton(prominent: false)
+                noteButton()
             } else {
                 if book.tracksPages {
                     progressButton
@@ -244,18 +242,18 @@ struct BookPage: View {
     }
 
     /// The next step the book is waiting for on a tap, and every state it
-    /// moves through on a long press, the one it is in ticked. Round and
-    /// wordless beside the play button.
-    private func primaryButton(_ step: NextStep, iconOnly: Bool = false) -> some View {
+    /// moves through on a long press, the one it is in ticked. On glass
+    /// beside the play button.
+    private func primaryButton(_ step: NextStep, prominent: Bool = true) -> some View {
         Menu {
             statusPicker
         } label: {
-            HeroButtonLabel(title: step.title, systemImage: step.systemImage, iconOnly: iconOnly)
+            HeroButtonLabel(title: step.title, systemImage: step.systemImage)
         } primaryAction: {
             onSetStatus(step.status)
         }
         .menuStyle(.button)
-        .heroButtonStyle(prominent: !iconOnly)
+        .heroButtonStyle(prominent: prominent)
         .accessibilityIdentifier("book-next-step")
     }
 
@@ -277,14 +275,14 @@ struct BookPage: View {
     /// Where a book read or given up stands, in the place of the next step:
     /// "✓ Lu" or "👎 Abandonné", which opens the full choice of status, for a
     /// book read again or picked up after all.
-    private func statusButton(iconOnly: Bool = false) -> some View {
+    private func statusButton(prominent: Bool = true) -> some View {
         Menu {
             statusPicker
         } label: {
-            HeroButtonLabel(title: LocalizedStringKey(book.status.label), systemImage: book.status.symbol, iconOnly: iconOnly)
+            HeroButtonLabel(title: LocalizedStringKey(book.status.label), systemImage: book.status.symbol)
         }
         .menuStyle(.button)
-        .heroButtonStyle(prominent: !iconOnly)
+        .heroButtonStyle(prominent: prominent)
         .accessibilityIdentifier(book.status == .dropped ? "book-dropped-status" : "book-read-status")
     }
 
@@ -305,11 +303,9 @@ struct BookPage: View {
     /// The stars once given, else the way to give them. The saga's stars lent
     /// to a volume are not drawn here: grey on glass they read as five empty
     /// stars, and the button's work is to rate this book.
-    private func ratingButton(prominent: Bool, iconOnly: Bool = false) -> some View {
+    private func ratingButton(prominent: Bool) -> some View {
         let label = Group {
-            if iconOnly, book.rating == nil {
-                HeroButtonLabel(title: "Noter", systemImage: "star", iconOnly: true)
-            } else if let rating = book.rating {
+            if let rating = book.rating {
                 // In the button's own colour, as the heart beside the
                 // title bar is: the hero keeps to white on glass.
                 RatingStars(rating: rating, font: .footnote, monochrome: true)
@@ -334,7 +330,7 @@ struct BookPage: View {
     /// The reader's remarks on the book, whatever its status: what they
     /// thought of it so far, or once read. Once written, the button takes the
     /// reader to them; their bubble opens the field over the keyboard.
-    private func noteButton(iconOnly: Bool = false) -> some View {
+    private func noteButton() -> some View {
         Button {
             if book.note == nil {
                 onEditNote()
@@ -342,7 +338,7 @@ struct BookPage: View {
                 commentRequest = CommentRequest(anchor: Self.noteAnchor, count: commentRequest.count + 1)
             }
         } label: {
-            HeroButtonLabel(title: "Remarques", systemImage: "text.bubble", iconOnly: iconOnly)
+            HeroButtonLabel(title: "Remarques", systemImage: "text.bubble")
         }
         .buttonStyle(.actionGlass)
         .accessibilityIdentifier("book-hero-note")
@@ -550,31 +546,21 @@ struct NextStep: Equatable {
 private struct HeroButtonLabel: View {
     let title: LocalizedStringKey
     let systemImage: String
-    /// The symbol alone, in a round button: the title stays for VoiceOver.
-    var iconOnly = false
-
     /// The label's height, which the stars match: a little taller than the
     /// regular glass button's own.
     static let height: CGFloat = 24
 
     var body: some View {
-        if iconOnly {
+        HStack(spacing: 6) {
             Image(systemName: systemImage)
                 .imageScale(.medium)
-                .frame(width: Self.height, height: Self.height)
-                .accessibilityLabel(Text(title))
-        } else {
-            HStack(spacing: 6) {
-                Image(systemName: systemImage)
-                    .imageScale(.medium)
-                    .accessibilityHidden(true)
-                Text(title)
-            }
-            .lineLimit(1)
-            .fixedSize()
-            .padding(.horizontal, 2)
-            .frame(height: Self.height)
+                .accessibilityHidden(true)
+            Text(title)
         }
+        .lineLimit(1)
+        .fixedSize()
+        .padding(.horizontal, 2)
+        .frame(height: Self.height)
     }
 }
 
