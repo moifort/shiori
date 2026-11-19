@@ -76,7 +76,6 @@ struct FriendBookPage: View {
         BookHero(
             book: book,
             state: friendState,
-            isAwaited: !awaited.isEmpty,
             showsLength: false,
             onOpenAuthor: { author in Task { await onAction(.openAuthor(author)) } },
             onOpenNarrator: { narrator in Task { await onAction(.openNarrator(narrator)) } }

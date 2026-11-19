@@ -74,7 +74,6 @@ struct SuggestionPage: View {
             book: shown,
             state: state,
             stateTag: suggestion.watched && suggestion.state == .unannounced ? String(localized: "Pas annoncé") : nil,
-            isAwaited: !choices.watch(of: suggestion).awaited.isEmpty,
             showsLength: false,
             status: choices.marks[suggestion.id] == .notInterested ? .notInterested : nil,
             isSetAside: choices.marks[suggestion.id] == .notInterested

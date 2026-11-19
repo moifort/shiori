@@ -9,9 +9,19 @@ struct OutlinedTag: View {
     /// Frosted glass behind the word, for a cover whose print would fight it.
     /// Off on a ground already smooth: the book hero's colours.
     var isFrosted = true
+    /// A symbol before the word, where the tag says what the reader decided
+    /// of the book rather than what it is: "Non partagé", "Guetté".
+    var systemImage: String? = nil
 
     var body: some View {
-        Text(text.localizedUppercase)
+        HStack(spacing: 3) {
+            if let systemImage {
+                Image(systemName: systemImage)
+                    .imageScale(.small)
+                    .accessibilityHidden(true)
+            }
+            Text(text.localizedUppercase)
+        }
             .font(.caption2.weight(.bold))
             .foregroundStyle(.white.opacity(0.9))
             .padding(.horizontal, 4)
@@ -29,7 +39,11 @@ struct OutlinedTag: View {
 }
 
 #Preview {
-    OutlinedTag(text: "Audio")
+    HStack {
+        OutlinedTag(text: "Audio")
+        OutlinedTag(text: "Non partagé", systemImage: "eye.slash")
+        OutlinedTag(text: "Guetté", systemImage: "binoculars.fill")
+    }
         .padding()
         .background(.gray)
 }

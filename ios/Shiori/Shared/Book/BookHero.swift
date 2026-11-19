@@ -18,7 +18,8 @@ struct BookHero<Actions: View>: View {
     /// Where the edition stands, as a word in an outlined tag before the
     /// format's: "Pas annoncé" while nothing is.
     var stateTag: String? = nil
-    /// The reader awaits an edition of it: binoculars beside the title.
+    /// The reader awaits an edition of it: "Guetté" joins the tags. Off where
+    /// the page's own "Guetter" already says what is awaited.
     var isAwaited = false
     /// How long the book runs on the detail line — pages, or a recording's
     /// hours. Off where the facts under the hero say it and nothing else does.
@@ -80,17 +81,13 @@ struct BookHero<Actions: View>: View {
                 identity
                     .onGeometryChange(for: CGFloat.self, of: \.size.height) { identityHeight = $0 }
             }
-            // In the corner over the text, level with the cover's top: what
-            // the reader decided of the book, apart from what it is, and the
+            // In the corner over the text, level with the cover's top: the
             // day a book to come is out.
             .overlay(alignment: .topTrailing) {
-                HStack(alignment: .top, spacing: 8) {
-                    marks
-                    if let releaseDate {
-                        ReleaseDateBadge(date: releaseDate, onGlass: true)
-                    }
+                if let releaseDate {
+                    ReleaseDateBadge(date: releaseDate, onGlass: true)
+                        .font(.body)
                 }
-                .font(.body)
             }
             actions
         }
@@ -242,35 +239,29 @@ struct BookHero<Actions: View>: View {
         }
     }
 
-    /// What the reader decided of the book that its page does not otherwise
-    /// say: kept out of the shared libraries, an edition awaited. Given up is
-    /// the first button's to say.
-    @ViewBuilder private var marks: some View {
-        if book.hidden {
-            Image(systemName: "lock")
-                .foregroundStyle(.white.opacity(0.7))
-                .fixedSize()
-                .accessibilityLabel(Text("Non partagé"))
-                .accessibilityIdentifier("book-hidden-mark")
-        }
-        if isAwaited {
-            AwaitedMark()
-                .accessibilityIdentifier("book-awaited-mark")
-        }
-    }
-
     /// What the edition is, in outlined tags over the saga: only a foreign
     /// edition and a recording are tagged, paper in the phone's language being
-    /// what a book is taken to be, and a recording kept on the iPhone. Clear
-    /// over the hero's colours: no glass behind the words.
+    /// what a book is taken to be, and a recording kept on the iPhone. Then
+    /// what the reader decided of it, a symbol before the word: kept out of
+    /// the shared libraries, an edition awaited. Words only, never a button:
+    /// the "…" changes them. Clear over the hero's colours: no glass behind
+    /// the words.
     @ViewBuilder private var tags: some View {
         let cover = CoverTags(book: book, isFrosted: false)
-        if !cover.isEmpty || isDownloaded {
+        if !cover.isEmpty || isDownloaded || book.hidden || isAwaited {
             HStack(spacing: 6) {
                 if !cover.isEmpty { cover }
                 if isDownloaded {
                     OutlinedTag(text: String(localized: "Téléchargé"), isFrosted: false)
                         .accessibilityIdentifier("book-downloaded-tag")
+                }
+                if book.hidden {
+                    OutlinedTag(text: String(localized: "Non partagé"), isFrosted: false, systemImage: "eye.slash")
+                        .accessibilityIdentifier("book-hidden-tag")
+                }
+                if isAwaited {
+                    OutlinedTag(text: String(localized: "Guetté"), isFrosted: false, systemImage: "binoculars.fill")
+                        .accessibilityIdentifier("book-awaited-tag")
                 }
             }
             .padding(.trailing, besideLeaf)

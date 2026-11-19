@@ -73,7 +73,6 @@ struct AwardWinnerPage: View {
             book: shown,
             state: state,
             stateTag: winner.watched && winner.state == .unannounced ? String(localized: "Pas annoncé") : nil,
-            isAwaited: !choices.watch(of: winner).awaited.isEmpty,
             overTitle: winner.mentions.first.map { AnyView(AwardLaurels(mention: $0)) },
             status: choices.marks[winner.id] == .notInterested ? .notInterested : nil,
             isSetAside: choices.marks[winner.id] == .notInterested
