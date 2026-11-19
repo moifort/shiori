@@ -79,4 +79,5 @@ fragment AwaitedEditionFields on AwaitedEdition {
   awaitedAt
   sourceBookId
   ownerId
+  recommendedBy
 }

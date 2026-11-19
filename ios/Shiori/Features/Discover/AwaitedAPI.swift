@@ -38,6 +38,9 @@ struct AwaitedEdition: Identifiable, Hashable, Codable, Sendable {
     let bookId: String?
     /// The reader's own id for their copy, a friend's for theirs.
     let ownerId: String
+    /// The first name of the friend it was awaited at: who recommended it.
+    /// Nil for one awaited from the reader's own shelf or a scan.
+    var recommendedBy: String? = nil
 
     var state: AwaitedState { release.state }
     /// Its title in the language awaited once found, else the original's.
@@ -413,7 +416,8 @@ extension AwaitedEdition {
             release: Release(fields: fields.release.fragments.releaseFields),
             awaitedAt: GraphQLHelpers.parseISO8601(fields.awaitedAt),
             bookId: fields.sourceBookId,
-            ownerId: fields.ownerId
+            ownerId: fields.ownerId,
+            recommendedBy: fields.recommendedBy
         )
     }
 }

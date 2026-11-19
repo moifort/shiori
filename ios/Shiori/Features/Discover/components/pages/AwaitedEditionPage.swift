@@ -76,7 +76,8 @@ struct AwaitedEditionPage: View {
             onOpenLacking: { act(.openLacking($0)) },
             // Once out, no bell is left to give the wait up: the button says it.
             onNoLongerInterested: { await onAction(.stopAwaiting) },
-            onChooseCover: { act(.chooseCover) }
+            onChooseCover: { act(.chooseCover) },
+            recommendedBy: edition.recommendedBy
         )
     }
 
@@ -104,6 +105,16 @@ struct AwaitedEditionPage: View {
 #Preview("Describing") {
     NavigationStack {
         AwaitedEditionPage(edition: .preview, shown: AwaitedEdition.preview.cover, isDescribing: true) { _ in }
+    }
+}
+
+#Preview("Awaited at a friend's") {
+    NavigationStack {
+        AwaitedEditionPage(
+            edition: .previewFromFriend,
+            shown: AwaitedEdition.previewFromFriend.cover,
+            isDescribing: false
+        ) { _ in }
     }
 }
 

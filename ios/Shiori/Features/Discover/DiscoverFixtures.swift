@@ -114,6 +114,29 @@ extension AwaitedEdition {
     )
 }
 
+extension AwaitedEdition {
+    /// A recording awaited from a friend's shelf, out: the friend recommended it.
+    static let previewFromFriend: AwaitedEdition = {
+        var edition = AwaitedEdition(
+            id: "preview-friend",
+            format: .audiobook,
+            state: .available,
+            title: "Seul sur Mars",
+            originalTitle: "The Martian",
+            originalLanguage: .en,
+            authors: ["Andy Weir"],
+            date: "2026-10-28",
+            coverURL: nil,
+            storeURL: URL(string: "https://www.audible.fr/search?keywords=Seul%20sur%20Mars%20Andy%20Weir"),
+            awaitedAt: .now.addingTimeInterval(-20 * 86400),
+            bookId: "friend-book",
+            ownerId: "guillaume"
+        )
+        edition.recommendedBy = "Guillaume"
+        return edition
+    }()
+}
+
 extension AwardWinner {
     /// A winner in English nobody awaited yet: both formats left to await.
     static let preview = AwardWinner(

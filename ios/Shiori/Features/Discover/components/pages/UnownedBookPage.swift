@@ -101,6 +101,10 @@ struct UnownedBookPage: View {
     /// "Couverture" in the "…" of the bar: another cover picked for the book,
     /// for every reader. Nil draws no "…".
     var onChooseCover: (() -> Void)? = nil
+    /// The friend the book was wished for or awaited at: their first name,
+    /// over their word on it under the facts, as a book's page draws who
+    /// recommended it. Nil draws nothing.
+    var recommendedBy: String? = nil
 
     /// Bumped on each tap of the bell, which swings as a bell rings.
     @State private var rings = 0
@@ -119,6 +123,7 @@ struct UnownedBookPage: View {
                     synopsis
                     saga
                     facts
+                    recommendation
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 4)
@@ -140,6 +145,19 @@ struct UnownedBookPage: View {
                 ToolbarItem(placement: .primaryAction) {
                     UnownedBookActionsMenu(onChooseCover: onChooseCover)
                 }
+            }
+        }
+    }
+
+    /// Who recommended it, as the page of a book in the library says it: a
+    /// friend's bubble under "Commentaires". Nothing is typed here: the
+    /// friend's shelf is where the book was seen, and that is their word.
+    @ViewBuilder private var recommendation: some View {
+        if let recommendedBy {
+            VStack(alignment: .leading, spacing: 12) {
+                RowHeader(title: "Commentaires")
+                MessageBubble(text: String(localized: "Je te le conseille."), sender: recommendedBy)
+                    .accessibilityIdentifier("unowned-recommendation-comment")
             }
         }
     }

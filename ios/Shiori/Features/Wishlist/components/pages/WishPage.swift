@@ -35,7 +35,8 @@ struct WishPage: View {
             onAdd: { addition in await onAdd(addition == .read ? .read : .toRead) },
             onToggleBell: {},
             onNoLongerInterested: onRemove,
-            onChooseCover: onChooseCover
+            onChooseCover: onChooseCover,
+            recommendedBy: wish.origin == .friend ? wish.originLabel : nil
         )
     }
 }
