@@ -26,6 +26,8 @@ import type {
   FriendRecommendations,
   FriendSaga,
   FriendSagaPage,
+  FriendsShelf,
+  FriendsShelfEntry,
   LovedAuthor,
 } from '~/domain/friendship/use-case'
 import { narratorKeyOf } from '~/domain/narrator/primitives'
@@ -345,6 +347,19 @@ export const FriendType = builder.objectRef<Friend>('Friend').implement({
       resolve: (friend) => friend.firstName ?? null,
     }),
     since: t.field({ type: 'DateTime', resolve: (friend) => friend.since }),
+    avatarHero: t.field({
+      type: AvatarHeroEnum,
+      nullable: true,
+      description: 'The hero they wear as an avatar. Null with a colour, a photo or no avatar.',
+      resolve: (friend) => (friend.avatar?.kind === 'hero' ? friend.avatar.hero : null),
+    }),
+    avatarColor: t.field({
+      type: AvatarColorEnum,
+      nullable: true,
+      description:
+        'The colour their initials are drawn on. Null with a hero, a photo or no avatar.',
+      resolve: (friend) => (friend.avatar?.kind === 'initials' ? friend.avatar.color : null),
+    }),
     bookCount: t.field({
       type: 'Count',
       description:
@@ -676,3 +691,47 @@ export const FriendRecommendationsType = builder
       authors: t.field({ type: [FriendLovedAuthorType], resolve: (found) => found.authors }),
     }),
   })
+
+export const FriendsShelfEntryType = builder
+  .objectRef<FriendsShelfEntry>('FriendsShelfEntry')
+  .implement({
+    description: 'A book on the friends’ page, with whose shelf it is on.',
+    fields: (t) => ({
+      friendId: t.field({ type: 'UserId', resolve: (entry) => entry.friendId }),
+      friendFirstName: t.string({
+        nullable: true,
+        description: 'Null for an account that never finished its onboarding.',
+        resolve: (entry) => entry.friendName ?? null,
+      }),
+      book: t.field({ type: FriendBookType, resolve: (entry) => entry.book }),
+    }),
+  })
+
+export const FriendsShelfType = builder.objectRef<FriendsShelf>('FriendsShelf').implement({
+  description:
+    'The friends’ page: what the chosen friends are reading, have hearted, have finished ' +
+    'and mean to read. Each rail holds every chosen friend’s books together, the most ' +
+    'recent first, twenty at most. A book marked "do not share" is never among them.',
+  fields: (t) => ({
+    reading: t.field({
+      type: [FriendsShelfEntryType],
+      description: 'In progress, the most recently active first.',
+      resolve: (shelf) => shelf.reading,
+    }),
+    favorites: t.field({
+      type: [FriendsShelfEntryType],
+      description: 'Hearted, the most recently hearted first.',
+      resolve: (shelf) => shelf.favorites,
+    }),
+    finished: t.field({
+      type: [FriendsShelfEntryType],
+      description: 'Finished, the most recently finished first; only books with a date.',
+      resolve: (shelf) => shelf.finished,
+    }),
+    pile: t.field({
+      type: [FriendsShelfEntryType],
+      description: 'On their pile, the most recently added first.',
+      resolve: (shelf) => shelf.pile,
+    }),
+  }),
+})

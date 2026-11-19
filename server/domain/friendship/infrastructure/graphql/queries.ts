@@ -9,6 +9,7 @@ import {
   FriendRecommendationsType,
   FriendSagaPageType,
   FriendSagaType,
+  FriendsShelfType,
   FriendType,
 } from '~/domain/friendship/infrastructure/graphql/types'
 import { FriendshipUseCase } from '~/domain/friendship/use-case'
@@ -70,6 +71,26 @@ builder.queryFields((t) => ({
       const profile = await FriendshipUseCase.profile(context.userId, args.userId)
       return profile === 'not-friends' ? null : profile
     },
+  }),
+
+  friendsShelf: t.field({
+    type: FriendsShelfType,
+    description:
+      'The friends’ page: what the chosen friends are reading, have hearted, have ' +
+      'finished and mean to read, each rail every chosen friend’s books together, the ' +
+      'most recent first.\n\n' +
+      'No `friendIds`, or an empty list, means every friend. An id that is not a ' +
+      'friend is left out, so a stranger’s shelf never comes through. A book marked ' +
+      '"do not share" appears nowhere here.',
+    args: {
+      friendIds: t.arg({
+        type: ['UserId'],
+        required: false,
+        description: 'The friends chosen on the page; none means every friend.',
+      }),
+    },
+    resolve: (_root, args, context) =>
+      FriendshipUseCase.friendsShelf(context.userId, args.friendIds ?? []),
   }),
 
   myShelf: t.field({

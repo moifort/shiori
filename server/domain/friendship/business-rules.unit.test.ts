@@ -6,8 +6,10 @@ import {
   friendSagaStateOf,
   inReadingOrder,
   isLovedByMany,
+  mergedRail,
   newestFavoritesFirst,
   picksPerFriend,
+  railDates,
   recentHeartsOf,
   subgenreOf,
 } from '~/domain/friendship/business-rules'
@@ -442,5 +444,42 @@ describe('friendPicksOf', () => {
     )
 
     expect(picks.books.map((pick) => String(pick.item.title))).toEqual(['Dated', 'Undated'])
+  })
+})
+
+describe('mergedRail', () => {
+  const book = (title: string, addedAt: Date) => ({
+    title,
+    status: 'to-read' as const,
+    addedAt,
+    updatedAt: addedAt,
+    statusChangedAt: addedAt,
+  })
+
+  test("orders every friend's books by date alone, never friend by friend", () => {
+    const rail = mergedRail(
+      [
+        { friendId: 'alice' as UserId, books: [book('A1', day(5)), book('A2', day(1))] },
+        { friendId: 'carol' as UserId, books: [book('C1', day(3))] },
+      ],
+      railDates.pile,
+      10,
+    )
+
+    expect(rail.map(({ friendId, book }) => `${friendId}:${book.title}`)).toEqual([
+      'alice:A1',
+      'carol:C1',
+      'alice:A2',
+    ])
+  })
+
+  test('keeps the most recent books when there are more than shown', () => {
+    const rail = mergedRail(
+      [{ friendId: 'alice' as UserId, books: [book('Old', day(1)), book('New', day(9))] }],
+      railDates.pile,
+      1,
+    )
+
+    expect(rail.map(({ book }) => book.title)).toEqual(['New'])
   })
 })

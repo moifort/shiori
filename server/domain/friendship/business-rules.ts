@@ -270,3 +270,41 @@ export const friendPicksOf = <
     authors: picksOf(authorHearts, heldAuthors, friendCount, limit),
   }
 }
+
+/** A book on one of the shelves merged into the friends' page, with whose it is. */
+export type ShelfEntry<Item> = { friendId: UserId; book: Item }
+
+type DatedBook = Pick<
+  Book,
+  | 'status'
+  | 'addedAt'
+  | 'updatedAt'
+  | 'statusChangedAt'
+  | 'startedAt'
+  | 'favoritedAt'
+  | 'finishedAt'
+>
+
+/** Several friends' lists of one kind as one rail: every friend's books
+ *  together, the most recent first by `dateOf`, `shown` at most. A friend
+ *  with a busy shelf does not push the others out of sight: the rail is
+ *  ordered by date alone, never by friend. */
+export const mergedRail = <Item extends DatedBook>(
+  lists: readonly { friendId: UserId; books: readonly Item[] }[],
+  dateOf: (book: Item) => Date | undefined,
+  shown: number,
+): ShelfEntry<Item>[] =>
+  lists
+    .flatMap(({ friendId, books }) => books.map((book) => ({ friendId, book })))
+    .sort(
+      (left, right) => (dateOf(right.book)?.getTime() ?? 0) - (dateOf(left.book)?.getTime() ?? 0),
+    )
+    .slice(0, shown)
+
+/** When each rail of the friends' page orders its books by. */
+export const railDates = {
+  reading: (book: DatedBook) => lastActivityOf(book),
+  favorites: (book: DatedBook) => book.favoritedAt ?? lastActivityOf(book),
+  finished: (book: DatedBook) => book.finishedAt,
+  pile: (book: DatedBook) => book.addedAt,
+}

@@ -2076,6 +2076,16 @@ type FormatShare {
 """Somebody whose library the reader can see, and who can see theirs."""
 type Friend {
   """
+  The colour their initials are drawn on. Null with a hero, a photo or no avatar.
+  """
+  avatarColor: AvatarColor
+
+  """
+  The hero they wear as an avatar. Null with a colour, a photo or no avatar.
+  """
+  avatarHero: AvatarHero
+
+  """
   How many books they share: every one on their shelf, the dropped ones and the ones they keep to themselves aside — what `FriendProfile.bookCount` says.
   """
   bookCount: Count!
@@ -2479,6 +2489,32 @@ type FriendSagaPage {
 
   """The saga shelved last first, each with every volume on the shelf."""
   sagas: [FriendSaga!]!
+}
+
+"""
+The friends’ page: what the chosen friends are reading, have hearted, have finished and mean to read. Each rail holds every chosen friend’s books together, the most recent first, twenty at most. A book marked "do not share" is never among them.
+"""
+type FriendsShelf {
+  """Hearted, the most recently hearted first."""
+  favorites: [FriendsShelfEntry!]!
+
+  """Finished, the most recently finished first; only books with a date."""
+  finished: [FriendsShelfEntry!]!
+
+  """On their pile, the most recently added first."""
+  pile: [FriendsShelfEntry!]!
+
+  """In progress, the most recently active first."""
+  reading: [FriendsShelfEntry!]!
+}
+
+"""A book on the friends’ page, with whose shelf it is on."""
+type FriendsShelfEntry {
+  book: FriendBook!
+
+  """Null for an account that never finished its onboarding."""
+  friendFirstName: String
+  friendId: UserId!
 }
 
 """
@@ -4442,6 +4478,16 @@ type Query {
   Friendship is symmetric: each of these can see the reader's shelf on the same terms. Their books are a separate read — a list of six friends must not fetch six libraries.
   """
   friends: [Friend!]!
+
+  """
+  The friends’ page: what the chosen friends are reading, have hearted, have finished and mean to read, each rail every chosen friend’s books together, the most recent first.
+  
+  No `friendIds`, or an empty list, means every friend. An id that is not a friend is left out, so a stranger’s shelf never comes through. A book marked "do not share" appears nowhere here.
+  """
+  friendsShelf(
+    """The friends chosen on the page; none means every friend."""
+    friendIds: [UserId!]
+  ): FriendsShelf!
 
   """
   What the signed-in reader's books say about their tastes, genre by genre: the page the dashboard's genre card opens. Worked out from the library on each read; a figure with fewer than three books behind it is left out.

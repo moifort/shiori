@@ -1179,3 +1179,97 @@ describe("taking a friend's printed book as an audiobook", () => {
     expect(result.data?.friendBookAudio).toBeNull()
   })
 })
+
+describe("the friends' page", () => {
+  const addBook = async (owner: UserId, fields: string) => {
+    const result = await as(owner)(`mutation { addBook(input: { ${fields} }) { id } }`)
+    expect(result.errors).toBeUndefined()
+    return (result.data as { addBook: { id: string } }).addBook.id
+  }
+  /** Carol invites Bob: Bob then has two friends, Alice and Carol. */
+  const befriendCarol = async () => {
+    const invitation = await as(carol)('mutation { inviteFriend { code } }')
+    const { code } = (invitation.data as { inviteFriend: { code: string } }).inviteFriend
+    await as(bob)(
+      'mutation Accept($code: String!) { acceptFriendInvitation(code: $code) { userId } }',
+      { code },
+    )
+  }
+  const shelfOf = (ids?: string[]) =>
+    as(bob)(
+      'query Shelf($ids: [UserId!]) { friendsShelf(friendIds: $ids) { reading { friendId friendFirstName book { title } } pile { friendId book { title } } } }',
+      { ids },
+    )
+
+  test("sets every friend's books in one rail, the most recently active first", async () => {
+    setSystemTime(new Date('2026-09-01T10:00:00Z'))
+    await addBook(alice, 'title: "Dune", status: READING')
+    setSystemTime(new Date('2026-09-02T10:00:00Z'))
+    await addBook(carol, 'title: "Silo", status: READING')
+    await as(carol)('mutation { completeOnboarding(input: { firstName: "Carol" }) { firstName } }')
+    setSystemTime()
+    await befriend()
+    await befriendCarol()
+
+    const result = await shelfOf()
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.friendsShelf).toEqual({
+      reading: [
+        { friendId: 'carol', friendFirstName: 'Carol', book: { title: 'Silo' } },
+        { friendId: 'alice', friendFirstName: null, book: { title: 'Dune' } },
+      ],
+      pile: [],
+    })
+  })
+
+  test('narrows to the friends chosen', async () => {
+    await addBook(alice, 'title: "Dune", status: READING')
+    await addBook(carol, 'title: "Silo", status: READING')
+    await befriend()
+    await befriendCarol()
+
+    const result = await shelfOf(['alice'])
+
+    expect(result.data?.friendsShelf).toEqual({
+      reading: [{ friendId: 'alice', friendFirstName: null, book: { title: 'Dune' } }],
+      pile: [],
+    })
+  })
+
+  // An id slipped into the list must not open a stranger's shelf.
+  test("never shows a stranger's books, even when asked for by id", async () => {
+    await addBook(carol, 'title: "Silo", status: READING')
+    await befriend()
+
+    const result = await shelfOf(['carol'])
+
+    expect(result.data?.friendsShelf).toEqual({ reading: [], pile: [] })
+  })
+
+  test('leaves out a book its owner marked "do not share"', async () => {
+    const secret = await addBook(alice, 'title: "Un secret", status: TO_READ')
+    await addBook(alice, 'title: "Hypérion", status: TO_READ')
+    await as(alice)(`mutation { setBookHidden(id: "${secret}", hidden: true) { id } }`)
+    await befriend()
+
+    const result = await shelfOf()
+
+    expect(result.data?.friendsShelf).toEqual({
+      reading: [],
+      pile: [{ friendId: 'alice', book: { title: 'Hypérion' } }],
+    })
+  })
+
+  test('carries the avatar each friend wears on the friends list', async () => {
+    await as(alice)('mutation { completeOnboarding(input: { firstName: "Alice" }) { firstName } }')
+    await as(alice)('mutation { changeAvatar(input: { hero: HOLMES }) { avatarHero } }')
+    await befriend()
+
+    const result = await as(bob)('{ friends { firstName avatarHero avatarColor } }')
+
+    expect(result.data?.friends).toEqual([
+      { firstName: 'Alice', avatarHero: 'HOLMES', avatarColor: null },
+    ])
+  })
+})

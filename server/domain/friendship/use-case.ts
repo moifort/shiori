@@ -39,7 +39,9 @@ import {
   friendPicksOf,
   friendSagaStateOf,
   inReadingOrder,
+  mergedRail,
   newestFavoritesFirst,
+  railDates,
   recentHeartsOf,
   subgenreOf,
 } from '~/domain/friendship/business-rules'
@@ -59,6 +61,8 @@ import { UserQuery } from '~/domain/user/query'
  *  would take a page of its own, and the point of the screen is the handful at
  *  the top of it. */
 const SHELF_SHOWN = 30
+/** How many books each rail of the friends' page carries, every friend together. */
+const FRIENDS_RAIL_SHOWN = 20
 
 /** One saga a friend is reading, as their own books describe it.
  *
@@ -116,6 +120,8 @@ export type FriendProfile = {
   sagas: FriendSaga[]
   /** The book they finished most recently, when one carries its date. */
   lastFinished?: FriendBook
+  /** The books they finished, the most recent first, those with a date only. */
+  finished: FriendBook[]
   /** The book they dropped most recently. */
   lastDropped?: FriendBook
   /** The book they shelved most recently. */
@@ -127,6 +133,16 @@ export type FriendProfile = {
    *  counts them. */
   readThisYear: CountValue
 }
+
+/** The friends' page: each rail every chosen friend's books together, the
+ *  most recent first, with whose each book is. */
+export type FriendsShelf = {
+  reading: FriendsShelfEntry[]
+  favorites: FriendsShelfEntry[]
+  finished: FriendsShelfEntry[]
+  pile: FriendsShelfEntry[]
+}
+export type FriendsShelfEntry = { friendId: UserId; friendName?: string; book: FriendBook }
 
 /** A heart one friend gave lately, as the dashboard shows it: a saga or a
  *  book, whose, and when. */
@@ -233,6 +249,50 @@ export namespace FriendshipUseCase {
       sharedShelfOf(friendId, SHELF_SHOWN),
     ])
     return marked(shelf, (book) => ownsStory(owned, book))
+  }
+
+  /** The friends' page: what the chosen friends are reading, have hearted,
+   *  have finished and mean to read, each rail their books together, the most
+   *  recent first. No friend chosen means every friend; an id that is not a
+   *  friend is left out, so a stranger's shelf never comes through.
+   *
+   *  Reads each chosen friend's shared books once — the cost of one
+   *  `friendProfile` per friend — and no paid call. */
+  export const friendsShelf = async (
+    userId: UserId,
+    friendIds: readonly UserId[] = [],
+  ): Promise<FriendsShelf> => {
+    const friendships = await FriendshipQuery.all(userId)
+    const everyone = friendships.flatMap((friendship) =>
+      friendship.userIds.filter((member) => member !== userId),
+    )
+    const chosen =
+      friendIds.length === 0 ? everyone : everyone.filter((id) => friendIds.includes(id))
+    const [owned, shelves] = await Promise.all([
+      BookQuery.shelfKeys(userId),
+      Promise.all(chosen.map((friendId) => sharedShelfOf(friendId, FRIENDS_RAIL_SHOWN))),
+    ])
+    const names = new Map(shelves.map((shelf) => [shelf.userId, shelf.firstName]))
+    const mark = markedBy((book) => ownsStory(owned, book))
+    const rail = (
+      list: (shelf: FriendProfile) => FriendBook[],
+      dateOf: (book: FriendBook) => Date | undefined,
+    ): FriendsShelfEntry[] =>
+      mergedRail(
+        shelves.map((shelf) => ({ friendId: shelf.userId, books: list(shelf) })),
+        dateOf,
+        FRIENDS_RAIL_SHOWN,
+      ).map(({ friendId, book }) => ({
+        friendId,
+        friendName: names.get(friendId),
+        book: mark([book])[0] ?? book,
+      }))
+    return {
+      reading: rail((shelf) => shelf.reading, railDates.reading),
+      favorites: rail((shelf) => shelf.favorites, railDates.favorites),
+      finished: rail((shelf) => shelf.finished, railDates.finished),
+      pile: rail((shelf) => shelf.pile, railDates.pile),
+    }
   }
 
   /** The reader's own shelf exactly as a friend sees it: the books marked "do
@@ -732,6 +792,10 @@ const sharedShelfOf = async (
   ).slice(0, shown)
 
   const finished = lastFinishedOf(books)
+  const finishedList = books
+    .filter((book) => book.status === 'read' && book.finishedAt !== undefined)
+    .sort((left, right) => (right.finishedAt?.getTime() ?? 0) - (left.finishedAt?.getTime() ?? 0))
+    .slice(0, shown)
   const dropped = lastDroppedOf(books)
   const added = lastAddedOf(books)
   // The sagas drawn with their covers: the favourites, and those of the
@@ -755,6 +819,7 @@ const sharedShelfOf = async (
     signedFinished,
     signedDropped,
     signedAdded,
+    signedFinishedList,
   ] = await Promise.all([
     BookQuery.withSignedCovers(reading),
     BookQuery.withSignedCovers(pile),
@@ -769,6 +834,7 @@ const sharedShelfOf = async (
     BookQuery.withSignedCovers(finished ? [finished] : []),
     BookQuery.withSignedCovers(dropped ? [dropped] : []),
     BookQuery.withSignedCovers(added ? [added] : []),
+    BookQuery.withSignedCovers(finishedList),
   ])
   const unmarked = markedBy(() => false)
 
@@ -781,6 +847,7 @@ const sharedShelfOf = async (
     lastFinished: unmarked(signedFinished)[0],
     lastDropped: unmarked(signedDropped)[0],
     lastAdded: unmarked(signedAdded)[0],
+    finished: unmarked(signedFinishedList),
     sagas: sagas.map((saga, index) =>
       friendSagaOf(saga, favoriteSagas, ratings, unmarked(signedVolumes[index] ?? [])),
     ),
@@ -806,6 +873,7 @@ const marked = (shelf: FriendProfile, inLibrary: (book: BookView) => boolean): F
     lastFinished: shelf.lastFinished && mark([shelf.lastFinished])[0],
     lastDropped: shelf.lastDropped && mark([shelf.lastDropped])[0],
     lastAdded: shelf.lastAdded && mark([shelf.lastAdded])[0],
+    finished: mark(shelf.finished),
     sagas: shelf.sagas.map((saga) => ({ ...saga, volumes: mark(saga.volumes) })),
   }
 }
