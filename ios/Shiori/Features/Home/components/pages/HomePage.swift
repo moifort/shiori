@@ -86,6 +86,8 @@ struct HomePage: View {
     /// The play button of each audiobook open, in a build with the Audible
     /// player; nil for a book that plays nothing.
     var listeningState: (Book) -> ListeningButtonState? = { _ in nil }
+    /// Whether an Audible title is kept on the iPhone, for its card's tag.
+    var isDownloaded: (Book) -> Bool = { _ in false }
     let onAction: (HomeAction) -> Void
 
     /// How far the page is pulled down past its top.
@@ -370,7 +372,8 @@ struct HomePage: View {
                                     listening: listeningState(book),
                                     onListen: {
                                         if let state = listeningState(book) { onAction(.listen(book, state)) }
-                                    }
+                                    },
+                                    isDownloaded: isDownloaded(book)
                                 )
                                 // The next card shows past the edge, so the row
                                 // reads as scrolling; a lone one takes the width.

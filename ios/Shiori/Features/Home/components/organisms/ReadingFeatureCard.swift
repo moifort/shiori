@@ -21,6 +21,9 @@ struct ReadingFeatureCard: View {
     /// it takes the place of "Marquer lu". Nil keeps the next step.
     var listening: ListeningButtonState? = nil
     var onListen: () -> Void = {}
+    /// An Audible title kept on the iPhone: a download symbol tagged after
+    /// "Audio".
+    var isDownloaded = false
 
     /// The text's and the buttons' heights, which the cover stretches to.
     @State private var leadHeight: CGFloat = 0
@@ -98,8 +101,8 @@ struct ReadingFeatureCard: View {
     }
 
     /// How long it has been open and how long it runs, then outlined tags for
-    /// a foreign edition and a recording: a printed book in the phone's
-    /// language needs none.
+    /// a foreign edition and a recording, and a recording kept on the iPhone:
+    /// a printed book in the phone's language needs none.
     private var detailLine: some View {
         // A tag stands a point taller than the text: the room is kept for a
         // book without one, so every card of the row stands as tall.
@@ -111,6 +114,9 @@ struct ReadingFeatureCard: View {
                     .foregroundStyle(.white.opacity(0.75))
                     .lineLimit(1)
                 CoverTags(book: book)
+                if isDownloaded {
+                    DownloadedTag()
+                }
             }
         }
     }
@@ -197,7 +203,8 @@ struct ReadingFeatureCard: View {
         ),
         caption: "depuis 2j",
         onOpen: {}, onFinish: {}, onOpenSeries: {},
-        listening: .resume
+        listening: .resume,
+        isDownloaded: true
     )
     .padding()
 }

@@ -49,12 +49,9 @@ struct BookHero<Actions: View>: View {
     /// white, as a saga set aside does.
     var isSetAside = false
     /// An Audible title kept on the iPhone: "Téléchargé" joins the tags. The
-    /// player itself never says so.
+    /// player itself never says so, and nothing tells a title still on its
+    /// way.
     var isDownloaded = false
-    /// An Audible title on its way to the iPhone: "Téléchargement" stands
-    /// where "Téléchargé" will. With no share told, since the iPhone gives
-    /// none for a FairPlay stream downloading as it plays.
-    var isDownloading = false
     @ViewBuilder var actions: Actions
 
     /// The text's height and the cover's, to tell whether the text climbs
@@ -252,15 +249,12 @@ struct BookHero<Actions: View>: View {
     /// the words.
     @ViewBuilder private var tags: some View {
         let cover = CoverTags(book: book, isFrosted: false)
-        if !cover.isEmpty || isDownloaded || isDownloading || book.hidden || isAwaited {
+        if !cover.isEmpty || isDownloaded || book.hidden || isAwaited {
             HStack(spacing: 6) {
                 if !cover.isEmpty { cover }
                 if isDownloaded {
-                    OutlinedTag(text: String(localized: "Téléchargé"), isFrosted: false)
+                    OutlinedTag(text: String(localized: "Téléchargé"), isFrosted: false, trailingSystemImage: "arrow.down")
                         .accessibilityIdentifier("book-downloaded-tag")
-                } else if isDownloading {
-                    OutlinedTag(text: String(localized: "Téléchargement"), isFrosted: false)
-                        .accessibilityIdentifier("book-downloading-tag")
                 }
                 if book.hidden {
                     OutlinedTag(text: String(localized: "Non partagé"), isFrosted: false, systemImage: "eye.slash")
@@ -402,10 +396,3 @@ extension BookState {
     }
 }
 
-#Preview("Downloading audiobook") {
-    var book = Book.preview
-    book.format = .audiobook
-    return ScrollView {
-        BookHero(book: book, state: .reading(of: book), isDownloading: true) { EmptyView() }
-    }
-}

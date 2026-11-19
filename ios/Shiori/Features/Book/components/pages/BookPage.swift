@@ -54,8 +54,6 @@ struct BookPage: View {
     var onListen: () -> Void = {}
     /// The audiobook is kept on the iPhone: a tag in the hero says so.
     var isDownloaded = false
-    /// The audiobook on its way to the iPhone.
-    var isDownloading = false
 
     /// The comment the page holding it scrolls to: the reader's remarks on
     /// "Remarques" once written, rather than the form again, and a comment
@@ -175,8 +173,7 @@ struct BookPage: View {
             onOpenAuthor: onOpenAuthor,
             onOpenNarrator: onOpenNarrator,
             onOpenProgress: onOpenProgress,
-            isDownloaded: isDownloaded,
-            isDownloading: isDownloading
+            isDownloaded: isDownloaded
         ) {
             // Sideways past the width, from edge to edge, rather than a
             // label cut or an icon dropped.
@@ -202,16 +199,11 @@ struct BookPage: View {
         // tap on a row over a neighbouring button.
         HStack(spacing: 8) {
             if let listening {
-                // Every button beside the play button keeps its label: the
-                // row scrolls sideways rather than leaving bare icons.
+                // The play button stands for the status: no "Marquer lu" nor
+                // "✓ Lu" beside it, the edit form changes a status set by
+                // mistake. Every button keeps its label: the row scrolls
+                // sideways rather than leaving bare icons.
                 listenButton(listening)
-                // A finished book needs no "Marquer lu": its "✓ Lu" says it
-                // is read, and opens every status, for one marked by mistake.
-                if let step = NextStep(status: book.status) {
-                    primaryButton(step, prominent: false)
-                } else {
-                    statusButton(prominent: false)
-                }
                 ratingButton(prominent: false)
                 noteButton()
             } else {

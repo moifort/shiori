@@ -12,6 +12,9 @@ struct OutlinedTag: View {
     /// A symbol before the word, where the tag says what the reader decided
     /// of the book rather than what it is: "Non partagé", "Guetté".
     var systemImage: String? = nil
+    /// A symbol after the word, the one a smaller tag shows alone: the
+    /// download arrow after "Téléchargé", so the home card's arrow reads.
+    var trailingSystemImage: String? = nil
 
     var body: some View {
         HStack(spacing: 3) {
@@ -21,6 +24,11 @@ struct OutlinedTag: View {
                     .accessibilityHidden(true)
             }
             Text(text.localizedUppercase)
+            if let trailingSystemImage {
+                Image(systemName: trailingSystemImage)
+                    .imageScale(.small)
+                    .accessibilityHidden(true)
+            }
         }
             .font(.caption2.weight(.bold))
             .foregroundStyle(.white.opacity(0.9))
@@ -38,11 +46,34 @@ struct OutlinedTag: View {
     }
 }
 
+/// A recording kept on the iPhone, as a symbol in the same outline, after
+/// its "Audio": the home's card has no room for the word.
+struct DownloadedTag: View {
+    var body: some View {
+        // Set as text, so the line stands exactly as tall as "Audio" beside it.
+        Text("\(Image(systemName: "arrow.down"))")
+            .font(.caption2.weight(.bold))
+            .foregroundStyle(.white.opacity(0.9))
+            .padding(.horizontal, 4)
+            .padding(.vertical, 1)
+            // The same frosted ground as the "Audio" beside it.
+            .background {
+                RoundedRectangle(cornerRadius: 3)
+                    .fill(.ultraThinMaterial)
+                    .environment(\.colorScheme, .dark)
+            }
+            .overlay { RoundedRectangle(cornerRadius: 3).strokeBorder(.white.opacity(0.75), lineWidth: 1) }
+            .fixedSize()
+            .accessibilityLabel(Text("Téléchargé"))
+    }
+}
+
 #Preview {
     HStack {
         OutlinedTag(text: "Audio")
         OutlinedTag(text: "Non partagé", systemImage: "eye.slash")
         OutlinedTag(text: "Guetté", systemImage: "binoculars.fill")
+        DownloadedTag()
     }
         .padding()
         .background(.gray)

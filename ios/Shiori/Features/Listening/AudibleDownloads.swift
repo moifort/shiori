@@ -67,14 +67,6 @@ final class AudibleDownloads {
 
     func record(_ asin: String) -> Record? { records[asin] }
 
-    /// Whether a title is still on its way to the iPhone. How far it has
-    /// come is not told: a FairPlay stream downloading as it plays leaves the
-    /// task's progress, its loaded time ranges and its delegate's loading
-    /// callbacks all at nothing on the iPhone, from start to finish.
-    func isDownloading(_ asin: String) -> Bool {
-        tasks[asin] != nil && !isDownloaded(asin)
-    }
-
     // MARK: - Downloading
 
     /// Download a title as it plays: the asset handed in is the one the

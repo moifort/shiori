@@ -325,7 +325,10 @@ struct HomeScreen: View {
                     onBarCalled: { bar.call($0) },
                     onDiscoveryChoice: viewModel.choose,
                     discoveryChoices: viewModel.discoveryChoices,
-                    listeningState: { ListeningButtonState.of($0, player: player) }
+                    listeningState: { ListeningButtonState.of($0, player: player) },
+                    isDownloaded: { book in
+                        ListeningTitle(book: book).map { player?.downloads.isDownloaded($0.asin) == true } ?? false
+                    }
                 ) { action in
                     switch action {
                     case let .showLibrary(request): onShowLibrary(request)
