@@ -118,7 +118,7 @@ jobs:
       - uses: ruby/setup-ruby@v1
         if: env.SUBMIT == 'true'
         with:
-          ruby-version: '3.4.12'
+          ruby-version: '3.4.13'
           bundler-cache: true
           working-directory: infra
 
