@@ -45,7 +45,8 @@ struct LibraryLinkRows: View {
 }
 
 /// One of the library's rows: the symbol, the title, the chevron, the hairline.
-private struct LibraryLinkRow: View {
+/// The Amis tab draws its own with it.
+struct LibraryLinkRow: View {
     let image: Image
     let title: String
     let action: () -> Void

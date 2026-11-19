@@ -2,7 +2,7 @@ import PhotosUI
 import SwiftUI
 
 enum TabSelection: Int, CaseIterable, Identifiable {
-    case home, library, news, search, scan
+    case home, library, news, friends, scan
     var id: Int { rawValue }
 
     var label: String {
@@ -10,7 +10,7 @@ enum TabSelection: Int, CaseIterable, Identifiable {
         case .home: String(localized: "Accueil")
         case .library: String(localized: "Bibliothèque")
         case .news: String(localized: "Actu")
-        case .search: String(localized: "Rechercher")
+        case .friends: String(localized: "Amis")
         case .scan: String(localized: "Scanner")
         }
     }
@@ -21,7 +21,7 @@ enum TabSelection: Int, CaseIterable, Identifiable {
         // An open book, as the Books app wears on its icon.
         case .library: "book"
         case .news: "newspaper"
-        case .search: "magnifyingglass"
+        case .friends: "person.2"
         case .scan: "camera.viewfinder"
         }
     }
@@ -59,7 +59,7 @@ struct ContentView: View {
     @State private var showPhotoPicker = false
     @State private var pickedPhoto: PhotosPickerItem?
     @State private var showManualAdd = false
-    /// Partagé, opened from the home: its tab gave way to the search.
+    /// Partagé, opened from the home.
     @State private var showShared = false
     /// A page shared into Shiori from elsewhere on the phone, picked up when the
     /// app comes to the front. Nil the rest of the time.
@@ -275,9 +275,11 @@ struct ContentView: View {
                 NewsScreen()
                     .environment(\.hostTab, .news)
             }
-            Tab(TabSelection.search.label, systemImage: TabSelection.search.symbol, value: .search) {
-                LibrarySearchScreen()
-                    .environment(\.hostTab, .search)
+            // The friends took the search's place; the search waits, hidden,
+            // until it finds a new home.
+            Tab(TabSelection.friends.label, systemImage: TabSelection.friends.symbol, value: .friends) {
+                FriendsScreen()
+                    .environment(\.hostTab, .friends)
             }
             Tab(
                 TabSelection.scan.label,

@@ -120,3 +120,24 @@ extension FriendBook {
 extension FriendInvitation {
     static let preview = FriendInvitation(code: "K7Q2MX9P", expiresAt: .now.addingTimeInterval(86400 * 7))
 }
+
+extension FriendsShelf {
+    /// The Amis tab's rails: the preview shelf's books, shared out between
+    /// the two preview friends.
+    static let preview: FriendsShelf = {
+        let shelf = FriendProfile.preview
+        let names = ["camille": "Camille", "leo": "Léo"]
+        func entries(_ books: [FriendBook]) -> [FriendsShelfEntry] {
+            books.enumerated().map { index, book in
+                let friendId = index.isMultiple(of: 2) ? "camille" : "leo"
+                return FriendsShelfEntry(friendId: friendId, friendName: names[friendId], book: book)
+            }
+        }
+        return FriendsShelf(
+            reading: entries(shelf.reading),
+            favorites: entries(shelf.favorites),
+            finished: entries([shelf.lastFinished].compactMap { $0 }),
+            pile: entries(shelf.pile)
+        )
+    }()
+}

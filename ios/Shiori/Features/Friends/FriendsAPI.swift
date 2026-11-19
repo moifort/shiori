@@ -19,6 +19,17 @@ struct Friend: Identifiable, Codable, Sendable {
     /// What moved last on their shelf, one book per kind, undated by any
     /// window: the list keeps what is still recent when it draws them.
     var recentActivity: [RecentActivity] = []
+    /// The hero or colour they wear, as the server names them. A photo is
+    /// never carried: it is theirs.
+    var avatarHero: String?
+    var avatarColor: String?
+
+    /// What they wear; their initials on slate without one.
+    var avatar: AccountAvatar {
+        if let hero = avatarHero.flatMap(AvatarHero.init(graphQLName:)) { return .hero(hero) }
+        if let color = avatarColor.flatMap({ AvatarColor(rawValue: $0.lowercased()) }) { return .tinted(color) }
+        return .initials
+    }
 
     var displayName: String {
         firstName ?? String(localized: "Un lecteur")
@@ -48,6 +59,33 @@ extension Friend {
             recentActivity: shelf.recentActivity()
         )
     }
+}
+
+/// The Amis tab's rails: the chosen friends' books, each rail every friend
+/// together, the most recent first.
+struct FriendsShelf: Codable, Equatable, Sendable {
+    var reading: [FriendsShelfEntry] = []
+    var favorites: [FriendsShelfEntry] = []
+    var finished: [FriendsShelfEntry] = []
+    var pile: [FriendsShelfEntry] = []
+
+    var isEmpty: Bool { reading.isEmpty && favorites.isEmpty && finished.isEmpty && pile.isEmpty }
+
+    /// The rails kept to the friends chosen; none keeps every friend.
+    func narrowed(to friendIds: [String]) -> FriendsShelf {
+        guard !friendIds.isEmpty else { return self }
+        let keep = { (entries: [FriendsShelfEntry]) in entries.filter { friendIds.contains($0.friendId) } }
+        return FriendsShelf(reading: keep(reading), favorites: keep(favorites), finished: keep(finished), pile: keep(pile))
+    }
+}
+
+/// A book of the Amis tab, with whose shelf it is on.
+struct FriendsShelfEntry: Identifiable, Codable, Equatable, Sendable {
+    /// One book can sit on two friends' shelves: the pair is the row.
+    var id: String { "\(friendId)-\(book.id)" }
+    let friendId: String
+    let friendName: String?
+    let book: FriendBook
 }
 
 /// A book on a friend's shelf, and whether the reader already owns the story —
@@ -277,7 +315,8 @@ enum FriendsAPI {
     static func friends() async throws -> [Friend] {
         #if DEBUG
         if Showcase.isOn {
-            return Showcase.friends
+            // `-showcase-alone`: the reader before their first friend.
+            return Showcase.isAlone ? [] : Showcase.friendsWithAvatars
         }
         #endif
         let data = try await GraphQLHelpers.fetch(
@@ -285,6 +324,29 @@ enum FriendsAPI {
             query: ShioriGraphQL.FriendsQuery()
         )
         return data.friends.map { Friend(row: $0.fragments.friendRow) }
+    }
+
+    /// The Amis tab's rails for the friends chosen; none means every friend.
+    static func friendsShelf(friendIds: [String]) async throws -> FriendsShelf {
+        #if DEBUG
+        if Showcase.isOn {
+            return Showcase.isAlone ? FriendsShelf() : Showcase.friendsShelf(friendIds)
+        }
+        #endif
+        let data = try await GraphQLHelpers.fetch(
+            GraphQLClient.shared.apollo,
+            query: ShioriGraphQL.FriendsShelfQuery(friendIds: friendIds.isEmpty ? .none : .some(friendIds))
+        )
+        let shelf = data.friendsShelf
+        let map = { (row: ShioriGraphQL.FriendsShelfEntryRow) in
+            FriendsShelfEntry(friendId: row.friendId, friendName: row.friendFirstName, book: FriendBook(row: row.book.fragments.friendBookRow))
+        }
+        return FriendsShelf(
+            reading: shelf.reading.map { map($0.fragments.friendsShelfEntryRow) },
+            favorites: shelf.favorites.map { map($0.fragments.friendsShelfEntryRow) },
+            finished: shelf.finished.map { map($0.fragments.friendsShelfEntryRow) },
+            pile: shelf.pile.map { map($0.fragments.friendsShelfEntryRow) }
+        )
     }
 
     /// Nil for anybody the reader is not friends with, which is also the answer
@@ -485,7 +547,9 @@ private extension Friend {
             readingCount: row.readingCount,
             toReadCount: row.toReadCount,
             readThisYear: row.readThisYear,
-            recentActivity: row.recentActivity.compactMap(RecentActivity.init(row:))
+            recentActivity: row.recentActivity.compactMap(RecentActivity.init(row:)),
+            avatarHero: row.avatarHero?.rawValue,
+            avatarColor: row.avatarColor?.rawValue
         )
     }
 }

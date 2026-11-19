@@ -81,6 +81,63 @@ extension Showcase {
         ),
     ]
 
+    /// The showcase before the reader's first friend: the Amis tab's invitation.
+    static let isAlone = ProcessInfo.processInfo.arguments.contains("-showcase-alone")
+
+    /// The heroes the showcase's friends wear.
+    private static let friendHeroes = ["lea": "KATNISS", "hugo": "KVOTHE", "camille": "ALICE"]
+
+    /// The friends, each wearing a hero, as the Amis tab draws them.
+    static var friendsWithAvatars: [Friend] {
+        friends.map { friend in
+            var friend = friend
+            friend.avatarHero = friendHeroes[friend.userId]
+            return friend
+        }
+    }
+
+    /// The Amis tab's rails, from the friends' recent activity and a few of
+    /// the shelf's books, narrowed to the friends chosen.
+    static func friendsShelf(_ ids: [String]) -> FriendsShelf {
+        func entry(
+            _ friendId: String, _ book: Book, days: Double, status: ReadingStatus, hearted: Bool = false
+        ) -> FriendsShelfEntry {
+            // The friend's own copy: their status and dates, not the reader's.
+            var book = book
+            book.status = status
+            book.favorite = hearted
+            book.shelvedAt = daysAgo(days)
+            if status == .read { book.finishedAt = daysAgo(days) }
+            var friendBook = friendBook(book, favoritedAt: hearted ? daysAgo(days) : nil, activity: days)
+            friendBook.ownerAvatarHero = friendHeroes[friendId]
+            let name = friends.first { $0.userId == friendId }?.firstName
+            return FriendsShelfEntry(friendId: friendId, friendName: name, book: friendBook)
+        }
+        let pile = books.filter { $0.status == .toRead }
+        let shelf = FriendsShelf(
+            reading: [
+                entry("lea", shared("furtifs"), days: 2, status: .reading),
+                entry("hugo", shared("frieren-14"), days: 4, status: .reading),
+                entry("camille", shared("monte-cristo"), days: 9, status: .reading),
+            ],
+            favorites: [
+                entry("lea", sorceleur, days: 1, status: .read, hearted: true),
+                entry("hugo", spyFamily, days: 2, status: .read, hearted: true),
+                entry("camille", shared("veiller-sur-elle"), days: 5, status: .read, hearted: true),
+            ],
+            finished: [
+                entry("lea", shared("horde-du-contrevent"), days: 3, status: .read),
+                entry("camille", shared("veiller-sur-elle"), days: 5, status: .read),
+                entry("hugo", shared("blacksad-7"), days: 8, status: .read),
+            ],
+            pile: [entry("lea", shared("demain-et-demain"), days: 6, status: .toRead)]
+                + pile.prefix(3).enumerated().map { index, book in
+                    entry(["hugo", "camille", "lea"][index], book, days: Double(10 + index), status: .toRead)
+                }
+        )
+        return shelf.narrowed(to: ids)
+    }
+
     /// The reader's own shelf as their friends see it.
     static var myShelf: FriendProfile {
         let reading = books.filter { $0.status == .reading }

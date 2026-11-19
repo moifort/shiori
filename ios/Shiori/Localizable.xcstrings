@@ -4281,6 +4281,22 @@
         }
       }
     },
+    "Ce qu’ils verront de vous" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What they'll see of you"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ce qu’ils verront de vous"
+          }
+        }
+      }
+    },
     "Celle sur laquelle vous achetez vos livres audio." : {
       "localizations" : {
         "en" : {
@@ -6377,6 +6393,22 @@
         }
       }
     },
+    "En ce moment" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Right now"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En ce moment"
+          }
+        }
+      }
+    },
     "En cours" : {
       "localizations" : {
         "en" : {
@@ -7849,6 +7881,22 @@
         }
       }
     },
+    "Impossible de charger vos amis" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't load your friends"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible de charger vos amis"
+          }
+        }
+      }
+    },
     "Impossible de préparer l’achat. Réessayez dans un instant." : {
       "localizations" : {
         "en" : {
@@ -8053,6 +8101,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Invitez un ami"
+          }
+        }
+      }
+    },
+    "Invitez un ami : vous verrez ce qu’il lit, ce qu’il a adoré et ce qui l’attend sur sa pile. Il verra vos livres en retour." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invite a friend: you'll see what they're reading, what they loved and what's waiting on their pile. They'll see your books in return."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invitez un ami : vous verrez ce qu’il lit, ce qu’il a adoré et ce qui l’attend sur sa pile. Il verra vos livres en retour."
           }
         }
       }
@@ -9077,6 +9141,22 @@
         }
       }
     },
+    "Leurs coups de cœur" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Their favorites"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leurs coups de cœur"
+          }
+        }
+      }
+    },
     "Ligne %lld" : {
       "localizations" : {
         "en" : {
@@ -9121,6 +9201,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Lire la suite"
+          }
+        }
+      }
+    },
+    "Lire, c’est mieux à plusieurs" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reading is better together"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lire, c’est mieux à plusieurs"
           }
         }
       }
@@ -13797,6 +13893,22 @@
         }
       }
     },
+    "Ses coups de cœur" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Their favorites"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ses coups de cœur"
+          }
+        }
+      }
+    },
     "Ses favoris" : {
       "localizations" : {
         "en" : {
@@ -14485,6 +14597,38 @@
         }
       }
     },
+    "Sur leur pile" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On their pile"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sur leur pile"
+          }
+        }
+      }
+    },
+    "Sur sa pile" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On their pile"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sur sa pile"
+          }
+        }
+      }
+    },
     "Surtout %@" : {
       "localizations" : {
         "en" : {
@@ -14993,6 +15137,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Terminés"
+          }
+        }
+      }
+    },
+    "Terminés récemment" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recently finished"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Terminés récemment"
           }
         }
       }

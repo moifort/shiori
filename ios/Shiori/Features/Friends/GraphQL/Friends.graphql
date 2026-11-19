@@ -14,6 +14,8 @@ fragment FriendRow on Friend {
   userId
   firstName
   since
+  avatarHero
+  avatarColor
   bookCount
   favoriteCount
   readingCount
@@ -32,6 +34,33 @@ fragment FriendRow on Friend {
 query FriendProfile($userId: UserId!) {
   friendProfile(userId: $userId) {
     ...SharedShelf
+  }
+}
+
+# The Amis tab: the chosen friends' books, each rail every friend together.
+# No friend chosen means every friend.
+query FriendsShelf($friendIds: [UserId!]) {
+  friendsShelf(friendIds: $friendIds) {
+    reading {
+      ...FriendsShelfEntryRow
+    }
+    favorites {
+      ...FriendsShelfEntryRow
+    }
+    finished {
+      ...FriendsShelfEntryRow
+    }
+    pile {
+      ...FriendsShelfEntryRow
+    }
+  }
+}
+
+fragment FriendsShelfEntryRow on FriendsShelfEntry {
+  friendId
+  friendFirstName
+  book {
+    ...FriendBookRow
   }
 }
 

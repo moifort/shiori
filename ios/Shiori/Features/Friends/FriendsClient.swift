@@ -25,6 +25,8 @@ struct FriendsClient: Sendable {
     var wish: @Sendable (_ friendId: String, _ bookId: String) async throws -> String = { _, _ in "" }
     /// A wish taken back, from "Envies" tapped again.
     var removeWish: @Sendable (_ wishId: String) async throws -> Void = { _ in }
+    /// The Amis tab's rails for the friends chosen; none means every friend.
+    var friendsShelf: @Sendable (_ friendIds: [String]) async throws -> FriendsShelf = { _ in FriendsShelf() }
 }
 
 extension FriendsClient {
@@ -44,7 +46,8 @@ extension FriendsClient {
         accept: { try await FriendsAPI.accept(code: $0) },
         remove: { try await FriendsAPI.remove(userId: $0) },
         wish: { try await WishlistAPI.wish(friendId: $0, bookId: $1).id },
-        removeWish: { try await WishlistAPI.remove(id: $0) }
+        removeWish: { try await WishlistAPI.remove(id: $0) },
+        friendsShelf: { try await FriendsAPI.friendsShelf(friendIds: $0) }
     )
 
     /// Answers from the fixtures, at once, and accepts every write.
@@ -62,6 +65,7 @@ extension FriendsClient {
         stopAwaiting: { _ in },
         invite: { .preview },
         accept: { _ in Friend.previews[1] },
-        remove: { _ in }
+        remove: { _ in },
+        friendsShelf: { ids in FriendsShelf.preview.narrowed(to: ids) }
     )
 }

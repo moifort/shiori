@@ -169,6 +169,9 @@ final class ScreenshotTest: XCTestCase {
     /// The search, and the cover picker reached from a book it finds: the
     /// landing page's tour, not the App Store's.
     func testCaptureSearchAndCover() throws {
+        // The Amis tab took the search's place, which waits, hidden, for a
+        // new home: nothing opens it until then.
+        throw XCTSkip("The search has no tab while the Amis tab holds its place.")
         try open("Rechercher")
         try wait(app.descendants(matching: .any)["search-viewed"].firstMatch)
         settle()
