@@ -58,6 +58,17 @@ enum NewsCard: Identifiable, Hashable, Sendable {
         return parts.count == 2 && parts[0] == "awaited" ? String(parts[1]) : nil
     }
 
+    /// Whether the server says the reader holds the book already, in any
+    /// format: a friend's book, a prize's winner. The other cards are of
+    /// books the server leaves out once held.
+    var inLibrary: Bool {
+        switch self {
+        case let .friend(move): move.lead.inLibrary
+        case let .award(winner): winner.inLibrary ?? false
+        default: false
+        }
+    }
+
     var isDismissable: Bool {
         switch self {
         case .suggestion, .award: true
@@ -246,12 +257,14 @@ enum NewsDiscoverPicks {
     }
 }
 
-/// What the reader made of the cards' wish button on this visit: the books
-/// just wished for, by `NewsCard.key`, and the awaited editions of the wish
-/// list's rail just taken off it, which their card no longer shows wished.
+/// What the reader made of the cards' buttons on this visit: the books
+/// just wished for, by `NewsCard.key`, the awaited editions of the wish
+/// list's rail just taken off it, which their card no longer shows wished,
+/// and the books just taken with the "+".
 struct NewsWishes: Equatable, ExpressibleByArrayLiteral {
     private var added: Set<String> = []
     private var dropped: Set<String> = []
+    private var taken: Set<String> = []
 
     init(arrayLiteral keys: String...) { added = Set(keys) }
 
@@ -262,6 +275,14 @@ struct NewsWishes: Equatable, ExpressibleByArrayLiteral {
         let key = item.card.key
         return added.contains(key) || (item.isAwaited && !dropped.contains(key))
     }
+
+    /// A large card's book held already, as the server says, or just taken
+    /// here: "Chez vous" in place of its buttons.
+    func isOwned(_ card: NewsCard) -> Bool {
+        card.inLibrary || taken.contains(card.key)
+    }
+
+    mutating func take(_ key: String) { taken.insert(key) }
 
     mutating func insert(_ key: String) {
         added.insert(key)

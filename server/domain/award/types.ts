@@ -62,6 +62,9 @@ export type AwardedWorkView = {
   awaitableFormats: ReleaseFormat[]
   /** The edition the reader awaits already, when they do. */
   awaitedId?: AwaitedEditionId
+  /** Whether the reader holds the novel in any format: a winner shown in
+   *  print the reader keeps as a recording. Set where the library was read. */
+  inLibrary?: boolean
 }
 
 /** One award's winners on the full list: the ones the reader does not hold, and

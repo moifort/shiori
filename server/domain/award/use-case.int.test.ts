@@ -45,6 +45,9 @@ mock.module('~/domain/book/infrastructure/published-cover', () => ({
   publishedCoverOf: async () => 'https://covers.example/hyperion.jpg',
   isCoverGone: async () => false,
   isImageAt: async () => true,
+  isbnCoversOf: async () => ({}),
+  otherEditionCoversOf: async () => [],
+  isbnsInLanguage: () => [],
 }))
 
 const { AwardUseCase } = await import('~/domain/award/use-case')
@@ -365,6 +368,18 @@ describe('the award sections', () => {
     shelve('La Maison vide', 'Laurent Mauvignier', 'literary-fiction')
 
     expect(await AwardUseCase.sections(reader, 'book', 'fr', now)).toEqual([])
+  })
+
+  test('shows in print a winner the reader keeps as a recording, marked as theirs', async () => {
+    shelve('L’Étranger', 'Albert Camus', 'literary-fiction', 'read', 'audiobook')
+    shelve('Madame Bovary', 'Gustave Flaubert', 'literary-fiction', 'read', 'audiobook')
+    shelve('La Maison vide', 'Laurent Mauvignier', 'literary-fiction', 'read', 'audiobook')
+
+    const winners = (await AwardUseCase.sections(reader, 'book', 'fr', now)).flatMap(
+      (section) => section.winners,
+    )
+    expect(winners.length).toBeGreaterThan(0)
+    expect(winners.every((view) => view.inLibrary)).toBe(true)
   })
 })
 

@@ -6,6 +6,7 @@ import {
   genresOf,
   hasRead,
   isHeld,
+  isInLibrary,
   latestWinnersOf,
   latestYearsOf,
   MAX_AWARD_SECTIONS,
@@ -64,8 +65,14 @@ export namespace AwardUseCase {
     const works = await latestWorksOf(awards)
     const editions = await editionsOf(works, userId, appLanguage)
     const today = todayOf(now)
-    const views = new Map(
-      works.map((work) => [work.key, viewOf(work, format, appLanguage, editions, today)] as const),
+    const views = new Map<string, AwardedWorkView>(
+      works.map((work) => {
+        const view = viewOf(work, format, appLanguage, editions, today)
+        return [
+          work.key,
+          { ...view, inLibrary: isInLibrary(work, view.watch?.found, books) },
+        ] as const
+      }),
     )
     const shown = (view: AwardedWorkView) =>
       !dismissed.has(view.work.key) && !isHeld(view.work, format, view.watch?.found, books)
@@ -120,7 +127,8 @@ export namespace AwardUseCase {
     const editions = await editionsOf(works, userId, appLanguage)
     const today = todayOf(now)
     const shown = works.flatMap((work) => {
-      const view = viewOf(work, format, appLanguage, editions, today)
+      const base = viewOf(work, format, appLanguage, editions, today)
+      const view = { ...base, inLibrary: isInLibrary(work, base.watch?.found, books) }
       return dismissed.has(work.key) || isHeld(work, format, view.watch?.found, books) ? [] : [view]
     })
     const picked = genres.map((genre) => ({

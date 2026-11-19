@@ -37,7 +37,10 @@ struct NewsCardRow: View {
         ScrollView(.horizontal) {
             LazyHStack(alignment: .top, spacing: 12) {
                 ForEach(items) { item in
-                    NewsLargeCard(item: item, isWished: wished.isWished(item), onAction: onAction)
+                    NewsLargeCard(
+                        item: item, isWished: wished.isWished(item), isOwned: wished.isOwned(item.card),
+                        onAction: onAction
+                    )
                         .containerRelativeFrame(.horizontal) { width, _ in
                             SeriesReleaseCard.railWidth(width, count: items.count)
                         }
@@ -57,10 +60,12 @@ struct NewsCardRow: View {
 /// happened at its foot, as the covers of a rail say it; beside it the title,
 /// the author, the outlined tags — how long is left, "Audio", a foreign
 /// language — and at the foot "Envies" and the "+" of the other ways
-/// to take it. A release's day sits in the corner as a calendar leaf.
+/// to take it, or "Chez vous" for a book the reader holds already. A
+/// release's day sits in the corner as a calendar leaf.
 struct NewsLargeCard: View {
     let item: NewsShelfItem
     var isWished = false
+    var isOwned = false
     let onAction: (NewsAction) async -> Void
 
     /// The home's "En cours" card's height (ReadingFeatureCard), which every
@@ -117,6 +122,7 @@ struct NewsLargeCard: View {
                 NewsCardButtons(
                     card: card,
                     isWished: isWished,
+                    isOwned: isOwned,
                     onAction: onAction
                 )
             }
@@ -157,6 +163,9 @@ struct NewsLargeCard: View {
 
 /// The foot of a large card: the pair "Envies" and "+" every book page
 /// shares (WishAddButtons), and for a prize or a discovery "Pas intéressé".
+/// A book the reader holds already, in any format, has nothing left to
+/// take: "Chez vous" stands in for the pair, "Pas intéressé" stays. One on
+/// the wish list keeps its checked "Envies".
 /// The "+" opens the book page's add menu without the wish list: each format
 /// the book may be taken in, then the editions to await. Where the three do
 /// not fit beside a rail card's cover, the wish keeps its colour but loses
@@ -164,6 +173,7 @@ struct NewsLargeCard: View {
 struct NewsCardButtons: View {
     let card: NewsCard
     var isWished = false
+    var isOwned = false
     let onAction: (NewsAction) async -> Void
 
     var body: some View {
@@ -175,20 +185,10 @@ struct NewsCardButtons: View {
 
     private func row(isCompact: Bool) -> some View {
         HStack(spacing: 8) {
-            WishAddButtons(
-                isWished: isWished,
-                isCompact: isCompact,
-                showsMenu: !formats.isEmpty || !awaitable.isEmpty,
-                onToggle: { Task { await onAction(isWished ? .unwish(card) : .wish(card)) } }
-            ) {
-                BookAddMenuItems(
-                    formats: formats,
-                    owned: false,
-                    awaitable: awaitable,
-                    onAdd: { status, format in await onAction(.add(card, status, format)) },
-                    onAwait: { format in Task { await onAction(.awaitEdition(card, format)) } },
-                    showsWish: false
-                )
+            if isOwned && !isWished {
+                OwnedCapsule()
+            } else {
+                wishAdd(isCompact: isCompact)
             }
             if card.isDismissable {
                 Button {
@@ -200,6 +200,24 @@ struct NewsCardButtons: View {
                 .buttonStyle(ActionButtonStyle(fill: .glass, shape: .circle, height: 28))
                 .accessibilityLabel("Pas intéressé")
             }
+        }
+    }
+
+    private func wishAdd(isCompact: Bool) -> some View {
+        WishAddButtons(
+            isWished: isWished,
+            isCompact: isCompact,
+            showsMenu: !formats.isEmpty || !awaitable.isEmpty,
+            onToggle: { Task { await onAction(isWished ? .unwish(card) : .wish(card)) } }
+        ) {
+            BookAddMenuItems(
+                formats: formats,
+                owned: false,
+                awaitable: awaitable,
+                onAdd: { status, format in await onAction(.add(card, status, format)) },
+                onAwait: { format in Task { await onAction(.awaitEdition(card, format)) } },
+                showsWish: false
+            )
         }
     }
 

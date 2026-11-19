@@ -45,4 +45,5 @@ fragment AwardWinnerFields on AwardWinner {
   storeUrl
   awaitableFormats
   awaitedEditionId
+  inLibrary
 }

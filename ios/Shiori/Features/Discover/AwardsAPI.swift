@@ -76,6 +76,10 @@ struct AwardWinner: Discovery, Hashable, Sendable, Codable {
     /// The novel whatever its format, which "Pas intéressé" turns down. Nil
     /// on a winner read back from a snapshot saved before it was sent.
     var key: String?
+    /// Whether the reader holds the novel in any format: a winner shown in
+    /// print they keep as a recording. Nil on a snapshot saved before it
+    /// was sent.
+    var inLibrary: Bool?
 
     /// Its title in the app's language once found, else the one it won under.
     var title: String { release.title }
@@ -237,7 +241,8 @@ extension AwardWinner {
                 }
             },
             awaitedEditionId: fields.awaitedEditionId,
-            key: fields.key
+            key: fields.key,
+            inLibrary: fields.inLibrary
         )
     }
 }

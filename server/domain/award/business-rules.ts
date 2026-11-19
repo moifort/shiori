@@ -214,6 +214,13 @@ export const isHeld = (
 ): boolean =>
   books.some((book) => releaseFormatOf(book.format) === format && isWork(book, work, found))
 
+/** Whether the reader holds the work in any format, in any status. */
+export const isInLibrary = (
+  work: AwardedWork,
+  found: FoundEdition | undefined,
+  books: readonly ShelfBook[],
+): boolean => books.some((book) => isWork(book, work, found))
+
 /** Whether the reader has read the work, in any format. */
 export const hasRead = (
   work: AwardedWork,

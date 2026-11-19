@@ -4,6 +4,7 @@ import {
   genresOf,
   hasRead,
   isHeld,
+  isInLibrary,
   sectionGenreOf,
   watchKeyOf,
   winnerStateOf,
@@ -128,6 +129,13 @@ describe('what the reader holds', () => {
 
   test('a printed copy does not hold the recording', () => {
     expect(isHeld(hyperion, 'audiobook', found, [shelved("Les Cantos d'Hypérion")])).toBe(false)
+  })
+
+  test('the library holds it in any format, whatever the one shown', () => {
+    const recording = [shelved("Les Cantos d'Hypérion", { format: 'audiobook' })]
+    expect(isHeld(hyperion, 'book', found, recording)).toBe(false)
+    expect(isInLibrary(hyperion, found, recording)).toBe(true)
+    expect(isInLibrary(hyperion, found, [shelved('Autre')])).toBe(false)
   })
 
   test('read counts in any format, and only once read', () => {

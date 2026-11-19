@@ -248,6 +248,7 @@ final class NewsViewModel {
     func add(_ event: FeedEvent, _ status: CopiedStatus, as format: BookFormat) async {
         if await perform({ try await client.addFriendBook(event.friendId, event.bookId, status, format) }) {
             taken.insert(event.bookId)
+            wished.take(event.bookId)
         }
     }
 
@@ -272,6 +273,7 @@ final class NewsViewModel {
         draft.status = status == .read ? .read : .toRead
         if await perform({ try await client.addReleased(draft) }) {
             taken.insert(item.id)
+            wished.take(item.id)
         }
     }
 
@@ -386,6 +388,7 @@ final class NewsViewModel {
         draft.status = status == .read ? .read : .toRead
         if await perform({ try await client.addReleased(draft) }) {
             taken.insert(card.key)
+            wished.take(card.key)
         }
     }
 

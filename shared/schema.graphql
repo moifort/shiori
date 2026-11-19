@@ -940,6 +940,11 @@ type AwardWinner {
   """The edition’s shared watch: stable for a novel, format and language."""
   id: String!
 
+  """
+  Whether the reader holds the novel in any format, in any status: a winner shown in print they keep as a recording. False where the library was not read.
+  """
+  inLibrary: Boolean!
+
   """The novel, whatever its format: what `dismissAwardWinner` turns down."""
   key: String!
   originalLanguage: BookLanguage! @deprecated(reason: "Read `release`, which the list and the page draw alike.")

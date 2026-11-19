@@ -273,7 +273,10 @@ struct NewsAgendaSection: View {
                 LazyHStack(alignment: .top, spacing: entries.count <= NewsShelf.cardLimit ? 12 : 13) {
                     ForEach(entries) { entry in
                         if entries.count <= NewsShelf.cardLimit {
-                            NewsLargeCard(item: entry.item, isWished: wished.isWished(entry.item), onAction: onAction)
+                            NewsLargeCard(
+                                item: entry.item, isWished: wished.isWished(entry.item),
+                                isOwned: wished.isOwned(entry.item.card), onAction: onAction
+                            )
                                 .containerRelativeFrame(.horizontal) { width, _ in
                                     SeriesReleaseCard.railWidth(width, count: entries.count)
                                 }
@@ -397,6 +400,7 @@ private struct NewsDayLeaf: View {
 private struct NewsAgendaLead: View {
     let card: NewsCard
     let isWished: Bool
+    var isOwned = false
     var coverWidth: CGFloat = NewsLargeCard.coverWidth
     let onAction: (NewsAction) async -> Void
 
@@ -416,7 +420,7 @@ private struct NewsAgendaLead: View {
                     .font(.title3.weight(.bold))
                     .lineLimit(1)
                 Spacer(minLength: 8)
-                NewsCardButtons(card: card, isWished: isWished, onAction: onAction)
+                NewsCardButtons(card: card, isWished: isWished, isOwned: isOwned, onAction: onAction)
             }
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -507,7 +511,10 @@ struct NewsPrizesSlider: View {
             ScrollView(.horizontal) {
                 LazyHStack(alignment: .top, spacing: 12) {
                     ForEach(cards) { card in
-                        NewsAgendaLead(card: card, isWished: wished.contains(card.key), coverWidth: NewsLargeCard.coverWidth, onAction: onAction)
+                        NewsAgendaLead(
+                            card: card, isWished: wished.contains(card.key), isOwned: wished.isOwned(card),
+                            coverWidth: NewsLargeCard.coverWidth, onAction: onAction
+                        )
                             .containerRelativeFrame(.horizontal) { width, _ in
                                 SeriesReleaseCard.railWidth(width, count: cards.count)
                             }

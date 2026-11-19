@@ -119,6 +119,12 @@ export const AwardWinnerType = builder.objectRef<AwardedWorkView>('AwardWinner')
         'novel nobody awaited, never looked up: `watched` tells them apart.',
       resolve: (view) => view.state,
     }),
+    inLibrary: t.boolean({
+      description:
+        'Whether the reader holds the novel in any format, in any status: a winner shown ' +
+        'in print they keep as a recording. False where the library was not read.',
+      resolve: (view) => view.inLibrary ?? false,
+    }),
     watched: t.boolean({
       description: 'Whether the web was ever searched for its edition.',
       resolve: (view) => view.watch !== undefined,
