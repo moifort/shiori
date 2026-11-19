@@ -2297,22 +2297,6 @@
         }
       }
     },
-    "Ajouter à ma bibliothèque" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Add to my library"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ajouter à ma bibliothèque"
-          }
-        }
-      }
-    },
     "Ajouter à ma pile" : {
       "localizations" : {
         "en" : {

@@ -34,6 +34,8 @@ struct NewsClient: Sendable {
     /// server reads the library once for all of them. Nil, or a field in
     /// error, and each section is asked alone through the closures above.
     var opening: (@Sendable (_ limit: Int) async throws -> NewsOpening)? = nil
+    /// What the wish list rail shows, asked alone when the opening fails.
+    var wishlistReleases: @Sendable () async throws -> [UpcomingRelease] = { [] }
     /// A discovery or a prize onto the wish list.
     var wishDiscovery: @Sendable (BookDraft, Wish.Origin) async throws -> String = { _, _ in "" }
     /// A wish taken back, from a second tap on the wished "Envies".
@@ -69,6 +71,7 @@ extension NewsClient {
         awards: { try await AwardsAPI.sections(format: .book) },
         discoveries: { try await SuggestionsAPI.monthly(format: .book, lookUp: false).suggestions },
         opening: { try await NewsAPI.opening(limit: $0) },
+        wishlistReleases: { try await NewsAPI.wishlistReleases() },
         wishDiscovery: { draft, origin in try await WishlistAPI.wish(draft, origin: origin).id },
         removeWish: { try await WishlistAPI.remove(id: $0) },
         stopAwaiting: { try await AwaitedAPI.stop(id: $0) },
@@ -92,6 +95,7 @@ extension NewsClient {
         alertsSilenced: { false },
         invite: { .preview },
         awards: { AwardSection.previews },
-        discoveries: { MonthlyDiscoveries.preview.suggestions }
+        discoveries: { MonthlyDiscoveries.preview.suggestions },
+        wishlistReleases: { UpcomingRelease.wishlistPreviews }
     )
 }

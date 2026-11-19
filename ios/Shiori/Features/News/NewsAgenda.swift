@@ -157,12 +157,14 @@ struct NewsAgenda: Hashable, Sendable {
     ///   - upcoming: what is announced for a day, the strip's days to come.
     ///   - announced: everything announced, dated or not, for the shelves;
     ///     `upcoming` when nil.
+    ///   - wishlist: the wish list rail, in the server's order.
     ///   - dismissed: cards turned down this session, gone at once.
     init(
         released: [ReleasedItem],
         events: [FeedEvent],
         upcoming: [UpcomingRelease],
         announced: [UpcomingRelease]? = nil,
+        wishlist: [UpcomingRelease] = [],
         suggestions: [Suggestion],
         awards: [AwardSection],
         dismissed: Set<String> = [],
@@ -207,7 +209,8 @@ struct NewsAgenda: Hashable, Sendable {
             .map(NewsCard.award)
             .filter { !dismissed.contains($0.key) }
         shelves = NewsShelves(
-            released: released, moves: moves, upcoming: announced ?? upcoming, today: today, calendar: calendar
+            released: released, moves: moves, upcoming: announced ?? upcoming, wishlist: wishlist,
+            today: today, calendar: calendar
         )
         hasFriends = !moves.isEmpty
     }

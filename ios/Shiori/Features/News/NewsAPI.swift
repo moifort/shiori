@@ -36,7 +36,8 @@ enum NewsAPI {
             narratorNews: data.narratorNews.map { news(from: $0.fragments.narratorNewsFields) },
             awards: data.awardSections.map { AwardSection(fields: $0.fragments.awardSectionFields) },
             discoveries: MonthlyDiscoveries(fields: data.monthlyDiscoveries.fragments.monthlyDiscoveriesFields)
-                .suggestions
+                .suggestions,
+            wishlistReleases: data.wishlistReleases.compactMap { release(from: $0.fragments.upcomingReleaseFields) }
         )
     }
 
@@ -115,6 +116,19 @@ enum NewsAPI {
             query: ShioriGraphQL.YearReleasesQuery()
         )
         return data.yearReleases.compactMap { release(from: $0.fragments.upcomingReleaseFields) }
+    }
+
+    /// What the wish list rail shows: to come, out lately, then out already
+    /// when asked for lately.
+    static func wishlistReleases() async throws -> [UpcomingRelease] {
+        #if DEBUG
+        if Showcase.isOn { return [] }
+        #endif
+        let data = try await GraphQLHelpers.fetch(
+            GraphQLClient.shared.apollo,
+            query: ShioriGraphQL.WishlistReleasesQuery()
+        )
+        return data.wishlistReleases.compactMap { release(from: $0.fragments.upcomingReleaseFields) }
     }
 
     private static func release(from row: ShioriGraphQL.UpcomingReleaseFields) -> UpcomingRelease? {

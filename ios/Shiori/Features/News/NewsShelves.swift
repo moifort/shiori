@@ -15,6 +15,9 @@ struct NewsShelfItem: Identifiable, Hashable, Sendable {
     var friend: FeedEvent?
     /// A friend's stars, drawn in place of the line.
     var rating: Double?
+    /// Where a wish list edition out stands, "Sorti · 6 nov." or
+    /// "Disponible": a large card's word, with no date leaf beside it.
+    var standing: String?
 
     var id: String { card.id }
 
@@ -69,7 +72,12 @@ struct NewsShelves: Hashable, Sendable {
     ///   - released: what came out lately, newest first.
     ///   - moves: the friends' moves, newest first.
     ///   - upcoming: everything announced, dated or not.
-    init(released: [ReleasedItem], moves: [FriendMove], upcoming: [UpcomingRelease], today: Date, calendar: Calendar) {
+    ///   - wishlist: the editions awaited the wish list rail shows, in the
+    ///     server's order: to come, out lately, out already when asked for.
+    init(
+        released: [ReleasedItem], moves: [FriendMove], upcoming: [UpcomingRelease],
+        wishlist: [UpcomingRelease] = [], today: Date, calendar: Calendar
+    ) {
         let moves = moves.sorted { $0.lead.at > $1.lead.at }
         var seenFriends = Set<String>()
         activity = moves
@@ -158,19 +166,36 @@ struct NewsShelves: Hashable, Sendable {
         }
         narrators = Array(narratorItems.prefix(Self.limit))
 
-        // The wish list: only what is still to come, the dated first.
-        let wishItems = aheadRelease(.awaited).map { release in
-            NewsShelfItem(
-                card: .upcoming(release),
-                caption: release.date.map { Self.shortDate($0, calendar: calendar) } ?? String(localized: "En vue")
-            )
-        }
-        wishes = Array(wishItems.prefix(Self.limit))
+        // The wish list, as the server orders it: what is to come by its
+        // date, what came out lately by its day, the rest found out already
+        // when the reader asked for it.
+        wishes = Array(wishlist.prefix(Self.limit).map { release in
+            let (caption, isOut) = Self.wishCaption(release, today: today, calendar: calendar)
+            return NewsShelfItem(card: .upcoming(release), caption: caption, standing: isOut ? caption : nil)
+        })
     }
 
     /// "Tome 9 · 14 nov.", or the state alone outside a numbered series.
     static func volumeTag(_ release: UpcomingRelease, _ state: String) -> String {
         release.volume.map { String(localized: "Tome \($0) · \(state)") } ?? state.capitalizedFirst
+    }
+
+    /// A wish list edition's foot, and whether it is out: its date while to
+    /// come, "Sorti · 6 nov." when out within the rail's thirty days,
+    /// "Disponible" when it was out already as the reader asked for it.
+    static func wishCaption(
+        _ release: UpcomingRelease, today: Date, calendar: Calendar
+    ) -> (caption: String, isOut: Bool) {
+        let available = (String(localized: "Disponible"), true)
+        guard let date = release.date else { return available }
+        let parts = date.split(separator: "-").compactMap { Int($0) }
+        guard parts.count > 1, let first = calendar.date(
+            from: DateComponents(year: parts[0], month: parts[1], day: parts.count > 2 ? parts[2] : 1)
+        ) else { return (shortDate(date, calendar: calendar), false) }
+        let end = parts.count > 2 ? first : calendar.date(byAdding: .month, value: 1, to: first) ?? first
+        guard end <= today else { return (shortDate(date, calendar: calendar), false) }
+        let since = calendar.date(byAdding: .day, value: -NewsFeedLayout.releasedDays, to: today) ?? today
+        return first >= since ? (outCaption(first), true) : available
     }
 
     /// "Sorti · 12 oct."
@@ -291,6 +316,7 @@ extension NewsShelfItem {
     /// the day the date leaf says — "♥ Adoré", "Tome 9", "Sorti", "Annoncé",
     /// "À paraître".
     var word: String {
+        if let standing { return standing }
         switch card {
         case let .friend(move):
             return NewsShelves.action(move.lead)
@@ -316,7 +342,8 @@ extension NewsShelfItem {
     /// included since the page is news, and how long is left when ahead.
     /// Nil for the prizes, the month's discovery and what has no date.
     var day: String? {
-        switch card {
+        if standing != nil { return nil }
+        return switch card {
         case let .released(item): Self.isoDay(item.day)
         case let .upcoming(release): release.date
         case let .friend(move): Self.isoDay(move.lead.at)

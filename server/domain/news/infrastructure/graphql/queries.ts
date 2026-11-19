@@ -48,6 +48,18 @@ builder.queryFields((t) => ({
       NewsUseCase.yearReleases(context.userId, languageOf(context.event)),
   }),
 
+  wishlistReleases: t.field({
+    type: [UpcomingReleaseType],
+    description:
+      'What the wish list rail of Actualités shows of the editions the reader awaits: the ' +
+      'ones announced for a date to come, the soonest first; the ones out in the last 30 ' +
+      'days, the newest first; then the ones already out when the reader asked for them in ' +
+      'the last 30 days, the latest asked first. Undated ones are left out. Read off the ' +
+      'release watches: no web lookup.',
+    resolve: (_root, _args, context) =>
+      NewsUseCase.wishlistReleases(context.userId, languageOf(context.event)),
+  }),
+
   upcomingReleases: t.field({
     type: [UpcomingReleaseType],
     description:

@@ -3,7 +3,13 @@ import type { SharedActivity, SharedShelfToday } from '~/domain/analytics/types'
 import type { AwaitedEditionView } from '~/domain/awaited-edition/types'
 import type { Discovery, ShownVolume } from '~/domain/discovery/types'
 import type { Friend } from '~/domain/friendship/types'
-import { feedEventsOf, feedPageOf, upcomingOf, yearReleasesOf } from '~/domain/news/business-rules'
+import {
+  feedEventsOf,
+  feedPageOf,
+  upcomingOf,
+  wishlistReleasesOf,
+  yearReleasesOf,
+} from '~/domain/news/business-rules'
 import type { FollowedSeries } from '~/domain/series/use-case'
 import type { UserId } from '~/domain/shared/types'
 
@@ -328,5 +334,75 @@ describe('yearReleasesOf', () => {
       ['awaited', 'Out'],
       ['saga', 'Two'],
     ])
+  })
+})
+
+describe('wishlistReleasesOf', () => {
+  const today = '2026-11-18'
+  const awaited = (
+    title: string,
+    state: AwaitedEditionView['state'],
+    date: string | undefined,
+    awaitedAt = '2026-01-10T09:00:00Z',
+  ) =>
+    ({
+      id: title,
+      format: 'book',
+      state,
+      awaitedAt: new Date(awaitedAt),
+      source: { title, authors: ['Auteur'] },
+      ...(state === 'unannounced' ? {} : { found: { title, ...(date ? { date } : {}) } }),
+    }) as unknown as AwaitedEditionView
+  const titles = (views: AwaitedEditionView[]) =>
+    wishlistReleasesOf(views, today).map((release) => String(release.title))
+
+  test('lists what is to come, then what came out lately, then what was out when asked', () => {
+    expect(
+      titles([
+        awaited('Found at once', 'available', '2025-06-01', '2026-11-12T09:00:00Z'),
+        awaited('Out lately', 'available', '2026-11-06'),
+        awaited('Out earlier lately', 'available', '2026-10-25'),
+        awaited('Third', 'announced', '2026-12-03'),
+        awaited('Second', 'announced', '2026-12-02'),
+        awaited('Next month', 'announced', '2027-01'),
+      ]),
+    ).toEqual([
+      'Second',
+      'Third',
+      'Next month',
+      'Out lately',
+      'Out earlier lately',
+      'Found at once',
+    ])
+  })
+
+  test('leaves out the undated, whether nothing was found or no date was', () => {
+    expect(
+      titles([
+        awaited('Checking', 'unannounced', undefined),
+        awaited('Undated', 'announced', undefined),
+        awaited('Dated', 'announced', '2026-12-02'),
+      ]),
+    ).toEqual(['Dated'])
+  })
+
+  test('drops what came out over thirty days ago, unless asked for in the last thirty', () => {
+    expect(
+      titles([
+        awaited('Old', 'available', '2026-09-01', '2026-08-01T09:00:00Z'),
+        awaited('Asked long ago', 'available', '2025-01-01', '2026-10-01T09:00:00Z'),
+        awaited('Asked lately', 'available', '2025-01-01', '2026-11-01T09:00:00Z'),
+        awaited('Out after it was asked', 'available', '2026-10-01', '2026-09-20T09:00:00Z'),
+      ]),
+    ).toEqual(['Asked lately'])
+  })
+
+  test('lists the editions found at once the latest asked first', () => {
+    expect(
+      titles([
+        awaited('Asked first', 'available', '2024-01-01', '2026-11-01T09:00:00Z'),
+        awaited('Asked last', 'available', '2024-01-01', '2026-11-15T09:00:00Z'),
+      ]),
+    ).toEqual(['Asked last', 'Asked first'])
   })
 })

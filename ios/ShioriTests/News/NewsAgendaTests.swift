@@ -192,21 +192,19 @@ struct NewsAgendaTests {
         )
     }
 
-    @Test func theWishListHoldsOnlyWhatIsToComeTheDatedFirst() {
+    @Test func theWishListKeepsTheServersOrderAndSaysWhereEachStands() {
         let wishes = NewsAgenda(
-            released: NewsFeedLayout.released(
-                releases: [followed("out", .awaited, "2026-11-05")], narrator: [], format: nil, now: now, calendar: calendar
-            ),
-            events: [], upcoming: [],
-            announced: [
-                followed("undated", .awaited, nil), followed("december", .awaited, "2026-12-03"),
-                followed("soon", .awaited, "2026-11-14"),
+            released: [], events: [], upcoming: [], announced: [],
+            wishlist: [
+                followed("soon", .awaited, "2026-11-14"), followed("december", .awaited, "2026-12-03"),
+                followed("outLately", .awaited, "2026-11-05"), followed("foundAtOnce", .awaited, "2024-03-02"),
             ],
             suggestions: [], awards: [], now: now, calendar: calendar
         ).shelves.wishes
 
-        #expect(wishes.map(\.id) == ["upcoming-soon", "upcoming-december", "upcoming-undated"])
-        #expect(wishes.last?.caption == String(localized: "En vue"))
+        #expect(wishes.map(\.id) == ["upcoming-soon", "upcoming-december", "upcoming-outLately", "upcoming-foundAtOnce"])
+        #expect(wishes[2].caption == NewsShelves.outCaption(day("2026-11-05")))
+        #expect(wishes[3].caption == String(localized: "Disponible"))
     }
 
     @Test func theShelvesSortEachFollowOutFirstThenToCome() {
@@ -237,8 +235,7 @@ struct NewsAgendaTests {
         #expect(shelves.authors.first?.person == "Martha Wells")
         #expect(shelves.narrators.map(\.id) == ["upcoming-voice"])
         #expect(shelves.narrators.first?.person == "Bernard Gabay")
-        #expect(shelves.wishes.map(\.id) == ["upcoming-wishNext"])
-        #expect(shelves.wishes.last?.caption == String(localized: "En vue"))
+        #expect(shelves.wishes.isEmpty)
     }
 
     @Test func theFriendsShelfHoldsTheirRecentFavouritesOnly() {

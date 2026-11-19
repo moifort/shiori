@@ -15,6 +15,7 @@ import {
   narratedWorksOf,
   releaseKeysOf,
   upcomingOf,
+  wishlistReleasesOf,
   withReleaseViewsOf,
   yearReleasesOf,
 } from '~/domain/news/business-rules'
@@ -72,6 +73,23 @@ export namespace NewsUseCase {
   ): Promise<UpcomingRelease[]> => {
     const { volumes, awaited, today } = await DiscoveryUseCase.yearReleases(userId, now)
     return withReleaseViews(yearReleasesOf(volumes, awaited, today), language, now)
+  }
+
+  /** What Actualités' wish list rail shows of the editions the reader awaits:
+   *  the ones still to come, then the ones out lately, then the ones already
+   *  out when asked for lately (`wishlistReleasesOf`). A story the library
+   *  holds is left out. Read off the release watches: no web lookup. */
+  export const wishlistReleases = async (
+    userId: UserId,
+    language: Language,
+    now = new Date(),
+  ): Promise<UpcomingRelease[]> => {
+    const [awaited, library] = await Promise.all([
+      AwaitedEditionUseCase.everyAwaited(userId, now),
+      BookQuery.all(userId),
+    ])
+    const wanted = awaited.filter((view) => !isHeld(view, view.found, library))
+    return withReleaseViews(wishlistReleasesOf(wanted, todayOf(now)), language, now)
   }
 
   /** The recordings the narrators the reader hearted lent their voice to

@@ -290,6 +290,52 @@ export const yearReleasesOf = (
       .map((view) => awaitedRelease(view, view.format)),
   ].sort((left, right) => soonestFirst(right, left))
 
+/** How long an awaited edition out stays on Actualités' wish list rail. */
+export const WISHLIST_RECENT_DAYS = 30
+
+/** What Actualités' wish list rail shows of the editions the reader awaits,
+ *  in three groups: the ones announced for a date still to come, the soonest
+ *  first; the ones out in the last thirty days, the newest first; then the
+ *  ones already out when the reader asked for them in the last thirty days,
+ *  found by the watch at once (a book already on Audible), the latest asked
+ *  first. An edition with no date — nothing found yet, or found undated — and
+ *  one out longer ago are left out. */
+export const wishlistReleasesOf = (
+  awaited: readonly AwaitedEditionView[],
+  today: string,
+): UpcomingRelease[] => {
+  const since = daysBefore(today, WISHLIST_RECENT_DAYS)
+  const dated = (view: AwaitedEditionView) => view.found?.date
+  const ahead = awaited
+    .filter((view) => view.state === 'announced' && dated(view) !== undefined)
+    .map((view) => awaitedRelease(view, view.format))
+    .sort(soonestFirst)
+  const outLately = awaited.filter((view) => {
+    const date = dated(view)
+    return view.state === 'available' && date !== undefined && dayOf(date) >= since
+  })
+  const foundAtOnce = awaited
+    .filter((view) => {
+      const date = dated(view)
+      const asked = todayOf(view.awaitedAt)
+      return (
+        view.state === 'available' &&
+        date !== undefined &&
+        dayOf(date) < since &&
+        dayOf(date) <= asked &&
+        asked >= since
+      )
+    })
+    .sort((left, right) => right.awaitedAt.getTime() - left.awaitedAt.getTime())
+  return [
+    ...ahead,
+    ...outLately
+      .map((view) => awaitedRelease(view, view.format))
+      .sort((l, r) => soonestFirst(r, l)),
+    ...foundAtOnce.map((view) => awaitedRelease(view, view.format)),
+  ]
+}
+
 // MARK: - Narrators
 
 /** How long a recording stays news after it came out. */

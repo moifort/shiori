@@ -22,6 +22,8 @@ final class NewsViewModel {
     private var cursor: String?
     private(set) var releases: [UpcomingRelease] = []
     private(set) var yearReleases: [UpcomingRelease] = []
+    /// The wish list rail, in the server's order.
+    private(set) var wishlistReleases: [UpcomingRelease] = []
     private(set) var narratorNews: [NarratorNews] = []
     /// The prizes' winners and the month's discoveries, for Découvrir's
     /// "Prix littéraires" and "Sorties et découvertes".
@@ -68,6 +70,7 @@ final class NewsViewModel {
         let narratorNews: [NarratorNews]
         var awardSections: [AwardSection] = []
         var suggestions: [Suggestion] = []
+        var wishlistReleases: [UpcomingRelease] = []
     }
 
     /// The last news on disk. Bump the version whenever one of these types
@@ -79,7 +82,7 @@ final class NewsViewModel {
     init(client: NewsClient, caching: Bool = true) {
         self.client = client
         defaults = caching ? .standard : nil
-        cache = caching ? SnapshotCache<Snapshot>("news", version: 4) : nil
+        cache = caching ? SnapshotCache<Snapshot>("news", version: 5) : nil
         friendsSeenAt = defaults?.object(forKey: Self.friendsSeenKey) as? Date
         ringsSeenAt = friendsSeenAt
         if let snapshot = cache?.read() {
@@ -89,6 +92,7 @@ final class NewsViewModel {
             narratorNews = snapshot.narratorNews
             awardSections = snapshot.awardSections
             suggestions = snapshot.suggestions
+            wishlistReleases = snapshot.wishlistReleases
         }
     }
 
@@ -100,6 +104,7 @@ final class NewsViewModel {
             events: shownEvents,
             upcoming: calendar(now: now).dated,
             announced: releases,
+            wishlist: wishlistReleases,
             suggestions: suggestions,
             awards: awardSections,
             dismissed: dismissed,
@@ -172,7 +177,7 @@ final class NewsViewModel {
         let token = generation
         isLoading = !hasLoaded
         defer { if token == generation { isLoading = false } }
-        let (first, dated, voices, year, winners, discoveries) = await fetchOpening()
+        let (first, dated, voices, year, winners, discoveries, wishlist) = await fetchOpening()
         guard token == generation else { return }
         // Over news already on screen, what changed slides into place rather
         // than the whole page redrawing at once.
@@ -189,6 +194,7 @@ final class NewsViewModel {
             if case let .success(year) = year { yearReleases = year }
             if case let .success(winners) = winners { awardSections = winners }
             if case let .success(discoveries) = discoveries { suggestions = discoveries }
+            if case let .success(wishlist) = wishlist { wishlistReleases = wishlist }
         }
         if case let .failure(error) = winners, !isCancellation(error) { reportError(error) }
         if case let .failure(error) = discoveries, !isCancellation(error) { reportError(error) }
@@ -198,6 +204,7 @@ final class NewsViewModel {
         }
         if case let .failure(error) = dated, !isCancellation(error) { reportError(error) }
         if case let .failure(error) = year, !isCancellation(error) { reportError(error) }
+        if case let .failure(error) = wishlist, !isCancellation(error) { reportError(error) }
         hasLoaded = true
         if case .success = first { saveSnapshot() }
         await loadAlerts()
@@ -441,7 +448,8 @@ final class NewsViewModel {
             yearReleases: yearReleases,
             narratorNews: narratorNews,
             awardSections: awardSections,
-            suggestions: suggestions
+            suggestions: suggestions,
+            wishlistReleases: wishlistReleases
         )
         Task.detached { cache.write(snapshot) }
     }
@@ -453,7 +461,8 @@ final class NewsViewModel {
         narratorNews: Result<[NarratorNews], Error>,
         yearReleases: Result<[UpcomingRelease], Error>,
         awards: Result<[AwardSection], Error>,
-        discoveries: Result<[Suggestion], Error>
+        discoveries: Result<[Suggestion], Error>,
+        wishlist: Result<[UpcomingRelease], Error>
     )
 
     /// The opening in one request, which reads the library once for every
@@ -466,10 +475,14 @@ final class NewsViewModel {
             case let .success(found):
                 return (
                     .success(found.feed), .success(found.upcoming), .success(found.narratorNews),
-                    .success(found.yearReleases), .success(found.awards), .success(found.discoveries)
+                    .success(found.yearReleases), .success(found.awards), .success(found.discoveries),
+                    .success(found.wishlistReleases)
                 )
             case let .failure(error) where !GraphQLHelpers.answeredWithErrors(error):
-                return (.failure(error), .failure(error), .failure(error), .failure(error), .failure(error), .failure(error))
+                return (
+                    .failure(error), .failure(error), .failure(error), .failure(error), .failure(error), .failure(error),
+                    .failure(error)
+                )
             case .failure:
                 break
             }
@@ -480,7 +493,8 @@ final class NewsViewModel {
         async let released = capture { try await client.yearReleases() }
         async let prizes = capture { try await client.awards() }
         async let picks = capture { try await client.discoveries() }
-        return await (page, upcoming, narrated, released, prizes, picks)
+        async let wishlist = capture { try await client.wishlistReleases() }
+        return await (page, upcoming, narrated, released, prizes, picks, wishlist)
     }
 
     private func capture<T: Sendable>(_ work: @Sendable () async throws -> T) async -> Result<T, Error> {

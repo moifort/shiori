@@ -12,6 +12,9 @@ query NewsOpening($limit: Int!) {
   yearReleases {
     ...UpcomingReleaseFields
   }
+  wishlistReleases {
+    ...UpcomingReleaseFields
+  }
   narratorNews {
     ...NarratorNewsFields
   }
@@ -62,6 +65,14 @@ query UpcomingReleases {
 # What came out since the start of the year, for the year's counts.
 query YearReleases {
   yearReleases {
+    ...UpcomingReleaseFields
+  }
+}
+
+# What the wish list rail shows of the editions awaited: to come, out lately,
+# then out already when asked for lately.
+query WishlistReleases {
+  wishlistReleases {
     ...UpcomingReleaseFields
   }
 }

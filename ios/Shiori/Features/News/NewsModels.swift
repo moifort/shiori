@@ -192,4 +192,6 @@ struct NewsOpening: Sendable {
     let narratorNews: [NarratorNews]
     let awards: [AwardSection]
     let discoveries: [Suggestion]
+    /// What the wish list rail shows, in its order.
+    var wishlistReleases: [UpcomingRelease] = []
 }

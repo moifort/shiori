@@ -149,8 +149,9 @@ struct NewsPersonTile: View {
     }
 }
 
-/// "Liste d'envies": the editions the reader awaits still to come, as
-/// posters, their day or "En vue" in the cover's foot, "Audio" in its corner.
+/// "Liste d'envies": the editions the reader awaits, as posters — to come
+/// with their day, out lately with "Sorti · 6 nov.", out already when asked
+/// for with "Disponible" in the cover's foot, "Audio" in its corner.
 struct NewsWishesRail: View {
     let items: [NewsShelfItem]
     let onAction: (NewsAction) async -> Void
@@ -176,6 +177,7 @@ struct NewsWishesRail: View {
         released: NewsFeedLayout.released(releases: UpcomingRelease.releasedPreviews, narrator: [.preview], format: nil),
         moves: NewsFeedLayout.friendSections(events: FeedEvent.previews).flatMap(\.moves),
         upcoming: UpcomingRelease.previews,
+        wishlist: UpcomingRelease.wishlistPreviews,
         today: .now,
         calendar: .current
     )

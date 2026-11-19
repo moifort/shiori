@@ -136,6 +136,31 @@ extension UpcomingRelease {
         ),
     ]
 
+    /// The wish list rail as the server orders it: two to come, one out
+    /// lately, one out already when the reader asked for it.
+    static let wishlistPreviews: [UpcomingRelease] = [
+        UpcomingRelease(
+            id: "awaited~fourth-wing-4", source: .awaited, format: .book, title: "Fourth Wing, tome 4",
+            authors: ["Rebecca Yarros"], date: isoDay(daysAhead: 14), coverURL: openLibraryCover("9781649374042"),
+            seriesName: "Fourth Wing", volume: 4, author: nil, sagaRating: nil, sagaFavorite: false
+        ),
+        UpcomingRelease(
+            id: "awaited~terminus-etoiles", source: .awaited, format: .audiobook, title: "Terminus Étoiles",
+            authors: ["Alfred Bester"], date: isoDay(daysAhead: 15), coverURL: openLibraryCover("9780679767800"),
+            seriesName: nil, volume: nil, author: nil, sagaRating: nil, sagaFavorite: false
+        ),
+        UpcomingRelease(
+            id: "awaited~projet-derniere-chance", source: .awaited, format: .book, title: "Projet Dernière Chance",
+            authors: ["Andy Weir"], date: isoDay(daysAhead: -12), coverURL: openLibraryCover("9780593135204"),
+            seriesName: nil, volume: nil, author: nil, sagaRating: nil, sagaFavorite: false
+        ),
+        UpcomingRelease(
+            id: "awaited~seul-sur-mars-audio", source: .awaited, format: .audiobook, title: "Seul sur Mars",
+            authors: ["Andy Weir"], date: "2015-02-12", coverURL: openLibraryCover("9780553418026"),
+            seriesName: nil, volume: nil, author: nil, sagaRating: nil, sagaFavorite: false
+        ),
+    ]
+
     private static func isoDay(daysAhead: Int) -> String {
         Date.now.addingTimeInterval(Double(daysAhead) * 86400).formatted(.iso8601.year().month().day())
     }

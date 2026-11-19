@@ -4814,6 +4814,11 @@ type Query {
   wishlist: Wishlist!
 
   """
+  What the wish list rail of Actualités shows of the editions the reader awaits: the ones announced for a date to come, the soonest first; the ones out in the last 30 days, the newest first; then the ones already out when the reader asked for them in the last 30 days, the latest asked first. Undated ones are left out. Read off the release watches: no web lookup.
+  """
+  wishlistReleases: [UpcomingRelease!]!
+
+  """
   What came out since the start of the year: the volumes of the sagas the reader follows, held or not, and the editions they await. The newest first. Read off the release watches: no web lookup.
   """
   yearReleases: [UpcomingRelease!]!
