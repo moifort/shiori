@@ -75,6 +75,21 @@ describe('a story the library comes to hold', () => {
     expect(fake.snapshot('wishes').size).toBe(0)
   })
 
+  test('a book renamed after a story wished for at a friend’s takes that friend', async () => {
+    await WishUseCase.wish(
+      bob,
+      { title: BookTitle('Piranesi'), authors: clarke, format: 'book' },
+      { kind: 'friend', friendId: 'guillaume' as UserId, label: 'Guillaume' },
+    )
+    const book = await BookCommand.add(bob, { title: BookTitle('Piranessi'), authors: clarke })
+    expect(book.recommendation).toBeUndefined()
+
+    const edited = await BookCommand.edit(bob, book.id, { title: BookTitle('Piranesi') })
+
+    expect(edited).toMatchObject({ recommendation: { recommenderName: PersonName('Guillaume') } })
+    expect(fake.snapshot('wishes').size).toBe(0)
+  })
+
   test('reads the wishes once and deletes only the one held', async () => {
     await wish('Piranesi', new Date('2026-11-01'))
     startFakeRequest()

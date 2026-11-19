@@ -398,24 +398,27 @@ export namespace BookCommand {
     // screen is no Kindle title's any more, and the sync lets go of it.
     const format = facts.format ?? book.format
     const media = mediaFor(format, facts.media ?? book.media)
+    const renamed = 'title' in facts || 'authors' in facts
+    const corrected: Book = {
+      ...book,
+      ...facts,
+      // Clearing the language says nothing of the edition: it reads as the
+      // default again, never as an edition of its own.
+      language: ('language' in facts ? facts.language : book.language) ?? DEFAULT_BOOK_LANGUAGE,
+      media,
+      ...kindleLinkUnder(book, media),
+      ...retagged,
+      ...membership,
+      ...dates,
+      updatedAt: now,
+    }
+    // A book renamed after a story wished for or awaited at a friend's takes
+    // that friend with it, as an arrival does, before the wish is deleted.
     const edited = await repository.save(
-      {
-        ...book,
-        ...facts,
-        // Clearing the language says nothing of the edition: it reads as the
-        // default again, never as an edition of its own.
-        language: ('language' in facts ? facts.language : book.language) ?? DEFAULT_BOOK_LANGUAGE,
-        media,
-        ...kindleLinkUnder(book, media),
-        ...retagged,
-        ...membership,
-        ...dates,
-        updatedAt: now,
-      },
+      renamed ? await advisedByFriend(userId, corrected) : corrected,
       batch,
     )
-    if ('title' in facts || 'authors' in facts)
-      await WishCommand.forgetHeld(userId, [edited], batch)
+    if (renamed) await WishCommand.forgetHeld(userId, [edited], batch)
     const classification = {
       ...('genre' in edit ? { genre: edit.genre } : {}),
       ...('subgenres' in edit ? { subgenres: edited.subgenres } : {}),
