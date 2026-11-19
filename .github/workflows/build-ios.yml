@@ -16,10 +16,12 @@ jobs:
   # compiles. The generated Apollo code is regenerated here from the committed
   # schema, so a backend change that the iOS operations no longer match fails
   # here, before the archive. Builds without signing or uploading.
-  # macos-26 is a standard runner, so this costs nothing on a public repository.
+  # xcode-27 (macOS 27 with Xcode 27, a GitHub preview image) is a standard runner, so this
+  # costs nothing on a public repository. App Store Connect refuses builds made with an
+  # SDK older than iOS 27 from April 2027 (ITMS-90725, mail of 2026-11-19 on build 1547).
   ios:
     name: 📱 iOS
-    runs-on: macos-26
+    runs-on: xcode-27
     # A run is eight to ten minutes: restoring the packages, a cold build, one
     # simulator booted while they go, and tests that take seconds once the app is
     # up. Thirty leaves room for a slow cache, not for a second simulator boot.
@@ -42,8 +44,8 @@ jobs:
       # generation and the build rather than after them, where it sat as eleven
       # silent minutes before the tests on 2026-10-16.
       #
-      # The image ships one iPhone 17 per iOS runtime (26.2, 26.4 and 26.5 on
-      # 2026-10-25); the newest is taken, as on every project. The scheme's test
+      # The image ships one iPhone 17 per iOS runtime (27.0 and 27.2 on
+      # 2026-11-19); the newest is taken, as on every project. The scheme's test
       # pre-action keeps whatever simulator is already booted, so this one is the
       # only one that ever boots: picking the first match while the pre-action
       # booted "iPhone 17" by name cold-started a second simulator inside the test

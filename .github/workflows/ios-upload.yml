@@ -74,7 +74,8 @@ jobs:
     name: 📱 iOS build & upload
     needs: check
     if: needs.check.outputs.exists != 'true'
-    runs-on: macos-26
+    # Xcode 27: App Store Connect refuses an SDK older than iOS 27 from April 2027 (ITMS-90725).
+    runs-on: xcode-27
     timeout-minutes: 40
     outputs:
       uploaded: ${{ steps.upload.outputs.uploaded }}
