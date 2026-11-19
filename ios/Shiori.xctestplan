@@ -3,12 +3,12 @@
     {
       "id" : "98964143-42F8-4C95-A6A5-49FFFD1E1166",
       "name" : "Test Scheme Action",
-      "options" : {
-
-      }
+      "options" : {}
     }
   ],
   "defaultOptions" : {
+    "language" : "fr",
+    "region" : "FR",
     "performanceAntipatternCheckerEnabled" : true,
     "targetForVariableExpansion" : {
       "containerPath" : "container:Shiori.xcodeproj",
