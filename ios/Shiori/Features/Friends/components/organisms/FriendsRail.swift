@@ -55,7 +55,7 @@ struct FriendsRail: View {
 
 #Preview {
     FriendsRail(
-        title: "En ce moment",
+        title: "Lecture en cours",
         items: FriendsShelf.preview.reading.map {
             .init(
                 id: $0.id, book: $0.book.book, label: PosterLabel.of($0.book.book, in: .recent),

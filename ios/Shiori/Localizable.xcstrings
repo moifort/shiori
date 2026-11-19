@@ -6393,22 +6393,6 @@
         }
       }
     },
-    "En ce moment" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Right now"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "En ce moment"
-          }
-        }
-      }
-    },
     "En cours" : {
       "localizations" : {
         "en" : {
@@ -8917,6 +8901,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Lecture de votre bibliothèque Kindle..."
+          }
+        }
+      }
+    },
+    "Lecture en cours" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Currently reading"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lecture en cours"
           }
         }
       }

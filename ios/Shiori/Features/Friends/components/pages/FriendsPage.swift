@@ -102,7 +102,7 @@ struct FriendsPage: View {
     private var isOne: Bool { soleFriend != nil }
 
     @ViewBuilder private var rails: some View {
-        rail("En ce moment", shelf.reading, context: .recent)
+        rail("Lecture en cours", shelf.reading, context: .recent)
         rail(isOne ? "Ses coups de cœur" : "Leurs coups de cœur", shelf.favorites, context: .read)
         rail("Terminés récemment", shelf.finished, context: .read)
         rail(isOne ? "Sur sa pile" : "Sur leur pile", shelf.pile, context: .pile)
