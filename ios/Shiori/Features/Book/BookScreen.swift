@@ -110,7 +110,8 @@ struct BookScreen: View {
                             player?.press(state, on: book)
                         }
                     },
-                    isDownloaded: ListeningTitle(book: book).map { player?.downloads.isDownloaded($0.asin) == true } ?? false
+                    isDownloaded: ListeningTitle(book: book).map { player?.downloads.isDownloaded($0.asin) == true } ?? false,
+                    downloadPercent: ListeningTitle(book: book).flatMap { player?.downloads.downloadPercent($0.asin) }
                 )
                 .safeAreaInset(edge: .bottom) {
                     if isComposingNote {

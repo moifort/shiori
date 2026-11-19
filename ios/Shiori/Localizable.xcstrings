@@ -15621,6 +15621,22 @@
         }
       }
     },
+    "Téléch. %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "DL %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Téléch. %@"
+          }
+        }
+      }
+    },
     "Téléchargé" : {
       "localizations" : {
         "en" : {
