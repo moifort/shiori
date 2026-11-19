@@ -15621,18 +15621,18 @@
         }
       }
     },
-    "Téléch. %@" : {
+    "Téléchargement" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "DL %@"
+            "value" : "Downloading"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Téléch. %@"
+            "value" : "Téléchargement"
           }
         }
       }

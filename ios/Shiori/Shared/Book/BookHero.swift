@@ -51,9 +51,10 @@ struct BookHero<Actions: View>: View {
     /// An Audible title kept on the iPhone: "Téléchargé" joins the tags. The
     /// player itself never says so.
     var isDownloaded = false
-    /// An Audible title on its way to the iPhone, in whole percent:
-    /// "Téléch. 34 %", cut short, stands where "Téléchargé" will, in full.
-    var downloadPercent: Int? = nil
+    /// An Audible title on its way to the iPhone: "Téléchargement" stands
+    /// where "Téléchargé" will. With no share told, since the iPhone gives
+    /// none for a FairPlay stream downloading as it plays.
+    var isDownloading = false
     @ViewBuilder var actions: Actions
 
     /// The text's height and the cover's, to tell whether the text climbs
@@ -251,15 +252,14 @@ struct BookHero<Actions: View>: View {
     /// the words.
     @ViewBuilder private var tags: some View {
         let cover = CoverTags(book: book, isFrosted: false)
-        if !cover.isEmpty || isDownloaded || downloadPercent != nil || book.hidden || isAwaited {
+        if !cover.isEmpty || isDownloaded || isDownloading || book.hidden || isAwaited {
             HStack(spacing: 6) {
                 if !cover.isEmpty { cover }
                 if isDownloaded {
                     OutlinedTag(text: String(localized: "Téléchargé"), isFrosted: false)
                         .accessibilityIdentifier("book-downloaded-tag")
-                } else if let downloadPercent {
-                    let share = (Double(downloadPercent) / 100).formatted(.percent)
-                    OutlinedTag(text: String(localized: "Téléch. \(share)"), isFrosted: false)
+                } else if isDownloading {
+                    OutlinedTag(text: String(localized: "Téléchargement"), isFrosted: false)
                         .accessibilityIdentifier("book-downloading-tag")
                 }
                 if book.hidden {
@@ -406,6 +406,6 @@ extension BookState {
     var book = Book.preview
     book.format = .audiobook
     return ScrollView {
-        BookHero(book: book, state: .reading(of: book), downloadPercent: 34) { EmptyView() }
+        BookHero(book: book, state: .reading(of: book), isDownloading: true) { EmptyView() }
     }
 }

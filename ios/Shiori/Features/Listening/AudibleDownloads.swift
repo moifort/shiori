@@ -26,9 +26,6 @@ final class AudibleDownloads {
 
     private var records: [String: Record]
     private var tasks: [String: AVAssetDownloadTask] = [:]
-    /// How far each title under way has come, in whole percent.
-    private var percents: [String: Int] = [:]
-    @ObservationIgnored private var progressObservers: [String: NSKeyValueObservation] = [:]
     @ObservationIgnored private var session: AVAssetDownloadURLSession?
     @ObservationIgnored private let relay = DownloadRelay()
 
@@ -70,11 +67,12 @@ final class AudibleDownloads {
 
     func record(_ asin: String) -> Record? { records[asin] }
 
-    /// How far a title still downloading has come, in whole percent; nil
-    /// once it is wholly on the iPhone, or when nothing is under way.
-    func downloadPercent(_ asin: String) -> Int? {
-        guard tasks[asin] != nil, !isDownloaded(asin) else { return nil }
-        return percents[asin] ?? 0
+    /// Whether a title is still on its way to the iPhone. How far it has
+    /// come is not told: a FairPlay stream downloading as it plays leaves the
+    /// task's progress, its loaded time ranges and its delegate's loading
+    /// callbacks all at nothing on the iPhone, from start to finish.
+    func isDownloading(_ asin: String) -> Bool {
+        tasks[asin] != nil && !isDownloaded(asin)
     }
 
     // MARK: - Downloading
@@ -100,29 +98,17 @@ final class AudibleDownloads {
         task.resume()
     }
 
-    /// Keep a task and the share of it already arrived, as the task's own
-    /// progress counts it.
+    /// Keep a task under way. A task the system hands back once it has
+    /// ended is left alone: its completion has come, or comes, through the
+    /// delegate, and keeping it would show the title downloading for good.
     private func follow(_ task: AVAssetDownloadTask, of asin: String) {
+        guard task.state == .running || task.state == .suspended else { return }
         tasks[asin] = task
-        progressObservers[asin] = task.progress.observe(\.fractionCompleted, options: [.initial, .new]) {
-            @Sendable [weak self] progress, _ in
-            let percent = min(99, Int(progress.fractionCompleted * 100))
-            Task { @MainActor in
-                guard let self, self.tasks[asin] != nil, self.percents[asin] != percent else { return }
-                self.percents[asin] = percent
-            }
-        }
-    }
-
-    private func forget(_ asin: String) {
-        progressObservers.removeValue(forKey: asin)?.invalidate()
-        percents[asin] = nil
     }
 
     /// Remove a title from the iPhone: the stream, the key and the record.
     func remove(_ asin: String) {
         tasks.removeValue(forKey: asin)?.cancel()
-        forget(asin)
         if let path = records.removeValue(forKey: asin)?.relativePath {
             try? FileManager.default.removeItem(
                 at: URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent(path)
@@ -158,7 +144,6 @@ final class AudibleDownloads {
 
     fileprivate func completed(_ asin: String, error: Error?) {
         tasks[asin] = nil
-        forget(asin)
         if let error {
             // A cancel is a removal, already done. Anything else, an expired
             // signed link above all, starts again at the next listening.
