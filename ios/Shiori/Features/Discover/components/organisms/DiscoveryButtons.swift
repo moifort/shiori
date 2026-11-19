@@ -320,3 +320,19 @@ private struct WorkingLabel: ViewModifier {
             .overlay { if isWorking { ProgressView().controlSize(.regular) } }
     }
 }
+
+#Preview("Boutons d'une découverte") {
+    VStack(alignment: .leading, spacing: 24) {
+        // The home's hero: the round "+" and the eye.
+        HStack(spacing: 10) {
+            DiscoveryButtons(item: Suggestion.preview, choices: DiscoveryChoices()) { _, _ in true }
+        }
+        // The page: "Envies", the "+" in full, then "Guetter" or the eye.
+        HStack(spacing: 10) {
+            DiscoveryButtons(item: Suggestion.preview, choices: DiscoveryChoices(), onChoice: { _, _ in true }, addsInFull: true)
+        }
+    }
+    .padding()
+    .background(.black)
+    .preferredColorScheme(.dark)
+}

@@ -258,3 +258,22 @@ struct NewsPersonPill: View {
         .frame(maxWidth: maxWidth, alignment: .leading)
     }
 }
+
+#Preview("Grandes cartes") {
+    let shelves = NewsShelves(
+        released: NewsFeedLayout.released(releases: UpcomingRelease.releasedPreviews, narrator: [.preview], format: nil),
+        moves: NewsFeedLayout.friendSections(events: FeedEvent.previews).flatMap(\.moves),
+        upcoming: UpcomingRelease.previews,
+        today: .now,
+        calendar: .current
+    )
+    ScrollView {
+        VStack(spacing: 16) {
+            ForEach((shelves.loves + shelves.series).prefix(3)) { item in
+                NewsLargeCard(item: item) { _ in }
+            }
+        }
+        .padding(20)
+    }
+    .preferredColorScheme(.dark)
+}

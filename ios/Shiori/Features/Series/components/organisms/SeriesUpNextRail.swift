@@ -43,3 +43,12 @@ struct SeriesUpNextRail: View {
         }
     }
 }
+
+#if DEBUG
+#Preview("Séries à continuer") {
+    ScrollView {
+        SeriesUpNextRail(upNext: SeriesFixtures.followed.upNext) { _ in }
+    }
+    .preferredColorScheme(.dark)
+}
+#endif

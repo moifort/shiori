@@ -120,3 +120,24 @@ struct ScrollBarButton: View {
         .accessibilityLabel(title)
     }
 }
+
+#Preview("Barre qui s'efface") {
+    NavigationStack {
+        ScrollView {
+            VStack(spacing: 12) {
+                ForEach(0..<30) { index in
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(.white.opacity(0.08))
+                        .frame(height: 60)
+                        .overlay { Text(verbatim: "\(index + 1)") }
+                }
+            }
+            .padding(20)
+        }
+        .navigationTitle("Découvrir")
+        .scrollAwayBar("Découvrir") {
+            ScrollBarButton(title: "Rechercher", systemImage: "magnifyingglass") {}
+        }
+    }
+    .preferredColorScheme(.dark)
+}

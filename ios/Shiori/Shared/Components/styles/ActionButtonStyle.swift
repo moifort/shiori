@@ -177,3 +177,37 @@ extension ButtonStyle where Self == ActionButtonStyle {
         ActionButtonStyle(fill: fill, height: height)
     }
 }
+
+#Preview {
+    VStack(spacing: 16) {
+        HStack(spacing: 10) {
+            Button("Ajouter", systemImage: "plus") {}.buttonStyle(.actionPrimary)
+            Button("Envies", systemImage: "heart") {}.buttonStyle(.actionGlass)
+        }
+        HStack(spacing: 10) {
+            Button("Pas intéressé", systemImage: "eye.slash") {}
+                .labelStyle(.iconOnly)
+                .buttonStyle(.actionRound())
+            Button("Déjà lu", systemImage: "checkmark") {}
+                .labelStyle(.iconOnly)
+                .buttonStyle(.actionRound(isOn: true))
+            Button("Ajouter", systemImage: "plus") {}
+                .disabled(true)
+                .buttonStyle(.actionPrimary)
+        }
+        HStack(spacing: 10) {
+            // The three control sizes, in words no reader sees.
+            Button {} label: { Text(verbatim: "Small") }.buttonStyle(.actionGlass).controlSize(.small)
+            Button {} label: { Text(verbatim: "Regular") }.buttonStyle(.actionGlass)
+            Button {} label: { Text(verbatim: "Large") }.buttonStyle(.actionGlass).controlSize(.large)
+        }
+        Button("Continuer") {}
+            .frame(maxWidth: .infinity)
+            .buttonStyle(.actionWide)
+            .controlSize(.large)
+    }
+    .font(.headline)
+    .padding(20)
+    .background(.black)
+    .preferredColorScheme(.dark)
+}
