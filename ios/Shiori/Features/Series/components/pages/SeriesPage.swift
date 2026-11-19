@@ -136,7 +136,6 @@ struct SeriesPage: View {
             fan: fan(series),
             language: language,
             onOpenAuthor: author.map { author in { Task { await onAction(.openAuthor(author)) } } },
-            status: isSetAside ? .unfollowed : nil,
             isSetAside: isSetAside
         ) {
             GlassEffectContainer(spacing: 10) {
@@ -202,13 +201,14 @@ struct SeriesPage: View {
     /// they hold nothing of.
     private var followsHere: Bool { friend == nil && !owned.isEmpty }
 
-    /// The reader stopped following the saga: said in the hero's pill, and in
-    /// black and white on every cover.
+    /// The reader stopped following the saga: said by the slashed bell and in
+    /// black and white on every cover, with no pill to push the hero down.
     private var isSetAside: Bool { followsHere && !isFollowed }
 
     /// The only way to follow the saga or set it aside: the bell on white
     /// while it is followed, slashed on glass once set aside, as the "Non
-    /// suivies" filter draws it. The hero's pill says "Non suivie".
+    /// suivies" filter draws it. Setting it aside asks first, as "Supprimer" does;
+    /// following it again does not.
     private var followButton: some View {
         ActionToggle(
             isOn: isFollowed,
@@ -217,7 +217,8 @@ struct SeriesPage: View {
             turnOnLabel: "Suivre",
             turnOffLabel: "Ne plus suivre",
             size: ProgressCapsule.height,
-            gesture: .swing
+            gesture: .swing,
+            turnOffConfirmation: "Ne plus suivre la série ?"
         ) { followed in
             await onAction(.setFollowed(followed))
         }

@@ -23,6 +23,10 @@ struct ActionToggle: View {
     /// What the symbol does once turned over, as it says it: a bell swings,
     /// an eye blinks. Nil bounces.
     var gesture: IconGesture? = nil
+    /// Asked before turning the state off, in a dialog hung on the button,
+    /// as "Supprimer" asks: the state only turns over once confirmed. Nil
+    /// turns it off at once. Turning it on never asks.
+    var turnOffConfirmation: LocalizedStringKey? = nil
     let onToggle: (Bool) async -> Void
 
     /// The state as last drawn, read once the call settled: the struct's
@@ -30,20 +34,16 @@ struct ActionToggle: View {
     @State private var latest: Bool?
     @State private var refusals = 0
     @State private var turns = 0
+    @State private var confirmsTurnOff = false
 
     private var isShownOn: Bool { isOn }
 
     var body: some View {
         Button {
-            let wanted = !isShownOn
-            turns += 1
-            Task {
-                await onToggle(wanted)
-                // The caller turned the state over at once; back where it
-                // was once the call settled, the server said no. A frame's
-                // wait lets the view take the settled state in first.
-                try? await Task.sleep(for: .milliseconds(50))
-                if (latest ?? isOn) != wanted { refusals += 1 }
+            if isShownOn, turnOffConfirmation != nil {
+                confirmsTurnOff = true
+            } else {
+                turnOver()
             }
         } label: {
             Image(systemName: isShownOn ? symbol : (offSymbol ?? "\(symbol).slash"))
@@ -58,6 +58,28 @@ struct ActionToggle: View {
         .sensoryFeedback(trigger: isOn) { _, on in on ? .success : .impact(weight: .light) }
         .accessibilityLabel(Text(isShownOn ? turnOffLabel : turnOnLabel))
         .accessibilityAddTraits(isShownOn ? .isSelected : [])
+        // Attached to the button: the dialog rises from the one that asked.
+        .confirmationDialog(
+            turnOffConfirmation ?? "",
+            isPresented: $confirmsTurnOff,
+            titleVisibility: .visible
+        ) {
+            Button(turnOffLabel, role: .destructive) { turnOver() }
+            Button("Annuler", role: .cancel) {}
+        }
+    }
+
+    private func turnOver() {
+        let wanted = !isShownOn
+        turns += 1
+        Task {
+            await onToggle(wanted)
+            // The caller turned the state over at once; back where it
+            // was once the call settled, the server said no. A frame's
+            // wait lets the view take the settled state in first.
+            try? await Task.sleep(for: .milliseconds(50))
+            if (latest ?? isOn) != wanted { refusals += 1 }
+        }
     }
 }
 
@@ -78,7 +100,7 @@ private struct TurnEffect: ViewModifier {
 #Preview {
     @Previewable @State var on = false
     HStack(spacing: 16) {
-        ActionToggle(isOn: on, symbol: "bell", turnOnLabel: "Suivre", turnOffLabel: "Ne plus suivre", gesture: .swing) {
+        ActionToggle(isOn: on, symbol: "bell", turnOnLabel: "Suivre", turnOffLabel: "Ne plus suivre", gesture: .swing, turnOffConfirmation: "Ne plus suivre la série ?") {
             on = $0
         }
         ActionToggle(isOn: true, symbol: "eye", turnOnLabel: "Marquer comme vu", turnOffLabel: "Marquer comme non vu") { _ in }

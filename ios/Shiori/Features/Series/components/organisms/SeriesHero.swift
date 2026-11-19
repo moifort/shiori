@@ -20,9 +20,6 @@ struct SeriesHero<Actions: View>: View {
     /// Opens the author's page from their name, a chevron after it. Nil draws
     /// the name alone, as where no volume held carries the author's key.
     var onOpenAuthor: (() -> Void)? = nil
-    /// What the reader decided of the saga, in words under the author —
-    /// "Non suivie" — while the button under says what a tap does.
-    var status: HeroStatus? = nil
     /// Set aside by the reader: the covers and their colours turn black and
     /// white, as the saga's card does on the shelf.
     var isSetAside = false
@@ -105,11 +102,6 @@ struct SeriesHero<Actions: View>: View {
                     .font(.caption)
                     .foregroundStyle(.white.opacity(0.75))
                     .accessibilityIdentifier("series-language")
-            }
-            if let status {
-                StatusPill(text: status.text, systemImage: status.systemImage)
-                    .padding(.top, 4)
-                    .accessibilityIdentifier("series-status-pill")
             }
         }
     }

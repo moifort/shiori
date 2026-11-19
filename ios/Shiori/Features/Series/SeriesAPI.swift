@@ -261,6 +261,13 @@ enum SeriesAPI {
     /// the English Dune aside leaves the French one followed. Only the saga:
     /// its volumes keep their own statuses.
     static func setFollowed(seriesId: String, followed: Bool) async throws -> SeriesOpinion {
+        #if DEBUG
+        if Showcase.isOn {
+            var opinion = Showcase.seriesScreen(id: seriesId).opinion ?? SeriesOpinion(seriesId: seriesId)
+            opinion.followed = followed
+            return opinion
+        }
+        #endif
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
             concerning: .series(id: seriesId),

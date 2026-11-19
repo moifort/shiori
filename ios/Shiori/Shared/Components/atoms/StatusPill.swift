@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// What the reader decided of a page's subject, said in words in its hero —
-/// "Pas intéressé", "Non suivie" — while the button under it says what a tap
+/// "Pas intéressé" — while the button under it says what a tap
 /// does. White on glass, as every pill over a cover.
 struct StatusPill: View {
     let text: String
@@ -29,17 +29,11 @@ struct HeroStatus: Equatable {
     static var notInterested: HeroStatus {
         HeroStatus(text: String(localized: "Pas intéressé"), systemImage: "eye.slash")
     }
-
-    /// A saga the reader set aside.
-    static var unfollowed: HeroStatus {
-        HeroStatus(text: String(localized: "Non suivie"), systemImage: SeriesState.unfollowed.symbol)
-    }
 }
 
 #Preview {
     VStack(spacing: 12) {
         StatusPill(text: HeroStatus.notInterested.text, systemImage: HeroStatus.notInterested.systemImage)
-        StatusPill(text: HeroStatus.unfollowed.text, systemImage: HeroStatus.unfollowed.systemImage)
     }
     .padding()
     .background(.green.gradient)

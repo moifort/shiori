@@ -10341,6 +10341,22 @@
         }
       }
     },
+    "Ne plus suivre la série ?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stop following this series?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ne plus suivre la série ?"
+          }
+        }
+      }
+    },
     "Ne plus être prévenu" : {
       "localizations" : {
         "en" : {
