@@ -34,6 +34,7 @@ struct NewsScreen: View {
             .sheet(item: $viewModel.invitation) { invitation in
                 InvitationSheet(invitation: invitation, myShelf: nil)
             }
+            .pushesPlayerBook()
         } detail: { detail in
             detailContent(detail)
         }

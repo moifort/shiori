@@ -79,6 +79,7 @@ struct HomeScreen: View {
         // sets a message beside its inbox, and is pushed over it on a phone.
         DetailSplit(item: $detail, onClose: afterClosing) {
             dashboard
+                .pushesPlayerBook()
         } detail: { detail in
             detailContent(detail)
         }

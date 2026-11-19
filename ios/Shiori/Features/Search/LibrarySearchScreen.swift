@@ -50,6 +50,7 @@ struct LibrarySearchScreen: View {
             .pushesDetail(item: $selectedBook, onClose: { _ in viewModel.refreshViewed() }) { book in
                 BookScreen(bookId: book.id)
             }
+            .pushesPlayerBook()
         }
         .task { await viewModel.appear() }
     }

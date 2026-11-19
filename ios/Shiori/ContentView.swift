@@ -72,9 +72,10 @@ struct ContentView: View {
     /// one for the whole app, so the title plays on whatever tab is open.
     @State private var player: AudiblePlayer? = AudiblePlayerGate.isOpen ? AudiblePlayer() : nil
     @State private var showPlayer = false
-    /// The book the player's three dots asked for, opened once it has closed.
+    /// The book the player's three dots asked for, pushed on the tab in front
+    /// once the player has closed.
     @State private var pendingPlayerBook: String?
-    @State private var playerBook: PlayerBook?
+    @State private var playerBookRoute = PlayerBookRoute()
     @Namespace private var playerTransition
 
     /// The trailing "Scanner" entry must stay detached from the content tabs.
@@ -256,6 +257,7 @@ struct ContentView: View {
                     onScan: { showAddSheet = true },
                     onShowShared: { showShared = true }
                 )
+                .environment(\.hostTab, .home)
             }
             Tab(
                 TabSelection.library.label,
@@ -267,12 +269,15 @@ struct ContentView: View {
                     libraryRequest: $libraryMode,
                     seriesRequest: $seriesMode
                 )
+                .environment(\.hostTab, .library)
             }
             Tab(TabSelection.news.label, systemImage: TabSelection.news.symbol, value: .news) {
                 NewsScreen()
+                    .environment(\.hostTab, .news)
             }
             Tab(TabSelection.search.label, systemImage: TabSelection.search.symbol, value: .search) {
                 LibrarySearchScreen()
+                    .environment(\.hostTab, .search)
             }
             Tab(
                 TabSelection.scan.label,
@@ -295,7 +300,9 @@ struct ContentView: View {
                 .matchedTransitionSource(id: "player", in: playerTransition)
         })
         .sheet(isPresented: $showPlayer, onDismiss: {
-            playerBook = pendingPlayerBook.map(PlayerBook.init)
+            if let bookID = pendingPlayerBook {
+                playerBookRoute.open(bookID, on: selectedTab)
+            }
             pendingPlayerBook = nil
         }) {
             PlayerScreen(onOpenBook: { pendingPlayerBook = $0 })
@@ -303,10 +310,7 @@ struct ContentView: View {
                 .navigationTransition(.zoom(sourceID: "player", in: playerTransition))
                 .environment(player)
         }
-        .sheet(item: $playerBook) { book in
-            NavigationStack { BookScreen(bookId: book.id) }
-                .environment(player)
-        }
+        .environment(\.playerBookRoute, playerBookRoute)
         // A book page starts a title from here.
         .environment(player)
     }
@@ -373,9 +377,4 @@ struct ContentView: View {
         case .manual: showManualAdd = true
         }
     }
-}
-
-/// The book the full-screen player opened, shown over the tabs.
-private struct PlayerBook: Identifiable {
-    let id: String
 }

@@ -37,6 +37,7 @@ struct LibraryShelvesScreen: View {
         if genre == nil {
             DetailSplit(item: $destination) {
                 page
+                    .pushesPlayerBook()
             } detail: { opened in
                 LibraryDestinationScreen(destination: opened, client: client)
             }
