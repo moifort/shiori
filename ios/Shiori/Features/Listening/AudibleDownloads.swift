@@ -36,6 +36,7 @@ final class AudibleDownloads {
 
     init() {
         records = Self.loadRecords()
+        saveRecords()
         relay.owner = self
         let configuration = URLSessionConfiguration.background(withIdentifier: Self.sessionIdentifier)
         configuration.sessionSendsLaunchEvents = true
@@ -82,7 +83,8 @@ final class AudibleDownloads {
     /// player plays, so the two share what has already arrived.
     func download(_ asset: AVURLAsset, of playback: Playback, title: String) {
         let asin = playback.asin
-        if let record = records[asin], record.isComplete || tasks[asin] != nil { return }
+        // A title noted complete whose stream is gone downloads again.
+        if isDownloaded(asin) || tasks[asin] != nil { return }
         records[asin] = Record(
             asin: asin,
             contentReference: playback.contentReference,
@@ -187,15 +189,35 @@ final class AudibleDownloads {
     private static var indexURL: URL { folder.appendingPathComponent("index.json") }
 
     private static func relativePath(of location: URL) -> String {
-        let home = NSHomeDirectory() + "/"
-        return location.path.hasPrefix(home) ? String(location.path.dropFirst(home.count)) : location.path
+        relativePath(of: location.path, home: NSHomeDirectory())
+    }
+
+    /// A path inside the app's container, relative to the home folder. iOS
+    /// hands a download's location under `/.nofollow/private`, which the home
+    /// folder's own path does not start with: what follows the container's
+    /// folder is kept, whichever way the container itself is spelt.
+    nonisolated static func relativePath(of path: String, home: String) -> String {
+        if let container = path.range(of: "/Containers/Data/Application/") {
+            let inside = path[container.upperBound...]
+            if let slash = inside.firstIndex(of: "/") {
+                return String(inside[inside.index(after: slash)...])
+            }
+        }
+        let prefix = home.hasSuffix("/") ? home : home + "/"
+        return path.hasPrefix(prefix) ? String(path.dropFirst(prefix.count)) : path
     }
 
     private static func loadRecords() -> [String: Record] {
         guard let data = try? Data(contentsOf: indexURL),
               let records = try? JSONDecoder().decode([String: Record].self, from: data)
         else { return [:] }
-        return records
+        // Paths recorded in whole, before they were kept relative, are repaired.
+        let home = NSHomeDirectory()
+        return records.mapValues { record in
+            var record = record
+            record.relativePath = record.relativePath.map { relativePath(of: $0, home: home) }
+            return record
+        }
     }
 
     private func saveRecords() {
