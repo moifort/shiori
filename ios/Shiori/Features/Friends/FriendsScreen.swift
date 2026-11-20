@@ -10,9 +10,13 @@ struct FriendsScreen: View {
     @State private var viewModel: FriendsViewModel
     @State private var openedBook: OpenedBook?
     @State private var route: FriendsRoute?
+    /// A friend another tab asked for: the page narrowed to them alone, back
+    /// at its top.
+    @Binding var friendRequest: String?
 
-    init(client: FriendsClient = .live) {
+    init(client: FriendsClient = .live, friendRequest: Binding<String?> = .constant(nil)) {
         _viewModel = State(initialValue: FriendsViewModel(client: client))
+        _friendRequest = friendRequest
     }
 
     var body: some View {
@@ -61,6 +65,13 @@ struct FriendsScreen: View {
             }
         }
         .task { await viewModel.loadOnAppear() }
+        .onChange(of: friendRequest, initial: true) { _, friendId in
+            guard let friendId else { return }
+            friendRequest = nil
+            route = nil
+            openedBook = nil
+            Task { await viewModel.show(only: friendId) }
+        }
         // A friend added or a book taken changes what the rails say: asked
         // again on the next look.
         .onReceive(NotificationCenter.default.publisher(for: .shioriDataDidChange)) { _ in

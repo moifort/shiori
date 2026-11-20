@@ -37,7 +37,10 @@ struct NewsCardRow: View {
         ScrollView(.horizontal) {
             LazyHStack(alignment: .top, spacing: 12) {
                 ForEach(items) { item in
-                    NewsLargeCard(item: item, isWished: wished.isWished(item), wishes: wished, onAction: onAction)
+                    NewsLargeCard(
+                        item: item, isWished: wished.isWished(item), wishes: wished,
+                        height: NewsLargeCard.height(for: items), onAction: onAction
+                    )
                         .containerRelativeFrame(.horizontal) { width, _ in
                             SeriesReleaseCard.railWidth(width, count: items.count)
                         }
@@ -53,9 +56,10 @@ struct NewsCardRow: View {
 }
 
 /// One book of a short shelf, large: its cover edge to edge on the leading
-/// side, the person it is shown for in a pill on the cover's top and what
-/// happened at its foot, as the covers of a rail say it; beside it the title,
-/// the author, the outlined tags — how long is left, "Audio", a foreign
+/// side, what happened at its foot, as the covers of a rail say it; beside
+/// it the person it is shown for in a pill with a chevron, which opens them —
+/// the Amis tab narrowed to a friend, an author's or a narrator's page —
+/// then the author, the title, the outlined tags — how long is left, "Audio", a foreign
 /// language — and at the foot "+ Ajouter", or "Ajouté" for a book the
 /// reader holds already. A
 /// release's day sits in the corner as a calendar leaf.
@@ -65,11 +69,22 @@ struct NewsLargeCard: View {
     /// What the cards' buttons made of their books, and the cards turned
     /// down, drawn black and white.
     var wishes: NewsWishes = []
+    /// The row's height: every card of a row stands as tall as the others.
+    var height: CGFloat = NewsLargeCard.height
     let onAction: (NewsAction) async -> Void
 
     /// The home's "En cours" card's height (ReadingFeatureCard), which every
     /// large card of Actualité stands at, whatever its title or its tags say.
     static let height: CGFloat = 149
+    /// What a person's pill adds over the text: its height and the gap under
+    /// it, so the title keeps its two lines.
+    static let pillRoom: CGFloat = 26
+
+    /// A row's height: taller by the pill's room when one of its cards
+    /// carries a pill, so the cards stay the same height side by side.
+    static func height(for items: [NewsShelfItem]) -> CGFloat {
+        items.contains { $0.pillName != nil } ? height + pillRoom : height
+    }
     /// The "En cours" card's cover width.
     static let coverWidth: CGFloat = ReadingFeatureCard.coverWidth
     /// The calendar leaf's width and its margin, kept clear by the text.
@@ -87,16 +102,17 @@ struct NewsLargeCard: View {
                 // Edge to edge over the card's whole height, no rim, as the
                 // "En cours" card: its own corners round it.
                 corner: 0,
-                height: Self.height
+                height: height
             )
-            .overlay(alignment: .topLeading) {
-                if item.pillName != nil {
-                    NewsPersonPill(item: item, maxWidth: Self.coverWidth - 14)
-                        .padding(7)
-                }
-            }
             .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 0) {
+                if item.pillName != nil {
+                    NewsPersonPill(item: item, isLarge: true) { target in
+                        Task { await onAction(.openPerson(target)) }
+                    }
+                    .padding(.trailing, item.day == nil ? 0 : Self.leafRoom - 14)
+                    .padding(.bottom, 7)
+                }
                 // As the "En cours" card: who wrote it over the title, the
                 // title on two lines at most, then the tags.
                 Text(card.cover.authors.joined(separator: ", "))
@@ -125,7 +141,7 @@ struct NewsLargeCard: View {
             .padding(.vertical, 14)
             .padding(.trailing, 14)
         }
-        .frame(height: Self.height)
+        .frame(height: height)
         .frame(maxWidth: .infinity, alignment: .leading)
         .overlay(alignment: .topTrailing) {
             if let date = item.day {
@@ -233,27 +249,49 @@ struct NewsCardButtons: View {
 /// author's or a narrator's portrait and "M. Wells" — in a white pill on glass.
 struct NewsPersonPill: View {
     let item: NewsShelfItem
-    let maxWidth: CGFloat
+    /// The large card's pill, over its title: larger, with a chevron, and a
+    /// button when the card names someone it can open.
+    var isLarge = false
+    var maxWidth: CGFloat = .infinity
+    var onOpen: ((NewsPersonTarget) -> Void)?
+
+    private var avatarSize: CGFloat { isLarge ? 24 : 18 }
 
     var body: some View {
-        HStack(spacing: 5) {
+        if isLarge, let target = item.personTarget, let onOpen {
+            Button { onOpen(target) } label: { pill }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text(item.pillName ?? ""))
+        } else {
+            pill
+        }
+    }
+
+    private var pill: some View {
+        HStack(spacing: isLarge ? 7 : 5) {
             Group {
                 if let avatar = item.avatar {
-                    AccountAvatarView(avatar: avatar, firstName: item.person, size: 18)
+                    AccountAvatarView(avatar: avatar, firstName: item.person, size: avatarSize)
                 } else {
-                    AuthorAvatar(initials: initials(of: item.person), portraitURL: item.portraitURL, size: 18)
+                    AuthorAvatar(initials: initials(of: item.person), portraitURL: item.portraitURL, size: avatarSize)
                 }
             }
             .clipShape(.circle)
             Text(item.pillName ?? "")
-                .font(.caption2.weight(.semibold))
+                .font(isLarge ? .subheadline.weight(.semibold) : .caption2.weight(.semibold))
                 .lineLimit(1)
+            if isLarge, item.personTarget != nil {
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(.white.opacity(0.75))
+            }
         }
         .padding(.leading, 4)
-        .padding(.trailing, 9)
-        .frame(height: 26)
+        .padding(.trailing, isLarge ? 11 : 9)
+        .frame(height: isLarge ? 32 : 26)
         .foregroundStyle(.white)
         .glassEffect(.regular, in: .capsule)
+        .contentShape(.capsule)
         .environment(\.colorScheme, .dark)
         .frame(maxWidth: maxWidth, alignment: .leading)
     }

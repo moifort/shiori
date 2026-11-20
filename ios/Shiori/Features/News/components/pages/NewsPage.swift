@@ -23,6 +23,9 @@ enum NewsAction {
     /// "Séries suivies ›" the series, "Auteurs préférés ›" and "Narrateurs
     /// préférés ›" the hearted ones, "Liste d'envies ›" the wish list.
     case openLibrary(LibraryDestination)
+    /// A large card's pill: the friend on the Amis tab, alone, or the
+    /// author's or the narrator's page.
+    case openPerson(NewsPersonTarget)
     case invite
     case openAlerts
     case refresh
@@ -279,7 +282,7 @@ struct NewsAgendaSection: View {
                         if entries.count <= NewsShelf.cardLimit {
                             NewsLargeCard(
                                 item: entry.item, isWished: wished.isWished(entry.item),
-                                wishes: wished, onAction: onAction
+                                wishes: wished, height: NewsLargeCard.height(for: entries.map(\.item)), onAction: onAction
                             )
                                 .containerRelativeFrame(.horizontal) { width, _ in
                                     SeriesReleaseCard.railWidth(width, count: entries.count)

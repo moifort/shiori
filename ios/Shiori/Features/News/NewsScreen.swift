@@ -9,9 +9,12 @@ struct NewsScreen: View {
     @State private var viewModel: NewsViewModel
     @State private var detail: NewsDetail?
     @State private var showsAlerts = false
+    /// A friend's pill: the Amis tab, narrowed to that friend.
+    private let onShowFriend: (String) -> Void
 
-    init(client: NewsClient = .live) {
+    init(client: NewsClient = .live, onShowFriend: @escaping (String) -> Void = { _ in }) {
         _viewModel = State(initialValue: NewsViewModel(client: client))
+        self.onShowFriend = onShowFriend
     }
 
     var body: some View {
@@ -78,6 +81,9 @@ struct NewsScreen: View {
         case let .add(card, status, format): await viewModel.add(card, status, as: format)
         case let .awaitEdition(card, format): await viewModel.awaitEdition(card, format)
         case let .openLibrary(destination): open(.library(destination))
+        case let .openPerson(.friend(friendId)): onShowFriend(friendId)
+        case let .openPerson(.author(author)): open(.author(author))
+        case let .openPerson(.narrator(narrator)): open(.narrator(narrator))
         case .invite: await viewModel.invite()
         case .openAlerts: showsAlerts = true
         case .refresh: await viewModel.load()

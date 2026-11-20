@@ -41,6 +41,8 @@ struct ContentView: View {
     @State private var libraryMode: LibraryRequest?
     /// The same for the Library tab's series shelf.
     @State private var seriesMode: SeriesRequest?
+    /// The friend a Découvrir pill asked for, handed to the Amis tab.
+    @State private var friendRequest: String?
     /// The add sheet, behind the tab bar's scan button: the camera, the last
     /// photos, a title and a record typed by hand, from every tab.
     @State private var showAddSheet = false
@@ -272,13 +274,16 @@ struct ContentView: View {
                 .environment(\.hostTab, .library)
             }
             Tab(TabSelection.news.label, systemImage: TabSelection.news.symbol, value: .news) {
-                NewsScreen()
-                    .environment(\.hostTab, .news)
+                NewsScreen(onShowFriend: { friendId in
+                    friendRequest = friendId
+                    selectedTab = .friends
+                })
+                .environment(\.hostTab, .news)
             }
             // The friends took the search's place; the search waits, hidden,
             // until it finds a new home.
             Tab(TabSelection.friends.label, systemImage: TabSelection.friends.symbol, value: .friends) {
-                FriendsScreen()
+                FriendsScreen(friendRequest: $friendRequest)
                     .environment(\.hostTab, .friends)
             }
             Tab(

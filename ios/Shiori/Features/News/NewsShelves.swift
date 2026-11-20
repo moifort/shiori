@@ -28,6 +28,33 @@ struct NewsShelfItem: Identifiable, Hashable, Sendable {
     }
 
     var avatar: AccountAvatar? { friend?.avatar }
+
+    /// Where the pill leads: the Amis tab narrowed to the friend, the
+    /// author's page, the narrator's. Nil when the card names no one it can
+    /// open.
+    var personTarget: NewsPersonTarget? {
+        if let friend { return .friend(friend.friendId) }
+        switch card {
+        case let .released(.narrator(news, _)):
+            return .narrator(NarratorDestination(key: news.narratorKey, name: news.narrator))
+        case let .released(.release(release, _)), let .upcoming(release):
+            switch UpcomingReleaseDestination.immediate(release) {
+            case let .author(author): return .author(author)
+            case let .narrator(narrator): return .narrator(narrator)
+            default: return nil
+            }
+        default:
+            return nil
+        }
+    }
+}
+
+/// The person a Découvrir card names, as its pill opens them.
+enum NewsPersonTarget: Hashable {
+    /// The Amis tab, showing that friend alone.
+    case friend(String)
+    case author(AuthorDestination)
+    case narrator(NarratorDestination)
 }
 
 /// The shelves under Découvrir's agenda, each a rail of what one of the

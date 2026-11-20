@@ -106,6 +106,17 @@ final class FriendsViewModel {
         await load()
     }
 
+    /// One friend alone, asked for from another tab: the pick is that
+    /// friend, whatever was picked before.
+    func show(only friendId: String) async {
+        guard selected != [friendId] else { return }
+        selected = [friendId]
+        if let cached = shelfCache(for: selected)?.read() {
+            withAnimation(.smooth) { shelf = cached }
+        }
+        await load()
+    }
+
     func invite() async {
         isInviting = true
         defer { isInviting = false }

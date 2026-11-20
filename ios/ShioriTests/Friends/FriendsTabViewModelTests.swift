@@ -45,6 +45,18 @@ struct FriendsTabViewModelTests {
         #expect(viewModel.soleFriend == nil)
     }
 
+    @Test func aFriendAskedForFromDecouvrirIsShownAlone() async {
+        let viewModel = FriendsViewModel(client: .preview, caching: false)
+        await viewModel.load()
+        await viewModel.toggle("camille")
+        await viewModel.toggle("leo")
+
+        await viewModel.show(only: "leo")
+
+        #expect(viewModel.selected == ["leo"])
+        #expect(viewModel.soleFriend?.userId == "leo")
+    }
+
     @Test func lettingEveryFriendGoShowsEveryoneAgain() async {
         let viewModel = FriendsViewModel(client: .preview, caching: false)
         await viewModel.load()
