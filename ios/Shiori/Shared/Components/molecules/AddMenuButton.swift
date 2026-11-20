@@ -191,9 +191,9 @@ struct AddMenuButton<MenuItems: View>: View {
     }
 }
 
-/// The closed eye beside "+ Ajouter": one tap turns the book down, its cover
-/// going black and white; a second takes the refusal back. It shows the
-/// state: on glass while the book is offered, on white once turned down.
+/// The barred eye beside "+ Ajouter": one tap turns the book down, its cover
+/// going black and white, and the eye opens on white; a second tap on the
+/// open eye takes the refusal back. Barred on glass while the book is offered.
 struct NotInterestedToggle: View {
     let isOn: Bool
     var size: AddMenuButton<EmptyView>.Size = .card
@@ -202,7 +202,9 @@ struct NotInterestedToggle: View {
     var body: some View {
         ActionToggle(
             isOn: isOn,
-            symbol: "eye.slash",
+            // Barred while the book is offered; once turned down, the eye
+            // opens again: the tap that brings the book back.
+            symbol: "eye",
             offSymbol: "eye.slash",
             turnOnLabel: "Pas intéressé",
             turnOffLabel: "Ça m'intéresse finalement",
