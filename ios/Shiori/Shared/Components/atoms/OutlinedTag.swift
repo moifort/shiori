@@ -49,11 +49,24 @@ struct OutlinedTag: View {
 /// A recording kept on the iPhone, as a symbol in the same outline, after
 /// its "Audio": the home's card has no room for the word.
 struct DownloadedTag: View {
+    /// A capital's height in the tag's font, unaccented: the arrow keeps the
+    /// room around it that the letters of "Audio" have.
+    @ScaledMetric(relativeTo: .caption2) private var arrowHeight: CGFloat = 8
+
     var body: some View {
-        // Set as text, so the line stands exactly as tall as "Audio" beside it.
-        Text("\(Image(systemName: "arrow.down"))")
+        // A hidden letter sets the line, so the tag stands exactly as tall as
+        // "Audio" beside it; the arrow sits in it at a capital's height.
+        Text(verbatim: "A")
             .font(.caption2.weight(.bold))
-            .foregroundStyle(.white.opacity(0.9))
+            .hidden()
+            .overlay {
+                Image(systemName: "arrow.down")
+                    .resizable()
+                    .fontWeight(.bold)
+                    .scaledToFit()
+                    .frame(height: arrowHeight)
+                    .foregroundStyle(.white.opacity(0.9))
+            }
             .padding(.horizontal, 4)
             .padding(.vertical, 1)
             // The same frosted ground as the "Audio" beside it.
