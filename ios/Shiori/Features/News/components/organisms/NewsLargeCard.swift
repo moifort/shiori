@@ -77,8 +77,9 @@ struct NewsLargeCard: View {
     /// large card of Actualité stands at, whatever its title or its tags say.
     static let height: CGFloat = 149
     /// What a person's pill adds over the text: its height and the gap under
-    /// it, so the title keeps its two lines.
-    static let pillRoom: CGFloat = 26
+    /// it, less what it rises into the top margin, so the title keeps its two
+    /// lines.
+    static let pillRoom: CGFloat = 18
 
     /// A row's height: taller by the pill's room when one of its cards
     /// carries a pill, so the cards stay the same height side by side.
@@ -111,6 +112,9 @@ struct NewsLargeCard: View {
                         Task { await onAction(.openPerson(target)) }
                     }
                     .padding(.trailing, item.day == nil ? 0 : Self.leafRoom - 14)
+                    // Its top on the date's: 10 pt from the card's edge, as
+                    // the badge, not the column's 14.
+                    .padding(.top, -4)
                     .padding(.bottom, 7)
                 }
                 // As the "En cours" card: who wrote it over the title, the
@@ -255,7 +259,7 @@ struct NewsPersonPill: View {
     var maxWidth: CGFloat = .infinity
     var onOpen: ((NewsPersonTarget) -> Void)?
 
-    private var avatarSize: CGFloat { isLarge ? 24 : 18 }
+    private var avatarSize: CGFloat { isLarge ? 22 : 18 }
 
     var body: some View {
         if isLarge, let target = item.personTarget, let onOpen {
@@ -268,7 +272,7 @@ struct NewsPersonPill: View {
     }
 
     private var pill: some View {
-        HStack(spacing: isLarge ? 7 : 5) {
+        HStack(spacing: isLarge ? 6 : 5) {
             Group {
                 if let avatar = item.avatar {
                     AccountAvatarView(avatar: avatar, firstName: item.person, size: avatarSize)
@@ -286,9 +290,10 @@ struct NewsPersonPill: View {
                     .foregroundStyle(.white.opacity(0.75))
             }
         }
-        .padding(.leading, 4)
-        .padding(.trailing, isLarge ? 11 : 9)
-        .frame(height: isLarge ? 32 : 26)
+        .padding(.leading, isLarge ? 3 : 4)
+        .padding(.trailing, isLarge ? 10 : 9)
+        // The large one stands as tall as the card's "Ajouter" button.
+        .frame(height: isLarge ? 28 : 26)
         .foregroundStyle(.white)
         .glassEffect(.regular, in: .capsule)
         .contentShape(.capsule)
