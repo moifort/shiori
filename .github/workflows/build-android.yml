@@ -20,7 +20,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: '25'
       - uses: oven-sh/setup-bun@v2
       - name: Components stay pure and previewed
         # docs/android-guide.md: nothing under components/ or shared/components
