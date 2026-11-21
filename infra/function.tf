@@ -127,9 +127,6 @@ resource "google_cloudfunctions2_function" "server" {
     # together.
     timeout_seconds       = 180
     max_instance_count    = 100
-    # No warm instance (its cost was turned down): a cold start is shortened
-    # instead by the startup CPU boost, which the provider cannot set here and
-    # the Deploy workflow turns on after every apply.
     min_instance_count    = 0
     service_account_email = google_service_account.function.email
 
