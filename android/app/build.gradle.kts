@@ -13,7 +13,10 @@ if (file("google-services.json").exists()) {
 
 android {
     namespace = "com.polyforms.shiori"
-    compileSdk = 37
+    // Compose 1.13 (BOM 2026.11) compiles against the 37.1 minor SDK; targetSdk stays 37.
+    compileSdk {
+        version = release(37) { minorApiLevel = 1 }
+    }
 
     defaultConfig {
         applicationId = "com.polyforms.shiori.app"
