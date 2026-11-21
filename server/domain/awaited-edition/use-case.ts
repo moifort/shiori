@@ -13,6 +13,7 @@ import {
   PASS_REBUILT_EVERY_MS,
   passCandidatesOf,
   passEntryOf,
+  passStateUnchanged,
   releaseIdentityOf,
   releaseShownOf,
   viewOf,
@@ -267,7 +268,7 @@ export namespace AwaitedEditionUseCase {
     changedReaders: UserId[]
   }> => {
     const overBudget = () => Date.now() - startedAt > budgetMs
-    const { all, watches, stateAfter } = await editionsForThePass(now)
+    const { all, watches, stateBefore, stateAfter } = await editionsForThePass(now)
     const lookedUp = new Set<string>()
     const due = dueWatchesOf(all, watches, now, todayOf(now))
     let watched = 0
@@ -299,9 +300,11 @@ export namespace AwaitedEditionUseCase {
     }
     const result = await lookUpDue()
     // Best effort: without it, the next pass reads every edition awaited.
-    await AwaitedEditionCommand.savePassState(stateAfter()).catch((error) =>
-      logger.warn('edition pass state not saved', { error }),
-    )
+    const next = stateAfter()
+    if (!passStateUnchanged(stateBefore, next))
+      await AwaitedEditionCommand.savePassState(next).catch((error) =>
+        logger.warn('edition pass state not saved', { error }),
+      )
     const changedReaders = [
       ...new Set(
         all.filter((awaited) => lookedUp.has(awaited.watchKey)).map((awaited) => awaited.userId),
@@ -362,6 +365,7 @@ const editionsForThePass = async (now: Date) => {
     return {
       all,
       watches,
+      stateBefore: state,
       stateAfter: (): EditionPassState => ({
         entries: entriesOf(
           all.map((awaited) => awaited.watchKey),
@@ -384,6 +388,7 @@ const editionsForThePass = async (now: Date) => {
   return {
     all,
     watches,
+    stateBefore: state,
     // A key read and awaited by nobody now leaves the state; one not read
     // keeps what the last pass knew of it.
     stateAfter: (): EditionPassState => ({

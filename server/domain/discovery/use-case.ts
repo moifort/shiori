@@ -37,6 +37,7 @@ import {
   narratorWatchKeyOf,
   newAnnouncementsOf,
   newWorkAnnouncementsOf,
+  passStateUnchanged,
   possiblyUnwatchedOf,
   projectionsToRefreshOf,
   readerIsStale,
@@ -578,9 +579,11 @@ export namespace DiscoveryUseCase {
       Math.max(0, dueAuthors.length - authorsLeft) +
       Math.max(0, dueNarrators.length - narratorsLeft)
     // Best effort: without it, the next pass reads every watch followed.
-    await DiscoveryCommand.savePassState(pass.stateAfter()).catch((error) =>
-      logger.warn('discovery pass state not saved', { error }),
-    )
+    const next = pass.stateAfter()
+    if (!passStateUnchanged(pass.stateBefore, next))
+      await DiscoveryCommand.savePassState(next).catch((error) =>
+        logger.warn('discovery pass state not saved', { error }),
+      )
     const changedOf = <T>(after: ReadonlyMap<string, T>, before: ReadonlyMap<string, T>) =>
       new Set([...after].filter(([key, watch]) => before.get(key) !== watch).map(([key]) => key))
     return {
@@ -1056,6 +1059,8 @@ const watchesForThePass = async (everyone: readonly DiscoveryReader[], now: Date
       authors: authors.keys,
       narrators: narrators.keys,
     }),
+    /** What the last pass left: the state not written again when unchanged. */
+    stateBefore: state,
     /** What to leave for the next pass, once this one's looks are written. */
     stateAfter: (): DiscoveryPassState => ({
       followed,

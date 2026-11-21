@@ -8,12 +8,14 @@ import {
   inShelfOrder,
   isConfirmed,
   isHeld,
+  passStateUnchanged,
   stateOf,
   storeUrlOf,
 } from '~/domain/awaited-edition/business-rules'
 import type {
   AwaitedEdition,
   AwaitedEditionView,
+  EditionPassState,
   EditionWatch,
   FoundEdition,
 } from '~/domain/awaited-edition/types'
@@ -297,5 +299,50 @@ describe('storeUrlOf', () => {
       'https://www.amazon.fr/s?k=Vent+et+v%C3%A9rit%C3%A9+Brandon+Sanderson&i=stripbooks',
     )
     expect(storeUrlOf('book', 'fr', {})).toBeUndefined()
+  })
+})
+
+describe('passStateUnchanged', () => {
+  const rebuiltAt = new Date('2026-11-21T00:15:00Z')
+  const dueFrom = new Date('2026-12-01T00:00:00Z')
+  const state = (entries: EditionPassState['entries'], at = rebuiltAt): EditionPassState => ({
+    entries,
+    savedAt: new Date('2026-11-21T10:15:00Z'),
+    rebuiltAt: at,
+  })
+  const entries = [{ key: 'a', dueFrom }, { key: 'b', done: true }, { key: 'c' }]
+
+  test('a pass with no state before it is always saved', () => {
+    expect(passStateUnchanged(undefined, state(entries))).toBe(false)
+  })
+
+  test('the same entries, in another order and saved later, are unchanged', () => {
+    const after = { ...state([...entries].reverse()), savedAt: new Date() }
+    expect(passStateUnchanged(state(entries), after)).toBe(true)
+  })
+
+  test('a key looked up, its date moved, changes it', () => {
+    const later = new Date(dueFrom.getTime() + 86_400_000)
+    expect(
+      passStateUnchanged(
+        state(entries),
+        state([{ key: 'a', dueFrom: later }, ...entries.slice(1)]),
+      ),
+    ).toBe(false)
+  })
+
+  test('a key found available changes it', () => {
+    expect(
+      passStateUnchanged(state(entries), state([{ key: 'a', done: true }, ...entries.slice(1)])),
+    ).toBe(false)
+  })
+
+  test('a key newly awaited, or awaited by nobody now, changes it', () => {
+    expect(passStateUnchanged(state(entries), state([...entries, { key: 'd' }]))).toBe(false)
+    expect(passStateUnchanged(state(entries), state(entries.slice(1)))).toBe(false)
+  })
+
+  test('a rebuilt state is always saved', () => {
+    expect(passStateUnchanged(state(entries), state(entries, new Date()))).toBe(false)
   })
 })

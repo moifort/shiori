@@ -360,6 +360,26 @@ export const followedKeysOf = (readers: readonly DiscoveryReader[]): WatchKeys =
   ],
 })
 
+/** Whether a pass leaves the next one nothing the last state did not say
+ *  already: the same keys followed, the same ones still without a watch. Most
+ *  hours nothing is due, and writing the same state back would be the pass's
+ *  only write. The date it was saved is read by nobody. */
+export const passStateUnchanged = (
+  before: DiscoveryPassState | undefined,
+  after: DiscoveryPassState,
+): boolean => {
+  if (!before) return false
+  const same = (left: readonly string[], right: readonly string[]) => {
+    const keys = new Set(left)
+    return keys.size === new Set(right).size && right.every((key) => keys.has(key))
+  }
+  const sameKeys = (left: WatchKeys, right: WatchKeys) =>
+    same(left.sagas, right.sagas) &&
+    same(left.authors, right.authors) &&
+    same(left.narrators, right.narrators)
+  return sameKeys(before.followed, after.followed) && sameKeys(before.unwatched, after.unwatched)
+}
+
 /** The followed keys that may have no watch: the ones the last pass found
  *  without one, and the ones it did not know were followed. Every followed key
  *  when no pass left anything. A watch is never deleted, so any other key had a

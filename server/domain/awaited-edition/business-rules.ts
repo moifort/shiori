@@ -7,6 +7,7 @@ import type {
   AwaitedSource,
   AwaitedState,
   EditionPassEntry,
+  EditionPassState,
   EditionWatch,
   FoundEdition,
 } from '~/domain/awaited-edition/types'
@@ -253,6 +254,26 @@ export const passEntryOf = (
   )
     return { key, done: true }
   return { key, dueFrom: new Date(watch.checkedAt.getTime() + EDITION_WATCH_EVERY_MS) }
+}
+
+/** Whether a pass leaves the next one what the last state already said: the
+ *  same build, and every key with the same entry, in whatever order. Most
+ *  hours nothing is looked up, and the state written back would be the pass's
+ *  only write. Not saving it leaves its date behind, so the next pass reads
+ *  the editions awaited since that older date: the same, at worst a few more. */
+export const passStateUnchanged = (
+  before: EditionPassState | undefined,
+  after: EditionPassState,
+): boolean => {
+  if (!before || before.rebuiltAt.getTime() !== after.rebuiltAt.getTime()) return false
+  if (before.entries.length !== after.entries.length) return false
+  const entryOf = ({ dueFrom, done }: EditionPassEntry) =>
+    `${dueFrom?.getTime() ?? ''}|${done ?? ''}`
+  const known = new Map(before.entries.map((entry) => [entry.key, entryOf(entry)]))
+  return (
+    known.size === after.entries.length &&
+    after.entries.every((entry) => known.get(entry.key) === entryOf(entry))
+  )
 }
 
 /** The keys that may be due now: no watch at the last pass, or one whose two

@@ -34,6 +34,7 @@ import {
   newAnnouncementsOf,
   newWorkAnnouncementsOf,
   onAudible,
+  passStateUnchanged,
   projectionsToRefreshOf,
   readersFollowingOf,
   recentReleasesOf,
@@ -1313,5 +1314,39 @@ describe('the Découvrir projection', () => {
       'ann' as UserId,
     ])
     expect(readersFollowingOf(readers, new Set(['other--fr']), new Set())).toEqual([])
+  })
+})
+
+describe('passStateUnchanged', () => {
+  const keys = (sagas: string[], authors: string[] = [], narrators: string[] = []) => ({
+    sagas,
+    authors,
+    narrators,
+  })
+  const state = (followed = keys(['a', 'b'], ['x']), unwatched = keys(['b'])) => ({
+    followed,
+    unwatched,
+    savedAt: new Date('2026-11-21T10:15:00Z'),
+  })
+
+  test('a pass with no state before it is always saved', () => {
+    expect(passStateUnchanged(undefined, state())).toBe(false)
+  })
+
+  test('the same keys, in another order and saved later, are unchanged', () => {
+    const after = { ...state(keys(['b', 'a'], ['x']), keys(['b'])), savedAt: new Date() }
+    expect(passStateUnchanged(state(), after)).toBe(true)
+  })
+
+  test('a saga newly followed changes it', () => {
+    expect(passStateUnchanged(state(), state(keys(['a', 'b', 'c'], ['x'])))).toBe(false)
+  })
+
+  test('a key that found its watch changes it', () => {
+    expect(passStateUnchanged(state(), state(undefined, keys([])))).toBe(false)
+  })
+
+  test('a narrator newly followed changes it', () => {
+    expect(passStateUnchanged(state(), state(keys(['a', 'b'], ['x'], ['n'])))).toBe(false)
   })
 })
