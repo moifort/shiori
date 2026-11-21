@@ -195,6 +195,28 @@ jobs:
           terraform init -input=false
           terraform apply -auto-approve -input=false
 
+      # A cold instance spends about 5 s loading the bundle on its single CPU, and
+      # with a few readers most openings land on one (42 starts for 224 requests on
+      # 2026-11-20). Startup CPU boost lends a second CPU while the instance boots,
+      # billed only those seconds. Cloud Functions does not expose the setting and
+      # the Google provider has no field for it, so it is set on the Cloud Run
+      # service underneath. A function deploy writes a new revision without it,
+      # so this runs after every apply, and does nothing when the boost is on.
+      - name: Keep the startup CPU boost on
+        env:
+          PROJECT: ${{ vars.GCP_PROJECT_ID }}
+          SERVICE: shiori-server
+          REGION: europe-west3
+        run: |
+          boost=$(gcloud run services describe "$SERVICE" --project "$PROJECT" --region "$REGION" \
+            --format=json | jq -r '.spec.template.metadata.annotations["run.googleapis.com/startup-cpu-boost"] // "false"')
+          if [ "$boost" = "true" ]; then
+            echo "Startup CPU boost already on"
+          else
+            gcloud run services update "$SERVICE" --project "$PROJECT" --region "$REGION" \
+              --cpu-boost --quiet
+          fi
+
       - name: Run Firestore migrations
         working-directory: infra
         run: |
