@@ -9,6 +9,7 @@ import { logBootSteps, markBootStep } from '~/system/boot-marks'
 import { createLogger } from '~/system/logger'
 import { startReadMeter } from '~/system/read-meter'
 import { setApollo } from '~/utils/apollo'
+import { clientBuildOf, userAgentOf } from '~/utils/client-build'
 
 const logger = createLogger('graphql')
 
@@ -31,13 +32,15 @@ const sentryErrorCapture = {
 }
 
 // One line per operation, to find the slow screens: which operation, how long
-// it took, and the Firestore reads it made. Info level, so never sent to Sentry;
+// it took, the Firestore reads it made, and the client that asked — a build
+// run from Xcode is flagged, so a count of readers can leave it out. Info level, so never sent to Sentry;
 // in a built bundle the context keys land under `jsonPayload`, where Cloud
 // Logging can sum them per operation.
 const operationMetrics: ApolloServerPlugin<GraphQLContext> = {
   requestDidStart: async ({ contextValue }) => {
     const started = performance.now()
     const reads = startReadMeter(contextValue.event.context)
+    const client = clientBuildOf(userAgentOf(contextValue.event))
     return {
       willSendResponse: async ({ operationName, operation, errors }) => {
         logger.info('operation served', {
@@ -47,6 +50,7 @@ const operationMetrics: ApolloServerPlugin<GraphQLContext> = {
           ...reads,
           reads: reads.docReads + reads.queryDocs,
           errors: errors?.length ?? 0,
+          ...client,
         })
       },
     }
