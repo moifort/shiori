@@ -44,7 +44,7 @@ final class AudiblePlayer {
     private(set) var duration: TimeInterval = 0
     private(set) var chapters: [ListeningChapter] = []
     /// When the sleep timer pauses the player, and what it was set to.
-    private(set) var sleepTimer: (minutes: Int, endsAt: Date)?
+    private(set) var sleepTimer: SleepTimer?
     /// The titles kept on the iPhone.
     let downloads: AudibleDownloads
 
@@ -201,6 +201,7 @@ final class AudiblePlayer {
         if sleepTimer?.minutes == minutes {
             sleepTimer = nil
             lastSleepMinutes = nil
+            player.volume = 1
             return
         }
         startSleepTimer(minutes: minutes)
@@ -208,22 +209,40 @@ final class AudiblePlayer {
 
     private func startSleepTimer(minutes: Int) {
         sleepTask?.cancel()
+        player.volume = 1
         lastSleepMinutes = minutes
         sleptAt = nil
-        let endsAt = Date.now.addingTimeInterval(TimeInterval(minutes * 60))
-        sleepTimer = (minutes, endsAt)
+        let timer = SleepTimer(minutes: minutes, from: .now)
+        sleepTimer = timer
         sleepTask = Task { [weak self] in
-            try? await Task.sleep(for: .seconds(minutes * 60))
+            // Full volume until the fade, then down to silence in small steps,
+            // and the pause once it is reached. It runs with the screen locked
+            // too: the app plays in the background.
+            try? await Task.sleep(for: .seconds(max(0, timer.fadeStartsAt.timeIntervalSinceNow)))
+            while !Task.isCancelled, !timer.isOver(at: .now) {
+                self?.player.volume = timer.volume(at: .now)
+                try? await Task.sleep(for: .seconds(Self.fadeStep))
+            }
             guard !Task.isCancelled, let self else { return }
             self.sleepTimer = nil
             self.sleptAt = .now
             self.pause()
+            // The next listening starts at its usual volume.
+            self.player.volume = 1
         }
     }
 
+    /// How often the volume steps down during the fade.
+    static let fadeStep: TimeInterval = 0.1
+
+    /// Whether the sleep timer is fading the listening out right now.
+    var isSleepFading: Bool {
+        sleepTimer?.isFading(at: .now) ?? false
+    }
+
     /// A headset press or a shake: the timer starts over for as long as it
-    /// was set, and a listening it just paused plays again. Answers whether
-    /// it did anything.
+    /// was set, at full volume again, and a listening it just paused plays
+    /// again. Answers whether it did anything.
     @discardableResult
     func restartSleepTimer() -> Bool {
         if let sleepTimer {
@@ -244,6 +263,7 @@ final class AudiblePlayer {
         saveNow()
         sleepTask?.cancel()
         sleepTimer = nil
+        player.volume = 1
         teardownStream()
         title = nil
         playback = nil
@@ -634,14 +654,24 @@ final class AudiblePlayer {
             return .success
         }
         center.pauseCommand.addTarget { [weak self] _ in
-            MainActor.assumeIsolated { self?.pause() }
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                // Some headsets send a pause rather than a toggle: while the
+                // timer fades the listening out, it gives it its minutes back.
+                if self.isSleepFading {
+                    self.restartSleepTimer()
+                } else {
+                    self.pause()
+                }
+            }
             return .success
         }
         center.togglePlayPauseCommand.addTarget { [weak self] _ in
             MainActor.assumeIsolated {
                 guard let self else { return }
-                // While the timer runs, a press on the headset gives it its
-                // minutes back rather than pausing; once it paused, it plays.
+                // While the timer runs, its fade included, a press on the
+                // headset gives it its minutes back at full volume rather than
+                // pausing; once it paused, it plays.
                 if !self.restartSleepTimer() { self.togglePlayPause() }
             }
             return .success
