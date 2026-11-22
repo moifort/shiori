@@ -5,8 +5,10 @@ import {
   getFirestore,
   Query,
   Transaction,
+  WriteBatch,
 } from 'firebase-admin/firestore'
 import { meterFirestoreReads } from '~/system/read-meter'
+import { meterFirestoreWrites } from '~/system/write-meter'
 
 // Over REST rather than gRPC: a cold instance's first read no longer loads the
 // gRPC stack and its protos. Measured through the built bundle on a Mac, Node 22,
@@ -27,3 +29,4 @@ export const db = () => getFirestore()
 const AggregateQuery = Object.getPrototypeOf(db().collection('_').count()).constructor
 
 meterFirestoreReads({ Firestore, Query, AggregateQuery, Transaction, DocumentReference })
+meterFirestoreWrites({ WriteBatch })
