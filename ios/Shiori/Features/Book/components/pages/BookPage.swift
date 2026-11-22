@@ -188,21 +188,21 @@ struct BookPage: View {
         .sensoryFeedback(.success, trigger: book.status)
     }
 
-    /// The next step white, the rating and the reader's remarks on glass, set
-    /// as Apple Music sets "Lecture" and "Aléatoire": subheadline semibold,
-    /// the symbol at the text's own size and weight, a tight gap between
-    /// them, every button the same height. A book read waits for the reader's
+    /// The next step white, the rating on glass and the reader's remarks as a
+    /// round glass icon, at the 50 pt of every other book page's buttons
+    /// (a suggestion, a friend's book): headline, the symbol at the text's
+    /// own size and weight, every button the same height. A book read waits for the reader's
     /// word on it, not for a next state: reading it again clears the day it
     /// was finished, a choice made in the menu, not here.
     private var heroButtons: some View {
         // No GlassEffectContainer: a menu opened from inside one loses a moving
         // tap on a row over a neighbouring button.
-        HStack(spacing: 8) {
+        HStack(spacing: 12) {
             if let listening {
                 // The play button stands for the status: no "Marquer lu" nor
                 // "✓ Lu" beside it, the edit form changes a status set by
-                // mistake. Every button keeps its label: the row scrolls
-                // sideways rather than leaving bare icons.
+                // mistake. The row scrolls sideways rather than shortening
+                // a label; only the remarks stand as an icon.
                 listenButton(listening)
                 ratingButton(prominent: false)
                 noteButton()
@@ -218,8 +218,8 @@ struct BookPage: View {
                 noteButton()
             }
         }
-        .font(.subheadline.weight(.semibold))
-        .controlSize(.regular)
+        .font(.headline)
+        .controlSize(.large)
         .fixedSize()
     }
 
@@ -246,7 +246,7 @@ struct BookPage: View {
             onSetStatus(step.status)
         }
         .menuStyle(.button)
-        .heroButtonStyle(prominent: prominent)
+        .buttonStyle(.action(prominent ? .white : .glass))
         .accessibilityIdentifier("book-next-step")
     }
 
@@ -275,7 +275,7 @@ struct BookPage: View {
             HeroButtonLabel(title: LocalizedStringKey(book.status.label), systemImage: book.status.symbol)
         }
         .menuStyle(.button)
-        .heroButtonStyle(prominent: prominent)
+        .buttonStyle(.action(prominent ? .white : .glass))
         .accessibilityIdentifier(book.status == .dropped ? "book-dropped-status" : "book-read-status")
     }
 
@@ -331,9 +331,11 @@ struct BookPage: View {
                 commentRequest = CommentRequest(anchor: Self.noteAnchor, count: commentRequest.count + 1)
             }
         } label: {
-            HeroButtonLabel(title: "Remarques", systemImage: "text.bubble")
+            Image(systemName: "text.bubble")
+                .font(.title3.weight(.medium))
+                .accessibilityLabel("Remarques")
         }
-        .buttonStyle(.actionGlass)
+        .buttonStyle(.actionRound())
         .accessibilityIdentifier("book-hero-note")
     }
 
@@ -539,8 +541,8 @@ struct NextStep: Equatable {
 private struct HeroButtonLabel: View {
     let title: LocalizedStringKey
     let systemImage: String
-    /// The label's height, which the stars match: a little taller than the
-    /// regular glass button's own.
+    /// The label's height, which the stars match; the large button's 50 pt
+    /// sets the button's own.
     static let height: CGFloat = 24
 
     var body: some View {
@@ -554,17 +556,6 @@ private struct HeroButtonLabel: View {
         .fixedSize()
         .padding(.horizontal, 2)
         .frame(height: Self.height)
-    }
-}
-
-private extension View {
-    /// White for the hero's lead button, glass for the others.
-    @ViewBuilder func heroButtonStyle(prominent: Bool) -> some View {
-        if prominent {
-            buttonStyle(.glassProminent).tint(.white).foregroundStyle(.black)
-        } else {
-            buttonStyle(.glass)
-        }
     }
 }
 
