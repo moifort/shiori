@@ -196,6 +196,13 @@ final class AudiblePlayer {
     static let seekSaveDelay: TimeInterval = 2
 
     /// Pause in `minutes`, or turn the timer off when that choice is the one set.
+    /// What follows the title playing, in the order the player will take it:
+    /// the queue the full-screen player lists.
+    func upNext() async throws -> [ListeningQueueEntry] {
+        guard let asin = title?.asin else { return [] }
+        return try await client.queue(asin)
+    }
+
     func toggleSleepTimer(minutes: Int) {
         sleepTask?.cancel()
         if sleepTimer?.minutes == minutes {
@@ -425,7 +432,7 @@ final class AudiblePlayer {
         // Listened to the end: the download has done its work.
         downloads.remove(playback.asin)
         Task { [weak self, client] in
-            let next = try? await client.nextInProgress(playback.asin)
+            let next = try? await client.queue(playback.asin).first?.title
             guard let self, self.playback?.asin == playback.asin else { return }
             if let next { self.play(next) }
         }

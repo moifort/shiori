@@ -10,12 +10,16 @@ enum PlayerAction {
     case sleep(minutes: Int)
     /// The three dots: the player gives way to the book's page.
     case openBook
+    /// A book of the queue, played in place of this one.
+    case play(ListeningTitle)
 }
 
 /// The full-screen player, over its cover's colours: the cover, the title and
 /// the series, the chapter's bar with where the listener is in it, the chapter
 /// and ±30 s controls, the time left in the book, and the sleep timer set in
-/// one touch.
+/// one touch. Under it, the queue: pulled up, the cover shrinks to a banner
+/// over the bar and the controls, and the audiobooks that follow this one
+/// are listed, each played with a touch.
 struct PlayerPage: View {
     struct Item: Hashable {
         let title: String
@@ -30,6 +34,8 @@ struct PlayerPage: View {
         let sleepMinutes: Int?
         /// Whether the title has a book in the library to open.
         var hasBook = true
+        /// What follows this title; nil while it loads.
+        var queue: [ListeningQueueEntry]?
     }
 
     let item: Item
@@ -37,25 +43,24 @@ struct PlayerPage: View {
 
     /// Where a finger dragging the bar holds it, from 0 to 1.
     @State private var scrubbing: Double?
+    @State private var isQueueOpen: Bool
+
+    init(item: Item, isQueueOpen: Bool = false, onAction: @escaping (PlayerAction) -> Void) {
+        self.item = item
+        self.onAction = onAction
+        _isQueueOpen = State(initialValue: isQueueOpen)
+    }
 
     var body: some View {
         GeometryReader { proxy in
-            let art = min(300, proxy.size.width - 102)
-            VStack(spacing: 0) {
-                PlayerArtwork(url: item.coverURL, size: art, cornerRadius: 12)
-                    .shadow(color: .black.opacity(0.45), radius: 25, y: 22)
-                    .padding(.top, 60)
-                heading
-                    .padding(.top, 36)
-                chapterBar
-                    .padding(.top, 28)
-                controls
-                    .padding(.top, 34)
-                summary
-                    .padding(.top, 22)
-                sleepTimer
-                    .padding(.top, 40)
-                Spacer(minLength: 0)
+            Group {
+                if isQueueOpen {
+                    queuePage
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                } else {
+                    playerPage(width: proxy.size.width)
+                        .transition(.opacity)
+                }
             }
             .padding(.horizontal, 32)
             .frame(width: proxy.size.width)
@@ -63,6 +68,55 @@ struct PlayerPage: View {
         .foregroundStyle(.white)
         .background { backdrop }
         .environment(\.colorScheme, .dark)
+    }
+
+    // MARK: - Layouts
+
+    private func playerPage(width: CGFloat) -> some View {
+        VStack(spacing: 0) {
+            PlayerArtwork(url: item.coverURL, size: min(300, width - 102), cornerRadius: 12)
+                .shadow(color: .black.opacity(0.45), radius: 25, y: 22)
+                .padding(.top, 48)
+            heading
+                .padding(.top, 30)
+            chapterBar
+                .padding(.top, 22)
+            controls
+                .padding(.top, 26)
+            if item.failure != nil {
+                summary
+                    .padding(.top, 22)
+            }
+            sleepTimer
+                .padding(.top, 26)
+            Spacer(minLength: 24)
+            openQueueHandle
+        }
+    }
+
+    /// The queue pulled up: the title as a banner, the bar and the controls
+    /// kept, then what follows.
+    private var queuePage: some View {
+        VStack(spacing: 0) {
+            banner
+                .padding(.top, 40)
+            chapterBar
+                .padding(.top, 30)
+            controls
+                .padding(.top, 14)
+            closeQueueHandle
+                .padding(.top, 10)
+            Text("À suivre")
+                .font(.title3.bold())
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.top, 8)
+            queueList
+                .padding(.top, 10)
+        }
+    }
+
+    private func setQueueOpen(_ open: Bool) {
+        withAnimation(.snappy) { isQueueOpen = open }
     }
 
     // MARK: - Parts
@@ -94,24 +148,174 @@ struct PlayerPage: View {
                         .foregroundStyle(.white.opacity(0.7))
                         .lineLimit(1)
                 }
+                bookLeft
+                    .padding(.top, 2)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            Button { onAction(.openBook) } label: {
-                Image(systemName: "ellipsis")
-                    .font(.system(size: 16, weight: .semibold))
-                    .frame(width: 36, height: 36)
-                    .glassEffect(.regular.interactive(), in: .circle)
-            }
-            .buttonStyle(.plain)
-            .disabled(!item.hasBook)
-            .accessibilityLabel(Text("Fiche du livre"))
+            bookButton
         }
     }
 
-    /// The time left in the book, or why it does not play. Downloading
-    /// and waiting for the network show nothing: they happen in silence.
+    /// The heading shrunk beside a small cover, over the pulled-up queue.
+    private var banner: some View {
+        HStack(alignment: .center, spacing: 14) {
+            PlayerArtwork(url: item.coverURL, size: 64, cornerRadius: 8)
+                .shadow(color: .black.opacity(0.4), radius: 10, y: 8)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(item.title)
+                    .font(.title3.bold())
+                    .lineLimit(1)
+                if let subtitle = item.subtitle {
+                    Text(subtitle)
+                        .font(.subheadline)
+                        .foregroundStyle(.white.opacity(0.7))
+                        .lineLimit(1)
+                }
+                bookLeft
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            bookButton
+        }
+    }
+
+    /// "11h47 restantes · 46%", under the subtitle; nothing while the
+    /// recording's length is unknown or it fails.
+    @ViewBuilder
+    private var bookLeft: some View {
+        if item.failure == nil, item.progress.duration > 0 {
+            Text(ListeningText.summary(item.progress))
+                .contentTransition(.numericText())
+                .font(.footnote.weight(.semibold).monospacedDigit())
+                .foregroundStyle(.white.opacity(0.7))
+                .lineLimit(1)
+        }
+    }
+
+    private var bookButton: some View {
+        Button { onAction(.openBook) } label: {
+            Image(systemName: "ellipsis")
+                .font(.system(size: 16, weight: .semibold))
+                .frame(width: 36, height: 36)
+                .glassEffect(.regular.interactive(), in: .circle)
+        }
+        .buttonStyle(.plain)
+        .disabled(!item.hasBook)
+        .accessibilityLabel(Text("Fiche du livre"))
+    }
+
+    private var grabber: some View {
+        Capsule()
+            .fill(.white.opacity(0.5))
+            .frame(width: 36, height: 5)
+    }
+
+    /// At the foot of the player: touched or pulled up, it opens the queue.
+    private var openQueueHandle: some View {
+        Button { setQueueOpen(true) } label: {
+            VStack(spacing: 14) {
+                grabber
+                Text("À suivre")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.white.opacity(0.7))
+            }
+            .padding(.top, 12)
+            .frame(maxWidth: .infinity, minHeight: 60, alignment: .top)
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 12).onEnded { value in
+                if value.translation.height < -30 { setQueueOpen(true) }
+            }
+        )
+    }
+
+    /// Over the queue: touched or pulled down, it folds the queue away.
+    private var closeQueueHandle: some View {
+        Button { setQueueOpen(false) } label: {
+            grabber
+                .frame(maxWidth: .infinity, minHeight: 24)
+                .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 12).onEnded { value in
+                if value.translation.height > 30 { setQueueOpen(false) }
+            }
+        )
+        .accessibilityLabel(Text("Replier la file"))
+    }
+
+    @ViewBuilder
+    private var queueList: some View {
+        if let queue = item.queue {
+            if queue.isEmpty {
+                EmptyState(
+                    systemImage: "text.line.first.and.arrowtriangle.forward",
+                    title: "Rien à suivre",
+                    message: "Les livres audio en cours et à lire s'enchaîneront ici, une fois ce livre fini."
+                )
+                .frame(maxHeight: .infinity, alignment: .top)
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: 0) {
+                        ForEach(queue) { entry in
+                            queueRow(entry)
+                        }
+                    }
+                }
+                .scrollIndicators(.hidden)
+            }
+        } else {
+            ProgressView()
+                .tint(.white)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+
+    private func queueRow(_ entry: ListeningQueueEntry) -> some View {
+        Button {
+            setQueueOpen(false)
+            onAction(.play(entry.title))
+        } label: {
+            HStack(spacing: 14) {
+                PlayerArtwork(url: entry.title.coverURL, size: 56, cornerRadius: 6)
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: 8) {
+                        Text(entry.title.title)
+                            .font(.body.weight(.semibold))
+                            .lineLimit(1)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        if let heard = entry.heard {
+                            Pill(text: (Double(heard) / 100).formatted(.percent), font: .caption.weight(.semibold))
+                        }
+                    }
+                    if let subtitle = entry.title.subtitle {
+                        Text(subtitle)
+                            .font(.subheadline)
+                            .foregroundStyle(.white.opacity(0.7))
+                            .lineLimit(1)
+                    }
+                }
+                .frame(maxHeight: .infinity)
+                .overlay(alignment: .bottom) {
+                    Rectangle()
+                        .fill(.white.opacity(0.14))
+                        .frame(height: 0.5)
+                }
+            }
+            .frame(height: 76)
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text("Écouter \(entry.title.title)"))
+    }
+
+    /// Why it does not play; the time left in the book sits on the chapter's
+    /// line. Downloading and waiting for the network show nothing: they
+    /// happen in silence.
     private var summary: some View {
-        Text(item.failure ?? ListeningText.summary(item.progress))
+        Text(item.failure ?? "")
             .contentTransition(.numericText())
             .font(.footnote)
             .foregroundStyle(.white.opacity(0.7))
@@ -261,6 +465,20 @@ extension PlayerPage.Item {
         failure: nil,
         sleepMinutes: nil
     )
+
+    func withQueue(_ queue: [ListeningQueueEntry]?) -> Self {
+        var item = self
+        item.queue = queue
+        return item
+    }
+}
+
+#Preview("Queue") {
+    PlayerPage(item: .preview.withQueue(ListeningQueueEntry.previews), isQueueOpen: true) { _ in }
+}
+
+#Preview("Queue empty") {
+    PlayerPage(item: .preview.withQueue([]), isQueueOpen: true) { _ in }
 }
 
 #Preview("Playing") {

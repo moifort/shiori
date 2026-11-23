@@ -6,9 +6,11 @@ struct PlayerScreen: View {
     @Environment(\.dismiss) private var dismiss
     /// The book of the title playing, once the player has closed.
     let onOpenBook: (String) -> Void
+    /// What follows the title playing, asked again whenever it changes.
+    @State private var queue: [ListeningQueueEntry]?
 
     var body: some View {
-        if let item = PlayerPage.Item(player: player) {
+        if let item = PlayerPage.Item(player: player, queue: queue) {
             PlayerPage(item: item) { action in
                 switch action {
                 case .togglePlay: player.togglePlayPause()
@@ -21,6 +23,18 @@ struct PlayerScreen: View {
                     guard let bookID = player.title?.bookID else { return }
                     dismiss()
                     onOpenBook(bookID)
+                case let .play(title): player.play(title)
+                }
+            }
+            .task(id: player.title?.asin) {
+                queue = nil
+                do {
+                    queue = try await player.upNext()
+                } catch is CancellationError {
+                } catch {
+                    // The queue is a convenience: it stays empty rather than
+                    // getting in the way of what plays.
+                    queue = []
                 }
             }
         } else {
@@ -49,7 +63,7 @@ struct PlayerAccessoryScreen: View {
 }
 
 extension PlayerPage.Item {
-    @MainActor init?(player: AudiblePlayer) {
+    @MainActor init?(player: AudiblePlayer, queue: [ListeningQueueEntry]? = nil) {
         guard let title = player.title else { return nil }
         let failure: String? = if case let .failed(message) = player.phase { message } else { nil }
         self.init(
@@ -61,7 +75,8 @@ extension PlayerPage.Item {
             isLoading: player.phase == .loading,
             failure: failure,
             sleepMinutes: player.sleepTimer?.minutes,
-            hasBook: title.bookID != nil
+            hasBook: title.bookID != nil,
+            queue: queue
         )
     }
 }

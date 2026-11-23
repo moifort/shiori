@@ -9045,6 +9045,22 @@
         }
       }
     },
+    "Les livres audio en cours et à lire s'enchaîneront ici, une fois ce livre fini." : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les livres audio en cours et à lire s'enchaîneront ici, une fois ce livre fini."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The audiobooks under way and on your pile will follow here once this one ends."
+          }
+        }
+      }
+    },
     "Les livres de ce rayon s'afficheront ici." : {
       "localizations" : {
         "en" : {
@@ -12917,6 +12933,22 @@
         }
       }
     },
+    "Replier la file" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Replier la file"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fold the queue"
+          }
+        }
+      }
+    },
     "Reprendre" : {
       "localizations" : {
         "en" : {
@@ -13217,6 +13249,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Rien ici pour l'instant"
+          }
+        }
+      }
+    },
+    "Rien à suivre" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rien à suivre"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing up next"
           }
         }
       }
@@ -15749,22 +15797,6 @@
         }
       }
     },
-    "Téléchargement" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Downloading"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Téléchargement"
-          }
-        }
-      }
-    },
     "Téléchargé" : {
       "localizations" : {
         "en" : {
@@ -17797,6 +17829,22 @@
         }
       }
     },
+    "À suivre" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "À suivre"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Up Next"
+          }
+        }
+      }
+    },
     "À venir" : {
       "localizations" : {
         "en" : {
@@ -17889,6 +17937,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Écouter"
+          }
+        }
+      }
+    },
+    "Écouter %@" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Écouter %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Listen to %@"
           }
         }
       }

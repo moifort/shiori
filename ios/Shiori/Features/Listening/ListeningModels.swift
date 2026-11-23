@@ -61,3 +61,20 @@ extension ListeningTitle {
         )
     }
 }
+
+/// One audiobook of the player's queue: what follows once the title playing
+/// ends, and how far into it the reader already is.
+struct ListeningQueueEntry: Hashable, Sendable, Identifiable {
+    let title: ListeningTitle
+    /// Whole percent heard, on a recording under way; nil on the pile.
+    let heard: Int?
+
+    var id: String { title.asin }
+}
+
+extension ListeningQueueEntry {
+    init?(book: Book) {
+        guard let title = ListeningTitle(book: book) else { return nil }
+        self.init(title: title, heard: book.status == .reading ? book.listeningProgress : nil)
+    }
+}

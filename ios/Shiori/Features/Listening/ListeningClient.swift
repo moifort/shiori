@@ -7,10 +7,11 @@ struct ListeningClient: Sendable {
     /// A content key the iPhone may keep.
     var contentKey: @Sendable (_ asin: String, _ spc: Data) async throws -> Data
     var savePosition: @Sendable (_ asin: String, _ contentReference: String, _ position: TimeInterval) async throws -> Void
-    /// The audiobook to play once this one ends: the Audible title the reader
-    /// started most recently among those under way, this one aside; with none
-    /// under way, the one shelved most recently on the pile.
-    var nextInProgress: @Sendable (_ after: String) async throws -> ListeningTitle?
+    /// The audiobooks to play once this one ends, in order: the Audible titles
+    /// under way, the last one started first, then the pile, the last one
+    /// shelved first, this one aside. The player plays the first; the queue
+    /// shows them all, so what it lists is what follows.
+    var queue: @Sendable (_ after: String) async throws -> [ListeningQueueEntry]
 }
 
 extension ListeningClient {
@@ -18,13 +19,14 @@ extension ListeningClient {
         start: { try await ListeningAPI.start(asin: $0, offline: true) },
         contentKey: { try await ListeningAPI.contentKey(asin: $0, request: $1, offline: true) },
         savePosition: { try await ListeningAPI.savePosition(asin: $0, contentReference: $1, at: $2) },
-        nextInProgress: { asin in
+        queue: { asin in
             // The home's "En cours", the last one started first, then its pile,
             // the last one shelved first.
             let dashboard = try await HomeAPI.dashboard()
+            var seen: Set<String> = [asin]
             return (dashboard.reading + dashboard.toRead)
-                .compactMap(ListeningTitle.init(book:))
-                .first { $0.asin != asin }
+                .compactMap(ListeningQueueEntry.init(book:))
+                .filter { seen.insert($0.id).inserted }
         }
     )
 
@@ -34,6 +36,6 @@ extension ListeningClient {
         start: { _ in .preview },
         contentKey: { _, _ in Data() },
         savePosition: { _, _, _ in },
-        nextInProgress: { _ in nil }
+        queue: { _ in ListeningQueueEntry.previews }
     )
 }
