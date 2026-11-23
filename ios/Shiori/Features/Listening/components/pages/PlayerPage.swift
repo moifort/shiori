@@ -106,11 +106,18 @@ struct PlayerPage: View {
                     .allowsHitTesting(progress >= 0.5)
                     .accessibilityHidden(progress < 0.5)
                     .gesture(queueDrag(travel: travel))
-                queueList
-                    .opacity(Double(progress))
-                    .allowsHitTesting(progress == 1)
-                    .accessibilityHidden(progress < 1)
-                    .simultaneousGesture(listPullDown(travel: travel))
+                // Only there once pulled: a scroll view in the sheet, even
+                // hidden, takes over the sheet's own pull-down, and the player
+                // no longer closes onto its pill.
+                if progress > 0 {
+                    queueList
+                        .opacity(Double(progress))
+                        .allowsHitTesting(progress == 1)
+                        .accessibilityHidden(progress < 1)
+                        .simultaneousGesture(listPullDown(travel: travel))
+                } else {
+                    Color.clear
+                }
             }
             .padding(.horizontal, 32)
             .frame(width: proxy.size.width)
