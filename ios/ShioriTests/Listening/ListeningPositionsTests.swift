@@ -45,3 +45,33 @@ struct ListeningPositionsTests {
         #expect(ListeningPositions.resume(audible: 100, savedAt: nil, local: nil) == 100)
     }
 }
+
+@Suite("The title listened to last")
+struct LastListenedTitleTests {
+    private func store() -> LastListenedTitle {
+        LastListenedTitle(defaults: UserDefaults(suiteName: "last-title-\(UUID().uuidString)")!)
+    }
+
+    @Test("the title kept is found again, cover and book included")
+    func keptAndFound() {
+        let last = store()
+        #expect(last.value == nil)
+        let title = ListeningTitle(
+            asin: "B077PLB5KD",
+            title: "Endymion",
+            subtitle: "Les Cantos d'Hypérion · Tome 3",
+            coverURL: URL(string: "https://example.com/cover.jpg"),
+            bookID: "book-1"
+        )
+        last.value = title
+        #expect(last.value == title)
+    }
+
+    @Test("stopping forgets it")
+    func forgotten() {
+        let last = store()
+        last.value = ListeningTitle(asin: "B1", title: "Seul sur Mars", subtitle: nil, coverURL: nil)
+        last.value = nil
+        #expect(last.value == nil)
+    }
+}

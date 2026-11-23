@@ -72,7 +72,7 @@ struct ContentView: View {
     @State private var backgroundedAt: Date?
     /// The Audible player, in a build that carries it (`AudiblePlayerGate`):
     /// one for the whole app, so the title plays on whatever tab is open.
-    @State private var player: AudiblePlayer? = AudiblePlayerGate.isOpen ? AudiblePlayer() : nil
+    @State private var player: AudiblePlayer? = AudiblePlayerGate.isOpen ? AudiblePlayer(restoresLastTitle: true) : nil
     @State private var showPlayer = false
     /// The book the player's three dots asked for, pushed on the tab in front
     /// once the player has closed.

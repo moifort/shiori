@@ -88,14 +88,39 @@ final class AudiblePlayer {
     private var hasRetried = false
     private var artwork: MPMediaItemArtwork?
 
-    init(client: ListeningClient = .live, downloads: AudibleDownloads? = nil) {
+    /// The title listened to last, kept on the iPhone so a relaunch finds it.
+    private let lastTitle: LastListenedTitle
+
+    /// With `restoresLastTitle`, the title listened to last comes back paused
+    /// where it stopped, its pill over the tab bar, as if the app had never
+    /// closed: a touch on play takes it up.
+    init(
+        client: ListeningClient = .live,
+        downloads: AudibleDownloads? = nil,
+        restoresLastTitle: Bool = false,
+        defaults: UserDefaults = .standard
+    ) {
         self.client = client
         self.downloads = downloads ?? AudibleDownloads()
+        lastTitle = LastListenedTitle(defaults: defaults)
         player.automaticallyWaitsToMinimizeStalling = true
         observeNetwork()
         observePlayer()
         observeApp()
         configureRemoteCommands()
+        if restoresLastTitle, let title = lastTitle.value {
+            prepare(title)
+        }
+    }
+
+    /// The title back, paused where it stopped: its licence is asked as for a
+    /// play, but nothing starts until the reader asks.
+    private func prepare(_ title: ListeningTitle) {
+        self.title = title
+        phase = .loading
+        resumesOnReconnect = false
+        loadArtwork(for: title)
+        start(at: nil)
     }
 
     // MARK: - Commands
@@ -111,6 +136,7 @@ final class AudiblePlayer {
         saveNow()
         teardownStream()
         self.title = title
+        lastTitle.value = title
         phase = .loading
         elapsed = 0
         duration = 0
@@ -273,6 +299,7 @@ final class AudiblePlayer {
         player.volume = 1
         teardownStream()
         title = nil
+        lastTitle.value = nil
         playback = nil
         isPlaying = false
         MPNowPlayingInfoCenter.default().nowPlayingInfo = nil

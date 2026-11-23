@@ -68,3 +68,27 @@ struct ListeningPositions {
         defaults.set(try? JSONEncoder().encode(entries), forKey: Self.key)
     }
 }
+
+/// The title listened to last, kept on the iPhone so the player finds it again
+/// after the app is closed. Gone once the reader stops listening.
+struct LastListenedTitle {
+    private let defaults: UserDefaults
+    private static let key = "audible.lastTitle"
+
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+    }
+
+    var value: ListeningTitle? {
+        get {
+            defaults.data(forKey: Self.key).flatMap { try? JSONDecoder().decode(ListeningTitle.self, from: $0) }
+        }
+        nonmutating set {
+            if let newValue {
+                defaults.set(try? JSONEncoder().encode(newValue), forKey: Self.key)
+            } else {
+                defaults.removeObject(forKey: Self.key)
+            }
+        }
+    }
+}

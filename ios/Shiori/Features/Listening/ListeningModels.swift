@@ -31,7 +31,7 @@ struct Playback: Sendable {
 
 /// The title being listened to, as the player draws it: what the list it was
 /// started from already knew, so the accessory shows it before the licence is in.
-struct ListeningTitle: Hashable, Sendable, Identifiable {
+struct ListeningTitle: Hashable, Sendable, Identifiable, Codable {
     let asin: String
     let title: String
     /// The series and the volume, "Les Cantos d'Hypérion · Tome 3", or the author.
