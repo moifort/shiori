@@ -78,7 +78,9 @@ struct ContentView: View {
     /// once the player has closed.
     @State private var pendingPlayerBook: String?
     @State private var playerBookRoute = PlayerBookRoute()
-    @Namespace private var playerTransition
+    /// Where the pill sits over the tab bar, in the window: the player grows
+    /// out of it and goes back into it.
+    @State private var playerPillFrame: CGRect = .zero
 
     /// The trailing "Scanner" entry must stay detached from the content tabs.
     /// iOS 26 separates the `.search` role; iOS 27 folded `.search` back into the
@@ -304,22 +306,41 @@ struct ContentView: View {
         // tab and the scan button when the bar folds away, as in Music.
         .modifier(PlayerAccessorySlot(player: player) {
             PlayerAccessoryScreen(onOpen: { showPlayer = true })
-                .matchedTransitionSource(id: "player", in: playerTransition)
+                // Under the player while it is open, so the sheet lands on
+                // it when it shrinks back.
+                .opacity(showPlayer ? 0 : 1)
+                .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: {
+                    playerPillFrame = $0
+                }
         })
-        .sheet(isPresented: $showPlayer, onDismiss: {
-            if let bookID = pendingPlayerBook {
-                playerBookRoute.open(bookID, on: selectedTab)
-            }
-            pendingPlayerBook = nil
-        }) {
-            PlayerScreen(onOpenBook: { pendingPlayerBook = $0 })
-                .presentationDragIndicator(.visible)
-                .navigationTransition(.zoom(sourceID: "player", in: playerTransition))
+        // Not a system sheet: pulled down, the player follows the thumb whole,
+        // then goes back into its pill, as in Music.
+        .overlay {
+            if showPlayer, let player {
+                PlayerSheet(pillFrame: playerPillFrame, onClosed: closePlayer) {
+                    PlayerScreen(onOpenBook: { pendingPlayerBook = $0 })
+                } backdrop: {
+                    PlayerBackdrop(coverURL: player.title?.coverURL)
+                } pill: {
+                    PlayerAccessoryScreen(onOpen: {})
+                        .glassEffect(.regular, in: .capsule)
+                }
                 .environment(player)
+            }
         }
         .environment(\.playerBookRoute, playerBookRoute)
         // A book page starts a title from here.
         .environment(player)
+    }
+
+    /// The player gone back into its pill: the book its three dots asked for
+    /// opens on the tab in front.
+    private func closePlayer() {
+        showPlayer = false
+        if let bookID = pendingPlayerBook {
+            playerBookRoute.open(bookID, on: selectedTab)
+        }
+        pendingPlayerBook = nil
     }
 
     /// A book awaited from a scan's review: the wishlist, where its edition

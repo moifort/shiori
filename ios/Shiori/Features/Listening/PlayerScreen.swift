@@ -3,7 +3,7 @@ import SwiftUI
 /// The full-screen player, on the app's one `AudiblePlayer`.
 struct PlayerScreen: View {
     @Environment(AudiblePlayer.self) private var player
-    @Environment(\.dismiss) private var dismiss
+    @Environment(\.closePlayer) private var closePlayer
     /// The book of the title playing, once the player has closed.
     let onOpenBook: (String) -> Void
     /// What follows the title playing, asked again whenever it changes.
@@ -21,8 +21,8 @@ struct PlayerScreen: View {
                 case let .sleep(minutes): player.toggleSleepTimer(minutes: minutes)
                 case .openBook:
                     guard let bookID = player.title?.bookID else { return }
-                    dismiss()
                     onOpenBook(bookID)
+                    closePlayer?()
                 case let .play(title): player.play(title)
                 }
             }
@@ -39,7 +39,7 @@ struct PlayerScreen: View {
             }
         } else {
             // Stopped from the lock screen while open: nothing left to show.
-            Color.black.ignoresSafeArea().task { dismiss() }
+            Color.black.ignoresSafeArea().task { closePlayer?() }
         }
     }
 }

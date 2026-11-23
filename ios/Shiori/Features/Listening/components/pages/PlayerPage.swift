@@ -181,18 +181,8 @@ struct PlayerPage: View {
     // MARK: - Parts
 
     private var backdrop: some View {
-        Color.black
-            .overlay {
-                if let url = item.coverURL {
-                    CoverEffectImage(url: url, effect: .backdrop) { Color.clear }
-                        .scaleEffect(1.6)
-                        .brightness(-0.1)
-                }
-            }
-            .clipped()
+        PlayerBackdrop(coverURL: item.coverURL)
             .ignoresSafeArea()
-            .allowsHitTesting(false)
-            .accessibilityHidden(true)
     }
 
     private var heading: some View {
@@ -514,6 +504,26 @@ struct PlayerPage: View {
                 .accessibilityAddTraits(isOn ? .isSelected : [])
             }
         }
+    }
+}
+
+/// The player's ground: its cover, blown up and blurred, over black. The
+/// sheet draws it too, so the colours stay while it shrinks into its pill.
+struct PlayerBackdrop: View {
+    let coverURL: URL?
+
+    var body: some View {
+        Color.black
+            .overlay {
+                if let coverURL {
+                    CoverEffectImage(url: coverURL, effect: .backdrop) { Color.clear }
+                        .scaleEffect(1.6)
+                        .brightness(-0.1)
+                }
+            }
+            .clipped()
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
     }
 }
 
