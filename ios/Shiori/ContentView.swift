@@ -317,7 +317,7 @@ struct ContentView: View {
         // then goes back into its pill, as in Music.
         .overlay {
             if showPlayer, let player {
-                PlayerSheet(pillFrame: playerPillFrame, onClosed: closePlayer) {
+                PlayerSheet(pillFrame: playerPillFrame, coverURL: player.title?.coverURL, onClosed: closePlayer) {
                     PlayerScreen(onOpenBook: { pendingPlayerBook = $0 })
                 } backdrop: {
                     PlayerBackdrop(coverURL: player.title?.coverURL)

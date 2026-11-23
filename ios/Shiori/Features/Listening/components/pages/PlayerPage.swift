@@ -76,6 +76,12 @@ struct PlayerPage: View {
             QueueRevealLayout(progress: progress) {
                 PlayerArtwork(url: item.coverURL, size: full, cornerRadius: mix(12, 8, progress) / scale)
                     .shadow(color: .black.opacity(0.45), radius: mix(25, 10, progress) / scale, y: mix(22, 8, progress) / scale)
+                    // Where it shows, for the sheet to fly it into the pill.
+                    .background {
+                        GeometryReader { cover in
+                            Color.clear.preference(key: PlayerArtworkFrameKey.self, value: cover.frame(in: .global))
+                        }
+                    }
                     .scaleEffect(scale, anchor: .topLeading)
                 heading
                     .opacity(ramp(progress, from: 0.3, to: 0))
