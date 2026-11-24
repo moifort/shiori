@@ -15,16 +15,26 @@ import androidx.compose.ui.unit.dp
 import com.polyforms.shiori.shared.SystemTint
 
 /**
- * Liquid Glass and the materials, as near as Compose draws them: a translucent fill with a fine
- * rim. iOS blurs what lies behind; Android has no backdrop blur, so the fill is denser.
+ * Liquid Glass and the materials, as near as Compose draws them: what lies behind, blurred, under
+ * a light veil and a fine rim, as iOS draws it ("blur, never darken"). The blur needs a
+ * [LocalBackdrop] (a floating bar over its page, Android 12+); without one the veil is denser,
+ * since nothing blurs what shows through.
  */
 @Composable
 fun Modifier.glass(shape: Shape = CircleShape, tint: Color? = null, interactive: Boolean = true): Modifier {
     val colors = Shiori.colors
+    val backdrop = LocalBackdrop.current
+    val blurs = backdrop != null && tint == null
     val fill = tint?.copy(alpha = 0.92f)
-        ?: if (colors.isDark) Color(0xCC2C2C2E) else Color(0xE6FFFFFF)
+        ?: when {
+            blurs && colors.isDark -> Color(0x802C2C2E)
+            blurs -> Color(0xA6FFFFFF)
+            colors.isDark -> Color(0xCC2C2C2E)
+            else -> Color(0xE6FFFFFF)
+        }
     val rim = if (colors.isDark) Color.White.copy(alpha = 0.12f) else Color.Black.copy(alpha = 0.06f)
-    return this.background(fill, shape).border(0.5.dp, rim, shape)
+    val ground = if (blurs) this.backdropBlur(backdrop!!, shape) else this
+    return ground.background(fill, shape).border(0.5.dp, rim, shape)
 }
 
 /** `.ultraThinMaterial` in the dark scheme, over a cover: a dark veil. */

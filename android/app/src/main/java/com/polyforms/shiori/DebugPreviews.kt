@@ -1,5 +1,6 @@
 package com.polyforms.shiori
 
+import com.polyforms.shiori.shared.components.styles.backdropSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.foundation.lazy.items
 
@@ -397,14 +398,18 @@ private fun TabBarPreview() {
     val tabs = listOf(TabSelection.HOME, TabSelection.LIBRARY, TabSelection.NEWS, TabSelection.FRIENDS)
     var selected by remember { androidx.compose.runtime.mutableStateOf(TabSelection.LIBRARY) }
     val colors = com.polyforms.shiori.shared.components.styles.Shiori.colors
+    val backdrop = com.polyforms.shiori.shared.components.styles.rememberBackdrop()
     androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize().background(colors.groupedBackground).nestedScroll(fold.connection)) {
-        androidx.compose.foundation.lazy.LazyColumn(androidx.compose.ui.Modifier.fillMaxSize().statusBarsPadding()) {
+        androidx.compose.foundation.lazy.LazyColumn(
+            androidx.compose.ui.Modifier.fillMaxSize().backdropSource(backdrop).background(colors.groupedBackground).statusBarsPadding(),
+        ) {
             items(DebugFixtures.reading.size * 6) { index ->
                 val book = DebugFixtures.reading[index % DebugFixtures.reading.size]
                 com.polyforms.shiori.shared.components.organisms.BookRow(book)
             }
         }
         androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.align(androidx.compose.ui.Alignment.BottomCenter)) {
+          androidx.compose.runtime.CompositionLocalProvider(com.polyforms.shiori.shared.components.styles.LocalBackdrop provides backdrop) {
             com.polyforms.shiori.shared.platform.FloatingTabBar(
                 tabs = tabs.map { com.polyforms.shiori.shared.platform.TabItem(it, it.label, it.symbol) },
                 selected = selected,
@@ -413,6 +418,7 @@ private fun TabBarPreview() {
                 minimized = fold.isMinimized,
                 onExpand = { fold.isMinimized = false },
             )
+          }
         }
     }
 }

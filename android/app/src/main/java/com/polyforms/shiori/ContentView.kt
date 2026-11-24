@@ -12,6 +12,7 @@ import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.polyforms.shiori.shared.components.styles.backdropSource
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.Lifecycle
@@ -145,7 +146,10 @@ fun ContentView(router: AppRouter = remember { AppRouter() }) {
         }
     }
     val contentTabs = listOf(TabSelection.HOME, TabSelection.LIBRARY, TabSelection.NEWS, TabSelection.FRIENDS)
+    val backdrop = com.polyforms.shiori.shared.components.styles.rememberBackdrop()
     Box(Modifier.fillMaxSize().nestedScroll(fold.connection)) {
+        // The tabs' pages, recorded so the floating bar blurs what scrolls under it.
+        Box(Modifier.fillMaxSize().backdropSource(backdrop)) {
         contentTabs.forEach { tab ->
             val visible = router.selectedTab == tab
             Box(Modifier.fillMaxSize().graphicsLayer { alpha = if (visible) 1f else 0f }.zIndex(if (visible) 1f else 0f)) {
@@ -167,9 +171,11 @@ fun ContentView(router: AppRouter = remember { AppRouter() }) {
                 }
             }
         }
+        }
         // The bar shows on a tab's root only, as iOS hides it under a pushed page.
         if (navigators.getValue(router.selectedTab).depth == 0) {
             Box(Modifier.align(Alignment.BottomCenter).zIndex(2f)) {
+                CompositionLocalProvider(com.polyforms.shiori.shared.components.styles.LocalBackdrop provides backdrop) {
                 FloatingTabBar(
                     tabs = contentTabs.map { TabItem(it, it.label, it.symbol) },
                     selected = router.selectedTab,
@@ -182,6 +188,7 @@ fun ContentView(router: AppRouter = remember { AppRouter() }) {
                     onExpand = { fold.isMinimized = false },
                     accessory = playerAccessory(),
                 )
+                }
             }
         }
     }

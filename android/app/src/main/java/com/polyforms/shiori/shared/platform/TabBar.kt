@@ -1,7 +1,6 @@
 package com.polyforms.shiori.shared.platform
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.animateContentSize
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
@@ -64,7 +63,7 @@ fun <T> FloatingTabBar(
             Box(Modifier.fillMaxWidth().padding(bottom = 8.dp)) { accessory() }
         }
         Row(
-            Modifier.fillMaxWidth().animateContentSize(),
+            Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
