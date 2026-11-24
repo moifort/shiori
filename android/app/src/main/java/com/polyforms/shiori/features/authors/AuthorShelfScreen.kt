@@ -4,6 +4,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.polyforms.shiori.features.news.NewsApi
+import com.polyforms.shiori.features.news.UpcomingReleaseScreen
 import com.polyforms.shiori.features.news.UpcomingRelease
 import com.polyforms.shiori.shared.SnapshotCache
 import kotlinx.coroutines.Dispatchers
@@ -89,7 +90,9 @@ fun AuthorShelfScreen(
             viewModel.hasMore,
             viewModel.loadMoreFailed,
             releases = releases,
-            onOpenRelease = { release -> releaseDestination(release)?.let(::open) },
+            // Opens what the release opens in Actualités: the announced volume, the awaited
+            // edition, the author's page.
+            onOpenRelease = { release -> navigator.push { UpcomingReleaseScreen(release) } },
             allTitle = L("Tous les auteurs"),
         ) { action ->
             when (action) {
@@ -106,18 +109,3 @@ fun AuthorShelfScreen(
     }
 }
 
-/**
- * Where a release of "Prochaines sorties" leads without a lookup: an author's release on its author,
- * a recording on its narrator ("narrator~<narrator key>~<title>"), a saga's volume on its author
- * when the release names one.
- */
-fun releaseDestination(release: UpcomingRelease): LibraryDestination? {
-    if (release.source == com.polyforms.shiori.features.news.ReleaseSource.NARRATOR) {
-        val parts = release.id.split("~")
-        val name = release.narrator
-        if (parts.size >= 2 && name != null) {
-            return LibraryDestination.Narrator(com.polyforms.shiori.features.narrators.NarratorDestination(parts[1], name))
-        }
-    }
-    return release.author?.let { LibraryDestination.Author(AuthorDestination(it.key, it.name)) }
-}

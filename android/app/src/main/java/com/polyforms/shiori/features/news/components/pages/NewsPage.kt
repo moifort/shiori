@@ -1,5 +1,6 @@
 package com.polyforms.shiori.features.news.components.pages
 
+import com.polyforms.shiori.features.authors.AuthorListOrder
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -239,10 +240,10 @@ private fun Shelves(agenda: NewsAgenda, wished: NewsWishes, act: (NewsAction) ->
     if (agenda.prizes.isNotEmpty()) Box(gap) { NewsPrizesSlider(agenda.prizes, wished, act) }
     if (shelves.series.isNotEmpty()) Box(gap) { NewsSeriesRail(shelves.series, act) }
     if (shelves.authors.isNotEmpty()) {
-        Box(gap) { NewsShelf(L("Auteurs préférés"), shelves.authors, { act(NewsAction.OpenLibrary(LibraryDestination.Authors)) }, wished, act) }
+        Box(gap) { NewsShelf(L("Auteurs préférés"), shelves.authors, { act(NewsAction.OpenLibrary(LibraryDestination.Authors(AuthorListOrder.LOVED))) }, wished, act) }
     }
     if (shelves.narrators.isNotEmpty()) {
-        Box(gap) { NewsShelf(L("Narrateurs préférés"), shelves.narrators, { act(NewsAction.OpenLibrary(LibraryDestination.Narrators)) }, wished, act) }
+        Box(gap) { NewsShelf(L("Narrateurs préférés"), shelves.narrators, { act(NewsAction.OpenLibrary(LibraryDestination.Narrators(AuthorListOrder.LOVED))) }, wished, act) }
     }
     if (shelves.wishes.isNotEmpty()) {
         Box(gap) {

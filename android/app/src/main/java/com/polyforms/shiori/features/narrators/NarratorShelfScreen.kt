@@ -13,7 +13,7 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.builtins.ListSerializer
 import com.polyforms.shiori.features.authors.AuthorListOrder
 import com.polyforms.shiori.features.authors.FavoriteAuthorReleases
-import com.polyforms.shiori.features.authors.releaseDestination
+import com.polyforms.shiori.features.news.UpcomingReleaseDestination
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -87,7 +87,14 @@ fun NarratorShelfScreen(
             viewModel.hasMore,
             viewModel.loadMoreFailed,
             releases = releases,
-            onOpenRelease = { release -> releaseDestination(release)?.let(::open) },
+            // Opens what the release opens in Actualités: a recording on its narrator.
+            onOpenRelease = { release ->
+                when (val found = UpcomingReleaseDestination.immediate(release)) {
+                    is UpcomingReleaseDestination.Narrator -> open(LibraryDestination.Narrator(found.narrator))
+                    is UpcomingReleaseDestination.Author -> open(LibraryDestination.Author(found.author))
+                    else -> Unit
+                }
+            },
             allTitle = L("Tous les narrateurs"),
         ) { action ->
             when (action) {
