@@ -1,5 +1,6 @@
 package com.polyforms.shiori.features.library
 
+import com.polyforms.shiori.features.wishlist.WishScreen
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -62,12 +63,11 @@ fun PileScreen(view: ShelvesView = ShelvesView(), client: LibraryClient = Librar
                 PileAction.OpenWishlist -> open(LibraryDestination.Wishlist)
                 is PileAction.DropWished -> viewModel.dropWished(action.book)
                 is PileAction.OpenWished -> {
+                    val wish = viewModel.wishlist.wish(action.book)
                     val edition = viewModel.wishlist.edition(action.book)
-                    // The wish's own page comes with the books-not-held port; until then, the list.
-                    if (edition != null) {
-                        navigator.push { AwaitedEditionScreen(edition, onStop = { navigator.pop() }) }
-                    } else {
-                        open(LibraryDestination.Wishlist)
+                    when {
+                        wish != null -> navigator.push { WishScreen(wish) }
+                        edition != null -> navigator.push { AwaitedEditionScreen(edition) }
                     }
                 }
                 PileAction.Refresh -> {
