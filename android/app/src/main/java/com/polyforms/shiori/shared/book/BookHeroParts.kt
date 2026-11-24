@@ -1,5 +1,8 @@
 package com.polyforms.shiori.shared.book
 
+import com.polyforms.shiori.shared.components.styles.saturation
+import com.polyforms.shiori.shared.components.atoms.OutlinedTag
+
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -230,17 +233,26 @@ fun PosterCover(
     progress: Int? = null,
     rating: Double? = null,
     isGreyed: Boolean = false,
+    /** An outlined word drawn in the corner in place of "Audio": a release's date. */
+    cornerTag: String? = null,
+    /** The corners' radius: square inside a card whose own corners round it. */
+    corner: Dp = 8.dp,
+    /** Stretched to a card's whole height rather than its 2:3 shape; null keeps the poster's. */
+    height: Dp? = null,
 ) {
-    val shape = RoundedCornerShape(8.dp)
-    val grey = remember { ColorMatrix().apply { setToSaturation(0f) } }
-    Box(modifier.size(width, width * 1.5f).clip(shape)) {
-        Box(Modifier.fillMaxSize().then(if (isGreyed) Modifier.graphicsLayer { } else Modifier)) {
-            BookCover(book, width, showsFormatBadge = false, cornerRadius = 8.dp, showsPlaceholderAuthor = false)
+    val shape = RoundedCornerShape(corner)
+    val drawnHeight = maxOf(width * 1.5f, height ?: 0.dp)
+    // A line, stars or a bar sits in the foot; nothing to say there, no blur either.
+    val hasFoot = caption.isNotEmpty() || rating != null || progress != null
+    Box(modifier.size(width, drawnHeight).clip(shape)) {
+        Box(Modifier.fillMaxSize().saturation(if (isGreyed) 0f else 1f)) {
+            BookCover(book, width, showsFormatBadge = false, cornerRadius = corner, showsPlaceholderAuthor = false)
         }
-        if (isGreyed) Box(Modifier.fillMaxSize().background(Color.Gray.copy(alpha = 0.35f)))
         Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = dimming.toFloat())))
         val url = book.coverURL
-        if (url != null) {
+        if (!hasFoot) {
+            Unit
+        } else if (url != null) {
             CoverEffectImage(
                 url,
                 CoverEffect.Melt(blur = 20, fadeStart = 0.4, fadeEnd = 0.92, dimming = dimming),
@@ -253,7 +265,11 @@ fun PosterCover(
                 ),
             )
         }
-        if (showsEditionTags) Box(Modifier.align(Alignment.TopEnd).padding(6.dp)) { CoverTags(book) }
+        if (cornerTag != null) {
+            Box(Modifier.align(Alignment.TopEnd).padding(6.dp)) { OutlinedTag(cornerTag) }
+        } else if (showsEditionTags) {
+            Box(Modifier.align(Alignment.TopEnd).padding(6.dp)) { CoverTags(book) }
+        }
         if (marksReading) {
             Box(Modifier.align(Alignment.TopStart).padding(start = if (width < 110.dp) 10.dp else 12.dp)) {
                 BookmarkRibbon(if (width < 110.dp) 12.dp else 14.dp)
@@ -292,12 +308,21 @@ fun PosterCover(
                 )
             }
         }
-        Box(Modifier.fillMaxSize().border(1.dp, Color.White.copy(alpha = 0.22f), shape))
+        // The thin light rim inside the edge; none for a cover set edge to edge in a card.
+        if (corner > 0.dp) Box(Modifier.fillMaxSize().border(1.dp, Color.White.copy(alpha = 0.22f), shape))
     }
 }
 
 @Composable
-fun PosterCover(book: Book, label: PosterLabel, modifier: Modifier = Modifier, width: Dp = 102.dp, showsEditionTags: Boolean = true) =
+fun PosterCover(
+    book: Book,
+    label: PosterLabel,
+    modifier: Modifier = Modifier,
+    width: Dp = 102.dp,
+    showsEditionTags: Boolean = true,
+    corner: Dp = 8.dp,
+    height: Dp? = null,
+) =
     PosterCover(
         book,
         label.caption,
@@ -309,4 +334,7 @@ fun PosterCover(book: Book, label: PosterLabel, modifier: Modifier = Modifier, w
         progress = label.progress,
         rating = label.rating,
         isGreyed = label.isGreyed,
+        cornerTag = label.cornerTag,
+        corner = corner,
+        height = height,
     )

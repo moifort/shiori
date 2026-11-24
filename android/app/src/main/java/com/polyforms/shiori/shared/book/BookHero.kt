@@ -1,5 +1,19 @@
 package com.polyforms.shiori.shared.book
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.runtime.getValue
+import com.polyforms.shiori.shared.BookFormat
+import com.polyforms.shiori.shared.components.atoms.HeroStatus
+import com.polyforms.shiori.shared.components.atoms.StatusPill
+import com.polyforms.shiori.shared.components.atoms.coverTagsAreEmpty
+import com.polyforms.shiori.shared.components.atoms.setAsideAnimation
+import com.polyforms.shiori.shared.components.styles.saturation
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -48,6 +62,9 @@ fun BookHero(
     book: Book,
     modifier: Modifier = Modifier,
     state: BookState? = null,
+    /** Where the edition stands, as a word in an outlined tag on the detail line: "Pas annoncé". */
+    stateTag: String? = null,
+    /** The reader awaits an edition of it: "Guetté" joins the tags. */
     isAwaited: Boolean = false,
     showsLength: Boolean = true,
     onOpenAuthor: ((PersonDestination) -> Unit)? = null,
@@ -57,14 +74,23 @@ fun BookHero(
     countdown: String? = null,
     onOpenProgress: (() -> Unit)? = null,
     overTitle: (@Composable () -> Unit)? = null,
+    /** What the reader decided of it, in words under the detail line: "Pas intéressé". */
+    status: HeroStatus? = null,
+    /** Turned down by the reader: the cover and its colours turn black and white. */
+    isSetAside: Boolean = false,
+    /** An Audible title kept on the phone: "Téléchargé" joins the tags. */
+    isDownloaded: Boolean = false,
+    /** Whose book it is, when it is a friend's: their name on a pill level with the cover's top. */
+    owner: (@Composable () -> Unit)? = null,
     actions: @Composable () -> Unit = {},
 ) {
+    val saturation by animateFloatAsState(if (isSetAside) 0f else 1f, setAsideAnimation(), label = "setAside")
     val dark = Shiori.colors.isDark
     Box(modifier.fillMaxWidth()) {
         // The wash reaches up under the status bar and down past the hero, into the page.
         CoverBackdrop(
             book.coverURL,
-            Modifier.matchParentSize().layout { measurable, constraints ->
+            Modifier.matchParentSize().saturation(saturation).layout { measurable, constraints ->
                 val extraTop = 400.dp.roundToPx()
                 val extraBottom = 170.dp.roundToPx()
                 val placeable = measurable.measure(constraints.copy(minHeight = constraints.maxHeight + extraTop + extraBottom, maxHeight = constraints.maxHeight + extraTop + extraBottom))
@@ -79,12 +105,19 @@ fun BookHero(
             verticalArrangement = Arrangement.spacedBy(18.dp),
         ) {
             Box(Modifier.fillMaxWidth()) {
-                Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.Bottom) {
-                    Box(Modifier.shadow(16.dp, ambientColor = Color.Black.copy(alpha = 0.45f))) {
+                Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.Bottom) {
+                    Box(Modifier.shadow(16.dp, ambientColor = Color.Black.copy(alpha = 0.45f)).saturation(saturation)) {
+                        // No format badge: the outlined tags over the saga say it.
                         BookCover(book, coverWidth, showsFormatBadge = false)
                     }
-                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                    Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(3.dp, Alignment.Bottom)) {
+                        if (owner != null) {
+                            // Level with the cover's top while the text leaves room.
+                            owner()
+                            Spacer(Modifier.weight(1f).heightIn(min = 10.dp))
+                        }
                         if (overTitle != null) Box(Modifier.padding(bottom = 6.dp)) { overTitle() }
+                        HeroTags(book, isDownloaded, isAwaited, Modifier.padding(end = if (releaseDate != null) 58.dp else 0.dp, bottom = 3.dp))
                         book.series?.let { series ->
                             Text(
                                 listOfNotNull(series.name, series.volume?.let { "· ${L("Tome %lld", it)}" }).joinToString(" "),
@@ -119,22 +152,39 @@ fun BookHero(
                                 if (details.isNotEmpty()) {
                                     Text(details, style = Shiori.type.caption, color = Color.White.copy(alpha = 0.75f), maxLines = 2)
                                 }
-                                CoverTags(book, isFrosted = false)
+                                if (stateTag != null) OutlinedTag(stateTag, isFrosted = false)
                                 if (countdown != null) OutlinedTag(countdown, isFrosted = false)
                             }
                             book.unfinishedListeningProgress?.let { ListeningProgressLine(it, book.durationMinutes) }
                             ReadingPageLine(book.unfinishedReadingPage, book.pageCount, onOpenProgress)
                         }
+                        if (status != null) StatusPill(status.text, status.symbol, Modifier.padding(top = 8.dp))
                     }
                 }
-                Row(Modifier.align(Alignment.TopEnd), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    if (book.hidden) Icon(Symbol("eye.slash"), L("Non partagé"), Modifier.size(20.dp), tint = Color.White.copy(alpha = 0.7f))
-                    if (isAwaited) Icon(Symbol("binoculars"), L("Suivi"), Modifier.size(20.dp), tint = Color.White.copy(alpha = 0.7f))
-                    if (releaseDate != null) ReleaseDateBadge(releaseDate, onGlass = true)
+                // In the corner over the text, level with the cover's top: the day a book to come is out.
+                if (releaseDate != null) {
+                    Box(Modifier.align(Alignment.TopEnd)) { ReleaseDateBadge(releaseDate, onGlass = true) }
                 }
             }
             actions()
         }
+    }
+}
+
+/**
+ * What the edition is, in outlined tags over the saga: only a foreign edition and a recording are
+ * tagged, and a recording kept on the phone. Then what the reader decided of it, a symbol before
+ * the word: kept out of the shared libraries, an edition awaited. Words only, never a button.
+ */
+@Composable
+private fun HeroTags(book: Book, isDownloaded: Boolean, isAwaited: Boolean, modifier: Modifier = Modifier) {
+    val coverEmpty = coverTagsAreEmpty(book.language, book.format == BookFormat.AUDIOBOOK)
+    if (coverEmpty && !isDownloaded && !book.hidden && !isAwaited) return
+    Row(modifier, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        if (!coverEmpty) CoverTags(book, isFrosted = false)
+        if (isDownloaded) OutlinedTag(L("Téléchargé"), isFrosted = false, trailingSymbol = "arrow.down")
+        if (book.hidden) OutlinedTag(L("Non partagé"), isFrosted = false, symbol = "eye.slash")
+        if (isAwaited) OutlinedTag(L("Guetté"), isFrosted = false, symbol = "binoculars.fill")
     }
 }
 

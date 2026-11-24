@@ -56,7 +56,7 @@ fun ToolbarIconButton(
 ) {
     val colors = Shiori.colors
     val tint = when {
-        prominent -> Color.White
+        prominent -> colors.onAccent
         destructive -> colors.red
         else -> colors.label
     }

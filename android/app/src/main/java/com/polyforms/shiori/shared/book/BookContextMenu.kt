@@ -29,6 +29,9 @@ sealed interface BookQuickAction {
     data class OpenSeries(val id: String) : BookQuickAction
     data class OpenAuthor(val key: String, val name: String) : BookQuickAction
     data object Remove : BookQuickAction
+
+    /** A friend's book onto the reader's pile: only a friend's menu offers it. */
+    data object Take : BookQuickAction
 }
 
 /**
@@ -88,5 +91,77 @@ fun BookContextMenuBox(
             }
             MenuEntries(entries, expanded) { expanded = false }
         }
+    }
+}
+
+/**
+ * The long press on a cover of the wishlist: "Retirer" in red, which takes it off the list. Null
+ * `onDrop` leaves the cover with its tap alone.
+ */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun WishContextMenuBox(onOpen: () -> Unit, onDrop: (() -> Unit)?, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    val haptics = LocalHapticFeedback.current
+    Box(
+        modifier.combinedClickable(
+            interactionSource = remember { MutableInteractionSource() },
+            indication = null,
+            onClick = onOpen,
+            onLongClick = onDrop?.let {
+                {
+                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                    expanded = true
+                }
+            },
+        ),
+    ) {
+        content()
+        if (onDrop != null) {
+            MenuEntries(listOf(MenuEntry.Item(L("Retirer"), "bookmark.slash", destructive = true, action = onDrop)), expanded) { expanded = false }
+        }
+    }
+}
+
+/**
+ * The long press on a cover of a friend's shelf: nothing that would touch the friend's record — no
+ * status, heart, stars or removal. "Ajouter à ma pile" first, unless the reader holds the book
+ * already, then where it leads.
+ */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun FriendBookContextMenuBox(
+    book: Book,
+    owned: Boolean,
+    onOpen: () -> Unit,
+    onAction: (BookQuickAction) -> Unit,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val haptics = LocalHapticFeedback.current
+    Box(
+        modifier.combinedClickable(
+            interactionSource = remember { MutableInteractionSource() },
+            indication = null,
+            onClick = onOpen,
+            onLongClick = {
+                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                expanded = true
+            },
+        ),
+    ) {
+        content()
+        val entries = buildList {
+            if (!owned) {
+                add(MenuEntry.Item(L("Ajouter à ma pile"), "plus") { onAction(BookQuickAction.Take) })
+                add(MenuEntry.Divider)
+            }
+            book.series?.let { s -> add(MenuEntry.Item(L("Voir la série"), "square.stack") { onAction(BookQuickAction.OpenSeries(s.id)) }) }
+            val author = book.authors.firstOrNull()
+            val key = book.authorKeys?.firstOrNull()
+            if (author != null && key != null) add(MenuEntry.Item(L("Voir l'auteur"), "author") { onAction(BookQuickAction.OpenAuthor(key, author)) })
+        }
+        MenuEntries(entries, expanded) { expanded = false }
     }
 }

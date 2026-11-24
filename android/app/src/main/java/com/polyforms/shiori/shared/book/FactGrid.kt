@@ -50,6 +50,8 @@ data class FactTile(
     val monospaced: Boolean = false,
     val placeholder: String = L("Non renseigné"),
     val showsChevron: Boolean = false,
+    /** The chevron's symbol: up and down for a tile that opens a menu of values. */
+    val chevronSymbol: String = "chevron.right",
     val action: (() -> Unit)? = null,
 )
 
@@ -115,7 +117,7 @@ fun FactGrid(groups: List<FactGroup>, links: List<FactLink> = emptyList()) {
                                     color = if (tile.value == null) colors.tertiaryLabel else colors.label,
                                     maxLines = 2,
                                 )
-                                if (tile.showsChevron) Icon(Symbol("chevron.right"), null, Modifier.size(12.dp), tint = colors.tertiaryLabel)
+                                if (tile.showsChevron) Icon(Symbol(tile.chevronSymbol), null, Modifier.size(12.dp), tint = colors.tertiaryLabel)
                             }
                             tile.chips.forEach { Pill(it, style = Shiori.type.caption.copy(fontWeight = FontWeight.SemiBold)) }
                         }

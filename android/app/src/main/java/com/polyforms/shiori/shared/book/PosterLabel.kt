@@ -18,6 +18,8 @@ data class PosterLabel(
     val rating: Double? = null,
     val dimming: Double = 0.12,
     val isGreyed: Boolean = false,
+    /** An outlined word in the top corner in place of "Audio": a release's date. */
+    val cornerTag: String? = null,
 ) {
     enum class Context { RECENT, JOURNAL, PILE, READ, LOVED_BY_YEAR, LOVED_BY_AUTHOR, DROPPED }
 
@@ -31,6 +33,9 @@ data class PosterLabel(
         data class Years(val n: Int) : Span
 
         companion object {
+        /** Nothing in the foot, so no blur there either: the rail's title says it all. */
+        val bare = PosterLabel(caption = "")
+
             fun of(date: Instant, now: Instant): Span {
                 val start = date.atZone(ZoneId.systemDefault()).toLocalDate()
                 val end = now.atZone(ZoneId.systemDefault()).toLocalDate()

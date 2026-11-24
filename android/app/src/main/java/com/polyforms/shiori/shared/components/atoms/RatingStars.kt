@@ -53,7 +53,7 @@ enum class StarSymbol(val symbol: String) {
 val Double.starsText: String
     get() = NumberFormat.getNumberInstance().apply { maximumFractionDigits = 1; minimumFractionDigits = 0 }.format(this)
 
-/** Five stars, filled to the rating: yellow for the book's own, grey for one lent by its saga. */
+/** Five stars, filled to the rating: in the text's colour for the book's own, grey for one lent by its saga. */
 @Composable
 fun RatingStars(
     rating: Double,
@@ -67,7 +67,7 @@ fun RatingStars(
     val filled = tint ?: when {
         monochrome -> colors.label
         inherited -> colors.secondaryLabel
-        else -> colors.yellow
+        else -> colors.label
     }
     val empty = if (tint != null) tint.copy(alpha = 0.35f) else if (monochrome) colors.label.copy(alpha = 0.35f) else colors.gray.copy(alpha = 0.3f)
     val description = if (inherited) {
@@ -147,7 +147,7 @@ fun InteractiveStarRating(
 @Composable
 fun OpinionMark(rating: Double?, isFavorite: Boolean, size: Dp = 11.dp, ratingIsInherited: Boolean = false) {
     when {
-        isFavorite -> Icon(Symbol("heart.fill"), L("Favori"), Modifier.size(size), tint = Shiori.colors.red)
+        isFavorite -> Icon(Symbol("heart.fill"), L("Favori"), Modifier.size(size), tint = Shiori.colors.label)
         ratingIsInherited && rating == 5.0 ->
             Icon(Symbol("heart.fill"), L("Série favorite"), Modifier.size(size), tint = Shiori.colors.secondaryLabel)
         rating != null -> RatingStars(rating, size = size, inherited = ratingIsInherited)

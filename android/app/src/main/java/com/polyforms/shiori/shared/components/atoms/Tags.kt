@@ -1,5 +1,7 @@
 package com.polyforms.shiori.shared.components.atoms
 
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -51,17 +53,49 @@ fun AwaitedMark() {
 
 /** White capitals in a white outline on a cover: "EN", "AUDIO". */
 @Composable
-fun OutlinedTag(text: String, isFrosted: Boolean = true) {
+fun OutlinedTag(
+    text: String,
+    isFrosted: Boolean = true,
+    /** A symbol before the word, where the tag says what the reader decided: "Non partagé", "Guetté". */
+    symbol: String? = null,
+    /** A symbol after the word: the download arrow after "Téléchargé". */
+    trailingSymbol: String? = null,
+) {
     val shape = RoundedCornerShape(3.dp)
-    Text(
-        text.uppercase(),
-        style = Shiori.type.caption2.copy(fontWeight = FontWeight.Bold),
-        color = Color.White.copy(alpha = 0.9f),
-        modifier = Modifier
+    val color = Color.White.copy(alpha = 0.9f)
+    Row(
+        Modifier
             .then(if (isFrosted) Modifier.ultraThinDark(shape) else Modifier)
             .border(1.dp, Color.White.copy(alpha = 0.75f), shape)
             .padding(horizontal = 4.dp, vertical = 1.dp),
-    )
+        horizontalArrangement = Arrangement.spacedBy(3.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (symbol != null) Icon(Symbol(symbol), null, Modifier.size(9.dp), tint = color)
+        Text(text.uppercase(), style = Shiori.type.caption2.copy(fontWeight = FontWeight.Bold), color = color)
+        if (trailingSymbol != null) Icon(Symbol(trailingSymbol), null, Modifier.size(9.dp), tint = color)
+    }
+}
+
+/**
+ * A recording kept on the phone, as a symbol in the same outline, after its "Audio": the home's
+ * card has no room for the word. As tall as "Audio" beside it, the arrow at a capital's height.
+ */
+@Composable
+fun DownloadedTag() {
+    val shape = RoundedCornerShape(3.dp)
+    Box(
+        Modifier
+            .ultraThinDark(shape)
+            .border(1.dp, Color.White.copy(alpha = 0.75f), shape)
+            .padding(horizontal = 4.dp, vertical = 1.dp)
+            .semantics { contentDescription = L("Téléchargé") },
+        contentAlignment = Alignment.Center,
+    ) {
+        // A hidden letter sets the line, so the tag stands exactly as tall as "Audio".
+        Text("A", style = Shiori.type.caption2.copy(fontWeight = FontWeight.Bold), color = Color.Transparent)
+        Icon(Symbol("arrow.down"), null, Modifier.size(8.dp), tint = Color.White.copy(alpha = 0.9f))
+    }
 }
 
 /** The tags a cover wears: a foreign language, a recording. Nothing for a book in the phone's. */
@@ -112,18 +146,22 @@ val ReadingStatus.tint: Color
 
 /** A status disc on a cover's corner. */
 @Composable
-fun ReadingStatusBadge(status: ReadingStatus) = CoverBadge(status.symbol, status.tint)
+fun ReadingStatusBadge(status: ReadingStatus) = CoverBadge(status.symbol)
 
+/**
+ * A badge pinned to a cover's corner, in one colour like every icon: the symbol carries the state.
+ * `tint` is kept for the callers that still pass one, and ignored.
+ */
 @Composable
-fun CoverBadge(symbol: String, tint: Color) {
+fun CoverBadge(symbol: String, @Suppress("UNUSED_PARAMETER") tint: Color? = null) {
     Box(
         Modifier
             .size(18.dp)
-            .background(tint, CircleShape)
+            .background(Shiori.colors.label, CircleShape)
             .border(1.5.dp, Shiori.colors.secondaryGroupedBackground, CircleShape),
         contentAlignment = Alignment.Center,
     ) {
-        Icon(Symbol(symbol), null, Modifier.size(9.dp), tint = Color.White)
+        Icon(Symbol(symbol), null, Modifier.size(9.dp), tint = Shiori.colors.background)
     }
 }
 
@@ -172,6 +210,8 @@ private fun TagsPreview() = PreviewSurface {
             AudiobookBadge()
             AwaitedMark()
             OutlinedTag("EN")
+            OutlinedTag(L("Guetté"), symbol = "binoculars.fill")
+            DownloadedTag()
             LanguageTag(com.polyforms.shiori.shared.BookLanguage.EN)
             CoverBadge("heart.fill", Shiori.colors.red)
         }

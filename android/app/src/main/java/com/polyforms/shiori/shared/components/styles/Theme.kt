@@ -42,7 +42,10 @@ data class ShioriColors(
     val fill: Color,
     val secondaryFill: Color,
     val tertiaryFill: Color,
+    /** The label's colour, as iOS's accent: the selected tab, links and prominent buttons. */
     val accent: Color,
+    /** What reads on the accent: the background's colour. */
+    val onAccent: Color,
     val blue: Color,
     val green: Color,
     val red: Color,
@@ -72,7 +75,8 @@ val LightColors = ShioriColors(
     fill = Color(0x33787880),
     secondaryFill = Color(0x29787880),
     tertiaryFill = Color(0x1F767680),
-    accent = Color(0xFF007AFF),
+    accent = Color(0xFF000000),
+    onAccent = Color(0xFFFFFFFF),
     blue = Color(0xFF007AFF),
     green = Color(0xFF34C759),
     red = Color(0xFFFF3B30),
@@ -102,7 +106,8 @@ val DarkColors = ShioriColors(
     fill = Color(0x5C787880),
     secondaryFill = Color(0x52787880),
     tertiaryFill = Color(0x3D767680),
-    accent = Color(0xFF0A84FF),
+    accent = Color(0xFFFFFFFF),
+    onAccent = Color(0xFF000000),
     blue = Color(0xFF0A84FF),
     green = Color(0xFF30D158),
     red = Color(0xFFFF453A),
@@ -148,7 +153,7 @@ private fun materialScheme(colors: ShioriColors): ColorScheme {
     val base = if (colors.isDark) darkColorScheme() else lightColorScheme()
     return base.copy(
         primary = colors.accent,
-        onPrimary = Color.White,
+        onPrimary = colors.onAccent,
         background = colors.groupedBackground,
         onBackground = colors.label,
         surface = colors.secondaryGroupedBackground,

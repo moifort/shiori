@@ -96,7 +96,7 @@ fun BookRow(
     @Composable
     fun marks() {
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-            if (isHidden) Icon(Symbol("eye.slash"), L("Non partagé"), Modifier.size(14.dp), tint = colors.secondaryLabel)
+            if (isHidden) Icon(Symbol("lock"), L("Non partagé"), Modifier.size(14.dp), tint = colors.secondaryLabel)
             if (isAwaited) AwaitedMark()
             OpinionMark(shownRating, isFavorite, 12.dp, ratingIsInherited)
             if (listeningProgress != null) RowChip(listeningProgress, ReadingStatus.READING.tint)

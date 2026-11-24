@@ -73,7 +73,8 @@ fun ShioriButton(
     val colors = Shiori.colors
     val base = if (destructive) colors.red else tint
     val (background, shown) = when (kind) {
-        ButtonKind.PROMINENT -> base to Color.White
+        // On the accent, the background's colour; on red or another tint, white.
+        ButtonKind.PROMINENT -> base to if (base == colors.accent) colors.onAccent else Color.White
         ButtonKind.BORDERED -> base.copy(alpha = 0.15f) to base
         ButtonKind.PLAIN -> Color.Transparent to base
     }

@@ -75,6 +75,8 @@ fun rememberBookQuickActions(client: LibraryClient, open: (LibraryDestination) -
             is BookQuickAction.OpenSeries -> open(LibraryDestination.Series(action.id))
             is BookQuickAction.OpenAuthor -> open(LibraryDestination.Author(AuthorDestination(action.key, action.name)))
             BookQuickAction.Remove -> state.removing = book
+            // Only a friend's menu offers it, which its own screen answers.
+            BookQuickAction.Take -> Unit
         }
     }
 }

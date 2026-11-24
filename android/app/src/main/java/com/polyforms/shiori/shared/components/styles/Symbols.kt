@@ -1,6 +1,17 @@
 package com.polyforms.shiori.shared.components.styles
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.PlaylistPlay
+import androidx.compose.material.icons.outlined.Shield
+import androidx.compose.material.icons.outlined.PersonRemove
+import androidx.compose.material.icons.outlined.Bedtime
+import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.Speed
+import androidx.compose.material.icons.outlined.Replay30
+import androidx.compose.material.icons.outlined.ExpandMore
+import androidx.compose.material.icons.outlined.Checklist
+import androidx.compose.material.icons.outlined.BookmarkRemove
+import androidx.compose.material.icons.outlined.ArrowDownward
 import androidx.compose.material.icons.automirrored.outlined.Article
 import androidx.compose.material.icons.automirrored.outlined.Backspace
 import androidx.compose.material.icons.automirrored.outlined.CallMerge
@@ -308,5 +319,17 @@ fun Symbol(name: String): ImageVector = when (name) {
     "star.outline" -> Icons.Outlined.Star
     "book.outlined" -> Icons.Outlined.Book
     "person.add" -> Icons.Outlined.PersonAdd
+    "arrow.down" -> Icons.Outlined.ArrowDownward
+    "bookmark.slash" -> Icons.Outlined.BookmarkRemove
+    "calendar.badge.exclamationmark" -> Icons.Outlined.EventBusy
+    "checklist" -> Icons.Outlined.Checklist
+    "chevron.down" -> Icons.Outlined.ExpandMore
+    "gobackward.30" -> Icons.Outlined.Replay30
+    "hare" -> Icons.Outlined.Speed
+    "lock" -> Icons.Outlined.Lock
+    "moon" -> Icons.Outlined.Bedtime
+    "person.badge.minus" -> Icons.Outlined.PersonRemove
+    "shield" -> Icons.Outlined.Shield
+    "text.line.first.and.arrowtriangle.forward" -> Icons.AutoMirrored.Outlined.PlaylistPlay
     else -> Icons.Outlined.Circle
 }

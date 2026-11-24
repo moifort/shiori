@@ -1,5 +1,7 @@
 package com.polyforms.shiori.shared.book
 
+import com.polyforms.shiori.shared.DiscoveredVolume
+
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -33,6 +35,8 @@ fun SeriesVolumesRow(
     currentId: String,
     onOpenSeries: () -> Unit,
     onOpenVolume: (Book) -> Unit,
+    /** The page of a volume the reader lacks; null where the row has none, a lacking cover then opening the saga. */
+    onOpenLacking: ((DiscoveredVolume) -> Unit)? = null,
 ) {
     val state = rememberLazyListState()
     LaunchedEffect(volumes.map { it.id }) {
@@ -65,12 +69,21 @@ fun SeriesVolumesRow(
                     }
                     is SeriesStripItem.Missing -> {
                         val caption = item.number?.let { L("Tome %lld", it) } ?: item.title
-                        val day = if (item.forthcoming) item.date?.let(ReleaseDateText::short) else null
-                        Box(Modifier.plainClickable(onClick = onOpenSeries).padding(4.dp)) {
+                        // An announced volume shows its day, or "Annoncé" before it has one.
+                        val day = if (item.forthcoming) item.date?.let(ReleaseDateText::short) ?: L("Annoncé") else null
+                        // Its own page when the row has one to give and it has a number to be filed
+                        // at, as a cover always opens its book; else the saga's screen.
+                        val number = item.number
+                        val open: () -> Unit = if (number != null && onOpenLacking != null) {
+                            { onOpenLacking(DiscoveredVolume(number, item.title, item.date, null, item.coverURL)) }
+                        } else {
+                            onOpenSeries
+                        }
+                        Box(Modifier.plainClickable(onClick = open).padding(4.dp)) {
                             PosterCover(
                                 Book(id = item.id, title = item.title, authors = emptyList(), coverURL = item.coverURL, status = ReadingStatus.TO_READ),
                                 day ?: caption,
-                                Modifier.alpha(if (day != null) 1f else if (item.forthcoming) 0.3f else 0.45f),
+                                Modifier.alpha(if (day == null) 0.45f else 1f),
                                 showsEditionTags = false,
                                 dimming = if (day == null) 0.12 else 0.5,
                             )

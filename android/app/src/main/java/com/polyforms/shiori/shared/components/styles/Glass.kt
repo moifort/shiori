@@ -6,6 +6,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.Dp
@@ -68,3 +70,25 @@ val AudibleOrange = Color(0xFFF8991C)
 /** The AI shimmer's colours: blue, purple, pink, orange. */
 @Composable
 fun aiGlowColors(): List<Color> = with(Shiori.colors) { listOf(blue, purple, pink, orange) }
+
+/**
+ * Draws the content at `amount` of its colour: 1 as it is, 0 in black and white, as a book turned
+ * down or a saga set aside. Animate the amount for the slow drain (`setAsideAnimation`).
+ */
+fun Modifier.saturation(amount: Float): Modifier =
+    if (amount >= 1f) {
+        this
+    } else {
+        drawWithContent {
+            val paint = androidx.compose.ui.graphics.Paint().apply {
+                colorFilter = androidx.compose.ui.graphics.ColorFilter.colorMatrix(
+                    androidx.compose.ui.graphics.ColorMatrix().apply { setToSaturation(amount.coerceIn(0f, 1f)) },
+                )
+            }
+            drawIntoCanvas { canvas ->
+                canvas.saveLayer(androidx.compose.ui.geometry.Rect(androidx.compose.ui.geometry.Offset.Zero, size), paint)
+                drawContent()
+                canvas.restore()
+            }
+        }
+    }
