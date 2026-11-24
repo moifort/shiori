@@ -114,31 +114,15 @@ fun DebugPreviews(name: String) {
             "friend-book" -> com.polyforms.shiori.features.friends.components.pages.FriendBookPage(
                 DebugFixtures.friendBook, "Léa", null, emptyList(), listOf(BookFormat.BOOK, BookFormat.AUDIOBOOK), emptyList(),
             ) {}
-            "discover" -> androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize().background(com.polyforms.shiori.shared.components.styles.Shiori.colors.groupedBackground)) {
-                val feed = DebugFixtures.discoverFeed
-                com.polyforms.shiori.features.discover.components.pages.DiscoverPage(
-                    com.polyforms.shiori.shared.components.molecules.LibraryShelf.BOOKS,
-                    feed,
-                    DebugFixtures.discoverAwaited,
-                    null,
-                    emptyList(),
-                    com.polyforms.shiori.features.discover.DiscoveriesLine.Shown(DebugFixtures.discoveries),
-                    false,
-                    false,
-                    null,
-                ) {}
-            }
             "awaited" -> com.polyforms.shiori.features.discover.AwaitedEditionScreen(DebugFixtures.discoverAwaited[0]) {}
-            "news" -> androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize().background(com.polyforms.shiori.shared.components.styles.Shiori.colors.groupedBackground)) {
-                val feed = com.polyforms.shiori.features.news.NewsFeedLayout.feedSections(emptyList(), DebugFixtures.newsEvents, null, null)
-                com.polyforms.shiori.features.news.components.pages.NewsPage(
-                    feed, emptySet(), emptySet(), emptySet(),
-                    com.polyforms.shiori.features.news.ReleaseCalendar(DebugFixtures.upcoming),
-                    null,
-                    com.polyforms.shiori.features.news.NewsFeedLayout.pillFormats(feed, null),
-                    com.polyforms.shiori.features.news.NewsFeedLayout.stories(DebugFixtures.newsEvents, null),
-                    null, false, false, false, null,
-                ) {}
+            "news" -> com.polyforms.shiori.features.news.components.pages.NewsPage(
+                com.polyforms.shiori.features.news.NewsFixtures.agenda(),
+                isLoading = false,
+                errorMessage = null,
+                alertsSilenced = false,
+            ) {}
+            "upcoming" -> androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize().background(com.polyforms.shiori.shared.components.styles.Shiori.colors.groupedBackground)) {
+                com.polyforms.shiori.features.news.components.pages.UpcomingReleasesPage(com.polyforms.shiori.features.news.NewsFixtures.upcoming) {}
             }
             "tabbar" -> TabBarPreview()
             "components" -> com.polyforms.shiori.shared.components.styles.ShioriTheme(dark = true) { ComponentsPreview() }
@@ -168,6 +152,10 @@ fun DebugPreviews(name: String) {
                 remember { AudiblePlayers.app(context).apply { showPreview(ListeningTitlePreview, Playback.preview) } }
                 ShioriRoot()
             }
+            "pending-release" -> com.polyforms.shiori.features.news.components.pages.PendingReleasePage(
+                com.polyforms.shiori.features.news.NewsFixtures.authorRelease,
+                com.polyforms.shiori.features.news.components.pages.PendingReleasePhase.Loading,
+            )
             else -> ShioriRoot()
         }
     }
