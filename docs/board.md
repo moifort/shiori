@@ -15,6 +15,24 @@ https://claude.ai/artifact/3zk9AtzsPsT3G32zpQbJxQ, created on 2026-11-15 in the 
 - Layout lives in `project/canvas.json` (`boards`, `order`). A new artboard sits 80 px from its
   siblings in the same row, with its `boards` entry and `order` slot.
 
+### How the page "App" is laid out
+
+Three zones, left to right (rearranged on 2026-11-24):
+
+- **Écrans** (x = 0): one row per feature in the app's journey, each under its title — Onboarding,
+  Accueil, Découvrir, Bibliothèque, Fiches, Feuilles du livre, Ajouter, the not-yet-migrated
+  Ajouter captures, Recherche, Amis et partage, Lecteur audio, Réglages. A screen comes first in
+  its row, its states stacked under it; a note sits beside the screen it explains.
+- **Composants** (x = 8200): `Composants.dc.html`, the index, then one row per component family
+  (Boutons d'action, Boutons Envies et « + », Guetter, Couvertures et cartes, Navigation). A row
+  is the component's whole collection: its production states first, then its variants. A new
+  component sheet joins its family's row and gets a line in the index (its link is the sheet's
+  file name; tag « États » or « Variantes »); a new family gets a row and a block.
+- **Prototypage** (`Zone-Prototypage.dc.html`, x = 14200): page explorations not built yet,
+  one titled group each. The zone artboard is resized to hold its groups.
+
+In Play on the canvas, a line of the index moves the canvas to that sheet, in its family's row.
+
 ## Keeping the board alive
 
 The Shiori Board vanished on 2026-11-15 ("artifact not found", gone from the gallery) without
@@ -62,8 +80,11 @@ same task:
 
 ## Variants
 
-- New variants and explorations go in the prototyping zone. The "Variants" page only archives
-  shipped work: once built, a prototype's variants move there and are never touched again.
+- New page variants and explorations go in the prototyping zone. The "Variants" page only
+  archives shipped work: once built, a prototype's variants move there and are never touched
+  again.
+- Variants of a component live in its collection row in the Composants zone, after its
+  production states, and are listed in `Composants.dc.html` with the « Variantes » tag.
 - A variant artboard shows only the part that varies (the hero, the card), cropped in root
   height, `$preview` and its `boards` `h`. Alternatives to one question stack in a column,
   80 px apart.
