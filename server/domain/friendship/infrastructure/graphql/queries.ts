@@ -1,5 +1,10 @@
 import { EditionOfferType } from '~/domain/awaited-edition/infrastructure/graphql/types'
-import { BookLanguageEnum, ReadingStatusEnum } from '~/domain/book/infrastructure/graphql/enums'
+import {
+  BookFormatEnum,
+  BookLanguageEnum,
+  heldAs,
+  ReadingStatusEnum,
+} from '~/domain/book/infrastructure/graphql/enums'
 import { AudioAvailabilityEnum } from '~/domain/friendship/infrastructure/graphql/enums'
 import {
   FriendBookType,
@@ -58,6 +63,9 @@ builder.queryFields((t) => ({
   friendProfile: t.field({
     type: FriendProfileType,
     nullable: true,
+    deprecationReason:
+      'The friend page is gone: the Amis tab draws a friend from `friendsShelf`, and their ' +
+      'books and sagas from `friendLibraryPage` and `friendSagaPage`.',
     description:
       "One friend's shelf: what they are reading, their pile, their favourites " +
       'and the sagas they are working through.\n\n' +
@@ -183,6 +191,11 @@ builder.queryFields((t) => ({
           'The favourites view: the books they hearted or rated, hearts first, then ' +
           'five stars down to one, each rank newest on the shelf first.',
       }),
+      format: t.arg({
+        type: BookFormatEnum,
+        required: false,
+        description: 'Keep only books of this format. Omit for every format.',
+      }),
       limit: t.arg.int({ defaultValue: 60, description: 'Maximum books in the page' }),
       after: t.arg({
         type: 'BookId',
@@ -202,6 +215,7 @@ builder.queryFields((t) => ({
           status: args.status ?? undefined,
           favorite: args.favorite ?? undefined,
           loved: args.loved ?? undefined,
+          format: heldAs(args.format).format,
         },
       ),
   }),

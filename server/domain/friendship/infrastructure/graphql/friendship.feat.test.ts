@@ -477,6 +477,23 @@ describe("the reader's own shelf, as friends see it", () => {
     expect(counted.data?.friendProfile).toEqual({ bookCount: 2 })
   })
 
+  // The format pills over "Livres", as the reader's own library has them.
+  test('narrows a friend library to one format', async () => {
+    await addBook(alice, 'title: "Un roman", status: READ')
+    await addBook(alice, 'title: "Un manga", format: MANGA, status: READ')
+    await befriend()
+
+    const mangas = await as(bob)(
+      '{ friendLibraryPage(userId: "alice", format: MANGA) { books { title } hasMore } }',
+    )
+
+    expect(mangas.errors).toBeUndefined()
+    expect(mangas.data?.friendLibraryPage).toEqual({
+      books: [{ title: 'Un manga' }],
+      hasMore: false,
+    })
+  })
+
   test("ranks a friend's favourite books, hearts first, then their stars", async () => {
     const unjudged = await addBook(alice, 'title: "Sans avis", status: READ')
     const rated = await addBook(alice, 'title: "Quatre étoiles", status: READ')

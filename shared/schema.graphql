@@ -4400,6 +4400,9 @@ type Query {
     """Keep only the books they hearted."""
     favorite: Boolean @deprecated(reason: "Use `loved`, which follows the hearts with the stars.")
 
+    """Keep only books of this format. Omit for every format."""
+    format: BookFormat
+
     """Maximum books in the page"""
     limit: Int = 60
 
@@ -4422,7 +4425,7 @@ type Query {
   
   A book marked "do not share" appears nowhere here, and no reading note is exposed at all.
   """
-  friendProfile(userId: UserId!): FriendProfile
+  friendProfile(userId: UserId!): FriendProfile @deprecated(reason: "The friend page is gone: the Amis tab draws a friend from `friendsShelf`, and their books and sagas from `friendLibraryPage` and `friendSagaPage`.")
 
   """
   What the reader’s friends hearted and the reader does not hold, for Découvrir: books, sagas and the authors of both, the newest heart first, twenty of each at most. Held is judged on the story, whatever the format — a friend’s recording is a story the reader may take on paper.

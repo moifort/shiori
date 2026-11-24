@@ -324,12 +324,13 @@ export namespace FriendshipUseCase {
    *  not share" never. `loved` is the favourites view: the books they hearted
    *  or rated, hearts first and then five stars down to one, each rank newest
    *  on the shelf first — on their own verdict alone, as a friend's row draws
-   *  it, never their saga's stars. Null for a stranger. */
+   *  it, never their saga's stars. `format` keeps one format alone, as the
+   *  pills over the reader's own "Livres" do. Null for a stranger. */
   export const libraryPage = async (
     viewerId: UserId,
     ownerId: UserId,
     page: { limit: number; after?: BookId },
-    view: { status?: ReadingStatus; favorite?: boolean; loved?: boolean },
+    view: { status?: ReadingStatus; favorite?: boolean; loved?: boolean; format?: BookFormat },
   ): Promise<FriendLibraryPage | undefined> => {
     if (!(await canRead(viewerId, ownerId))) return undefined
     const [books, owned] = await Promise.all([
@@ -345,7 +346,9 @@ export namespace FriendshipUseCase {
           SHELF_STATUSES
     const kept = books.filter(
       (book) =>
-        (!view.favorite || book.favorite === true) && (!statuses || statuses.includes(book.status)),
+        (!view.favorite || book.favorite === true) &&
+        (!statuses || statuses.includes(book.status)) &&
+        (!view.format || book.format === view.format),
     )
     const ordered = view.loved
       ? lovedFirst(
