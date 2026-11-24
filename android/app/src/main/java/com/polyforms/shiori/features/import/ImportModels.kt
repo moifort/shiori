@@ -1,5 +1,6 @@
 package com.polyforms.shiori.features.import
 
+import com.polyforms.shiori.R
 import com.polyforms.shiori.shared.Book
 import com.polyforms.shiori.shared.L
 import com.polyforms.shiori.shared.ReadingStatus
@@ -115,7 +116,8 @@ enum class ImportSource {
     AUDIBLE, KINDLE;
 
     val label: String get() = if (this == AUDIBLE) "Audible" else "Kindle"
-    val symbol: String get() = if (this == AUDIBLE) "headphones" else "ipad"
+    /** The service's logo, a template drawn in the text's colour: the one mark the app shows for it. */
+    val logo: Int get() = if (this == AUDIBLE) R.drawable.logo_audible else R.drawable.logo_kindle
     val subtitle: String get() = L("Connexion, import et synchronisation")
 }
 
@@ -152,4 +154,18 @@ interface ImportItem {
     val status: ReadingStatus
     val alreadyInLibrary: Boolean
     val removedByReader: Boolean
+}
+
+/** What the import pages draw in previews: two Audible books, four Kindle ones, as on iOS. */
+object ImportFixtures {
+    val audibleBooks = listOf(
+        ImportableBook("B002V1OF70", "Le Nom du vent", listOf("Patrick Rothfuss"), listOf("Bernard Gabay"), 1770, null, "Chronique du tueur de roi", 1, ReadingStatus.READ, null, alreadyInLibrary = false),
+        ImportableBook("B00X57B4KE", "La Peur du sage", listOf("Patrick Rothfuss"), listOf("Bernard Gabay"), 2460, null, "Chronique du tueur de roi", 2, ReadingStatus.TO_READ, null, alreadyInLibrary = true),
+    )
+    val kindleBooks = listOf(
+        ImportableKindleBook("B0G26NZ911", "Fearless", listOf("Lauren Roberts"), null, "Powerless", 3, ReadingStatus.TO_READ, alreadyInLibrary = false),
+        ImportableKindleBook("B0FBM5PXX6", "Reckless", listOf("Lauren Roberts"), null, "Powerless", 2, ReadingStatus.READ, alreadyInLibrary = false),
+        ImportableKindleBook("B0GGX6LNFM", "Taming 7", listOf("Chloe Walsh"), null, "Boys of Tommen", 5, ReadingStatus.READ, alreadyInLibrary = true),
+        ImportableKindleBook("B0CXYZ1234", "La Femme de ménage", listOf("Freida McFadden"), null, null, null, ReadingStatus.READ, alreadyInLibrary = false),
+    )
 }

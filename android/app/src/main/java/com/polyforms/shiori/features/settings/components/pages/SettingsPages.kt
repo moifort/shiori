@@ -27,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -65,13 +66,18 @@ private fun SettingsColumn(content: @Composable () -> Unit) {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).statusBarsPadding().padding(top = 64.dp, bottom = 40.dp), verticalArrangement = Arrangement.spacedBy(24.dp)) { content() }
 }
 
-/** A settings line: a white glyph on a tinted badge, a title and a line under it. */
+/** A settings line: a grey badge holding a glyph (or a service's logo) in the text's colour, a title and a line under it. */
 @Composable
-fun SettingsRow(icon: String, title: String, subtitle: String?, tint: Color, divider: Boolean = true, onClick: () -> Unit) {
+fun SettingsRow(icon: String, title: String, subtitle: String?, divider: Boolean = true, logo: Int? = null, onClick: () -> Unit) {
     val colors = Shiori.colors
     FormRow(divider = divider, onClick = onClick) {
-        Box(Modifier.size(28.dp).background(tint, RoundedCornerShape(6.dp)), contentAlignment = Alignment.Center) {
-            Icon(Symbol(icon), null, Modifier.size(15.dp), tint = Color.White)
+        Box(Modifier.size(28.dp).background(colors.tertiaryFill, RoundedCornerShape(6.dp)), contentAlignment = Alignment.Center) {
+            // Monochrome like every icon: the glyph in the text's colour.
+            if (logo != null) {
+                Icon(painterResource(logo), null, Modifier.size(17.dp), tint = colors.label)
+            } else {
+                Icon(Symbol(icon), null, Modifier.size(14.dp), tint = colors.label)
+            }
         }
         Column(Modifier.weight(1f).padding(start = 14.dp, top = 6.dp, bottom = 6.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(title, style = Shiori.type.body, color = colors.label)
@@ -93,10 +99,9 @@ sealed interface SettingsHomeAction {
 /** The settings: profile, Premium, notifications, the sources, the version, a word to us. */
 @Composable
 fun SettingsHomePage(profileSubtitle: String?, isPremium: Boolean?, notificationsBlocked: Boolean, appVersion: String, buildNumber: String, onAction: (SettingsHomeAction) -> Unit) {
-    val colors = Shiori.colors
     SettingsColumn {
         FormSection {
-            SettingsRow("person.crop.circle.fill", L("Profil"), profileSubtitle, colors.blue) { onAction(SettingsHomeAction.Open(SettingsDestination.PROFILE)) }
+            SettingsRow("person.crop.circle.fill", L("Profil"), profileSubtitle) { onAction(SettingsHomeAction.Open(SettingsDestination.PROFILE)) }
             SettingsRow(
                 "sparkles",
                 if (isPremium == true) L("Shiori Premium") else L("Découvrir Premium"),
@@ -105,24 +110,22 @@ fun SettingsHomePage(profileSubtitle: String?, isPremium: Boolean?, notification
                     false -> L("Scannez sans compter")
                     null -> null
                 },
-                colors.orange,
             ) { onAction(SettingsHomeAction.ShowPremium) }
             SettingsRow(
                 if (notificationsBlocked) "bell.slash.fill" else "bell.badge.fill",
                 L("Notifications"),
                 if (notificationsBlocked) L("Désactivées dans les réglages du téléphone") else L("Prochaine sortie et nouvelle disponibilité"),
-                colors.red,
                 divider = false,
             ) { onAction(SettingsHomeAction.Open(SettingsDestination.NOTIFICATIONS)) }
         }
         FormSection(L("Sources")) {
             ImportSource.entries.forEachIndexed { index, source ->
-                SettingsRow(source.symbol, source.label, source.subtitle, colors.teal, divider = index < ImportSource.entries.lastIndex) { onAction(SettingsHomeAction.OpenSource(source)) }
+                SettingsRow("", source.label, source.subtitle, divider = index < ImportSource.entries.lastIndex, logo = source.logo) { onAction(SettingsHomeAction.OpenSource(source)) }
             }
         }
         FormSection(L("Application")) {
-            SettingsRow("doc.text.fill", L("Version et nouveautés"), "v$appVersion ($buildNumber)", colors.indigo) { onAction(SettingsHomeAction.Open(SettingsDestination.CHANGELOG)) }
-            SettingsRow("envelope.fill", L("Nous écrire"), L("Signaler un problème ou proposer une idée"), colors.pink, divider = false) { onAction(SettingsHomeAction.ShowFeedback) }
+            SettingsRow("doc.text.fill", L("Version et nouveautés"), "v$appVersion ($buildNumber)") { onAction(SettingsHomeAction.Open(SettingsDestination.CHANGELOG)) }
+            SettingsRow("envelope.fill", L("Nous écrire"), L("Signaler un problème ou proposer une idée"), divider = false) { onAction(SettingsHomeAction.ShowFeedback) }
         }
     }
 }

@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -30,6 +31,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -52,10 +54,12 @@ import com.polyforms.shiori.shared.account.AvatarColor
 import com.polyforms.shiori.shared.components.atoms.AccountAvatarView
 import com.polyforms.shiori.shared.components.molecules.MenuPicker
 import com.polyforms.shiori.shared.components.organisms.AvatarPickerSheet
-import com.polyforms.shiori.shared.components.styles.ButtonKind
+import com.polyforms.shiori.shared.components.styles.ActionButton
+import com.polyforms.shiori.shared.components.styles.ActionFill
+import com.polyforms.shiori.shared.components.styles.ActionLabel
+import com.polyforms.shiori.shared.components.styles.ActionSize
 import com.polyforms.shiori.shared.components.styles.PlainTextField
 import com.polyforms.shiori.shared.components.styles.Shiori
-import com.polyforms.shiori.shared.components.styles.ShioriButton
 import com.polyforms.shiori.shared.components.styles.ShioriDivider
 import com.polyforms.shiori.shared.components.styles.ShioriSwitch
 import com.polyforms.shiori.shared.components.styles.Symbol
@@ -258,7 +262,11 @@ private fun FirstNamePage(firstName: String, onFirstName: (String) -> Unit, avat
             )
         }
         Spacer(Modifier.weight(1f))
-        Entrance(160) { ShioriButton(L("Continuer"), tint = Color.White, enabled = trimmed.isNotEmpty(), large = true, fillWidth = true, foreground = Color.Black) { onNext() } }
+        Entrance(160) {
+            ActionButton(onNext, Modifier.fillMaxWidth(), size = ActionSize.LARGE, spansWidth = true, enabled = trimmed.isNotEmpty()) {
+                ActionLabel(L("Continuer"), null, ActionSize.LARGE.side)
+            }
+        }
     }
     if (picking) AvatarPickerSheet(avatar, trimmed, { picking = false }, onAvatar)
 }
@@ -294,9 +302,9 @@ private fun LibrariesOfferPage(
         }
         Entrance(120) {
             Column(Modifier.background(Shiori.colors.secondaryGroupedBackground, RoundedCornerShape(12.dp)).padding(horizontal = 12.dp).alpha(if (isWorking) 0.6f else 1f)) {
-                SourceToggle("headphones", "Audible", L("Vos livres audio, avec ce que vous avez déjà écouté."), audible, onAudible)
+                SourceToggle(ImportSource.AUDIBLE.logo, "Audible", L("Vos livres audio, avec ce que vous avez déjà écouté."), audible, onAudible)
                 ShioriDivider(Modifier.padding(start = 44.dp))
-                SourceToggle("book.closed", "Kindle", L("Vos livres numériques, avec ceux que vous avez finis."), kindle, onKindle)
+                SourceToggle(ImportSource.KINDLE.logo, "Kindle", L("Vos livres numériques, avec ceux que vous avez finis."), kindle, onKindle)
                 ShioriDivider(Modifier.padding(start = 44.dp))
                 MenuPicker(marketplace, AmazonMarketplace.entries, { it.amazonLabel }, onMarketplace, divider = false) {
                     Text(L("Boutique"), style = Shiori.type.body, color = Shiori.colors.label)
@@ -306,17 +314,28 @@ private fun LibrariesOfferPage(
         Spacer(Modifier.weight(1f))
         Entrance(160) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                ShioriButton(L("Connecter"), symbol = "arrow.down.circle", tint = Color.White, enabled = !isWorking && (audible || kindle), large = true, fillWidth = true, foreground = Color.Black) { onConnect() }
-                ShioriButton(L("Plus tard"), kind = ButtonKind.BORDERED, tint = Color.White, enabled = !isWorking, large = true, fillWidth = true) { onSkip() }
+                ActionButton(onConnect, Modifier.fillMaxWidth(), size = ActionSize.LARGE, spansWidth = true, enabled = !isWorking && (audible || kindle)) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Row(Modifier.alpha(if (isWorking) 0f else 1f), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                            ActionLabel(L("Connecter"), "arrow.down.circle", ActionSize.LARGE.side)
+                        }
+                        if (isWorking) CircularProgressIndicator(Modifier.size(20.dp), color = Color.Black, strokeWidth = 2.dp)
+                    }
+                }
+                ActionButton(onSkip, Modifier.fillMaxWidth(), fill = ActionFill.GLASS, size = ActionSize.LARGE, spansWidth = true, enabled = !isWorking) {
+                    ActionLabel(L("Plus tard"), null, ActionSize.LARGE.side)
+                }
             }
         }
     }
 }
 
 @Composable
-private fun SourceToggle(symbol: String, title: String, detail: String, isOn: Boolean, onChange: (Boolean) -> Unit) {
+private fun SourceToggle(logo: Int, title: String, detail: String, isOn: Boolean, onChange: (Boolean) -> Unit) {
     Row(Modifier.fillMaxWidth().padding(vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-        Icon(Symbol(symbol), null, Modifier.size(24.dp), tint = Shiori.colors.accent)
+        Box(Modifier.width(32.dp), contentAlignment = Alignment.Center) {
+            Icon(painterResource(logo), null, Modifier.size(26.dp), tint = Shiori.colors.accent)
+        }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(title, style = Shiori.type.body, color = Shiori.colors.label)
             Text(detail, style = Shiori.type.caption, color = Shiori.colors.secondaryLabel)

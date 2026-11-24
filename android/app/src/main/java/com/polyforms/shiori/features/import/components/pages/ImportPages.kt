@@ -18,11 +18,13 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.polyforms.shiori.features.home.daysAgo
@@ -34,6 +36,7 @@ import com.polyforms.shiori.features.import.SyncOutcome
 import com.polyforms.shiori.shared.DateText
 import com.polyforms.shiori.shared.L
 import com.polyforms.shiori.shared.ReadingStatus
+import com.polyforms.shiori.shared.components.atoms.AsyncActionButton
 import com.polyforms.shiori.shared.components.molecules.EmptyState
 import com.polyforms.shiori.shared.components.molecules.MenuPicker
 import com.polyforms.shiori.shared.components.molecules.RowLabel
@@ -45,6 +48,7 @@ import com.polyforms.shiori.shared.components.styles.Shiori
 import com.polyforms.shiori.shared.components.styles.ShioriButton
 import com.polyforms.shiori.shared.components.styles.ShioriDivider
 import com.polyforms.shiori.shared.components.styles.ShioriSwitch
+import com.polyforms.shiori.shared.components.styles.actionLabelStyle
 import com.polyforms.shiori.shared.components.styles.Symbol
 import com.polyforms.shiori.shared.components.styles.plainClickable
 import com.polyforms.shiori.shared.platform.MenuEntry
@@ -52,8 +56,6 @@ import com.polyforms.shiori.shared.platform.ToolbarMenuButton
 import androidx.compose.ui.tooling.preview.Preview
 import com.polyforms.shiori.DebugFixtures
 import com.polyforms.shiori.PreviewSurface
-
-private val ImportSource.pageSymbol: String get() = if (this == ImportSource.AUDIBLE) "headphones" else "book.closed"
 
 @Composable
 private fun PageColumn(content: @Composable () -> Unit) {
@@ -68,7 +70,7 @@ fun ImportConnectPage(source: ImportSource, marketplace: AmazonMarketplace, onMa
     PageColumn {
         FormSection {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Icon(Symbol(source.pageSymbol), null, Modifier.size(34.dp), tint = colors.accent)
+                Icon(painterResource(source.logo), null, Modifier.size(40.dp), tint = colors.accent)
                 Text(if (audible) L("Importez votre bibliothèque Audible") else L("Importez votre bibliothèque Kindle"), style = Shiori.type.title3.copy(fontWeight = FontWeight.Bold), color = colors.label)
                 Text(
                     if (audible) L("Connectez votre compte Amazon une fois, puis choisissez les livres audio à ajouter. Ils rejoignent votre bibliothèque avec leur couverture, leur série et votre avancement d'écoute.")
@@ -202,7 +204,7 @@ fun <Item : ImportItem> ImportLibraryPage(
                 Text(if (audible) L("Lecture de votre bibliothèque Audible...") else L("Lecture de votre bibliothèque Kindle..."), style = Shiori.type.subheadline, color = colors.secondaryLabel)
             }
             books.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                EmptyState(source.pageSymbol, L("Bibliothèque vide"), if (audible) L("Aucun livre audio sur ce compte.") else L("Aucun livre Kindle sur ce compte."))
+                EmptyState("", L("Bibliothèque vide"), if (audible) L("Aucun livre audio sur ce compte.") else L("Aucun livre Kindle sur ce compte."), logo = source.logo)
             }
             else -> LazyColumn(Modifier.fillMaxSize().statusBarsPadding(), contentPadding = PaddingValues(top = 64.dp, bottom = 140.dp)) {
                 items(books, key = { it.asin }) { book ->
@@ -237,12 +239,14 @@ fun <Item : ImportItem> ImportLibraryPage(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            ShioriButton(
-                if (selectedCount == 0) L("Sélectionnez des livres") else L("Importer %lld livre(s)", selectedCount),
-                enabled = canImport,
-                large = true,
-                fillWidth = true,
-            ) { onImport() }
+            AsyncActionButton({ onImport(); null }, Modifier.fillMaxWidth(), height = 48.dp, spansWidth = true, enabled = canImport) {
+                Text(
+                    if (selectedCount == 0) L("Sélectionnez des livres") else L("Importer %lld livre(s)", selectedCount),
+                    style = actionLabelStyle(48.dp),
+                    color = LocalContentColor.current,
+                    maxLines = 1,
+                )
+            }
             if (isImporting) Text(L("Import en cours, gardez l'écran ouvert..."), style = Shiori.type.caption, color = colors.secondaryLabel)
         }
         Box(Modifier.align(Alignment.TopEnd).statusBarsPadding().padding(16.dp)) {
