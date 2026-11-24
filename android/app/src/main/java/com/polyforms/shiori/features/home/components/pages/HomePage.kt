@@ -1,5 +1,7 @@
 package com.polyforms.shiori.features.home.components.pages
 
+import com.polyforms.shiori.shared.platform.pageEndRoom
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -203,7 +205,7 @@ fun HomePage(
             refreshing = false
         }
     }, Modifier.fillMaxSize()) {
-        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = 120.dp)) {
+        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = pageEndRoom())) {
             if (onBareBackdrop) {
                 Box {
                     // Up under the bar and the status bar, as a hero's, and taking no room: the

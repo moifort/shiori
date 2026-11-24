@@ -1,5 +1,9 @@
 package com.polyforms.shiori.features.import.components.pages
 
+import com.polyforms.shiori.shared.platform.bottomCovered
+
+import com.polyforms.shiori.shared.platform.pageEndRoom
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -8,7 +12,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -59,7 +62,7 @@ import com.polyforms.shiori.PreviewSurface
 
 @Composable
 private fun PageColumn(content: @Composable () -> Unit) {
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).statusBarsPadding().padding(top = 64.dp, bottom = 40.dp), verticalArrangement = Arrangement.spacedBy(24.dp)) { content() }
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).statusBarsPadding().padding(top = 64.dp, bottom = pageEndRoom()), verticalArrangement = Arrangement.spacedBy(24.dp)) { content() }
 }
 
 /** An Amazon source not connected yet: what the import does, the store, the connect button. */
@@ -206,7 +209,7 @@ fun <Item : ImportItem> ImportLibraryPage(
             books.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 EmptyState("", L("Bibliothèque vide"), if (audible) L("Aucun livre audio sur ce compte.") else L("Aucun livre Kindle sur ce compte."), logo = source.logo)
             }
-            else -> LazyColumn(Modifier.fillMaxSize().statusBarsPadding(), contentPadding = PaddingValues(top = 64.dp, bottom = 140.dp)) {
+            else -> LazyColumn(Modifier.fillMaxSize().statusBarsPadding(), contentPadding = PaddingValues(top = 64.dp, bottom = bottomCovered() + 120.dp)) {
                 items(books, key = { it.asin }) { book ->
                     Row(
                         Modifier.fillMaxWidth().plainClickable(enabled = !book.alreadyInLibrary) { onToggle(book) }.alpha(if (book.alreadyInLibrary) 0.55f else 1f)
@@ -235,7 +238,7 @@ fun <Item : ImportItem> ImportLibraryPage(
             }
         }
         Column(
-            Modifier.align(Alignment.BottomCenter).fillMaxWidth().background(colors.secondaryGroupedBackground).navigationBarsPadding().padding(16.dp),
+            Modifier.align(Alignment.BottomCenter).fillMaxWidth().background(colors.secondaryGroupedBackground).padding(bottom = bottomCovered()).padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {

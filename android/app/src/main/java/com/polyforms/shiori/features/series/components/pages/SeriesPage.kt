@@ -1,6 +1,6 @@
 package com.polyforms.shiori.features.series.components.pages
 
-import com.polyforms.shiori.shared.platform.TabBarClearance
+import com.polyforms.shiori.shared.platform.pageEndRoom
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
@@ -224,7 +224,7 @@ private fun Catalogue(
                 }
             }
         }
-        Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 4.dp, bottom = TabBarClearance), verticalArrangement = Arrangement.spacedBy(28.dp)) {
+        Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 4.dp, bottom = pageEndRoom()), verticalArrangement = Arrangement.spacedBy(28.dp)) {
             Column(verticalArrangement = Arrangement.spacedBy(22.dp)) {
                 val next = releases?.next
                 if (friend == null && next != null && next.number !in heldNumbers) {

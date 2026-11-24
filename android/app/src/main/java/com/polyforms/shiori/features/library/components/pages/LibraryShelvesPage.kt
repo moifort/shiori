@@ -1,5 +1,7 @@
 package com.polyforms.shiori.features.library.components.pages
 
+import com.polyforms.shiori.shared.platform.pageEndRoom
+
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.Spacer
@@ -99,7 +101,7 @@ fun LibraryShelvesPage(
             refreshing = false
         }
     }, Modifier.fillMaxSize()) {
-        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = 120.dp), verticalArrangement = Arrangement.spacedBy(30.dp)) {
+        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = pageEndRoom()), verticalArrangement = Arrangement.spacedBy(30.dp)) {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 // The tab's root draws its name in the bar that scrolls away, with the avatar; a
                 // genre page, pushed, keeps its own large title.

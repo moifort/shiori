@@ -1,5 +1,7 @@
 package com.polyforms.shiori.features.authors.components.pages
 
+import com.polyforms.shiori.shared.platform.pageEndRoom
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -41,7 +43,7 @@ import com.polyforms.shiori.PreviewSurface
 fun AuthorWorkPage(work: AuthorWork, author: String, isAdding: Boolean, onAdd: suspend () -> Unit) {
     val colors = Shiori.colors
     Box(Modifier.fillMaxSize().background(colors.groupedBackground)) {
-        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = pageEndRoom())) {
             Box(Modifier.fillMaxWidth()) {
                 CoverBackdrop(work.coverURL, Modifier.fillMaxWidth().height(420.dp), fadeHeight = 140.dp)
                 Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {

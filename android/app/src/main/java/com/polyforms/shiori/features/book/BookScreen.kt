@@ -1,7 +1,8 @@
 package com.polyforms.shiori.features.book
 
+import com.polyforms.shiori.shared.platform.bottomCovered
+
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.activity.compose.BackHandler
@@ -12,7 +13,6 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.CircularProgressIndicator
@@ -147,16 +147,15 @@ fun BookScreen(
                     listening = ListeningButtonState.of(book, player)?.let { HeroListening(it.title, it.symbol) },
                     onListen = { ListeningButtonState.of(book, player)?.let { state -> player?.press(state, book) } },
                     isDownloaded = false,
-                    contentPadding = PaddingValues(bottom = 24.dp),
                 )
                 // Back puts the note away, as cancelling it does.
                 BackHandler(enabled = composingNote) { composingNote = false }
-                // Above the tab bar while the keyboard is down, as iOS insets it over the bar.
+                // Above the tab bar and the title playing while the keyboard is down, as iOS insets it over them.
                 val keyboardUp = WindowInsets.isImeVisible
                 AnimatedVisibility(
                     composingNote,
                     Modifier.align(Alignment.BottomCenter)
-                        .then(if (keyboardUp) Modifier else Modifier.navigationBarsPadding().padding(bottom = 74.dp)),
+                        .then(if (keyboardUp) Modifier else Modifier.padding(bottom = bottomCovered())),
                     enter = slideInVertically { it } + fadeIn(),
                     exit = slideOutVertically { it } + fadeOut(),
                 ) {

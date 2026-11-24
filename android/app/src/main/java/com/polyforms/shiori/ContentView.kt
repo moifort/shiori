@@ -40,6 +40,12 @@ import com.polyforms.shiori.shared.platform.FloatingTabBar
 import com.polyforms.shiori.shared.platform.NavigationStack
 import com.polyforms.shiori.shared.platform.Navigator
 import com.polyforms.shiori.shared.platform.TabBarFold
+import com.polyforms.shiori.shared.platform.BottomRoom
+import com.polyforms.shiori.shared.platform.LocalBottomCovered
+import com.polyforms.shiori.features.listening.components.organisms.PlayerAccessoryHeight
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.navigationBars
 import com.polyforms.shiori.shared.platform.TabItem
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import java.time.Instant
@@ -154,6 +160,13 @@ fun ContentView(router: AppRouter = remember { AppRouter() }) {
     val contentTabs = listOf(TabSelection.HOME, TabSelection.LIBRARY, TabSelection.NEWS, TabSelection.FRIENDS)
     val backdrop = com.polyforms.shiori.shared.components.styles.rememberBackdrop()
     LaunchedEffect(router.selectedTab) { opened += router.selectedTab }
+    val accessory = playerAccessory()
+    // What the bar and the title playing cover, handed to every page beneath for its foot.
+    val covered = BottomRoom.covered(
+        navigation = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding(),
+        accessory = if (accessory != null) PlayerAccessoryHeight else null,
+    )
+    CompositionLocalProvider(LocalBottomCovered provides covered) {
     Box(Modifier.fillMaxSize().nestedScroll(fold.connection)) {
         // The tabs' pages, recorded so the floating bar blurs what scrolls under it.
         Box(Modifier.fillMaxSize().backdropSource(backdrop)) {
@@ -184,7 +197,7 @@ fun ContentView(router: AppRouter = remember { AppRouter() }) {
         }
         }
         // The bar stays over pushed pages too, as iOS keeps it, folding as they scroll; each
-        // scrolled page leaves [TabBarClearance] at its foot.
+        // scrolled page leaves [pageEndRoom] at its foot.
         run {
             Box(Modifier.align(Alignment.BottomCenter).zIndex(2f)) {
                 CompositionLocalProvider(com.polyforms.shiori.shared.components.styles.LocalBackdrop provides backdrop) {
@@ -198,11 +211,12 @@ fun ContentView(router: AppRouter = remember { AppRouter() }) {
                     onTrailing = { router.showAddSheet = true },
                     minimized = fold.isMinimized,
                     onExpand = { fold.isMinimized = false },
-                    accessory = playerAccessory(),
+                    accessory = accessory,
                 )
                 }
             }
         }
+    }
     }
         AddBookFlow(router)
         FriendsOverlays(router)

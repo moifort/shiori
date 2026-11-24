@@ -1,5 +1,7 @@
 package com.polyforms.shiori.shared.components.molecules
 
+import com.polyforms.shiori.shared.platform.bottomCovered
+
 import com.polyforms.shiori.shared.components.styles.ShioriTheme
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.LinearEasing
@@ -15,7 +17,6 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
@@ -70,12 +71,12 @@ fun GeneratingPill() {
     }
 }
 
-/** The pill at the foot of a page while `isGenerating`, rising in and fading out. */
+/** The pill at the foot of a page while `isGenerating`, rising in and fading out, above the tab bar and the title playing. */
 @Composable
 fun BoxScope.GeneratingPillHost(isGenerating: Boolean) {
     AnimatedVisibility(
         isGenerating,
-        Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 12.dp),
+        Modifier.align(Alignment.BottomCenter).padding(bottom = bottomCovered() + 12.dp),
         enter = fadeIn() + scaleIn(initialScale = 0.6f),
         exit = fadeOut() + scaleOut(targetScale = 0.9f),
     ) { GeneratingPill() }

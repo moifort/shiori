@@ -1,6 +1,6 @@
 package com.polyforms.shiori.features.series.components.pages
 
-import com.polyforms.shiori.shared.platform.TabBarClearance
+import com.polyforms.shiori.shared.platform.pageEndRoom
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -129,7 +129,7 @@ fun SeriesShelfPage(
             refreshing = false
         }
     }, Modifier.fillMaxSize()) {
-        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = TabBarClearance), verticalArrangement = Arrangement.spacedBy(30.dp)) {
+        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = pageEndRoom()), verticalArrangement = Arrangement.spacedBy(30.dp)) {
             if (title != null) LargeTitle(title) else Spacer(Modifier.statusBarsPadding().height(56.dp))
             if (upNext.isNotEmpty()) SeriesUpNextRail(upNext) { send(SeriesShelfAction.open(it)) }
             if (releases.isNotEmpty()) {

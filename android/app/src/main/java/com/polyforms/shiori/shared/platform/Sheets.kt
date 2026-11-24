@@ -55,7 +55,10 @@ fun ShioriSheet(onDismiss: () -> Unit, content: @Composable ColumnScope.(dismiss
         dragHandle = null,
         contentWindowInsets = { WindowInsets(0) },
     ) {
-        Column(Modifier.fillMaxWidth().statusBarsPadding()) { content(dismiss) }
+        // A sheet rises over the tab bar: only the system navigation is under its foot.
+        androidx.compose.runtime.CompositionLocalProvider(LocalBottomCovered provides null) {
+            Column(Modifier.fillMaxWidth().statusBarsPadding()) { content(dismiss) }
+        }
     }
 }
 
@@ -66,7 +69,9 @@ fun FullScreenCover(onDismiss: () -> Unit, content: @Composable () -> Unit) {
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
     ) {
-        Box(Modifier.fillMaxSize().background(Shiori.colors.background)) { content() }
+        androidx.compose.runtime.CompositionLocalProvider(LocalBottomCovered provides null) {
+            Box(Modifier.fillMaxSize().background(Shiori.colors.background)) { content() }
+        }
     }
 }
 

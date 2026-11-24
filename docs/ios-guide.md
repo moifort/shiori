@@ -414,6 +414,10 @@ Previews check how a view looks; unit tests check what the app decides. They do 
   centred.
 - **No hint text under sections** — no `footer:` caption explaining a picker. A message that
   matters in one state is a row inside the section, shown only in that state.
+- **A page's last element scrolls fully clear** of the tab bar and of the player's capsule,
+  with 32 pt of air after it; what floats at a page's foot (the AI pill, the note composer)
+  sits above both. iOS gets the room from the bottom safe area; Android from
+  `pageEndRoom()` / `bottomCovered()` (`TabBar.kt`), never a fixed number.
 - **Toolbar actions are icon-only**, through `ToolbarIconButton` and `AsyncToolbarButton`;
   the title is kept for VoiceOver. Cancel `xmark` on the left, confirm `checkmark` on the right.
   A text-only item never moves into the iPhone Duo's vertical bar. Close or cancel is

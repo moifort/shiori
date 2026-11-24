@@ -1,5 +1,7 @@
 package com.polyforms.shiori.features.settings.components.pages
 
+import com.polyforms.shiori.shared.platform.pageEndRoom
+
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -63,7 +65,7 @@ import com.polyforms.shiori.PreviewSurface
 
 @Composable
 private fun SettingsColumn(content: @Composable () -> Unit) {
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).statusBarsPadding().padding(top = 64.dp, bottom = 40.dp), verticalArrangement = Arrangement.spacedBy(24.dp)) { content() }
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).statusBarsPadding().padding(top = 64.dp, bottom = pageEndRoom()), verticalArrangement = Arrangement.spacedBy(24.dp)) { content() }
 }
 
 /** A settings line: a grey badge holding a glyph (or a service's logo) in the text's colour, a title and a line under it. */

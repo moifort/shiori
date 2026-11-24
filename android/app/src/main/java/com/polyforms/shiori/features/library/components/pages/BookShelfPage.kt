@@ -1,6 +1,6 @@
 package com.polyforms.shiori.features.library.components.pages
 
-import com.polyforms.shiori.shared.platform.TabBarClearance
+import com.polyforms.shiori.shared.platform.pageEndRoom
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -116,7 +116,7 @@ fun ShelfGrid(columns: Int, spacing: Dp, onRefresh: suspend () -> Unit, inset: D
         LazyVerticalGrid(
             GridCells.Fixed(columns),
             Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(start = inset, end = inset, bottom = TabBarClearance),
+            contentPadding = PaddingValues(start = inset, end = inset, bottom = pageEndRoom()),
             horizontalArrangement = Arrangement.spacedBy(spacing),
             verticalArrangement = Arrangement.spacedBy(spacing),
             content = content,

@@ -1,6 +1,6 @@
 package com.polyforms.shiori.features.discover.components.pages
 
-import com.polyforms.shiori.shared.platform.TabBarClearance
+import com.polyforms.shiori.shared.platform.pageEndRoom
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -104,7 +104,7 @@ fun SuggestionPage(
                 }
             }
             Column(
-                Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 4.dp, bottom = TabBarClearance),
+                Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 4.dp, bottom = pageEndRoom()),
                 verticalArrangement = Arrangement.spacedBy(28.dp),
             ) {
                 SuggestionReasonCard(suggestion.reason, suggestion.references) { act(SuggestionAction.OpenReference(it)) }

@@ -1,5 +1,7 @@
 package com.polyforms.shiori.features.search.components.pages
 
+import com.polyforms.shiori.shared.platform.pageEndRoom
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -114,7 +116,7 @@ fun LibrarySearchPage(
                     CircularProgressIndicator()
                     Text(L("Préparation de vos livres…"), style = Shiori.type.subheadline, color = colors.secondaryLabel)
                 }
-                showsNoResult -> Box(Modifier.fillMaxSize().padding(bottom = 120.dp), contentAlignment = Alignment.Center) {
+                showsNoResult -> Box(Modifier.fillMaxSize().padding(bottom = pageEndRoom()), contentAlignment = Alignment.Center) {
                     if (results.hiddenByFilter > 0) {
                         EmptyState(
                             "line.3.horizontal.decrease.circle",
@@ -126,7 +128,7 @@ fun LibrarySearchPage(
                         EmptyState("magnifyingglass", L("Aucun livre ne correspond"), L("Cherchez un titre, un auteur ou une série de votre bibliothèque."))
                     }
                 }
-                else -> LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 120.dp)) {
+                else -> LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = pageEndRoom())) {
                     if (!typed && !filter.isActive && recentlyViewed.isNotEmpty()) {
                         item(key = "viewed") {
                             Section(L("Vus récemment")) {

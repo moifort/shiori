@@ -1,5 +1,7 @@
 package com.polyforms.shiori.features.news.components.pages
 
+import com.polyforms.shiori.shared.platform.pageEndRoom
+
 import com.polyforms.shiori.features.authors.AuthorListOrder
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
@@ -192,7 +194,7 @@ fun NewsPage(
                 },
                 Modifier.fillMaxSize(),
             ) {
-                Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = 120.dp)) {
+                Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = pageEndRoom())) {
                     val day = agenda.days.firstOrNull { it.day == (lead ?: agenda.openingDay) }
                     val top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 64.dp
                     DarkCards {

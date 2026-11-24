@@ -1,6 +1,6 @@
 package com.polyforms.shiori.features.discover.components.pages
 
-import com.polyforms.shiori.shared.platform.TabBarClearance
+import com.polyforms.shiori.shared.platform.pageEndRoom
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -266,7 +266,7 @@ fun UnownedBookPage(
                 }
             }
             Column(
-                Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 4.dp, bottom = TabBarClearance),
+                Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 4.dp, bottom = pageEndRoom()),
                 verticalArrangement = Arrangement.spacedBy(28.dp),
             ) {
                 // The summary once the model wrote it; nothing while it writes, the bar saying so.

@@ -1,5 +1,7 @@
 package com.polyforms.shiori.features.scan.components.pages
 
+import com.polyforms.shiori.shared.platform.pageEndRoom
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -263,7 +265,7 @@ fun ScanReviewPage(
                 }
             }
             Column(
-                Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 4.dp, bottom = 32.dp),
+                Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 4.dp, bottom = pageEndRoom()),
                 verticalArrangement = Arrangement.spacedBy(28.dp),
             ) {
                 if (ownedCopy != null) {

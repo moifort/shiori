@@ -1,5 +1,7 @@
 package com.polyforms.shiori.features.news.components.pages
 
+import com.polyforms.shiori.shared.platform.pageEndRoom
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -42,7 +44,7 @@ sealed interface PendingReleasePhase {
  */
 @Composable
 fun PendingReleasePage(release: UpcomingRelease, phase: PendingReleasePhase, onRetry: suspend () -> Unit = {}) {
-    Column(Modifier.fillMaxSize().background(Shiori.colors.groupedBackground).verticalScroll(rememberScrollState())) {
+    Column(Modifier.fillMaxSize().background(Shiori.colors.groupedBackground).verticalScroll(rememberScrollState()).padding(bottom = pageEndRoom())) {
         BookHero(release.cover, showsLength = false, releaseDate = release.date, countdown = release.date?.let { ReleaseDateText.countdown(it) })
         Box(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 32.dp), contentAlignment = Alignment.Center) {
             when (phase) {

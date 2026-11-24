@@ -1,6 +1,11 @@
 package com.polyforms.shiori.shared.platform
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.ui.unit.Dp
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
@@ -58,9 +63,9 @@ fun <T> FloatingTabBar(
     accessory: (@Composable () -> Unit)? = null,
 ) {
     val colors = Shiori.colors
-    Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 20.dp, vertical = 6.dp)) {
+    Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 20.dp, vertical = BottomRoom.BarPadding)) {
         if (accessory != null && !minimized) {
-            Box(Modifier.fillMaxWidth().padding(bottom = 8.dp)) { accessory() }
+            Box(Modifier.fillMaxWidth().padding(bottom = BottomRoom.AccessoryGap)) { accessory() }
         }
         Row(
             Modifier.fillMaxWidth(),
@@ -71,7 +76,7 @@ fun <T> FloatingTabBar(
                 val tab = tabs.firstOrNull { it.value == selected } ?: tabs.first()
                 Box(
                     Modifier
-                        .size(62.dp)
+                        .size(BottomRoom.BarHeight)
                         .shadow(12.dp, CircleShape, ambientColor = colors.label.copy(alpha = 0.2f), spotColor = colors.label.copy(alpha = 0.2f))
                         .clip(CircleShape)
                         .glass(CircleShape)
@@ -86,7 +91,7 @@ fun <T> FloatingTabBar(
                 Row(
                     Modifier
                         .weight(1f)
-                        .height(62.dp)
+                        .height(BottomRoom.BarHeight)
                         .shadow(12.dp, CircleShape, ambientColor = colors.label.copy(alpha = 0.2f), spotColor = colors.label.copy(alpha = 0.2f))
                         .clip(CircleShape)
                         .glass(CircleShape)
@@ -114,7 +119,7 @@ fun <T> FloatingTabBar(
             if (trailing != null) {
                 Box(
                     Modifier
-                        .size(62.dp)
+                        .size(BottomRoom.BarHeight)
                         .shadow(12.dp, CircleShape, ambientColor = colors.label.copy(alpha = 0.2f), spotColor = colors.label.copy(alpha = 0.2f))
                         .clip(CircleShape)
                         .glass(CircleShape)
@@ -148,5 +153,42 @@ class TabBarFold {
     }
 }
 
-/** The room the floating tab bar takes at the foot of a scrolled page. */
-val TabBarClearance = 96.dp
+/**
+ * What the floating tab bar, and the title playing over it, cover at the foot of the screen:
+ * iOS hands the same height to every page as its bottom safe area, for free, through the tab bar
+ * and `tabViewBottomAccessory`. One source for every scrolled page and everything that floats
+ * at the foot of one, set by `ContentView` where the bar is drawn; null outside the tabs (a
+ * sheet, a full-screen cover), where only the system navigation is covered.
+ */
+val LocalBottomCovered = compositionLocalOf<Dp?> { null }
+
+object BottomRoom {
+    /** The bar's capsule and the round buttons beside it. */
+    val BarHeight = 62.dp
+
+    /** The bar's own padding, above and below it. */
+    val BarPadding = 6.dp
+
+    /** Between the title playing and the bar. */
+    val AccessoryGap = 8.dp
+
+    /** The breathing room after a page's last element, as iOS pages end (`.padding(.bottom, 32)`). */
+    val PageEndMargin = 32.dp
+
+    /**
+     * The height the bar covers over `navigation` (the system navigation inset), with the title
+     * playing above it when `accessory` is its height. The bar unfolded, always: folded it covers
+     * less, and a foot that shrank under the thumb would make the page's end jump.
+     */
+    fun covered(navigation: Dp, accessory: Dp?): Dp =
+        navigation + BarPadding + BarHeight + BarPadding + (accessory?.let { it + AccessoryGap } ?: 0.dp)
+}
+
+/** What chrome covers at the foot of the screen here: the tab bar and the player, else the system navigation. */
+@Composable
+fun bottomCovered(): Dp =
+    LocalBottomCovered.current ?: WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+
+/** The empty room a scrolled page leaves after its last element, for it to scroll fully clear of the bar and the player. */
+@Composable
+fun pageEndRoom(): Dp = bottomCovered() + BottomRoom.PageEndMargin

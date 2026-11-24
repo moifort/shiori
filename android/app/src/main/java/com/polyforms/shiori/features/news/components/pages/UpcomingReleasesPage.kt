@@ -1,6 +1,6 @@
 package com.polyforms.shiori.features.news.components.pages
 
-import com.polyforms.shiori.shared.platform.TabBarClearance
+import com.polyforms.shiori.shared.platform.pageEndRoom
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -48,7 +48,7 @@ fun UpcomingReleasesPage(releases: List<UpcomingRelease>, onOpen: (UpcomingRelea
     var format by remember { mutableStateOf<BookFormat?>(null) }
     val colors = Shiori.colors
     val sections = ReleaseCalendar(releases.filter { format == null || it.format == format }).sections
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = TabBarClearance)) {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = pageEndRoom())) {
         LargeTitle(L("À venir"))
         Box(Modifier.padding(top = 4.dp)) {
             FilterPills(NewsFeedLayout.pillFormats.map { FilterPill(it.name, it.pillLabel) }, format?.name, { id -> format = id?.let { BookFormat.valueOf(it) } })

@@ -1,6 +1,6 @@
 package com.polyforms.shiori.features.book.components.pages
 
-import com.polyforms.shiori.shared.platform.TabBarClearance
+import com.polyforms.shiori.shared.platform.pageEndRoom
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -219,7 +219,7 @@ fun BookPage(
             }
         }
         Column(
-            Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 4.dp, bottom = TabBarClearance),
+            Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 4.dp, bottom = pageEndRoom()),
             verticalArrangement = Arrangement.spacedBy(28.dp),
         ) {
             book.synopsis?.let { BookSynopsisBlock(it) }

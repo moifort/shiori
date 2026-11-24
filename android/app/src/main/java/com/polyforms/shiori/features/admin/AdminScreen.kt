@@ -1,5 +1,7 @@
 package com.polyforms.shiori.features.admin
 
+import com.polyforms.shiori.shared.platform.pageEndRoom
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -167,7 +169,7 @@ private fun monthTitle(month: LocalDate) =
 @Composable
 fun AdminPage(metrics: AdminMetrics) {
     val colors = Shiori.colors
-    LazyColumn(Modifier.fillMaxSize().statusBarsPadding(), contentPadding = PaddingValues(top = 72.dp, bottom = 40.dp), verticalArrangement = Arrangement.spacedBy(24.dp)) {
+    LazyColumn(Modifier.fillMaxSize().statusBarsPadding(), contentPadding = PaddingValues(top = 72.dp, bottom = pageEndRoom()), verticalArrangement = Arrangement.spacedBy(24.dp)) {
         item(key = "top") {
             Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 MonthCostCard(metrics.costs, metrics.month.minusMonths(1))
