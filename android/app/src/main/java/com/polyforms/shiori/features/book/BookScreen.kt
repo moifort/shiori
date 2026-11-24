@@ -28,6 +28,10 @@ import com.polyforms.shiori.features.book.components.organisms.BookMenuAction
 import com.polyforms.shiori.features.book.components.pages.BookEditSheet
 import com.polyforms.shiori.features.book.components.pages.BookField
 import com.polyforms.shiori.features.book.components.pages.BookPage
+import com.polyforms.shiori.features.book.components.pages.HeroListening
+import com.polyforms.shiori.features.listening.ListeningButtonState
+import com.polyforms.shiori.features.listening.LocalAudiblePlayer
+import com.polyforms.shiori.features.listening.press
 import com.polyforms.shiori.features.book.components.pages.CoverPickerSheet
 import com.polyforms.shiori.features.book.components.pages.FieldEditSheet
 import com.polyforms.shiori.features.book.components.pages.GenreEditSheet
@@ -73,6 +77,8 @@ fun BookScreen(
     val navigator = currentNavigator
     var sheet by remember { mutableStateOf<Sheet?>(null) }
     var composingNote by remember { mutableStateOf(false) }
+    // The Audible player, in a build that carries it.
+    val player = LocalAudiblePlayer.current
 
     fun run(operation: suspend () -> Unit) {
         scope.launch {
@@ -130,10 +136,10 @@ fun BookScreen(
                             navigator.push { AnnouncedVolumeScreen(saga, volume) }
                         }
                     },
-                    // The Audible player (Lot 7) fills these: the play button's state, its press,
-                    // and whether the title is kept on the phone.
-                    listening = null,
-                    onListen = {},
+                    // The play button of an Audible audiobook: it leads the hero, the state as the
+                    // player says it. Android keeps no download (Audible refuses it), so no tag.
+                    listening = ListeningButtonState.of(book, player)?.let { HeroListening(it.title, it.symbol) },
+                    onListen = { ListeningButtonState.of(book, player)?.let { state -> player?.press(state, book) } },
                     isDownloaded = false,
                     contentPadding = PaddingValues(bottom = 24.dp),
                 )
