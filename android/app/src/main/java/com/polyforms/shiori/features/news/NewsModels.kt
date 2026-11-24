@@ -135,3 +135,18 @@ val BookFormat.pillLabel: String
         BookFormat.COMIC -> L("Comics")
         BookFormat.MANGA -> L("Mangas")
     }
+
+/**
+ * The Actu tab's opening, asked in one request so the server reads the library once for every
+ * section rather than once each.
+ */
+data class NewsOpening(
+    val feed: com.polyforms.shiori.shared.CursorPage<FeedEvent>,
+    val upcoming: List<UpcomingRelease>,
+    val yearReleases: List<UpcomingRelease>,
+    val narratorNews: List<NarratorNews>,
+    val awards: List<com.polyforms.shiori.features.discover.AwardSection>,
+    val discoveries: List<com.polyforms.shiori.features.discover.Suggestion>,
+    /** What the wish list rail shows, in its order. */
+    val wishlistReleases: List<UpcomingRelease> = emptyList(),
+)

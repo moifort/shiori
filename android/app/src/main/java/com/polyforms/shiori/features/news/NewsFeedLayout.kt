@@ -6,13 +6,10 @@ import com.polyforms.shiori.shared.BookFormat
 import com.polyforms.shiori.shared.BookLanguage
 import com.polyforms.shiori.shared.BookMedium
 import com.polyforms.shiori.shared.JournalPeriod
-import com.polyforms.shiori.shared.L
 import com.polyforms.shiori.shared.account.AccountAvatar
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
-import java.time.format.TextStyle
-import java.util.Locale
 
 /** Something out in the last thirty days: a release followed, or a narrator's new recording. */
 sealed interface ReleasedItem {
@@ -62,6 +59,11 @@ sealed interface ReleasedItem {
 /** One friend's move, and the friends who made the same one the same day. */
 data class FriendMove(val lead: FeedEvent, val others: List<FeedEvent>) {
     val id: String get() = lead.id
+}
+
+/** The friends' moves of one journal period, under its heading. */
+data class FriendSection(val title: String, val moves: List<FriendMove>) {
+    val id: String get() = title
 }
 
 /** A friend's face on the stories rail; ringed when they did something new. */
@@ -132,7 +134,11 @@ object NewsFeedLayout {
 
     private fun sameMove(event: FeedEvent) = "${event.kind.name}~${event.title.lowercase()}~${event.authors.firstOrNull()?.lowercase() ?: ""}"
 
-    fun friendMoves(events: List<FeedEvent>, friendId: String? = null, now: Instant = Instant.now()): List<FriendMove> {
+    /**
+     * The friends' moves under their journal periods, newest first, narrowed to one friend when
+     * one is picked. Within a period the same move on the same story by several friends is one line.
+     */
+    fun friendSections(events: List<FeedEvent>, friendId: String? = null, now: Instant = Instant.now()): List<FriendSection> {
         val sections = mutableListOf<Pair<JournalPeriod, MutableList<MutableList<FeedEvent>>>>()
         for (event in events.sortedByDescending { it.at }) {
             if (friendId != null && event.friendId != friendId) continue
@@ -143,8 +149,11 @@ object NewsFeedLayout {
             val existing = moves.firstOrNull { sameMove(it[0]) == key }
             if (existing != null) existing += event else moves += mutableListOf(event)
         }
-        return sections.flatMap { section -> section.second.map { FriendMove(it[0], it.drop(1)) } }
+        return sections.map { (period, moves) -> FriendSection(period.title(now), moves.map { FriendMove(it[0], it.drop(1)) }) }
     }
+
+    fun friendMoves(events: List<FeedEvent>, friendId: String? = null, now: Instant = Instant.now()): List<FriendMove> =
+        friendSections(events, friendId, now).flatMap { it.moves }
 
     fun stories(events: List<FeedEvent>, seenAt: Instant?): List<FriendStory> {
         val stories = mutableListOf<FriendStory>()
@@ -163,77 +172,5 @@ object NewsFeedLayout {
     fun pillFormats(feed: List<NewsFeedSection>, selected: BookFormat?): List<BookFormat> {
         val present = feed.flatMap { it.items }.map { it.format }.toSet()
         return pillFormats.filter { it in present || it == selected }
-    }
-}
-
-/** A day of the release calendar, or a month or year without one. */
-data class ReleaseDay(val id: String, val weekday: String?, val label: String, val symbol: String? = null, val releases: List<UpcomingRelease>)
-
-data class ReleaseMonthSection(val id: String, val title: String, val days: List<ReleaseDay>)
-
-/** The releases to come, filed by month and day, then the later years, the undated, the awaited. */
-class ReleaseCalendar(val releases: List<UpcomingRelease>, private val now: Instant = Instant.now()) {
-    private data class Parsed(val year: Int, val month: Int?, val day: Int?)
-
-    private fun parsed(date: String?): Parsed? {
-        val parts = date?.split("-")?.mapNotNull { it.toIntOrNull() } ?: return null
-        val year = parts.firstOrNull() ?: return null
-        return Parsed(year, parts.getOrNull(1), parts.getOrNull(2))
-    }
-
-    val dated: List<UpcomingRelease> get() = sections.filter { it.id != BEYOND && it.id != AWAITED }.flatMap { it.days.flatMap { day -> day.releases } }
-
-    val sections: List<ReleaseMonthSection>
-        get() {
-            val locale = Locale.getDefault()
-            val today = now.atZone(ZoneId.systemDefault()).toLocalDate()
-            data class Month(val start: LocalDate, val days: MutableMap<Int, MutableList<UpcomingRelease>> = sortedMapOf(), val monthOnly: MutableList<UpcomingRelease> = mutableListOf())
-            val months = sortedMapOf<String, Month>()
-            val years = sortedMapOf<Int, MutableList<UpcomingRelease>>()
-            val undated = mutableListOf<UpcomingRelease>()
-            val waiting = mutableListOf<UpcomingRelease>()
-            for (release in releases) {
-                val date = parsed(release.date)
-                if (date == null) {
-                    if (release.source == ReleaseSource.AWAITED) waiting += release else undated += release
-                    continue
-                }
-                val month = date.month
-                if (month == null) {
-                    if (date.year >= today.year) years.getOrPut(date.year) { mutableListOf() } += release
-                    continue
-                }
-                val start = runCatching { LocalDate.of(date.year, month, 1) }.getOrNull() ?: continue
-                val key = "%04d-%02d".format(date.year, month)
-                val day = date.day
-                if (day != null) {
-                    val whenDay = runCatching { LocalDate.of(date.year, month, day) }.getOrNull() ?: continue
-                    if (whenDay.isBefore(today)) continue
-                    months.getOrPut(key) { Month(start) }.days.getOrPut(day) { mutableListOf() } += release
-                } else {
-                    if (!start.plusMonths(1).isAfter(today)) continue
-                    months.getOrPut(key) { Month(start) }.monthOnly += release
-                }
-            }
-            val sections = months.map { (key, entry) ->
-                val days = entry.days.map { (day, list) ->
-                    val whenDay = entry.start.withDayOfMonth(day)
-                    ReleaseDay("$key-$day", whenDay.dayOfWeek.getDisplayName(TextStyle.SHORT, locale), day.toString(), releases = list)
-                }.toMutableList()
-                if (entry.monthOnly.isNotEmpty()) days += ReleaseDay("$key-month", null, L("Sans jour"), releases = entry.monthOnly)
-                var title = entry.start.month.getDisplayName(TextStyle.FULL_STANDALONE, locale).replaceFirstChar { it.titlecase(locale) }
-                if (entry.start.year != today.year) title += " ${entry.start.year}"
-                ReleaseMonthSection(key, title, days)
-            }.toMutableList()
-            val beyond = years.map { (year, list) -> ReleaseDay("year-$year", null, year.toString(), releases = list) }.toMutableList()
-            if (undated.isNotEmpty()) beyond += ReleaseDay("undated", null, L("Sans date"), releases = undated)
-            if (beyond.isNotEmpty()) sections += ReleaseMonthSection(BEYOND, L("Au-delà"), beyond)
-            if (waiting.isNotEmpty()) sections += ReleaseMonthSection(AWAITED, L("Guettés, pas encore annoncés"), listOf(ReleaseDay("awaited", null, "", "binoculars", waiting)))
-            return sections
-        }
-
-    companion object {
-        private const val BEYOND = "beyond"
-        private const val AWAITED = "awaited"
     }
 }
