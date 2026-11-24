@@ -682,8 +682,7 @@ final class AudiblePlayer {
         let center = MPRemoteCommandCenter.shared()
         center.playCommand.addTarget { [weak self] _ in
             MainActor.assumeIsolated {
-                guard let self else { return }
-                if !self.restartSleepTimer() { self.resume() }
+                self?.playFromHeadset()
             }
             return .success
         }
@@ -705,8 +704,12 @@ final class AudiblePlayer {
                 guard let self else { return }
                 // While the timer runs, its fade included, a press on the
                 // headset gives it its minutes back at full volume rather than
-                // pausing; once it paused, it plays.
-                if !self.restartSleepTimer() { self.togglePlayPause() }
+                // pausing; paused, it plays.
+                if self.isPlaying {
+                    if !self.restartSleepTimer() { self.togglePlayPause() }
+                } else {
+                    self.playFromHeadset()
+                }
             }
             return .success
         }
@@ -735,6 +738,15 @@ final class AudiblePlayer {
             MainActor.assumeIsolated { self?.previousChapter() }
             return .success
         }
+    }
+
+    /// A headset's play: the listening plays, and a running timer starts over
+    /// for as long as it was set. Restarting the timer alone left the press
+    /// unanswered, and iOS handed the headset to the app heard before: on
+    /// 2026-11-23, a pause then a press with the timer set played YouTube.
+    private func playFromHeadset() {
+        restartSleepTimer()
+        if !isPlaying { togglePlayPause() }
     }
 
     /// What the lock screen and the Control Centre show. Written on every
