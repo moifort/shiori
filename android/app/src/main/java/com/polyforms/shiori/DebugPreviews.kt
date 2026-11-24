@@ -33,6 +33,10 @@ import com.polyforms.shiori.features.listening.components.pages.PlayerPage
 import com.polyforms.shiori.features.listening.components.pages.PlayerPageItem
 import com.polyforms.shiori.features.listening.preview
 import com.polyforms.shiori.shared.platform.NavigationStack
+import com.polyforms.shiori.features.discover.book
+import com.polyforms.shiori.features.discover.describedForPreview
+import com.polyforms.shiori.features.discover.release
+import com.polyforms.shiori.features.wishlist.release as wishRelease
 
 /**
  * Pages drawn from their fixtures, opened by `adb shell am start … --es preview <name>` on a
@@ -210,6 +214,60 @@ fun DebugPreviews(name: String) {
                     isDownloaded = { name == "home-listening" && it.format == com.polyforms.shiori.shared.BookFormat.AUDIOBOOK },
                 ) {}
             }
+            "announced" -> {
+                val opened = com.polyforms.shiori.features.discover.DiscoveryVolume(DebugFixtures.sagas[0], DebugFixtures.announcedVolume)
+                com.polyforms.shiori.features.discover.components.pages.AnnouncedVolumePage(
+                    opened,
+                    opened.book(opened.release.describedForPreview),
+                    isDescribing = false,
+                    added = false,
+                    linksToSaga = true,
+                ) {}
+            }
+            "awaited-page" -> {
+                val edition = com.polyforms.shiori.features.discover.DiscoverFixtures.awaitedFromFriend
+                com.polyforms.shiori.features.discover.components.pages.AwaitedEditionPage(edition, edition.cover, isDescribing = false) {}
+            }
+            "award" -> {
+                val winner = com.polyforms.shiori.features.discover.DiscoverFixtures.awardWinner
+                com.polyforms.shiori.features.discover.components.pages.AwardWinnerPage(
+                    winner,
+                    winner.release.copy(publisher = "Saga Press", pageCount = 448).book("award-preview"),
+                    isDescribing = false,
+                    choices = remember { DiscoveryChoices() },
+                    onChoice = { _, _ -> true },
+                    others = listOf(com.polyforms.shiori.features.discover.DiscoverFixtures.goncourtWinner),
+                ) {}
+            }
+            "suggestion" -> {
+                val suggestion = DebugFixtures.discoveries.suggestions[0]
+                com.polyforms.shiori.features.discover.components.pages.SuggestionPage(
+                    suggestion,
+                    suggestion.cover,
+                    isDescribing = false,
+                    choices = remember { DiscoveryChoices() },
+                    onChoice = { _, _ -> true },
+                ) {}
+            }
+            "wish" -> {
+                val wish = com.polyforms.shiori.features.wishlist.WishlistFixtures.wishes[0]
+                com.polyforms.shiori.features.wishlist.components.pages.WishPage(
+                    wish,
+                    wish.wishRelease.book("wish-${wish.id}"),
+                    "https://www.amazon.fr/s?k=Hyperion",
+                    isDescribing = false,
+                    onAdd = {},
+                    onRemove = {},
+                    onChooseCover = {},
+                )
+            }
+            "wishlist" -> androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize().background(com.polyforms.shiori.shared.components.styles.Shiori.colors.groupedBackground)) {
+                com.polyforms.shiori.features.wishlist.components.pages.WishlistPage(
+                    com.polyforms.shiori.features.wishlist.WishlistFixtures.wishlist,
+                    listOf(BookFormat.BOOK, BookFormat.AUDIOBOOK),
+                    null,
+                    isLoading = false,
+                    errorMessage = null,
             else -> ShioriRoot()
         }
     }
