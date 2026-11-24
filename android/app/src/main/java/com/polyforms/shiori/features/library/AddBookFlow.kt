@@ -1,5 +1,8 @@
 package com.polyforms.shiori.features.library
 
+import com.polyforms.shiori.features.discover.AwaitedApi
+import com.polyforms.shiori.shared.isCancellation
+import com.polyforms.shiori.shared.reportError
 import android.graphics.BitmapFactory
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -87,14 +90,26 @@ fun AddBookFlow(router: AppRouter) {
                 ScanScreen(
                     shown.start,
                     onDismiss = { flow = null },
-                    onAwait = { _, _ ->
+                    // Awaited: the edition is watched and the wishlist opens over the Library.
+                    onAwait = { draft, format ->
                         flow = null
-                        // The wishlist, in the Library, as iOS opens it (`opensWishlist` to come with Lot 4).
-                        router.selectedTab = com.polyforms.shiori.TabSelection.LIBRARY
+                        router.openLibrary(LibraryRequest(opensWishlist = true))
+                        scope.launch {
+                            try {
+                                AwaitedApi.awaitScanned(draft, format)
+                            } catch (error: Exception) {
+                                if (!isCancellation(error)) reportError(error)
+                            }
+                        }
                     },
                     onAdded = { book ->
                         flow = null
                         router.openLibrary(LibraryRequest(focus = book.id))
+                    },
+                    // Wished: the Library's wishlist, opened over its shelves.
+                    onWished = {
+                        flow = null
+                        router.openLibrary(LibraryRequest(opensWishlist = true))
                     },
                 )
             }
