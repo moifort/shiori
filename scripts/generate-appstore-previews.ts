@@ -13,7 +13,7 @@
  *
  * Three kinds of panel. The first two are one photograph cut in two: a reader
  * photographing a book, the phone showing its record filled in. The last is two
- * friends' hands, each phone showing the Partagé page. In between, the app alone:
+ * friends' hands, each phone showing the Amis tab. In between, the app alone:
  * an iPhone drawn to its exact proportions (device-panel.swift), on the grey —
  * hands added nothing there.
  *

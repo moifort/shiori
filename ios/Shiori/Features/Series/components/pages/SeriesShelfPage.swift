@@ -183,6 +183,7 @@ struct SeriesShelfPage: View {
                         ) {
                             onAction(.openSeries(saga))
                         }
+                        .accessibilityIdentifier("series-card")
                         .frame(height: 128)
                         .contextMenu {
                             if saga.isSetAside {

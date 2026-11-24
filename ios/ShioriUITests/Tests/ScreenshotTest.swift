@@ -20,8 +20,8 @@ final class ScreenshotTest: XCTestCase {
     private var labels: [String: String] {
         language == "en"
             ? [
-                "Bibliothèque": "Library", "Découvrir": "Discover", "Partagé": "Shared",
-                "Scanner": "Scan", "Accueil": "Home", "Vérifier": "Review", "Rechercher": "Search",
+                "Bibliothèque": "Library", "Découvrir": "Discover", "Actu": "News", "Amis": "Friends",
+                "Auteurs": "Authors", "Séries": "Series", "L'agenda": "Agenda", "Scanner": "Scan", "Accueil": "Home", "Vérifier": "Review", "Rechercher": "Search",
                 "Premium annuel": "Premium Yearly",
             ]
             : [:]
@@ -79,38 +79,9 @@ final class ScreenshotTest: XCTestCase {
         closeDetail()
         _ = app.descendants(matching: .any)["home-genres"].waitForNonExistence(timeout: 5)
 
-        // Bibliothèque, its books as a mosaic of covers.
-        try open("Bibliothèque")
-        let shelves = app.segmentedControls["library-shelf-picker"]
-        try tap(shelves.buttons.element(boundBy: 0), until: app.buttons["library-mode-mosaic"])
-        try tap(app.buttons["library-mode-mosaic"], until: app.buttons["book-tile"].firstMatch)
-        settle()
-        save("01-library")
-
-        // The authors: each with the books held and the sagas they write.
-        try tap(shelves.buttons.element(boundBy: 2), until: app.descendants(matching: .any)["author-row"].firstMatch)
-        settle()
-        save("09-authors")
-
-        // The sagas: their strips of covers, the volumes to come.
-        try tap(shelves.buttons.element(boundBy: 1), until: app.descendants(matching: .any)["series-row"].firstMatch)
-        settle()
-        save("03-series")
-
-        // One saga, its next volume announced under its introduction.
-        try tap(app.descendants(matching: .any)["series-row"].firstMatch, until: app.descendants(matching: .any)["series-releases"])
-        settle()
-        save("04-saga")
-        closeDetail()
-
-        try open("Découvrir")
-        try wait(app.descendants(matching: .any)["discover-volume-row"].firstMatch)
-        settle()
-        save("05-discover")
-
-        // One of the month's discoveries: the book Claude chose, and why.
+        // The month's discovery, the hero's button: the book Claude chose, and why.
         try tap(
-            app.descendants(matching: .any)["discover-suggestion"].firstMatch,
+            app.buttons.matching(NSPredicate(format: "label == %@", label("Découvrir"))).firstMatch,
             until: app.descendants(matching: .any)["suggestion-reason"]
         )
         settle()
@@ -118,22 +89,51 @@ final class ScreenshotTest: XCTestCase {
         closeDetail()
         _ = app.descendants(matching: .any)["suggestion-reason"].waitForNonExistence(timeout: 5)
 
-        // Further down Découvrir: the friends' favorites and the series' next volumes.
+        // Bibliothèque: the rows of its lists over the rails of its books.
+        try open("Bibliothèque")
+        try wait(app.descendants(matching: .any)["library-rail-recent"])
+        settle()
+        save("01-library")
+
+        // The authors: each with the books held and the series they write.
+        try tap(button(labelled: label("Auteurs")), until: app.descendants(matching: .any)["author-row"].firstMatch)
+        settle()
+        save("09-authors")
+        closeDetail()
+
+        // The series: the volumes to come, then every series followed.
+        try tap(button(labelled: label("Séries")), until: app.descendants(matching: .any)["series-releases"].firstMatch)
+        settle()
+        save("03-series")
+        let seriesCard = app.descendants(matching: .any).matching(identifier: "series-card")
+        app.swipeUp()
+        try wait(seriesCard.firstMatch)
+        settle()
+        save("10-discover-series")
+
+        // One series, its next volume announced under its introduction.
+        try tap(
+            seriesCard.matching(NSPredicate(format: "label CONTAINS %@", "One Piece")).firstMatch,
+            until: app.descendants(matching: .any)["series-releases"]
+        )
+        settle()
+        save("04-saga")
+        closeDetail()
+        _ = app.descendants(matching: .any)["series-progress"].waitForNonExistence(timeout: 5)
+        closeDetail()
+
+        // Actu: what the book world brought, the friends' news under it.
+        try open("Actu")
+        try wait(app.staticTexts[label("L'agenda")])
+        settle()
+        save("05-discover")
         app.swipeUp()
         settle()
         save("08-discover-more")
 
-        // Découvrir's Séries shelf: each saga followed, its next volume dated.
-        let discoverShelves = app.segmentedControls["library-shelf-picker"]
-        try tap(
-            discoverShelves.buttons.element(boundBy: 1),
-            until: app.descendants(matching: .any)["discover-series-row"].firstMatch
-        )
-        settle()
-        save("10-discover-series")
-
-        try open("Partagé")
-        try wait(app.descendants(matching: .any)["shared-my-page"])
+        // Amis: the friends' avatars over the rails of their books.
+        try open("Amis")
+        try wait(app.descendants(matching: .any)["friends-avatars"])
         settle()
         save("06-shared")
 
@@ -203,7 +203,13 @@ final class ScreenshotTest: XCTestCase {
     private func open(_ french: String) throws {
         let tab = label(french)
         let button = app.tabBars.buttons[tab].firstMatch
-        if button.waitForExistence(timeout: 5) {
+        // A page scrolled down folds the tab bar to its selected tab: tapping
+        // that tab unfolds it.
+        if !button.waitForExistence(timeout: 3) {
+            let folded = app.tabBars.buttons.firstMatch
+            if folded.exists { folded.tap() }
+        }
+        if button.waitForExistence(timeout: 3) {
             button.tap()
         } else {
             try tap(app.buttons[tab].firstMatch)
@@ -219,8 +225,8 @@ final class ScreenshotTest: XCTestCase {
         if back.exists { back.tap() }
     }
 
-    private func element(labelled text: String) -> XCUIElement {
-        app.descendants(matching: .any)
+    private func button(labelled text: String) -> XCUIElement {
+        app.buttons
             .matching(NSPredicate(format: "label CONTAINS %@", text))
             .firstMatch
     }

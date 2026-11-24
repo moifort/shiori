@@ -76,6 +76,7 @@ struct FriendsPage: View {
                         welcomed: welcomed,
                         onRemove: { id in Task { await onAction(.remove(id)) } }
                     ) { id in Task { await onAction(.toggle(id)) } }
+                    .accessibilityIdentifier("friends-avatars")
                     if let soleFriend {
                         VStack(spacing: 0) {
                             LibraryLinkRow(symbol: "book.pages", title: String(localized: "Livres")) {
