@@ -19,3 +19,19 @@ export const AudibleMarketplaceEnum = builder.enumType('AudibleMarketplace', {
     CO_JP: { value: 'co.jp', description: 'audible.co.jp' },
   } as const,
 })
+
+export const AudibleDrmEnum = builder.enumType('AudibleDrm', {
+  description:
+    'The DRM a title is licensed in: the one the device plays natively. The ' +
+    'stream is never decrypted outside it.',
+  values: {
+    FAIRPLAY: {
+      value: 'fairplay',
+      description: "Apple's: an HLS stream, its keys traded with `audibleFairPlayKey`.",
+    },
+    WIDEVINE: {
+      value: 'widevine',
+      description: "Android's: a DASH manifest, its keys traded with `audibleWidevineKey`.",
+    },
+  } as const,
+})

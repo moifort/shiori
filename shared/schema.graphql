@@ -287,6 +287,17 @@ type AudibleCookie {
 }
 
 """
+The DRM a title is licensed in: the one the device plays natively. The stream is never decrypted outside it.
+"""
+enum AudibleDrm {
+  """Apple's: an HLS stream, its keys traded with `audibleFairPlayKey`."""
+  FAIRPLAY
+
+  """Android's: a DASH manifest, its keys traded with `audibleWidevineKey`."""
+  WIDEVINE
+}
+
+"""
 Everything needed to run the Amazon sign-in in a web view.
 
 Plant the cookies, load `url`, and watch navigation for `redirectUrl`: it carries the authorization code as the `openid.oa2.authorization_code` query parameter. Hand that code to `completeAudibleLogin` and close the view. The sign-in is good for thirty minutes.
@@ -341,12 +352,14 @@ enum AudibleMarketplace {
 """
 Everything the player needs to play one title of the Audible library.
 
-The stream is HLS encrypted with FairPlay, played by AVFoundation as it is: add the asset to an `AVContentKeySession`, build each SPC from `certificate` and the `skd://` URI without its scheme, and trade it with `audibleFairPlayKey`. `streamUrl` is signed by Amazon for a limited time: ask again rather than keep it.
+Asked in FairPlay (the default), the stream is HLS, played by AVFoundation as it is: add the asset to an `AVContentKeySession`, build each SPC from `certificate` and the `skd://` URI without its scheme, and trade it with `audibleFairPlayKey`. Asked in Widevine, it is a DASH manifest, played by Android's MediaDrm as it is: answer each key request with `audibleWidevineKey`. `streamUrl` is signed by Amazon for a limited time: ask again rather than keep it.
 """
 type AudiblePlayback {
   asin: AudibleAsin!
 
-  """The FairPlay application certificate, base64."""
+  """
+  The FairPlay application certificate or the Widevine service certificate, base64.
+  """
   certificate: String!
   chapters: [AudibleChapter!]!
 
@@ -357,7 +370,7 @@ type AudiblePlayback {
   """Null on a title the reader never opened."""
   position: AudiblePosition
 
-  """The HLS playlist."""
+  """The HLS playlist (FairPlay) or the DASH manifest (Widevine)."""
   streamUrl: String!
 }
 
@@ -3205,6 +3218,23 @@ type Mutation {
   ): String!
 
   """
+  Answer a Widevine key request of Android's player with Amazon's licence, both base64: the `data` of a `MediaDrm.KeyRequest` in, what `MediaDrmCallback.executeKeyRequest` answers out.
+  
+  Relayed for the same reason as `audibleFairPlayKey`, and fails as it does.
+  """
+  audibleWidevineKey(
+    asin: AudibleAsin!
+
+    """The key request, base64."""
+    challenge: String!
+
+    """
+    Ask for a key the device may keep, for a title started with `offline`. False by default.
+    """
+    offline: Boolean
+  ): String!
+
+  """
   Await one of the reader’s own books in the language of the app, in one format: translated into print, or recorded. Look it up on the web at once when nobody did — one grounded call, about ten seconds — so the answer says whether it is announced or already out. Awaiting it twice answers the first. Fails with `BAD_USER_INPUT` for a format the book’s page does not offer, and `TOO_MANY_AWAITED` past a hundred editions. `NOT_FOUND` for a book that is not theirs.
   """
   awaitBookEdition(bookId: BookId!, format: ReleaseFormat!): AwaitedEdition!
@@ -3780,14 +3810,17 @@ type Mutation {
   ): AudibleLogin!
 
   """
-  Ask Amazon for a FairPlay licence to play one title of the Audible library, with its chapters and where the reader stopped last.
+  Ask Amazon for a licence to play one title of the Audible library, in the DRM of the reader's device (`drm`, FairPlay by default), with its chapters and where the reader stopped last.
   
   A mutation because Amazon counts the licences a device takes: call it when the reader presses play, never ahead. Fails with `AUDIBLE_NOT_CONNECTED` when no account is linked, `AUDIBLE_LICENSE_DENIED` when Amazon grants no licence (a title the account does not own, a licence quota), and `AUDIBLE_UNAVAILABLE` when Amazon refuses the call.
   
-  With `offline`, the licence is a download licence: the same stream, whose content key the device may keep (`audibleFairPlayKey` with `offline` too), so the title plays with no network once downloaded.
+  With `offline`, the licence is a download licence: the same stream, whose content key the device may keep (`audibleFairPlayKey` or `audibleWidevineKey` with `offline` too), so the title plays with no network once downloaded.
   """
   startAudiblePlayback(
     asin: AudibleAsin!
+
+    """The DRM the device plays. `FAIRPLAY` by default."""
+    drm: AudibleDrm
 
     """Ask for a licence the title can be downloaded under. False by default."""
     offline: Boolean

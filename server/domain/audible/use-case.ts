@@ -26,6 +26,7 @@ import { openReadableCredentials } from '~/domain/audible/infrastructure/credent
 import { AudibleQuery } from '~/domain/audible/query'
 import type {
   AudibleAsin,
+  AudibleDrm,
   AudiblePlayback,
   ImportableBook,
   LibrarySync,
@@ -293,31 +294,33 @@ export namespace AudibleUseCase {
     return BookUseCase.add(userId, volumeBookFrom(recording, membership, language))
   }
 
-  /** What the app's player needs to play one title: a FairPlay licence, asked
-   *  of Amazon when the reader presses play and never ahead — Amazon counts the
-   *  licences a device takes.
+  /** What the app's player needs to play one title: a licence in the DRM of
+   *  the reader's device (FairPlay unless told Widevine), asked of Amazon when
+   *  the reader presses play and never ahead — Amazon counts the licences a
+   *  device takes.
    *
    *  `denied` when Amazon grants none: a title the account does not own, or a
    *  device past its licence quota.
    *
-   *  `offline` asks for a download licence: the same FairPlay stream, whose key
-   *  the device may keep, so the title plays with no network once downloaded. */
+   *  `offline` asks for a download licence: the same stream, whose key the
+   *  device may keep, so the title plays with no network once downloaded. */
   export const playback = async (
     userId: UserId,
     asin: AudibleAsin,
-    { offline = false }: { offline?: boolean } = {},
+    { offline = false, drm = 'fairplay' }: { offline?: boolean; drm?: AudibleDrm } = {},
   ): Promise<AudiblePlayback | 'not-connected' | 'denied'> =>
     withCredentials<AudiblePlayback | 'denied'>(userId, async (credentials) => {
       try {
         const { license, credentials: rotated } = await api.playbackLicense(credentials, asin, {
           consumption: consumptionOf(offline),
+          drm: drmTypeOf(drm),
         })
         return { value: playbackOf(asin, license), credentials: rotated }
       } catch (error) {
         if (!(error instanceof api.LicenseDeniedError)) throw error
         // Audible's own reasons can name the customer: the status is enough to
         // tell a quota from an ownership refusal.
-        logger.warn('Audible licence denied', { status: error.status, asin })
+        logger.warn('Audible licence denied', { status: error.status, asin, drm })
         return { value: 'denied' as const, credentials }
       }
     })
@@ -337,6 +340,25 @@ export namespace AudibleUseCase {
         consumption: consumptionOf(offline),
       })
       return { value: ckc, credentials: rotated }
+    })
+
+  /** Answer a Widevine key request from Android's player with Amazon's
+   *  licence. Relayed for the same reason as `fairPlayKey`, with the same
+   *  `offline`. */
+  export const widevineKey = async (
+    userId: UserId,
+    asin: AudibleAsin,
+    challenge: string,
+    { offline = false }: { offline?: boolean } = {},
+  ): Promise<string | 'not-connected'> =>
+    withCredentials(userId, async (credentials) => {
+      const { license, credentials: rotated } = await api.widevineKey(
+        credentials,
+        asin,
+        challenge,
+        { consumption: consumptionOf(offline) },
+      )
+      return { value: license, credentials: rotated }
     })
 
   /** Save where the reader stopped, on Audible itself: their other players —
@@ -481,5 +503,8 @@ const recordingOf = async (
 }
 
 /** How Audible is asked to license a title: kept on the device, or streamed. */
+/** The reader's DRM as Audible names it. */
+const drmTypeOf = (drm: AudibleDrm) => (drm === 'widevine' ? 'Widevine' : 'FairPlay')
+
 const consumptionOf = (offline: boolean) =>
   offline ? ('Download' as const) : ('Streaming' as const)

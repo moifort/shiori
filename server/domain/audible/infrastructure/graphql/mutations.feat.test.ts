@@ -41,13 +41,13 @@ mock.module('~/domain/audible/infrastructure/audible-api', () => ({
   // Nobody has stopped anywhere: the statuses under test come off the library.
   lastPositions: async (credentials: unknown) => ({ positions: [], credentials }),
   landingUrlOf: (marketplace: string) => `https://www.amazon.${marketplace}/ap/maplanding`,
-  playbackLicense: async (credentials: unknown, asin: string) => {
+  playbackLicense: async (credentials: unknown, asin: string, options?: { drm?: string }) => {
     if (licenseDenied) throw new LicenseDeniedError(asin, 'Denied', [])
     return {
       license: {
         asin,
         acr: 'CR!ACR',
-        streamUrl: 'https://example.cloudfront.net/title.m3u8',
+        streamUrl: `https://example.cloudfront.net/title.${options?.drm === 'Widevine' ? 'mpd' : 'm3u8'}`,
         certificate: 'Q0VSVA==',
         durationMs: 3_000_000,
         chapters: [{ title: 'Chapitre 1', startMs: 0, lengthMs: 3_000_000 }],
@@ -57,6 +57,7 @@ mock.module('~/domain/audible/infrastructure/audible-api', () => ({
     }
   },
   fairPlayKey: async (credentials: unknown) => ({ ckc: 'Q0tD', credentials }),
+  widevineKey: async (credentials: unknown) => ({ license: 'TElD', credentials }),
   savePosition: async (credentials: unknown, position: unknown) => {
     savedPositions.push(position)
     return { credentials }
@@ -475,6 +476,37 @@ describe('playing a title', () => {
 
     expect(result.errors).toBeUndefined()
     expect(result.data?.audibleFairPlayKey).toBe('Q0tD')
+  })
+
+  test('answers a DASH stream when Android asks for Widevine', async () => {
+    await connect()
+    const result = await execute(
+      'mutation { startAudiblePlayback(asin: "B0H95GDVTN", drm: WIDEVINE) { streamUrl } }',
+    )
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.startAudiblePlayback).toEqual({
+      streamUrl: 'https://example.cloudfront.net/title.mpd',
+    })
+  })
+
+  test('relays the Widevine key', async () => {
+    await connect()
+    const result = await execute(
+      'mutation { audibleWidevineKey(asin: "B0H95GDVTN", challenge: "Q0hBTA==") }',
+    )
+
+    expect(result.errors).toBeUndefined()
+    expect(result.data?.audibleWidevineKey).toBe('TElD')
+  })
+
+  test('refuses an empty Widevine key request', async () => {
+    await connect()
+    const result = await execute(
+      'mutation { audibleWidevineKey(asin: "B0H95GDVTN", challenge: " ") }',
+    )
+
+    expect(codeOf(result)).toBe('BAD_USER_INPUT')
   })
 
   test('refuses an empty key request', async () => {

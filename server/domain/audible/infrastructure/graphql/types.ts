@@ -225,19 +225,24 @@ const PlaybackPositionType = builder
 export const AudiblePlaybackType = builder.objectRef<AudiblePlayback>('AudiblePlayback').implement({
   description:
     'Everything the player needs to play one title of the Audible library.\n\n' +
-    'The stream is HLS encrypted with FairPlay, played by AVFoundation as it is: ' +
-    'add the asset to an `AVContentKeySession`, build each SPC from `certificate` ' +
-    'and the `skd://` URI without its scheme, and trade it with ' +
-    '`audibleFairPlayKey`. `streamUrl` is signed by Amazon for a limited time: ' +
+    'Asked in FairPlay (the default), the stream is HLS, played by AVFoundation ' +
+    'as it is: add the asset to an `AVContentKeySession`, build each SPC from ' +
+    '`certificate` and the `skd://` URI without its scheme, and trade it with ' +
+    '`audibleFairPlayKey`. Asked in Widevine, it is a DASH manifest, played by ' +
+    "Android's MediaDrm as it is: answer each key request with " +
+    '`audibleWidevineKey`. `streamUrl` is signed by Amazon for a limited time: ' +
     'ask again rather than keep it.',
   fields: (t) => ({
     asin: t.field({ type: 'AudibleAsin', resolve: (playback) => playback.asin }),
     contentReference: t.exposeString('contentReference', {
       description: 'Opaque. Handed back with every `saveAudiblePosition`.',
     }),
-    streamUrl: t.exposeString('streamUrl', { description: 'The HLS playlist.' }),
+    streamUrl: t.exposeString('streamUrl', {
+      description: 'The HLS playlist (FairPlay) or the DASH manifest (Widevine).',
+    }),
     certificate: t.exposeString('certificate', {
-      description: 'The FairPlay application certificate, base64.',
+      description:
+        'The FairPlay application certificate or the Widevine service certificate, base64.',
     }),
     durationMs: t.exposeInt('durationMs'),
     chapters: t.field({ type: [PlaybackChapterType], resolve: (playback) => playback.chapters }),

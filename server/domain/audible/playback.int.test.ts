@@ -32,6 +32,7 @@ const credentialsWith = (accessToken: string) => ({
 const license: PlaybackLicense = {
   asin,
   acr: 'CR!ACR',
+  drm: 'FairPlay',
   streamUrl: 'https://example.cloudfront.net/title.m3u8',
   certificate: 'Q0VSVA==',
   durationMs: 43_221_151,
@@ -46,6 +47,7 @@ let refusal: Error | undefined
 const keyCalls: string[] = []
 const savedPositions: unknown[] = []
 const consumptions: (string | undefined)[] = []
+const drms: (string | undefined)[] = []
 
 beforeEach(() => {
   resetFakeFirestore()
@@ -55,6 +57,7 @@ beforeEach(() => {
   keyCalls.length = 0
   savedPositions.length = 0
   consumptions.length = 0
+  drms.length = 0
   stageAudibleApi({
     login: async () => ({
       loginUrl: 'https://www.amazon.fr/ap/signin',
@@ -66,9 +69,10 @@ beforeEach(() => {
     playbackLicense: async (
       _credentials: unknown,
       _asin: string,
-      options?: { consumption?: string },
+      options?: { consumption?: string; drm?: string },
     ) => {
       consumptions.push(options?.consumption)
+      drms.push(options?.drm)
       if (refusal) throw refusal
       return { license, credentials: credentialsWith(answeredToken) }
     },
@@ -81,6 +85,16 @@ beforeEach(() => {
       keyCalls.push(spc)
       consumptions.push(options?.consumption)
       return { ckc: 'Q0tD', credentials: credentialsWith(answeredToken) }
+    },
+    widevineKey: async (
+      _credentials: unknown,
+      _asin: string,
+      challenge: string,
+      options?: { consumption?: string },
+    ) => {
+      keyCalls.push(challenge)
+      consumptions.push(options?.consumption)
+      return { license: 'TElD', credentials: credentialsWith(answeredToken) }
     },
     savePosition: async (_credentials: unknown, position: unknown) => {
       savedPositions.push(position)
@@ -118,6 +132,7 @@ describe('playing a title', () => {
   test('is refused without an account', async () => {
     expect(await AudibleUseCase.playback(reader, asin)).toBe('not-connected')
     expect(await AudibleUseCase.fairPlayKey(reader, asin, 'U1BD')).toBe('not-connected')
+    expect(await AudibleUseCase.widevineKey(reader, asin, 'Q0hBTA==')).toBe('not-connected')
     expect(
       await AudibleUseCase.savePosition(reader, {
         asin,
@@ -146,6 +161,24 @@ describe('playing a title', () => {
 
     expect(await AudibleUseCase.fairPlayKey(reader, asin, 'U1BD')).toBe('Q0tD')
     expect(keyCalls).toEqual(['U1BD'])
+  })
+
+  test('asks Amazon for FairPlay unless the device plays Widevine', async () => {
+    await connect()
+    await AudibleUseCase.playback(reader, asin)
+    await AudibleUseCase.playback(reader, asin, { drm: 'widevine' })
+
+    expect(drms).toEqual(['FairPlay', 'Widevine'])
+  })
+
+  test('relays a Widevine key request, to keep when offline', async () => {
+    await connect()
+
+    expect(await AudibleUseCase.widevineKey(reader, asin, 'Q0hBTA==', { offline: true })).toBe(
+      'TElD',
+    )
+    expect(keyCalls).toEqual(['Q0hBTA=='])
+    expect(consumptions).toEqual(['Download'])
   })
 
   test('asks for a download licence and a key to keep when offline', async () => {

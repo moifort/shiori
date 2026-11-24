@@ -10,6 +10,7 @@ import {
   register,
   savePosition,
   search,
+  widevineKey,
 } from 'audible-api-ts'
 import type { AudibleMarketplace } from '~/domain/audible/types'
 
@@ -30,6 +31,7 @@ export {
   register,
   savePosition,
   search,
+  widevineKey,
 }
 
 /** Where Amazon sends the browser back once the reader has signed in. The

@@ -38,6 +38,7 @@ export const fakeAudibleApi = {
   landingUrlOf: dispatch('landingUrlOf'),
   playbackLicense: dispatch('playbackLicense'),
   fairPlayKey: dispatch('fairPlayKey'),
+  widevineKey: dispatch('widevineKey'),
   savePosition: dispatch('savePosition'),
   // The real class, not a stand-in: the domain tells a refusal apart with
   // `instanceof`, and a test throws one to say Amazon refused.

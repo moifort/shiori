@@ -1,6 +1,9 @@
 import { match } from 'ts-pattern'
 import { AudibleCommand } from '~/domain/audible/command'
-import { AudibleMarketplaceEnum } from '~/domain/audible/infrastructure/graphql/enums'
+import {
+  AudibleDrmEnum,
+  AudibleMarketplaceEnum,
+} from '~/domain/audible/infrastructure/graphql/enums'
 import {
   audibleUnavailable,
   licenseDenied,
@@ -227,26 +230,33 @@ builder.mutationFields((t) => ({
   startAudiblePlayback: t.field({
     type: AudiblePlaybackType,
     description:
-      'Ask Amazon for a FairPlay licence to play one title of the Audible library, ' +
-      'with its chapters and where the reader stopped last.\n\n' +
+      'Ask Amazon for a licence to play one title of the Audible library, in the ' +
+      "DRM of the reader's device (`drm`, FairPlay by default), with its chapters " +
+      'and where the reader stopped last.\n\n' +
       'A mutation because Amazon counts the licences a device takes: call it when ' +
       'the reader presses play, never ahead. Fails with `AUDIBLE_NOT_CONNECTED` when ' +
       'no account is linked, `AUDIBLE_LICENSE_DENIED` when Amazon grants no licence ' +
       '(a title the account does not own, a licence quota), and `AUDIBLE_UNAVAILABLE` ' +
       'when Amazon refuses the call.\n\n' +
       'With `offline`, the licence is a download licence: the same stream, whose ' +
-      'content key the device may keep (`audibleFairPlayKey` with `offline` too), so ' +
-      'the title plays with no network once downloaded.',
+      'content key the device may keep (`audibleFairPlayKey` or `audibleWidevineKey` ' +
+      'with `offline` too), so the title plays with no network once downloaded.',
     args: {
       asin: t.arg({ type: 'AudibleAsin', required: true }),
       offline: t.arg.boolean({
         required: false,
         description: 'Ask for a licence the title can be downloaded under. False by default.',
       }),
+      drm: t.arg({
+        type: AudibleDrmEnum,
+        required: false,
+        description: 'The DRM the device plays. `FAIRPLAY` by default.',
+      }),
     },
     resolve: async (_root, args, context) => {
       const result = await AudibleUseCase.playback(context.userId, args.asin, {
         offline: args.offline ?? false,
+        drm: args.drm ?? 'fairplay',
       }).catch(audibleUnavailable)
       return match(result)
         .with('not-connected', notConnected)
@@ -281,6 +291,34 @@ builder.mutationFields((t) => ({
       return match(result)
         .with('not-connected', notConnected)
         .otherwise((ckc) => ckc)
+    },
+  }),
+
+  audibleWidevineKey: t.string({
+    description:
+      "Answer a Widevine key request of Android's player with Amazon's licence, " +
+      'both base64: the `data` of a `MediaDrm.KeyRequest` in, what ' +
+      '`MediaDrmCallback.executeKeyRequest` answers out.\n\n' +
+      'Relayed for the same reason as `audibleFairPlayKey`, and fails as it does.',
+    args: {
+      asin: t.arg({ type: 'AudibleAsin', required: true }),
+      challenge: t.arg.string({ required: true, description: 'The key request, base64.' }),
+      offline: t.arg.boolean({
+        required: false,
+        description:
+          'Ask for a key the device may keep, for a title started with `offline`. ' +
+          'False by default.',
+      }),
+    },
+    resolve: async (_root, args, context) => {
+      const challenge = args.challenge.trim()
+      if (!challenge) return badUserInput('The key request is empty')
+      const result = await AudibleUseCase.widevineKey(context.userId, args.asin, challenge, {
+        offline: args.offline ?? false,
+      }).catch(audibleUnavailable)
+      return match(result)
+        .with('not-connected', notConnected)
+        .otherwise((license) => license)
     },
   }),
 

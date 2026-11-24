@@ -186,20 +186,28 @@ export type PlaybackChapter = {
   lengthMs: number
 }
 
+/** The DRM a title is licensed in: the one the reader's device plays natively.
+ *  FairPlay on Apple's platforms, Widevine on Android. */
+export type AudibleDrm = 'fairplay' | 'widevine'
+
 /** What the app's player needs to play one title of the reader's Audible library.
  *
- *  A FairPlay stream that Apple's player plays as it is: nothing is decrypted
- *  outside it, and the device credentials that obtained it stay here. The key
- *  for the stream is traded through the server too (`fairPlayKey`), since the
- *  call is signed with those credentials. */
+ *  A stream in the DRM of the reader's device — FairPlay over HLS for Apple's
+ *  player, Widevine over DASH for Android's — played as it is: nothing is
+ *  decrypted outside the platform's own DRM, and the device credentials that
+ *  obtained it stay here. The key for the stream is traded through the server
+ *  too (`fairPlayKey`, `widevineKey`), since the call is signed with those
+ *  credentials. */
 export type AudiblePlayback = {
   asin: AudibleAsin
   /** What a saved position is written against. Opaque to the app, handed back
    *  with every position it saves. */
   contentReference: string
-  /** The HLS playlist, signed by Amazon for a limited time. */
+  /** The HLS playlist (FairPlay) or the DASH manifest (Widevine), signed by
+   *  Amazon for a limited time. */
   streamUrl: string
-  /** The FairPlay application certificate, base64. */
+  /** The FairPlay application certificate or the Widevine service
+   *  certificate, base64. */
   certificate: string
   durationMs: number
   chapters: PlaybackChapter[]
