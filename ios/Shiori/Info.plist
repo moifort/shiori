@@ -22,7 +22,7 @@
 #ifdef AUDIBLE_PLAYER
 	<!-- The Audible player keeps playing with the screen locked. Declared only
 	     where the player is built in (SHIORI_AUDIBLE_PLAYER, see AudiblePlayerGate),
-	     so no App Store build claims a background mode it does not use. -->
+	     so a build without it claims no background mode it does not use. -->
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>audio</string>
