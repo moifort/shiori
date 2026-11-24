@@ -23,6 +23,9 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.res.imageResource
@@ -110,6 +113,8 @@ fun SiriOrb(modifier: Modifier = Modifier, size: Dp = 300.dp) {
         val radius = this.size.minDimension / 2
         // The artwork is 640 points wide, its largest lobe about 520: fitted to the footprint.
         val unit = this.size.minDimension / 520f
+        // Straight on black, clipped round, as iOS's `clipShape(Circle().scale(0.9))`.
+        clipPath(Path().apply { addOval(Rect(center, radius * 0.9f)) }) {
         drawCircle(Color.Black, radius * 0.9f)
         layers.forEachIndexed { index, layer ->
             val (ax, ay, az) = layer.axis(t)
@@ -130,6 +135,7 @@ fun SiriOrb(modifier: Modifier = Modifier, size: Dp = 300.dp) {
             rotate(mix(360f, 250f, t), center)
             scale(0.6f * unit, 0.6f * unit, center)
         }) { drawLayer(highlight, 239f, 266f, null, 0.3f) }
+        }
         // Softens the sphere's edge into the page.
         drawCircle(
             Brush.radialGradient(0f to Color.Black, 0.8f to Color.Black, 1f to Color.Transparent, center = center, radius = radius),
