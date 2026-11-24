@@ -102,21 +102,9 @@ private fun Navigator.open(card: NewsCard, choices: DiscoveryChoices, viewModel:
             is ReleasedItem.Narrator -> NarratorScreen(item.news.narratorKey, item.news.narrator)
         }
         is NewsCard.Upcoming -> UpcomingReleaseScreen(card.release)
-        is NewsCard.Discovery -> SuggestionScreen(card.suggestion, choices) { _, choice -> viewModel.choose(card, choice) }
+        // As on iOS, the page answers through its own writes; the card catches up on the next load.
+        is NewsCard.Discovery -> SuggestionScreen(card.suggestion, choices)
         is NewsCard.Award -> AwardWinnerScreen(card.winner)
     }
 }
 
-/** A discovery's page answering through the same writes as its card. */
-private suspend fun NewsViewModel.choose(card: NewsCard, choice: DiscoveryChoice): Boolean {
-    when (choice) {
-        DiscoveryChoice.Add -> add(card, CopiedStatus.TO_READ, card.cover.format.takeIf { it == BookFormat.AUDIOBOOK } ?: BookFormat.BOOK)
-        DiscoveryChoice.AlreadyRead -> add(card, CopiedStatus.READ, BookFormat.BOOK)
-        is DiscoveryChoice.Await -> awaitEdition(card, choice.format)
-        DiscoveryChoice.Wish -> wish(card)
-        DiscoveryChoice.NotInterested -> dismiss(card)
-        DiscoveryChoice.Reconsider -> reconsider(card)
-        DiscoveryChoice.UndoAlreadyRead -> undo(card, isWished = false)
-    }
-    return true
-}
