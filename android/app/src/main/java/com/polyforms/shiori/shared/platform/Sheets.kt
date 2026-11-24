@@ -151,6 +151,13 @@ fun ConfirmationSheet(title: String, choices: List<ConfirmationChoice>, message:
             ): androidx.compose.ui.unit.IntOffset {
                 val x = (anchorBounds.center.x - popupContentSize.width / 2)
                     .coerceIn(margin, (windowSize.width - popupContentSize.width - margin).coerceAtLeast(margin))
+                // Composed at a page's level, the anchor is the page: the card takes the middle.
+                if (anchorBounds.height > windowSize.height / 2) {
+                    return androidx.compose.ui.unit.IntOffset(
+                        (windowSize.width - popupContentSize.width) / 2,
+                        (windowSize.height - popupContentSize.height) / 2,
+                    )
+                }
                 val below = anchorBounds.bottom + gap
                 val y = if (below + popupContentSize.height <= windowSize.height - margin) {
                     below
