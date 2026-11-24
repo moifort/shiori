@@ -25,6 +25,13 @@ import com.polyforms.shiori.features.home.components.pages.HomeHeader
 import com.polyforms.shiori.features.home.components.pages.HomePage
 import com.polyforms.shiori.features.book.BookFixtures
 import com.polyforms.shiori.features.book.components.pages.BookPage
+import com.polyforms.shiori.features.listening.AudiblePlayers
+import com.polyforms.shiori.features.listening.ListeningQueuePreviews
+import com.polyforms.shiori.features.listening.ListeningTitlePreview
+import com.polyforms.shiori.features.listening.Playback
+import com.polyforms.shiori.features.listening.components.pages.PlayerPage
+import com.polyforms.shiori.features.listening.components.pages.PlayerPageItem
+import com.polyforms.shiori.features.listening.preview
 import com.polyforms.shiori.shared.platform.NavigationStack
 
 /**
@@ -151,6 +158,16 @@ fun DebugPreviews(name: String) {
                 isLoading = false, isImporting = false, selectedCount = 0, canImport = false,
                 isSelected = { false }, onToggle = {}, onSelectAll = {}, onDeselectAll = {}, onImport = {},
             )
+            "player" -> PlayerPage(PlayerPageItem.preview.copy(queue = ListeningQueuePreviews)) {}
+            "player-queue" -> PlayerPage(PlayerPageItem.preview.copy(queue = ListeningQueuePreviews), queueProgress = 1f) {}
+            "player-sleep" -> PlayerPage(PlayerPageItem.preview.copy(sleepMinutes = 20)) {}
+            // The tabs with a title in the capsule over the bar, no stream behind it: a tap on
+            // it opens the player's sheet.
+            "player-accessory" -> {
+                val context = androidx.compose.ui.platform.LocalContext.current
+                remember { AudiblePlayers.app(context).apply { showPreview(ListeningTitlePreview, Playback.preview) } }
+                ShioriRoot()
+            }
             else -> ShioriRoot()
         }
     }
