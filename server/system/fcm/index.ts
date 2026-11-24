@@ -24,10 +24,9 @@ export namespace Fcm {
         notification: { title: message.title, body: message.body },
         android: {
           priority: 'high',
-          notification: {
-            channelId: 'alerts',
-            ...(message.threadId ? { tag: message.threadId } : {}),
-          },
+          // No channel named: the app's own default channel takes it, so the app can
+          // replace its channel without the server following.
+          ...(message.threadId ? { notification: { tag: message.threadId } } : {}),
         },
         ...(message.link ? { data: { link: message.link } } : {}),
       })
