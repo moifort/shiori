@@ -141,3 +141,34 @@ extension FriendsShelf {
         )
     }()
 }
+
+extension FriendSaga {
+    /// Two sagas of a friend's shelf: one under way, one read through.
+    static let previews: [FriendSaga] = [
+        FriendSaga(
+            id: "ph", seriesId: "ph", name: "Primal Hunter", isAudio: true, author: "Zogarth",
+            language: .fr, ownedCount: 3, favorite: false, rating: 4, genre: nil, subgenre: nil,
+            volumes: (4...6).map { number in
+                Book(
+                    id: "ph-\(number)", title: "Primal Hunter \(number)", authors: ["Zogarth"],
+                    format: .audiobook,
+                    series: SeriesMembership(id: "ph", name: "Primal Hunter", volume: number, kind: .main),
+                    status: number == 6 ? .reading : .read
+                )
+            },
+            state: .inProgress
+        ),
+        FriendSaga(
+            id: "fondation", seriesId: "fondation", name: "Fondation", author: "Isaac Asimov",
+            language: .fr, ownedCount: 2, favorite: true, genre: nil, subgenre: nil,
+            volumes: (1...2).map { number in
+                Book(
+                    id: "fondation-\(number)", title: "Fondation \(number)", authors: ["Isaac Asimov"],
+                    series: SeriesMembership(id: "fondation", name: "Fondation", volume: number, kind: .main),
+                    status: .read
+                )
+            },
+            state: .complete
+        ),
+    ]
+}

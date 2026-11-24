@@ -160,6 +160,58 @@ extension ShelvesView {
     }
 }
 
+/// The status menu over a friend's sagas, in the corner as the one over
+/// "Livres": where the friend stands on each saga, read off their own volumes.
+enum SeriesStatusFilter: String, CaseIterable, Identifiable, Sendable {
+    case all, inProgress, notStarted, complete, dropped, loved
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .all: String(localized: "Toutes")
+        case .inProgress: String(localized: "En cours")
+        case .notStarted: String(localized: "À commencer")
+        case .complete: String(localized: "Terminées")
+        case .dropped: String(localized: "Abandonnées")
+        case .loved: String(localized: "Préférées")
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .all: "tray.full"
+        case .inProgress: ReadingStatus.reading.symbol
+        case .notStarted: ReadingStatus.toRead.symbol
+        case .complete: ReadingStatus.read.symbol
+        case .dropped: ReadingStatus.dropped.symbol
+        case .loved: "heart"
+        }
+    }
+
+    /// Whether the filter keeps the saga. Given up on: a volume dropped and
+    /// none being read; such a saga is no longer "En cours".
+    func keeps(_ series: FollowedSeries) -> Bool {
+        let statuses = series.volumes.map(\.status)
+        let dropped = statuses.contains(.dropped) && !statuses.contains(.reading)
+        switch self {
+        case .all: return true
+        case .inProgress: return series.state == .inProgress && !dropped
+        case .notStarted: return series.state == .notStarted
+        case .complete: return series.state == .complete
+        case .dropped: return dropped
+        case .loved: return series.opinion?.favorite == true || (series.opinion?.rating ?? 0) >= 4
+        }
+    }
+}
+
+extension FollowedSeries {
+    /// What the saga is held as, for the format pills: its first volume's.
+    var heldFormat: BookFormat {
+        volumes.first?.format ?? (isAudio ? .audiobook : .book)
+    }
+}
+
 /// The filters of "Toutes les séries", each offered only when it holds a saga.
 enum SeriesShelfFilter: String, CaseIterable, Identifiable, Sendable {
     case all, inProgress, incomplete, loved, notStarted, complete, notFollowed

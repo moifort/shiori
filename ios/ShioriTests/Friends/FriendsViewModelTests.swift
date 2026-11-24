@@ -178,57 +178,6 @@ struct FriendShelfListModelTests {
 }
 
 @MainActor
-struct FriendProfileViewModelTests {
-    @Test func previewAsksNothing() async {
-        let viewModel = FriendProfileViewModel(preview: .preview)
-
-        await viewModel.load()
-
-        #expect(viewModel.isPreview)
-        #expect(viewModel.isLoading == false)
-        #expect(viewModel.profile?.userId == FriendProfile.preview.userId)
-    }
-
-    @Test func failureOverAShelfSaysNothing() async {
-        let fails = Flag()
-        var client = FriendsClient.preview
-        client.profile = { _ in
-            if fails.isOn { throw Boom() }
-            return .preview
-        }
-        let viewModel = FriendProfileViewModel(friend: Friend.previews[0], client: client, caching: false)
-        await viewModel.load()
-
-        fails.isOn = true
-        await viewModel.load()
-
-        #expect(viewModel.profile != nil)
-        #expect(viewModel.errorMessage == nil)
-    }
-
-    @Test func failureOverNothingIsShown() async {
-        var client = FriendsClient.preview
-        client.profile = { _ in throw Boom() }
-        let viewModel = FriendProfileViewModel(friend: Friend.previews[0], client: client, caching: false)
-
-        await viewModel.load()
-
-        #expect(viewModel.profile == nil)
-        #expect(viewModel.errorMessage != nil)
-    }
-
-    @Test func ownedBookIsMarkedOnEveryShelf() async {
-        let viewModel = FriendProfileViewModel(friend: Friend.previews[0], client: .preview, caching: false)
-        await viewModel.load()
-        // Silo is on the pile and is the last book added.
-        viewModel.markOwned("silo")
-
-        #expect(viewModel.profile?.pile.first { $0.id == "silo" }?.inLibrary == true)
-        #expect(viewModel.profile?.lastAdded?.inLibrary == true)
-    }
-}
-
-@MainActor
 struct FriendBookViewModelTests {
     @Test func addSaysWhatTheReaderTook() async {
         let viewModel = FriendBookViewModel(friendId: "camille", bookId: "preview", client: .preview, caching: false)

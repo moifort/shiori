@@ -6,6 +6,28 @@ import Foundation
 extension Showcase {
     // MARK: - Friends
 
+    /// A friend's "Livres": the showcase shelf stands in for theirs, cut as
+    /// the server cuts it — the dropped books left out unless asked for.
+    static func friendLibraryPage(
+        status: ReadingStatus?,
+        format: BookFormat?,
+        after: String?
+    ) -> (books: [FriendBook], hasMore: Bool) {
+        let kept = shelved.filter { book in
+            (status.map { book.status == $0 } ?? (book.status != .dropped))
+                && (format.map { book.format == $0 } ?? true)
+        }
+        let page = CursorPage(kept, limit: 60, after: after, cursor: \.id)
+        return (page.items.map { FriendBook(book: $0, inLibrary: false) }, page.hasMore)
+    }
+
+    /// A friend's "Séries": the showcase sagas, drawn from their volumes alone.
+    static func friendSagaPage(after: String?) -> (sagas: [FriendSaga], hasMore: Bool) {
+        let page = seriesPage(limit: 30, after: after, mode: .all, state: nil)
+        return (page.items.map(FriendSaga.init(showcase:)), page.hasMore)
+    }
+
+
     private static func friendBook(_ book: Book, favoritedAt: Date? = nil, activity days: Double) -> FriendBook {
         FriendBook(
             book: book,
@@ -422,6 +444,28 @@ extension Showcase {
         release.language = language
         release.described = true
         return release
+    }
+}
+extension FriendSaga {
+    /// A showcase saga as a friend's shelf carries it: their volumes, their
+    /// heart and stars, nothing of the catalogue.
+    init(showcase saga: FollowedSeries) {
+        self.init(
+            id: saga.seriesId,
+            seriesId: saga.seriesId,
+            name: saga.name,
+            isAudio: saga.isAudio,
+            author: saga.author,
+            language: saga.language,
+            ownedCount: saga.ownedCount,
+            favorite: saga.opinion?.favorite == true,
+            rating: saga.opinion?.rating,
+            genre: saga.genre,
+            subgenre: nil,
+            volumes: saga.volumes,
+            shelvedAt: saga.shelvedAt,
+            state: saga.state
+        )
     }
 }
 #endif

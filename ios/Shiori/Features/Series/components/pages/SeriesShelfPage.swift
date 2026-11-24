@@ -7,6 +7,9 @@ enum SeriesShelfAction {
     /// A volume the reader lacks, on its own page.
     case openVolume(DiscoveryVolume)
     case selectFilter(SeriesShelfFilter)
+    /// A friend's sagas: a format pill, and the status menu in the corner.
+    case selectFormat(BookFormat?)
+    case selectStatus(SeriesStatusFilter)
     case follow(FollowedSeries)
     case refresh
 }
@@ -16,6 +19,10 @@ enum SeriesShelfAction {
 /// announced, each drawn as the saga screen's release card, in a rail; then every saga as the home's cards, two by
 /// row, under their filters, the last of which, "Non suivies", lists the
 /// sagas no longer followed, greyed.
+///
+/// A friend's "Séries" is this same page with the cards of "Toutes les
+/// séries" alone, untitled, over their sagas, under the filters of "Livres":
+/// the format pills, and the status menu in the corner.
 struct SeriesShelfPage: View {
     let upNext: [(series: FollowedSeries, volume: FollowedSeries.NextVolume)]
     let releases: [(series: FollowedSeries, volume: DiscoveredVolume)]
@@ -24,6 +31,12 @@ struct SeriesShelfPage: View {
     let series: [FollowedSeries]
     let isLoading: Bool
     let errorMessage: String?
+    /// A friend's sagas: the status menu offered in the corner, which puts the
+    /// format pills in place of the filters'. Empty on the reader's own.
+    var statuses: [SeriesStatusFilter] = []
+    var selectedStatus: SeriesStatusFilter = .all
+    var formats: [BookFormat] = []
+    var selectedFormat: BookFormat?
     let onAction: (SeriesShelfAction) -> Void
 
     @State private var releaseInView: String?
@@ -50,6 +63,11 @@ struct SeriesShelfPage: View {
         .background(Color(.systemGroupedBackground))
         .navigationTitle("Séries")
         .refreshable { onAction(.refresh) }
+        .toolbar {
+            if !statuses.isEmpty {
+                ToolbarItem(placement: .primaryAction) { statusMenu }
+            }
+        }
         .overlay {
             if series.isEmpty, upNext.isEmpty {
                 if isLoading {
@@ -111,11 +129,38 @@ struct SeriesShelfPage: View {
         }
     }
 
+    /// The status menu of a friend's sagas, drawn as the one over "Livres".
+    private var statusMenu: some View {
+        Menu {
+            Picker("Statut", selection: Binding(
+                get: { selectedStatus },
+                set: { onAction(.selectStatus($0)) }
+            )) {
+                ForEach(statuses) { status in
+                    Label(status.label, systemImage: status.symbol).tag(status)
+                }
+            }
+        } label: {
+            ShelfFilterLabel(symbol: selectedStatus.symbol, title: selectedStatus.label)
+        }
+        .accessibilityIdentifier("friend-series-status-filter")
+    }
+
     @ViewBuilder private var allSeries: some View {
-        if !series.isEmpty || filter != .all {
+        if !series.isEmpty || filter != .all || selectedStatus != .all || selectedFormat != nil {
             VStack(alignment: .leading, spacing: 14) {
-                RowHeader(title: "Toutes les séries", style: .inline).padding(.horizontal, 20)
-                if filters.count > 1 {
+                // A friend's page is this list alone: no title over it.
+                if statuses.isEmpty {
+                    RowHeader(title: "Toutes les séries", style: .inline).padding(.horizontal, 20)
+                }
+                if !statuses.isEmpty {
+                    if formats.count > 1 {
+                        FilterPills(
+                            pills: formats.map { FilterPills.Pill(id: $0.rawValue, label: $0.shelfLabel) },
+                            selected: selectedFormat?.rawValue
+                        ) { onAction(.selectFormat($0.flatMap(BookFormat.init(rawValue:)))) }
+                    }
+                } else if filters.count > 1 {
                     FilterPills(
                         pills: filters.map { FilterPills.Pill(id: $0.rawValue, label: $0.label) },
                         selected: filter.rawValue,

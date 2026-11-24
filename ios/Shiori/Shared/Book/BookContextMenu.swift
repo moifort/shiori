@@ -10,6 +10,8 @@ enum BookQuickAction: Hashable {
     /// The author's key and name.
     case openAuthor(key: String, name: String)
     case remove
+    /// A friend's book onto the reader's pile: only a friend's menu offers it.
+    case take
 }
 
 extension View {
@@ -49,6 +51,37 @@ extension View {
             }
         } else {
             self
+        }
+    }
+}
+
+extension View {
+    /// The long press on a cover of a friend's shelf: the cover lifted as the
+    /// reader's own, but nothing that would touch the friend's record — no
+    /// status, heart, stars or removal. "Ajouter à ma pile" first, unless the
+    /// reader holds the book already, then where it leads.
+    func friendBookContextMenu(
+        _ book: Book,
+        owned: Bool,
+        onAction: @escaping (BookQuickAction) -> Void
+    ) -> some View {
+        contextMenu {
+            if !owned {
+                Section {
+                    Button("Ajouter à ma pile", systemImage: "plus") { onAction(.take) }
+                        .accessibilityIdentifier("friend-book-take")
+                }
+            }
+            Section {
+                if let series = book.series {
+                    Button("Voir la série", systemImage: "square.stack") { onAction(.openSeries(series.id)) }
+                }
+                if let author = book.authors.first, let key = book.authorKeys?.first {
+                    Button { onAction(.openAuthor(key: key, name: author)) } label: { Label("Voir l'auteur", image: "author") }
+                }
+            }
+        } preview: {
+            BookContextPreview(book: book)
         }
     }
 }

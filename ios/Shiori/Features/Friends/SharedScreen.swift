@@ -12,8 +12,12 @@ struct SharedScreen: View {
     @State private var removing: Friend?
     @State private var openedBook: OpenedBook?
 
-    init(client: FriendsClient = .live) {
+    /// A friend's row: the Amis tab, that friend chosen.
+    var onOpenFriend: (String) -> Void = { _ in }
+
+    init(client: FriendsClient = .live, onOpenFriend: @escaping (String) -> Void = { _ in }) {
         _viewModel = State(initialValue: SharedViewModel(client: client))
+        self.onOpenFriend = onOpenFriend
     }
 
     var body: some View {
@@ -29,6 +33,7 @@ struct SharedScreen: View {
             ) { action in
                 switch action {
                 case let .openBook(book, friend): openedBook = OpenedBook(book: book, friend: friend)
+                case let .openFriend(friend): onOpenFriend(friend.userId)
                 case .invite: await viewModel.invite()
                 case .enterCode:
                     pastedCode = ""
@@ -38,18 +43,6 @@ struct SharedScreen: View {
                 }
             }
             .navigationTitle("Partagé")
-            .navigationDestination(for: SharedDestination.self) { destination in
-                switch destination {
-                case .myPage:
-                    if let myShelf = viewModel.myShelf {
-                        FriendProfileScreen(preview: myShelf)
-                    }
-                case let .friend(userId):
-                    if let friend = viewModel.friends.first(where: { $0.userId == userId }) {
-                        FriendProfileScreen(friend: friend)
-                    }
-                }
-            }
         } detail: { opened in
             // A cover opens its book as the friend's page opens it; the
             // reader's own covers open their own record.

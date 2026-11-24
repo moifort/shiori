@@ -1,16 +1,11 @@
 import SwiftUI
 
-/// Where a row of the Partagé tab leads, pushed by the screen.
-enum SharedDestination: Hashable {
-    /// The reader's own page, as their friends see it.
-    case myPage
-    case friend(userId: String)
-}
-
 /// Everything the Partagé page can ask for.
 enum SharedAction {
     /// A cover of a row: a friend's book, or the reader's own when `friend` is nil.
     case openBook(FriendBook, friend: Friend?)
+    /// A friend's row: the Amis tab, that friend chosen.
+    case openFriend(Friend)
     case invite
     case enterCode
     case askToRemove(Friend)
@@ -72,12 +67,9 @@ struct SharedPage: View {
 
     private func mySection(_ myShelf: FriendProfile) -> some View {
         Section {
-            NavigationLink(value: SharedDestination.myPage) {
-                FriendRow(friend: Friend(seenByFriends: myShelf)) { book in
-                    Task { await onAction(.openBook(book, friend: nil)) }
-                }
+            FriendRow(friend: Friend(seenByFriends: myShelf)) { book in
+                Task { await onAction(.openBook(book, friend: nil)) }
             }
-            .navigationLinkIndicatorVisibility(.hidden)
             .listRowInsets(.horizontal, 16)
             // Inset from the avatar: the line under a card, above the
             // action that goes with it, not the break between friends.
@@ -106,12 +98,12 @@ struct SharedPage: View {
             .disabled(isInviting)
             .accessibilityIdentifier("friends-invite")
             ForEach(friends) { friend in
-                NavigationLink(value: SharedDestination.friend(userId: friend.userId)) {
-                    FriendRow(friend: friend) { book in
-                        Task { await onAction(.openBook(book, friend: friend)) }
-                    }
+                FriendRow(friend: friend) { book in
+                    Task { await onAction(.openBook(book, friend: friend)) }
                 }
-                .navigationLinkIndicatorVisibility(.hidden)
+                // The row opens the Amis tab on that friend; a cover, its book.
+                .contentShape(.rect)
+                .onTapGesture { Task { await onAction(.openFriend(friend)) } }
                 // The reader's own row's margin, so the covers keep the same
                 // size from one card to the next.
                 .listRowInsets(.horizontal, 16)

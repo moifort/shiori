@@ -120,8 +120,22 @@ fragment FriendSagaRow on FriendSaga {
 }
 
 # A friend's whole library, a page at a time, drawn as the reader's own.
-query FriendLibraryPage($userId: UserId!, $status: ReadingStatus, $loved: Boolean, $after: BookId) {
-  friendLibraryPage(userId: $userId, status: $status, loved: $loved, limit: 60, after: $after) {
+query FriendLibraryPage(
+  $userId: UserId!
+  $status: ReadingStatus
+  $loved: Boolean
+  $after: BookId
+  # Last, so the builds that pass the others in order keep compiling.
+  $format: BookFormat
+) {
+  friendLibraryPage(
+    userId: $userId
+    status: $status
+    loved: $loved
+    format: $format
+    limit: 60
+    after: $after
+  ) {
     books {
       ...FriendBookRow
     }

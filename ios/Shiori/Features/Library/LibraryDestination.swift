@@ -168,6 +168,8 @@ private struct BookQuickActions: ViewModifier {
         case let .openSeries(id): open(.series(id))
         case let .openAuthor(key, name): open(.author(AuthorDestination(key: key, name: name)))
         case .remove: removing = book
+        // Only a friend's menu offers it, and their screen carries it out.
+        case .take: break
         }
     }
 

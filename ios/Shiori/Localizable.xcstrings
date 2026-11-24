@@ -1853,6 +1853,22 @@
         }
       }
     },
+    "Abandonnées" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abandonnées"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dropped"
+          }
+        }
+      }
+    },
     "Abandonnés" : {
       "localizations" : {
         "en" : {
@@ -2213,22 +2229,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ajouter aux favoris"
-          }
-        }
-      }
-    },
-    "Ajouter la série à mes séries" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Add the series to my series"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ajouter la série à mes séries"
           }
         }
       }
@@ -3193,22 +3193,6 @@
         }
       }
     },
-    "Aucun livre n'a été ajouté à cette bibliothèque." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No books have been added to this library."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aucun livre n'a été ajouté à cette bibliothèque."
-          }
-        }
-      }
-    },
     "Aucun livre ne correspond" : {
       "localizations" : {
         "en" : {
@@ -3221,22 +3205,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Aucun livre ne correspond"
-          }
-        }
-      }
-    },
-    "Aucun livre ne correspond." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No book matches."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aucun livre ne correspond."
           }
         }
       }
@@ -3417,6 +3385,22 @@
         }
       }
     },
+    "Aucune série" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucune série"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No series"
+          }
+        }
+      }
+    },
     "Aucune série en cours." : {
       "localizations" : {
         "en" : {
@@ -3445,22 +3429,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Aucune série n'a été ajoutée à cette bibliothèque."
-          }
-        }
-      }
-    },
-    "Aucune série ne correspond." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No matching series."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aucune série ne correspond."
           }
         }
       }
@@ -9765,22 +9733,6 @@
         }
       }
     },
-    "Ma pile à lire" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "My reading pile"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ma pile à lire"
-          }
-        }
-      }
-    },
     "Maigret" : {
       "localizations" : {
         "en" : {
@@ -13669,22 +13621,6 @@
         }
       }
     },
-    "Sa pile à lire" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Their reading pile"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sa pile à lire"
-          }
-        }
-      }
-    },
     "Saisie" : {
       "localizations" : {
         "en" : {
@@ -14049,22 +13985,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Servis par le cache"
-          }
-        }
-      }
-    },
-    "Ses favoris" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Their favorites"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ses favoris"
           }
         }
       }
@@ -14993,22 +14913,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Série"
-          }
-        }
-      }
-    },
-    "Série déjà dans votre bibliothèque" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Series already in your library"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Série déjà dans votre bibliothèque"
           }
         }
       }
@@ -17013,38 +16917,6 @@
         }
       }
     },
-    "^[%lld livre](inflect: true)" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "^[%lld book](inflect: true)"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "^[%lld livre](inflect: true)"
-          }
-        }
-      }
-    },
-    "^[%lld série](inflect: true)" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "^[%lld series](inflect: true)"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "^[%lld série](inflect: true)"
-          }
-        }
-      }
-    },
     "ajouté aujourd'hui" : {
       "localizations" : {
         "en" : {
@@ -18161,22 +18033,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Étagère"
-          }
-        }
-      }
-    },
-    "État" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "State"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "État"
           }
         }
       }

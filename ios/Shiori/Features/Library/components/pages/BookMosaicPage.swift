@@ -5,8 +5,14 @@ import SwiftUI
 /// at a glance. No title: each cover's foot carries its stars, a white heart
 /// for a favourite, and a tap opens the book. A menu in the toolbar narrows
 /// the mosaic to one reading status, as the library's list once did.
+///
+/// A friend's "Livres" is this same page over their books, with the friend's
+/// long press, which leaves their record alone.
 struct BookMosaicPage: View {
     let sections: [ListSection<Book>]
+    /// On a friend's shelf, whether the reader holds a book already: the long
+    /// press is then the friend's. Nil on the reader's own.
+    var ownedByReader: ((Book) -> Bool)?
     var formats: [BookFormat] = []
     var selectedFormat: BookFormat?
     var selectedStatus: ReadingStatus?
@@ -73,7 +79,7 @@ struct BookMosaicPage: View {
                             }
                             .buttonStyle(.plain)
                             .accessibilityLabel(Text(book.title))
-                            .bookContextMenu(book) { onAction(.menu(book, $0)) }
+                            .modifier(MosaicMenu(book: book, ownedByReader: ownedByReader) { onAction(.menu(book, $0)) })
                             .onAppear { onAction(.reached(book.id)) }
                             .transition(.homeCard)
                         }
@@ -115,6 +121,21 @@ struct BookMosaicPage: View {
                 }
                 .accessibilityIdentifier("all-books-status-filter")
             }
+        }
+    }
+}
+
+/// The long press of a cover: the reader's own menu, or a friend's.
+private struct MosaicMenu: ViewModifier {
+    let book: Book
+    let ownedByReader: ((Book) -> Bool)?
+    let onAction: (BookQuickAction) -> Void
+
+    func body(content: Content) -> some View {
+        if let ownedByReader {
+            content.friendBookContextMenu(book, owned: ownedByReader(book), onAction: onAction)
+        } else {
+            content.bookContextMenu(book, onAction: onAction)
         }
     }
 }

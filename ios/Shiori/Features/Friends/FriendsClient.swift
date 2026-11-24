@@ -6,8 +6,7 @@ import Foundation
 struct FriendsClient: Sendable {
     var friends: @Sendable () async throws -> [Friend]
     var myShelf: @Sendable () async throws -> FriendProfile
-    var profile: @Sendable (_ userId: String) async throws -> FriendProfile?
-    var libraryPage: @Sendable (_ friendId: String, _ status: ReadingStatus?, _ loved: Bool, _ after: String?)
+    var libraryPage: @Sendable (_ friendId: String, _ status: ReadingStatus?, _ format: BookFormat?, _ after: String?)
         async throws -> (books: [FriendBook], hasMore: Bool)
     var sagaPage: @Sendable (_ friendId: String, _ state: SeriesState?, _ loved: Bool, _ after: String?)
         async throws -> (sagas: [FriendSaga], hasMore: Bool)
@@ -33,8 +32,7 @@ extension FriendsClient {
     static let live = FriendsClient(
         friends: { try await FriendsAPI.friends() },
         myShelf: { try await FriendsAPI.myShelf() },
-        profile: { try await FriendsAPI.profile(userId: $0) },
-        libraryPage: { try await FriendsAPI.libraryPage(friendId: $0, status: $1, loved: $2, after: $3) },
+        libraryPage: { try await FriendsAPI.libraryPage(friendId: $0, status: $1, format: $2, after: $3) },
         sagaPage: { try await FriendsAPI.sagaPage(friendId: $0, state: $1, loved: $2, after: $3) },
         book: { try await FriendsAPI.book(friendId: $0, bookId: $1) },
         audio: { try await FriendsAPI.audio(friendId: $0, bookId: $1) },
@@ -54,9 +52,8 @@ extension FriendsClient {
     static let preview = FriendsClient(
         friends: { Friend.previews },
         myShelf: { .preview },
-        profile: { _ in .preview },
         libraryPage: { _, _, _, _ in (FriendProfile.preview.favorites + FriendProfile.preview.reading, false) },
-        sagaPage: { _, _, _, _ in ([], false) },
+        sagaPage: { _, _, _, _ in (FriendSaga.previews, false) },
         book: { _, _ in .preview },
         audio: { _, _ in .available },
         addBook: { _, _, _, _ in },

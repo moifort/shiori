@@ -349,16 +349,6 @@ enum FriendsAPI {
         )
     }
 
-    /// Nil for anybody the reader is not friends with, which is also the answer
-    /// for an id that names nobody.
-    static func profile(userId: String) async throws -> FriendProfile? {
-        let data = try await GraphQLHelpers.fetch(
-            GraphQLClient.shared.apollo,
-            query: ShioriGraphQL.FriendProfileQuery(userId: userId)
-        )
-        return data.friendProfile.map { FriendProfile(shelf: $0.fragments.sharedShelf) }
-    }
-
     /// The reader's own shelf, exactly as their friends see it: the books they
     /// keep to themselves left out, in full rather than the thirty a friend is
     /// shown of each list.
@@ -375,21 +365,28 @@ enum FriendsAPI {
         return FriendProfile(shelf: data.myShelf.fragments.sharedShelf)
     }
 
-    /// One page of a friend's library — or of the reader's own, previewed —
-    /// newest first on the day each book was shelved.
+    /// One page of a friend's library, newest first on the day each book was
+    /// shelved: what their "Livres" draws, under its status filter and its
+    /// format pill.
     static func libraryPage(
         friendId: String,
         status: ReadingStatus?,
-        loved: Bool = false,
+        format: BookFormat?,
         after: String?
     ) async throws -> (books: [FriendBook], hasMore: Bool) {
+        #if DEBUG
+        if Showcase.isOn {
+            return Showcase.friendLibraryPage(status: status, format: format, after: after)
+        }
+        #endif
         let data = try await GraphQLHelpers.fetch(
             GraphQLClient.shared.apollo,
             query: ShioriGraphQL.FriendLibraryPageQuery(
                 userId: friendId,
                 status: GraphQLHelpers.graphQLNullable(status.map(LibraryAPI.graphQLStatus)),
-                loved: loved ? .some(true) : .none,
-                after: GraphQLHelpers.graphQLNullable(after)
+                loved: .none,
+                after: GraphQLHelpers.graphQLNullable(after),
+                format: GraphQLHelpers.graphQLNullable(format.map(LibraryAPI.graphQLFormat))
             )
         )
         guard let page = data.friendLibraryPage else { return ([], false) }
@@ -403,6 +400,11 @@ enum FriendsAPI {
         loved: Bool,
         after: String?
     ) async throws -> (sagas: [FriendSaga], hasMore: Bool) {
+        #if DEBUG
+        if Showcase.isOn {
+            return Showcase.friendSagaPage(after: after)
+        }
+        #endif
         let data = try await GraphQLHelpers.fetch(
             GraphQLClient.shared.apollo,
             query: ShioriGraphQL.FriendSagaPageQuery(

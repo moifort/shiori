@@ -145,7 +145,13 @@ struct ContentView: View {
             }
             // Every list redraws itself on the data-change notice the mutation
             // posts, so the form only has to close.
-            .sheet(isPresented: $showShared) { SharedScreen() }
+            .sheet(isPresented: $showShared) {
+                SharedScreen { friendId in
+                    showShared = false
+                    friendRequest = friendId
+                    selectedTab = .friends
+                }
+            }
             .sheet(isPresented: $showManualAdd) {
                 ManualAddScreen(onAdded: { _ in showManualAdd = false })
             }

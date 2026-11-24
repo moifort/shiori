@@ -1,71 +1,109 @@
 import SwiftUI
 
-/// A friend's sagas, connected: loads a page per view and filter, takes a
-/// saga's first volume onto the reader's pile, opens a saga as a sheet, and
-/// hands the rest to `FriendSeriesListPage`.
+/// A friend's "Séries", connected: the reader's own "Séries" reduced to
+/// "Toutes les séries" — the cards two by row — under the filters of their
+/// "Livres": the format pills, and the status menu in the corner. Every page
+/// is loaded at once, as the reader's sagas are. A card opens the saga as a
+/// friend's: where they stand on it.
+///
+/// The cards say what the friend's own volumes say, never the shared
+/// catalogue: "5 sur 5 lus" counts the volumes on their shelf.
 struct FriendSeriesListScreen: View {
     let friendId: String
     let friendName: String
-    /// The reader's own sagas, previewed: every one is theirs already.
-    var isPreview = false
     var client: FriendsClient = .live
 
-    @State private var model = FriendShelfListModel<FriendSaga>(ownedFlag: \.inLibrary)
-    @State private var mode: LibraryMode = .all
-    @State private var state: SeriesState?
-    @State private var openSaga: FriendSaga?
+    @State private var sagas: [FollowedSeries] = []
+    @State private var loaded = false
+    @State private var errorMessage: String?
+    @State private var status: SeriesStatusFilter = .all
+    @State private var format: BookFormat?
+    @State private var openSaga: SeriesDestinationID?
+
+    /// The most pages asked for, as the reader's own sagas.
+    private static let maxPages = 10
 
     var body: some View {
-        FriendSeriesListPage(
-            friendName: friendName,
-            sagas: model.rows,
-            mode: $mode,
-            state: $state,
-            isWaiting: model.loadedQuery != query && model.errorMessage == nil,
-            loadFailed: model.loadedQuery != query || model.rows.isEmpty ? model.errorMessage : nil,
-            hasMore: model.hasMore,
-            loadMoreFailed: model.loadMoreFailed,
-            adding: model.adding,
-            isPreview: isPreview
+        SeriesShelfPage(
+            upNext: [],
+            releases: [],
+            filters: [],
+            filter: .all,
+            series: sagas.filter { saga in status.keeps(saga) && (format.map { saga.heldFormat == $0 } ?? true) },
+            isLoading: !loaded && errorMessage == nil,
+            errorMessage: errorMessage,
+            statuses: SeriesStatusFilter.allCases,
+            selectedStatus: status,
+            formats: BookFormat.allCases.filter { f in sagas.contains { $0.heldFormat == f } },
+            selectedFormat: format
         ) { action in
             switch action {
-            case let .openSaga(saga): openSaga = saga
-            case let .take(saga, format):
-                guard let first = saga.volumes.first else { return }
-                await model.take(saga.id) {
-                    try await client.addBook(friendId, first.id, .toRead, format)
-                }
-            case .loadMore: await model.loadMore(fetch: fetch)
-            case .refresh: await model.load(query: query, fetch: fetch)
+            case let .openSeries(saga): openSaga = SeriesDestinationID(id: saga.seriesId)
+            case let .selectStatus(status): withAnimation(.smooth) { self.status = status }
+            case let .selectFormat(format): withAnimation(.smooth) { self.format = format }
+            case .refresh: Task { await load() }
+            case .openBook, .openVolume, .follow, .selectFilter: break
             }
         }
-        .task(id: query) { await model.load(query: query, fetch: fetch) }
-        // Pushed, as a saga opens from the reader's own Series tab.
+        .overlay {
+            if loaded, sagas.isEmpty {
+                EmptyState(
+                    systemImage: "square.stack",
+                    title: "Aucune série",
+                    message: "Aucune série n'a été ajoutée à cette bibliothèque."
+                )
+            }
+        }
+        .scrollAwayBar(String(localized: "Séries"))
         .pushesDetail(item: $openSaga) { saga in
-            // Where the saga stands is the friend's; previewed, the reader's
-            // own saga opens as it does from their Series tab.
-            SeriesScreen(
-                seriesId: saga.seriesId,
-                friend: isPreview ? nil : SeriesFriend(id: friendId, name: friendName)
-            )
+            SeriesScreen(seriesId: saga.id, friend: SeriesFriend(id: friendId, name: friendName))
         }
-        .alert(
-            "Ajout impossible",
-            isPresented: .init(get: { model.addFailed != nil }, set: { if !$0 { model.addFailed = nil } })
-        ) {
-            Button("OK", role: .cancel) { model.addFailed = nil }
-        } message: {
-            Text(model.addFailed ?? "")
-        }
+        .task { if !loaded { await load() } }
     }
 
-    private var query: String { "\(mode.rawValue)-\(state?.rawValue ?? "all")" }
-
-    private var fetch: FriendShelfListModel<FriendSaga>.Fetch {
-        let (client, friendId, state, loved) = (client, friendId, state, mode == .favorites)
-        return { after in
-            let page = try await client.sagaPage(friendId, state, loved, after)
-            return (page.sagas, page.hasMore)
+    private func load() async {
+        errorMessage = nil
+        do {
+            var all: [FriendSaga] = []
+            var after: String?
+            for _ in 0..<Self.maxPages {
+                let page = try await client.sagaPage(friendId, nil, false, after)
+                all += page.sagas.filter { new in !all.contains { $0.id == new.id } }
+                guard page.hasMore, let last = page.sagas.last else { break }
+                after = last.id
+            }
+            sagas = all.map(FollowedSeries.init(friendSaga:))
+            loaded = true
+        } catch {
+            guard !isCancellation(error) else { return }
+            errorMessage = reportError(error)
         }
+    }
+}
+
+extension FollowedSeries {
+    /// A friend's saga as the Series tab's card reads it: their volumes on the
+    /// strip and nothing between them, their heart and their stars.
+    init(friendSaga saga: FriendSaga) {
+        self.init(
+            seriesId: saga.seriesId,
+            name: saga.name,
+            isAudio: saga.isAudio,
+            author: saga.author,
+            language: saga.language,
+            state: saga.state,
+            genre: saga.genre,
+            ownedCount: saga.ownedCount,
+            shelvedAt: saga.shelvedAt,
+            volumes: saga.volumes,
+            strip: saga.volumes.map(SeriesStripItem.owned),
+            opinion: SeriesOpinion(seriesId: saga.seriesId, rating: saga.rating, favorite: saga.favorite)
+        )
+    }
+}
+
+#Preview {
+    NavigationStack {
+        FriendSeriesListScreen(friendId: "camille", friendName: "Camille", client: .preview)
     }
 }

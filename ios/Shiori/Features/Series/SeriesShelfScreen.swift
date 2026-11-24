@@ -32,6 +32,7 @@ struct SeriesShelfScreen: View {
             case let .selectFilter(filter): withAnimation(.smooth) { viewModel.filter = filter }
             case let .follow(saga): Task { await viewModel.follow(saga) }
             case .refresh: Task { await viewModel.load() }
+            case .selectFormat, .selectStatus: break
             }
         }
         .scrollAwayBar(String(localized: "Séries"))
