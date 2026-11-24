@@ -183,7 +183,8 @@ fun PlayerPage(item: PlayerPageItem, queueProgress: Float = 0f, onAction: (Playe
     val density = LocalDensity.current
     // How far the queue is pulled up: 0 is the whole player, 1 the queue over the shrunk player.
     val queue = remember { Animatable(queueProgress) }
-    val progress = queue.value
+    // The spring runs a little past its ends: what is drawn stays between them.
+    val progress = queue.value.coerceIn(0f, 1f)
     fun setQueueOpen(open: Boolean) {
         scope.launch { queue.animateTo(if (open) 1f else 0f, spring(dampingRatio = 0.85f, stiffness = 300f)) }
     }

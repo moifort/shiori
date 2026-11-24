@@ -142,7 +142,8 @@ fun PlayerSheet(
         BackHandler { close() }
         LaunchedEffect(Unit) { morph.animateTo(0f, spring(dampingRatio = 0.85f, stiffness = 180f)) }
 
-        val m = morph.value
+        // The spring runs a little past its ends: what is drawn stays between them.
+        val m = morph.value.coerceIn(0f, 1f)
         val eased = 1 - (1 - m) * (1 - m)
         val isInteractive = m == 0f && !isClosing
         val sheet = Rect(0f, geometry.top + pull.value, screen.width, geometry.top + pull.value + geometry.sheetHeight)
