@@ -61,18 +61,27 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.polyforms.shiori.DebugFixtures
 import com.polyforms.shiori.PreviewSurface
 
-/** One poster of a row: a book, its label, and where tapping it leads when not to the book. */
+/**
+ * One poster of a row: a book, its label, and where tapping it leads when not to the book.
+ *
+ * `open` comes last so that a trailing lambda, `PosterRowItem(book, caption) { … }`, is what the
+ * tap runs: placed before `dropWished`, the lambda became the long press's "Retirer" and the tap
+ * fell through to the row's own `onOpen`, which those rows leave empty.
+ */
 data class PosterRowItem(
     val book: Book,
     val label: PosterLabel,
-    val open: (() -> Unit)? = null,
     /** "Retirer" on the long press, for a cover of the wishlist: what takes it off the list, when it is not the row's own. */
     val dropWished: (() -> Unit)? = null,
+    val open: (() -> Unit)? = null,
 ) {
-    constructor(book: Book, caption: String, open: (() -> Unit)? = null, dropWished: (() -> Unit)? = null) : this(book, PosterLabel(caption), open, dropWished)
+    constructor(book: Book, caption: String, dropWished: (() -> Unit)? = null, open: (() -> Unit)? = null) : this(book, PosterLabel(caption), dropWished, open)
 
     val id: String get() = book.id
     val caption: String get() = label.caption
+
+    /** What a tap on the poster runs: its own `open`, else the row's `onOpen` with its book. */
+    fun tap(onOpen: (Book) -> Unit) = open?.invoke() ?: onOpen(book)
 }
 
 /** Posters in a horizontal row, or a grid of rows scrolling sideways; a long press opens the menu. */
@@ -90,7 +99,7 @@ fun PosterRow(
 ) {
     @Composable
     fun Poster(item: PosterRowItem) {
-        val open = { item.open?.invoke() ?: onOpen(item.book) }
+        val open = { item.tap(onOpen) }
         val drop = item.dropWished ?: onDropWished?.let { drop -> { drop(item.book) } }
         val description = listOfNotNull(item.book.title, item.caption, item.label.cornerTag).joinToString(", ")
         if (drop != null) {

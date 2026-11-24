@@ -40,7 +40,7 @@ private fun item(series: FollowedSeries, volume: NextVolume, open: () -> Unit): 
     is NextVolume.Owned -> {
         val book = volume.book
         val caption = book.series?.volume?.let { L("Tome %lld", it) } ?: book.title
-        PosterRowItem(book, PosterLabel(caption, marksReading = book.status == ReadingStatus.READING), open)
+        PosterRowItem(book, PosterLabel(caption, marksReading = book.status == ReadingStatus.READING), open = open)
     }
     is NextVolume.Missing -> {
         val book = Book(
@@ -52,7 +52,7 @@ private fun item(series: FollowedSeries, volume: NextVolume, open: () -> Unit): 
             coverURL = volume.coverURL,
             status = ReadingStatus.TO_READ,
         )
-        PosterRowItem(book, volume.number?.let { L("Tome %lld", it) } ?: volume.title, open)
+        PosterRowItem(book, volume.number?.let { L("Tome %lld", it) } ?: volume.title, open = open)
     }
 }
 
