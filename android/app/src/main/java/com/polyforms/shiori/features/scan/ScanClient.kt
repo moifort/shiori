@@ -12,6 +12,7 @@ import com.polyforms.shiori.features.wishlist.WishlistApi
 import com.polyforms.shiori.shared.Book
 import com.polyforms.shiori.shared.BookFormat
 import com.polyforms.shiori.shared.BookLanguage
+import com.polyforms.shiori.shared.SeriesStripItem
 
 /** What a scan asks of the server: reading a cover, a link or a title, and adding the book. */
 interface ScanClient {
@@ -30,6 +31,8 @@ interface ScanClient {
     suspend fun addDetected(book: DetectedBook): Book
     suspend fun remainingScans(): Int?
     suspend fun wish(draft: BookDraft)
+    /** The volumes of the scanned book's saga, held or lacking, for the row the review draws as a book's page does. */
+    suspend fun sagaVolumes(seriesId: String, language: BookLanguage?): List<SeriesStripItem> = emptyList()
 
     companion object {
         val live: ScanClient = object : ScanClient {
@@ -50,6 +53,7 @@ interface ScanClient {
             override suspend fun wish(draft: BookDraft) {
                 WishlistApi.wish(draft, Wish.Origin.SCAN)
             }
+            override suspend fun sagaVolumes(seriesId: String, language: BookLanguage?) = BookApi.sagaVolumes(seriesId, language)
         }
     }
 }

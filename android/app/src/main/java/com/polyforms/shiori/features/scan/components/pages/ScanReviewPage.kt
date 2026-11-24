@@ -1,16 +1,19 @@
 package com.polyforms.shiori.features.scan.components.pages
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -29,43 +32,46 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.input.KeyboardCapitalization
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.polyforms.shiori.features.book.BookCorrection
 import com.polyforms.shiori.features.book.BookDraft
 import com.polyforms.shiori.features.book.BookVocabulary
 import com.polyforms.shiori.features.book.Change
 import com.polyforms.shiori.features.book.SeriesPlacement
+import com.polyforms.shiori.features.book.components.pages.BookField
+import com.polyforms.shiori.features.book.components.pages.FieldEditSheet
 import com.polyforms.shiori.features.book.components.pages.GenreEditSheet
-import com.polyforms.shiori.features.book.components.pages.RatingPromptSheet
+import com.polyforms.shiori.features.book.components.pages.HeroButton
 import com.polyforms.shiori.features.book.components.pages.SeriesJoinSheet
 import com.polyforms.shiori.features.discover.ReleaseFormat
 import com.polyforms.shiori.shared.Book
 import com.polyforms.shiori.shared.BookFormat
 import com.polyforms.shiori.shared.BookLanguage
 import com.polyforms.shiori.shared.BookMedium
-import com.polyforms.shiori.shared.DateText
 import com.polyforms.shiori.shared.L
 import com.polyforms.shiori.shared.ReadingStatus
 import com.polyforms.shiori.shared.SeriesMembership
+import com.polyforms.shiori.shared.SeriesStripItem
 import com.polyforms.shiori.shared.VolumeKind
-import com.polyforms.shiori.shared.book.BookFact
+import com.polyforms.shiori.shared.book.BookHero
 import com.polyforms.shiori.shared.book.BookSynopsisBlock
+import com.polyforms.shiori.shared.book.FactGrid
+import com.polyforms.shiori.shared.book.FactGroup
+import com.polyforms.shiori.shared.book.FactTile
 import com.polyforms.shiori.shared.book.MediaToggles
-import com.polyforms.shiori.shared.components.atoms.RatingStars
+import com.polyforms.shiori.shared.book.SeriesVolumesRow
 import com.polyforms.shiori.shared.components.atoms.ToolbarIconButton
 import com.polyforms.shiori.shared.components.molecules.MenuPicker
-import com.polyforms.shiori.shared.components.molecules.ReadingStatusPicker
+import com.polyforms.shiori.shared.components.molecules.RowHeader
 import com.polyforms.shiori.shared.components.molecules.RowLabel
-import com.polyforms.shiori.shared.components.organisms.BookCover
 import com.polyforms.shiori.shared.components.styles.FormRow
 import com.polyforms.shiori.shared.components.styles.FormSection
 import com.polyforms.shiori.shared.components.styles.PlainTextField
 import com.polyforms.shiori.shared.components.styles.Shiori
-import com.polyforms.shiori.shared.components.styles.ShioriSwitch
 import com.polyforms.shiori.shared.components.styles.Symbol
+import com.polyforms.shiori.shared.components.styles.plainClickable
 import com.polyforms.shiori.shared.platform.MenuEntries
 import com.polyforms.shiori.shared.platform.MenuEntry
 import com.polyforms.shiori.shared.platform.SheetBar
@@ -78,18 +84,39 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.polyforms.shiori.DebugFixtures
 import com.polyforms.shiori.PreviewSurface
 
+/*
+ * What the model proposed, before anything is saved, drawn as the book's page draws a book: the
+ * hero over the cover's colours, then the summary, the saga and the facts as tiles. Every fact is
+ * a guess — the safety net against a misread cover — so every one can be corrected: the
+ * publisher, the year, the pages and the ISBN from their tile, every tile shown even when the
+ * cover said nothing; the title and author from the facts' header, the saga and the genre from
+ * their sheets; the edition's language from its tile, presumed the app's own. Nothing leaves the
+ * phone until the reader adds it.
+ *
+ * Where the book goes is the hero's to say: "Ajouter" puts it on the pile on a tap and offers
+ * "En cours" and "Déjà lu" on a long press, each asking for its day; "Envie" puts it on the
+ * wishlist; "Guetter", when its edition in the app's language may be awaited, awaits it instead.
+ * The "+" of the bar offers all of it again, within reach once the hero has scrolled away.
+ */
+
+/** Everything the review can ask for. */
 sealed interface ScanReviewAction {
+    /** The draft, and the saga as the reader renamed it, if they did. */
     data class Save(val draft: BookDraft, val series: SeriesPlacement?) : ScanReviewAction
     data object Retake : ScanReviewAction
+    /** The edition in the app's language awaited instead of the book added: the scan is then over. */
     data class AwaitEdition(val draft: BookDraft, val format: ReleaseFormat) : ScanReviewAction
+    /** Onto the wishlist rather than the shelf: the scan is then over. */
     data class Wish(val draft: BookDraft) : ScanReviewAction
+    /** The language or the format was corrected: what may be awaited, and the saga, are asked again. */
     data class LanguageOrFormatChanged(val language: BookLanguage?, val format: BookFormat) : ScanReviewAction
     data class OpenOwnedCopy(val book: Book) : ScanReviewAction
 }
 
-private enum class ReviewSheet { IDENTITY, SERIES, GENRE, RATE }
+private enum class ReviewSheet { IDENTITY, SERIES, GENRE }
 
-private fun BookDraft.asReviewedBook(rating: Double, renamed: SeriesPlacement?): Book = Book(
+/** The draft as the book's page would draw it once saved. */
+private fun BookDraft.asReviewedBook(renamed: SeriesPlacement?): Book = Book(
     id = "review",
     title = title,
     authors = authors,
@@ -106,7 +133,6 @@ private fun BookDraft.asReviewedBook(rating: Double, renamed: SeriesPlacement?):
     series = renamed?.let { SeriesMembership("", it.name, it.volume, VolumeKind.MAIN) } ?: series,
     coverURL = coverURL,
     status = status,
-    rating = if (rating > 0) rating else null,
 )
 
 private fun <T> Change<T>?.valueOr(old: T?): T? = when (this) {
@@ -115,7 +141,7 @@ private fun <T> Change<T>?.valueOr(old: T?): T? = when (this) {
     Change.Clear -> null
 }
 
-/** A correction read back into the draft. */
+/** A correction read back into the draft. The saga is never part of one: it stays as the scan resolved it. */
 fun BookDraft.applying(correction: BookCorrection): BookDraft = copy(
     title = correction.title ?: title,
     authors = correction.authors ?: authors,
@@ -131,7 +157,28 @@ fun BookDraft.applying(correction: BookCorrection): BookDraft = copy(
     language = correction.language.valueOr(language),
 )
 
-/** What the AI read off the cover, to check and correct before the book is added. */
+/**
+ * The saga's row with the book scanned in its own place, bright and ringed: in place of the volume
+ * the reader lacks, or of their own copy of it. The book alone when the saga was renamed here, or
+ * before its volumes have loaded.
+ */
+internal fun reviewRowVolumes(book: Book, sagaVolumes: List<SeriesStripItem>, renamed: Boolean): List<SeriesStripItem> {
+    val current = SeriesStripItem.Owned(book)
+    val number = book.series?.volume
+    if (renamed || number == null || sagaVolumes.isEmpty()) return listOf(current)
+    var placed = false
+    val items = sagaVolumes.mapNotNull { item ->
+        val isThisVolume = when (item) {
+            is SeriesStripItem.Missing -> item.number == number
+            is SeriesStripItem.Owned -> item.book.series?.kind == VolumeKind.MAIN && item.book.series?.volume == number
+        }
+        if (!isThisVolume) return@mapNotNull item
+        if (placed) null else current.also { placed = true }
+    }
+    return if (placed) items else items + current
+}
+
+/** What the AI read off the cover, drawn as the book's page, to check and correct before the book is added. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScanReviewPage(
@@ -141,154 +188,126 @@ fun ScanReviewPage(
     awaitable: List<ReleaseFormat>,
     loadSubgenres: suspend () -> List<String>,
     loadVocabulary: suspend () -> BookVocabulary?,
+    /** The saga's volumes, held or lacking, as the book's page will list them. */
+    sagaVolumes: List<SeriesStripItem> = emptyList(),
+    /** Closes the scan, beside "Reprendre". */
+    onClose: (() -> Unit)? = null,
     onAction: suspend (ScanReviewAction) -> Unit,
 ) {
     val scope = rememberCoroutineScope()
     var draft by remember { mutableStateOf(initial) }
     var renamed by remember { mutableStateOf<SeriesPlacement?>(null) }
     var sheet by remember { mutableStateOf<ReviewSheet?>(null) }
+    var editedField by remember { mutableStateOf<BookField?>(null) }
+    var choosesLanguage by remember { mutableStateOf(false) }
     var addMenu by remember { mutableStateOf(false) }
-    val book = draft.asReviewedBook(draft.rating, renamed)
+    // The status the book is being added as, while its day is asked.
+    var askedDate by remember { mutableStateOf<ReadingStatus?>(null) }
+    val book = draft.asReviewedBook(renamed)
     val colors = Shiori.colors
     fun send(action: ScanReviewAction) {
         scope.launch { onAction(action) }
     }
     LaunchedEffect(draft.language, draft.format) { onAction(ScanReviewAction.LanguageOrFormatChanged(draft.language, draft.format)) }
 
-    fun markRead() {
-        if (draft.status == ReadingStatus.TO_READ || draft.status == ReadingStatus.READING) draft = draft.copy(status = ReadingStatus.READ)
-    }
-    fun rate(stars: Double) {
-        draft = draft.copy(rating = stars, favorite = draft.favorite && stars >= 3)
-        if (stars > 0) markRead()
-    }
-    fun love(loved: Boolean) {
-        draft = draft.copy(favorite = loved, rating = if (loved && draft.rating < 3) 5.0 else draft.rating)
-        if (loved) markRead()
-    }
     val canSave = draft.title.isNotBlank() && !isSaving
-    fun save(status: ReadingStatus) {
-        var approved = draft
-        if (status != approved.status) {
-            approved = approved.copy(status = status)
-            if (status == ReadingStatus.TO_READ) approved = approved.copy(rating = 0.0, favorite = false)
-        }
-        draft = approved
+    // Saves the book in the status picked, with the day the reader gave it: the start of a book
+    // under way, the finish of one read — the server stamps the start of a read book on its finish.
+    fun save(status: ReadingStatus, day: Instant?) {
+        val approved = draft.copy(
+            status = status,
+            rating = 0.0,
+            favorite = false,
+            startedAt = if (status == ReadingStatus.READING) day else null,
+            finishedAt = if (status == ReadingStatus.READ) day else null,
+        )
         send(ScanReviewAction.Save(approved, renamed))
     }
+    // On the pile at once; under way or read once its day is picked.
+    fun add(status: ReadingStatus) {
+        if (!canSave) return
+        if (status == ReadingStatus.TO_READ) save(status, null) else askedDate = status
+    }
+    fun wish() {
+        if (canSave) send(ScanReviewAction.Wish(draft))
+    }
+    fun awaitEdition(format: ReleaseFormat) = send(ScanReviewAction.AwaitEdition(draft, format))
 
-    Box(Modifier.fillMaxSize()) {
-        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).statusBarsPadding().padding(top = 64.dp, bottom = 40.dp), verticalArrangement = Arrangement.spacedBy(24.dp)) {
-            if (ownedCopy != null) {
-                val joining = mediaJoining(draft, ownedCopy)
-                FormSection(
-                    footer = if (joining.isEmpty()) L("Vous pouvez l'ajouter une seconde fois, pour une autre édition par exemple.")
-                    else L("Il rejoindra votre fiche, désormais en %@. Un seul livre, quel que soit le support.", BookMedium.label(ownedCopy.media + joining)),
-                ) {
-                    FormRow(divider = false, onClick = { send(ScanReviewAction.OpenOwnedCopy(ownedCopy)) }) {
-                        Icon(Symbol(if (joining.isEmpty()) "exclamationmark.triangle.fill" else "link"), null, Modifier.size(20.dp), tint = if (joining.isEmpty()) colors.orange else colors.accent)
-                        Column(Modifier.weight(1f).padding(start = 12.dp)) {
-                            Text(L("Déjà dans votre bibliothèque"), style = Shiori.type.headline, color = colors.label)
-                            Text("${ownedCopy.title} · ${ownedCopy.status.label}", style = Shiori.type.subheadline, color = colors.secondaryLabel, maxLines = 1)
+    // The three ways onto the shelf, in the order a book goes through them.
+    val shelfChoices = listOf(
+        MenuEntry.Item(L("À lire"), ReadingStatus.TO_READ.symbol) { add(ReadingStatus.TO_READ) },
+        MenuEntry.Item(L("En cours"), ReadingStatus.READING.symbol) { add(ReadingStatus.READING) },
+        MenuEntry.Item(L("Déjà lu"), ReadingStatus.READ.symbol) { add(ReadingStatus.READ) },
+    )
+    val awaitChoices = awaitable.map { format ->
+        MenuEntry.Item(format.awaitLabel, if (format == ReleaseFormat.AUDIOBOOK) "headphones" else "binoculars") { awaitEdition(format) }
+    }
+
+    Box(Modifier.fillMaxSize().background(colors.groupedBackground)) {
+        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState(), enabled = !isSaving)) {
+            BookHero(book) {
+                // "Ajouter" white, as the book's page sets its next step, "Envie" and "Guetter" on
+                // glass beside it; sideways past the width rather than a label cut.
+                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    HeroButton(L("Ajouter"), "plus", prominent = true, menu = shelfChoices, showsMenu = true) { add(ReadingStatus.TO_READ) }
+                    HeroButton(L("Envie"), "bookmark") { wish() }
+                    if (awaitable.isNotEmpty()) {
+                        if (awaitable.size > 1) {
+                            HeroButton(L("Guetter"), "binoculars", menu = awaitChoices, menuOnTap = true, showsMenu = true) {}
+                        } else {
+                            HeroButton(L("Guetter"), "binoculars") { awaitEdition(awaitable.first()) }
                         }
-                        Icon(Symbol("chevron.right"), null, Modifier.size(12.dp), tint = colors.tertiaryLabel)
                     }
                 }
             }
-            Box(Modifier.padding(horizontal = 16.dp)) {
-                ReadingStatusPicker(draft.status) { status ->
-                    draft = draft.copy(status = status)
-                    if (status == ReadingStatus.TO_READ || status == ReadingStatus.READING) draft = draft.copy(rating = 0.0, favorite = false)
+            Column(
+                Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 4.dp, bottom = 32.dp),
+                verticalArrangement = Arrangement.spacedBy(28.dp),
+            ) {
+                if (ownedCopy != null) {
+                    OwnedCopyBlock(ownedCopy, mediaJoining(draft, ownedCopy)) { send(ScanReviewAction.OpenOwnedCopy(ownedCopy)) }
                 }
-            }
-            FormSection(footer = L("Lu automatiquement sur la couverture : touchez une ligne pour la corriger avant d'ajouter le livre.")) {
-                FormRow(onClick = { sheet = ReviewSheet.IDENTITY }) {
-                    BookCover(book, 64.dp)
-                    Column(Modifier.weight(1f).padding(start = 12.dp, top = 4.dp, bottom = 4.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        Text(book.title, style = Shiori.type.headline, color = colors.label)
-                        Text(listOfNotNull(book.authorLine, book.series?.label?.let { "· $it" }).joinToString(" "), style = Shiori.type.subheadline, color = colors.secondaryLabel)
+                draft.synopsis?.let { BookSynopsisBlock(it) }
+                book.series?.let { membership ->
+                    SeriesVolumesRow(
+                        membership.name,
+                        reviewRowVolumes(book, sagaVolumes, renamed != null),
+                        book.id,
+                        onOpenSeries = { sheet = ReviewSheet.SERIES },
+                        onOpenVolume = {},
+                    )
+                }
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    RowHeader(L("Informations"), detail = L("titre et auteur"), action = { sheet = ReviewSheet.IDENTITY })
+                    Box {
+                        FactGrid(listOf(FactGroup(factTiles(book, draft, { sheet = it }, { editedField = it }, { choosesLanguage = true }))))
+                        val choices = BookLanguage.reviewChoices.let { list -> draft.language?.takeIf { it !in list }?.let { list + it } ?: list }
+                        MenuEntries(
+                            choices.map { language -> MenuEntry.Item(language.label, checked = language == draft.language) { draft = draft.copy(language = language) } },
+                            choosesLanguage,
+                        ) { choosesLanguage = false }
                     }
                 }
-                FormRow(onClick = { sheet = ReviewSheet.SERIES }) {
-                    RowLabel(L("Série"), "square.stack")
-                    Spacer(Modifier.weight(1f))
-                    Text(book.series?.name ?: L("Aucune"), style = Shiori.type.body, color = colors.accent, textAlign = TextAlign.End)
-                    Icon(Symbol("chevron.right"), null, Modifier.padding(start = 4.dp).size(12.dp), tint = colors.accent)
-                }
-                FormRow(onClick = { sheet = ReviewSheet.GENRE }) {
-                    RowLabel(L("Genre"), "books.vertical")
-                    Spacer(Modifier.weight(1f))
-                    Text(book.genre?.label ?: L("Non renseigné"), style = Shiori.type.body, color = colors.accent)
-                    Icon(Symbol("chevron.right"), null, Modifier.padding(start = 4.dp).size(12.dp), tint = colors.accent)
-                }
-                FormRow {
-                    RowLabel(L("Type"), book.format.symbol)
-                    Spacer(Modifier.weight(1f))
-                    Text(book.format.label, style = Shiori.type.body, color = colors.secondaryLabel)
-                }
-                if (book.media.isNotEmpty()) {
-                    FormRow {
-                        RowLabel(L("Support"), if (book.media.size > 1) "books.vertical" else book.media[0].symbol)
-                        Spacer(Modifier.weight(1f))
-                        Text(BookMedium.label(book.media), style = Shiori.type.body, color = colors.secondaryLabel)
-                    }
-                }
-                BookFact.entries.filter { it.applies(book) }.forEach { fact ->
-                    FactField(fact, book) { correction -> draft = draft.applying(correction) }
-                }
-                val choices = BookLanguage.reviewChoices.let { list -> draft.language?.takeIf { it !in list }?.let { list + it } ?: list }
-                MenuPicker(draft.language, choices, { it?.label ?: L("Non renseignée") }, { draft = draft.copy(language = it) }, divider = false) {
-                    RowLabel(L("Langue"), "globe")
-                }
-            }
-            FormSection(L("Ma lecture")) {
-                FormRow(onClick = { sheet = ReviewSheet.RATE }) {
-                    if (draft.rating > 0) {
-                        RowLabel(L("Note"), "star")
-                        Spacer(Modifier.weight(1f))
-                        RatingStars(draft.rating)
-                    } else {
-                        Icon(Symbol("star"), null, Modifier.size(18.dp), tint = colors.accent)
-                        Text(L("Noter ce livre"), style = Shiori.type.body, color = colors.accent, modifier = Modifier.padding(start = 12.dp))
-                    }
-                }
-                FormRow(divider = draft.status != ReadingStatus.TO_READ) {
-                    RowLabel(L("Favori"), if (draft.favorite) "heart.fill" else "heart")
-                    Spacer(Modifier.weight(1f))
-                    ShioriSwitch(draft.favorite, ::love)
-                }
-                if (draft.status != ReadingStatus.TO_READ) {
-                    val latestStart = if (draft.status == ReadingStatus.READ) minOf(draft.finishedAt ?: Instant.now(), Instant.now()) else Instant.now()
-                    ReviewDateRow(L("Commencé le"), "calendar.badge.plus", draft.startedAt?.let { minOf(it, latestStart) } ?: latestStart, latestStart, divider = draft.status == ReadingStatus.READ) { date ->
-                        draft = draft.copy(startedAt = date, finishedAt = draft.finishedAt?.let { if (draft.status == ReadingStatus.READ && it < date) date else it })
-                    }
-                    if (draft.status == ReadingStatus.READ) {
-                        ReviewDateRow(L("Terminé le"), "calendar.badge.checkmark", draft.finishedAt ?: Instant.now(), Instant.now(), divider = false) { draft = draft.copy(finishedAt = it) }
-                    }
-                }
-            }
-            draft.synopsis?.let { synopsis ->
-                FormSection(L("Résumé")) { Box(Modifier.padding(16.dp)) { BookSynopsisBlock(synopsis) } }
             }
         }
-        Row(Modifier.statusBarsPadding().fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+        // The bar: "Reprendre" leading, the title, the "+" that offers everything the hero does.
+        Row(
+            Modifier.statusBarsPadding().fillMaxWidth().height(56.dp).padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            onClose?.let { close -> ToolbarIconButton(L("Fermer"), "xmark", onClick = close) }
             ToolbarIconButton(L("Reprendre"), "arrow.counterclockwise") { send(ScanReviewAction.Retake) }
-            Text(L("Vérifier"), style = Shiori.type.headline, color = colors.label, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
+            Text(L("Vérifier"), style = Shiori.type.headline, color = colors.label, textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.weight(1f))
             Box {
                 ToolbarIconButton(L("Ajouter"), "plus", prominent = true, enabled = !isSaving) { addMenu = true }
                 MenuEntries(
                     buildList {
-                        add(MenuEntry.Item(L("À lire"), "bookmark.fill") { if (canSave) save(ReadingStatus.TO_READ) })
-                        add(MenuEntry.Item(L("Déjà lu"), "checkmark") { if (canSave) save(ReadingStatus.READ) })
+                        addAll(shelfChoices)
                         add(MenuEntry.Divider)
-                        add(MenuEntry.Item(L("Liste d'envies"), "bookmark") { if (canSave) send(ScanReviewAction.Wish(draft)) })
-                        if (awaitable.isNotEmpty()) {
+                        add(MenuEntry.Item(L("Liste d'envies"), "bookmark") { wish() })
+                        if (awaitChoices.isNotEmpty()) {
                             add(MenuEntry.Divider)
-                            awaitable.forEach { format ->
-                                add(MenuEntry.Item(format.awaitLabel, if (format == ReleaseFormat.AUDIOBOOK) "headphones" else "character.book.closed") {
-                                    send(ScanReviewAction.AwaitEdition(draft, format))
-                                })
-                            }
+                            addAll(awaitChoices)
                         }
                     },
                     addMenu,
@@ -308,17 +327,53 @@ fun ScanReviewPage(
             (correction.series as? Change.Set)?.let { renamed = it.value }
             null
         }
-        ReviewSheet.RATE -> RatingPromptSheet(if (draft.rating > 0) draft.rating else null, dismiss, onRemove = {
-            sheet = null
-            rate(0.0)
-        }) { stars ->
-            sheet = null
-            rate(stars)
-        }
         null -> Unit
+    }
+    editedField?.let { field ->
+        FieldEditSheet(book, field, { editedField = null }) { correction ->
+            draft = draft.applying(correction)
+            null
+        }
+    }
+    askedDate?.let { status ->
+        ReadingDateDialog(if (status == ReadingStatus.READ) L("Terminé le") else L("Commencé le"), onDismiss = { askedDate = null }) { day ->
+            askedDate = null
+            save(status, day)
+        }
     }
 }
 
+/** What the cover said, as the book's page tiles it, every tile there to be corrected. */
+private fun factTiles(
+    book: Book,
+    draft: BookDraft,
+    onSheet: (ReviewSheet) -> Unit,
+    onField: (BookField) -> Unit,
+    onLanguage: () -> Unit,
+): List<FactTile> = buildList {
+    add(FactTile("genre", L("Genre"), book.genre?.label, chips = book.subgenres, isWide = true, showsChevron = true, action = { onSheet(ReviewSheet.GENRE) }))
+    // A saga read off the cover heads its own row; none, and it is joined from here.
+    if (book.series == null) {
+        add(FactTile("series", L("Série"), null, isWide = true, placeholder = L("Aucune"), showsChevron = true, action = { onSheet(ReviewSheet.SERIES) }))
+    }
+    add(FactTile("format", L("Format"), formatValue(book)))
+    add(FactTile("publisher", L("Éditeur"), book.publisher, action = { onField(BookField.PUBLISHER) }))
+    add(FactTile("firstPublishedIn", L("Parution"), book.firstPublishedIn?.toString(), action = { onField(BookField.FIRST_PUBLISHED_IN) }))
+    add(FactTile("pageCount", L("Pages"), book.pageCount?.toString(), action = { onField(BookField.PAGE_COUNT) }))
+    if (book.format != BookFormat.AUDIOBOOK) add(FactTile("isbn13", L("ISBN"), book.isbn13, monospaced = true, action = { onField(BookField.ISBN13) }))
+    // The edition decides which volumes of its saga are out. Presumed in the app's language, switched here.
+    add(FactTile("language", L("Langue"), draft.language?.label, placeholder = L("Non renseignée"), showsChevron = true, chevronSymbol = "chevron.up.chevron.down", action = onLanguage))
+}
+
+/** What the book is and how the reader holds it, as the book's page says it: "Livre · papier". */
+private fun formatValue(book: Book): String =
+    if (book.format == BookFormat.AUDIOBOOK || book.media.isEmpty()) book.format.label
+    else "${book.format.label} · ${BookMedium.label(book.media).lowercase()}"
+
+/**
+ * The media this book brings to the copy the reader already keeps, which it then joins rather than
+ * doubles. Empty when it brings none, and saving shelves a second copy.
+ */
 private fun mediaJoining(draft: BookDraft, copy: Book): List<BookMedium> {
     if (draft.format == BookFormat.AUDIOBOOK || copy.format == BookFormat.AUDIOBOOK) return emptyList()
     val language = draft.language
@@ -327,59 +382,61 @@ private fun mediaJoining(draft: BookDraft, copy: Book): List<BookMedium> {
     return draft.media.filter { it !in copy.media }
 }
 
+/**
+ * The reader already keeps this book, opening their copy: a warning when saving would shelve a
+ * second one, a note when it joins the copy on another medium.
+ */
 @Composable
-private fun FactField(fact: BookFact, book: Book, onCorrect: (BookCorrection) -> Unit) {
-    var text by remember(fact) { mutableStateOf(fact.value(book) ?: "") }
-    FormRow {
-        RowLabel(fact.title, fact.icon)
-        PlainTextField(
-            text,
-            { typed ->
-                text = typed
-                fact.correction(typed, book)?.takeIf { !it.isEmpty }?.let(onCorrect)
-            },
-            "",
-            Modifier.weight(1f),
-            keyboardType = if (fact.isNumeric) KeyboardType.Number else KeyboardType.Text,
-            capitalization = KeyboardCapitalization.Words,
-            textAlign = TextAlign.End,
-            onDone = {
-                val correction = fact.correction(text, book)
-                if (correction == null) text = fact.value(book) ?: "" else if (!correction.isEmpty) onCorrect(correction)
-            },
-        )
+private fun OwnedCopyBlock(copy: Book, joining: List<BookMedium>, onOpen: () -> Unit) {
+    val colors = Shiori.colors
+    Row(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(colors.secondaryGroupedBackground).plainClickable(onClick = onOpen).padding(14.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Icon(Symbol(if (joining.isEmpty()) "exclamationmark.triangle.fill" else "link"), null, Modifier.size(20.dp), tint = colors.label)
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(L("Déjà dans votre bibliothèque"), style = Shiori.type.headline, color = colors.label)
+            Text("${copy.title} · ${copy.status.label}", style = Shiori.type.subheadline, color = colors.secondaryLabel, maxLines = 1)
+            Text(
+                if (joining.isEmpty()) L("Vous pouvez l'ajouter une seconde fois, pour une autre édition par exemple.")
+                else L("Il rejoindra votre fiche, désormais en %@. Un seul livre, quel que soit le support.", BookMedium.label(copy.media + joining)),
+                style = Shiori.type.footnote,
+                color = colors.secondaryLabel,
+                modifier = Modifier.padding(top = 4.dp),
+            )
+        }
+        Icon(Symbol("chevron.right"), null, Modifier.size(12.dp), tint = colors.tertiaryLabel)
     }
 }
 
+/**
+ * Asked when a book being checked is added "En cours" or "Déjà lu": the day it was started, or
+ * finished, on a calendar opened on today. Closed without an answer, the book is not added.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ReviewDateRow(title: String, symbol: String, date: Instant, latest: Instant, divider: Boolean, onPick: (Instant) -> Unit) {
-    var open by remember { mutableStateOf(false) }
+private fun ReadingDateDialog(title: String, onDismiss: () -> Unit, onPick: (Instant) -> Unit) {
     val colors = Shiori.colors
-    FormRow(divider = divider, onClick = { open = true }) {
-        RowLabel(title, symbol)
-        Spacer(Modifier.weight(1f))
-        Text(DateText.dayMonthShortYear(DateText.local(date)), style = Shiori.type.body, color = colors.label)
-    }
-    if (open) {
-        val state = rememberDatePickerState(
-            initialSelectedDateMillis = DateText.local(date).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli(),
-            selectableDates = object : SelectableDates {
-                override fun isSelectableDate(utcTimeMillis: Long) = utcTimeMillis <= latest.toEpochMilli() + 86_400_000
-            },
-        )
-        DatePickerDialog(
-            onDismissRequest = { open = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    open = false
-                    val millis = state.selectedDateMillis ?: return@TextButton
-                    val day = Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate()
-                    onPick(minOf(day.atTime(12, 0).atZone(ZoneId.systemDefault()).toInstant(), latest))
-                }) { Text(L("OK"), color = colors.accent) }
-            },
-            dismissButton = { TextButton(onClick = { open = false }) { Text(L("Annuler"), color = colors.accent) } },
-        ) { DatePicker(state, showModeToggle = false) }
+    val now = Instant.now()
+    val state = rememberDatePickerState(
+        initialSelectedDateMillis = now.atZone(ZoneId.systemDefault()).toLocalDate().atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli(),
+        selectableDates = object : SelectableDates {
+            override fun isSelectableDate(utcTimeMillis: Long) = utcTimeMillis <= now.toEpochMilli() + 86_400_000
+        },
+    )
+    DatePickerDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(onClick = {
+                val millis = state.selectedDateMillis ?: return@TextButton
+                val day = Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate()
+                onPick(minOf(day.atTime(12, 0).atZone(ZoneId.systemDefault()).toInstant(), now))
+            }) { Text(L("Enregistrer"), color = colors.accent) }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(L("Annuler"), color = colors.accent) } },
+    ) {
+        Text(title, style = Shiori.type.headline, color = colors.label, modifier = Modifier.padding(start = 24.dp, top = 16.dp))
+        DatePicker(state, showModeToggle = false, title = null, headline = null)
     }
 }
 

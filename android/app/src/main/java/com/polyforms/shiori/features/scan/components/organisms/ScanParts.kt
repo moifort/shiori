@@ -32,7 +32,7 @@ import androidx.compose.ui.unit.dp
 import com.polyforms.shiori.shared.L
 import com.polyforms.shiori.shared.components.molecules.EmptyState
 import com.polyforms.shiori.shared.components.molecules.EmptyStateAction
-import com.polyforms.shiori.shared.components.organisms.AIGlassDrops
+import com.polyforms.shiori.shared.components.organisms.SiriOrb
 import com.polyforms.shiori.shared.components.styles.Shiori
 import com.polyforms.shiori.shared.components.styles.plainClickable
 import androidx.compose.ui.tooling.preview.Preview
@@ -64,12 +64,24 @@ fun Shutter(size: Dp = 72.dp, onClick: () -> Unit) {
     }
 }
 
-/** The AI reading the cover. */
+/**
+ * Shown while the model calls run — a cover, a shared link or a chosen title being read. A cold
+ * scan takes the better part of a minute, so this shows the AI at work — Siri's orb on a dark
+ * page, as the shelf search does — under one plain line, rather than a bare spinner.
+ */
 @Composable
-fun ScanAnalyzingPage() {
-    Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(40.dp, Alignment.CenterVertically)) {
-        AIGlassDrops()
-        Text(L("Analyse de la couverture"), style = Shiori.type.headline, color = Shiori.colors.label)
+fun ScanAnalyzingPage() = AIWaitPage(L("Analyse de la couverture"))
+
+/** The AI at work: Siri's orb on black, what is being read in white under it. */
+@Composable
+fun AIWaitPage(title: String) {
+    Column(
+        Modifier.fillMaxSize().background(Color.Black),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(22.dp, Alignment.CenterVertically),
+    ) {
+        SiriOrb()
+        Text(title, style = Shiori.type.headline, color = Color.White)
     }
 }
 

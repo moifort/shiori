@@ -14,11 +14,17 @@ import com.polyforms.shiori.shared.ApiError
 import com.polyforms.shiori.shared.Book
 import com.polyforms.shiori.shared.BookFormat
 import com.polyforms.shiori.shared.BookLanguage
+import com.polyforms.shiori.shared.BookOrigin
+import com.polyforms.shiori.shared.SeriesStripItem
 import com.polyforms.shiori.shared.reportError
 import com.polyforms.shiori.shared.track
 
 /** A scan: the photo or text, the AI's reading, the review, the book added. */
-class ScanViewModel(private val client: ScanClient) {
+class ScanViewModel(
+    private val client: ScanClient,
+    /** How a book saved here reached the library: a scan, a typed title, a share. */
+    private val origin: BookOrigin.Kind = BookOrigin.Kind.SCAN,
+) {
     enum class Step { CAMERA, ANALYZING, REVIEW, NO_RESULT, FAILED }
 
     var step by mutableStateOf(Step.CAMERA)
@@ -36,6 +42,9 @@ class ScanViewModel(private val client: ScanClient) {
     var isSaving by mutableStateOf(false)
         private set
     var awaitable by mutableStateOf<List<ReleaseFormat>>(emptyList())
+        private set
+    /** The scanned book's saga, every volume of it, as its page will list them. */
+    var sagaVolumes by mutableStateOf<List<SeriesStripItem>>(emptyList())
         private set
     private var typedTitle: String? = null
     private var sharedLink: String? = null
@@ -107,7 +116,8 @@ class ScanViewModel(private val client: ScanClient) {
     suspend fun save(draft: BookDraft, placement: SeriesPlacement?): Book? {
         isSaving = true
         try {
-            var book = client.add(if (placement != null) draft.copy(series = null) else draft)
+            val added = draft.copy(origin = BookOrigin(origin))
+            var book = client.add(if (placement != null) added.copy(series = null) else added)
             track(AnalyticsEvent.BookAdded(AnalyticsEvent.BookSource.SCAN))
             if (placement != null) {
                 try {
@@ -153,6 +163,23 @@ class ScanViewModel(private val client: ScanClient) {
         }
         try {
             awaitable = client.awaitableFormats(language, format)
+        } catch (failed: Exception) {
+            reportError(failed)
+        }
+    }
+
+    /**
+     * The saga's volumes in the edition reviewed, from the catalogue the scan built: the same row
+     * a book's page draws, never a catalogue built here.
+     */
+    suspend fun loadSagaVolumes(language: BookLanguage?) {
+        val seriesId = draft?.series?.id
+        if (seriesId.isNullOrEmpty()) {
+            sagaVolumes = emptyList()
+            return
+        }
+        try {
+            sagaVolumes = client.sagaVolumes(seriesId, language)
         } catch (failed: Exception) {
             reportError(failed)
         }

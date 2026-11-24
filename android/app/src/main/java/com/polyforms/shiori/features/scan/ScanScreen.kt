@@ -30,6 +30,13 @@ import com.polyforms.shiori.features.scan.components.pages.ScanReviewPage
 import com.polyforms.shiori.features.subscription.components.pages.PremiumSheet
 import com.polyforms.shiori.features.subscription.components.pages.PremiumTrigger
 import com.polyforms.shiori.shared.Book
+import com.polyforms.shiori.shared.BookOrigin
+import com.polyforms.shiori.shared.components.molecules.Confirmation
+import com.polyforms.shiori.shared.components.molecules.ConfirmationHost
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.input.pointer.pointerInput
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import com.polyforms.shiori.shared.L
 import com.polyforms.shiori.shared.components.atoms.ToolbarIconButton
 import com.polyforms.shiori.shared.components.styles.Shiori
@@ -44,6 +51,14 @@ sealed interface ScanStart {
     data class Photo(val jpeg: ByteArray) : ScanStart
     data class Title(val title: String) : ScanStart
     data class Link(val link: String) : ScanStart
+
+    /** Where a book saved from this start came from, unless the caller knows better. */
+    val origin: BookOrigin.Kind
+        get() = when (this) {
+            Camera, is Photo -> BookOrigin.Kind.SCAN
+            is Title -> BookOrigin.Kind.SEARCH
+            is Link -> BookOrigin.Kind.SHARE
+        }
 }
 
 /** A cover scan, from the camera to the book added. */
@@ -53,10 +68,23 @@ fun ScanScreen(
     onDismiss: () -> Unit,
     onAwait: (BookDraft, ReleaseFormat) -> Unit,
     onAdded: (Book) -> Unit,
+    /** The book went onto the wishlist: once the scan has said so over the review, it closes. */
+    onWished: () -> Unit = onDismiss,
+    /** How a book saved here reached the library, when the caller knows better than the start: a share. */
+    origin: BookOrigin.Kind? = null,
     client: ScanClient = ScanClient.live,
 ) {
     val scope = rememberCoroutineScope()
-    val viewModel = remember { ScanViewModel(client) }
+    val viewModel = remember { ScanViewModel(client, origin ?: start.origin) }
+    // What was just done, said over the screen whose button did it.
+    var confirmation by remember { mutableStateOf<Confirmation?>(null) }
+    // Says what was done over the review, where its button was, and moves on only once the word
+    // has been read.
+    suspend fun confirm(done: Confirmation, next: () -> Unit) {
+        confirmation = done
+        delay(Confirmation.HOLD_MILLIS)
+        next()
+    }
     val navigator = currentNavigator
     var captureRequest by remember { mutableIntStateOf(0) }
     LaunchedEffect(Unit) {
@@ -81,13 +109,27 @@ fun ScanScreen(
             }
             ScanViewModel.Step.ANALYZING -> ScanAnalyzingPage()
             ScanViewModel.Step.REVIEW -> viewModel.draft?.let { draft ->
-                ScanReviewPage(draft, viewModel.ownedCopy, viewModel.isSaving, viewModel.awaitable, viewModel::subgenres, viewModel::vocabulary) { action ->
+                ScanReviewPage(
+                    draft,
+                    viewModel.ownedCopy,
+                    viewModel.isSaving,
+                    viewModel.awaitable,
+                    viewModel::subgenres,
+                    viewModel::vocabulary,
+                    sagaVolumes = viewModel.sagaVolumes,
+                    onClose = onDismiss,
+                ) { action ->
                     when (action) {
-                        is ScanReviewAction.Save -> viewModel.save(action.draft, action.series)?.let(onAdded)
+                        is ScanReviewAction.Save -> viewModel.save(action.draft, action.series)?.let { book ->
+                            confirm(Confirmation.addedToLibrary) { onAdded(book) }
+                        }
                         ScanReviewAction.Retake -> viewModel.retake()
-                        is ScanReviewAction.AwaitEdition -> onAwait(action.draft, action.format)
-                        is ScanReviewAction.Wish -> if (viewModel.wish(action.draft)) onDismiss()
-                        is ScanReviewAction.LanguageOrFormatChanged -> viewModel.loadAwaitable(action.language, action.format)
+                        is ScanReviewAction.AwaitEdition -> confirm(Confirmation.awaited) { onAwait(action.draft, action.format) }
+                        is ScanReviewAction.Wish -> if (viewModel.wish(action.draft)) confirm(Confirmation.addedToWishlist, onWished)
+                        is ScanReviewAction.LanguageOrFormatChanged -> coroutineScope {
+                            launch { viewModel.loadAwaitable(action.language, action.format) }
+                            launch { viewModel.loadSagaVolumes(action.language) }
+                        }
                         is ScanReviewAction.OpenOwnedCopy -> navigator.push { BookScreen(action.book.id) }
                     }
                 }
@@ -98,6 +140,9 @@ fun ScanScreen(
         if (viewModel.step != ScanViewModel.Step.REVIEW) {
             Box(Modifier.statusBarsPadding().padding(16.dp)) { ToolbarIconButton(L("Fermer"), "xmark", onClick = onDismiss) }
         }
+        // Nothing is tapped while the word is said.
+        if (confirmation != null) Box(Modifier.fillMaxSize().pointerInput(Unit) { awaitPointerEventScope { while (true) awaitPointerEvent().changes.forEach { it.consume() } } })
+        ConfirmationHost(confirmation) { confirmation = null }
     }
     if (viewModel.paywallShown) {
         PremiumSheet(PremiumTrigger.SCAN_ALLOWANCE_SPENT) {

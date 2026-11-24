@@ -55,7 +55,6 @@ import com.polyforms.shiori.shared.AnalyticsEvent
 import com.polyforms.shiori.shared.ApiError
 import com.polyforms.shiori.shared.L
 import com.polyforms.shiori.shared.components.atoms.ToolbarIconButton
-import com.polyforms.shiori.shared.components.organisms.AIGlassDrops
 import com.polyforms.shiori.shared.components.styles.FormSection
 import com.polyforms.shiori.shared.components.styles.PlainTextField
 import com.polyforms.shiori.shared.components.styles.Shiori
@@ -257,12 +256,8 @@ fun ShelfImportScreen(onDismiss: () -> Unit, startJpeg: ByteArray? = null, clien
                     }
                 }
             }
-            ShelfImportViewModel.Step.DETECTING -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(40.dp)) {
-                    AIGlassDrops()
-                    Text(L("Analyse de l'étagère"), style = Shiori.type.headline, color = Shiori.colors.label)
-                }
-            }
+            // The AI at work: Siri's orb on a dark page, with the one thing happening said under it.
+            ShelfImportViewModel.Step.DETECTING -> com.polyforms.shiori.features.scan.components.organisms.AIWaitPage(L("Analyse de l'étagère"))
             ShelfImportViewModel.Step.CHECKLIST -> ShelfChecklistPage(viewModel)
             ShelfImportViewModel.Step.NO_RESULT -> com.polyforms.shiori.features.scan.components.organisms.ScanNoResultPage(
                 L("Photographiez les tranches de face, bien éclairées, ou posez les couvertures à plat sans qu'elles se chevauchent. Rien n'a été décompté."),
@@ -312,7 +307,7 @@ private fun ShelfChecklistPage(viewModel: ShelfImportViewModel) {
                                 Symbol(if (isTicked) "checkmark.circle.fill" else "circle"),
                                 if (isTicked) L("Décocher") else L("Cocher"),
                                 Modifier.size(26.dp).plainClickable { viewModel.toggle(book.id) },
-                                tint = if (isTicked) colors.accent else colors.secondaryLabel,
+                                tint = if (isTicked) colors.label else colors.secondaryLabel,
                             )
                             Box(Modifier.size(32.dp, 48.dp).clip(RoundedCornerShape(3.dp)).background(colors.tertiaryFill)) {
                                 viewModel.crop(book)?.let { Image(it, null, Modifier.fillMaxSize(), contentScale = ContentScale.Fit) }
@@ -328,7 +323,7 @@ private fun ShelfChecklistPage(viewModel: ShelfImportViewModel) {
                                 }
                             }
                             if (book.owned) {
-                                Text(L("Déjà chez vous"), style = Shiori.type.caption, color = colors.green, modifier = Modifier.background(colors.green.copy(alpha = 0.15f), CircleShape).padding(horizontal = 8.dp, vertical = 3.dp))
+                                Text(L("Déjà chez vous"), style = Shiori.type.caption, color = colors.secondaryLabel, modifier = Modifier.background(colors.tertiaryFill, CircleShape).padding(horizontal = 8.dp, vertical = 3.dp))
                             }
                         }
                         if (index < viewModel.books.lastIndex) ShioriDivider(Modifier.padding(start = 16.dp))
@@ -413,8 +408,8 @@ private fun ShelfAddingPage(viewModel: ShelfImportViewModel, onDone: () -> Unit)
                                 when (progress) {
                                     ShelfAddProgress.Waiting -> Icon(Symbol("clock"), null, Modifier.size(20.dp), tint = colors.secondaryLabel)
                                     ShelfAddProgress.Adding -> CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
-                                    ShelfAddProgress.Added -> Icon(Symbol("checkmark.circle.fill"), null, Modifier.size(22.dp), tint = colors.green)
-                                    is ShelfAddProgress.Failed -> Icon(Symbol("exclamationmark.circle.fill"), null, Modifier.size(22.dp), tint = colors.red)
+                                    ShelfAddProgress.Added -> Icon(Symbol("checkmark.circle.fill"), null, Modifier.size(22.dp), tint = colors.label)
+                                    is ShelfAddProgress.Failed -> Icon(Symbol("exclamationmark.circle.fill"), null, Modifier.size(22.dp), tint = colors.label)
                                 }
                             }
                             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {

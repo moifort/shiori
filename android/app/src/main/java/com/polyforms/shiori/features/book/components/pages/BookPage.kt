@@ -328,6 +328,8 @@ fun HeroButton(
     height: Dp = 40.dp,
     isRound: Boolean = false,
     contentDescription: String? = null,
+    /** A small chevron after the words, where the button opens a menu. */
+    showsMenu: Boolean = false,
     content: (@Composable () -> Unit)? = null,
     onClick: () -> Unit,
 ) {
@@ -366,6 +368,7 @@ fun HeroButton(
                         maxLines = 1,
                     )
                 }
+                if (showsMenu) Icon(Symbol("chevron.down"), null, Modifier.size(12.dp), tint = foreground)
             }
         }
         if (menu.isNotEmpty()) MenuEntries(menu, expanded) { expanded = false }
