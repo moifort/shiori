@@ -64,10 +64,15 @@ sealed interface NewsCard {
         }
 
     /**
-     * Whether the server says the reader holds the book already, in any format: a friend's book.
-     * The other cards are of books the server leaves out once held.
+     * Whether the server says the reader holds the book already, in any format: a friend's book, a
+     * prize's winner. The other cards are of books the server leaves out once held.
      */
-    val inLibrary: Boolean get() = (this as? Friend)?.move?.lead?.inLibrary ?: false
+    val inLibrary: Boolean
+        get() = when (this) {
+            is Friend -> move.lead.inLibrary
+            is Award -> winner.inLibrary ?: false
+            else -> false
+        }
 
     /** A "Pas intéressé" the server keeps: the month's discovery and a prize. */
     val isDismissable: Boolean get() = this is Discovery || this is Award

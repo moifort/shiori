@@ -17,8 +17,6 @@ import com.polyforms.shiori.LocalAppRouter
 import com.polyforms.shiori.features.authors.AuthorScreen
 import com.polyforms.shiori.features.discover.AwardWinnerScreen
 import com.polyforms.shiori.features.discover.SuggestionScreen
-import com.polyforms.shiori.features.discover.components.organisms.DiscoveryChoice
-import com.polyforms.shiori.features.discover.components.organisms.DiscoveryChoices
 import com.polyforms.shiori.features.friends.CopiedStatus
 import com.polyforms.shiori.features.friends.FriendBookScreen
 import com.polyforms.shiori.features.library.LibraryDestinationScreen
@@ -48,13 +46,12 @@ fun NewsScreen(client: NewsClient = NewsClient.live) {
     val viewModel = remember { NewsViewModel(client, scope) }
     val navigator = currentNavigator
     val router = LocalAppRouter.current
-    val choices = remember { DiscoveryChoices() }
     var showsAlerts by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { viewModel.loadOnAppear() }
     LaunchedEffect(Unit) { DataChanges.notices.collect { viewModel.load() } }
     NewsPage(viewModel.agenda(), viewModel.wished, viewModel.isLoading, viewModel.errorMessage, viewModel.alertsSilenced) { action ->
         when (action) {
-            is NewsAction.Open -> navigator.open(action.card, choices, viewModel)
+            is NewsAction.Open -> navigator.open(action.card)
             is NewsAction.Wish -> viewModel.wish(action.card)
             is NewsAction.Unwish -> viewModel.unwish(action.card)
             is NewsAction.Dismiss -> viewModel.dismiss(action.card)
@@ -94,7 +91,7 @@ fun NewsScreen(client: NewsClient = NewsClient.live) {
  * release on the volume, edition, author or narrator it came from, a discovery or a prize on its
  * own. A release looks itself up behind its loader.
  */
-private fun Navigator.open(card: NewsCard, choices: DiscoveryChoices, viewModel: NewsViewModel) = push {
+private fun Navigator.open(card: NewsCard) = push {
     when (card) {
         is NewsCard.Friend -> card.move.lead.let { FriendBookScreen(it.friendId, it.bookId, it.friendName) }
         is NewsCard.Released -> when (val item = card.item) {
@@ -103,7 +100,7 @@ private fun Navigator.open(card: NewsCard, choices: DiscoveryChoices, viewModel:
         }
         is NewsCard.Upcoming -> UpcomingReleaseScreen(card.release)
         // As on iOS, the page answers through its own writes; the card catches up on the next load.
-        is NewsCard.Discovery -> SuggestionScreen(card.suggestion, choices)
+        is NewsCard.Discovery -> SuggestionScreen(card.suggestion)
         is NewsCard.Award -> AwardWinnerScreen(card.winner)
     }
 }
