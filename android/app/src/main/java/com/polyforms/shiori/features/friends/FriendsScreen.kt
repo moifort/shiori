@@ -111,13 +111,6 @@ fun FriendsOverlays(router: AppRouter, client: FriendsClient = FriendsClient.liv
     var invitationError by remember { mutableStateOf<String?>(null) }
     var offersPastedInvitation by remember { mutableStateOf(false) }
 
-    // The Partagé screen is gone: what the home still asks of it is the Amis tab.
-    LaunchedEffect(router.showShared) {
-        if (!router.showShared) return@LaunchedEffect
-        router.showShared = false
-        router.selectedTab = TabSelection.FRIENDS
-    }
-
     LaunchedEffect(router.invitation) {
         val request = router.invitation ?: return@LaunchedEffect
         router.invitation = null

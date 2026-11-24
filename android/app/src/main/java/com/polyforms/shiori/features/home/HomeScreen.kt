@@ -22,7 +22,6 @@ import com.polyforms.shiori.features.listening.ListeningButtonState
 import com.polyforms.shiori.features.listening.LocalAudiblePlayer
 import com.polyforms.shiori.features.listening.press
 import com.polyforms.shiori.shared.isCancellation
-import com.polyforms.shiori.shared.platform.shareText
 import com.polyforms.shiori.shared.reportError
 import com.polyforms.shiori.LocalAppRouter
 import com.polyforms.shiori.features.admin.AdminScreen
@@ -95,7 +94,7 @@ fun HomeScreen(
     fun invite() = scope.launch {
         try {
             val invitation = friendsClient.invite()
-            context.shareText(L("Je t'ouvre ma bibliothèque sur Shiori") + "\n" + invitation.url)
+            com.polyforms.shiori.features.friends.InvitationShare.present(context, invitation)
         } catch (error: Exception) {
             if (!isCancellation(error)) viewModel.actionError = reportError(error)
         }

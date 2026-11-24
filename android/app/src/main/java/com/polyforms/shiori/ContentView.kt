@@ -69,7 +69,6 @@ class AppRouter {
     var showAddSheet by mutableStateOf(false)
     var libraryRequest by mutableStateOf<LibraryRequest?>(null)
     var seriesRequest by mutableStateOf<SeriesRequest?>(null)
-    var showShared by mutableStateOf(false)
     var invitation by mutableStateOf<InvitationRequest?>(null)
 
     /** The friend a Découvrir pill asked for, handed to the Amis tab. */

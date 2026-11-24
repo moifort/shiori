@@ -39,7 +39,7 @@ import androidx.compose.ui.unit.dp
 import com.polyforms.shiori.PreviewSurface
 import com.polyforms.shiori.features.authors.components.organisms.AuthorAvatar
 import com.polyforms.shiori.features.discover.ReleaseFormat
-import com.polyforms.shiori.features.friends.components.pages.bookAddMenu
+import com.polyforms.shiori.features.friends.components.organisms.bookAddMenu
 import com.polyforms.shiori.features.news.NewsCard
 import com.polyforms.shiori.features.news.NewsFixtures
 import com.polyforms.shiori.features.news.NewsPersonTarget
