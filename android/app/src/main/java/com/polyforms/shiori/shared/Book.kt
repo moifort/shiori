@@ -226,7 +226,8 @@ enum class SeriesState {
             NOT_STARTED -> ReadingStatus.TO_READ.symbol
             IN_PROGRESS -> ReadingStatus.READING.symbol
             COMPLETE -> ReadingStatus.READ.symbol
-            UNFOLLOWED -> "eye.slash"
+            // The bell, as for an awaited edition, since following means being told.
+            UNFOLLOWED -> "bell.slash"
         }
 }
 
@@ -248,6 +249,33 @@ data class SeriesMembership(
 /** Who recommended a book, and what they said of it. Either half may be missing, never both. */
 @Serializable
 data class BookRecommendation(val recommenderName: String? = null, val comment: String? = null)
+
+/**
+ * How a book reached the library, recorded once when it was added: the screen, the share or the
+ * import it came from. Absent on books added before origins were recorded.
+ */
+@Serializable
+data class BookOrigin(val kind: Kind, val friendName: String? = null) {
+    @Serializable
+    enum class Kind { SCAN, SHELF, SEARCH, MANUAL, SHARE, DISCOVER, SERIES, AUTHOR, FRIEND, AWAITED, KINDLE, AUDIBLE }
+
+    /** The tile's value on the book page: "Scan", "Chez Léa", "Audible". */
+    val label: String
+        get() = when (kind) {
+            Kind.SCAN -> L("Scan")
+            Kind.SHELF -> L("Étagère")
+            Kind.SEARCH -> L("Recherche")
+            Kind.MANUAL -> L("Saisie")
+            Kind.SHARE -> L("Partage")
+            Kind.DISCOVER -> L("Découvrir")
+            Kind.SERIES -> L("Série")
+            Kind.AUTHOR -> L("Auteur")
+            Kind.FRIEND -> friendName?.let { L("Chez %@", it) } ?: L("Chez un ami")
+            Kind.AWAITED -> L("Guetté")
+            Kind.KINDLE -> "Kindle"
+            Kind.AUDIBLE -> "Audible"
+        }
+}
 
 /** A book as its reader holds it: the public facts and their own judgment on one record. */
 @Serializable
@@ -271,6 +299,8 @@ data class Book(
     val narratorKeys: List<String>? = null,
     val listeningProgress: Int? = null,
     val audibleURL: String? = null,
+    /** The recording's ASIN, for an audiobook imported from a linked Audible account. */
+    val audibleAsin: String? = null,
     val amazonURL: String? = null,
     val isbn13: String? = null,
     val language: BookLanguage? = null,
@@ -283,6 +313,8 @@ data class Book(
     val favorite: Boolean = false,
     val note: String? = null,
     val recommendation: BookRecommendation? = null,
+    /** How the book reached the library; null on books added before it was kept. */
+    val origin: BookOrigin? = null,
     val hidden: Boolean = false,
     val awaitingDescription: Boolean = false,
     val addedAt: Instant? = null,

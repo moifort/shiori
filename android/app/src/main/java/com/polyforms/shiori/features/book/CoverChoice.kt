@@ -21,15 +21,18 @@ data class CoverChoice(val source: Source, val url: String, val isCurrent: Boole
 
 /** A source added after this build shipped is a cover left out rather than guessed. */
 val BookCoverChoicesQuery.BookCoverChoice.asDomain: CoverChoice?
-    get() {
-        val source = when (source) {
-            CoverSource.KINDLE -> CoverChoice.Source.KINDLE
-            CoverSource.PHOTO -> CoverChoice.Source.PHOTO
-            CoverSource.AMAZON -> CoverChoice.Source.AMAZON
-            CoverSource.OPEN_LIBRARY -> CoverChoice.Source.OPEN_LIBRARY
-            CoverSource.OTHER_EDITION -> CoverChoice.Source.OTHER_EDITION
-            CoverSource.WEB -> CoverChoice.Source.WEB
-            else -> return null
-        }
-        return CoverChoice(source, url, current)
+    get() = coverChoiceOf(source, url, current)
+
+/** A choice of a book's or a release's covers, read off the schema's own enum. */
+fun coverChoiceOf(source: CoverSource, url: String, current: Boolean): CoverChoice? {
+    val domainSource = when (source) {
+        CoverSource.KINDLE -> CoverChoice.Source.KINDLE
+        CoverSource.PHOTO -> CoverChoice.Source.PHOTO
+        CoverSource.AMAZON -> CoverChoice.Source.AMAZON
+        CoverSource.OPEN_LIBRARY -> CoverChoice.Source.OPEN_LIBRARY
+        CoverSource.OTHER_EDITION -> CoverChoice.Source.OTHER_EDITION
+        CoverSource.WEB -> CoverChoice.Source.WEB
+        else -> return null
     }
+    return CoverChoice(domainSource, url, current)
+}

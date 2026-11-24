@@ -5,6 +5,8 @@ import com.polyforms.shiori.graphql.fragment.BookSummary
 import com.polyforms.shiori.graphql.fragment.SeriesOpinionFields
 import com.polyforms.shiori.graphql.fragment.VolumeEntry
 import com.polyforms.shiori.graphql.type.BookFormat as GBookFormat
+import com.polyforms.shiori.graphql.type.BookOriginInput
+import com.polyforms.shiori.graphql.type.BookOriginKind as GBookOriginKind
 import com.polyforms.shiori.graphql.type.BookLanguage as GBookLanguage
 import com.polyforms.shiori.graphql.type.BookMedium as GBookMedium
 import com.polyforms.shiori.graphql.type.Genre as GGenre
@@ -95,6 +97,7 @@ val BookDetail.asBook: Book
         narratorKeys = narratorKeys,
         listeningProgress = listeningProgress?.toInt(),
         audibleURL = audibleUrl,
+        audibleAsin = audibleAsin,
         amazonURL = amazonUrl,
         isbn13 = isbn13,
         language = language?.asDomain,
@@ -107,6 +110,7 @@ val BookDetail.asBook: Book
         favorite = favorite,
         note = note,
         recommendation = recommendation?.let { BookRecommendation(it.recommenderName, it.comment) },
+        origin = origin?.let { origin -> origin.kind.asDomain?.let { BookOrigin(it, origin.friendName) } },
         hidden = hidden,
         awaitingDescription = awaitingDescription,
         addedAt = parseISO8601(addedAt),
@@ -134,4 +138,15 @@ val SeriesOpinionFields.asOpinion: SeriesOpinion
         volumeCount = volumeCount,
         followed = followed,
         unfollowedLanguages = unfollowedLanguages.mapNotNull { it.asDomain },
+    )
+
+/** A kind added after this build shipped is an origin left out rather than guessed. */
+val GBookOriginKind.asDomain: BookOrigin.Kind?
+    get() = BookOrigin.Kind.entries.firstOrNull { it.name == name }
+
+/** What an addition sends of where it came from. */
+val BookOrigin.asInput: BookOriginInput
+    get() = BookOriginInput(
+        kind = GBookOriginKind.valueOf(kind.name),
+        friendName = (if (kind == BookOrigin.Kind.FRIEND) friendName else null).asOptional(),
     )

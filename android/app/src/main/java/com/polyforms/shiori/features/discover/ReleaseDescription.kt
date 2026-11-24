@@ -45,7 +45,8 @@ fun Book.described(description: ReleaseDescription?): Book {
     )
 }
 
-object ReleaseApi {
+/** The description request before releases were one record; goes with this file once Actu is ported. */
+object SeedReleaseApi {
     suspend fun describe(seed: ReleaseSeed): ReleaseDescription {
         val membership = seed.series?.takeIf { it.id.isNotEmpty() }
         val answer = GraphQLClient.perform(
@@ -73,7 +74,7 @@ object ReleaseApi {
  * Describes a book to come once, the pill shown only when the answer takes a moment: a cached
  * description lands before the pill would.
  */
-class ReleaseDescriber(private val describeSeed: suspend (ReleaseSeed) -> ReleaseDescription = ReleaseApi::describe) {
+class ReleaseDescriber(private val describeSeed: suspend (ReleaseSeed) -> ReleaseDescription = SeedReleaseApi::describe) {
     var description by mutableStateOf<ReleaseDescription?>(null)
         private set
     var isDescribing by mutableStateOf(false)
