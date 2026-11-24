@@ -43,6 +43,7 @@ import com.polyforms.shiori.features.home.components.organisms.BACKDROP_RISE
 import com.polyforms.shiori.features.home.components.organisms.ListenButton
 import com.polyforms.shiori.shared.book.CoverBackdrop
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.requiredHeight
 import com.polyforms.shiori.features.home.components.organisms.HomeEmptyHero
 import com.polyforms.shiori.features.home.components.organisms.HomeFiguresLine
@@ -205,12 +206,16 @@ fun HomePage(
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = 120.dp)) {
             if (onBareBackdrop) {
                 Box {
-                    // Up under the bar and the status bar, as a hero's.
-                    CoverBackdrop(
-                        dashboard.leadCoverURL,
-                        Modifier.fillMaxWidth().requiredHeight(bareBackdropHeight + BACKDROP_RISE).offset(y = -BACKDROP_RISE / 2),
-                        fadeHeight = bareFadeHeight,
-                    )
+                    // Up under the bar and the status bar, as a hero's, and taking no room: the
+                    // rows follow the figures.
+                    Box(Modifier.matchParentSize()) {
+                        CoverBackdrop(
+                            dashboard.leadCoverURL,
+                            Modifier.fillMaxWidth().wrapContentHeight(Alignment.Top, unbounded = true)
+                                .requiredHeight(bareBackdropHeight + BACKDROP_RISE).offset(y = -BACKDROP_RISE),
+                            fadeHeight = bareFadeHeight,
+                        )
+                    }
                     ShioriTheme(dark = true) {
                         Column(Modifier.statusBarsPadding()) {
                             header(true)

@@ -16,9 +16,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.ui.layout.layout
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
@@ -188,12 +188,20 @@ fun ReadingFeatureCard(
     }
 }
 
+/** As tall as its parent plus `rise`, drawn from `rise` above it: a hero's wash up under the bar and the figures. */
+private fun Modifier.risingAbove(rise: androidx.compose.ui.unit.Dp): Modifier = layout { measurable, constraints ->
+    val up = rise.roundToPx()
+    val placeable = measurable.measure(androidx.compose.ui.unit.Constraints.fixed(constraints.maxWidth, constraints.maxHeight + up))
+    layout(constraints.maxWidth, constraints.maxHeight) { placeable.place(0, -up) }
+}
+
 /** The Home of an empty library: three blank covers and the scan button. */
 @Composable
 fun HomeEmptyHero(onScan: () -> Unit) {
     Box(Modifier.fillMaxWidth()) {
-        Box(
-            Modifier.fillMaxWidth().requiredHeight(780.dp).offset(y = (-180).dp)
+        // The wash runs up under the bar and down past the hero, taking no room of its own.
+        Box(Modifier.matchParentSize()) { Box(
+            Modifier.risingAbove(180.dp)
                 .background(
                     Brush.radialGradient(
                         listOf(Color(0.42f, 0.16f, 0.11f), Color(0.23f, 0.11f, 0.16f), Color(0.05f, 0.07f, 0.09f)),
@@ -201,7 +209,7 @@ fun HomeEmptyHero(onScan: () -> Unit) {
                         radius = 1400f,
                     ),
                 ),
-        )
+        ) }
         Box(Modifier.matchParentSize().background(Brush.verticalGradient(0.6f to Color.Transparent, 1f to Shiori.colors.groupedBackground)))
         Column(
             Modifier.fillMaxWidth().padding(start = 28.dp, end = 28.dp, bottom = 40.dp),
@@ -232,7 +240,9 @@ fun HomeSearchingHero(month: String, bookCount: Int, backdropCover: String?) {
         while (true) withFrameMillis { angle = ((it - start) / 1000f * 240f) % 360f }
     }
     Box(Modifier.fillMaxWidth()) {
-        CoverBackdrop(backdropCover, Modifier.fillMaxWidth().requiredHeight(780.dp).offset(y = (-180).dp), fadeHeight = 240.dp)
+        Box(Modifier.matchParentSize()) {
+            CoverBackdrop(backdropCover, Modifier.risingAbove(180.dp), fadeHeight = 240.dp)
+        }
         Column(Modifier.fillMaxWidth().padding(start = 28.dp, end = 28.dp, bottom = 44.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Box(Modifier.padding(top = 26.dp).size(140.dp, 206.dp), contentAlignment = Alignment.Center) {
                 val colors = listOf(
