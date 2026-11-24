@@ -18,7 +18,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import com.polyforms.shiori.TabSelection
 import com.polyforms.shiori.features.friends.FriendsClient
-import com.polyforms.shiori.features.home.components.organisms.ListenButton
+import com.polyforms.shiori.features.listening.ListeningButtonState
+import com.polyforms.shiori.features.listening.LocalAudiblePlayer
+import com.polyforms.shiori.features.listening.press
 import com.polyforms.shiori.shared.isCancellation
 import com.polyforms.shiori.shared.platform.shareText
 import com.polyforms.shiori.shared.reportError
@@ -61,13 +63,11 @@ private sealed interface HomeSheet {
 fun HomeScreen(
     client: HomeClient = HomeClient.live,
     friendsClient: FriendsClient = FriendsClient.live,
-    /** The play button of each audiobook open, once the Audible player is built; null for none. */
-    listeningState: (Book) -> ListenButton? = { null },
     /** Whether an Audible title is kept on the phone, for its card's tag. */
     isDownloaded: (Book) -> Boolean = { false },
-    /** The play button pressed, in the state it showed: the player's to answer. */
-    onListen: (Book, ListenButton) -> Unit = { _, _ -> },
 ) {
+    /** The Audible player, in a build that carries it. */
+    val player = LocalAudiblePlayer.current
     val scope = rememberCoroutineScope()
     val viewModel = remember { HomeViewModel(client, scope) }
     val navigator = currentNavigator
@@ -124,7 +124,7 @@ fun HomeScreen(
                 viewModel.discoveryChoices,
                 viewModel::choose,
                 prompt = viewModel.shownPrompt,
-                listeningState = listeningState,
+                listeningState = { ListeningButtonState.of(it, player) },
                 isDownloaded = isDownloaded,
                 onRefresh = viewModel::load,
                 header = {
@@ -145,7 +145,7 @@ fun HomeScreen(
                     is HomeAction.RecordProgress -> sheet = HomeSheet.Progress(action.book)
                     HomeAction.Scan -> router.showAddSheet = true
                     is HomeAction.ConnectSource -> connect(action.source)
-                    is HomeAction.Listen -> onListen(action.book, action.state)
+                    is HomeAction.Listen -> player?.press(action.state, action.book)
                     is HomeAction.OpenRelease -> when (val release = action.release) {
                         is HomeRelease.Volume -> navigator.push { AnnouncedVolumeScreen(release.release.saga, release.release.volume) }
                         is HomeRelease.Awaited -> navigator.push {

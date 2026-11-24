@@ -40,7 +40,7 @@ import com.polyforms.shiori.features.home.Dashboard
 import com.polyforms.shiori.features.home.HomeRelease
 import com.polyforms.shiori.features.home.HomePrompt
 import com.polyforms.shiori.features.home.components.organisms.BACKDROP_RISE
-import com.polyforms.shiori.features.home.components.organisms.ListenButton
+import com.polyforms.shiori.features.listening.ListeningButtonState
 import com.polyforms.shiori.shared.book.CoverBackdrop
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.wrapContentHeight
@@ -90,7 +90,7 @@ sealed interface HomeAction {
     data class FinishBook(val book: Book) : HomeAction
     data class RecordProgress(val book: Book) : HomeAction
     /** The play button of an Audible audiobook's card, in the state it showed. */
-    data class Listen(val book: Book, val state: ListenButton) : HomeAction
+    data class Listen(val book: Book, val state: ListeningButtonState) : HomeAction
     data object Scan : HomeAction
     data class ConnectSource(val source: ImportSource) : HomeAction
     data class OpenRelease(val release: HomeRelease) : HomeAction
@@ -168,7 +168,7 @@ fun HomePage(
     /** The one thing the hero asks the reader to set up, after its pages. */
     prompt: HomePrompt? = null,
     /** The play button of each audiobook open, once the Audible player is built; null for a book that plays nothing. */
-    listeningState: (Book) -> ListenButton? = { null },
+    listeningState: (Book) -> ListeningButtonState? = { null },
     /** Whether an Audible title is kept on the phone, for its card's tag. */
     isDownloaded: (Book) -> Boolean = { false },
     onAction: (HomeAction) -> Unit,
@@ -298,7 +298,7 @@ private fun Section(title: String, onTitle: (() -> Unit)? = null, content: @Comp
 }
 
 @Composable
-private fun ReadingRow(dashboard: Dashboard, listeningState: (Book) -> ListenButton?, isDownloaded: (Book) -> Boolean, onAction: (HomeAction) -> Unit) {
+private fun ReadingRow(dashboard: Dashboard, listeningState: (Book) -> ListeningButtonState?, isDownloaded: (Book) -> Boolean, onAction: (HomeAction) -> Unit) {
     if (dashboard.reading.isEmpty()) return
     Section(L("En cours"), onTitle = { onAction(HomeAction.ShowLibrary(LibraryRequest(filter = LibraryFilter.Status(ReadingStatus.READING)))) }) {
         BoxWithConstraints(Modifier.fillMaxWidth()) {

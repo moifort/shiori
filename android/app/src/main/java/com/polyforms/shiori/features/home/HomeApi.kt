@@ -14,7 +14,6 @@ import com.polyforms.shiori.graphql.fragment.DashboardBookCard
 import com.polyforms.shiori.graphql.fragment.TastePlace
 import com.polyforms.shiori.shared.Book
 import com.polyforms.shiori.shared.GraphQLClient
-import com.polyforms.shiori.shared.L
 import com.polyforms.shiori.shared.ReadingStatus
 import com.polyforms.shiori.shared.SeriesMembership
 import com.polyforms.shiori.shared.Showcase
@@ -158,7 +157,7 @@ object HomeFixtures {
     val prompts = listOf(HomePrompt.AUDIBLE, HomePrompt.KINDLE, HomePrompt.FRIENDS)
 
     /** An Audible audiobook under way, as the player draws its button. */
-    val listenButton = com.polyforms.shiori.features.home.components.organisms.ListenButton(L("Reprendre"), "play.fill")
+    val listenButton = com.polyforms.shiori.features.listening.ListeningButtonState.RESUME
 
     /** A library with nothing on it yet: the empty hero and the sources to connect. */
     val emptyDashboard = Dashboard(

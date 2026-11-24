@@ -58,6 +58,7 @@ import com.polyforms.shiori.shared.book.ListeningProgressLine
 import com.polyforms.shiori.shared.book.ReadingPageLine
 import com.polyforms.shiori.shared.components.atoms.CoverTags
 import com.polyforms.shiori.shared.components.atoms.DownloadedTag
+import com.polyforms.shiori.features.listening.ListeningButtonState
 import com.polyforms.shiori.shared.components.styles.ActionButton
 import com.polyforms.shiori.shared.components.styles.ActionFill
 import com.polyforms.shiori.shared.components.styles.ActionLabel
@@ -111,11 +112,6 @@ fun CardGlassButton(title: String, onClick: () -> Unit) {
     ActionButton(onClick, fill = ActionFill.GLASS, size = ActionSize.SMALL) { ActionLabel(title, null, ActionSize.SMALL.side) }
 }
 
-/**
- * The play button of an Audible audiobook's card, as the player describes it: "Écouter",
- * "Reprendre", "Pause" or "Réécouter", with its symbol. The player (Lot 7) maps its state onto it.
- */
-data class ListenButton(val title: String, val symbol: String)
 
 /** A book under way, as the Home's reading rail shows it: its cover's wash, where the reader is. */
 @Composable
@@ -128,7 +124,7 @@ fun ReadingFeatureCard(
     onProgress: () -> Unit,
     onOpenSeries: (() -> Unit)?,
     /** The play button of an Audible audiobook, once the player is built: it takes the place of "Marquer lu". */
-    listening: ListenButton? = null,
+    listening: ListeningButtonState? = null,
     onListen: () -> Unit = {},
     /** An Audible title kept on the phone: a download symbol tagged after "Audio". */
     isDownloaded: Boolean = false,
@@ -333,7 +329,7 @@ private fun HomeCardsPreview() = PreviewSurface {
             DebugFixtures.reading[0].copy(format = com.polyforms.shiori.shared.BookFormat.AUDIOBOOK, durationMinutes = 1310, listeningProgress = 46, audibleAsin = "B0"),
             "depuis 2j",
             onOpen = {}, onFinish = {}, onProgress = {}, onOpenSeries = {},
-            listening = ListenButton("Reprendre", "play.fill"),
+            listening = ListeningButtonState.RESUME,
             isDownloaded = true,
         )
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
