@@ -39,18 +39,21 @@ struct ScanScreen: View {
 
     var start: Start = .camera
     var onDismiss: () -> Void
-    /// The review asked to await the book rather than add it: the scan closes
-    /// and the caller sends the request, which may take a web search, behind
-    /// it.
+    /// The review asked to await the book rather than add it: once the scan
+    /// has said so over the review, it closes and the caller sends the
+    /// request, which may take a web search, behind it.
     var onAwait: (BookDraft, ReleaseFormat) -> Void
-    /// The book went into the library: the scan closes and the Library shows
-    /// the reader where it was shelved.
+    /// The book went into the library: once the scan has said so over the
+    /// review, it closes and the Library shows the reader where it was shelved.
     var onAdded: (Book) -> Void
-    /// The book went onto the wishlist: the scan closes.
+    /// The book went onto the wishlist: once the scan has said so over the
+    /// review, it closes.
     var onWished: () -> Void
 
     @State private var viewModel: ScanViewModel
     @State private var shouldCapture = false
+    /// What was just done, said over the screen whose button did it.
+    @State private var confirmation: Confirmation?
 
     init(
         start: Start = .camera,
@@ -78,6 +81,8 @@ struct ScanScreen: View {
                     }
                 }
         }
+        .allowsHitTesting(confirmation == nil)
+        .confirmationHUD($confirmation)
         .sheet(isPresented: $viewModel.paywallShown, onDismiss: onDismiss) {
             PremiumSheet(trigger: .scanAllowanceSpent)
         }
@@ -102,6 +107,14 @@ struct ScanScreen: View {
         }
     }
 
+    /// Says what was done over the review, where its button was, and moves on
+    /// only once the word has been read.
+    private func confirm(_ done: Confirmation, then next: () -> Void) async {
+        confirmation = done
+        try? await Task.sleep(for: Confirmation.holdDuration)
+        next()
+    }
+
     @ViewBuilder
     private var content: some View {
         switch viewModel.step {
@@ -122,12 +135,14 @@ struct ScanScreen: View {
                 ) { action in
                     switch action {
                     case let .save(approved, series):
-                        if let book = await viewModel.save(approved, series: series) { onAdded(book) }
+                        if let book = await viewModel.save(approved, series: series) {
+                            await confirm(.addedToLibrary) { onAdded(book) }
+                        }
                     case .retake: viewModel.retake()
                     case let .awaitEdition(draft, format):
-                        onAwait(draft, format)
+                        await confirm(.awaited) { onAwait(draft, format) }
                     case let .wish(draft):
-                        if await viewModel.wish(draft) { onWished() }
+                        if await viewModel.wish(draft) { await confirm(.addedToWishlist, then: onWished) }
                     case let .languageOrFormatChanged(language, format):
                         async let awaitable: Void = viewModel.loadAwaitable(language: language, format: format)
                         async let saga: Void = viewModel.loadSagaVolumes(language: language)

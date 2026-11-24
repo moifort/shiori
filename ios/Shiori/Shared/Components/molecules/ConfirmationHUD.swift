@@ -48,7 +48,7 @@ extension View {
                 ConfirmationHUD(symbol: shown.symbol, label: shown.label)
                     .transition(.scale(scale: 0.85).combined(with: .opacity))
                     .task(id: shown.id) {
-                        try? await Task.sleep(for: .seconds(1.6))
+                        try? await Task.sleep(for: Confirmation.holdDuration)
                         guard confirmation.wrappedValue?.id == shown.id else { return }
                         withAnimation(.easeOut(duration: 0.3)) { confirmation.wrappedValue = nil }
                     }
@@ -65,6 +65,9 @@ struct Confirmation: Identifiable, Equatable {
     let label: LocalizedStringKey
 
     static func == (lhs: Confirmation, rhs: Confirmation) -> Bool { lhs.id == rhs.id }
+
+    /// How long the HUD holds before it fades.
+    static let holdDuration: Duration = .seconds(1.6)
 
     /// The book went onto the shelf, whatever its status.
     static var addedToLibrary: Confirmation {
