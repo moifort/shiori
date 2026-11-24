@@ -24,6 +24,10 @@ struct PosterLabel: Hashable, Sendable {
     /// date, its own line then free for the person it is announced for.
     var cornerTag: String?
 
+    /// Nothing in the foot, so no blur there either: the rail's title says
+    /// it all, as "Coups de cœur récents" does of a heart.
+    static let bare = PosterLabel(caption: "")
+
     /// The dimming of a book given up on, or of a saga set aside.
     static let setAsideDimming = 0.5
 

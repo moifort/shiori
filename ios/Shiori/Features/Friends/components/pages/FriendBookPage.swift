@@ -20,10 +20,10 @@ enum FriendBookAction {
 
 /// What a friend's book page draws once the book is known: the reader's own
 /// book page, read-only. The same hero over the cover's colours — the friend
-/// named on the detail line with where they stand, their monogram in the
-/// corner as an account's, the way onto the
+/// named on the detail line with where they stand, their name and avatar on a
+/// pill level with the cover's top, the way onto the
 /// reader's shelf where their own book has its next step, and the friend's
-/// heart, or else their stars, on glass beside it — then the same blocks: the summary,
+/// "Coup de cœur", or else their stars, on glass beside it — then the same blocks: the summary,
 /// the facts as tiles, the editions awaited, the saga. Nothing can be corrected here, so no tile answers a
 /// tap; the friend's own remarks stay private and never reach this page.
 struct FriendBookPage: View {
@@ -78,7 +78,12 @@ struct FriendBookPage: View {
             state: friendState,
             showsLength: false,
             onOpenAuthor: { author in Task { await onAction(.openAuthor(author)) } },
-            onOpenNarrator: { narrator in Task { await onAction(.openNarrator(narrator)) } }
+            onOpenNarrator: { narrator in Task { await onAction(.openNarrator(narrator)) } },
+            owner: AnyView(
+                FriendCoverTag(name: friendName, avatar: entry.ownerAvatar, isLarge: true)
+                    .accessibilityLabel(Text("Chez \(friendName)"))
+                    .accessibilityIdentifier("friend-book-owner")
+            )
         ) {
             ScrollView(.horizontal) {
                 heroButtons
@@ -156,10 +161,11 @@ struct FriendBookPage: View {
             // in for the stars rather than sitting beside them.
             if book.favorite {
                 glassChip {
-                    // A full red: the hero's dark appearance lightens
-                    // the system red to a pink on glass.
-                    Image(systemName: "heart.fill")
-                        .foregroundStyle(Color(red: 0.93, green: 0.1, blue: 0.15))
+                    // White, as every mark on glass, and said in words: the
+                    // heart alone read as a button to heart it oneself.
+                    Label("Coup de cœur", systemImage: "heart.fill")
+                        .labelStyle(.titleAndIcon)
+                        .foregroundStyle(.white)
                 }
                 .accessibilityLabel(Text("Coup de cœur de \(friendName)"))
                 .accessibilityIdentifier("friend-book-favorite")

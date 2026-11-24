@@ -52,6 +52,9 @@ struct BookHero<Actions: View>: View {
     /// player itself never says so, and nothing tells a title still on its
     /// way.
     var isDownloaded = false
+    /// Whose book it is, when it is a friend's: their name on a pill level
+    /// with the cover's top, over the text and aligned on it.
+    var owner: AnyView? = nil
     @ViewBuilder var actions: Actions
 
     /// The text's height and the cover's, to tell whether the text climbs
@@ -79,8 +82,17 @@ struct BookHero<Actions: View>: View {
                     .shadow(color: .black.opacity(0.45), radius: 16, y: 10)
                     .accessibilityHidden(true)
                     .onGeometryChange(for: CGFloat.self, of: \.size.height) { coverHeight = $0 }
-                identity
-                    .onGeometryChange(for: CGFloat.self, of: \.size.height) { identityHeight = $0 }
+                VStack(alignment: .leading, spacing: 0) {
+                    if let owner {
+                        owner
+                        // Level with the cover's top while the text leaves
+                        // room, stacked over it when the text runs taller.
+                        Spacer(minLength: 10)
+                    }
+                    identity
+                        .onGeometryChange(for: CGFloat.self, of: \.size.height) { identityHeight = $0 }
+                }
+                .frame(minHeight: owner == nil ? nil : coverHeight, alignment: .bottom)
             }
             // In the corner over the text, level with the cover's top: the
             // day a book to come is out.

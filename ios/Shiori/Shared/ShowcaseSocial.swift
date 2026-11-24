@@ -138,6 +138,14 @@ extension Showcase {
         return shelf.narrowed(to: ids)
     }
 
+    /// One book of a friend's shelf, as its page opens it: the rails' own
+    /// copy, a hearted one before the same book finished.
+    static func friendBook(friendId: String, bookId: String) -> FriendBook? {
+        let shelf = friendsShelf([])
+        return (shelf.reading + shelf.favorites + shelf.finished + shelf.pile)
+            .first { $0.friendId == friendId && $0.book.id == bookId }?.book
+    }
+
     /// The reader's own shelf as their friends see it.
     static var myShelf: FriendProfile {
         let reading = books.filter { $0.status == .reading }

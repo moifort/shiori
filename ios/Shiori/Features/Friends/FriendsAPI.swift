@@ -455,6 +455,9 @@ enum FriendsAPI {
     /// Nil for a book they keep to themselves, and for anybody who is not a
     /// friend.
     static func book(friendId: String, bookId: String) async throws -> FriendBook? {
+        #if DEBUG
+        if Showcase.isOn { return Showcase.friendBook(friendId: friendId, bookId: bookId) }
+        #endif
         let data = try await GraphQLHelpers.fetch(
             GraphQLClient.shared.apollo,
             query: ShioriGraphQL.FriendBookQuery(userId: friendId, bookId: bookId)

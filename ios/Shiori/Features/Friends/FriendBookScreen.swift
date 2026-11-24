@@ -111,19 +111,6 @@ struct FriendBookScreen: View {
                     ToolbarIconButton(title: "Fermer", systemImage: "xmark", role: .cancel) { dismiss() }
                 }
             }
-            // Whose shelf it is: their disc in the corner, as the TV app
-            // sets the account's — filling the place, without the toolbar's
-            // glass around it. Their name is on the hero's detail line.
-            ToolbarItem(placement: .primaryAction) {
-                AccountAvatarView(
-                    avatar: viewModel.entry?.ownerAvatar ?? .initials,
-                    firstName: friendName,
-                    size: 44
-                )
-                    .accessibilityLabel(Text("Chez \(friendName)"))
-                    .accessibilityIdentifier("friend-book-owner")
-            }
-            .sharedBackgroundVisibility(.hidden)
         }
         .alert(
             "Ajout impossible",

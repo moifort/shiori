@@ -5561,6 +5561,22 @@
         }
       }
     },
+    "Coups de cœur récents" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recent favorites"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Coups de cœur récents"
+          }
+        }
+      }
+    },
     "Couverture" : {
       "localizations" : {
         "en" : {
@@ -9153,22 +9169,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Les prochaines sorties de vos séries, de vos auteurs et de vos livres guettés s'afficheront ici."
-          }
-        }
-      }
-    },
-    "Leurs coups de cœur" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Their favorites"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Leurs coups de cœur"
           }
         }
       }
@@ -14049,22 +14049,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Servis par le cache"
-          }
-        }
-      }
-    },
-    "Ses coups de cœur" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Their favorites"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ses coups de cœur"
           }
         }
       }

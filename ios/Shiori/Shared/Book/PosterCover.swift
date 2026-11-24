@@ -41,6 +41,9 @@ struct PosterCover: View {
 
     static let cornerRadius: CGFloat = 8
 
+    /// A line, stars or a bar sits in the foot.
+    private var hasFoot: Bool { !caption.isEmpty || rating != nil || progress != nil }
+
     var body: some View {
         cover
             // Dimmed a little, as the TV app's posters are: a white cover no
@@ -49,7 +52,9 @@ struct PosterCover: View {
                 RoundedRectangle(cornerRadius: corner, style: .continuous)
                     .fill(.black.opacity(dimming))
             }
-            .overlay { footBlur }
+            // Nothing to say in the foot, no blur there: the cover stays
+            // sharp to its edge, as a rail whose title already says it.
+            .overlay { if hasFoot { footBlur } }
             .overlay(alignment: .topTrailing) {
                 if let cornerTag {
                     OutlinedTag(text: cornerTag)

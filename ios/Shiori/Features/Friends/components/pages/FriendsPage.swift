@@ -103,13 +103,14 @@ struct FriendsPage: View {
 
     @ViewBuilder private var rails: some View {
         rail("Lecture en cours", shelf.reading, context: .recent)
-        rail(isOne ? "Ses coups de cœur" : "Leurs coups de cœur", shelf.favorites, context: .read)
+        // The title says they are hearted: no heart, no line on the covers.
+        rail("Coups de cœur récents", shelf.favorites, context: nil)
         rail("Terminés récemment", shelf.finished, context: .read)
         rail(isOne ? "Sur sa pile" : "Sur leur pile", shelf.pile, context: .pile)
     }
 
     @ViewBuilder
-    private func rail(_ title: LocalizedStringKey, _ entries: [FriendsShelfEntry], context: PosterLabel.Context) -> some View {
+    private func rail(_ title: LocalizedStringKey, _ entries: [FriendsShelfEntry], context: PosterLabel.Context?) -> some View {
         if !entries.isEmpty {
             FriendsRail(
                 title: title,
@@ -117,7 +118,7 @@ struct FriendsPage: View {
                     FriendsRail.Item(
                         id: entry.id,
                         book: entry.book.book,
-                        label: PosterLabel.of(entry.book.book, in: context),
+                        label: context.map { PosterLabel.of(entry.book.book, in: $0) } ?? .bare,
                         friendName: isOne ? nil : (entry.friendName ?? String(localized: "Un lecteur")),
                         friendAvatar: entry.book.ownerAvatar
                     )
