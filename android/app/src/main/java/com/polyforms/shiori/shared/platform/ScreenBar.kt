@@ -4,7 +4,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.runtime.Stable
-import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.runtime.getValue
@@ -95,10 +95,9 @@ val LocalScreenTitle = staticCompositionLocalOf<ScreenTitle?> { null }
 fun LargeTitle(title: String, modifier: Modifier = Modifier) {
     val screen = LocalScreenTitle.current
     if (screen != null) {
-        DisposableEffect(screen, title) {
-            screen.text = title
-            onDispose { if (screen.text == title) screen.text = null }
-        }
+        // Set once and kept: the title sits in a lazy list, and scrolling it out of the list
+        // must not take the bar's title with it.
+        SideEffect { screen.text = title }
         Spacer(modifier.statusBarsPadding().height(56.dp))
         return
     }
@@ -193,6 +192,26 @@ fun BoxScope.ScrollAwayBar(
             pinned()
         }
     }
+}
+
+/**
+ * A pushed page's bar as iOS's `scrollAwayBar` draws it: Back stays, the title its page names
+ * through [LargeTitle] sits on the left beside it and goes while the page scrolls down, with the
+ * buttons that are not [pinned].
+ */
+@Composable
+fun BoxScope.PushedScrollAwayBar(
+    state: ScrollAwayState,
+    pinned: @Composable RowScope.() -> Unit = {},
+) {
+    val navigator = LocalNavigator.current
+    ScrollAwayBar(
+        LocalScreenTitle.current?.text.orEmpty(),
+        state,
+        showsAccount = false,
+        onBack = navigator?.let { nav -> { nav.pop() } },
+        pinned = pinned,
+    )
 }
 
 /**

@@ -9,6 +9,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import com.polyforms.shiori.features.home.components.organisms.PosterRowItem
 import com.polyforms.shiori.features.library.components.pages.PileAction
 import com.polyforms.shiori.features.library.components.pages.PilePage
@@ -21,7 +22,8 @@ import com.polyforms.shiori.shared.platform.ShioriAlert
 import com.polyforms.shiori.features.discover.AnnouncedVolumeScreen
 import com.polyforms.shiori.features.discover.AwaitedEditionScreen
 import com.polyforms.shiori.shared.components.styles.Shiori
-import com.polyforms.shiori.shared.platform.ScreenBar
+import com.polyforms.shiori.shared.platform.PushedScrollAwayBar
+import com.polyforms.shiori.shared.platform.rememberScrollAwayState
 import com.polyforms.shiori.shared.platform.currentNavigator
 import kotlinx.coroutines.launch
 
@@ -44,7 +46,8 @@ fun PileScreen(view: ShelvesView = ShelvesView(), client: LibraryClient = Librar
         }
     }
 
-    Box(Modifier.fillMaxSize().background(Shiori.colors.groupedBackground)) {
+    val bar = rememberScrollAwayState()
+    Box(Modifier.fillMaxSize().background(Shiori.colors.groupedBackground).nestedScroll(bar.connection)) {
         PilePage(
             viewModel.pile,
             viewModel.wished.map { PosterRowItem(it, viewModel.wishlist.caption(it)) },
@@ -76,7 +79,7 @@ fun PileScreen(view: ShelvesView = ShelvesView(), client: LibraryClient = Librar
                 }
             }
         }
-        ScreenBar()
+        PushedScrollAwayBar(bar)
         viewModel.actionError?.let { message ->
             ShioriAlert(L("Action impossible"), message, onDismiss = { viewModel.actionError = null })
         }

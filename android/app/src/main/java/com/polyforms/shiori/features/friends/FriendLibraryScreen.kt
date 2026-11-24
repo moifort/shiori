@@ -11,6 +11,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import com.polyforms.shiori.features.authors.AuthorScreen
 import com.polyforms.shiori.features.library.components.pages.BookMosaicPage
 import com.polyforms.shiori.features.library.components.pages.BookShelfAction
@@ -23,7 +24,8 @@ import com.polyforms.shiori.shared.ListSection
 import com.polyforms.shiori.shared.ReadingStatus
 import com.polyforms.shiori.shared.book.BookQuickAction
 import com.polyforms.shiori.shared.components.styles.Shiori
-import com.polyforms.shiori.shared.platform.ScreenBar
+import com.polyforms.shiori.shared.platform.PushedScrollAwayBar
+import com.polyforms.shiori.shared.platform.rememberScrollAwayState
 import com.polyforms.shiori.shared.platform.ShioriAlert
 import com.polyforms.shiori.shared.platform.currentNavigator
 import kotlinx.coroutines.launch
@@ -58,7 +60,8 @@ fun FriendLibraryScreen(friendId: String, friendName: String, client: FriendsCli
         noteFormats()
     }
 
-    Box(Modifier.fillMaxSize().background(Shiori.colors.groupedBackground)) {
+    val bar = rememberScrollAwayState()
+    Box(Modifier.fillMaxSize().background(Shiori.colors.groupedBackground).nestedScroll(bar.connection)) {
         BookMosaicPage(
             sections = if (model.loadedQuery == query) ListSection.byMonth(model.rows.map { it.book }) { it.shelvedAt } else emptyList(),
             formats = formats,
@@ -100,7 +103,7 @@ fun FriendLibraryScreen(friendId: String, friendName: String, client: FriendsCli
                 is BookShelfAction.OpenSeries, is BookShelfAction.SelectGenre, BookShelfAction.Share -> Unit
             }
         }
-        ScreenBar { MosaicStatusMenu(status) { status = it } }
+        PushedScrollAwayBar(bar) { MosaicStatusMenu(status) { status = it } }
     }
     model.addFailed?.let { ShioriAlert(L("Ajout impossible"), it, onDismiss = { model.addFailed = null }) }
 }

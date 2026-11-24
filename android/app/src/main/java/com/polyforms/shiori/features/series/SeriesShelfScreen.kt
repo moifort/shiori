@@ -8,6 +8,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import com.polyforms.shiori.features.series.components.pages.SeriesShelfAction
 import com.polyforms.shiori.features.book.BookScreen
 import com.polyforms.shiori.features.discover.AnnouncedVolumeScreen
@@ -15,7 +16,8 @@ import com.polyforms.shiori.features.series.components.pages.SeriesShelfPage
 import com.polyforms.shiori.features.series.components.pages.SetAsideSeriesPage
 import com.polyforms.shiori.shared.DataChanges
 import com.polyforms.shiori.shared.components.styles.Shiori
-import com.polyforms.shiori.shared.platform.ScreenBar
+import com.polyforms.shiori.shared.platform.PushedScrollAwayBar
+import com.polyforms.shiori.shared.platform.rememberScrollAwayState
 import com.polyforms.shiori.shared.platform.currentNavigator
 import kotlinx.coroutines.launch
 
@@ -27,7 +29,8 @@ fun SeriesShelfScreen(filter: SeriesShelfFilter = SeriesShelfFilter.ALL, client:
     val navigator = currentNavigator
     LaunchedEffect(Unit) { viewModel.loadOnAppear() }
     LaunchedEffect(Unit) { DataChanges.notices.collect { viewModel.load() } }
-    Box(Modifier.fillMaxSize().background(Shiori.colors.groupedBackground)) {
+    val bar = rememberScrollAwayState()
+    Box(Modifier.fillMaxSize().background(Shiori.colors.groupedBackground).nestedScroll(bar.connection)) {
         SeriesShelfPage(
             viewModel.upNext,
             viewModel.releases,
@@ -47,7 +50,7 @@ fun SeriesShelfScreen(filter: SeriesShelfFilter = SeriesShelfFilter.ALL, client:
                 SeriesShelfAction.Refresh -> viewModel.load()
             }
         }
-        ScreenBar()
+        PushedScrollAwayBar(bar)
     }
 }
 
@@ -58,13 +61,14 @@ fun SetAsideSeriesScreen(client: SeriesClient = SeriesClient.live) {
     val viewModel = remember { SeriesShelfViewModel(client, scope) }
     val navigator = currentNavigator
     LaunchedEffect(Unit) { viewModel.loadOnAppear() }
-    Box(Modifier.fillMaxSize().background(Shiori.colors.groupedBackground)) {
+    val bar = rememberScrollAwayState()
+    Box(Modifier.fillMaxSize().background(Shiori.colors.groupedBackground).nestedScroll(bar.connection)) {
         SetAsideSeriesPage(
             viewModel.setAside,
             viewModel.isLoading,
             onOpen = { navigator.push { SeriesScreen(it.seriesId) } },
             onFollow = { scope.launch { viewModel.follow(it) } },
         )
-        ScreenBar()
+        PushedScrollAwayBar(bar)
     }
 }

@@ -22,6 +22,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import com.polyforms.shiori.features.authors.PersonListViewModel
 import com.polyforms.shiori.features.authors.components.pages.PersonShelfAction
 import com.polyforms.shiori.features.authors.components.pages.PersonShelfPage
@@ -32,7 +33,8 @@ import com.polyforms.shiori.features.library.rememberBookQuickActions
 import com.polyforms.shiori.shared.DataChanges
 import com.polyforms.shiori.shared.L
 import com.polyforms.shiori.shared.components.styles.Shiori
-import com.polyforms.shiori.shared.platform.ScreenBar
+import com.polyforms.shiori.shared.platform.PushedScrollAwayBar
+import com.polyforms.shiori.shared.platform.rememberScrollAwayState
 import com.polyforms.shiori.shared.platform.currentNavigator
 
 /** The section's last rows on disk, so the shelf opens on them. Bump the version whenever `UpcomingRelease` changes shape. */
@@ -74,7 +76,8 @@ fun NarratorShelfScreen(
         }
     }
 
-    Box(Modifier.fillMaxSize().background(Shiori.colors.groupedBackground)) {
+    val bar = rememberScrollAwayState()
+    Box(Modifier.fillMaxSize().background(Shiori.colors.groupedBackground).nestedScroll(bar.connection)) {
         PersonShelfPage(
             L("Narrateurs"),
             L("Narrateurs indisponibles"),
@@ -107,6 +110,6 @@ fun NarratorShelfScreen(
                 PersonShelfAction.Refresh -> viewModel.load()
             }
         }
-        ScreenBar()
+        PushedScrollAwayBar(bar)
     }
 }

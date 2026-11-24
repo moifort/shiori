@@ -13,6 +13,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.polyforms.shiori.features.library.components.pages.BookMosaicPage
@@ -25,7 +26,8 @@ import com.polyforms.shiori.shared.L
 import com.polyforms.shiori.shared.ReadingStatus
 import com.polyforms.shiori.shared.components.atoms.ToolbarIconButton
 import com.polyforms.shiori.shared.components.styles.Shiori
-import com.polyforms.shiori.shared.platform.ScreenBar
+import com.polyforms.shiori.shared.platform.PushedScrollAwayBar
+import com.polyforms.shiori.shared.platform.rememberScrollAwayState
 import com.polyforms.shiori.shared.platform.currentNavigator
 import com.polyforms.shiori.shared.platform.shareText
 import kotlinx.coroutines.launch
@@ -69,7 +71,8 @@ fun BookShelfScreen(
         }
     }
 
-    Box(Modifier.fillMaxSize().background(Shiori.colors.groupedBackground)) {
+    val bar = rememberScrollAwayState()
+    Box(Modifier.fillMaxSize().background(Shiori.colors.groupedBackground).nestedScroll(bar.connection)) {
         if (shelf == BookShelf.ALL) {
             BookMosaicPage(
                 viewModel.sections,
@@ -100,7 +103,7 @@ fun BookShelfScreen(
                 handle,
             )
         }
-        ScreenBar {
+        PushedScrollAwayBar(bar) {
             if (shelf == BookShelf.ALL) MosaicStatusMenu(viewModel.query.status) { viewModel.select(it) }
             if (shelf == BookShelf.LOVED && (viewModel.sections.isNotEmpty() || viewModel.lovedSeries.isNotEmpty())) {
                 if (isPreparingShare) {
