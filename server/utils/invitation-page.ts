@@ -14,8 +14,13 @@
  *
  * It shows no code: the link carries it, and the app takes the invitation up
  * by itself once it opens on the link. It gives nothing away either: the page
- * never names the reader who made the invitation. No cookie, no script,
- * nothing that follows the visitor.
+ * never names the reader who made the invitation. No cookie, nothing that
+ * follows the visitor.
+ *
+ * One line of script, on an iPhone: tapping the App Store badge copies the
+ * link, because a link opened before the app is installed does not survive
+ * the App Store. Shiori, opened for the first time, sees a link waiting and
+ * offers to paste it — one tap, and the invitation is taken up.
  *
  * Its Open Graph tags are what Messages, WhatsApp or Mail show of the link
  * before it is tapped: a title and the app's icon rather than a bare address.
@@ -62,17 +67,23 @@ const storeBadge = `<a class="store-badge" href="${APP_STORE_URL}" aria-label="T
     <span class="store-text"><small>Télécharger dans</small><b>App Store</b></span>
   </a>`
 
+/** The badge copies the invitation's own link as it is tapped: the copy is
+ *  rebuilt from the code, never the address bar, which may carry anything. */
+const copyOnTap = (code: string) =>
+  `<script>document.querySelector('.store-badge').addEventListener('click',function(){try{navigator.clipboard.writeText(location.origin+'/invite/${code}')}catch(e){}})</script>`
+
 const nextStepFor = (platform: InvitationPlatform) =>
   platform === 'android'
     ? `<p class="note">Shiori n'existe pas encore sur Android : il arrive bientôt sur Google Play.</p>`
     : platform === 'desktop'
       ? `<p class="note">Ouvrez ce lien sur votre iPhone.</p>`
-      : `<p class="note">Shiori installé, touchez de nouveau le lien reçu : l'invitation s'ouvre dans l'application.</p>`
+      : `<p class="note">Le lien est copié : ouvrez Shiori une fois installé, et collez l'invitation.</p>`
 
 export const invitationPage = (code: string | undefined, platform: InvitationPlatform): string => {
   const body = code
     ? `${platform === 'android' ? '' : storeBadge}
-  ${nextStepFor(platform)}`
+  ${nextStepFor(platform)}
+  ${platform === 'iphone' ? copyOnTap(code) : ''}`
     : `<p>Ce lien est incomplet : demandez qu'on vous le renvoie.</p>
   ${platform === 'android' ? '' : storeBadge}`
 

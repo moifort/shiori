@@ -4017,6 +4017,22 @@
         }
       }
     },
+    "Ce lien n'est pas une invitation Shiori." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This link is not a Shiori invitation."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ce lien n'est pas une invitation Shiori."
+          }
+        }
+      }
+    },
     "Ce livre n'est plus dans votre bibliothèque." : {
       "localizations" : {
         "en" : {
@@ -15261,6 +15277,22 @@
         }
       }
     },
+    "Un ami vous a ouvert sa bibliothèque. Collez son lien pour voir ses livres, et qu'il voie les vôtres." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A friend has opened their library to you. Paste their link to see their books, and let them see yours."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un ami vous a ouvert sa bibliothèque. Collez son lien pour voir ses livres, et qu'il voie les vôtres."
+          }
+        }
+      }
+    },
     "Un champ vidé est effacé." : {
       "localizations" : {
         "en" : {
@@ -15337,6 +15369,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Une erreur est survenue"
+          }
+        }
+      }
+    },
+    "Une invitation vous attend" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "An invitation is waiting for you"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Une invitation vous attend"
           }
         }
       }

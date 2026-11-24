@@ -105,7 +105,14 @@ struct AuthRoot: View {
             }
             .environment(\.colorScheme, .dark)
         case .required:
-            OnboardingScreen(onCompleted: { gate.markCompleted(firstName: $0, avatar: $1) })
+            OnboardingScreen(onCompleted: {
+                gate.markCompleted(firstName: $0, avatar: $1)
+                // A new reader who did not arrive on a link may have one
+                // waiting, copied by the invitation page before the install.
+                if invitationRequest == nil {
+                    UserDefaults.standard.set(true, forKey: PastedInvitation.pendingKey)
+                }
+            })
         case .ready:
             ZStack {
                 // Kept running out of sight: the checklist's last line is its

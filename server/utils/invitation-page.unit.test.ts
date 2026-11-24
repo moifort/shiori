@@ -27,9 +27,17 @@ describe('the invitation page', () => {
     expect(page).not.toContain('shiori://')
   })
 
+  test('on an iPhone, the badge copies the link to be pasted once the app is installed', () => {
+    const page = invitationPage('ABCD2345', 'iphone')
+    expect(page).toContain("clipboard.writeText(location.origin+'/invite/ABCD2345')")
+    expect(page).toContain('collez')
+    expect(invitationPage('ABCD2345', 'desktop')).not.toContain('clipboard')
+  })
+
   test('never shows the code: the link carries it', () => {
     for (const platform of ['iphone', 'android', 'desktop'] as const) {
-      expect(invitationPage('ABCD2345', platform)).not.toContain('ABCD2345')
+      const shown = invitationPage('ABCD2345', platform).replace(/<script>.*<\/script>/, '')
+      expect(shown).not.toContain('ABCD2345')
     }
   })
 

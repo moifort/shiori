@@ -35,6 +35,9 @@ struct ContentView: View {
     @State private var welcomedFriend: String?
     /// Why the invitation could not be taken up: expired, spent, the reader's own.
     @State private var invitationError: String?
+    /// Set as onboarding ends: the first opening asks once for a pasted link.
+    @AppStorage(PastedInvitation.pendingKey) private var pastedInvitationPending = false
+    @State private var offersPastedInvitation = false
 
     @Environment(\.isAdmin) private var isAdmin
 
@@ -183,6 +186,13 @@ struct ContentView: View {
                 invitation = nil
                 await accept(request)
             }
+            .task(id: pastedInvitationPending) { await offerPastedInvitation() }
+            .sheet(isPresented: $offersPastedInvitation) {
+                PastedInvitationSheet { action in
+                    offersPastedInvitation = false
+                    if case let .paste(text) = action { takeUp(pasted: text) }
+                }
+            }
             .alert(
                 "Invitation refusée",
                 isPresented: .init(
@@ -220,6 +230,32 @@ struct ContentView: View {
                     lastContentTab = tab
                 }
             }
+    }
+
+    /// The first opening after onboarding: a link waiting on the pasteboard
+    /// is most likely the invitation the web page copied before the install.
+    private func offerPastedInvitation() async {
+        #if DEBUG
+        if Showcase.isOn, ProcessInfo.processInfo.arguments.contains("-showcase-paste-invitation") {
+            offersPastedInvitation = true
+            return
+        }
+        #endif
+        guard pastedInvitationPending else { return }
+        pastedInvitationPending = false
+        guard invitation == nil, await PastedInvitation.pasteboardHoldsALink() else { return }
+        offersPastedInvitation = true
+    }
+
+    /// What the Paste button handed over, taken up as a tapped link would be.
+    private func takeUp(pasted text: String) {
+        guard let url = URL(string: text.trimmingCharacters(in: .whitespacesAndNewlines)),
+              let code = InvitationLink.code(from: url)
+        else {
+            invitationError = String(localized: "Ce lien n'est pas une invitation Shiori.")
+            return
+        }
+        invitation = InvitationRequest(code: code)
     }
 
     /// Takes an invitation up and shows the friend it joined. Accepting
