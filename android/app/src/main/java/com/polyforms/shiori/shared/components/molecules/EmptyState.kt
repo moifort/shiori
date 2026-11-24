@@ -35,7 +35,9 @@ fun EmptyState(
     modifier: Modifier = Modifier,
     primary: EmptyStateAction? = null,
     secondary: EmptyStateAction? = null,
-) = EmptyState(symbol, title, AnnotatedString(message), modifier, primary, secondary)
+    /** A drawable (a service's logo) drawn in place of `symbol`. */
+    logo: Int? = null,
+) = EmptyState(symbol, title, AnnotatedString(message), modifier, primary, secondary, logo)
 
 @Composable
 fun EmptyState(
@@ -45,6 +47,7 @@ fun EmptyState(
     modifier: Modifier = Modifier,
     primary: EmptyStateAction? = null,
     secondary: EmptyStateAction? = null,
+    logo: Int? = null,
 ) {
     val colors = Shiori.colors
     Column(
@@ -52,7 +55,11 @@ fun EmptyState(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Icon(Symbol(symbol), null, Modifier.size(48.dp), tint = colors.secondaryLabel)
+        if (logo != null) {
+            Icon(androidx.compose.ui.res.painterResource(logo), null, Modifier.size(48.dp), tint = colors.secondaryLabel)
+        } else {
+            Icon(Symbol(symbol), null, Modifier.size(48.dp), tint = colors.secondaryLabel)
+        }
         Text(title, style = Shiori.type.title2, color = colors.label, textAlign = TextAlign.Center)
         Text(message, style = Shiori.type.callout, color = colors.secondaryLabel, textAlign = TextAlign.Center)
         if (primary != null || secondary != null) {
