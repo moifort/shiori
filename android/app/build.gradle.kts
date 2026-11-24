@@ -60,6 +60,13 @@ android {
                 signingConfig = signingConfigs.getByName("upload")
             }
         }
+        // What frame times are measured on: the release build (R8, not debuggable), signed with
+        // the debug key so it installs over a debug build without losing the account.
+        create("benchmark") {
+            initWith(getByName("release"))
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += "release"
+        }
     }
 
     buildFeatures {
@@ -79,6 +86,15 @@ android {
 
 kotlin {
     jvmToolchain(21)
+}
+
+// `-Pshiori.composeReports=true` writes the Compose compiler's stability and skippability
+// reports to app/build/compose-reports.
+if (project.findProperty("shiori.composeReports") == "true") {
+    composeCompiler {
+        reportsDestination = layout.buildDirectory.dir("compose-reports")
+        metricsDestination = layout.buildDirectory.dir("compose-reports")
+    }
 }
 
 apollo {
