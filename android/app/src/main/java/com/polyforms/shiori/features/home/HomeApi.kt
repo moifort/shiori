@@ -24,7 +24,7 @@ import kotlin.math.roundToInt
 
 object HomeApi {
     suspend fun dashboard(): Dashboard {
-        if (Showcase.isOn) return HomeFixtures.dashboard
+        if (Showcase.isOn) return com.polyforms.shiori.DebugFixtures.dashboard
         return GraphQLClient.fetch(DashboardQuery(ZoneId.systemDefault().id)).dashboard.dashboardFields.asDashboard
     }
 
@@ -33,7 +33,7 @@ object HomeApi {
      * reads the library once for all of them.
      */
     suspend fun opening(): HomeOpening {
-        if (Showcase.isOn) return HomeOpening(HomeFixtures.dashboard, MonthlyDiscoveries("2026-10", suggestions = emptyList()), HomeFixtures.prompts)
+        if (Showcase.isOn) return HomeOpening(com.polyforms.shiori.DebugFixtures.dashboard, com.polyforms.shiori.DebugFixtures.discoveries, HomeFixtures.prompts)
         val data = GraphQLClient.fetch(HomeOpeningQuery(ZoneId.systemDefault().id))
         return HomeOpening(
             dashboard = data.dashboard.dashboardFields.asDashboard,
