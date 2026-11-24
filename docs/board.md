@@ -54,6 +54,11 @@ conversation 215476858736725 is open, and the cause is not confirmed.
 SwiftUI and the board are always in sync.
 
 - A requested UI change is drawn on the board first, then sent as a capture.
+- **Every board validation ask carries a fresh capture.** Each time the user is asked to validate
+  the board, a capture of the artboards as they now stand is sent with `SendUserFile` in the same
+  turn, the changed screens side by side; after any further edit, a new one. Never ask « Valider ? »
+  over a capture that predates the last edit, or with none: on 2026-11-24 a standby asked for
+  validation after a second round of edits without a new capture, and the user had to ask for it.
 - **Outside the prototyping zone** (`Zone-Prototypage.dc.html`, page "App"): the change goes all
   the way to iOS in the same task — board edit, capture, SwiftUI, simulator screenshot, commit.
 - **Inside the prototyping zone**: board-only exploration until the user says to build it.

@@ -20,7 +20,8 @@ When a mission arrives, read CLAUDE.md (Workflow rules 5 to 13) and docs/board.m
   `main`, and remove the worktree and the branch.
 - **A UI change is validated twice.** Board first (the link is in board.md), a capture sent with
   `SendUserFile`, a « Valider » question in your wrap-up. iOS only after that yes, a simulator
-  capture, a second validation.
+  capture, a second validation. Every validation ask comes with a capture of the board as it
+  stands now, sent in the same turn: a new edit means a new capture before asking again.
 - **The simulator is shared and stays in the background.** One at a time, each session its turn.
   Never take the user's screen: DeviceHub opened in the background only (`open -g -a …`),
   captures with `xcrun simctl io <udid> screenshot`, taps through the headless simulator tool.
