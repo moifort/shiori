@@ -562,6 +562,8 @@ data class DiscoveredVolume(
     val isbn13: String?,
     val coverURL: String?,
     val audibleURL: String? = null,
+    /** The volume as every list and its page draw it, as the server built it; null on a fixture or an older snapshot. */
+    val release: com.polyforms.shiori.features.discover.Release? = null,
 ) {
     val id: Int get() = number
 }

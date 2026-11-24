@@ -1,5 +1,6 @@
 package com.polyforms.shiori.features.series
 
+import com.polyforms.shiori.features.discover.asRelease
 import com.apollographql.apollo.api.Optional
 import com.polyforms.shiori.graphql.AddAudibleSeriesVolumeMutation
 import com.polyforms.shiori.graphql.CorrectSeriesMutation
@@ -201,7 +202,7 @@ val FollowedVolume.asBook: Book
     )
 
 val DiscoveredVolumeFields.asDomain: DiscoveredVolume
-    get() = DiscoveredVolume(number, title, date, isbn13, coverUrl, audibleUrl)
+    get() = DiscoveredVolume(number, title, date, isbn13, coverUrl, audibleUrl, release.releaseFields.asRelease)
 
 /** The first cover a saga's volumes have: its card's picture. */
 val FollowedSeries.cardCoverURL: String? get() = volumes.firstOrNull { it.coverURL != null }?.coverURL
