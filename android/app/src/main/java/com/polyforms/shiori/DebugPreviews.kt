@@ -17,6 +17,7 @@ import com.polyforms.shiori.shared.BookFormat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import com.polyforms.shiori.shared.platform.ScrollAwayBar
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
@@ -137,14 +138,24 @@ fun DebugPreviews(name: String) {
             "settings" -> androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize().background(com.polyforms.shiori.shared.components.styles.Shiori.colors.groupedBackground)) {
                 com.polyforms.shiori.features.settings.components.pages.SettingsHomePage("Thibaut Mottet", false, false, "1.0", "1") {}
             }
-            "shared" -> androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize().background(com.polyforms.shiori.shared.components.styles.Shiori.colors.groupedBackground)) {
-                com.polyforms.shiori.features.friends.components.pages.SharedPage(DebugFixtures.myShelf, DebugFixtures.friends, false, null, false) {}
+            "friends" -> FriendsPreview(emptyList())
+            "friends-one" -> FriendsPreview(listOf("sophie"))
+            "friends-none" -> androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize()) {
+                com.polyforms.shiori.features.friends.components.pages.FriendsPage(
+                    emptyList(), emptyList(), com.polyforms.shiori.features.friends.FriendsShelf(), null, DebugFixtures.myShelf,
+                    hasNoFriend = true, isWaiting = false, loadFailed = null, isInviting = false,
+                ) {}
+                ScrollAwayBar(com.polyforms.shiori.shared.L("Amis"), com.polyforms.shiori.shared.platform.rememberScrollAwayState())
             }
-            "friend" -> androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize().background(com.polyforms.shiori.shared.components.styles.Shiori.colors.groupedBackground)) {
-                com.polyforms.shiori.features.friends.components.pages.FriendProfilePage(DebugFixtures.friends[0], DebugFixtures.myShelf.copy(firstName = "Léa"), false, false, null) {}
+            "friend-books" -> com.polyforms.shiori.features.friends.FriendLibraryScreen("sophie", "Sophie", com.polyforms.shiori.features.friends.FriendsFixtures.client)
+            "friend-series" -> com.polyforms.shiori.features.friends.FriendSeriesListScreen("sophie", "Sophie", com.polyforms.shiori.features.friends.FriendsFixtures.client)
+            "friends-welcome" -> FriendsPreview(emptyList(), welcomed = "camille")
+            "pasted-invitation" -> androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color.Black)) {
+                com.polyforms.shiori.shared.platform.ShioriSheet({}) { com.polyforms.shiori.features.friends.components.pages.PastedInvitationSheet {} }
             }
             "friend-book" -> com.polyforms.shiori.features.friends.components.pages.FriendBookPage(
                 DebugFixtures.friendBook, "Léa", null, emptyList(), listOf(BookFormat.BOOK, BookFormat.AUDIOBOOK), emptyList(),
+                awaitFormats = listOf(com.polyforms.shiori.features.discover.ReleaseFormat.AUDIOBOOK),
             ) {}
             "awaited" -> com.polyforms.shiori.features.discover.AwaitedEditionScreen(DebugFixtures.discoverAwaited[0]) {}
             "news" -> com.polyforms.shiori.features.news.components.pages.NewsPage(
@@ -410,3 +421,19 @@ private fun TabBarPreview() {
 @Composable
 private fun DebugPreviewGround(content: @Composable () -> Unit) =
     androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize().background(com.polyforms.shiori.shared.components.styles.Shiori.colors.groupedBackground)) { content() }
+
+/** The Amis tab drawn from its fixtures, nobody or some friends picked. */
+@Composable
+private fun FriendsPreview(selected: List<String>, welcomed: String? = null) {
+    val friends = com.polyforms.shiori.features.friends.FriendsFixtures.friends
+    androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize()) {
+        com.polyforms.shiori.features.friends.components.pages.FriendsPage(
+            friends, selected, com.polyforms.shiori.features.friends.FriendsFixtures.shelf.narrowed(selected),
+            selected.singleOrNull()?.let { id -> friends.first { it.userId == id } }, null,
+            hasNoFriend = false, isWaiting = false, loadFailed = null, isInviting = false, welcomed = welcomed,
+        ) {}
+        ScrollAwayBar(com.polyforms.shiori.shared.L("Amis"), com.polyforms.shiori.shared.platform.rememberScrollAwayState()) {
+            com.polyforms.shiori.shared.components.atoms.ToolbarIconButton(com.polyforms.shiori.shared.L("Inviter"), "person.badge.plus") {}
+        }
+    }
+}
