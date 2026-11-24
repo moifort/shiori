@@ -7,6 +7,9 @@ import SwiftUI
 ///
 /// A friend an invitation just joined arrives with a welcome: their avatar
 /// grows into its place, ringed in white, in a burst of confetti.
+///
+/// An avatar held offers "Retirer", which asks before stopping the sharing,
+/// in a dialog hung on that avatar.
 struct FriendAvatarPicker: View {
     struct Item: Identifiable {
         let id: String
@@ -18,7 +21,12 @@ struct FriendAvatarPicker: View {
     let selected: [String]
     /// The friend just joined, welcomed while it is set.
     var welcomed: String? = nil
+    /// A friend removed, once the reader confirmed. Nil offers no menu.
+    var onRemove: ((String) -> Void)? = nil
     let onToggle: (String) -> Void
+
+    /// The friend whose removal waits for the reader's answer.
+    @State private var removing: String?
 
     private static let size: CGFloat = 62
 
@@ -70,6 +78,28 @@ struct FriendAvatarPicker: View {
         .animation(.smooth, value: isFaded)
         .accessibilityLabel(Text(item.name))
         .accessibilityAddTraits(isPicked ? .isSelected : [])
+        .contextMenu {
+            if onRemove != nil {
+                Button(role: .destructive) {
+                    removing = item.id
+                } label: {
+                    Label("Retirer", systemImage: "person.badge.minus")
+                }
+            }
+        }
+        .confirmationDialog(
+            "Retirer \(item.name) de vos amis ?",
+            isPresented: .init(
+                get: { removing == item.id },
+                set: { if !$0 { removing = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button("Retirer", role: .destructive) { onRemove?(item.id) }
+            Button("Annuler", role: .cancel) {}
+        } message: {
+            Text("Vos bibliothèques ne seront plus partagées.")
+        }
     }
 }
 

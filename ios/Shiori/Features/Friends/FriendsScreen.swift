@@ -55,6 +55,7 @@ struct FriendsScreen: View {
                 case let .openLibrary(friend): route = .library(friend.userId, friend.displayName)
                 case let .openSeries(friend): route = .series(friend.userId, friend.displayName)
                 case .invite: await viewModel.invite()
+                case let .remove(friendId): await viewModel.remove(friendId)
                 case .refresh: await viewModel.load()
                 }
             }

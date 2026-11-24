@@ -127,6 +127,23 @@ final class FriendsViewModel {
         }
     }
 
+    /// Stops sharing with a friend, both ways. They leave the avatars and the
+    /// pick at once; every tab that shows friends is told to ask again, since
+    /// the server answers no library change for it.
+    func remove(_ friendId: String) async {
+        do {
+            try await client.remove(friendId)
+            withAnimation(.smooth) {
+                friends.removeAll { $0.userId == friendId }
+                selected.removeAll { $0 == friendId }
+            }
+            NotificationCenter.default.post(name: .shioriDataDidChange, object: nil)
+        } catch {
+            guard !isCancellation(error) else { return }
+            errorMessage = reportError(error)
+        }
+    }
+
     private func loadMyShelf() async {
         do {
             myShelf = try await client.myShelf()

@@ -107,4 +107,32 @@ struct FriendsTabViewModelTests {
         #expect(viewModel.shelf == FriendsShelf.preview)
         #expect(viewModel.loadFailed == nil)
     }
+
+    @Test func removingAFriendDropsThemFromTheAvatarsAndThePick() async {
+        let calls = Calls()
+        var client = FriendsClient.preview
+        client.remove = { id in calls.record(id) }
+        let viewModel = FriendsViewModel(client: client, caching: false)
+        await viewModel.load()
+        await viewModel.toggle("camille")
+
+        await viewModel.remove("camille")
+
+        #expect(calls.all == ["camille"])
+        #expect(!viewModel.friends.contains { $0.userId == "camille" })
+        #expect(viewModel.selected.isEmpty)
+        #expect(viewModel.errorMessage == nil)
+    }
+
+    @Test func refusedRemovalKeepsTheFriendAndSaysSo() async {
+        var client = FriendsClient.preview
+        client.remove = { _ in throw Boom() }
+        let viewModel = FriendsViewModel(client: client, caching: false)
+        await viewModel.load()
+
+        await viewModel.remove("camille")
+
+        #expect(viewModel.friends.contains { $0.userId == "camille" })
+        #expect(viewModel.errorMessage != nil)
+    }
 }

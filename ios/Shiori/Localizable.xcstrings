@@ -12477,6 +12477,22 @@
         }
       }
     },
+    "Retirer %@ de vos amis ?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove %@ from your friends?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Retirer %@ de vos amis ?"
+          }
+        }
+      }
+    },
     "Retirer de la liste d'envies ?" : {
       "localizations" : {
         "en" : {
@@ -15641,6 +15657,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vos bibliothèques"
+          }
+        }
+      }
+    },
+    "Vos bibliothèques ne seront plus partagées." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your libraries will no longer be shared."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vos bibliothèques ne seront plus partagées."
           }
         }
       }

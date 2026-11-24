@@ -8,6 +8,8 @@ enum FriendsAction {
     case openLibrary(Friend)
     case openSeries(Friend)
     case invite
+    /// A friend's avatar held, "Retirer" chosen and confirmed.
+    case remove(String)
     case refresh
 }
 
@@ -71,7 +73,8 @@ struct FriendsPage: View {
                     FriendAvatarPicker(
                         items: friends.map { .init(id: $0.userId, name: $0.displayName, avatar: $0.avatar) },
                         selected: selected,
-                        welcomed: welcomed
+                        welcomed: welcomed,
+                        onRemove: { id in Task { await onAction(.remove(id)) } }
                     ) { id in Task { await onAction(.toggle(id)) } }
                     if let soleFriend {
                         VStack(spacing: 0) {
