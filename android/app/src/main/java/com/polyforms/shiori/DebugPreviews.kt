@@ -183,6 +183,28 @@ fun DebugPreviews(name: String) {
                 com.polyforms.shiori.features.news.NewsFixtures.authorRelease,
                 com.polyforms.shiori.features.news.components.pages.PendingReleasePhase.Loading,
             )
+            "home-prompt", "home-done", "home-empty", "home-listening" -> androidx.compose.foundation.layout.Box(
+                androidx.compose.ui.Modifier.fillMaxSize().background(com.polyforms.shiori.shared.components.styles.Shiori.colors.groupedBackground),
+            ) {
+                val done = com.polyforms.shiori.features.discover.MonthlyDiscoveries(
+                    com.polyforms.shiori.features.discover.MonthlyDiscoveries.month(java.time.Instant.now()),
+                    suggestions = emptyList(),
+                )
+                HomePage(
+                    if (name == "home-empty") com.polyforms.shiori.features.home.HomeFixtures.emptyDashboard else DebugFixtures.dashboard,
+                    emptyList(),
+                    emptySet(),
+                    done,
+                    isSearchingDiscoveries = false,
+                    discoveryChoices = remember { DiscoveryChoices() },
+                    onDiscoveryChoice = { _, _ -> true },
+                    onRefresh = {},
+                    header = { HomeHeader(false, avatar = {}) {} },
+                    prompt = com.polyforms.shiori.features.home.HomePrompt.AUDIBLE.takeIf { name == "home-prompt" },
+                    listeningState = { book -> com.polyforms.shiori.features.home.HomeFixtures.listenButton.takeIf { name == "home-listening" && book.format == com.polyforms.shiori.shared.BookFormat.AUDIOBOOK } },
+                    isDownloaded = { name == "home-listening" && it.format == com.polyforms.shiori.shared.BookFormat.AUDIOBOOK },
+                ) {}
+            }
             else -> ShioriRoot()
         }
     }
