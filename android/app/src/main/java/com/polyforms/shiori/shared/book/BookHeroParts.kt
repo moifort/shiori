@@ -49,7 +49,6 @@ import com.polyforms.shiori.shared.Book
 import com.polyforms.shiori.shared.CoverEffect
 import com.polyforms.shiori.shared.CoverEffectImage
 import com.polyforms.shiori.shared.L
-import com.polyforms.shiori.shared.blurCompat
 import com.polyforms.shiori.shared.components.atoms.BookmarkRibbon
 import com.polyforms.shiori.shared.components.atoms.CoverTags
 import com.polyforms.shiori.shared.components.atoms.ProgressBar
