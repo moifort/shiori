@@ -156,7 +156,7 @@ object SeriesApi {
 
 /** The showcase's followed sagas, filled with the showcase library. */
 object ShowcaseLibraryRows {
-    val series: List<FollowedSeries> = emptyList()
+    val series: List<FollowedSeries> get() = com.polyforms.shiori.DebugFixtures.followedSeries
 }
 
 val SeriesCatalogue.asSeries: BookSeries

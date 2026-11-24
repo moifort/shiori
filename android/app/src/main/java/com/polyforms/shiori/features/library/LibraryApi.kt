@@ -15,6 +15,7 @@ import com.polyforms.shiori.shared.BookRecommendation
 import com.polyforms.shiori.shared.FollowedSeries
 import com.polyforms.shiori.shared.GraphQLClient
 import com.polyforms.shiori.shared.Showcase
+import com.polyforms.shiori.shared.ShowcaseLibrary
 import com.polyforms.shiori.shared.asBook
 import com.polyforms.shiori.shared.asDomain
 import com.polyforms.shiori.shared.graphQL
@@ -22,7 +23,7 @@ import com.polyforms.shiori.shared.parseISO8601
 
 object LibraryApi {
     suspend fun shelves(view: ShelvesView): LibraryShelves {
-        if (Showcase.isOn) return LibraryShelves()
+        if (Showcase.isOn) return ShowcaseLibrary.shelves(view)
         val s = GraphQLClient.fetch(
             LibraryShelvesQuery(Optional.presentIfNotNull(view.format?.graphQL), Optional.presentIfNotNull(view.genre?.graphQL), Optional.presentIfNotNull(view.subgenre)),
         ).libraryShelves
@@ -43,14 +44,14 @@ object LibraryApi {
     }
 
     suspend fun lovedSeries(view: ShelvesView): List<FollowedSeries> {
-        if (Showcase.isOn) return emptyList()
+        if (Showcase.isOn) return ShowcaseLibrary.lovedSeries()
         return GraphQLClient.fetch(
             LovedSeriesQuery(Optional.presentIfNotNull(view.format?.graphQL), Optional.presentIfNotNull(view.genre?.graphQL), Optional.presentIfNotNull(view.subgenre)),
         ).libraryShelves.lovedSeries.map { SeriesApi.followedRow(it.followedSeriesRow, it.volumes.map { v -> v.followedVolume }, it.catalogue?.catalogueSpine) }
     }
 
     suspend fun shelfPage(query: ShelfQuery, limit: Int, after: String?): LibraryPageResult {
-        if (Showcase.isOn) return LibraryPageResult(emptyList(), false)
+        if (Showcase.isOn) return ShowcaseLibrary.shelfPage(query)
         val view = query.view
         val page = GraphQLClient.fetch(
             LibraryPageQuery(
@@ -67,7 +68,7 @@ object LibraryApi {
     }
 
     suspend fun pile(view: ShelvesView): Pile {
-        if (Showcase.isOn) return Pile()
+        if (Showcase.isOn) return ShowcaseLibrary.pile(view)
         val p = GraphQLClient.fetch(
             PileQuery(Optional.presentIfNotNull(view.format?.graphQL), Optional.presentIfNotNull(view.genre?.graphQL), Optional.presentIfNotNull(view.subgenre)),
         ).pile
