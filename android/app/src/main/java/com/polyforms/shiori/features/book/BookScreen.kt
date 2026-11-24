@@ -1,5 +1,10 @@
 package com.polyforms.shiori.features.book
 
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.isImeVisible
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -65,6 +70,7 @@ import com.polyforms.shiori.shared.platform.currentNavigator
 import kotlinx.coroutines.launch
 
 /** One of the reader's books, pushed from anywhere: its page, its sheets, its writes. */
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 fun BookScreen(
     bookId: String,
@@ -143,9 +149,14 @@ fun BookScreen(
                     isDownloaded = false,
                     contentPadding = PaddingValues(bottom = 24.dp),
                 )
+                // Back puts the note away, as cancelling it does.
+                BackHandler(enabled = composingNote) { composingNote = false }
+                // Above the tab bar while the keyboard is down, as iOS insets it over the bar.
+                val keyboardUp = WindowInsets.isImeVisible
                 AnimatedVisibility(
                     composingNote,
-                    Modifier.align(Alignment.BottomCenter),
+                    Modifier.align(Alignment.BottomCenter)
+                        .then(if (keyboardUp) Modifier else Modifier.navigationBarsPadding().padding(bottom = 74.dp)),
                     enter = slideInVertically { it } + fadeIn(),
                     exit = slideOutVertically { it } + fadeOut(),
                 ) {
