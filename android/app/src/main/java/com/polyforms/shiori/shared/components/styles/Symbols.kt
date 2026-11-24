@@ -15,7 +15,6 @@ import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material.icons.outlined.Checklist
-import androidx.compose.material.icons.outlined.BookmarkRemove
 import androidx.compose.material.icons.outlined.ArrowDownward
 import androidx.compose.material.icons.automirrored.outlined.Article
 import androidx.compose.material.icons.automirrored.outlined.Backspace
@@ -72,7 +71,7 @@ import androidx.compose.material.icons.filled.SetMeal
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.TheaterComedy
 import androidx.compose.material.icons.filled.ThumbDown
-import androidx.compose.material.icons.filled.TravelExplore
+import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.Terrain
 import androidx.compose.material.icons.filled.Verified
 import androidx.compose.material.icons.filled.Visibility
@@ -155,7 +154,6 @@ import androidx.compose.material.icons.outlined.Tag
 import androidx.compose.material.icons.outlined.TabletAndroid
 import androidx.compose.material.icons.outlined.TheaterComedy
 import androidx.compose.material.icons.outlined.ThumbDown
-import androidx.compose.material.icons.outlined.TravelExplore
 import androidx.compose.material.icons.outlined.Translate
 import androidx.compose.material.icons.outlined.UnfoldMore
 import androidx.compose.material.icons.outlined.Verified
@@ -176,7 +174,10 @@ import androidx.compose.ui.graphics.vector.ImageVector
  */
 fun Symbol(name: String): ImageVector = when (name) {
     "house", "house.fill", "home.chart.metric" -> Icons.Outlined.Home
-    "book", "book.closed", "text.book.closed.fill", "book.pages" -> Icons.AutoMirrored.Outlined.MenuBook
+    "book" -> SymbolDrawings.book
+    "book.closed" -> Icons.Outlined.Book
+    "text.book.closed.fill" -> Icons.Filled.Book
+    "book.pages" -> Icons.AutoMirrored.Outlined.MenuBook
     "book.fill" -> Icons.AutoMirrored.Filled.MenuBook
     "books.vertical", "books" -> Icons.AutoMirrored.Outlined.LibraryBooks
     "books.vertical.fill" -> Icons.AutoMirrored.Filled.LibraryBooks
@@ -217,7 +218,8 @@ fun Symbol(name: String): ImageVector = when (name) {
     "bell.slash" -> Icons.Outlined.NotificationsOff
     "bell.slash.fill" -> Icons.Filled.NotificationsOff
     "bell.badge.fill" -> Icons.Filled.NotificationsActive
-    "tray.full", "tray.and.arrow.down" -> Icons.Outlined.MoveToInbox
+    "tray.full" -> SymbolDrawings.trayFull
+    "tray.and.arrow.down" -> Icons.Outlined.MoveToInbox
     "eye" -> Icons.Outlined.Visibility
     "eye.fill" -> Icons.Filled.Visibility
     "eye.slash" -> Icons.Outlined.VisibilityOff
@@ -228,8 +230,8 @@ fun Symbol(name: String): ImageVector = when (name) {
     "calendar.badge.checkmark" -> Icons.Outlined.EventAvailable
     "calendar.badge.minus" -> Icons.Outlined.EventBusy
     "calendar.badge.clock" -> Icons.Outlined.EventRepeat
-    "binoculars" -> Icons.Outlined.TravelExplore
-    "binoculars.fill" -> Icons.Filled.TravelExplore
+    "binoculars" -> SymbolDrawings.binoculars
+    "binoculars.fill" -> SymbolDrawings.binocularsFill
     "tag" -> Icons.Outlined.Sell
     "tag.fill" -> Icons.Filled.LocalOffer
     "square.and.arrow.up" -> Icons.Outlined.IosShare
@@ -256,7 +258,8 @@ fun Symbol(name: String): ImageVector = when (name) {
     "building.2" -> Icons.Outlined.Business
     "building.2.fill" -> Icons.Filled.Business
     "building.columns.fill" -> Icons.Filled.AccountBalance
-    "arrow.clockwise", "arrow.counterclockwise" -> Icons.Outlined.Refresh
+    "arrow.clockwise" -> Icons.Outlined.Refresh
+    "arrow.counterclockwise" -> SymbolDrawings.arrowCounterclockwise
     "arrow.triangle.2.circlepath" -> Icons.Outlined.Sync
     "arrow.triangle.merge" -> Icons.AutoMirrored.Outlined.CallMerge
     "arrow.uturn.backward" -> Icons.AutoMirrored.Outlined.Undo
@@ -294,7 +297,8 @@ fun Symbol(name: String): ImageVector = when (name) {
     "lizard.fill" -> Icons.Filled.PestControl
     "line.3.horizontal.decrease.circle" -> Icons.Outlined.FilterList
     "leaf.fill" -> Icons.Filled.Forest
-    "laurel.leading", "laurel.trailing" -> Icons.Filled.EmojiEvents
+    "laurel.leading" -> SymbolDrawings.laurelLeading
+    "laurel.trailing" -> SymbolDrawings.laurelTrailing
     "hourglass" -> Icons.Outlined.HourglassEmpty
     "gift" -> Icons.Outlined.CardGiftcard
     "ghost" -> Icons.Filled.Face
@@ -325,7 +329,7 @@ fun Symbol(name: String): ImageVector = when (name) {
     "book.outlined" -> Icons.Outlined.Book
     "person.add" -> Icons.Outlined.PersonAdd
     "arrow.down" -> Icons.Outlined.ArrowDownward
-    "bookmark.slash" -> Icons.Outlined.BookmarkRemove
+    "bookmark.slash" -> SymbolDrawings.bookmarkSlash
     "calendar.badge.exclamationmark" -> Icons.Outlined.EventBusy
     "checklist" -> Icons.Outlined.Checklist
     "chevron.down" -> Icons.Outlined.ExpandMore
