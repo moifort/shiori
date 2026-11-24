@@ -8,6 +8,7 @@ import com.polyforms.shiori.features.discover.AwaitedState
 import com.polyforms.shiori.shared.Book
 import com.polyforms.shiori.shared.BookFormat
 import com.polyforms.shiori.shared.BookLanguage
+import com.polyforms.shiori.shared.BookOrigin
 import com.polyforms.shiori.shared.InstantSerializer
 import com.polyforms.shiori.shared.L
 import com.polyforms.shiori.shared.ReadingStatus
@@ -55,7 +56,17 @@ data class Wish(
         isbn13 = isbn13,
         coverURL = coverURL,
         status = status,
+        origin = bookOrigin,
     )
+
+    /** Where the book came from once it is on the shelf: where it was wished from, the wishlist being only the stop on the way. */
+    val bookOrigin: BookOrigin
+        get() = when (origin) {
+            Origin.FRIEND -> BookOrigin(BookOrigin.Kind.FRIEND, friendName = originLabel)
+            Origin.DISCOVERY, Origin.AWARD -> BookOrigin(BookOrigin.Kind.DISCOVER)
+            Origin.AUTHOR -> BookOrigin(BookOrigin.Kind.AUTHOR)
+            Origin.SCAN -> BookOrigin(BookOrigin.Kind.SCAN)
+        }
 }
 
 @Serializable

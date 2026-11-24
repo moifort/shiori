@@ -18,6 +18,7 @@ import com.polyforms.shiori.features.book.BookDraft
 import com.polyforms.shiori.shared.Book
 import com.polyforms.shiori.shared.BookFormat
 import com.polyforms.shiori.shared.BookLanguage
+import com.polyforms.shiori.shared.BookOrigin
 import com.polyforms.shiori.shared.GraphQLClient
 import com.polyforms.shiori.shared.InstantSerializer
 import com.polyforms.shiori.shared.L
@@ -174,6 +175,7 @@ data class AwaitedEdition(
         series = shown.series,
         coverURL = shown.coverURL,
         status = ReadingStatus.TO_READ,
+        origin = BookOrigin(BookOrigin.Kind.AWAITED),
     )
 
     companion object {
