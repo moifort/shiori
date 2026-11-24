@@ -170,6 +170,17 @@ fun DebugPreviews(name: String) {
                 com.polyforms.shiori.features.news.components.pages.UpcomingReleasesPage(com.polyforms.shiori.features.news.NewsFixtures.upcoming) {}
             }
             "tabbar" -> TabBarPreview()
+            "confirmation" -> androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize().background(com.polyforms.shiori.shared.components.styles.Shiori.colors.groupedBackground)) {
+                // A confirmation anchored to the bell that asks it, as iOS 26's popover.
+                androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.align(androidx.compose.ui.Alignment.Center)) {
+                    com.polyforms.shiori.shared.components.atoms.ToolbarIconButton("Cloche", "bell.slash") {}
+                    com.polyforms.shiori.shared.platform.ConfirmationSheet(
+                        "Ne plus suivre ce livre ?",
+                        listOf(com.polyforms.shiori.shared.platform.ConfirmationChoice("Ne plus suivre", destructive = true) {}),
+                        "Vous ne serez plus prévenu de sa sortie.",
+                    ) {}
+                }
+            }
             "pushed-title" -> {
                 // A pushed page of the stack: its title inline in the bar, beside Back.
                 val navigator = remember { com.polyforms.shiori.shared.platform.Navigator() }

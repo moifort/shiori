@@ -27,6 +27,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -127,43 +128,86 @@ fun HSpacer(width: androidx.compose.ui.unit.Dp) = Spacer(Modifier.width(width))
 /** One choice of a [ConfirmationSheet]. */
 data class ConfirmationChoice(val title: String, val destructive: Boolean = false, val action: () -> Unit)
 
-/** `confirmationDialog`: a title over a column of choices, as iOS's action sheet. */
+/**
+ * `confirmationDialog` as iOS 26 draws it on a phone: a small glass card anchored to what asked,
+ * the question in grey over its choices, and no Cancel row (a tap outside or Back dismisses).
+ * The card hangs under the layout that composes it (the button, or the row holding it), or over
+ * it when the screen has no room below.
+ */
 @Composable
 fun ConfirmationSheet(title: String, choices: List<ConfirmationChoice>, message: String? = null, onDismiss: () -> Unit) {
-    ShioriSheet(onDismiss) { dismiss ->
-        val colors = Shiori.colors
-        androidx.compose.material3.Text(
-            title,
-            style = Shiori.type.footnote.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold),
-            color = colors.secondaryLabel,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(top = 14.dp, bottom = if (message == null) 14.dp else 4.dp),
-        )
-        if (message != null) {
-            androidx.compose.material3.Text(
-                message,
-                style = Shiori.type.footnote,
-                color = colors.secondaryLabel,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = 14.dp),
-            )
-        }
-        androidx.compose.foundation.layout.Column(Modifier.padding(horizontal = 16.dp).padding(bottom = 24.dp)) {
-            choices.forEach { choice ->
-                Box(
-                    Modifier.fillMaxWidth().height(56.dp).clickable {
-                        dismiss()
-                        choice.action()
-                    },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    androidx.compose.material3.Text(choice.title, style = Shiori.type.title3, color = if (choice.destructive) colors.red else colors.accent)
+    val colors = Shiori.colors
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val margin = with(density) { 16.dp.roundToPx() }
+    val gap = with(density) { 8.dp.roundToPx() }
+    val shown = androidx.compose.runtime.remember { androidx.compose.animation.core.MutableTransitionState(false) }.apply { targetState = true }
+    val position = androidx.compose.runtime.remember(margin, gap) {
+        object : androidx.compose.ui.window.PopupPositionProvider {
+            override fun calculatePosition(
+                anchorBounds: androidx.compose.ui.unit.IntRect,
+                windowSize: androidx.compose.ui.unit.IntSize,
+                layoutDirection: androidx.compose.ui.unit.LayoutDirection,
+                popupContentSize: androidx.compose.ui.unit.IntSize,
+            ): androidx.compose.ui.unit.IntOffset {
+                val x = (anchorBounds.center.x - popupContentSize.width / 2)
+                    .coerceIn(margin, (windowSize.width - popupContentSize.width - margin).coerceAtLeast(margin))
+                val below = anchorBounds.bottom + gap
+                val y = if (below + popupContentSize.height <= windowSize.height - margin) {
+                    below
+                } else {
+                    (anchorBounds.top - gap - popupContentSize.height).coerceAtLeast(margin)
                 }
-                com.polyforms.shiori.shared.components.styles.ShioriDivider()
+                return androidx.compose.ui.unit.IntOffset(x, y)
             }
-            Box(Modifier.fillMaxWidth().height(56.dp).clickable { dismiss() }, contentAlignment = Alignment.Center) {
-                androidx.compose.material3.Text(L("Annuler"), style = Shiori.type.title3.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold), color = colors.accent)
+        }
+    }
+    androidx.compose.ui.window.Popup(
+        popupPositionProvider = position,
+        onDismissRequest = onDismiss,
+        properties = androidx.compose.ui.window.PopupProperties(focusable = true),
+    ) {
+        androidx.compose.animation.AnimatedVisibility(
+            shown,
+            enter = androidx.compose.animation.scaleIn(androidx.compose.animation.core.spring(dampingRatio = 0.8f), initialScale = 0.85f) +
+                androidx.compose.animation.fadeIn(),
+        ) {
+            androidx.compose.foundation.layout.Column(
+                Modifier
+                    .width(270.dp)
+                    .shadow(24.dp, RoundedCornerShape(22.dp), ambientColor = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.3f), spotColor = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.3f))
+                    .background(colors.secondaryGroupedBackground, RoundedCornerShape(22.dp))
+                    .padding(vertical = 6.dp),
+            ) {
+                Text(
+                    title,
+                    style = Shiori.type.footnote.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold),
+                    color = colors.secondaryLabel,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp).padding(top = 10.dp, bottom = if (message == null) 8.dp else 2.dp),
+                )
+                if (message != null) {
+                    Text(
+                        message,
+                        style = Shiori.type.footnote,
+                        color = colors.secondaryLabel,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp).padding(bottom = 8.dp),
+                    )
+                }
+                choices.forEach { choice ->
+                    Box(
+                        Modifier.fillMaxWidth().height(48.dp).clickable {
+                            onDismiss()
+                            choice.action()
+                        }.padding(horizontal = 18.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(choice.title, style = Shiori.type.body, color = if (choice.destructive) colors.red else colors.label)
+                    }
+                }
             }
         }
     }
 }
+
+
