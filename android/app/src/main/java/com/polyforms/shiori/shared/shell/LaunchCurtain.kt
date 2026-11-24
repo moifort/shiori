@@ -1,7 +1,6 @@
 package com.polyforms.shiori.shared.shell
 
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
@@ -24,6 +23,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.polyforms.shiori.R
@@ -36,10 +36,10 @@ private val LaunchBackground = Color.Black
 fun LaunchCurtain() {
     val covers = rememberLaunchCovers()
     val icon = remember { Animatable(0f) }
-    LaunchedEffect(Unit) { icon.animateTo(1f, spring(dampingRatio = 0.6f, stiffness = Spring.StiffnessLow)) }
+    LaunchedEffect(Unit) { icon.animateTo(1f, spring(dampingRatio = 0.7f, stiffness = 110f)) }
     Box(Modifier.fillMaxSize().background(LaunchBackground), contentAlignment = Alignment.Center) {
         CoverDrift(covers)
-        Box(Modifier.fillMaxSize().background(Brush.radialGradient(listOf(LaunchBackground.copy(alpha = 0.7f), LaunchBackground.copy(alpha = 0.4f), Color.Transparent), radius = 600f)))
+        Box(Modifier.fillMaxSize().background(Brush.radialGradient(listOf(LaunchBackground.copy(alpha = 0.7f), LaunchBackground.copy(alpha = 0.4f), Color.Transparent), radius = with(LocalDensity.current) { 200.dp.toPx() })))
         Image(
             painterResource(R.drawable.launch_icon),
             "Shiori",

@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
@@ -97,8 +98,13 @@ fun CoverDrift(covers: List<Int>, moving: Boolean = true, modifier: Modifier = M
                     )
                     val leftward = row % 2 == 0
                     val shift = if (leftward) -progress * repeatWidth else -repeatWidth + progress * repeatWidth
+                    // The strip is wider than the band: measured unbounded, or Compose squeezes
+                    // every cover past the band's width to nothing and the rows sliding right,
+                    // which start a whole repeat to the left, show no cover at all.
                     Row(
-                        Modifier.graphicsLayer { translationX = with(density) { shift.dp.toPx() } },
+                        Modifier
+                            .wrapContentWidth(Alignment.Start, unbounded = true)
+                            .graphicsLayer { translationX = with(density) { shift.dp.toPx() } },
                         horizontalArrangement = Arrangement.spacedBy(spacing.dp),
                     ) {
                         repeat(perStrip + across) { index ->
