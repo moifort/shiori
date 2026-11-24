@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- The measured build alone lets the shell profile it (simpleperf, Perfetto). -->
+    <application>
+        <profileable android:shell="true" />
+    </application>
+</manifest>
