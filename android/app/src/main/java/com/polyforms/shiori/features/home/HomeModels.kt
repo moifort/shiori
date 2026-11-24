@@ -82,3 +82,17 @@ data class GenreInsights(
     @Serializable data class DroppedRecord(val genre: BookGenre, val droppedCount: Int, val startedCount: Int)
     @Serializable data class Unexplored(val genre: BookGenre, val pileCount: Int)
 }
+
+/** The dashboard, the month's discoveries as they stand, and what the hero asks: one request. */
+data class HomeOpening(
+    val dashboard: Dashboard,
+    val discoveries: com.polyforms.shiori.features.discover.MonthlyDiscoveries,
+    /** What the hero asks the reader to set up, in the order it asks. */
+    val prompts: List<HomePrompt> = emptyList(),
+)
+
+/**
+ * Something the home's hero asks the reader to set up until it is done or they turn it down:
+ * their Audible library, their Kindle library, a first friend. The server decides which.
+ */
+enum class HomePrompt { AUDIBLE, KINDLE, FRIENDS }

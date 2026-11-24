@@ -56,6 +56,25 @@ class HomeViewModel(
         private set
     var actionError by mutableStateOf<String?>(null)
 
+    /** What the hero asks the reader to set up, as the server last said. */
+    var prompts by mutableStateOf(emptyList<HomePrompt>())
+        private set
+    /** The prompts turned down since the page opened: kept on screen, their eye filled, until the reader leaves. */
+    private var heldPrompts by mutableStateOf(emptySet<HomePrompt>())
+    /** The prompts turned down here, until the server's next answer says so. */
+    private var dismissedPrompts by mutableStateOf(emptySet<HomePrompt>())
+
+    /**
+     * The one prompt the hero shows, after its other pages: the first the reader has not turned
+     * down, or the one just turned down while the page is open. Never before the first book: the
+     * empty shelf offers the same in its own rows.
+     */
+    val shownPrompt: HomePrompt?
+        get() {
+            if (dashboard?.libraryIsEmpty != false) return null
+            return prompts.firstOrNull { it !in dismissedPrompts || it in heldPrompts }
+        }
+
     private var seenReleases by mutableStateOf(seenStore.all)
     private var heldReleases by mutableStateOf(emptySet<String>())
     val hiddenReleases: Set<String> get() = seenReleases - heldReleases
@@ -66,6 +85,11 @@ class HomeViewModel(
     val discoveryChoices = DiscoveryChoices()
     private val taken = mutableListOf<Suggestion>()
     private val booksRead = mutableMapOf<String, String>()
+    /** The wishes made from a discovery, which "Envies" on its page takes back. */
+    private val wishIds = mutableMapOf<String, String>()
+    /** The books put on the pile from a discovery, and the editions awaited from one. */
+    private val booksAdded = mutableMapOf<String, String>()
+    private val awaitedIds = mutableMapOf<String, MutableMap<ReleaseFormat, String>>()
     private var loaded = false
     private var discoveriesRead = false
     private var loading: Deferred<Unit>? = null
@@ -95,10 +119,9 @@ class HomeViewModel(
 
     private suspend fun refresh() = coroutineScope {
         errorMessage = null
-        launch { loadDiscoveries() }
         val fetchedReleases = async { fetchReleases() }
         try {
-            val fetched = client.dashboard()
+            val fetched = fetchTop()
             dashboard = fetched
             loaded = true
             cache?.let { cache -> scope.launch(Dispatchers.IO) { cache.write(fetched) } }
@@ -107,6 +130,27 @@ class HomeViewModel(
             if (!isCancellation(error)) errorMessage = reportError(error)
         }
         keep(fetchedReleases.await())
+    }
+
+    /**
+     * The dashboard, with the month's discoveries and the hero's prompts in the same request.
+     * Should it fail, each is asked alone: the discoveries apart, never in the figures' way.
+     */
+    private suspend fun fetchTop(): Dashboard = coroutineScope {
+        val top = try {
+            client.opening()
+        } catch (error: Exception) {
+            if (isCancellation(error)) throw error
+            null
+        }
+        if (top != null) {
+            discoveriesRead = true
+            show(top.discoveries)
+            prompts = top.prompts
+            return@coroutineScope top.dashboard
+        }
+        scope.launch { loadDiscoveries() }
+        client.dashboard()
     }
 
     private fun keep(fetched: List<HomeRelease>?) {
@@ -156,6 +200,7 @@ class HomeViewModel(
 
     suspend fun releaseTaken() {
         heldReleases = emptySet()
+        heldPrompts = emptySet()
         if (taken.isEmpty()) return
         taken.clear()
         loadDiscoveries()
@@ -165,6 +210,29 @@ class HomeViewModel(
         heldReleases = heldReleases + release.id
         seenReleases = seenReleases + release.id
         seenStore.see(release.id)
+    }
+
+    /** A prompt turned down from the hero's closed eye: kept on the account, and on screen until the reader leaves. */
+    fun dismiss(prompt: HomePrompt) {
+        heldPrompts = heldPrompts + prompt
+        dismissedPrompts = dismissedPrompts + prompt
+        scope.launch { send(prompt, dismissed = true) }
+    }
+
+    /** The eye pressed again: the prompt is asked again. */
+    fun undismiss(prompt: HomePrompt) {
+        dismissedPrompts = dismissedPrompts - prompt
+        scope.launch { send(prompt, dismissed = false) }
+    }
+
+    /** Tells the server, which keeps the answer for every device. A failure puts the prompt back as it stood. */
+    private suspend fun send(prompt: HomePrompt, dismissed: Boolean) {
+        try {
+            client.dismissPrompt(prompt, dismissed)
+        } catch (error: Exception) {
+            if (isCancellation(error)) return
+            dismissedPrompts = if (dismissed) dismissedPrompts - prompt else dismissedPrompts + prompt
+        }
     }
 
     fun unsee(release: HomeRelease) {
@@ -228,22 +296,18 @@ class HomeViewModel(
         hold(suggestion)
         return try {
             when (choice) {
-                DiscoveryChoice.Add -> client.addBook(suggestion.shelfDraft(ReadingStatus.TO_READ))
-                is DiscoveryChoice.Await -> client.awaitEdition(suggestion.draft, choice.format)
+                DiscoveryChoice.Add -> booksAdded[suggestion.id] = client.addBook(suggestion.shelfDraft(ReadingStatus.TO_READ))
+                is DiscoveryChoice.Await -> awaitedIds.getOrPut(suggestion.id) { mutableMapOf() }[choice.format] = client.awaitEdition(suggestion.draft, choice.format)
                 DiscoveryChoice.AlreadyRead -> booksRead[suggestion.id] = client.addBook(suggestion.shelfDraft(ReadingStatus.READ))
-                DiscoveryChoice.Wish -> client.wish(suggestion.shelfDraft(ReadingStatus.TO_READ))
+                DiscoveryChoice.Wish -> wishIds[suggestion.id] = client.wish(suggestion.shelfDraft(ReadingStatus.TO_READ))
                 DiscoveryChoice.UndoAlreadyRead -> {
                     booksRead[suggestion.id]?.let { client.deleteBook(it) }
                     booksRead.remove(suggestion.id)
                 }
-                DiscoveryChoice.NotInterested -> {
-                    client.dismissSuggestion(suggestion.id, DismissalReason.NOT_INTERESTED)
-                    loadDiscoveries()
-                }
-                DiscoveryChoice.Reconsider -> {
-                    client.reconsiderSuggestion(suggestion.id)
-                    loadDiscoveries()
-                }
+                // Black and white on the hero, held there until the reader leaves the page, when
+                // it leaves the line (`releaseTaken`).
+                DiscoveryChoice.NotInterested -> client.dismissSuggestion(suggestion.id, DismissalReason.NOT_INTERESTED)
+                DiscoveryChoice.Reconsider -> client.reconsiderSuggestion(suggestion.id)
             }
             true
         } catch (error: Exception) {

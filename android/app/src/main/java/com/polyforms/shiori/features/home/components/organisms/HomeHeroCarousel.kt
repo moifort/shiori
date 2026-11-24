@@ -46,7 +46,19 @@ import com.polyforms.shiori.features.discover.Suggestion
 import com.polyforms.shiori.features.discover.components.organisms.DiscoveryButtons
 import com.polyforms.shiori.features.discover.components.organisms.DiscoveryChoice
 import com.polyforms.shiori.features.discover.components.organisms.DiscoveryChoices
-import com.polyforms.shiori.features.discover.components.organisms.RoundGlass
+import com.polyforms.shiori.features.discover.components.organisms.DiscoveryMark
+import com.polyforms.shiori.features.home.HomePrompt
+import com.polyforms.shiori.R
+import com.polyforms.shiori.shared.components.molecules.ActionToggle
+import com.polyforms.shiori.shared.components.styles.ActionButton
+import com.polyforms.shiori.shared.components.styles.ActionLabel
+import com.polyforms.shiori.shared.components.styles.ActionSize
+import com.polyforms.shiori.shared.components.styles.IconGesture
+import com.polyforms.shiori.shared.components.styles.saturation
+import androidx.annotation.DrawableRes
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.ui.res.painterResource
 import com.polyforms.shiori.features.home.HomeRelease
 import com.polyforms.shiori.features.home.releaseTile
 import com.polyforms.shiori.shared.Book
@@ -73,7 +85,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.polyforms.shiori.DebugFixtures
 import com.polyforms.shiori.PreviewSurface
 
-/** One page of the Home hero: a release, a discovery, or the month's closing word. */
+/**
+ * One page of the Home hero: a release, a discovery, the page that asks for a rating, or, last,
+ * one thing the reader has not set up yet: Audible, Kindle or a first friend.
+ */
 sealed interface HomeHeroItem {
     val id: String
 
@@ -85,25 +100,30 @@ sealed interface HomeHeroItem {
         override val id: String get() = "discovery-${suggestion.id}"
     }
 
-    data class MonthDone(val month: String) : HomeHeroItem {
-        override val id: String get() = "month-done-$month"
-    }
-
     data class NeedsRatings(val month: String) : HomeHeroItem {
         override val id: String get() = "needs-ratings-$month"
+    }
+
+    /** Something to set up, after every other page. */
+    data class Prompt(val prompt: HomePrompt) : HomeHeroItem {
+        override val id: String get() = "prompt-${prompt.name.lowercase()}"
     }
 
     companion object {
         const val RELEASE_WINDOW = 6
         const val RECENT_WINDOW = 6
 
-        /** Releases of the week around today first, then the month's discoveries. */
+        /**
+         * Releases of the week around today first, then the month's discoveries. A month with no
+         * selection for want of a rated book closes on its page; one whose discoveries ran out
+         * has none. The prompt comes last.
+         */
         fun items(
             releases: List<HomeRelease>,
             discoveries: List<Suggestion>,
-            doneMonth: String? = null,
             needsRatingsMonth: String? = null,
             seen: Set<String> = emptySet(),
+            prompt: HomePrompt? = null,
             today: LocalDate = LocalDate.now(),
         ): List<HomeHeroItem> {
             val month = "%04d-%02d".format(today.year, today.monthValue)
@@ -129,11 +149,11 @@ sealed interface HomeHeroItem {
                 thisMonth.sortedWith { a, b -> collator.compare(a.name, b.name) } +
                 coming.sortedWith { a, b -> if (a.second != b.second) a.second.compareTo(b.second) else collator.compare(a.first.name, b.first.name) }.map { it.first }
             val done = if (discoveries.isEmpty()) {
-                doneMonth?.let { listOf(MonthDone(it)) } ?: needsRatingsMonth?.let { listOf(NeedsRatings(it)) } ?: emptyList()
+                needsRatingsMonth?.let { listOf(NeedsRatings(it)) } ?: emptyList()
             } else {
                 emptyList()
             }
-            return lined.map(::Release) + discoveries.map(::Discovery) + done
+            return lined.map(::Release) + discoveries.map(::Discovery) + done + listOfNotNull(prompt?.let(::Prompt))
         }
 
         fun releaseBadge(date: String, today: LocalDate = LocalDate.now()): String {
@@ -202,14 +222,20 @@ fun HomeHeroCarousel(
     choices: DiscoveryChoices,
     onSeeRelease: (HomeRelease) -> Unit,
     onUnseeRelease: (HomeRelease) -> Unit,
-    onShowDiscover: () -> Unit,
     onRate: () -> Unit,
+    /** A prompt's button: the connection or the invitation it asks for. */
+    onPrompt: (HomePrompt) -> Unit = {},
+    /** A prompt turned down from its closed eye. */
+    onDismissPrompt: (HomePrompt) -> Unit = {},
+    /** The eye pressed again: the prompt is asked again. */
+    onUndismissPrompt: (HomePrompt) -> Unit = {},
     backdropCover: String?,
     discoveryMonth: String,
 ) {
     val pager = rememberPagerState { items.size }
     val topHeights = remember { mutableStateMapOf<String, Dp>() }
     val seen = remember { mutableStateMapOf<String, Boolean>() }
+    val dismissedPrompts = remember { mutableStateMapOf<HomePrompt, Boolean>() }
     val density = LocalDensity.current
     val shownId = items.getOrNull(pager.currentPage)?.id
     val top = maxOf(coverHeight, shownId?.let { topHeights[it] } ?: 0.dp)
@@ -220,8 +246,12 @@ fun HomeHeroCarousel(
         is HomeHeroItem.Discovery -> item.suggestion.tile.coverURL
         else -> backdropCover
     }
+    val shown = items.getOrNull(pager.currentPage)
+    // A discovery turned down from the eye: black and white, cover and wash, as on its page.
+    val turnedDown = shown is HomeHeroItem.Discovery && choices.marks[shown.suggestion.id] == DiscoveryMark.NOT_INTERESTED
+    val saturation by animateFloatAsState(if (turnedDown) 0f else 1f, tween(600), label = "turnedDown")
     Box(Modifier.fillMaxWidth().height(height)) {
-        Crossfade(backdrop(items.getOrNull(pager.currentPage)), label = "backdrop") { url ->
+        Crossfade(backdrop(shown), Modifier.saturation(saturation), label = "backdrop") { url ->
             CoverBackdrop(url, Modifier.fillMaxWidth().requiredHeight(height + BACKDROP_RISE).offset(y = -BACKDROP_RISE / 2), fadeHeight = 240.dp)
         }
         HorizontalPager(pager, Modifier.fillMaxSize(), key = { items[it].id }) { index ->
@@ -233,44 +263,71 @@ fun HomeHeroCarousel(
                     Box(Modifier.onSizeChanged { topHeights[item.id] = with(density) { it.height.toDp() } }) {
                         when (item) {
                             is HomeHeroItem.Release -> ReleaseTop(item.release)
-                            is HomeHeroItem.Discovery -> DiscoveryTop(item.suggestion, discoveryMonth)
-                            is HomeHeroItem.MonthDone -> ClosingTop(item.month, "checkmark", L("Vous avez fait le tour"), MonthlyDiscoveries.nextArrivalLine(item.month))
+                            is HomeHeroItem.Discovery -> DiscoveryTop(
+                                item.suggestion,
+                                discoveryMonth,
+                                isTurnedDown = choices.marks[item.suggestion.id] == DiscoveryMark.NOT_INTERESTED,
+                            )
                             is HomeHeroItem.NeedsRatings -> ClosingTop(
-                                item.month,
-                                "star.fill",
+                                StackMark.Symbol("star.fill"),
+                                MonthlyDiscoveries.title(item.month),
                                 L("Notez vos lectures"),
                                 L("Donnez des étoiles ou un cœur à vos lectures pour recevoir vos livres du mois"),
                             )
+                            is HomeHeroItem.Prompt -> ClosingTop(item.prompt.mark, item.prompt.badge, item.prompt.title, item.prompt.pitch)
                         }
                     }
                     Spacer(Modifier.weight(1f))
                     Row(Modifier.fillMaxWidth().height(buttonsHeight), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
                         when (item) {
                             is HomeHeroItem.Release -> {
-                                HeroProminentButton({ onOpenRelease(item.release) }, Modifier.weight(1f)) { HeroLabel("calendar", L("Voir la sortie")) }
-                                val isSeen = seen[item.release.id] == true
-                                val haptics = LocalHapticFeedback.current
-                                RoundGlass(if (isSeen) L("Vu") else L("Marquer comme vu"), tint = if (isSeen) Color.White else null, onClick = {
-                                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                HeroButton(L("Voir la sortie"), "calendar", Modifier.weight(1f)) { onOpenRelease(item.release) }
+                                // Seen, the eye on white; not seen, the eye slashed on glass. Pressed
+                                // again, the release comes back. It leaves the line once the reader
+                                // leaves the page, as a discovery turned down does.
+                                ActionToggle(
+                                    isOn = seen[item.release.id] == true,
+                                    symbol = "eye",
+                                    turnOnLabel = L("Marquer comme vu"),
+                                    turnOffLabel = L("Marquer comme non vu"),
+                                    gesture = IconGesture.BLINK,
+                                ) { isSeen ->
                                     if (isSeen) {
-                                        seen.remove(item.release.id)
-                                        onUnseeRelease(item.release)
-                                    } else {
                                         seen[item.release.id] = true
                                         onSeeRelease(item.release)
+                                    } else {
+                                        seen.remove(item.release.id)
+                                        onUnseeRelease(item.release)
                                     }
-                                }) {
-                                    Icon(Symbol(if (isSeen) "eye.slash.fill" else "eye.slash"), null, Modifier.size(20.dp), tint = if (isSeen) Color.Black else Color.White)
                                 }
                             }
                             is HomeHeroItem.Discovery -> {
-                                HeroProminentButton({ onOpen(item.suggestion) }, Modifier.weight(1f)) { HeroLabel("sparkles", L("Découvrir")) }
+                                HeroButton(L("Découvrir"), "sparkles", Modifier.weight(1f)) { onOpen(item.suggestion) }
                                 DiscoveryButtons(item.suggestion, choices, onChoice)
                             }
-                            is HomeHeroItem.MonthDone ->
-                                HeroProminentButton(onShowDiscover, Modifier.weight(1f)) { HeroLabel("sparkles", L("Explorer Découvrir")) }
                             is HomeHeroItem.NeedsRatings ->
-                                HeroProminentButton(onRate, Modifier.weight(1f)) { HeroLabel("star.fill", L("Noter mes lectures")) }
+                                HeroButton(L("Noter mes lectures"), "star.fill", Modifier.weight(1f), onClick = onRate)
+                            is HomeHeroItem.Prompt -> {
+                                HeroButton(item.prompt.action, null, Modifier.weight(1f)) { onPrompt(item.prompt) }
+                                // Turned down, the eye fills white; pressed again, the prompt comes
+                                // back. It leaves the line once the reader leaves the page.
+                                ActionToggle(
+                                    isOn = dismissedPrompts[item.prompt] == true,
+                                    symbol = "eye.slash",
+                                    offSymbol = "eye",
+                                    turnOnLabel = L("Pas intéressé"),
+                                    turnOffLabel = L("Plus intéressé"),
+                                    gesture = IconGesture.BLINK,
+                                ) { dismissed ->
+                                    if (dismissed) {
+                                        dismissedPrompts[item.prompt] = true
+                                        onDismissPrompt(item.prompt)
+                                    } else {
+                                        dismissedPrompts.remove(item.prompt)
+                                        onUndismissPrompt(item.prompt)
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -289,11 +346,10 @@ fun HomeHeroCarousel(
 
 }
 
+/** A hero page's first action: white, 50 high, as wide as the room beside the round buttons. */
 @Composable
-private fun HeroLabel(symbol: String, title: String) {
-    Icon(Symbol(symbol), null, Modifier.size(18.dp), tint = Color.Black)
-    Spacer(Modifier.width(6.dp))
-    Text(title, style = Shiori.type.headline, color = Color.Black, maxLines = 1)
+private fun HeroButton(title: String, symbol: String?, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    ActionButton(onClick, modifier, size = ActionSize.LARGE, spansWidth = true) { ActionLabel(title, symbol, ActionSize.LARGE.side) }
 }
 
 @Composable
@@ -321,14 +377,16 @@ private fun ReleaseTop(release: HomeRelease) {
 }
 
 @Composable
-private fun DiscoveryTop(suggestion: Suggestion, month: String) {
-    PageTop(suggestion.tile, MonthlyDiscoveries.badge(month), suggestion.title, suggestion.authors.joinToString(", "), suggestion.reason, null, false)
+private fun DiscoveryTop(suggestion: Suggestion, month: String, isTurnedDown: Boolean) {
+    PageTop(suggestion.tile, MonthlyDiscoveries.badge(month), suggestion.title, suggestion.authors.joinToString(", "), suggestion.reason, null, false, isTurnedDown)
 }
 
 @Composable
-private fun PageTop(cover: Book, badge: String, title: String, meta: String, reason: String?, countdown: String?, leavesRoom: Boolean) {
+private fun PageTop(cover: Book, badge: String, title: String, meta: String, reason: String?, countdown: String?, leavesRoom: Boolean, isTurnedDown: Boolean = false) {
+    // Turned down from the eye: black and white, as on its page.
+    val saturation by animateFloatAsState(if (isTurnedDown) 0f else 1f, tween(600), label = "coverTurnedDown")
     Row(horizontalArrangement = Arrangement.spacedBy(18.dp), verticalAlignment = Alignment.Top) {
-        BookCover(cover, coverWidth, Modifier.shadow(18.dp, RoundedCornerShape(3.dp)), showsFormatBadge = false, isBound = true)
+        BookCover(cover, coverWidth, Modifier.shadow(18.dp, RoundedCornerShape(3.dp)).saturation(saturation), showsFormatBadge = false, isBound = true)
         Column(Modifier.weight(1f).padding(end = if (leavesRoom) 58.dp else 0.dp)) {
             Badge(badge)
             Text(title, style = Shiori.type.title2.copy(fontWeight = FontWeight.Bold), color = Color.White, maxLines = 3, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 10.dp))
@@ -350,20 +408,31 @@ private fun PageTop(cover: Book, badge: String, title: String, meta: String, rea
 }
 
 @Composable
-private fun ClosingTop(month: String, symbol: String, title: String, line: String) {
+private fun ClosingTop(mark: StackMark, badge: String, title: String, line: String) {
     Row(horizontalArrangement = Arrangement.spacedBy(18.dp), verticalAlignment = Alignment.Top) {
-        DoneStack(symbol, Modifier.size(coverWidth, coverHeight))
+        DoneStack(mark, Modifier.size(coverWidth, coverHeight))
         Column(Modifier.weight(1f)) {
-            Badge(MonthlyDiscoveries.title(month))
+            Badge(badge)
             Text(title, style = Shiori.type.title2.copy(fontWeight = FontWeight.Bold), color = Color.White, modifier = Modifier.padding(top = 10.dp))
             Text(line, style = Shiori.type.subheadline, color = Color.White.copy(alpha = 0.75f), modifier = Modifier.padding(top = 8.dp))
         }
     }
 }
 
+/** What the front cover of a `DoneStack` carries: a symbol, or a service's logo. */
+sealed interface StackMark {
+    data class Symbol(val name: String) : StackMark
+    data class Logo(@DrawableRes val drawable: Int) : StackMark
+}
+
 /** Three blank covers fanned out, a symbol on the front one. */
 @Composable
-fun DoneStack(symbol: String, modifier: Modifier = Modifier, scale: Float = 0.84f, coverSize: Pair<Dp, Dp> = 130.dp to 192.dp) {
+fun DoneStack(symbol: String, modifier: Modifier = Modifier, scale: Float = 0.84f, coverSize: Pair<Dp, Dp> = 130.dp to 192.dp) =
+    DoneStack(StackMark.Symbol(symbol), modifier, scale, coverSize)
+
+/** Three blank covers fanned out, a symbol or a logo on the front one. */
+@Composable
+fun DoneStack(mark: StackMark, modifier: Modifier = Modifier, scale: Float = 0.84f, coverSize: Pair<Dp, Dp> = 130.dp to 192.dp) {
     val shape = RoundedCornerShape(10.dp)
     @Composable
     fun Blank(modifier: Modifier) {
@@ -378,9 +447,64 @@ fun DoneStack(symbol: String, modifier: Modifier = Modifier, scale: Float = 0.84
         Blank(Modifier.offset(x = 14.dp * scale, y = 6.dp * scale).rotate(6f))
         Box(contentAlignment = Alignment.Center) {
             Blank(Modifier.shadow(18.dp, shape))
-            Icon(Symbol(symbol), null, Modifier.size(40.dp * scale), tint = Color.White.copy(alpha = 0.92f))
+            when (mark) {
+                is StackMark.Symbol -> Icon(Symbol(mark.name), null, Modifier.size(40.dp * scale), tint = Color.White.copy(alpha = 0.92f))
+                is StackMark.Logo -> Icon(painterResource(mark.drawable), null, Modifier.size(60.dp * scale), tint = Color.White.copy(alpha = 0.92f))
+            }
         }
     }
+}
+
+private val HomePrompt.mark: StackMark
+    get() = when (this) {
+        HomePrompt.AUDIBLE -> StackMark.Logo(R.drawable.logo_audible)
+        HomePrompt.KINDLE -> StackMark.Logo(R.drawable.logo_kindle)
+        HomePrompt.FRIENDS -> StackMark.Symbol("person.badge.plus")
+    }
+
+private val HomePrompt.badge: String
+    get() = when (this) {
+        HomePrompt.AUDIBLE -> "Audible"
+        HomePrompt.KINDLE -> "Kindle"
+        HomePrompt.FRIENDS -> L("Amis")
+    }
+
+private val HomePrompt.title: String
+    get() = when (this) {
+        HomePrompt.AUDIBLE -> L("Vos livres audio, ici")
+        HomePrompt.KINDLE -> L("Votre Kindle, rangé")
+        HomePrompt.FRIENDS -> L("Lisez avec vos amis")
+    }
+
+private val HomePrompt.pitch: String
+    get() = when (this) {
+        HomePrompt.AUDIBLE -> L("Connectez Audible : vos écoutes rejoignent la bibliothèque avec leur série et l'avancement, sans rien scanner.")
+        HomePrompt.KINDLE -> L("Connectez Kindle : vos ebooks arrivent avec couverture et série, et ceux que vous avez finis sont marqués lus.")
+        HomePrompt.FRIENDS -> L("Invitez un ami : voyez ce qu'il lit et ses coups de cœur, et piochez dans sa bibliothèque.")
+    }
+
+private val HomePrompt.action: String
+    get() = when (this) {
+        HomePrompt.AUDIBLE -> L("Connecter Audible")
+        HomePrompt.KINDLE -> L("Connecter Kindle")
+        HomePrompt.FRIENDS -> L("Inviter")
+    }
+
+@Preview(showBackground = true)
+@Composable
+private fun HomeHeroCarouselPromptsPreview() = PreviewSurface {
+    HomeHeroCarousel(
+        items = HomePrompt.entries.map(HomeHeroItem::Prompt),
+        onOpenRelease = {},
+        onOpen = {},
+        onChoice = { _, _ -> true },
+        choices = androidx.compose.runtime.remember { com.polyforms.shiori.features.discover.components.organisms.DiscoveryChoices() },
+        onSeeRelease = {},
+        onUnseeRelease = {},
+        onRate = {},
+        backdropCover = null,
+        discoveryMonth = DebugFixtures.discoveries.month,
+    )
 }
 
 @Preview(showBackground = true)
@@ -397,7 +521,6 @@ private fun HomeHeroCarouselPreview() = PreviewSurface {
         choices = androidx.compose.runtime.remember { com.polyforms.shiori.features.discover.components.organisms.DiscoveryChoices() },
         onSeeRelease = {},
         onUnseeRelease = {},
-        onShowDiscover = {},
         onRate = {},
         backdropCover = null,
         discoveryMonth = DebugFixtures.discoveries.month,

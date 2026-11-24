@@ -19,6 +19,9 @@ import com.polyforms.shiori.shared.ReadingStatus
 /** What the Home asks of the server. */
 interface HomeClient {
     suspend fun dashboard(): Dashboard
+
+    /** The dashboard, the discoveries and the hero's prompts in one request; null asks them apart. */
+    suspend fun opening(): HomeOpening? = null
     suspend fun discoveries(): MonthlyDiscoveries
     suspend fun lookUpDiscoveries(): MonthlyDiscoveries
     suspend fun discovery(format: ReleaseFormat): DiscoveryPage
@@ -28,16 +31,22 @@ interface HomeClient {
     suspend fun reconsiderSuggestion(id: String)
     suspend fun genreInsights(): GenreInsights
     suspend fun addBook(draft: BookDraft): String
-    suspend fun wish(draft: BookDraft)
+    /** Answers the wish's id, which "Envies" on the discovery's page takes back. */
+    suspend fun wish(draft: BookDraft): String
+    suspend fun removeWish(wishId: String) {}
     suspend fun deleteBook(id: String)
-    suspend fun awaitEdition(draft: BookDraft, format: ReleaseFormat)
+    suspend fun awaitEdition(draft: BookDraft, format: ReleaseFormat): String
     suspend fun finish(bookId: String)
     suspend fun recordPage(bookId: String, page: Int?, status: ReadingStatus?)
     suspend fun rate(bookId: String, stars: Double)
 
+    /** A hero prompt turned down from its closed eye, or taken back. */
+    suspend fun dismissPrompt(prompt: HomePrompt, dismissed: Boolean) {}
+
     companion object {
         val live: HomeClient = object : HomeClient {
             override suspend fun dashboard() = HomeApi.dashboard()
+            override suspend fun opening() = HomeApi.opening()
             override suspend fun discoveries() = SuggestionsApi.monthly(ReleaseFormat.BOOK, lookUp = false)
             override suspend fun lookUpDiscoveries() = SuggestionsApi.monthly(ReleaseFormat.BOOK, lookUp = true)
             override suspend fun discovery(format: ReleaseFormat) = DiscoverApi.discovery(format)
@@ -47,13 +56,10 @@ interface HomeClient {
             override suspend fun reconsiderSuggestion(id: String) = SuggestionsApi.reconsider(id)
             override suspend fun genreInsights() = HomeApi.genreInsights()
             override suspend fun addBook(draft: BookDraft) = BookAddition.add(draft, source = AnalyticsEvent.BookSource.DISCOVER).id
-            override suspend fun wish(draft: BookDraft) {
-                WishlistApi.wish(draft, Wish.Origin.DISCOVERY)
-            }
+            override suspend fun wish(draft: BookDraft) = WishlistApi.wish(draft, Wish.Origin.DISCOVERY).id
+            override suspend fun removeWish(wishId: String) = WishlistApi.remove(wishId)
             override suspend fun deleteBook(id: String) = BookApi.delete(id)
-            override suspend fun awaitEdition(draft: BookDraft, format: ReleaseFormat) {
-                AwaitedApi.awaitScanned(draft, format)
-            }
+            override suspend fun awaitEdition(draft: BookDraft, format: ReleaseFormat) = AwaitedApi.awaitScanned(draft, format).id
             override suspend fun finish(bookId: String) {
                 BookApi.setStatus(bookId, ReadingStatus.READ)
             }
@@ -64,6 +70,7 @@ interface HomeClient {
             override suspend fun rate(bookId: String, stars: Double) {
                 BookApi.rate(bookId, stars)
             }
+            override suspend fun dismissPrompt(prompt: HomePrompt, dismissed: Boolean) = HomeApi.dismiss(prompt, dismissed)
         }
     }
 }

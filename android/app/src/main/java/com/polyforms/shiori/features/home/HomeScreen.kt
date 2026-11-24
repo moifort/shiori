@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -14,6 +15,13 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import com.polyforms.shiori.TabSelection
+import com.polyforms.shiori.features.friends.FriendsClient
+import com.polyforms.shiori.features.home.components.organisms.ListenButton
+import com.polyforms.shiori.shared.isCancellation
+import com.polyforms.shiori.shared.platform.shareText
+import com.polyforms.shiori.shared.reportError
 import com.polyforms.shiori.LocalAppRouter
 import com.polyforms.shiori.features.admin.AdminScreen
 import com.polyforms.shiori.features.book.BookScreen
@@ -50,7 +58,16 @@ private sealed interface HomeSheet {
 
 /** The Home tab, connected: the dashboard and every page it opens. */
 @Composable
-fun HomeScreen(client: HomeClient = HomeClient.live) {
+fun HomeScreen(
+    client: HomeClient = HomeClient.live,
+    friendsClient: FriendsClient = FriendsClient.live,
+    /** The play button of each audiobook open, once the Audible player is built; null for none. */
+    listeningState: (Book) -> ListenButton? = { null },
+    /** Whether an Audible title is kept on the phone, for its card's tag. */
+    isDownloaded: (Book) -> Boolean = { false },
+    /** The play button pressed, in the state it showed: the player's to answer. */
+    onListen: (Book, ListenButton) -> Unit = { _, _ -> },
+) {
     val scope = rememberCoroutineScope()
     val viewModel = remember { HomeViewModel(client, scope) }
     val navigator = currentNavigator
@@ -68,12 +85,30 @@ fun HomeScreen(client: HomeClient = HomeClient.live) {
         viewModel.loadOnAppear()
     }
     LaunchedEffect(Unit) { DataChanges.notices.collect { viewModel.load() } }
+    // Left for another tab or a page pushed over it: the discoveries taken and the releases seen
+    // from the carousel leave the line while out of sight.
+    val inSight = router.selectedTab == TabSelection.HOME && navigator.depth == 0
+    LaunchedEffect(inSight) { if (!inSight) viewModel.releaseTaken() }
+    val context = LocalContext.current
+
+    /** The hero's "Inviter": the link straight into the share sheet, as the Amis tab sends it. */
+    fun invite() = scope.launch {
+        try {
+            val invitation = friendsClient.invite()
+            context.shareText(L("Je t'ouvre ma bibliothèque sur Shiori") + "\n" + invitation.url)
+        } catch (error: Exception) {
+            if (!isCancellation(error)) viewModel.actionError = reportError(error)
+        }
+    }
 
     fun connect(source: ImportSource) = navigator.push {
         when (source) {
             ImportSource.AUDIBLE -> AudibleImportScreen { navigator.pop() }
             ImportSource.KINDLE -> KindleImportScreen { navigator.pop() }
         }
+        // The import lands through the change notice, as every write does; a connection alone
+        // does not, and takes its prompt off the hero once the page is left.
+        DisposableEffect(Unit) { onDispose { scope.launch { viewModel.load() } } }
     }
 
     Box(Modifier.fillMaxSize().background(Shiori.colors.groupedBackground)) {
@@ -88,6 +123,9 @@ fun HomeScreen(client: HomeClient = HomeClient.live) {
                 viewModel.isSearchingDiscoveries,
                 viewModel.discoveryChoices,
                 viewModel::choose,
+                prompt = viewModel.shownPrompt,
+                listeningState = listeningState,
+                isDownloaded = isDownloaded,
                 onRefresh = viewModel::load,
                 header = {
                     HomeHeader(account.isAdmin, avatar = {
@@ -107,8 +145,7 @@ fun HomeScreen(client: HomeClient = HomeClient.live) {
                     is HomeAction.RecordProgress -> sheet = HomeSheet.Progress(action.book)
                     HomeAction.Scan -> router.showAddSheet = true
                     is HomeAction.ConnectSource -> connect(action.source)
-                    HomeAction.ShowShared -> router.showShared = true
-                    HomeAction.ShowDiscover -> router.showDiscover()
+                    is HomeAction.Listen -> onListen(action.book, action.state)
                     is HomeAction.OpenRelease -> when (val release = action.release) {
                         is HomeRelease.Volume -> navigator.push { AnnouncedVolumeScreen(release.release.saga, release.release.volume) }
                         is HomeRelease.Awaited -> navigator.push {
@@ -120,6 +157,13 @@ fun HomeScreen(client: HomeClient = HomeClient.live) {
                     }
                     is HomeAction.SeeRelease -> viewModel.see(action.release)
                     is HomeAction.UnseeRelease -> viewModel.unsee(action.release)
+                    is HomeAction.OpenPrompt -> when (action.prompt) {
+                        HomePrompt.AUDIBLE -> connect(ImportSource.AUDIBLE)
+                        HomePrompt.KINDLE -> connect(ImportSource.KINDLE)
+                        HomePrompt.FRIENDS -> invite()
+                    }
+                    is HomeAction.DismissPrompt -> viewModel.dismiss(action.prompt)
+                    is HomeAction.UndismissPrompt -> viewModel.undismiss(action.prompt)
                 }
             }
             error != null -> Box(Modifier.fillMaxSize().statusBarsPadding(), contentAlignment = Alignment.Center) {

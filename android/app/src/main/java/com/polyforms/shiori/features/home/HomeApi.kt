@@ -1,11 +1,20 @@
 package com.polyforms.shiori.features.home
 
+import com.polyforms.shiori.features.discover.MonthlyDiscoveries
+import com.polyforms.shiori.features.discover.asDomain
 import com.polyforms.shiori.graphql.DashboardQuery
+import com.polyforms.shiori.graphql.DismissHomePromptMutation
+import com.polyforms.shiori.graphql.HomeOpeningQuery
+import com.polyforms.shiori.graphql.fragment.DashboardFields
+import com.polyforms.shiori.graphql.fragment.MonthlyDiscoveriesFields
+import com.polyforms.shiori.graphql.type.DiscoveriesStatus
+import com.polyforms.shiori.graphql.type.HomePrompt as GHomePrompt
 import com.polyforms.shiori.graphql.GenreInsightsQuery
 import com.polyforms.shiori.graphql.fragment.DashboardBookCard
 import com.polyforms.shiori.graphql.fragment.TastePlace
 import com.polyforms.shiori.shared.Book
 import com.polyforms.shiori.shared.GraphQLClient
+import com.polyforms.shiori.shared.L
 import com.polyforms.shiori.shared.ReadingStatus
 import com.polyforms.shiori.shared.SeriesMembership
 import com.polyforms.shiori.shared.Showcase
@@ -17,38 +26,32 @@ import kotlin.math.roundToInt
 object HomeApi {
     suspend fun dashboard(): Dashboard {
         if (Showcase.isOn) return HomeFixtures.dashboard
-        val d = GraphQLClient.fetch(DashboardQuery(ZoneId.systemDefault().id)).dashboard.dashboardFields
-        return Dashboard(
-            currentYear = d.currentYear,
-            booksPerYear = d.booksPerYear.map { Dashboard.YearCount(it.year, it.count) },
-            pagesPerMonth = d.pagesPerMonth.map { Dashboard.MonthPages(it.month, it.pages) },
-            hoursPerMonth = d.hoursPerMonth.map { Dashboard.MonthHours(it.month, it.hours) },
-            reading = d.reading.map { it.dashboardBookCard.asBook(ReadingStatus.READING) },
-            toRead = d.toRead.map { it.dashboardBookCard.asBook(ReadingStatus.TO_READ) },
-            lastFinished = d.lastFinished?.dashboardBookCard?.asBook(ReadingStatus.READ),
-            toReadCount = d.toReadCount,
-            readCount = d.readCount,
-            pagesRead = d.pagesRead,
-            hoursListened = d.hoursListened,
-            genres = d.genres.map { Dashboard.GenreSlice(it.genre?.asDomain, it.count) },
-            series = d.series.map {
-                Dashboard.SeriesProgress(
-                    id = it.id,
-                    name = it.name,
-                    isAudio = it.audio,
-                    language = it.language?.asDomain,
-                    readCount = it.readCount,
-                    totalCount = it.totalCount,
-                    rating = it.rating?.let { r -> (r * 2).roundToInt() / 2.0 },
-                    favorite = it.favorite,
-                    coverURL = it.coverUrl,
-                )
-            },
-            favoriteCount = d.favoriteCount,
-            hasAudiobooks = d.hasAudiobooks,
-            hasPrintedBooks = d.hasPrintedBooks,
-            libraryIsEmpty = d.libraryIsEmpty,
+        return GraphQLClient.fetch(DashboardQuery(ZoneId.systemDefault().id)).dashboard.dashboardFields.asDashboard
+    }
+
+    /**
+     * The dashboard, the month's discoveries and the hero's prompts in one request: the server
+     * reads the library once for all of them.
+     */
+    suspend fun opening(): HomeOpening {
+        if (Showcase.isOn) return HomeOpening(HomeFixtures.dashboard, MonthlyDiscoveries("2026-10", suggestions = emptyList()), HomeFixtures.prompts)
+        val data = GraphQLClient.fetch(HomeOpeningQuery(ZoneId.systemDefault().id))
+        return HomeOpening(
+            dashboard = data.dashboard.dashboardFields.asDashboard,
+            discoveries = data.monthlyDiscoveries.monthlyDiscoveriesFields.asDiscoveries,
+            // A prompt a newer server names and this build does not know is left out.
+            prompts = data.me.homePrompts.mapNotNull { prompt -> HomePrompt.entries.firstOrNull { it.name == prompt.rawValue } },
         )
+    }
+
+    /** A prompt turned down, or taken back: kept on the account, so it holds on every device. */
+    suspend fun dismiss(prompt: HomePrompt, dismissed: Boolean) {
+        val value = when (prompt) {
+            HomePrompt.AUDIBLE -> GHomePrompt.AUDIBLE
+            HomePrompt.KINDLE -> GHomePrompt.KINDLE
+            HomePrompt.FRIENDS -> GHomePrompt.FRIENDS
+        }
+        GraphQLClient.perform(DismissHomePromptMutation(value, dismissed), changesLibrary = false)
     }
 
     suspend fun genreInsights(): GenreInsights {
@@ -69,6 +72,51 @@ object HomeApi {
     }
 }
 
+private val DashboardFields.asDashboard: Dashboard
+    get() = Dashboard(
+        currentYear = currentYear,
+        booksPerYear = booksPerYear.map { Dashboard.YearCount(it.year, it.count) },
+        pagesPerMonth = pagesPerMonth.map { Dashboard.MonthPages(it.month, it.pages) },
+        hoursPerMonth = hoursPerMonth.map { Dashboard.MonthHours(it.month, it.hours) },
+        reading = reading.map { it.dashboardBookCard.asBook(ReadingStatus.READING) },
+        toRead = toRead.map { it.dashboardBookCard.asBook(ReadingStatus.TO_READ) },
+        lastFinished = lastFinished?.dashboardBookCard?.asBook(ReadingStatus.READ),
+        toReadCount = toReadCount,
+        readCount = readCount,
+        pagesRead = pagesRead,
+        hoursListened = hoursListened,
+        genres = genres.map { Dashboard.GenreSlice(it.genre?.asDomain, it.count) },
+        series = series.map {
+            Dashboard.SeriesProgress(
+                id = it.id,
+                name = it.name,
+                isAudio = it.audio,
+                language = it.language?.asDomain,
+                readCount = it.readCount,
+                totalCount = it.totalCount,
+                rating = it.rating?.let { r -> (r * 2).roundToInt() / 2.0 },
+                favorite = it.favorite,
+                coverURL = it.coverUrl,
+            )
+        },
+        favoriteCount = favoriteCount,
+        hasAudiobooks = hasAudiobooks,
+        hasPrintedBooks = hasPrintedBooks,
+        libraryIsEmpty = libraryIsEmpty,
+    )
+
+private val MonthlyDiscoveriesFields.asDiscoveries: MonthlyDiscoveries
+    get() = MonthlyDiscoveries(
+        month = month,
+        status = when (status) {
+            DiscoveriesStatus.READY -> MonthlyDiscoveries.Status.READY
+            DiscoveriesStatus.SEARCHING -> MonthlyDiscoveries.Status.SEARCHING
+            else -> MonthlyDiscoveries.Status.NONE
+        },
+        suggestions = suggestions.map { it.suggestionFields.asDomain },
+        needsRatings = needsRatings,
+    )
+
 private val TastePlace.asTaste: GenreInsights.Taste get() = GenreInsights.Taste(genre.asDomain, subgenre, readCount, averageRating)
 
 private fun DashboardBookCard.asBook(status: ReadingStatus) = Book(
@@ -80,6 +128,7 @@ private fun DashboardBookCard.asBook(status: ReadingStatus) = Book(
     currentPage = currentPage,
     durationMinutes = durationMinutes,
     listeningProgress = listeningProgress?.toInt(),
+    audibleAsin = audibleAsin,
     series = series?.let { SeriesMembership(it.id, it.name, it.volume, it.kind.asDomain) },
     coverURL = coverUrl,
     status = status,
@@ -104,6 +153,25 @@ object HomeFixtures {
         series = emptyList(),
         favoriteCount = 15,
         libraryIsEmpty = false,
+    )
+
+    val prompts = listOf(HomePrompt.AUDIBLE, HomePrompt.KINDLE, HomePrompt.FRIENDS)
+
+    /** An Audible audiobook under way, as the player draws its button. */
+    val listenButton = com.polyforms.shiori.features.home.components.organisms.ListenButton(L("Reprendre"), "play.fill")
+
+    /** A library with nothing on it yet: the empty hero and the sources to connect. */
+    val emptyDashboard = Dashboard(
+        currentYear = 2026,
+        booksPerYear = emptyList(),
+        pagesPerMonth = emptyList(),
+        hoursPerMonth = emptyList(),
+        reading = emptyList(),
+        lastFinished = null,
+        toReadCount = 0,
+        genres = emptyList(),
+        series = emptyList(),
+        libraryIsEmpty = true,
     )
 
     val genreInsights = GenreInsights(0, emptyList(), emptyList(), emptyList(), null, null, null, null, null, emptyList())

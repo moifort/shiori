@@ -57,7 +57,11 @@ import com.polyforms.shiori.shared.book.CoverBackdrop
 import com.polyforms.shiori.shared.book.ListeningProgressLine
 import com.polyforms.shiori.shared.book.ReadingPageLine
 import com.polyforms.shiori.shared.components.atoms.CoverTags
-import com.polyforms.shiori.shared.components.atoms.HeroProminentButton
+import com.polyforms.shiori.shared.components.atoms.DownloadedTag
+import com.polyforms.shiori.shared.components.styles.ActionButton
+import com.polyforms.shiori.shared.components.styles.ActionFill
+import com.polyforms.shiori.shared.components.styles.ActionLabel
+import com.polyforms.shiori.shared.components.styles.ActionSize
 import com.polyforms.shiori.shared.components.molecules.Figure
 import com.polyforms.shiori.shared.components.molecules.Figures
 import com.polyforms.shiori.shared.components.molecules.FiguresLine
@@ -95,30 +99,23 @@ fun HomeFiguresLine(
     Box(modifier.plainClickable(onClick = onTap)) { FiguresLine(items) }
 }
 
-/** A white capsule button of a card over a cover: the main action. */
+/** A white capsule button of a card over a cover: the main action, small. */
 @Composable
 fun CardProminentButton(title: String, symbol: String?, onClick: () -> Unit) {
-    Row(
-        Modifier.height(30.dp).clip(CircleShape).background(Color.White).plainClickable(onClick = onClick).padding(horizontal = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(5.dp),
-    ) {
-        if (symbol != null) Icon(Symbol(symbol), null, Modifier.size(13.dp), tint = Color.Black)
-        Text(title, style = Shiori.type.caption.copy(fontWeight = FontWeight.SemiBold), color = Color.Black, maxLines = 1)
-    }
+    ActionButton(onClick, size = ActionSize.SMALL) { ActionLabel(title, symbol, ActionSize.SMALL.side) }
 }
 
-/** A glass capsule button of a card over a cover. */
+/** A glass capsule button of a card over a cover, small. */
 @Composable
 fun CardGlassButton(title: String, onClick: () -> Unit) {
-    Box(
-        Modifier.height(30.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.16f)).border(0.5.dp, Color.White.copy(alpha = 0.28f), CircleShape)
-            .plainClickable(onClick = onClick).padding(horizontal = 12.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(title, style = Shiori.type.caption.copy(fontWeight = FontWeight.SemiBold), color = Color.White, maxLines = 1)
-    }
+    ActionButton(onClick, fill = ActionFill.GLASS, size = ActionSize.SMALL) { ActionLabel(title, null, ActionSize.SMALL.side) }
 }
+
+/**
+ * The play button of an Audible audiobook's card, as the player describes it: "Écouter",
+ * "Reprendre", "Pause" or "Réécouter", with its symbol. The player (Lot 7) maps its state onto it.
+ */
+data class ListenButton(val title: String, val symbol: String)
 
 /** A book under way, as the Home's reading rail shows it: its cover's wash, where the reader is. */
 @Composable
@@ -130,6 +127,11 @@ fun ReadingFeatureCard(
     onFinish: () -> Unit,
     onProgress: () -> Unit,
     onOpenSeries: (() -> Unit)?,
+    /** The play button of an Audible audiobook, once the player is built: it takes the place of "Marquer lu". */
+    listening: ListenButton? = null,
+    onListen: () -> Unit = {},
+    /** An Audible title kept on the phone: a download symbol tagged after "Audio". */
+    isDownloaded: Boolean = false,
 ) {
     val series = book.series
     val overline = when {
@@ -158,6 +160,7 @@ fun ReadingFeatureCard(
                             modifier = Modifier.weight(1f, fill = false),
                         )
                         CoverTags(book)
+                        if (isDownloaded) DownloadedTag()
                     }
                     Box(Modifier.padding(top = 8.dp)) {
                         val progress = book.listeningProgress
@@ -171,7 +174,9 @@ fun ReadingFeatureCard(
                 }
                 Spacer(Modifier.height(12.dp).weight(1f))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    if (book.tracksPages) {
+                    if (listening != null) {
+                        CardProminentButton(listening.title, listening.symbol, onListen)
+                    } else if (book.tracksPages) {
                         CardProminentButton(L("Progression"), "bookmark.fill", onProgress)
                     } else {
                         CardProminentButton(L("Marquer lu"), "checkmark", onFinish)
@@ -211,10 +216,8 @@ fun HomeEmptyHero(onScan: () -> Unit) {
                 modifier = Modifier.padding(top = 24.dp),
             )
             Text(L("Une photo de la couverture suffit"), style = Shiori.type.subheadline, color = Color.White.copy(alpha = 0.85f), modifier = Modifier.padding(top = 4.dp))
-            HeroProminentButton(onScan, Modifier.padding(top = 20.dp).width(220.dp)) {
-                Icon(Symbol("camera.fill"), null, Modifier.size(18.dp), tint = Color.Black)
-                Spacer(Modifier.width(6.dp))
-                Text(L("Scanner un livre"), style = Shiori.type.headline, color = Color.Black)
+            ActionButton(onScan, Modifier.padding(top = 20.dp).width(220.dp), size = ActionSize.EXTRA_LARGE) {
+                ActionLabel(L("Scanner un livre"), "camera.fill", ActionSize.LARGE.side)
             }
         }
     }
@@ -293,12 +296,13 @@ fun ImportSourcesRow(onConnect: (ImportSource) -> Unit) {
             val tint = if (source == ImportSource.AUDIBLE) Color(0.97f, 0.6f, 0.11f) else Color(0.34f, 0.71f, 0.91f)
             StartCard(
                 {
-                    Image(
-                        painterResource(if (source == ImportSource.AUDIBLE) R.drawable.audible_app else R.drawable.kindle_app),
-                        null,
-                        Modifier.fillMaxSize().shadow(4.dp, RoundedCornerShape(10.dp)).clip(RoundedCornerShape(10.dp)),
-                        contentScale = ContentScale.Crop,
-                    )
+                    // The service's logo in the card's colour, on a glass tile.
+                    Box(
+                        Modifier.fillMaxSize().background(Color.White.copy(alpha = 0.1f), RoundedCornerShape(12.dp)).border(1.dp, Color.White.copy(alpha = 0.14f), RoundedCornerShape(12.dp)),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(painterResource(if (source == ImportSource.AUDIBLE) R.drawable.logo_audible else R.drawable.logo_kindle), null, Modifier.size(26.dp), tint = tint)
+                    }
                 },
                 source.label,
                 if (source == ImportSource.AUDIBLE) L("Vos livres audio, avec leur avancement.") else L("Vos livres lus et en cours, marqués comme tels."),
@@ -309,40 +313,23 @@ fun ImportSourcesRow(onConnect: (ImportSource) -> Unit) {
     }
 }
 
-/** The empty Home's invitation to share a library with a friend. */
-@Composable
-fun FriendsInviteCard(onInvite: () -> Unit, onEnterInvitation: () -> Unit) {
-    val tint = Color(0.3f, 0.6f, 0.35f)
-    StartCard(
-        {
-            Box(
-                Modifier.fillMaxSize().background(Color.White.copy(alpha = 0.1f), RoundedCornerShape(12.dp)).border(1.dp, Color.White.copy(alpha = 0.14f), RoundedCornerShape(12.dp)),
-                contentAlignment = Alignment.Center,
-            ) { Icon(Symbol("person.2.fill"), null, Modifier.size(22.dp), tint = tint) }
-        },
-        L("Invitez un ami"),
-        L("Vous verrez sa bibliothèque et il verra la vôtre."),
-        tint,
-        Modifier.fillMaxWidth(),
-    ) {
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            CardProminentButton(L("Inviter un ami"), null, onInvite)
-            CardGlassButton(L("J'ai reçu une invitation"), onEnterInvitation)
-        }
-    }
-}
-
 @Preview(showBackground = true)
 @Composable
 private fun HomeCardsPreview() = PreviewSurface {
     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         HomeFiguresLine(2026, 18, 15, 27, 41_230, 212, showsPagesAtZero = false) {}
         ReadingFeatureCard(DebugFixtures.reading[0], "Commencé il y a 12 jours", onOpen = {}, onFinish = {}, onProgress = {}, onOpenSeries = {})
+        ReadingFeatureCard(
+            DebugFixtures.reading[0].copy(format = com.polyforms.shiori.shared.BookFormat.AUDIOBOOK, durationMinutes = 1310, listeningProgress = 46, audibleAsin = "B0"),
+            "depuis 2j",
+            onOpen = {}, onFinish = {}, onProgress = {}, onOpenSeries = {},
+            listening = ListenButton("Reprendre", "play.fill"),
+            isDownloaded = true,
+        )
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             CardProminentButton("Terminé", "checkmark") {}
             CardGlassButton("Page") {}
         }
-        FriendsInviteCard(onInvite = {}, onEnterInvitation = {})
         ImportSourcesRow {}
     }
 }

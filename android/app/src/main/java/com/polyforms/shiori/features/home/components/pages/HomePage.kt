@@ -38,7 +38,12 @@ import com.polyforms.shiori.features.discover.components.organisms.DiscoveryChoi
 import com.polyforms.shiori.features.discover.components.organisms.DiscoveryChoices
 import com.polyforms.shiori.features.home.Dashboard
 import com.polyforms.shiori.features.home.HomeRelease
-import com.polyforms.shiori.features.home.components.organisms.FriendsInviteCard
+import com.polyforms.shiori.features.home.HomePrompt
+import com.polyforms.shiori.features.home.components.organisms.BACKDROP_RISE
+import com.polyforms.shiori.features.home.components.organisms.ListenButton
+import com.polyforms.shiori.shared.book.CoverBackdrop
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.requiredHeight
 import com.polyforms.shiori.features.home.components.organisms.HomeEmptyHero
 import com.polyforms.shiori.features.home.components.organisms.HomeFiguresLine
 import com.polyforms.shiori.features.home.components.organisms.HomeHeroCarousel
@@ -83,14 +88,19 @@ sealed interface HomeAction {
     data object ShowStatistics : HomeAction
     data class FinishBook(val book: Book) : HomeAction
     data class RecordProgress(val book: Book) : HomeAction
+    /** The play button of an Audible audiobook's card, in the state it showed. */
+    data class Listen(val book: Book, val state: ListenButton) : HomeAction
     data object Scan : HomeAction
     data class ConnectSource(val source: ImportSource) : HomeAction
-    data object ShowShared : HomeAction
-    data object ShowDiscover : HomeAction
     data class OpenRelease(val release: HomeRelease) : HomeAction
     data class OpenDiscovery(val suggestion: Suggestion) : HomeAction
     data class SeeRelease(val release: HomeRelease) : HomeAction
     data class UnseeRelease(val release: HomeRelease) : HomeAction
+    /** A hero prompt's button: the connection or the invitation. */
+    data class OpenPrompt(val prompt: HomePrompt) : HomeAction
+    /** A hero prompt turned down, or taken back. */
+    data class DismissPrompt(val prompt: HomePrompt) : HomeAction
+    data class UndismissPrompt(val prompt: HomePrompt) : HomeAction
 }
 
 object HomeCaptions {
@@ -115,15 +125,31 @@ object HomeCaptions {
     }
 }
 
-fun homeHeroItems(releases: List<HomeRelease>, seen: Set<String>, discoveries: MonthlyDiscoveries?): List<HomeHeroItem> =
-    HomeHeroItem.items(releases, discoveries?.shownOnHome ?: emptyList(), discoveries?.doneMonth(), discoveries?.needsRatingsMonth, seen)
+fun homeHeroItems(releases: List<HomeRelease>, seen: Set<String>, discoveries: MonthlyDiscoveries?, prompt: HomePrompt? = null): List<HomeHeroItem> =
+    HomeHeroItem.items(releases, discoveries?.shownOnHome ?: emptyList(), discoveries?.needsRatingsMonth, seen, prompt)
 
-/** Whether the Home opens on its full-bleed hero rather than on its figures. */
-fun opensOnHero(dashboard: Dashboard?, releases: List<HomeRelease>, seen: Set<String>, discoveries: MonthlyDiscoveries?, isSearching: Boolean): Boolean {
+/**
+ * Whether the Home opens on a hero that runs up under the bar: the carousel, the empty shelf's
+ * prompt before the first book, the wait on the month's selection, or the bare backdrop once the
+ * month's discoveries are all answered.
+ */
+fun opensOnHero(
+    dashboard: Dashboard?,
+    releases: List<HomeRelease>,
+    seen: Set<String>,
+    discoveries: MonthlyDiscoveries?,
+    isSearching: Boolean,
+    prompt: HomePrompt? = null,
+): Boolean {
     dashboard ?: return false
     if (dashboard.libraryIsEmpty) return true
-    return homeHeroItems(releases, seen, discoveries).isNotEmpty() || isSearching
+    return homeHeroItems(releases, seen, discoveries, prompt).isNotEmpty() || isSearching || discoveries?.doneMonth() != null
 }
+
+/** How far down the bare backdrop reaches: the head and the figures. */
+private val bareBackdropHeight = 250.dp
+/** How tall its fade into the page is, down to the first row. */
+private val bareFadeHeight = 110.dp
 
 /** The Home on a phone: the hero, the figures, then the reading, the pile, the releases, the sagas. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -138,11 +164,20 @@ fun HomePage(
     onDiscoveryChoice: suspend (Suggestion, DiscoveryChoice) -> Boolean,
     onRefresh: suspend () -> Unit,
     header: @Composable (onHero: Boolean) -> Unit,
+    /** The one thing the hero asks the reader to set up, after its pages. */
+    prompt: HomePrompt? = null,
+    /** The play button of each audiobook open, once the Audible player is built; null for a book that plays nothing. */
+    listeningState: (Book) -> ListenButton? = { null },
+    /** Whether an Audible title is kept on the phone, for its card's tag. */
+    isDownloaded: (Book) -> Boolean = { false },
     onAction: (HomeAction) -> Unit,
 ) {
     val scope = rememberCoroutineScope()
-    val items = homeHeroItems(releases, seenReleases, discoveries)
-    val onHero = opensOnHero(dashboard, releases, seenReleases, discoveries, isSearchingDiscoveries)
+    val items = homeHeroItems(releases, seenReleases, discoveries, prompt)
+    val onHero = opensOnHero(dashboard, releases, seenReleases, discoveries, isSearchingDiscoveries, prompt)
+    // The month's discoveries all answered and nothing else to put forward: no hero, the bar's
+    // title and the figures over the colours of the book read now, melting into the rows.
+    val onBareBackdrop = onHero && items.isEmpty() && !dashboard.libraryIsEmpty && !isSearchingDiscoveries && discoveries?.doneMonth() != null
     val month = discoveries?.month ?: MonthlyDiscoveries.month(Instant.now())
     var refreshing by remember { mutableStateOf(false) }
 
@@ -168,7 +203,22 @@ fun HomePage(
         }
     }, Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = 120.dp)) {
-            if (onHero) {
+            if (onBareBackdrop) {
+                Box {
+                    // Up under the bar and the status bar, as a hero's.
+                    CoverBackdrop(
+                        dashboard.leadCoverURL,
+                        Modifier.fillMaxWidth().requiredHeight(bareBackdropHeight + BACKDROP_RISE).offset(y = -BACKDROP_RISE / 2),
+                        fadeHeight = bareFadeHeight,
+                    )
+                    ShioriTheme(dark = true) {
+                        Column(Modifier.statusBarsPadding()) {
+                            header(true)
+                            Figures(Modifier.padding(start = 24.dp, end = 24.dp, top = 6.dp, bottom = 12.dp))
+                        }
+                    }
+                }
+            } else if (onHero) {
                 ShioriTheme(dark = true) {
                     Column(Modifier.zIndex(1f).statusBarsPadding()) {
                         header(true)
@@ -184,8 +234,10 @@ fun HomePage(
                         choices = discoveryChoices,
                         onSeeRelease = { onAction(HomeAction.SeeRelease(it)) },
                         onUnseeRelease = { onAction(HomeAction.UnseeRelease(it)) },
-                        onShowDiscover = { onAction(HomeAction.ShowDiscover) },
                         onRate = { onAction(HomeAction.ShowLibrary(LibraryRequest(filter = LibraryFilter.Status(ReadingStatus.READ)))) },
+                        onPrompt = { onAction(HomeAction.OpenPrompt(it)) },
+                        onDismissPrompt = { onAction(HomeAction.DismissPrompt(it)) },
+                        onUndismissPrompt = { onAction(HomeAction.UndismissPrompt(it)) },
                         backdropCover = dashboard.leadCoverURL,
                         discoveryMonth = month,
                     )
@@ -196,24 +248,21 @@ fun HomePage(
                 Box(Modifier.statusBarsPadding()) { header(false) }
             }
             Column(Modifier.padding(top = if (onHero) 16.dp else 14.dp), verticalArrangement = Arrangement.spacedBy(30.dp)) {
+                // Before the first book, in place of the shelves: the sources to connect. Friends are
+                // invited from the Amis tab, never from here: an invitation is a link.
                 if (dashboard.libraryIsEmpty) {
                     Section(L("Importer vos livres")) { Box(Modifier.padding(horizontal = 20.dp)) { ImportSourcesRow { onAction(HomeAction.ConnectSource(it)) } } }
-                    Section(L("Partager"), onTitle = { onAction(HomeAction.ShowShared) }) {
-                        Box(Modifier.padding(horizontal = 20.dp)) {
-                            FriendsInviteCard(onInvite = { onAction(HomeAction.ShowShared) }, onEnterInvitation = { onAction(HomeAction.ShowShared) })
-                        }
-                    }
                 } else if (!onHero) {
                     Figures(Modifier.padding(horizontal = 20.dp))
                 }
-                ReadingRow(dashboard, onAction)
+                ReadingRow(dashboard, listeningState, isDownloaded, onAction)
                 if (dashboard.toRead.isNotEmpty()) {
                     Section(L("Pile à lire"), onTitle = { onAction(HomeAction.ShowLibrary(LibraryRequest(filter = LibraryFilter.Status(ReadingStatus.TO_READ)))) }) {
                         PosterRow(dashboard.toRead.map { PosterRowItem(it, HomeCaptions.shelved(it)) }) { onAction(HomeAction.OpenBook(it)) }
                     }
                 }
                 if (releases.isNotEmpty() && !dashboard.libraryIsEmpty) {
-                    Section(L("Prochaines sorties"), onTitle = { onAction(HomeAction.ShowDiscover) }) {
+                    Section(L("Prochaines sorties")) {
                         PosterRow(
                             releases.map { release ->
                                 val upcoming = release.date?.let { ReleaseDateText.isUpcoming(it) } ?: false
@@ -244,7 +293,7 @@ private fun Section(title: String, onTitle: (() -> Unit)? = null, content: @Comp
 }
 
 @Composable
-private fun ReadingRow(dashboard: Dashboard, onAction: (HomeAction) -> Unit) {
+private fun ReadingRow(dashboard: Dashboard, listeningState: (Book) -> ListenButton?, isDownloaded: (Book) -> Boolean, onAction: (HomeAction) -> Unit) {
     if (dashboard.reading.isEmpty()) return
     Section(L("En cours"), onTitle = { onAction(HomeAction.ShowLibrary(LibraryRequest(filter = LibraryFilter.Status(ReadingStatus.READING)))) }) {
         BoxWithConstraints(Modifier.fillMaxWidth()) {
@@ -260,6 +309,9 @@ private fun ReadingRow(dashboard: Dashboard, onAction: (HomeAction) -> Unit) {
                         onFinish = { onAction(HomeAction.FinishBook(book)) },
                         onProgress = { onAction(HomeAction.RecordProgress(book)) },
                         onOpenSeries = book.series?.let { series -> { onAction(HomeAction.OpenSeries(series.id)) } },
+                        listening = listeningState(book),
+                        onListen = { listeningState(book)?.let { onAction(HomeAction.Listen(book, it)) } },
+                        isDownloaded = isDownloaded(book),
                     )
                 }
             }
@@ -290,6 +342,22 @@ fun HomeHeader(isAdmin: Boolean, avatar: @Composable () -> Unit, onAdmin: () -> 
         }
         avatar()
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun HomePageMonthDonePreview() = PreviewSurface {
+    HomePage(
+        DebugFixtures.dashboard,
+        releases = emptyList(),
+        seenReleases = emptySet(),
+        discoveries = MonthlyDiscoveries(MonthlyDiscoveries.month(Instant.now()), MonthlyDiscoveries.Status.READY, emptyList()),
+        isSearchingDiscoveries = false,
+        discoveryChoices = androidx.compose.runtime.remember { com.polyforms.shiori.features.discover.components.organisms.DiscoveryChoices() },
+        onDiscoveryChoice = { _, _ -> true },
+        onRefresh = {},
+        header = { HomeHeader(isAdmin = false, avatar = {}) {} },
+    ) {}
 }
 
 @Preview(showBackground = true)

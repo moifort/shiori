@@ -41,6 +41,12 @@ import com.polyforms.shiori.shared.CoverEffect
 import com.polyforms.shiori.shared.CoverEffectImage
 import com.polyforms.shiori.shared.CoverImage
 import com.polyforms.shiori.shared.L
+import com.polyforms.shiori.shared.ReleaseDateText
+import com.polyforms.shiori.shared.book.WishContextMenuBox
+import com.polyforms.shiori.shared.components.atoms.OutlinedTag
+import com.polyforms.shiori.shared.components.molecules.ReleaseDateBadge
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import com.polyforms.shiori.shared.book.BookQuickAction
 import com.polyforms.shiori.shared.book.PosterCover
 import com.polyforms.shiori.shared.book.PosterLabel
@@ -56,8 +62,14 @@ import com.polyforms.shiori.DebugFixtures
 import com.polyforms.shiori.PreviewSurface
 
 /** One poster of a row: a book, its label, and where tapping it leads when not to the book. */
-data class PosterRowItem(val book: Book, val label: PosterLabel, val open: (() -> Unit)? = null) {
-    constructor(book: Book, caption: String, open: (() -> Unit)? = null) : this(book, PosterLabel(caption), open)
+data class PosterRowItem(
+    val book: Book,
+    val label: PosterLabel,
+    val open: (() -> Unit)? = null,
+    /** "Retirer" on the long press, for a cover of the wishlist: what takes it off the list, when it is not the row's own. */
+    val dropWished: (() -> Unit)? = null,
+) {
+    constructor(book: Book, caption: String, open: (() -> Unit)? = null, dropWished: (() -> Unit)? = null) : this(book, PosterLabel(caption), open, dropWished)
 
     val id: String get() = book.id
     val caption: String get() = label.caption
@@ -72,16 +84,28 @@ fun PosterRow(
     rows: Int = 1,
     inset: Dp = 20.dp,
     onMenu: ((Book, BookQuickAction) -> Unit)? = null,
+    /** The long press on a cover of the wishlist: "Retirer" alone. */
+    onDropWished: ((Book) -> Unit)? = null,
     onOpen: (Book) -> Unit,
 ) {
     @Composable
     fun Poster(item: PosterRowItem) {
-        BookContextMenuBox(
-            item.book,
-            onOpen = { item.open?.invoke() ?: onOpen(item.book) },
-            onAction = onMenu?.let { menu -> { action: BookQuickAction -> menu(item.book, action) } },
-        ) {
-            PosterCover(item.book, item.label, width = coverWidth)
+        val open = { item.open?.invoke() ?: onOpen(item.book) }
+        val drop = item.dropWished ?: onDropWished?.let { drop -> { drop(item.book) } }
+        val description = listOfNotNull(item.book.title, item.caption, item.label.cornerTag).joinToString(", ")
+        if (drop != null) {
+            WishContextMenuBox(open, drop, Modifier.semantics(mergeDescendants = true) { contentDescription = description }) {
+                PosterCover(item.book, item.label, width = coverWidth)
+            }
+        } else {
+            BookContextMenuBox(
+                item.book,
+                onOpen = open,
+                onAction = onMenu?.let { menu -> { action: BookQuickAction -> menu(item.book, action) } },
+                modifier = Modifier.semantics(mergeDescendants = true) { contentDescription = description },
+            ) {
+                PosterCover(item.book, item.label, width = coverWidth)
+            }
         }
     }
     if (rows > 1) {
@@ -155,10 +179,24 @@ fun SeriesShowCard(
     tag: String? = null,
     isCompact: Boolean = false,
     isSetAside: Boolean = false,
+    /**
+     * The volume's day, `YYYY-MM-DD` or looser: a calendar leaf in the top corner, and over the
+     * name "Audio" and how long is left when it is ahead; the tag then names the volume alone.
+     */
+    releaseDate: String? = null,
     onLongPress: (() -> Unit)? = null,
     onOpen: () -> Unit,
 ) {
     val shape = RoundedCornerShape(18.dp)
+    // Over the name, on one line from the left: "Audio" first for a saga heard, how long is left
+    // before a volume ahead — a volume out says nothing of how long ago —, then a language other
+    // than the phone's.
+    val footTags = buildList {
+        if (releaseDate == null) return@buildList
+        if (series.isAudio) add(L("Audio"))
+        ReleaseDateText.countdown(releaseDate)?.let(::add)
+        series.language?.takeIf { it.isForeign }?.let { add(it.code) }
+    }
     Box(
         modifier
             .heightIn(min = if (isCompact) 128.dp else 176.dp)
@@ -192,6 +230,11 @@ fun SeriesShowCard(
             Modifier.matchParentSize().padding(if (isCompact) 10.dp else 12.dp),
             verticalArrangement = Arrangement.spacedBy(3.dp, Alignment.Bottom),
         ) {
+            if (footTags.isNotEmpty()) {
+                Row(Modifier.padding(bottom = 3.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    footTags.forEach { OutlinedTag(it) }
+                }
+            }
             Text(
                 series.name,
                 style = if (isCompact) Shiori.type.subheadline.copy(fontWeight = FontWeight.SemiBold) else Shiori.type.headline,
@@ -199,7 +242,8 @@ fun SeriesShowCard(
                 maxLines = if (isCompact) 2 else 1,
                 overflow = TextOverflow.Ellipsis,
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(if (isCompact) 6.dp else 8.dp), verticalAlignment = Alignment.CenterVertically) {
+            // No count where it is not known: a followed series seen from Actualité.
+            if (series.totalCount > 0) Row(horizontalArrangement = Arrangement.spacedBy(if (isCompact) 6.dp else 8.dp), verticalAlignment = Alignment.CenterVertically) {
                 val fraction = if (series.totalCount > 0) minOf(series.readCount, series.totalCount).toDouble() / series.totalCount else 0.0
                 ProgressBar(fraction, if (isCompact) 24.dp else 40.dp)
                 Text(
@@ -222,7 +266,11 @@ fun SeriesShowCard(
                 modifier = Modifier.align(Alignment.TopStart).padding(8.dp).glass(interactive = false).padding(horizontal = 8.dp, vertical = 4.dp),
             )
         }
-        Box(Modifier.align(Alignment.TopEnd).padding(10.dp)) { CoverTags(series.language, series.isAudio) }
+        if (releaseDate != null) {
+            Box(Modifier.align(Alignment.TopEnd).padding(8.dp)) { ReleaseDateBadge(releaseDate, onGlass = true) }
+        } else {
+            Box(Modifier.align(Alignment.TopEnd).padding(10.dp)) { CoverTags(series.language, series.isAudio) }
+        }
     }
 }
 
