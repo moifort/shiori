@@ -84,6 +84,33 @@ fun DebugPreviews(name: String) {
                     loadVocabulary = { null },
                 ) {}
             }
+            "review-saga" -> com.polyforms.shiori.features.scan.components.pages.ScanReviewPage(
+                com.polyforms.shiori.features.scan.ScanFixtures.sagaDraft,
+                null,
+                isSaving = false,
+                awaitable = listOf(com.polyforms.shiori.features.discover.ReleaseFormat.AUDIOBOOK),
+                loadSubgenres = { emptyList() },
+                loadVocabulary = { null },
+                sagaVolumes = com.polyforms.shiori.features.scan.ScanFixtures.sagaVolumes,
+                onClose = {},
+            ) {}
+            "review-confirmed" -> androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize()) {
+                com.polyforms.shiori.features.scan.components.pages.ScanReviewPage(
+                    DebugFixtures.reviewDraft,
+                    null,
+                    isSaving = false,
+                    awaitable = listOf(com.polyforms.shiori.features.discover.ReleaseFormat.AUDIOBOOK),
+                    loadSubgenres = { emptyList() },
+                    loadVocabulary = { null },
+                    onClose = {},
+                ) {}
+                com.polyforms.shiori.shared.components.molecules.ConfirmationHUD(
+                    com.polyforms.shiori.shared.components.molecules.Confirmation.addedToLibrary.symbol,
+                    com.polyforms.shiori.shared.components.molecules.Confirmation.addedToLibrary.label,
+                    androidx.compose.ui.Modifier.align(androidx.compose.ui.Alignment.Center),
+                )
+            }
+            "scan-analyzing" -> com.polyforms.shiori.features.scan.components.organisms.ScanAnalyzingPage()
             "scan" -> com.polyforms.shiori.features.scan.ScanScreen(onDismiss = {}, onAwait = { _, _ -> }, onAdded = {})
             "onboarding" -> androidx.compose.runtime.CompositionLocalProvider(com.polyforms.shiori.features.auth.LocalAuthSession provides remember { com.polyforms.shiori.features.auth.AuthSession() }) {
                 com.polyforms.shiori.shared.components.styles.ShioriTheme(dark = true) {
