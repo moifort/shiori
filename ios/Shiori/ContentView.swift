@@ -29,8 +29,12 @@ enum TabSelection: Int, CaseIterable, Identifiable {
 
 struct ContentView: View {
     /// An invitation the reader arrived on by tapping a link, owned by
-    /// `AuthRoot` so that it survives signing in, and cleared once asked.
+    /// `AuthRoot` so that it survives signing in, and cleared once taken up.
     @Binding var invitation: InvitationRequest?
+    /// The friend an invitation just joined, celebrated on the Amis tab.
+    @State private var welcomedFriend: String?
+    /// Why the invitation could not be taken up: expired, spent, the reader's own.
+    @State private var invitationError: String?
 
     @Environment(\.isAdmin) private var isAdmin
 
@@ -58,8 +62,6 @@ struct ContentView: View {
     @State private var showPhotoPicker = false
     @State private var pickedPhoto: PhotosPickerItem?
     @State private var showManualAdd = false
-    /// Partagé, opened from the home.
-    @State private var showShared = false
     /// A page shared into Shiori from elsewhere on the phone, picked up when the
     /// app comes to the front. Nil the rest of the time.
     @State private var sharedStart: ScanScreen.Start?
@@ -145,13 +147,6 @@ struct ContentView: View {
             }
             // Every list redraws itself on the data-change notice the mutation
             // posts, so the form only has to close.
-            .sheet(isPresented: $showShared) {
-                SharedScreen { friendId in
-                    showShared = false
-                    friendRequest = friendId
-                    selectedTab = .friends
-                }
-            }
             .sheet(isPresented: $showManualAdd) {
                 ManualAddScreen(onAdded: { _ in showManualAdd = false })
             }
@@ -179,11 +174,25 @@ struct ContentView: View {
                     origin: .share
                 )
             }
-            // The invitation is asked about rather than accepted: the link
-            // came from somewhere the reader does not control, and accepting
-            // opens their library to whoever sent it.
-            .sheet(item: $invitation) { request in
-                InvitationAcceptScreen(request: request, onAccepted: {})
+            // The link does everything: tapped, it is taken up at once, and
+            // the Amis tab opens on the friend arriving among the others.
+            // Once signed in and past onboarding — `AuthRoot` holds it until
+            // this view exists.
+            .task(id: invitation) {
+                guard let request = invitation else { return }
+                invitation = nil
+                await accept(request)
+            }
+            .alert(
+                "Invitation refusée",
+                isPresented: .init(
+                    get: { invitationError != nil },
+                    set: { if !$0 { invitationError = nil } }
+                )
+            ) {
+                Button("OK", role: .cancel) { invitationError = nil }
+            } message: {
+                Text(invitationError ?? "")
             }
             .task { takeSharedIntake() }
             // A token APNs rotated reaches the server on the next launch.
@@ -211,6 +220,20 @@ struct ContentView: View {
                     lastContentTab = tab
                 }
             }
+    }
+
+    /// Takes an invitation up and shows the friend it joined. Accepting
+    /// changes no library, so the Amis tab is told here to ask again.
+    private func accept(_ request: InvitationRequest, client: FriendsClient = .live) async {
+        do {
+            let friend = try await client.accept(request.code)
+            NotificationCenter.default.post(name: .shioriDataDidChange, object: nil)
+            selectedTab = .friends
+            welcomedFriend = friend.userId
+        } catch {
+            guard !isCancellation(error) else { return }
+            invitationError = reportError(error)
+        }
     }
 
     /// A return to the front: iOS kept the app alive, so no screen loads
@@ -254,8 +277,7 @@ struct ContentView: View {
                         libraryMode = request
                         selectedTab = .library
                     },
-                    onScan: { showAddSheet = true },
-                    onShowShared: { showShared = true }
+                    onScan: { showAddSheet = true }
                 )
                 .environment(\.hostTab, .home)
             }
@@ -281,7 +303,7 @@ struct ContentView: View {
             // The friends took the search's place; the search waits, hidden,
             // until it finds a new home.
             Tab(TabSelection.friends.label, systemImage: TabSelection.friends.symbol, value: .friends) {
-                FriendsScreen(friendRequest: $friendRequest)
+                FriendsScreen(friendRequest: $friendRequest, welcomedFriend: $welcomedFriend)
                     .environment(\.hostTab, .friends)
             }
             Tab(

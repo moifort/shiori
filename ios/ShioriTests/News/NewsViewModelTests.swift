@@ -251,12 +251,4 @@ struct NewsViewModelTests {
         #expect(viewModel.dismissed.contains(card.key))
         #expect(!viewModel.wished.isTurnedDown(card))
     }
-
-    @Test func invitingHandsTheInvitationOver() async {
-        let viewModel = NewsViewModel(client: .preview, caching: false)
-
-        await viewModel.invite()
-
-        #expect(viewModel.invitation != nil)
-    }
 }

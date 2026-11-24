@@ -26,7 +26,6 @@ enum NewsAction {
     /// A large card's pill: the friend on the Amis tab, alone, or the
     /// author's or the narrator's page.
     case openPerson(NewsPersonTarget)
-    case invite
     case openAlerts
     case refresh
 }
@@ -126,9 +125,6 @@ struct NewsPage: View {
                         .animation(.smooth, value: day?.id)
                     }
                     shelves
-                    if !agenda.hasFriends {
-                        invitation.padding(.top, 30)
-                    }
                 }
                 .padding(.bottom, 32)
             }
@@ -173,30 +169,6 @@ struct NewsPage: View {
                 NewsWishesRail(items: shelves.wishes, onAction: onAction).padding(.top, 30)
             }
         }
-    }
-
-    /// With no friend yet, the invitation in their place.
-    private var invitation: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("Vos amis")
-                .font(.title2.weight(.bold))
-            // The invitation is made on the server before its sheet opens:
-            // the capsule turns meanwhile, as on Partagé.
-            AsyncButton {
-                await onAction(.invite)
-            } label: {
-                Label("Inviter un ami", systemImage: "person.badge.plus")
-                    .font(.subheadline.weight(.semibold))
-                    .padding(.horizontal, 16)
-                    .frame(height: 40)
-                    .contentShape(.capsule)
-            }
-            .buttonStyle(ActionButtonStyle(fill: .glass, isBare: true))
-            Text("Ce que lisent et aiment vos amis s'affichera ici.")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-        }
-        .padding(.horizontal, 20)
     }
 }
 

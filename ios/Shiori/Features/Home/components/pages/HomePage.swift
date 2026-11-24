@@ -26,9 +26,6 @@ enum HomeAction {
     case scan
     /// An empty library's start rows: Audible or Kindle to connect.
     case connectSource(ImportSource)
-    /// An empty library's start rows: the Partagé tab, where a friend is
-    /// invited or an invitation entered.
-    case showShared
     /// A volume just out or announced, or a recording awaited.
     case openRelease(HomeRelease)
     case openDiscovery(Suggestion)
@@ -317,15 +314,12 @@ struct HomePage: View {
     // MARK: - Start rows
 
     /// Before the first book, in place of the shelves: the sources to
-    /// connect, and the friends to read with.
-    @ViewBuilder private var startRows: some View {
+    /// connect. Friends are invited from the Amis tab, never from here: an
+    /// invitation is a link, and the link does the rest.
+    private var startRows: some View {
         VStack(alignment: .leading, spacing: 12) {
             RowHeader(title: "Importer vos livres", style: .inline)
             ImportSourcesRow { onAction(.connectSource($0)) }
-        }
-        VStack(alignment: .leading, spacing: 12) {
-            RowHeader(title: "Partager", style: .inline) { onAction(.showShared) }
-            FriendsInviteCard(onInvite: { onAction(.showShared) }, onEnterInvitation: { onAction(.showShared) })
         }
     }
 

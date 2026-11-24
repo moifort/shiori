@@ -14,8 +14,11 @@ struct HomeScreen: View {
     /// the rated books, the favourites, the dropped ones, the whole shelf.
     let onShowLibrary: (LibraryRequest) -> Void
     let onScan: () -> Void
-    /// The Partagé tab, from the empty shelf's start rows.
-    var onShowShared: () -> Void = {}
+    /// Where the "Lisez avec vos amis" card's invitation comes from.
+    private let friendsClient: FriendsClient
+    /// The invitation the card asked for, sent through the share sheet the
+    /// moment it comes back.
+    @State private var invitation: FriendInvitation?
 
     @State private var viewModel: HomeViewModel
     /// What the dashboard opened: pushed over it on a phone, beside it on an
@@ -64,13 +67,13 @@ struct HomeScreen: View {
         onShowSeries: @escaping (SeriesRequest) -> Void,
         onShowLibrary: @escaping (LibraryRequest) -> Void,
         onScan: @escaping () -> Void,
-        onShowShared: @escaping () -> Void = {},
-        client: HomeClient = .live
+        client: HomeClient = .live,
+        friendsClient: FriendsClient = .live
     ) {
         self.onShowSeries = onShowSeries
         self.onShowLibrary = onShowLibrary
         self.onScan = onScan
-        self.onShowShared = onShowShared
+        self.friendsClient = friendsClient
         _viewModel = State(initialValue: HomeViewModel(client: client))
     }
 
@@ -105,6 +108,7 @@ struct HomeScreen: View {
         .onReceive(NotificationCenter.default.publisher(for: .shioriAwaitedEditionsDidChange)) { _ in
             Task { await viewModel.reloadReleases() }
         }
+        .sharesInvitation($invitation)
         .sheet(isPresented: $showSettings) {
             SettingsHomeScreen()
         }
@@ -264,6 +268,16 @@ struct HomeScreen: View {
     /// Whether a detail opens beside the dashboard: the Duo's inner screen.
     private var isSplit: Bool { sizeClass == .regular }
 
+    /// The card's "Inviter": the link straight into the share sheet, as the
+    /// Amis tab sends it.
+    private func invite() async {
+        do {
+            invitation = try await friendsClient.invite()
+        } catch {
+            if !isCancellation(error) { _ = reportError(error) }
+        }
+    }
+
     @ViewBuilder
     private func detailContent(_ detail: HomeDetail) -> some View {
         switch detail {
@@ -346,7 +360,6 @@ struct HomeScreen: View {
                     case let .recordProgress(book): progressBook = book
                     case .scan: onScan()
                     case let .connectSource(source): openSource = source
-                    case .showShared: onShowShared()
                     case let .openRelease(.volume(volume)): detail = .release(volume)
                     case let .openRelease(.awaited(edition)): detail = .awaited(edition)
                     case let .openDiscovery(suggestion): detail = .discovery(suggestion)
@@ -354,7 +367,7 @@ struct HomeScreen: View {
                     case let .unseeRelease(release): viewModel.unsee(release)
                     case .openPrompt(.audible): openSource = .audible
                     case .openPrompt(.kindle): openSource = .kindle
-                    case .openPrompt(.friends): onShowShared()
+                    case .openPrompt(.friends): Task { await invite() }
                     case let .dismissPrompt(prompt): viewModel.dismiss(prompt)
                     case let .undismissPrompt(prompt): viewModel.undismiss(prompt)
                     }

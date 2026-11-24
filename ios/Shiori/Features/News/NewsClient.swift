@@ -26,8 +26,6 @@ struct NewsClient: Sendable {
     var awaitReleased: @Sendable (BookDraft, ReleaseFormat) async throws -> String
     /// Whether nothing can reach the reader: the bell is struck through.
     var alertsSilenced: @Sendable () async -> Bool
-    /// An invitation to pass on, from the empty Amis tab and its rail.
-    var invite: @Sendable () async throws -> FriendInvitation
     /// The prizes' winners in print, as Découvrir lists them.
     var awards: @Sendable () async throws -> [AwardSection] = { [] }
     /// The month's discoveries already chosen: read, never asked for, so
@@ -75,7 +73,6 @@ extension NewsClient {
         wishReleased: { draft in try await WishlistAPI.wish(draft, origin: .discovery).id },
         awaitReleased: { draft, format in try await AwaitedAPI.awaitScanned(draft, format: format).id },
         alertsSilenced: { await DiscoverClient.live.alertsSilenced() },
-        invite: { try await FriendsAPI.invite() },
         awards: { try await AwardsAPI.sections(format: .book) },
         discoveries: { try await SuggestionsAPI.monthly(format: .book, lookUp: false).suggestions },
         opening: { try await NewsAPI.opening(limit: $0) },
@@ -104,7 +101,6 @@ extension NewsClient {
         wishReleased: { _ in "preview-wish" },
         awaitReleased: { _, _ in "preview-edition" },
         alertsSilenced: { false },
-        invite: { .preview },
         awards: { AwardSection.previews },
         discoveries: { MonthlyDiscoveries.preview.suggestions },
         wishlistReleases: { UpcomingRelease.wishlistPreviews }

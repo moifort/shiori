@@ -56,3 +56,9 @@ enum InvitationLink {
         return upper
     }
 }
+
+/// An invitation the reader arrived on by tapping a link, waiting to be taken up.
+struct InvitationRequest: Identifiable, Equatable {
+    let code: String
+    var id: String { code }
+}

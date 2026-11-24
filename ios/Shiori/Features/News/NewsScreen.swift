@@ -33,10 +33,6 @@ struct NewsScreen: View {
                 }
                 .presentationDetents([.medium, .large])
             }
-            // Shared the moment it comes back, as the Partagé tab does.
-            .sheet(item: $viewModel.invitation) { invitation in
-                InvitationSheet(invitation: invitation, myShelf: nil)
-            }
             .pushesPlayerBook()
         } detail: { detail in
             detailContent(detail)
@@ -84,7 +80,6 @@ struct NewsScreen: View {
         case let .openPerson(.friend(friendId)): onShowFriend(friendId)
         case let .openPerson(.author(author)): open(.author(author))
         case let .openPerson(.narrator(narrator)): open(.narrator(narrator))
-        case .invite: await viewModel.invite()
         case .openAlerts: showsAlerts = true
         case .refresh: await viewModel.load()
         }

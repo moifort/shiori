@@ -25,7 +25,18 @@ describe('the invitation page', () => {
     const page = invitationPage('ABCD2345', 'iphone')
     expect(page).toContain(APP_STORE_URL)
     expect(page).not.toContain('shiori://')
-    expect(page).toContain('ABCD2345')
+  })
+
+  test('never shows the code: the link carries it', () => {
+    for (const platform of ['iphone', 'android', 'desktop'] as const) {
+      expect(invitationPage('ABCD2345', platform)).not.toContain('ABCD2345')
+    }
+  })
+
+  test('gives the link a preview: a title and the app icon', () => {
+    const page = invitationPage('ABCD2345', 'iphone')
+    expect(page).toContain('og:title')
+    expect(page).toContain('og:image')
   })
 
   test('sends a computer to the App Store and asks for the link on an iPhone', () => {

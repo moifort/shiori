@@ -4201,22 +4201,6 @@
         }
       }
     },
-    "Ce que lisent et aiment vos amis s'affichera ici." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "What your friends read and love will show up here."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ce que lisent et aiment vos amis s'affichera ici."
-          }
-        }
-      }
-    },
     "Ce que vous partagez" : {
       "localizations" : {
         "en" : {
@@ -6553,22 +6537,6 @@
         }
       }
     },
-    "Envoyer l'invitation" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Send the invitation"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Envoyer l'invitation"
-          }
-        }
-      }
-    },
     "Envoyer une invitation" : {
       "localizations" : {
         "en" : {
@@ -7993,22 +7961,6 @@
         }
       }
     },
-    "Invitation" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Invitation"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Invitation"
-          }
-        }
-      }
-    },
     "Invitation refusée" : {
       "localizations" : {
         "en" : {
@@ -8053,22 +8005,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Inviter un ami"
-          }
-        }
-      }
-    },
-    "Invitez un ami" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Invite a friend"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Invitez un ami"
           }
         }
       }
@@ -8201,18 +8137,18 @@
         }
       }
     },
-    "Je t'ouvre ma bibliothèque sur Shiori. Code : %@" : {
+    "Je t'ouvre ma bibliothèque sur Shiori" : {
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "I’m opening my library to you on Shiori. Code: %@"
-          }
-        },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Je t'ouvre ma bibliothèque sur Shiori. Code : %@"
+            "value" : "Je t'ouvre ma bibliothèque sur Shiori"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I'm opening my library to you on Shiori"
           }
         }
       }
@@ -9697,22 +9633,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "L’achat est en attente d’approbation."
-          }
-        }
-      }
-    },
-    "Ma bibliothèque sur Shiori" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "My library on Shiori"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ma bibliothèque sur Shiori"
           }
         }
       }
@@ -11617,22 +11537,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Pas intéressé"
-          }
-        }
-      }
-    },
-    "Pas maintenant" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Not now"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pas maintenant"
           }
         }
       }
@@ -16165,22 +16069,6 @@
         }
       }
     },
-    "Vos amis" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your friends"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vos amis"
-          }
-        }
-      }
-    },
     "Vos bibliothèques" : {
       "localizations" : {
         "en" : {
@@ -16645,38 +16533,6 @@
         }
       }
     },
-    "Vous partagerez vos livres" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You’ll share your books"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vous partagerez vos livres"
-          }
-        }
-      }
-    },
-    "Vous partagez maintenant vos livres" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You’re now sharing your books"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vous partagez maintenant vos livres"
-          }
-        }
-      }
-    },
     "Vous partagez vos bibliothèques" : {
       "localizations" : {
         "en" : {
@@ -16737,22 +16593,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vous pouvez l'ajouter une seconde fois, pour une autre édition par exemple."
-          }
-        }
-      }
-    },
-    "Vous verrez sa bibliothèque et il verra la vôtre." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You will see their library and they will see yours."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vous verrez sa bibliothèque et il verra la vôtre."
           }
         }
       }

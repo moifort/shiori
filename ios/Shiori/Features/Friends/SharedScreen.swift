@@ -62,9 +62,7 @@ struct SharedScreen: View {
         // The invitation is shared the moment it comes back: the reader tapped
         // "invite", and a code sitting on screen with nothing to do is a step
         // they did not ask for.
-        .sheet(item: $viewModel.invitation) { invitation in
-            InvitationSheet(invitation: invitation, myShelf: viewModel.myShelf)
-        }
+        .sharesInvitation($viewModel.invitation)
         .alert("J'ai reçu une invitation", isPresented: $showAccept) {
             TextField("Code ou lien", text: $pastedCode)
                 .textInputAutocapitalization(.characters)

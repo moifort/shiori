@@ -33,6 +33,8 @@ struct FriendsPage: View {
     let isWaiting: Bool
     let loadFailed: String?
     let isInviting: Bool
+    /// The friend an invitation just joined, welcomed in the avatars' row.
+    var welcomed: String? = nil
     let onAction: (FriendsAction) async -> Void
 
     var body: some View {
@@ -68,7 +70,8 @@ struct FriendsPage: View {
                 VStack(alignment: .leading, spacing: 16) {
                     FriendAvatarPicker(
                         items: friends.map { .init(id: $0.userId, name: $0.displayName, avatar: $0.avatar) },
-                        selected: selected
+                        selected: selected,
+                        welcomed: welcomed
                     ) { id in Task { await onAction(.toggle(id)) } }
                     if let soleFriend {
                         VStack(spacing: 0) {
@@ -84,6 +87,8 @@ struct FriendsPage: View {
                     }
                 }
                 .environment(\.colorScheme, .dark)
+                // Over the rails, so a welcome's confetti fall in front of them.
+                .zIndex(1)
                 rails
             }
             .padding(.top, 4)

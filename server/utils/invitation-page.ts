@@ -12,12 +12,23 @@
  * Instagram the universal link does not fire even with the app installed, and
  * sending those readers to the store would be wrong.
  *
- * It gives nothing away: the code is already in the URL of whoever is reading,
- * and the page never names the reader who made the invitation. No cookie, no
- * script, nothing that follows the visitor.
+ * It shows no code: the link carries it, and the app takes the invitation up
+ * by itself once it opens on the link. It gives nothing away either: the page
+ * never names the reader who made the invitation. No cookie, no script,
+ * nothing that follows the visitor.
+ *
+ * Its Open Graph tags are what Messages, WhatsApp or Mail show of the link
+ * before it is tapped: a title and the app's icon rather than a bare address.
  */
 
 export const APP_STORE_URL = 'https://apps.apple.com/app/id6811938144'
+
+/** The app's icon, served by the project site, for the link's preview. */
+const PREVIEW_IMAGE_URL = 'https://shiori.polyforms.co/icon-256.png'
+
+const TITLE = 'Une bibliothèque vous est ouverte'
+const DESCRIPTION =
+  "Quelqu'un vous invite à partager sa bibliothèque sur Shiori, et à voir la sienne."
 
 /** Where the page is read, which decides what it offers. Shiori is not on
  *  Google Play yet, so an Android phone is told so rather than sent nowhere. */
@@ -51,21 +62,17 @@ const storeBadge = `<a class="store-badge" href="${APP_STORE_URL}" aria-label="T
     <span class="store-text"><small>Télécharger dans</small><b>App Store</b></span>
   </a>`
 
-const stepsFor = (platform: InvitationPlatform) =>
+const nextStepFor = (platform: InvitationPlatform) =>
   platform === 'android'
     ? `<p class="note">Shiori n'existe pas encore sur Android : il arrive bientôt sur Google Play.</p>`
-    : `<ol>
-    ${platform === 'desktop' ? '<li>Ouvrez ce lien sur votre iPhone.</li>' : ''}
-    <li>Installez Shiori depuis l'App Store, si ce n'est pas déjà fait.</li>
-    <li>Rouvrez ce lien : l'application s'ouvrira sur l'invitation.</li>
-    <li>Sinon, dans les réglages, « Amis », « J'ai reçu une invitation », et collez ce code.</li>
-  </ol>`
+    : platform === 'desktop'
+      ? `<p class="note">Ouvrez ce lien sur votre iPhone.</p>`
+      : `<p class="note">Shiori installé, touchez de nouveau le lien reçu : l'invitation s'ouvre dans l'application.</p>`
 
 export const invitationPage = (code: string | undefined, platform: InvitationPlatform): string => {
   const body = code
     ? `${platform === 'android' ? '' : storeBadge}
-  <div class="code">${escaped(code)}</div>
-  ${stepsFor(platform)}`
+  ${nextStepFor(platform)}`
     : `<p>Ce lien est incomplet : demandez qu'on vous le renvoie.</p>
   ${platform === 'android' ? '' : storeBadge}`
 
@@ -76,6 +83,11 @@ export const invitationPage = (code: string | undefined, platform: InvitationPla
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
 <title>Invitation Shiori</title>
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Shiori">
+<meta property="og:title" content="${TITLE}">
+<meta property="og:description" content="${escaped(DESCRIPTION)}">
+<meta property="og:image" content="${PREVIEW_IMAGE_URL}">
 <style>
   :root { color-scheme: light dark; }
   body {
@@ -97,20 +109,13 @@ export const invitationPage = (code: string | undefined, platform: InvitationPla
   .store-text { display: flex; flex-direction: column; align-items: flex-start; line-height: 1; text-align: left; }
   .store-text small { font-size: 10px; letter-spacing: .02em; margin-bottom: 3px; opacity: .9; }
   .store-text b { font-size: 19px; font-weight: 600; letter-spacing: -.01em; }
-  .code {
-    font: 700 2rem/1 ui-monospace, SFMono-Regular, Menlo, monospace;
-    letter-spacing: .25em; padding: 1rem 1.25rem; border-radius: .75rem;
-    background: rgba(127,127,127,.12); display: inline-block; margin: 1.75rem 0 1.5rem;
-  }
-  ol { text-align: left; margin: 0 auto; max-width: 24rem; padding-left: 1.25rem; }
-  li { margin-bottom: .5rem; }
-  .note { margin: 0; }
+  .note { margin: 1.5rem auto 0; max-width: 20rem; font-size: .9rem; opacity: .6; }
 </style>
 </head>
 <body>
 <main>
-  <h1>Une bibliothèque vous est ouverte</h1>
-  <p>Quelqu'un vous invite à partager sa bibliothèque sur Shiori, et à voir la sienne.</p>
+  <h1>${TITLE}</h1>
+  <p>${DESCRIPTION}</p>
   ${body}
 </main>
 </body>

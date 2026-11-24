@@ -522,6 +522,11 @@ enum FriendsAPI {
     /// Takes an invitation up, by its code or by the link carrying it: the
     /// server pulls the code out of whatever the reader pasted.
     static func accept(code: String) async throws -> Friend {
+        #if DEBUG
+        // The captures take an invitation up as the friend who sent it: the
+        // last of the shelf's friends, welcomed among the others.
+        if Showcase.isOn, let friend = Showcase.friendsWithAvatars.last { return friend }
+        #endif
         let data = try await GraphQLHelpers.perform(
             GraphQLClient.shared.apollo,
             mutation: ShioriGraphQL.AcceptFriendInvitationMutation(code: code),

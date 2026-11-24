@@ -50,9 +50,6 @@ final class NewsViewModel {
     private var editionIds: [String: String] = [:]
     private(set) var awaited: Set<String> = []
     private(set) var alertsSilenced = false
-    private(set) var isInviting = false
-    /// The invitation to pass on, presented the moment it comes back.
-    var invitation: FriendInvitation?
 
     /// The pill chosen; nil is "Tout".
     var format: BookFormat?
@@ -501,17 +498,6 @@ final class NewsViewModel {
         } catch {
             if !isCancellation(error) { reportError(error) }
             return false
-        }
-    }
-
-    func invite() async {
-        isInviting = true
-        defer { isInviting = false }
-        do {
-            invitation = try await client.invite()
-        } catch {
-            guard !isCancellation(error) else { return }
-            reportError(error)
         }
     }
 

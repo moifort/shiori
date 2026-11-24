@@ -13,10 +13,18 @@ struct FriendsScreen: View {
     /// A friend another tab asked for: the page narrowed to them alone, back
     /// at its top.
     @Binding var friendRequest: String?
+    /// The friend an invitation just joined: welcomed once they are in the
+    /// row, then let go.
+    @Binding var welcomedFriend: String?
 
-    init(client: FriendsClient = .live, friendRequest: Binding<String?> = .constant(nil)) {
+    init(
+        client: FriendsClient = .live,
+        friendRequest: Binding<String?> = .constant(nil),
+        welcomedFriend: Binding<String?> = .constant(nil)
+    ) {
         _viewModel = State(initialValue: FriendsViewModel(client: client))
         _friendRequest = friendRequest
+        _welcomedFriend = welcomedFriend
     }
 
     var body: some View {
@@ -32,7 +40,8 @@ struct FriendsScreen: View {
                 hasNoFriend: viewModel.hasNoFriend,
                 isWaiting: viewModel.isEmpty && !viewModel.loaded && viewModel.loadFailed == nil,
                 loadFailed: viewModel.isEmpty ? viewModel.loadFailed : nil,
-                isInviting: viewModel.isInviting
+                isInviting: viewModel.isInviting,
+                welcomed: welcomed
             ) { action in
                 switch action {
                 case let .toggle(friendId): await viewModel.toggle(friendId)
@@ -77,8 +86,13 @@ struct FriendsScreen: View {
         .onReceive(NotificationCenter.default.publisher(for: .shioriDataDidChange)) { _ in
             Task { await viewModel.load() }
         }
-        .sheet(item: $viewModel.invitation) { invitation in
-            InvitationSheet(invitation: invitation, myShelf: viewModel.myShelf)
+        .sharesInvitation($viewModel.invitation)
+        // The welcome plays once the friend is in the row, which the reload
+        // the acceptance asked for brings, and stops after the burst.
+        .task(id: welcomed) {
+            guard welcomed != nil else { return }
+            try? await Task.sleep(for: .seconds(3))
+            welcomedFriend = nil
         }
         .alert(
             "Une erreur est survenue",
@@ -91,6 +105,12 @@ struct FriendsScreen: View {
         } message: {
             Text(viewModel.errorMessage ?? "")
         }
+    }
+
+    /// The friend to welcome, once they are among the friends shown.
+    private var welcomed: String? {
+        guard let welcomedFriend, viewModel.friends.contains(where: { $0.userId == welcomedFriend }) else { return nil }
+        return welcomedFriend
     }
 }
 

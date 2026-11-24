@@ -49,48 +49,6 @@ struct ImportSourcesRow: View {
     }
 }
 
-/// "Partager": what sharing opens, and the two ways in, both on the
-/// Partagé tab.
-struct FriendsInviteCard: View {
-    let onInvite: () -> Void
-    let onEnterInvitation: () -> Void
-
-    var body: some View {
-        StartCard(
-            mark: .symbol("person.2.fill"),
-            title: String(localized: "Invitez un ami"),
-            text: String(localized: "Vous verrez sa bibliothèque et il verra la vôtre."),
-            tint: Color(red: 0.3, green: 0.6, blue: 0.35)
-        ) {
-            // Both labelled where they fit, stacked in a narrow column: a
-            // label never breaks over lines.
-            ViewThatFits(in: .horizontal) {
-                HStack(spacing: 8) { inviteButtons }
-                VStack(alignment: .leading, spacing: 8) { inviteButtons }
-            }
-        }
-    }
-
-    @ViewBuilder private var inviteButtons: some View {
-        Button(action: onInvite) {
-            Text("Inviter un ami")
-                .font(.caption.weight(.semibold))
-                .lineLimit(1)
-                .fixedSize()
-        }
-        .buttonStyle(.actionPrimary)
-        .accessibilityIdentifier("home-invite")
-        Button(action: onEnterInvitation) {
-            Text("J'ai reçu une invitation")
-                .font(.caption.weight(.semibold))
-                .lineLimit(1)
-                .fixedSize()
-        }
-        .buttonStyle(.actionGlass)
-        .accessibilityIdentifier("home-enter-invitation")
-    }
-}
-
 /// A card of the start rows: a mark — the service's own app icon, or a symbol
 /// in a glass square — a title, a line, and the buttons — small and
 /// captioned, as the card of the book read now draws its own — over a
@@ -183,7 +141,6 @@ private struct StartCard<Buttons: View>: View {
     ScrollView {
         VStack(alignment: .leading, spacing: 30) {
             ImportSourcesRow { _ in }
-            FriendsInviteCard(onInvite: {}, onEnterInvitation: {})
         }
         .padding(20)
     }
