@@ -19,15 +19,11 @@
 			</array>
 		</dict>
 	</array>
-#ifdef AUDIBLE_PLAYER
-	<!-- The Audible player keeps playing with the screen locked. Declared only
-	     where the player is built in (SHIORI_AUDIBLE_PLAYER, see AudiblePlayerGate),
-	     so a build without it claims no background mode it does not use. -->
+	<!-- The Audible player keeps playing with the screen locked. -->
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>audio</string>
 	</array>
-#endif
 	<!-- The system's launch screen is only this colour, the one the opening
 	     curtain is painted on, so the curtain takes over without a flash. -->
 	<key>UILaunchScreen</key>

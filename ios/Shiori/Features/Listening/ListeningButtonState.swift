@@ -30,7 +30,7 @@ enum ListeningButtonState: Hashable, Sendable {
     }
 
     /// The state of a book's button, or nil when it plays nothing: a paper
-    /// book, an audiobook with no Audible page, or a build without the player.
+    /// book, an audiobook with no Audible page, or a screen given no player (a preview).
     @MainActor static func of(_ book: Book, player: AudiblePlayer?) -> ListeningButtonState? {
         guard let player, let title = ListeningTitle(book: book) else { return nil }
         let current = player.title?.asin == title.asin

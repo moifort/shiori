@@ -70,9 +70,9 @@ struct ContentView: View {
     /// When the app last left the screen, so that a return after a while asks
     /// every list again. Nil while the app is in front.
     @State private var backgroundedAt: Date?
-    /// The Audible player, in a build that carries it (`AudiblePlayerGate`):
-    /// one for the whole app, so the title plays on whatever tab is open.
-    @State private var player: AudiblePlayer? = AudiblePlayerGate.isOpen ? AudiblePlayer(restoresLastTitle: true) : nil
+    /// The Audible player: one for the whole app, so the title plays on
+    /// whatever tab is open.
+    @State private var player = AudiblePlayer(restoresLastTitle: true)
     @State private var showPlayer = false
     /// The book the player's three dots asked for, pushed on the tab in front
     /// once the player has closed.
@@ -316,7 +316,7 @@ struct ContentView: View {
         // Not a system sheet: pulled down, the player follows the thumb whole,
         // then goes back into its pill, as in Music.
         .overlay {
-            if showPlayer, let player {
+            if showPlayer {
                 PlayerSheet(pillFrame: playerPillFrame, coverURL: player.title?.coverURL, onClosed: closePlayer) {
                     PlayerScreen(onOpenBook: { pendingPlayerBook = $0 })
                 } backdrop: {
