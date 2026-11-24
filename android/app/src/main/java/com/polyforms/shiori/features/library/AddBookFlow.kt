@@ -89,7 +89,8 @@ fun AddBookFlow(router: AppRouter) {
                     onDismiss = { flow = null },
                     onAwait = { _, _ ->
                         flow = null
-                        router.showDiscover()
+                        // The wishlist, in the Library, as iOS opens it (`opensWishlist` to come with Lot 4).
+                        router.selectedTab = com.polyforms.shiori.TabSelection.LIBRARY
                     },
                     onAdded = { book ->
                         flow = null

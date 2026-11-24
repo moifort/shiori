@@ -71,7 +71,6 @@ class AppRouter {
     var seriesRequest by mutableStateOf<SeriesRequest?>(null)
     var showShared by mutableStateOf(false)
     var invitation by mutableStateOf<InvitationRequest?>(null)
-    var opensDiscover by mutableStateOf(false)
 
     /** The friend a Découvrir pill asked for, handed to the Amis tab. */
     var friendRequest by mutableStateOf<String?>(null)
@@ -83,12 +82,6 @@ class AppRouter {
     fun showFriend(friendId: String) {
         friendRequest = friendId
         selectedTab = TabSelection.FRIENDS
-    }
-
-    /** Opens Découvrir, in the News tab. */
-    fun showDiscover() {
-        opensDiscover = true
-        selectedTab = TabSelection.NEWS
     }
 
     /** Opens the Library on what the dashboard asked for. */
