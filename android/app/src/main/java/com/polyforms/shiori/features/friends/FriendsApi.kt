@@ -7,17 +7,18 @@ import com.polyforms.shiori.graphql.AddFriendBookMutation
 import com.polyforms.shiori.graphql.FriendBookAudioQuery
 import com.polyforms.shiori.graphql.FriendBookQuery
 import com.polyforms.shiori.graphql.FriendLibraryPageQuery
-import com.polyforms.shiori.graphql.FriendProfileQuery
 import com.polyforms.shiori.graphql.FriendRecommendationsQuery
 import com.polyforms.shiori.graphql.FriendSagaPageQuery
 import com.polyforms.shiori.graphql.FriendSeriesScreenQuery
 import com.polyforms.shiori.graphql.FriendsQuery
+import com.polyforms.shiori.graphql.FriendsShelfQuery
 import com.polyforms.shiori.graphql.InviteFriendMutation
 import com.polyforms.shiori.graphql.MyShelfQuery
 import com.polyforms.shiori.graphql.RemoveFriendMutation
 import com.polyforms.shiori.graphql.fragment.FriendBookRow
 import com.polyforms.shiori.graphql.fragment.FriendRow
 import com.polyforms.shiori.graphql.fragment.FriendSagaRow
+import com.polyforms.shiori.graphql.fragment.FriendsShelfEntryRow
 import com.polyforms.shiori.graphql.fragment.SharedShelf
 import com.polyforms.shiori.graphql.type.FriendActivityKind
 import com.polyforms.shiori.graphql.type.AudioAvailability as GAudio
@@ -42,13 +43,33 @@ object FriendsApi {
         return GraphQLClient.fetch(FriendsQuery()).friends.map { it.friendRow.asDomain }
     }
 
-    suspend fun profile(userId: String): FriendProfile? = GraphQLClient.fetch(FriendProfileQuery(userId)).friendProfile?.sharedShelf?.asDomain
+    /** The Amis tab's rails for the friends chosen; none means every friend. */
+    suspend fun friendsShelf(friendIds: List<String>): FriendsShelf {
+        if (Showcase.isOn) return FriendsShelf()
+        val shelf = GraphQLClient.fetch(FriendsShelfQuery(if (friendIds.isEmpty()) Optional.Absent else Optional.present(friendIds))).friendsShelf
+        return FriendsShelf(
+            reading = shelf.reading.map { it.friendsShelfEntryRow.asDomain },
+            favorites = shelf.favorites.map { it.friendsShelfEntryRow.asDomain },
+            finished = shelf.finished.map { it.friendsShelfEntryRow.asDomain },
+            pile = shelf.pile.map { it.friendsShelfEntryRow.asDomain },
+        )
+    }
 
     suspend fun myShelf(): FriendProfile = GraphQLClient.fetch(MyShelfQuery()).myShelf.sharedShelf.asDomain
 
-    suspend fun libraryPage(friendId: String, status: ReadingStatus?, loved: Boolean = false, after: String?): Pair<List<FriendBook>, Boolean> {
+    /**
+     * One page of a friend's library, newest first on the day each book was shelved: what their
+     * "Livres" draws, under its status menu and its format pill.
+     */
+    suspend fun libraryPage(friendId: String, status: ReadingStatus?, format: BookFormat?, after: String?): Pair<List<FriendBook>, Boolean> {
         val page = GraphQLClient.fetch(
-            FriendLibraryPageQuery(friendId, Optional.presentIfNotNull(status?.graphQL), if (loved) Optional.present(true) else Optional.Absent, Optional.presentIfNotNull(after)),
+            FriendLibraryPageQuery(
+                userId = friendId,
+                status = Optional.presentIfNotNull(status?.graphQL),
+                loved = Optional.Absent,
+                after = Optional.presentIfNotNull(after),
+                format = Optional.presentIfNotNull(format?.graphQL),
+            ),
         ).friendLibraryPage ?: return emptyList<FriendBook>() to false
         return page.books.map { it.friendBookRow.asDomain } to page.hasMore
     }
@@ -148,6 +169,8 @@ val FriendRow.asDomain: Friend
         readingCount = readingCount,
         toReadCount = toReadCount,
         readThisYear = readThisYear,
+        avatarHero = avatarHero?.rawValue,
+        avatarColor = avatarColor?.rawValue,
         recentActivity = recentActivity.mapNotNull { row ->
             val at = parseISO8601(row.at) ?: return@mapNotNull null
             val (kind, status) = when (row.kind) {
@@ -165,6 +188,9 @@ val FriendRow.asDomain: Friend
             )
         },
     )
+
+val FriendsShelfEntryRow.asDomain: FriendsShelfEntry
+    get() = FriendsShelfEntry(friendId, friendFirstName, book.friendBookRow.asDomain)
 
 val SharedShelf.asDomain: FriendProfile
     get() = FriendProfile(

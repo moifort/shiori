@@ -5,6 +5,9 @@ package com.polyforms.shiori.features.friends
 import com.polyforms.shiori.shared.Book
 import com.polyforms.shiori.shared.BookGenre
 import com.polyforms.shiori.shared.BookLanguage
+import com.polyforms.shiori.shared.FollowedSeries
+import com.polyforms.shiori.shared.SeriesOpinion
+import com.polyforms.shiori.shared.SeriesStripItem
 import com.polyforms.shiori.shared.InstantSerializer
 import com.polyforms.shiori.shared.L
 import com.polyforms.shiori.shared.SeriesState
@@ -27,8 +30,15 @@ data class Friend(
     val toReadCount: Int = 0,
     val readThisYear: Int = 0,
     val recentActivity: List<RecentActivity> = emptyList(),
+    /** The hero or colour they wear, as the server names them. A photo is never carried: it is theirs. */
+    val avatarHero: String? = null,
+    val avatarColor: String? = null,
 ) {
     val id: String get() = userId
+
+    /** What they wear; their initials on slate without one. */
+    val avatar: AccountAvatar get() = avatarOf(avatarHero, avatarColor)
+
     val displayName: String get() = firstName ?: L("Un lecteur")
     val initials: String get() = displayName.split(" ").take(2).mapNotNull { it.firstOrNull() }.joinToString("").uppercase()
 
@@ -59,12 +69,39 @@ data class FriendBook(
 ) {
     val id: String get() = book.id
 
-    val ownerAvatar: AccountAvatar
-        get() {
-            ownerAvatarHero?.let(AvatarHero::ofGraphQL)?.let { return AccountAvatar.Hero(it) }
-            ownerAvatarColor?.let { c -> AvatarColor.entries.firstOrNull { it.name == c.uppercase() } }?.let { return AccountAvatar.Tinted(it) }
-            return AccountAvatar.Initials
-        }
+    val ownerAvatar: AccountAvatar get() = avatarOf(ownerAvatarHero, ownerAvatarColor)
+}
+
+/** An avatar as the server names it: a hero, else a colour, else the initials on slate. */
+private fun avatarOf(hero: String?, color: String?): AccountAvatar {
+    hero?.let(AvatarHero::ofGraphQL)?.let { return AccountAvatar.Hero(it) }
+    color?.let { c -> AvatarColor.entries.firstOrNull { it.name == c.uppercase() } }?.let { return AccountAvatar.Tinted(it) }
+    return AccountAvatar.Initials
+}
+
+/** The Amis tab's rails: the chosen friends' books, each rail every friend together, the most recent first. */
+@Serializable
+data class FriendsShelf(
+    val reading: List<FriendsShelfEntry> = emptyList(),
+    val favorites: List<FriendsShelfEntry> = emptyList(),
+    val finished: List<FriendsShelfEntry> = emptyList(),
+    val pile: List<FriendsShelfEntry> = emptyList(),
+) {
+    val isEmpty: Boolean get() = reading.isEmpty() && favorites.isEmpty() && finished.isEmpty() && pile.isEmpty()
+
+    /** The rails kept to the friends chosen; none keeps every friend. */
+    fun narrowed(to: List<String>): FriendsShelf {
+        if (to.isEmpty()) return this
+        fun keep(entries: List<FriendsShelfEntry>) = entries.filter { it.friendId in to }
+        return FriendsShelf(keep(reading), keep(favorites), keep(finished), keep(pile))
+    }
+}
+
+/** A book of the Amis tab, with whose shelf it is on. */
+@Serializable
+data class FriendsShelfEntry(val friendId: String, val friendName: String?, val book: FriendBook) {
+    /** One book can sit on two friends' shelves: the pair is the row. */
+    val id: String get() = "$friendId-${book.id}"
 }
 
 enum class AudioAvailability { AVAILABLE, UNAVAILABLE, UNKNOWN }
@@ -146,30 +183,6 @@ data class FriendInvitation(val code: String, val expiresAt: Instant) {
     val url: String get() = InvitationLink.url(code)
 }
 
-/** The links an invitation travels as: `https://<server>/invite/CODE`, or `shiori://invite/CODE`. */
-object InvitationLink {
-    const val HOST = "shiori-server-hvrhl6ox5q-ey.a.run.app"
-    const val SCHEME = "shiori"
-    private const val PATH = "invite"
-
-    fun url(code: String) = "https://$HOST/$PATH/$code"
-
-    fun code(url: android.net.Uri): String? {
-        val segments = url.pathSegments
-        if (url.scheme == SCHEME) {
-            if (url.host != PATH) return null
-            return segments.firstOrNull()?.let(::normalized)
-        }
-        if (url.host != HOST || segments.size != 2 || segments[0] != PATH) return null
-        return normalized(segments[1])
-    }
-
-    private fun normalized(code: String): String? {
-        val upper = code.uppercase()
-        return if (upper.length == 8 && upper.all { it.isLetterOrDigit() }) upper else null
-    }
-}
-
 /** Who among the reader's friends loved something. */
 @Serializable
 data class FriendLovers(val friends: List<Lover>, val lovedByMany: Boolean) {
@@ -209,3 +222,24 @@ data class LovedAuthor(val key: String, val name: String, val portraitURL: Strin
 /** "Coups de cœur de vos amis": what friends hearted and the reader holds in no format. */
 @Serializable
 data class FriendPicks(val books: List<LovedBook> = emptyList(), val sagas: List<LovedSaga> = emptyList(), val authors: List<LovedAuthor> = emptyList())
+
+/**
+ * A friend's saga as the Series tab's card reads it: their volumes on the strip and nothing
+ * between them, their heart and their stars. "5 sur 5 lus" counts the volumes on their shelf,
+ * never the shared catalogue.
+ */
+val FriendSaga.asFollowedSeries: FollowedSeries
+    get() = FollowedSeries(
+        seriesId = seriesId,
+        name = name,
+        isAudio = isAudio,
+        author = author,
+        language = language,
+        state = state,
+        genre = genre,
+        ownedCount = ownedCount,
+        shelvedAt = shelvedAt,
+        volumes = volumes,
+        strip = volumes.map { SeriesStripItem.Owned(it) },
+        opinion = SeriesOpinion(seriesId, rating, favorite),
+    )

@@ -13,8 +13,7 @@ import com.polyforms.shiori.shared.SeriesState
 interface FriendsClient {
     suspend fun friends(): List<Friend>
     suspend fun myShelf(): FriendProfile
-    suspend fun profile(userId: String): FriendProfile?
-    suspend fun libraryPage(friendId: String, status: ReadingStatus?, loved: Boolean, after: String?): Pair<List<FriendBook>, Boolean>
+    suspend fun libraryPage(friendId: String, status: ReadingStatus?, format: BookFormat?, after: String?): Pair<List<FriendBook>, Boolean>
     suspend fun sagaPage(friendId: String, state: SeriesState?, loved: Boolean, after: String?): Pair<List<FriendSaga>, Boolean>
     suspend fun book(friendId: String, bookId: String): FriendBook?
     suspend fun audio(friendId: String, bookId: String): AudioAvailability?
@@ -26,16 +25,21 @@ interface FriendsClient {
     suspend fun accept(code: String): Friend
     suspend fun remove(userId: String)
 
-    /** Onto the reader's wishlist: the server re-reads the friend's book. */
-    suspend fun wish(friendId: String, bookId: String)
+    /** Onto the reader's wishlist: the server re-reads the friend's book. Answers the wish's id. */
+    suspend fun wish(friendId: String, bookId: String): String
+
+    /** A wish taken back, from "Envies" tapped again. */
+    suspend fun removeWish(wishId: String)
+
+    /** The Amis tab's rails for the friends chosen; none means every friend. */
+    suspend fun friendsShelf(friendIds: List<String>): FriendsShelf
 
     companion object {
         val live: FriendsClient = object : FriendsClient {
             override suspend fun friends() = FriendsApi.friends()
             override suspend fun myShelf() = FriendsApi.myShelf()
-            override suspend fun profile(userId: String) = FriendsApi.profile(userId)
-            override suspend fun libraryPage(friendId: String, status: ReadingStatus?, loved: Boolean, after: String?) =
-                FriendsApi.libraryPage(friendId, status, loved, after)
+            override suspend fun libraryPage(friendId: String, status: ReadingStatus?, format: BookFormat?, after: String?) =
+                FriendsApi.libraryPage(friendId, status, format, after)
             override suspend fun sagaPage(friendId: String, state: SeriesState?, loved: Boolean, after: String?) =
                 FriendsApi.sagaPage(friendId, state, loved, after)
             override suspend fun book(friendId: String, bookId: String) = FriendsApi.book(friendId, bookId)
@@ -51,22 +55,11 @@ interface FriendsClient {
             override suspend fun remove(userId: String) {
                 FriendsApi.remove(userId)
             }
-            override suspend fun wish(friendId: String, bookId: String) {
-                WishlistApi.wish(friendId, bookId)
+            override suspend fun wish(friendId: String, bookId: String) = WishlistApi.wish(friendId, bookId).id
+            override suspend fun removeWish(wishId: String) {
+                WishlistApi.remove(wishId)
             }
+            override suspend fun friendsShelf(friendIds: List<String>) = FriendsApi.friendsShelf(friendIds)
         }
     }
-}
-
-/** Says on every shelf of the profile that the reader now holds the book. */
-fun FriendProfile.markingOwned(bookId: String): FriendProfile {
-    fun FriendBook.owned() = if (id == bookId) copy(inLibrary = true) else this
-    return copy(
-        reading = reading.map { it.owned() },
-        pile = pile.map { it.owned() },
-        favorites = favorites.map { it.owned() },
-        lastFinished = lastFinished?.owned(),
-        lastDropped = lastDropped?.owned(),
-        lastAdded = lastAdded?.owned(),
-    )
 }

@@ -79,7 +79,15 @@ fun AuthRoot() {
                             }
                         }
                         OnboardingGate.State.Required -> ShioriTheme(dark = true) {
-                            OnboardingScreen(onCompleted = { name, avatar -> gate.markCompleted(name, avatar) })
+                            val context = androidx.compose.ui.platform.LocalContext.current
+                            OnboardingScreen(onCompleted = { name, avatar ->
+                                gate.markCompleted(name, avatar)
+                                // A new reader who did not arrive on a link may have one waiting: from
+                                // Google Play's install referrer, or copied by the invitation page.
+                                if (com.polyforms.shiori.MainActivity.invitations.replayCache.isEmpty()) {
+                                    com.polyforms.shiori.features.friends.PastedInvitation.markPending(context)
+                                }
+                            })
                         }
                         OnboardingGate.State.Ready -> Box(Modifier.fillMaxSize()) {
                             ContentView()

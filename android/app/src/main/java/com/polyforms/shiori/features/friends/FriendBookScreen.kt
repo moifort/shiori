@@ -11,7 +11,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import com.polyforms.shiori.features.authors.AuthorScreen
 import com.polyforms.shiori.features.discover.AwaitedEdition
 import com.polyforms.shiori.features.discover.AwaitedEditionScreen
@@ -26,8 +25,6 @@ import com.polyforms.shiori.features.series.components.pages.takenAs
 import com.polyforms.shiori.shared.BookFormat
 import com.polyforms.shiori.shared.L
 import com.polyforms.shiori.shared.SnapshotCache
-import com.polyforms.shiori.shared.account.AccountAvatar
-import com.polyforms.shiori.shared.components.atoms.AccountAvatarView
 import com.polyforms.shiori.shared.components.molecules.EmptyState
 import com.polyforms.shiori.shared.components.molecules.FailureState
 import com.polyforms.shiori.shared.components.styles.Shiori
@@ -62,6 +59,9 @@ class FriendBookViewModel(val friendId: String, val bookId: String, private val 
         private set
     var wished by mutableStateOf(false)
         private set
+
+    /** The wish made here, which "Envies" tapped again takes back. */
+    private var wishId: String? = null
 
     /** Whether Audible sells it: until it answers, the reader may still take it heard. */
     var audio by mutableStateOf<AudioAvailability?>(null)
@@ -115,11 +115,19 @@ class FriendBookViewModel(val friendId: String, val bookId: String, private val 
         false
     }
 
+    /** "Envies": onto the wish list, or off it again on a second tap. Shown at once, back if the server refused. */
     suspend fun wish() {
+        val wasWished = wished
+        wished = !wasWished
         try {
-            client.wish(friendId, bookId)
-            wished = true
+            if (wasWished) {
+                wishId?.let { client.removeWish(it) }
+                wishId = null
+            } else {
+                wishId = client.wish(friendId, bookId)
+            }
         } catch (error: Throwable) {
+            wished = wasWished
             if (!isCancellation(error)) addFailed = reportError(error)
         }
     }
@@ -185,6 +193,7 @@ fun FriendBookScreen(friendId: String, bookId: String, friendName: String, onAdd
                 viewModel.offer.awaited,
                 formats = entry.book.format.takenAs.filter { it != BookFormat.AUDIOBOOK || viewModel.audio != AudioAvailability.UNAVAILABLE },
                 awaitable = viewModel.offer.awaitable,
+                awaitFormats = viewModel.offer.formats,
                 wished = viewModel.wished,
             ) { action ->
                 when (action) {
@@ -206,10 +215,8 @@ fun FriendBookScreen(friendId: String, bookId: String, friendName: String, onAdd
             errorMessage != null -> FailureState(L("Livre indisponible"), errorMessage) { viewModel.load() }
             else -> EmptyState("book.closed", L("Livre introuvable"), L("Ce livre n'est plus partagé."))
         }
-        // Whose shelf it is: their disc in the corner, as an account's.
-        ScreenBar {
-            AccountAvatarView(entry?.ownerAvatar ?: AccountAvatar.Initials, friendName, 44.dp)
-        }
+        // Whose shelf it is is said by the pill over the title.
+        ScreenBar()
     }
     viewModel.addFailed?.let { ShioriAlert(L("Ajout impossible"), it, onDismiss = { viewModel.addFailed = null }) }
 }

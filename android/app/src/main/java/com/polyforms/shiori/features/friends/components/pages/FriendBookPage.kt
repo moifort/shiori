@@ -23,17 +23,27 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.polyforms.shiori.features.book.components.pages.HeroButton
 import com.polyforms.shiori.features.discover.AwaitedEdition
 import com.polyforms.shiori.features.discover.AwaitedState
 import com.polyforms.shiori.features.discover.ReleaseFormat
 import com.polyforms.shiori.features.discover.components.organisms.AwaitedEditionReleaseRow
 import com.polyforms.shiori.features.friends.CopiedStatus
 import com.polyforms.shiori.features.friends.FriendBook
+import com.polyforms.shiori.features.friends.components.organisms.FriendBookAddMenu
+import com.polyforms.shiori.features.friends.components.organisms.FriendCoverTag
+import com.polyforms.shiori.shared.components.molecules.EditionWatch
+import com.polyforms.shiori.shared.components.styles.glassOnDark
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Text
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import com.polyforms.shiori.shared.Book
 import com.polyforms.shiori.shared.BookFormat
 import com.polyforms.shiori.shared.L
@@ -80,37 +90,10 @@ sealed interface FriendBookAction {
 }
 
 /**
- * What a book the reader does not hold may become: onto the pile or among the books read, in
- * each format they may take it in; onto the wishlist; its edition in the app's language awaited.
- */
-fun bookAddMenu(
-    formats: List<BookFormat>,
-    owned: Boolean,
-    awaitable: List<ReleaseFormat>,
-    wished: Boolean,
-    onAdd: (CopiedStatus, BookFormat) -> Unit,
-    onWish: () -> Unit,
-    onAwait: (ReleaseFormat) -> Unit,
-): List<MenuEntry> = buildList {
-    if (!owned) {
-        formats.forEach { format ->
-            val audio = format == BookFormat.AUDIOBOOK
-            add(MenuEntry.Item("${format.label} · ${if (audio) L("À écouter") else L("À lire")}", "bookmark.fill") { onAdd(CopiedStatus.TO_READ, format) })
-            add(MenuEntry.Item("${format.label} · ${if (audio) L("Déjà écouté") else L("Déjà lu")}", "checkmark") { onAdd(CopiedStatus.READ, format) })
-            add(MenuEntry.Divider)
-        }
-        add(MenuEntry.Item(L("Liste d'envies"), if (wished) "checkmark" else "bookmark") { if (!wished) onWish() })
-    }
-    if (awaitable.isNotEmpty()) {
-        if (!owned) add(MenuEntry.Divider)
-        awaitable.forEach { add(MenuEntry.Item(it.awaitLabel, if (it == ReleaseFormat.AUDIOBOOK) "headphones" else "character.book.closed") { onAwait(it) }) }
-    }
-}
-
-/**
  * A friend's book page: the reader's own book page, read-only. The same hero — the friend named
- * on the detail line with where they stand, the way onto the reader's shelf, the friend's heart
- * or stars beside it — then the summary, the facts, the editions awaited, the saga, their words.
+ * on the detail line with where they stand, their name and avatar on a pill level with the cover's
+ * top, the way onto the reader's shelf, the friend's "Coup de cœur" or else their stars on glass
+ * beside it — then the summary, the facts, the editions awaited, the saga, their words.
  */
 @Composable
 fun FriendBookPage(
@@ -120,6 +103,8 @@ fun FriendBookPage(
     awaited: List<AwaitedEdition>,
     formats: List<BookFormat> = emptyList(),
     awaitable: List<ReleaseFormat> = emptyList(),
+    /** Every edition that may be awaited of it, awaited or not: what "+ Ajouter" says once one is. */
+    awaitFormats: List<ReleaseFormat> = emptyList(),
     wished: Boolean = false,
     onAction: suspend (FriendBookAction) -> Unit,
 ) {
@@ -133,36 +118,42 @@ fun FriendBookPage(
         BookHero(
             book,
             state = friendState(book, friendName),
-            isAwaited = awaited.isNotEmpty(),
             showsLength = false,
             onOpenAuthor = { act(FriendBookAction.OpenAuthor(it)) },
             onOpenNarrator = { act(FriendBookAction.OpenNarrator(it)) },
+            owner = {
+                FriendCoverTag(friendName, entry.ownerAvatar, Modifier.semantics { contentDescription = L("Chez %@", friendName) }, isLarge = true)
+            },
         ) {
-            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                val menu = bookAddMenu(
+            Row(
+                Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                FriendBookAddMenu(
                     formats,
                     owned,
                     awaitable,
-                    wished,
                     onAdd = { status, format -> act(FriendBookAction.Add(status, format)) },
-                    onWish = { act(FriendBookAction.Wish) },
                     onAwait = { act(FriendBookAction.AwaitEdition(it)) },
+                    wished = wished,
+                    onWish = { act(FriendBookAction.Wish) },
+                    watch = EditionWatch(awaitFormats, awaited.map { it.format }.toSet()),
+                    onStopAwaiting = { format -> awaited.firstOrNull { it.format == format }?.let { act(FriendBookAction.StopAwaiting(it)) } },
                 )
-                Box(Modifier.alpha(if (menu.isEmpty()) 0.45f else 1f)) {
-                    HeroButton(
-                        if (owned) L("Chez vous") else L("Ajouter"),
-                        if (owned) "checkmark" else "plus",
-                        prominent = true,
-                        menu = menu,
-                        menuOnTap = true,
-                    ) {}
-                }
                 // One or the other: a heart is the top mark, so it stands in for the stars.
                 val rating = book.rating
                 if (book.favorite) {
-                    HeroButton(null, null, content = { Icon(Symbol("heart.fill"), null, Modifier.size(18.dp), tint = Color(0xFFED1A26)) }) {}
+                    // White, as every mark on glass, and said in words: the heart alone read as a
+                    // button to heart it oneself.
+                    GlassChip(L("Coup de cœur de %@", friendName)) {
+                        Icon(Symbol("heart.fill"), null, Modifier.size(18.dp), tint = Color.White)
+                        Text(L("Coup de cœur"), style = Shiori.type.headline, color = Color.White, maxLines = 1)
+                    }
                 } else if (rating != null) {
-                    HeroButton(null, null, content = { RatingStars(rating, size = 13.dp, monochrome = true, tint = Color.White) }) {}
+                    GlassChip(L("Noté %lld sur 5 par %@", rating.toInt(), friendName)) {
+                        RatingStars(rating, size = 13.dp, monochrome = true, tint = Color.White)
+                    }
                 }
             }
         }
@@ -214,6 +205,21 @@ fun FriendBookPage(
     }
 }
 
+/** A fact on glass beside the hero's button, at the button's own height, nothing to tap. */
+@Composable
+private fun GlassChip(description: String, content: @Composable RowScope.() -> Unit) {
+    Row(
+        Modifier
+            .defaultMinSize(52.dp, 52.dp)
+            .glassOnDark(CircleShape)
+            .padding(horizontal = 14.dp)
+            .clearAndSetSemantics { contentDescription = description },
+        horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
+        verticalAlignment = Alignment.CenterVertically,
+        content = content,
+    )
+}
+
 /**
  * Where the friend stands, said as a sentence about them: "Camille l'a lu le 15 octobre",
  * "Camille le lit depuis 3 jours", "Dans la pile de Camille" — heard for a recording.
@@ -262,5 +268,7 @@ private fun FriendBookPagePreview() = PreviewSurface {
         added = null,
         awaited = emptyList(),
         formats = listOf(com.polyforms.shiori.shared.BookFormat.BOOK, com.polyforms.shiori.shared.BookFormat.AUDIOBOOK),
+        awaitable = listOf(ReleaseFormat.AUDIOBOOK),
+        awaitFormats = listOf(ReleaseFormat.AUDIOBOOK),
     ) {}
 }
