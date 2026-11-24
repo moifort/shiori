@@ -40,8 +40,15 @@ object PushRegistrar {
     /** Asks Android for the permission; set by the screen that can show the prompt. */
     var requester: (suspend () -> Boolean)? = null
 
-    /** A tap on an alert: Découvrir opens. */
-    val openDiscover = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    /** A tap on an alert: the News tab opens, as on iOS. Replayed, since a tap on an alert
+     *  shown while the app was closed arrives before the signed-in screen collects it. */
+    val openNews = MutableSharedFlow<Unit>(replay = 1, extraBufferCapacity = 1)
+
+    /** Whether the activity was opened by a tap on an alert: ours, or one the system drew
+     *  while the app was closed, which carries FCM's message id and the alert's data. */
+    fun isTappedAlert(intent: Intent): Boolean =
+        intent.getBooleanExtra(MainActivity.OPEN_NEWS, false) ||
+            (intent.extras?.containsKey("google.message_id") == true && intent.action != Intent.ACTION_SEND)
 
     private val context: Context get() = AppContext.get()
     private val isReady: Boolean get() = FirebaseApp.getApps(context).isNotEmpty()
@@ -98,7 +105,9 @@ object PushRegistrar {
     }
 }
 
-/** FCM's entry: a new token goes to the server, an alert is shown in the alerts channel. */
+/** FCM's entry: a new token goes to the server, an alert arriving while the app is open is
+ *  shown in the alerts channel (the system shows it itself when the app is closed), as iOS
+ *  still shows a banner in the foreground. */
 class ShioriMessagingService : FirebaseMessagingService() {
     override fun onNewToken(token: String) {
         AppScope.launch { PushRegistrar.register(token) }
@@ -109,7 +118,10 @@ class ShioriMessagingService : FirebaseMessagingService() {
         val open = PendingIntent.getActivity(
             this,
             0,
-            Intent(this, MainActivity::class.java).putExtra(MainActivity.OPEN_DISCOVER, true).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
+            Intent(this, MainActivity::class.java)
+                .putExtra(MainActivity.OPEN_NEWS, true)
+                .putExtra("link", message.data["link"])
+                .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
         val shown = NotificationCompat.Builder(this, PushRegistrar.CHANNEL)
@@ -121,7 +133,8 @@ class ShioriMessagingService : FirebaseMessagingService() {
             .setContentIntent(open)
             .build()
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED || Build.VERSION.SDK_INT < 33) {
-            NotificationManagerCompat.from(this).notify(message.messageId.hashCode(), shown)
+            // One kind replaces its last alert, as the server's tag asks; the iOS thread.
+            NotificationManagerCompat.from(this).notify(notification.tag, message.messageId.hashCode(), shown)
         }
     }
 }

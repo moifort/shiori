@@ -31,9 +31,12 @@ class MainActivity : ComponentActivity() {
         route(intent)
     }
 
-    /** A release alert opens Découvrir; an invitation link asks before it is taken up. */
+    /** A tapped alert opens the News tab, as on iOS; an invitation link asks before it is
+     *  taken up. An alert reaches here two ways: shown by [ShioriMessagingService] while the app
+     *  is open, with [OPEN_NEWS], or shown by the system while it is closed, which hands the
+     *  activity FCM's own extras. */
     private fun route(intent: Intent) {
-        if (intent.getBooleanExtra(OPEN_DISCOVER, false)) PushRegistrar.openDiscover.tryEmit(Unit)
+        if (PushRegistrar.isTappedAlert(intent)) PushRegistrar.openNews.tryEmit(Unit)
         intent.data?.let(InvitationLink::code)?.let { invitations.tryEmit(it) }
         if (intent.action == Intent.ACTION_SEND) {
             val image = if (android.os.Build.VERSION.SDK_INT >= 33) {
@@ -50,7 +53,7 @@ class MainActivity : ComponentActivity() {
     }
 
     companion object {
-        const val OPEN_DISCOVER = "openDiscover"
+        const val OPEN_NEWS = "openNews"
 
         /** Invitation codes from tapped links, kept until the signed-in app takes them. */
         val invitations = MutableSharedFlow<String>(replay = 1, extraBufferCapacity = 1)

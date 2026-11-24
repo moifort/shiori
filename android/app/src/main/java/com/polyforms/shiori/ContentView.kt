@@ -140,7 +140,7 @@ fun ContentView(router: AppRouter = remember { AppRouter() }) {
         }
         PushRegistrar.refreshRegistration()
     }
-    LaunchedEffect(Unit) { PushRegistrar.openDiscover.collect { router.showDiscover() } }
+    LaunchedEffect(Unit) { PushRegistrar.openNews.collect { router.selectedTab = TabSelection.NEWS } }
     LaunchedEffect(Unit) {
         MainActivity.invitations.collect {
             @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
