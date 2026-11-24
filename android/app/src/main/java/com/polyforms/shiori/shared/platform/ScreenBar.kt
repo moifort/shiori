@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -151,6 +152,10 @@ fun BoxScope.ScrollAwayBar(
     title: String,
     state: ScrollAwayState,
     showsAccount: Boolean = true,
+    /** Back, on a pushed page: it stays while the title and the buttons go, as the system's. */
+    onBack: (() -> Unit)? = null,
+    /** Buttons that stay, as a toolbar item outside the bar that scrolls away. */
+    pinned: @Composable RowScope.() -> Unit = {},
     trailing: @Composable RowScope.() -> Unit = {},
 ) {
     val alpha by animateFloatAsState(if (state.isCalled) 1f else 0f, tween(250), label = "scrollAway")
@@ -160,16 +165,32 @@ fun BoxScope.ScrollAwayBar(
             .fillMaxWidth()
             .statusBarsPadding()
             .height(56.dp)
-            .padding(horizontal = 16.dp)
-            .graphicsLayer { this.alpha = alpha },
+            .padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(title, style = Shiori.type.title2.copy(fontWeight = FontWeight.Bold), color = Shiori.colors.label, maxLines = 1, modifier = Modifier.weight(1f))
-        if (state.isCalled) {
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                trailing()
-                if (showsAccount) AccountSettingsButton()
+        if (onBack != null) {
+            ToolbarIconButton(L("Retour"), "chevron.left", onClick = onBack)
+            Spacer(Modifier.width(12.dp))
+        }
+        Text(
+            title,
+            style = Shiori.type.title2.copy(fontWeight = FontWeight.Bold),
+            color = Shiori.colors.label,
+            maxLines = 1,
+            modifier = Modifier.weight(1f).graphicsLayer { this.alpha = alpha },
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+            if (state.isCalled) {
+                Row(
+                    Modifier.graphicsLayer { this.alpha = alpha },
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    trailing()
+                    if (showsAccount) AccountSettingsButton()
+                }
             }
+            pinned()
         }
     }
 }

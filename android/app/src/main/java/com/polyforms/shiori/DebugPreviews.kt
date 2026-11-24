@@ -150,7 +150,7 @@ fun DebugPreviews(name: String) {
                 ScrollAwayBar(com.polyforms.shiori.shared.L("Amis"), com.polyforms.shiori.shared.platform.rememberScrollAwayState())
             }
             "friend-books" -> com.polyforms.shiori.features.friends.FriendLibraryScreen("sophie", "Sophie", com.polyforms.shiori.features.friends.FriendsFixtures.client)
-            "friend-series" -> com.polyforms.shiori.features.friends.FriendSeriesListScreen("sophie", "Sophie", com.polyforms.shiori.features.friends.FriendsFixtures.client)
+            "friend-series" -> NavigationStack { com.polyforms.shiori.features.friends.FriendSeriesListScreen("sophie", "Sophie", com.polyforms.shiori.features.friends.FriendsFixtures.client) }
             "friends-welcome" -> FriendsPreview(emptyList(), welcomed = "camille")
             "pasted-invitation" -> androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color.Black)) {
                 com.polyforms.shiori.shared.platform.ShioriSheet({}) { com.polyforms.shiori.features.friends.components.pages.PastedInvitationSheet {} }

@@ -24,7 +24,9 @@ import com.polyforms.shiori.shared.L
 import com.polyforms.shiori.shared.components.molecules.EmptyState
 import com.polyforms.shiori.shared.components.styles.Shiori
 import com.polyforms.shiori.shared.isCancellation
-import com.polyforms.shiori.shared.platform.ScreenBar
+import com.polyforms.shiori.shared.platform.ScrollAwayBar
+import com.polyforms.shiori.shared.platform.rememberScrollAwayState
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import com.polyforms.shiori.shared.platform.currentNavigator
 import com.polyforms.shiori.shared.reportError
 
@@ -66,7 +68,8 @@ fun FriendSeriesListScreen(friendId: String, friendName: String, client: Friends
 
     LaunchedEffect(Unit) { if (!loaded) load() }
 
-    Box(Modifier.fillMaxSize().background(Shiori.colors.groupedBackground)) {
+    val bar = rememberScrollAwayState()
+    Box(Modifier.fillMaxSize().background(Shiori.colors.groupedBackground).nestedScroll(bar.connection)) {
         SeriesShelfPage(
             upNext = emptyList(),
             releases = emptyList(),
@@ -92,6 +95,14 @@ fun FriendSeriesListScreen(friendId: String, friendName: String, client: Friends
         if (loaded && sagas.isEmpty()) {
             EmptyState("square.stack", L("Aucune série"), L("Aucune série n'a été ajoutée à cette bibliothèque."))
         }
-        ScreenBar(L("Séries")) { SeriesStatusMenu(SeriesStatusFilter.entries, status) { status = it } }
+        // As iOS's scrollAwayBar: the title on the left beside Back, going while the page scrolls
+        // down; the status menu, a toolbar item of its own, stays.
+        ScrollAwayBar(
+            L("Séries"),
+            bar,
+            showsAccount = false,
+            onBack = { navigator.pop() },
+            pinned = { SeriesStatusMenu(SeriesStatusFilter.entries, status) { status = it } },
+        )
     }
 }
