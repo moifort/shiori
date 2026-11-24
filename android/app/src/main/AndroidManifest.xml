@@ -18,6 +18,14 @@
         android:theme="@style/Theme.Shiori">
         <!-- Sentry starts from ShioriApplication, only in a release build with a DSN. -->
         <meta-data android:name="io.sentry.auto-init" android:value="false" />
+        <!-- An alert the system draws while the app is closed: the flat book, in the alerts
+             channel. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_notification" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="release-alerts" />
 
         <activity
             android:name=".MainActivity"

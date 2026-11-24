@@ -30,7 +30,12 @@ enum class NotificationAuthorization { NOT_DETERMINED, AUTHORIZED, DENIED }
  * forgotten at sign-out. The permission is asked through [requester], which the activity sets.
  */
 object PushRegistrar {
-    const val CHANNEL = "alerts"
+    const val CHANNEL = "release-alerts"
+
+    /** The first channel, made at the default importance: no banner while the app was open.
+     *  Android restores a deleted channel's settings when the same id is made again, so the
+     *  high-importance one takes a new id and this one is removed. */
+    private const val FORMER_CHANNEL = "alerts"
     private var currentToken: String? = null
     private var asked = false
 
@@ -99,9 +104,12 @@ object PushRegistrar {
         runCatching { NotificationsApi.unregisterDevice(token) }
     }
 
+    /** High importance, so an alert shows as a banner even while the app is open, as iOS
+     *  presents it. */
     fun createChannel(context: Context) {
         val manager = context.getSystemService(NotificationManager::class.java) ?: return
-        manager.createNotificationChannel(NotificationChannel(CHANNEL, L("Alertes"), NotificationManager.IMPORTANCE_DEFAULT))
+        manager.deleteNotificationChannel(FORMER_CHANNEL)
+        manager.createNotificationChannel(NotificationChannel(CHANNEL, L("Alertes"), NotificationManager.IMPORTANCE_HIGH))
     }
 }
 
@@ -125,7 +133,8 @@ class ShioriMessagingService : FirebaseMessagingService() {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
         val shown = NotificationCompat.Builder(this, PushRegistrar.CHANNEL)
-            .setSmallIcon(R.mipmap.ic_launcher)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setContentTitle(notification.title)
             .setContentText(notification.body)
             .setStyle(NotificationCompat.BigTextStyle().bigText(notification.body))
