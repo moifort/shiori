@@ -120,11 +120,10 @@ fun <Person : ShelvedPerson> PersonShelfPage(
                     Box(Modifier.padding(top = 8.dp, bottom = if (allTitle == null) 0.dp else 18.dp)) { FavoriteAuthorReleasesRail(releases, onOpenRelease) }
                 }
             }
-            if (allTitle != null) {
-                item(key = "all-title") { RowHeader(allTitle, Modifier.padding(horizontal = 20.dp).padding(top = 8.dp), style = RowHeaderStyle.INLINE) }
-            }
             item(key = "pills") {
-                Box(Modifier.padding(vertical = 8.dp)) {
+                // The heading sits over the pills, 12 apart, as "Toutes les séries" heads the series'.
+                Column(Modifier.padding(vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    if (allTitle != null) RowHeader(allTitle, Modifier.padding(horizontal = 20.dp), style = RowHeaderStyle.INLINE)
                     FilterPills(orders.map { FilterPill(it.name, it.pillLabel) }, order.name, { id ->
                         AuthorListOrder.entries.firstOrNull { it.name == id }?.let { send(PersonShelfAction.Order(it)) }
                     }, allLabel = null)
