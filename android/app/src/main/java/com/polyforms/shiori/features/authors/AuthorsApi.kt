@@ -40,7 +40,7 @@ fun PortraitSource.asDomain(): PortraitChoice.Source = when (this) {
 
 object AuthorsApi {
     suspend fun page(key: String, offered: String? = null, waitForCatalogue: Boolean = false): AuthorPage? {
-        if (Showcase.isOn) return null
+        if (Showcase.isOn) return com.polyforms.shiori.DebugFixtures.authorPage
         return GraphQLClient.fetch(AuthorPageQuery(key, Optional.presentIfNotNull(offered), waitForCatalogue)).authorPage?.authorPageFields?.asDomain
     }
 
@@ -66,7 +66,7 @@ object AuthorsApi {
     }
 
     suspend fun myAuthorsPage(limit: Int, after: String?, order: AuthorListOrder): CursorPage<FollowedAuthor> {
-        if (Showcase.isOn) return CursorPage(emptyList(), false, null)
+        if (Showcase.isOn) return CursorPage(listOf(com.polyforms.shiori.DebugFixtures.author), false, null)
         val page = GraphQLClient.fetch(
             MyAuthorsPageQuery(Optional.present(limit), Optional.presentIfNotNull(after), Optional.Absent, Optional.present(order.graphQL)),
         ).myAuthorsPage
