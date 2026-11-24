@@ -4,6 +4,8 @@ import com.polyforms.shiori.shared.components.styles.backdropSource
 import com.polyforms.shiori.shared.platform.ScreenBar
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.navigationBars
 
 import androidx.compose.ui.unit.dp
 import com.polyforms.shiori.shared.components.molecules.ConfirmationHost
@@ -48,6 +50,7 @@ import com.polyforms.shiori.features.wishlist.release as wishRelease
  */
 @Composable
 fun DebugPreviews(name: String) {
+    if (name.startsWith("end-")) return PageEndPreview(name.removePrefix("end-"))
     NavigationStack {
         when (name) {
             "book" -> BookPage(
@@ -465,6 +468,42 @@ private fun FriendsPreview(selected: List<String>, welcomed: String? = null) {
         ) {}
         ScrollAwayBar(com.polyforms.shiori.shared.L("Amis"), com.polyforms.shiori.shared.platform.rememberScrollAwayState()) {
             com.polyforms.shiori.shared.components.atoms.ToolbarIconButton(com.polyforms.shiori.shared.L("Inviter"), "person.badge.plus") {}
+        }
+    }
+}
+
+/**
+ * `end-<page>`: a page under the real tab bar with a title in the player's capsule, the room at
+ * its foot handed down as `ContentView` does, for a capture of its last element scrolled clear
+ * of both (`end-home`, `end-book`, `end-library-books`, `end-news`).
+ */
+@Composable
+private fun PageEndPreview(page: String) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    remember { AudiblePlayers.app(context).apply { showPreview(ListeningTitlePreview, Playback.preview) } }
+    com.polyforms.shiori.features.listening.PlayerHost {
+        val tabs = listOf(TabSelection.HOME, TabSelection.LIBRARY, TabSelection.NEWS, TabSelection.FRIENDS)
+        val accessory = com.polyforms.shiori.features.listening.playerAccessory()
+        val covered = com.polyforms.shiori.shared.platform.BottomRoom.covered(
+            androidx.compose.foundation.layout.WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding(),
+            accessory = if (accessory != null) com.polyforms.shiori.features.listening.components.organisms.PlayerAccessoryHeight else null,
+        )
+        val backdrop = com.polyforms.shiori.shared.components.styles.rememberBackdrop()
+        androidx.compose.runtime.CompositionLocalProvider(com.polyforms.shiori.shared.platform.LocalBottomCovered provides covered) {
+            androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize()) {
+                androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize().backdropSource(backdrop)) { DebugPreviews(page) }
+                androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.align(androidx.compose.ui.Alignment.BottomCenter)) {
+                    androidx.compose.runtime.CompositionLocalProvider(com.polyforms.shiori.shared.components.styles.LocalBackdrop provides backdrop) {
+                        com.polyforms.shiori.shared.platform.FloatingTabBar(
+                            tabs = tabs.map { com.polyforms.shiori.shared.platform.TabItem(it, it.label, it.symbol) },
+                            selected = if (page.startsWith("news")) TabSelection.NEWS else if (page.startsWith("library")) TabSelection.LIBRARY else TabSelection.HOME,
+                            onSelect = {},
+                            trailing = com.polyforms.shiori.shared.platform.TabItem(TabSelection.SCAN, TabSelection.SCAN.label, TabSelection.SCAN.symbol),
+                            accessory = accessory,
+                        )
+                    }
+                }
+            }
         }
     }
 }
