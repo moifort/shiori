@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- The open book of the iOS icon, cut from its artwork: the book alone on the foreground, inside
+     the 66 dp safe zone of the 108 dp canvas so no launcher mask crops it, the midnight blue on
+     the background, and a one-colour silhouette for Android 13 themed icons. -->
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-    <background android:drawable="@mipmap/ic_launcher_background" />
-    <foreground android:drawable="@android:color/transparent" />
+    <background android:drawable="@drawable/ic_launcher_background" />
+    <foreground android:drawable="@mipmap/ic_launcher_foreground" />
+    <monochrome android:drawable="@mipmap/ic_launcher_monochrome" />
 </adaptive-icon>
