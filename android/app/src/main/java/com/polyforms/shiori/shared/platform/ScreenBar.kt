@@ -48,10 +48,14 @@ import com.polyforms.shiori.shared.components.styles.Shiori
 fun BoxScope.ScreenBar(
     title: String? = null,
     onBack: (() -> Unit)? = LocalNavigator.current?.let { nav -> { nav.pop() } },
+    /** A sheet's root: Fermer, an xmark, in place of Back. */
+    onClose: (() -> Unit)? = null,
     trailing: @Composable RowScope.() -> Unit = {},
 ) {
     Box(Modifier.align(Alignment.TopCenter).fillMaxWidth().statusBarsPadding().height(56.dp).padding(horizontal = 16.dp)) {
-        if (onBack != null) {
+        if (onClose != null) {
+            Box(Modifier.align(Alignment.CenterStart)) { ToolbarIconButton(L("Fermer"), "xmark", onClick = onClose) }
+        } else if (onBack != null) {
             Box(Modifier.align(Alignment.CenterStart)) { ToolbarIconButton(L("Retour"), "chevron.left", onClick = onBack) }
         }
         val shown = title ?: LocalScreenTitle.current?.text
@@ -224,8 +228,8 @@ fun AccountSettingsButton() {
     var showsSettings by remember { mutableStateOf(false) }
     AccountAvatarButton(account.avatar, account.firstName) { showsSettings = true }
     if (showsSettings) {
-        ShioriSheet({ showsSettings = false }) {
-            Box(Modifier.fillMaxSize()) { NavigationStack { SettingsHomeScreen() } }
+        ShioriSheet({ showsSettings = false }) { dismiss ->
+            Box(Modifier.fillMaxSize()) { NavigationStack { SettingsHomeScreen(onClose = dismiss) } }
         }
     }
 }

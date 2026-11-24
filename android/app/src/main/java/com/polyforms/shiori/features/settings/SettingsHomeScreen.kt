@@ -49,7 +49,7 @@ import kotlinx.coroutines.launch
 
 /** The settings, connected: each page they open, the offer, a word to us. */
 @Composable
-fun SettingsHomeScreen() {
+fun SettingsHomeScreen(onClose: (() -> Unit)? = null) {
     val navigator = currentNavigator
     val store = LocalSubscriptionStore.current
     val session = LocalAuthSession.current
@@ -77,7 +77,7 @@ fun SettingsHomeScreen() {
                 }
             }
         }
-        ScreenBar(title = L("Réglages"))
+        ScreenBar(title = L("Réglages"), onClose = onClose)
     }
     if (premium) PremiumSheet(PremiumTrigger.DISCOVER) { premium = false }
     if (feedback) FeedbackSheet({ feedback = false }, ::sendFeedback)

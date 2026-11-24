@@ -40,14 +40,12 @@ import com.polyforms.shiori.features.import.ImportSource
 import com.polyforms.shiori.features.import.KindleImportScreen
 import com.polyforms.shiori.features.onboarding.LocalAccount
 import com.polyforms.shiori.features.series.SeriesScreen
-import com.polyforms.shiori.features.settings.SettingsHomeScreen
+import com.polyforms.shiori.shared.platform.AccountSettingsButton
 import com.polyforms.shiori.shared.Book
 import com.polyforms.shiori.shared.DataChanges
 import com.polyforms.shiori.shared.L
-import com.polyforms.shiori.shared.components.atoms.AccountAvatarView
 import com.polyforms.shiori.shared.components.molecules.FailureState
 import com.polyforms.shiori.shared.components.styles.Shiori
-import com.polyforms.shiori.shared.components.styles.plainClickable
 import com.polyforms.shiori.shared.platform.ShioriAlert
 import com.polyforms.shiori.shared.platform.currentNavigator
 import kotlinx.coroutines.launch
@@ -127,9 +125,8 @@ fun HomeScreen(
                 isDownloaded = isDownloaded,
                 onRefresh = viewModel::load,
                 header = {
-                    HomeHeader(account.isAdmin, avatar = {
-                        AccountAvatarView(account.avatar, account.firstName, modifier = Modifier.plainClickable { navigator.push { SettingsHomeScreen() } })
-                    }) { navigator.push { AdminScreen() } }
+                    // The settings come up as a sheet, as from every other tab's avatar.
+                    HomeHeader(account.isAdmin, avatar = { AccountSettingsButton() }) { navigator.push { AdminScreen() } }
                 },
             ) { action ->
                 when (action) {
