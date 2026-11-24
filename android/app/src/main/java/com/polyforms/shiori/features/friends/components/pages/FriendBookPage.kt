@@ -1,5 +1,6 @@
 package com.polyforms.shiori.features.friends.components.pages
 
+import com.polyforms.shiori.shared.platform.TabBarClearance
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -158,7 +159,7 @@ fun FriendBookPage(
             }
         }
         Column(
-            Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 4.dp, bottom = 32.dp),
+            Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 4.dp, bottom = TabBarClearance),
             verticalArrangement = Arrangement.spacedBy(28.dp),
         ) {
             book.synopsis?.takeIf { it.isNotEmpty() }?.let { BookSynopsisBlock(it) }

@@ -1,5 +1,6 @@
 package com.polyforms.shiori.features.discover.components.pages
 
+import com.polyforms.shiori.shared.platform.TabBarClearance
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -116,7 +117,7 @@ fun AwardWinnerPage(
                 }
             }
             Column(
-                Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 4.dp, bottom = 32.dp),
+                Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 4.dp, bottom = TabBarClearance),
                 verticalArrangement = Arrangement.spacedBy(28.dp),
             ) {
                 // The summary once the model wrote it; nothing while it writes, the bar saying so.

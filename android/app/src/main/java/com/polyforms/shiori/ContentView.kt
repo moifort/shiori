@@ -172,8 +172,9 @@ fun ContentView(router: AppRouter = remember { AppRouter() }) {
             }
         }
         }
-        // The bar shows on a tab's root only, as iOS hides it under a pushed page.
-        if (navigators.getValue(router.selectedTab).depth == 0) {
+        // The bar stays over pushed pages too, as iOS keeps it, folding as they scroll; each
+        // scrolled page leaves [TabBarClearance] at its foot.
+        run {
             Box(Modifier.align(Alignment.BottomCenter).zIndex(2f)) {
                 CompositionLocalProvider(com.polyforms.shiori.shared.components.styles.LocalBackdrop provides backdrop) {
                 FloatingTabBar(

@@ -1,5 +1,6 @@
 package com.polyforms.shiori.features.authors.components.pages
 
+import com.polyforms.shiori.shared.platform.TabBarClearance
 import com.polyforms.shiori.features.discover.DiscoveryVolume
 import com.polyforms.shiori.features.discover.SagaDiscovery
 import com.polyforms.shiori.features.discover.SagaReleases
@@ -107,7 +108,7 @@ fun AuthorDetailPage(page: AuthorPage?, isLoading: Boolean, errorMessage: String
                 }
             }) {
                 Column(
-                    Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = 32.dp),
+                    Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = TabBarClearance),
                     verticalArrangement = Arrangement.spacedBy(30.dp),
                 ) {
                     Hero(page)

@@ -1,5 +1,6 @@
 package com.polyforms.shiori.features.home
 
+import com.polyforms.shiori.shared.platform.TabBarClearance
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -46,7 +47,7 @@ import com.polyforms.shiori.shared.reportError
 @Composable
 fun StatisticsPage(dashboard: Dashboard, onShowLibrary: (LibraryRequest) -> Unit, onOpenGenres: () -> Unit, onOpenBook: (Book) -> Unit) {
     Column(
-        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).statusBarsPadding().padding(top = 64.dp, bottom = 24.dp).padding(horizontal = 16.dp),
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).statusBarsPadding().padding(top = 64.dp, bottom = TabBarClearance).padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         StatTilesRow(
@@ -80,7 +81,7 @@ fun HomeStatisticsScreen(dashboard: Dashboard?, onShowLibrary: (LibraryRequest) 
 @Composable
 fun GenreInsightsPage(insights: GenreInsights) {
     Column(
-        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).statusBarsPadding().padding(top = 56.dp, bottom = 24.dp).padding(horizontal = 16.dp),
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).statusBarsPadding().padding(top = 56.dp, bottom = TabBarClearance).padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         GenreRadar(insights.shares)

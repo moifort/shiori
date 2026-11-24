@@ -1,5 +1,6 @@
 package com.polyforms.shiori.features.library.components.pages
 
+import com.polyforms.shiori.shared.platform.TabBarClearance
 import com.polyforms.shiori.features.discover.DiscoveryVolume
 import com.polyforms.shiori.features.series.UpNextTarget
 import com.polyforms.shiori.shared.book.PosterCover
@@ -115,7 +116,7 @@ fun PilePage(
             refreshing = false
         }
     }, Modifier.fillMaxSize()) {
-        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(28.dp)) {
+        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = TabBarClearance), verticalArrangement = Arrangement.spacedBy(28.dp)) {
             LargeTitle(BookShelf.TO_READ.title)
             if (genres.size > 1) {
                 FilterPills(genres.map { FilterPill(it.name, it.label) }, selectedGenre?.name, { id -> send(PileAction.SelectGenre(id?.let { BookGenre.valueOf(it) })) })

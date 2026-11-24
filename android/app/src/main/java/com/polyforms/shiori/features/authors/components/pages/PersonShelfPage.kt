@@ -1,5 +1,6 @@
 package com.polyforms.shiori.features.authors.components.pages
 
+import com.polyforms.shiori.shared.platform.TabBarClearance
 import com.polyforms.shiori.features.authors.components.organisms.FavoriteAuthorReleasesRail
 import com.polyforms.shiori.features.news.UpcomingRelease
 import com.polyforms.shiori.shared.components.molecules.RowHeader
@@ -111,7 +112,7 @@ fun <Person : ShelvedPerson> PersonShelfPage(
     }, Modifier.fillMaxSize()) {
         LazyColumn(
             Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 32.dp),
+            contentPadding = PaddingValues(bottom = TabBarClearance),
             verticalArrangement = Arrangement.spacedBy(if (order == AuthorListOrder.NAME) 0.dp else 26.dp),
         ) {
             item(key = "title") { LargeTitle(title) }

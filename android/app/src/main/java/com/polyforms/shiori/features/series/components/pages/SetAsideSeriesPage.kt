@@ -1,5 +1,6 @@
 package com.polyforms.shiori.features.series.components.pages
 
+import com.polyforms.shiori.shared.platform.TabBarClearance
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,7 +25,7 @@ import com.polyforms.shiori.PreviewSurface
 @Composable
 fun SetAsideSeriesPage(series: List<FollowedSeries>, isLoading: Boolean, onOpen: (FollowedSeries) -> Unit, onFollow: (FollowedSeries) -> Unit) {
     Box(Modifier.fillMaxSize()) {
-        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = TabBarClearance), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             LargeTitle(L("Non suivies"))
             SetAsideExplanation()
             SeriesGrid(series, { null }, onOpen, onFollow)

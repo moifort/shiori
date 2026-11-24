@@ -1,5 +1,6 @@
 package com.polyforms.shiori.features.wishlist.components.pages
 
+import com.polyforms.shiori.shared.platform.TabBarClearance
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -131,7 +132,7 @@ fun WishlistPage(
         }
     }, Modifier.fillMaxSize()) {
         Column(
-            Modifier.fillMaxSize().verticalScroll(rememberScrollState()).statusBarsPadding().padding(top = 60.dp, bottom = 32.dp),
+            Modifier.fillMaxSize().verticalScroll(rememberScrollState()).statusBarsPadding().padding(top = 60.dp, bottom = TabBarClearance),
             verticalArrangement = Arrangement.spacedBy(30.dp),
         ) {
             if (formats.size > 1) {

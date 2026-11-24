@@ -1,5 +1,6 @@
 package com.polyforms.shiori.features.narrators.components.pages
 
+import com.polyforms.shiori.shared.platform.TabBarClearance
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -73,7 +74,7 @@ fun NarratorDetailPage(page: NarratorPage?, isLoading: Boolean, errorMessage: St
                 }
             }) {
                 Column(
-                    Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = 32.dp),
+                    Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = TabBarClearance),
                     verticalArrangement = Arrangement.spacedBy(30.dp),
                 ) {
                     PersonHero(
