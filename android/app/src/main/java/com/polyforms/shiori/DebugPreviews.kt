@@ -135,6 +135,22 @@ fun DebugPreviews(name: String) {
             }
             "tabbar" -> TabBarPreview()
             "components" -> com.polyforms.shiori.shared.components.styles.ShioriTheme(dark = true) { ComponentsPreview() }
+            "kindle" -> com.polyforms.shiori.features.import.components.pages.ImportConnectPage(com.polyforms.shiori.features.import.ImportSource.KINDLE, com.polyforms.shiori.features.import.AmazonMarketplace.FR, {}, false) {}
+            "kindle-library" -> com.polyforms.shiori.features.import.components.pages.ImportLibraryPage(
+                com.polyforms.shiori.features.import.ImportSource.KINDLE, com.polyforms.shiori.features.import.ImportFixtures.kindleBooks,
+                isLoading = false, isImporting = false, selectedCount = 1, canImport = true,
+                isSelected = { it.asin == "B0G26NZ911" }, onToggle = {}, onSelectAll = {}, onDeselectAll = {}, onImport = {},
+            )
+            "audible-library" -> com.polyforms.shiori.features.import.components.pages.ImportLibraryPage(
+                com.polyforms.shiori.features.import.ImportSource.AUDIBLE, com.polyforms.shiori.features.import.ImportFixtures.audibleBooks,
+                isLoading = false, isImporting = false, selectedCount = 1, canImport = true,
+                isSelected = { it.asin == "B002V1OF70" }, onToggle = {}, onSelectAll = {}, onDeselectAll = {}, onImport = {},
+            )
+            "audible-empty" -> com.polyforms.shiori.features.import.components.pages.ImportLibraryPage(
+                com.polyforms.shiori.features.import.ImportSource.AUDIBLE, emptyList<com.polyforms.shiori.features.import.ImportableBook>(),
+                isLoading = false, isImporting = false, selectedCount = 0, canImport = false,
+                isSelected = { false }, onToggle = {}, onSelectAll = {}, onDeselectAll = {}, onImport = {},
+            )
             else -> ShioriRoot()
         }
     }
