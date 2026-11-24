@@ -3,8 +3,8 @@ import SwiftUI
 /// A book wished for, drawn as a book to have is (`UnownedBookPage`): the
 /// hero over the cover's colours, where it came from on the detail line, the
 /// white button that orders it from its store and the "+" that puts it on
-/// the pile or among the books read, and "Retirer" that takes it off
-/// the list. Then its summary and its facts. No bell: nothing is awaited. Pure and previewable.
+/// the pile or among the books read, and the "Envie" capsule beside it,
+/// which asks before taking the book off the list. Then its summary and its facts. No bell: nothing is awaited. Pure and previewable.
 struct WishPage: View {
     let wish: Wish
     /// The wish once described, as a book's page draws it.
@@ -33,8 +33,11 @@ struct WishPage: View {
             onClose: onClose,
             additions: [.pile, .read],
             onAdd: { addition in await onAdd(addition == .read ? .read : .toRead) },
+            // The book is on the list: "+ Ajouter" says "Envie", and a tap
+            // on it asks before taking it off. No "Retirer" beside it.
+            isWished: true,
+            onToggleWish: onRemove,
             onToggleBell: {},
-            onNoLongerInterested: onRemove,
             onChooseCover: onChooseCover,
             recommendedBy: wish.origin == .friend ? wish.originLabel : nil
         )
