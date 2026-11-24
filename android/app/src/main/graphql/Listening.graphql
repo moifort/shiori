@@ -1,0 +1,25 @@
+# The Audible player's licence and key on Android: the same calls as iOS's
+# Listening.graphql, asked in Widevine, the DRM Android plays. The position is
+# saved with iOS's own SaveAudiblePosition.
+
+mutation StartAudibleWidevinePlayback($asin: AudibleAsin!, $offline: Boolean) {
+  startAudiblePlayback(asin: $asin, offline: $offline, drm: WIDEVINE) {
+    asin
+    contentReference
+    streamUrl
+    durationMs
+    chapters {
+      title
+      startMs
+      lengthMs
+    }
+    position {
+      positionMs
+      savedAt
+    }
+  }
+}
+
+mutation AudibleWidevineKey($asin: AudibleAsin!, $challenge: String!, $offline: Boolean) {
+  audibleWidevineKey(asin: $asin, challenge: $challenge, offline: $offline)
+}

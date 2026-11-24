@@ -8,6 +8,11 @@ import androidx.compose.material.icons.outlined.Bedtime
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Speed
 import androidx.compose.material.icons.outlined.Replay30
+import androidx.compose.material.icons.outlined.Forward30
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.SkipPrevious
+import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material.icons.outlined.Checklist
 import androidx.compose.material.icons.outlined.BookmarkRemove
@@ -325,6 +330,11 @@ fun Symbol(name: String): ImageVector = when (name) {
     "checklist" -> Icons.Outlined.Checklist
     "chevron.down" -> Icons.Outlined.ExpandMore
     "gobackward.30" -> Icons.Outlined.Replay30
+    "goforward.30" -> Icons.Outlined.Forward30
+    "play.fill" -> Icons.Filled.PlayArrow
+    "pause.fill" -> Icons.Filled.Pause
+    "backward.end.fill" -> Icons.Filled.SkipPrevious
+    "forward.end.fill" -> Icons.Filled.SkipNext
     "hare" -> Icons.Outlined.Speed
     "lock" -> Icons.Outlined.Lock
     "moon" -> Icons.Outlined.Bedtime

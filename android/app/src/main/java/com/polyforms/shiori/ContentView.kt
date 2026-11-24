@@ -19,6 +19,9 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import com.polyforms.shiori.features.friends.FriendsOverlays
 import com.polyforms.shiori.features.friends.FriendsScreen
 import com.polyforms.shiori.features.friends.InvitationRequest
+import com.polyforms.shiori.features.book.BookScreen
+import com.polyforms.shiori.features.listening.PlayerHost
+import com.polyforms.shiori.features.listening.PlayerOverlay
 import com.polyforms.shiori.features.listening.playerAccessory
 import com.polyforms.shiori.features.home.HomeScreen
 import com.polyforms.shiori.features.library.AddBookFlow
@@ -124,6 +127,7 @@ fun ContentView(router: AppRouter = remember { AppRouter() }) {
     }
 
     CompositionLocalProvider(LocalAppRouter provides router) {
+    PlayerHost {
     val permission = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.RequestPermission()) { granted ->
         PushRegistrar.pendingAnswer?.complete(granted)
     }
@@ -191,5 +195,7 @@ fun ContentView(router: AppRouter = remember { AppRouter() }) {
     }
         AddBookFlow(router)
         FriendsOverlays(router)
+        PlayerOverlay { bookId -> navigators.getValue(router.selectedTab).push { BookScreen(bookId) } }
+    }
     }
 }

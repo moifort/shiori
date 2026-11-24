@@ -144,6 +144,9 @@ dependencies {
     implementation(libs.firebase.messaging)
     implementation(libs.billing)
     implementation(libs.sentry.android)
+    implementation(libs.media3.exoplayer)
+    implementation(libs.media3.exoplayer.dash)
+    implementation(libs.media3.session)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
