@@ -1,6 +1,7 @@
 package com.polyforms.shiori
 
 import com.polyforms.shiori.shared.components.styles.backdropSource
+import com.polyforms.shiori.shared.platform.ScreenBar
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.foundation.lazy.items
 
@@ -169,6 +170,19 @@ fun DebugPreviews(name: String) {
                 com.polyforms.shiori.features.news.components.pages.UpcomingReleasesPage(com.polyforms.shiori.features.news.NewsFixtures.upcoming) {}
             }
             "tabbar" -> TabBarPreview()
+            "pushed-title" -> {
+                // A pushed page of the stack: its title inline in the bar, beside Back.
+                val navigator = remember { com.polyforms.shiori.shared.platform.Navigator() }
+                androidx.compose.runtime.LaunchedEffect(Unit) {
+                    navigator.push {
+                        androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize()) {
+                            com.polyforms.shiori.features.series.components.pages.SetAsideSeriesPage(DebugFixtures.followedSeries, isLoading = false, onOpen = {}, onFollow = {})
+                            ScreenBar()
+                        }
+                    }
+                }
+                com.polyforms.shiori.shared.platform.NavigationStack(navigator) {}
+            }
             "components" -> com.polyforms.shiori.shared.components.styles.ShioriTheme(dark = true) { ComponentsPreview() }
             "kindle" -> com.polyforms.shiori.features.import.components.pages.ImportConnectPage(com.polyforms.shiori.features.import.ImportSource.KINDLE, com.polyforms.shiori.features.import.AmazonMarketplace.FR, {}, false) {}
             "kindle-library" -> com.polyforms.shiori.features.import.components.pages.ImportLibraryPage(

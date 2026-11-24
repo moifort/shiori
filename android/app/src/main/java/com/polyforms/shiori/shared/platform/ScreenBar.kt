@@ -4,6 +4,9 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -50,9 +53,10 @@ fun BoxScope.ScreenBar(
         if (onBack != null) {
             Box(Modifier.align(Alignment.CenterStart)) { ToolbarIconButton(L("Retour"), "chevron.left", onClick = onBack) }
         }
-        if (title != null) {
+        val shown = title ?: LocalScreenTitle.current?.text
+        if (shown != null) {
             Text(
-                title,
+                shown,
                 style = Shiori.type.headline,
                 color = Shiori.colors.label,
                 maxLines = 1,
@@ -70,9 +74,33 @@ fun LoadingScreen() {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
 }
 
-/** A screen's large title, under the floating bar, scrolling away with the content. */
+/**
+ * The title a pushed screen's page names, for its [ScreenBar] to draw inline beside Back. Each
+ * screen of a [NavigationStack] holds one; a page sets it through [LargeTitle].
+ */
+@Stable
+class ScreenTitle {
+    var text by mutableStateOf<String?>(null)
+}
+
+val LocalScreenTitle = staticCompositionLocalOf<ScreenTitle?> { null }
+
+/**
+ * A page's title. On a pushed screen iOS draws it inline in the bar, beside Back (the stack's
+ * root is inline, and pushed pages inherit it): there the page keeps only the bar's room and
+ * hands the title to the [ScreenBar]. Elsewhere, a large title scrolling away with the content.
+ */
 @Composable
 fun LargeTitle(title: String, modifier: Modifier = Modifier) {
+    val screen = LocalScreenTitle.current
+    if (screen != null) {
+        DisposableEffect(screen, title) {
+            screen.text = title
+            onDispose { if (screen.text == title) screen.text = null }
+        }
+        Spacer(modifier.statusBarsPadding().height(56.dp))
+        return
+    }
     Text(
         title,
         style = Shiori.type.largeTitle,

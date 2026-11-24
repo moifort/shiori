@@ -66,6 +66,7 @@ fun NavigationStack(navigator: Navigator = remember { Navigator() }, active: Boo
                     Layer(
                         visible = index == top,
                         modifier = Modifier.graphicsLayer { translationX = offset.value },
+                        pushed = true,
                     ) { entry.content() }
                 }
             }
@@ -73,9 +74,9 @@ fun NavigationStack(navigator: Navigator = remember { Navigator() }, active: Boo
     }
 }
 
-/** A screen of the stack: drawn and touchable only on top, kept composed below. */
+/** A screen of the stack: drawn and touchable only on top, kept composed below. A pushed one holds its bar's title. */
 @Composable
-private fun Layer(visible: Boolean, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+private fun Layer(visible: Boolean, modifier: Modifier = Modifier, pushed: Boolean = false, content: @Composable () -> Unit) {
     Box(
         modifier
             .fillMaxSize()
@@ -84,5 +85,11 @@ private fun Layer(visible: Boolean, modifier: Modifier = Modifier, content: @Com
             // A hit target over the whole screen, so a tap on its blank parts never reaches the
             // screen kept below it.
             .pointerInput(Unit) { awaitPointerEventScope { while (true) awaitPointerEvent() } },
-    ) { content() }
+    ) {
+        if (pushed) {
+            CompositionLocalProvider(LocalScreenTitle provides remember { ScreenTitle() }) { content() }
+        } else {
+            content()
+        }
+    }
 }
