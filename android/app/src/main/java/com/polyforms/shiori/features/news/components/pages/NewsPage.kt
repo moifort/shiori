@@ -60,6 +60,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.polyforms.shiori.PreviewSurface
 import com.polyforms.shiori.features.discover.AwardMention
+import com.polyforms.shiori.features.discover.LiteraryAward
 import com.polyforms.shiori.features.discover.ReleaseFormat
 import com.polyforms.shiori.features.friends.CopiedStatus
 import com.polyforms.shiori.features.library.LibraryDestination
@@ -454,9 +455,17 @@ private fun CompactLaurels(mention: AwardMention) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(mention.award.shortName.uppercase(), style = TextStyle(fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp), color = Color.White, maxLines = 1)
             Text(mention.year.toString(), style = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.ExtraBold), color = Color.White, maxLines = 1)
+            Text(categoryName(mention.award), style = TextStyle(fontSize = 10.sp), color = Color.White.copy(alpha = 0.85f), maxLines = 1)
         }
         Icon(Symbol("laurel.trailing"), null, Modifier.size(24.dp), tint = Color.White)
     }
+}
+
+/** What the prize crowns, under its year. */
+private fun categoryName(award: LiteraryAward): String = when (award) {
+    LiteraryAward.LOCUS_SCIENCE_FICTION -> L("Meilleur roman de SF")
+    LiteraryAward.LOCUS_FANTASY -> L("Meilleur roman de fantasy")
+    else -> L("Meilleur roman")
 }
 
 // Prix de l'année

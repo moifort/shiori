@@ -161,8 +161,8 @@ object NewsFixtures {
     )
 
     val awards = listOf(
-        AwardSection(BookGenre.FANTASY, listOf(winner("the-tainted-cup", "The Tainted Cup", "Robert Jackson Bennett", LiteraryAward.HUGO, openLibrary("9780593723180"), BookLanguage.EN))),
-        AwardSection(BookGenre.LITERARY_FICTION, listOf(winner("houris", "Houris", "Kamel Daoud", LiteraryAward.GONCOURT, openLibrary("9782073089877"), BookLanguage.FR))),
+        AwardSection(BookGenre.FANTASY, listOf(winner("the-tainted-cup", "The Tainted Cup", "Robert Jackson Bennett", LiteraryAward.HUGO, null, BookLanguage.EN))),
+        AwardSection(BookGenre.LITERARY_FICTION, listOf(winner("houris", "Houris", "Kamel Daoud", LiteraryAward.GONCOURT, null, BookLanguage.FR))),
     )
 
     /** The whole agenda the page previews draw. */
