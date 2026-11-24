@@ -33,6 +33,7 @@ import com.polyforms.shiori.features.listening.components.pages.PlayerPage
 import com.polyforms.shiori.features.listening.components.pages.PlayerPageItem
 import com.polyforms.shiori.features.listening.preview
 import com.polyforms.shiori.shared.platform.NavigationStack
+import com.polyforms.shiori.shared.platform.ScreenBar
 import com.polyforms.shiori.features.discover.book
 import com.polyforms.shiori.features.discover.describedForPreview
 import com.polyforms.shiori.features.discover.release
@@ -270,6 +271,66 @@ fun DebugPreviews(name: String) {
                     errorMessage = null,
                 ) {}
             }
+            // Lot 4: Library, Series, Authors.
+            "library-books", "friend-books" -> DebugPreviewGround {
+                val books = DebugFixtures.reading + DebugFixtures.toRead
+                androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize()) {
+                    com.polyforms.shiori.features.library.components.pages.BookMosaicPage(
+                        com.polyforms.shiori.shared.ListSection.byMonth(books) { it.shelvedAt },
+                        listOf(BookFormat.BOOK, BookFormat.AUDIOBOOK, BookFormat.MANGA), null, null,
+                        isLoading = false, errorMessage = null, hasMore = false, loadMoreFailed = false,
+                        ownedByReader = if (name == "friend-books") ({ it.id == "r1" }) else null,
+                    ) {}
+                    ScreenBar {
+                        com.polyforms.shiori.features.library.components.pages.MosaicStatusMenu(null) {}
+                    }
+                }
+            }
+            "series-shelf", "friend-series" -> DebugPreviewGround {
+                val friend = name == "friend-series"
+                val series = DebugFixtures.followedSeries
+                androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize()) {
+                    com.polyforms.shiori.features.series.components.pages.SeriesShelfPage(
+                        upNext = if (friend) emptyList() else listOf(series[0] to com.polyforms.shiori.features.series.NextVolume.Owned(DebugFixtures.toRead[0])),
+                        releases = if (friend) emptyList() else listOf(series[0] to DebugFixtures.announcedVolume),
+                        filters = if (friend) emptyList() else com.polyforms.shiori.features.series.SeriesShelfFilter.entries,
+                        filter = com.polyforms.shiori.features.series.SeriesShelfFilter.ALL,
+                        series = series,
+                        isLoading = false,
+                        errorMessage = null,
+                        statuses = if (friend) com.polyforms.shiori.features.series.SeriesStatusFilter.entries else emptyList(),
+                        formats = if (friend) listOf(BookFormat.BOOK, BookFormat.MANGA) else emptyList(),
+                        title = if (friend) null else com.polyforms.shiori.shared.L("Séries"),
+                    ) {}
+                    ScreenBar(title = if (friend) com.polyforms.shiori.shared.L("Séries") else null) {
+                        if (friend) com.polyforms.shiori.features.series.components.pages.SeriesStatusMenu(com.polyforms.shiori.features.series.SeriesStatusFilter.entries, com.polyforms.shiori.features.series.SeriesStatusFilter.ALL) {}
+                    }
+                }
+            }
+            "series", "series-set-aside" -> com.polyforms.shiori.features.series.components.pages.SeriesPage(
+                series = DebugFixtures.seriesCatalogue,
+                owned = listOf(DebugFixtures.reading[2]),
+                opinion = com.polyforms.shiori.shared.SeriesOpinion("frieren", rating = 4.0),
+                isLoading = false,
+                errorMessage = null,
+                language = com.polyforms.shiori.shared.BookLanguage.FR,
+                friend = null,
+                isFollowed = name == "series",
+                addingTitle = null,
+                releases = com.polyforms.shiori.features.discover.SagaReleases(true, DebugFixtures.announcedVolume),
+                takenFormat = BookFormat.MANGA,
+                announcedVolume = { null },
+            ) {}
+            "authors" -> DebugPreviewGround {
+                com.polyforms.shiori.features.authors.components.pages.PersonShelfPage(
+                    "Auteurs", "Auteurs indisponibles", "Aucun auteur préféré", "",
+                    listOf(DebugFixtures.author),
+                    com.polyforms.shiori.features.authors.AuthorListOrder.RECENT,
+                    isLoading = false, errorMessage = null, hasMore = false, loadMoreFailed = false,
+                    releases = DebugFixtures.upcoming.take(4),
+                    allTitle = "Tous les auteurs",
+                ) {}
+            }
             else -> ShioriRoot()
         }
     }
@@ -344,3 +405,8 @@ private fun TabBarPreview() {
         }
     }
 }
+
+/** A page on the grouped ground, as its screen draws it. */
+@Composable
+private fun DebugPreviewGround(content: @Composable () -> Unit) =
+    androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize().background(com.polyforms.shiori.shared.components.styles.Shiori.colors.groupedBackground)) { content() }
