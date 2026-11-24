@@ -20,6 +20,8 @@ fun reportError(error: Throwable): String {
     val ignored = isCancellation(error) || isConnectivityLoss(error) ||
         (error as? ApiError)?.domainCode == "AI_UNAVAILABLE"
     if (!ignored && Sentry.isEnabled()) Sentry.captureException(error)
+    // A debug build has no Sentry: the failure goes to logcat, so a device test can read it.
+    if (com.polyforms.shiori.BuildConfig.DEBUG) android.util.Log.w("Shiori", "reported error", error)
     return error.localizedMessage ?: L("Une erreur est survenue")
 }
 
