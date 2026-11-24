@@ -32,6 +32,8 @@ class PileViewModel(private val client: LibraryClient, private val scope: Corout
         private set
     var genres by mutableStateOf(pile.genres)
         private set
+    /** Why "Retirer" failed, for the alert; null once read. */
+    var actionError by mutableStateOf<String?>(null)
     private var loaded = false
     private var generation = 0
 
@@ -50,6 +52,26 @@ class PileViewModel(private val client: LibraryClient, private val scope: Corout
     suspend fun loadOnAppear() {
         if (loaded || isLoading) return
         load()
+    }
+
+    /**
+     * "Retirer" from the wishlist's rail: a book wished for leaves the list, an edition stops
+     * being awaited. The cover goes at once; the rail is read again on the notice the call posts.
+     */
+    suspend fun dropWished(book: Book) {
+        try {
+            val wish = wishlist.wish(book)
+            val edition = wishlist.edition(book)
+            if (wish != null) {
+                client.removeWish(wish.id)
+                wishlist = wishlist.copy(wishes = wishlist.wishes.filter { it.id != wish.id })
+            } else if (edition != null) {
+                client.stopAwaiting(edition.id)
+                wishlist = wishlist.copy(awaited = wishlist.awaited.filter { it.id != edition.id })
+            }
+        } catch (error: Exception) {
+            if (!isCancellation(error)) actionError = reportError(error)
+        }
     }
 
     suspend fun load() {

@@ -9,6 +9,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import com.polyforms.shiori.features.series.components.pages.SeriesShelfAction
+import com.polyforms.shiori.features.book.BookScreen
+import com.polyforms.shiori.features.discover.AnnouncedVolumeScreen
 import com.polyforms.shiori.features.series.components.pages.SeriesShelfPage
 import com.polyforms.shiori.features.series.components.pages.SetAsideSeriesPage
 import com.polyforms.shiori.shared.DataChanges
@@ -37,6 +39,9 @@ fun SeriesShelfScreen(filter: SeriesShelfFilter = SeriesShelfFilter.ALL, client:
         ) { action ->
             when (action) {
                 is SeriesShelfAction.OpenSeries -> navigator.push { SeriesScreen(action.series.seriesId) }
+                is SeriesShelfAction.OpenBook -> navigator.push { BookScreen(action.book.id) }
+                is SeriesShelfAction.OpenVolume -> navigator.push { AnnouncedVolumeScreen(action.volume.saga, action.volume.volume) }
+                is SeriesShelfAction.SelectFormat, is SeriesShelfAction.SelectStatus -> Unit
                 is SeriesShelfAction.SelectFilter -> viewModel.filter = action.filter
                 is SeriesShelfAction.Follow -> viewModel.follow(action.series)
                 SeriesShelfAction.Refresh -> viewModel.load()

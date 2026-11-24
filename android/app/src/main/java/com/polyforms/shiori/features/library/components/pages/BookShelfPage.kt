@@ -49,6 +49,12 @@ import com.polyforms.shiori.shared.L
 import com.polyforms.shiori.shared.ListSection
 import com.polyforms.shiori.shared.ReadingStatus
 import com.polyforms.shiori.shared.book.BookContextMenuBox
+import com.polyforms.shiori.shared.book.FriendBookContextMenuBox
+import com.polyforms.shiori.shared.CoverEffect
+import com.polyforms.shiori.shared.CoverEffectImage
+import com.polyforms.shiori.shared.components.styles.saturation
+import com.polyforms.shiori.shared.platform.MenuEntry
+import com.polyforms.shiori.shared.platform.ToolbarFilterMenu
 import com.polyforms.shiori.shared.book.BookQuickAction
 import com.polyforms.shiori.shared.book.PosterCover
 import com.polyforms.shiori.shared.book.PosterLabel
@@ -234,7 +240,14 @@ fun ShelfPoster(book: Book, label: PosterLabel, onOpen: () -> Unit, onMenu: (Boo
     }
 }
 
-/** Every book, five covers to a row, month by month, filtered by status from the bar. */
+/**
+ * "Livres": every book, five covers to a row, month by month, filtered by status from the bar
+ * ([MosaicStatusMenu]). A friend's "Livres" is this same page over their books, with the
+ * friend's long press, which leaves their record alone.
+ *
+ * [ownedByReader]: on a friend's shelf, whether the reader holds a book already; the long press
+ * is then the friend's. Null on the reader's own.
+ */
 @Composable
 fun BookMosaicPage(
     sections: List<ListSection<Book>>,
@@ -245,6 +258,7 @@ fun BookMosaicPage(
     errorMessage: String?,
     hasMore: Boolean,
     loadMoreFailed: Boolean,
+    ownedByReader: ((Book) -> Boolean)? = null,
     onAction: suspend (BookShelfAction) -> Unit,
 ) {
     val scope = rememberCoroutineScope()
@@ -285,7 +299,7 @@ fun BookMosaicPage(
             }
             items(section.rows, key = { "${section.id}-${it.id}" }) { book ->
                 LaunchedEffect(book.id) { onAction(BookShelfAction.Reached(book.id)) }
-                MosaicCover(book, isShowingDropped, { send(BookShelfAction.OpenBook(book)) }) { send(BookShelfAction.Menu(book, it)) }
+                MosaicCover(book, isShowingDropped, ownedByReader, { send(BookShelfAction.OpenBook(book)) }) { send(BookShelfAction.Menu(book, it)) }
             }
         }
         if (hasMore) {
@@ -296,33 +310,71 @@ fun BookMosaicPage(
     }
 }
 
+/**
+ * The status menu over "Livres", in the bar's corner: every book, or one reading status, in the
+ * order a book lives through them. A friend's "Livres" carries the same.
+ */
 @Composable
-private fun MosaicCover(book: Book, isDimmed: Boolean, onOpen: () -> Unit, onMenu: (BookQuickAction) -> Unit) {
+fun MosaicStatusMenu(selected: ReadingStatus?, onSelect: (ReadingStatus?) -> Unit) {
+    ToolbarFilterMenu(
+        selected?.symbol ?: "tray.full",
+        selected?.shelfTitle ?: L("Tous"),
+        listOf(MenuEntry.Item(L("Tous"), "tray.full", checked = selected == null) { onSelect(null) }) +
+            listOf(ReadingStatus.READING, ReadingStatus.TO_READ, ReadingStatus.READ, ReadingStatus.DROPPED).map { status ->
+                MenuEntry.Item(status.shelfTitle, status.symbol, checked = selected == status) { onSelect(status) }
+            },
+    )
+}
+
+/**
+ * A cover of the mosaic. A book given up on is drawn in black and white and dimmed, as a poster
+ * draws one; its stars stay white.
+ */
+@Composable
+private fun MosaicCover(book: Book, isDimmed: Boolean, ownedByReader: ((Book) -> Boolean)?, onOpen: () -> Unit, onMenu: (BookQuickAction) -> Unit) {
     var width by remember { mutableStateOf(0.dp) }
     val density = LocalDensity.current
-    BookContextMenuBox(
-        book,
-        onOpen,
-        onMenu,
-        Modifier.fillMaxWidth().aspectRatio(2f / 3f).clipToBounds().onSizeChanged { width = with(density) { it.width.toDp() } },
-    ) {
+    val modifier = Modifier.fillMaxWidth().aspectRatio(2f / 3f).clipToBounds().onSizeChanged { width = with(density) { it.width.toDp() } }
+    val content: @Composable () -> Unit = {
         Box(Modifier.fillMaxSize()) {
-            if (width > 0.dp) BookCover(book, width, showsFormatBadge = false, cornerRadius = 0.dp)
+            Box(Modifier.fillMaxSize().saturation(if (isDimmed) 0f else 1f)) {
+                if (width > 0.dp) BookCover(book, width, showsFormatBadge = false, cornerRadius = 0.dp)
+            }
             if (isDimmed) Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = PosterLabel.SET_ASIDE_DIMMING.toFloat())))
-            val rating = book.shownRating
-            if (book.favorite || rating != null) {
-                Box(
-                    Modifier.align(Alignment.BottomCenter).fillMaxWidth()
-                        .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.55f))))
-                        .padding(top = 10.dp, bottom = 4.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    if (book.favorite) {
-                        Icon(Symbol("heart.fill"), L("Coup de cœur"), Modifier.size(10.dp), tint = Color.White)
-                    } else if (rating != null) {
-                        RatingStars(rating, size = 8.dp, monochrome = true, tint = Color.White)
-                    }
-                }
+            MosaicRating(book, Modifier.align(Alignment.BottomCenter))
+        }
+    }
+    if (ownedByReader != null) {
+        FriendBookContextMenuBox(book, ownedByReader(book), onOpen, onMenu, modifier, content)
+    } else {
+        BookContextMenuBox(book, onOpen, onMenu, modifier, content)
+    }
+}
+
+/**
+ * A cover's rating at its foot, in white on a blur of the cover: always five stars, the ones not
+ * given as outlines, or a single heart for a favourite. Nothing on a book not rated yet.
+ */
+@Composable
+private fun MosaicRating(book: Book, modifier: Modifier = Modifier) {
+    val rating = book.shownRating
+    if (!book.favorite && rating == null) return
+    Box(modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+        val url = book.coverURL
+        if (url != null) {
+            CoverEffectImage(
+                url,
+                CoverEffect.Melt(blur = 12, fadeStart = 0.0, fadeEnd = 0.5, dimming = 0.0),
+                Modifier.matchParentSize(),
+            )
+        } else {
+            Box(Modifier.matchParentSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.35f)))))
+        }
+        Box(Modifier.padding(top = 10.dp, bottom = 4.dp)) {
+            if (book.favorite) {
+                Icon(Symbol("heart.fill"), L("Coup de cœur"), Modifier.size(10.dp), tint = Color.White)
+            } else if (rating != null) {
+                RatingStars(rating, size = 8.dp, monochrome = true, tint = Color.White)
             }
         }
     }

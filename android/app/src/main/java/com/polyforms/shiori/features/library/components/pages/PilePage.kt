@@ -1,5 +1,12 @@
 package com.polyforms.shiori.features.library.components.pages
 
+import com.polyforms.shiori.features.discover.DiscoveryVolume
+import com.polyforms.shiori.features.series.UpNextTarget
+import com.polyforms.shiori.shared.book.PosterCover
+import com.polyforms.shiori.shared.book.WishContextMenuBox
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -51,8 +58,23 @@ sealed interface PileAction {
     data class OpenSeries(val series: FollowedSeries) : PileAction
     data class SelectGenre(val genre: BookGenre?) : PileAction
     data class Menu(val book: Book, val action: BookQuickAction) : PileAction
+    /** A volume the reader lacks, on its own page. */
+    data class OpenVolume(val volume: DiscoveryVolume) : PileAction
     data object OpenWishlist : PileAction
+    /** A cover of the wishlist's rail: the book wished for, or the edition awaited, on its own page. */
+    data class OpenWished(val book: Book) : PileAction
+    /** "Retirer", from a cover's long press in the wishlist's rail. */
+    data class DropWished(val book: Book) : PileAction
     data object Refresh : PileAction
+
+    companion object
+}
+
+/** The action a cover of "Séries à continuer" asks for. */
+fun PileAction.Companion.open(target: UpNextTarget): PileAction = when (target) {
+    is UpNextTarget.Book -> PileAction.OpenBook(target.book)
+    is UpNextTarget.Volume -> PileAction.OpenVolume(target.volume)
+    is UpNextTarget.Series -> PileAction.OpenSeries(target.series)
 }
 
 /** The pile to read: what to finish, the sagas to follow on, the wishes, then the picks. */
@@ -77,11 +99,11 @@ fun PilePage(
 
     @Composable
     fun FollowOn() {
-        if (upNext.isNotEmpty()) SeriesUpNextRail(upNext) { send(PileAction.OpenSeries(it)) }
+        if (upNext.isNotEmpty()) SeriesUpNextRail(upNext) { send(PileAction.open(it)) }
         if (wished.isNotEmpty()) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 RowHeader(L("Liste d'envies"), Modifier.padding(horizontal = 20.dp), style = RowHeaderStyle.INLINE) { send(PileAction.OpenWishlist) }
-                PosterRow(wished) { send(PileAction.OpenWishlist) }
+                WishRail(wished, onOpen = { send(PileAction.OpenWished(it)) }, onDrop = { send(PileAction.DropWished(it)) })
             }
         }
     }
@@ -112,6 +134,22 @@ fun PilePage(
                     Rail(section, ::send)
                     if (section.kind == PileSectionKind.TO_FINISH) FollowOn()
                 }
+            }
+        }
+    }
+}
+
+/** The wishlist's rail: a cover opens its own page, a long press offers "Retirer". */
+@Composable
+private fun WishRail(items: List<PosterRowItem>, onOpen: (Book) -> Unit, onDrop: (Book) -> Unit) {
+    LazyRow(
+        contentPadding = PaddingValues(horizontal = 20.dp),
+        horizontalArrangement = Arrangement.spacedBy(13.dp),
+        verticalAlignment = Alignment.Top,
+    ) {
+        items(items, key = { it.id }) { item ->
+            WishContextMenuBox(onOpen = { onOpen(item.book) }, onDrop = { onDrop(item.book) }) {
+                PosterCover(item.book, item.label, width = 102.dp)
             }
         }
     }

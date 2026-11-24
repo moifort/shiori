@@ -18,15 +18,14 @@ import androidx.compose.ui.unit.dp
 import com.polyforms.shiori.features.library.components.pages.BookMosaicPage
 import com.polyforms.shiori.features.library.components.pages.BookShelfAction
 import com.polyforms.shiori.features.library.components.pages.BookShelfPage
+import com.polyforms.shiori.features.library.components.pages.MosaicStatusMenu
 import com.polyforms.shiori.shared.BookFormat
 import com.polyforms.shiori.shared.DataChanges
 import com.polyforms.shiori.shared.L
 import com.polyforms.shiori.shared.ReadingStatus
 import com.polyforms.shiori.shared.components.atoms.ToolbarIconButton
 import com.polyforms.shiori.shared.components.styles.Shiori
-import com.polyforms.shiori.shared.platform.MenuEntry
 import com.polyforms.shiori.shared.platform.ScreenBar
-import com.polyforms.shiori.shared.platform.ToolbarFilterMenu
 import com.polyforms.shiori.shared.platform.currentNavigator
 import com.polyforms.shiori.shared.platform.shareText
 import kotlinx.coroutines.launch
@@ -81,7 +80,7 @@ fun BookShelfScreen(
                 viewModel.errorMessage,
                 viewModel.hasMore,
                 viewModel.loadMoreFailed,
-                handle,
+                onAction = handle,
             )
         } else {
             BookShelfPage(
@@ -102,17 +101,7 @@ fun BookShelfScreen(
             )
         }
         ScreenBar {
-            if (shelf == BookShelf.ALL) {
-                val selected = viewModel.query.status
-                ToolbarFilterMenu(
-                    selected?.symbol ?: "tray.full",
-                    selected?.shelfTitle ?: L("Tous"),
-                    listOf(MenuEntry.Item(L("Tous"), "tray.full", checked = selected == null) { viewModel.select(null as ReadingStatus?) }) +
-                        listOf(ReadingStatus.READING, ReadingStatus.TO_READ, ReadingStatus.READ, ReadingStatus.DROPPED).map { status ->
-                            MenuEntry.Item(status.shelfTitle, status.symbol, checked = selected == status) { viewModel.select(status) }
-                        },
-                )
-            }
+            if (shelf == BookShelf.ALL) MosaicStatusMenu(viewModel.query.status) { viewModel.select(it) }
             if (shelf == BookShelf.LOVED && (viewModel.sections.isNotEmpty() || viewModel.lovedSeries.isNotEmpty())) {
                 if (isPreparingShare) {
                     CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp)

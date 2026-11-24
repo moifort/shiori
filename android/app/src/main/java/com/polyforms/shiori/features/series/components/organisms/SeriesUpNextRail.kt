@@ -9,6 +9,8 @@ import androidx.compose.ui.unit.dp
 import com.polyforms.shiori.features.home.components.organisms.PosterRow
 import com.polyforms.shiori.features.home.components.organisms.PosterRowItem
 import com.polyforms.shiori.features.series.NextVolume
+import com.polyforms.shiori.features.series.UpNextTarget
+import com.polyforms.shiori.features.series.target
 import com.polyforms.shiori.shared.Book
 import com.polyforms.shiori.shared.BookFormat
 import com.polyforms.shiori.shared.FollowedSeries
@@ -22,12 +24,15 @@ import androidx.compose.foundation.layout.Row
 import com.polyforms.shiori.DebugFixtures
 import com.polyforms.shiori.PreviewSurface
 
-/** "À suivre": the volume to read next of every saga under way. */
+/**
+ * "Séries à continuer": the next volume of each saga in progress, held or not, as the series
+ * screen and the pile both draw it. A cover opens its volume.
+ */
 @Composable
-fun SeriesUpNextRail(upNext: List<Pair<FollowedSeries, NextVolume>>, onOpen: (FollowedSeries) -> Unit) {
+fun SeriesUpNextRail(upNext: List<Pair<FollowedSeries, NextVolume>>, onOpen: (UpNextTarget) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        RowHeader(L("À suivre"), Modifier.padding(horizontal = 20.dp), style = RowHeaderStyle.INLINE)
-        PosterRow(upNext.map { (series, volume) -> item(series, volume) { onOpen(series) } }) {}
+        RowHeader(L("Séries à continuer"), Modifier.padding(horizontal = 20.dp), style = RowHeaderStyle.INLINE)
+        PosterRow(upNext.map { (series, volume) -> item(series, volume) { onOpen(series.target(volume)) } }) {}
     }
 }
 

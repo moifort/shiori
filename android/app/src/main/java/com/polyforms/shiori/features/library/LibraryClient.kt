@@ -1,6 +1,7 @@
 package com.polyforms.shiori.features.library
 
 import com.polyforms.shiori.features.book.BookApi
+import com.polyforms.shiori.features.discover.AwaitedApi
 import com.polyforms.shiori.features.wishlist.Wishlist
 import com.polyforms.shiori.features.wishlist.WishlistApi
 import com.polyforms.shiori.shared.Book
@@ -17,6 +18,9 @@ interface LibraryClient {
     suspend fun rate(id: String, stars: Double): Book
     suspend fun delete(id: String)
     suspend fun wishlist(): Wishlist
+    /** The rail's long press, "Retirer": a book wished for off the list, an edition no longer awaited. */
+    suspend fun removeWish(wishId: String)
+    suspend fun stopAwaiting(editionId: String)
 
     companion object {
         val live: LibraryClient = object : LibraryClient {
@@ -29,6 +33,8 @@ interface LibraryClient {
             override suspend fun rate(id: String, stars: Double) = BookApi.rate(id, stars)
             override suspend fun delete(id: String) = BookApi.delete(id)
             override suspend fun wishlist() = WishlistApi.wishlist()
+            override suspend fun removeWish(wishId: String) = WishlistApi.remove(wishId)
+            override suspend fun stopAwaiting(editionId: String) = AwaitedApi.stop(editionId)
         }
     }
 }

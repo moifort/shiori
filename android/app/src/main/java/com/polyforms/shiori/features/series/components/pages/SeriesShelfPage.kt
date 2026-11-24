@@ -36,6 +36,17 @@ import androidx.compose.ui.unit.dp
 import com.polyforms.shiori.features.home.components.organisms.SeriesShowCard
 import com.polyforms.shiori.features.series.NextVolume
 import com.polyforms.shiori.features.series.SeriesShelfFilter
+import com.polyforms.shiori.features.series.SeriesStatusFilter
+import com.polyforms.shiori.features.series.UpNextTarget
+import com.polyforms.shiori.features.discover.DiscoveryVolume
+import com.polyforms.shiori.features.discover.SagaDiscovery
+import com.polyforms.shiori.features.discover.SagaReleases
+import com.polyforms.shiori.features.library.shelfLabel
+import com.polyforms.shiori.shared.Book
+import com.polyforms.shiori.shared.BookFormat
+import com.polyforms.shiori.shared.platform.ToolbarFilterMenu
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.statusBarsPadding
 import com.polyforms.shiori.features.series.components.organisms.SeriesReleaseCard
 import com.polyforms.shiori.features.series.components.organisms.SeriesUpNextRail
 import com.polyforms.shiori.features.series.isSetAside
@@ -61,12 +72,33 @@ import com.polyforms.shiori.PreviewSurface
 
 sealed interface SeriesShelfAction {
     data class OpenSeries(val series: FollowedSeries) : SeriesShelfAction
+    data class OpenBook(val book: Book) : SeriesShelfAction
+    /** A volume the reader lacks, on its own page. */
+    data class OpenVolume(val volume: DiscoveryVolume) : SeriesShelfAction
     data class SelectFilter(val filter: SeriesShelfFilter) : SeriesShelfAction
+    /** A friend's sagas: a format pill, and the status menu in the corner. */
+    data class SelectFormat(val format: BookFormat?) : SeriesShelfAction
+    data class SelectStatus(val status: SeriesStatusFilter) : SeriesShelfAction
     data class Follow(val series: FollowedSeries) : SeriesShelfAction
     data object Refresh : SeriesShelfAction
+
+    companion object
 }
 
-/** The Library's sagas: up next, the coming releases, then every saga under a filter. */
+/** The action a cover of "Séries à continuer" asks for. */
+fun SeriesShelfAction.Companion.open(target: UpNextTarget): SeriesShelfAction = when (target) {
+    is UpNextTarget.Book -> SeriesShelfAction.OpenBook(target.book)
+    is UpNextTarget.Volume -> SeriesShelfAction.OpenVolume(target.volume)
+    is UpNextTarget.Series -> SeriesShelfAction.OpenSeries(target.series)
+}
+
+/**
+ * The Library's sagas: "Séries à continuer", the coming releases, then every saga under a filter.
+ *
+ * A friend's "Séries" is this same page with the cards of "Toutes les séries" alone, untitled,
+ * over their sagas, under the filters of "Livres": the format pills, and the status menu in the
+ * corner ([SeriesStatusMenu]). [statuses] is empty on the reader's own.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SeriesShelfPage(
@@ -77,6 +109,11 @@ fun SeriesShelfPage(
     series: List<FollowedSeries>,
     isLoading: Boolean,
     errorMessage: String?,
+    statuses: List<SeriesStatusFilter> = emptyList(),
+    selectedStatus: SeriesStatusFilter = SeriesStatusFilter.ALL,
+    formats: List<BookFormat> = emptyList(),
+    selectedFormat: BookFormat? = null,
+    title: String? = L("Séries"),
     onAction: suspend (SeriesShelfAction) -> Unit,
 ) {
     val scope = rememberCoroutineScope()
@@ -92,18 +129,30 @@ fun SeriesShelfPage(
         }
     }, Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(30.dp)) {
-            LargeTitle(L("Séries"))
-            if (upNext.isNotEmpty()) SeriesUpNextRail(upNext) { send(SeriesShelfAction.OpenSeries(it)) }
+            if (title != null) LargeTitle(title) else Spacer(Modifier.statusBarsPadding().height(56.dp))
+            if (upNext.isNotEmpty()) SeriesUpNextRail(upNext) { send(SeriesShelfAction.open(it)) }
             if (releases.isNotEmpty()) {
                 Column(verticalArrangement = Arrangement.spacedBy(18.dp)) {
                     RowHeader(L("Prochaines sorties"), Modifier.padding(horizontal = 20.dp), style = RowHeaderStyle.INLINE)
-                    ReleaseRail(releases) { send(SeriesShelfAction.OpenSeries(it)) }
+                    // The volume's page, as the card says: its saga is a tap away from there.
+                    ReleaseRail(releases) { saga, volume ->
+                        send(SeriesShelfAction.OpenVolume(DiscoveryVolume(SagaDiscovery(saga, SagaReleases(watched = true, next = volume)), volume)))
+                    }
                 }
             }
-            if (series.isNotEmpty() || filter != SeriesShelfFilter.ALL) {
+            if (series.isNotEmpty() || filter != SeriesShelfFilter.ALL || selectedStatus != SeriesStatusFilter.ALL || selectedFormat != null) {
                 Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                    RowHeader(L("Toutes les séries"), Modifier.padding(horizontal = 20.dp), style = RowHeaderStyle.INLINE)
-                    if (filters.size > 1) {
+                    // A friend's page is this list alone: no title over it.
+                    if (statuses.isEmpty()) {
+                        RowHeader(L("Toutes les séries"), Modifier.padding(horizontal = 20.dp), style = RowHeaderStyle.INLINE)
+                    }
+                    if (statuses.isNotEmpty()) {
+                        if (formats.size > 1) {
+                            FilterPills(formats.map { FilterPill(it.name, it.shelfLabel) }, selectedFormat?.name, { id ->
+                                send(SeriesShelfAction.SelectFormat(id?.let { BookFormat.valueOf(it) }))
+                            })
+                        }
+                    } else if (filters.size > 1) {
                         FilterPills(filters.map { FilterPill(it.name, it.label) }, filter.name, { id ->
                             send(SeriesShelfAction.SelectFilter(id?.let { SeriesShelfFilter.valueOf(it) } ?: SeriesShelfFilter.ALL))
                         }, allLabel = null)
@@ -131,10 +180,20 @@ private fun missingTag(saga: FollowedSeries): String {
     return if (missing == 1) L("1 tome à ajouter") else L("%lld tomes à ajouter", missing)
 }
 
+/** The status menu of a friend's sagas, drawn as the one over "Livres". */
+@Composable
+fun SeriesStatusMenu(statuses: List<SeriesStatusFilter>, selected: SeriesStatusFilter, onSelect: (SeriesStatusFilter) -> Unit) {
+    ToolbarFilterMenu(
+        selected.symbol,
+        selected.label,
+        statuses.map { status -> MenuEntry.Item(status.label, status.symbol, checked = selected == status) { onSelect(status) } },
+    )
+}
+
 @Composable
 fun SetAsideExplanation() {
     Text(
-        L("Ces séries ne sont plus suivies : elles n'apparaissent ni dans « À suivre », ni dans les sorties, ni sur l'accueil. Leurs tomes restent dans la bibliothèque."),
+        L("Ces séries ne sont plus suivies : elles n'apparaissent ni dans « Séries à continuer », ni dans les sorties, ni sur l'accueil. Leurs tomes restent dans la bibliothèque."),
         style = Shiori.type.subheadline,
         color = Shiori.colors.secondaryLabel,
         modifier = Modifier.padding(horizontal = 20.dp),
@@ -168,7 +227,7 @@ fun SeriesGrid(series: List<FollowedSeries>, tag: (FollowedSeries) -> String?, o
 }
 
 @Composable
-private fun ReleaseRail(releases: List<Pair<FollowedSeries, DiscoveredVolume>>, onOpen: (FollowedSeries) -> Unit) {
+private fun ReleaseRail(releases: List<Pair<FollowedSeries, DiscoveredVolume>>, onOpen: (FollowedSeries, DiscoveredVolume) -> Unit) {
     val state = rememberLazyListState()
     val inView by remember { derivedStateOf { state.firstVisibleItemIndex } }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -177,7 +236,7 @@ private fun ReleaseRail(releases: List<Pair<FollowedSeries, DiscoveredVolume>>, 
             val cardWidth = if (releases.size > 1) width - 50.dp else width
             LazyRow(state = state, contentPadding = PaddingValues(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 itemsIndexed(releases, key = { _, entry -> entry.first.id }) { _, (saga, volume) ->
-                    SeriesReleaseCard(volume, saga.author ?: saga.name, saga.isAudio, onOpen = { onOpen(saga) }, modifier = Modifier.width(cardWidth), language = saga.language)
+                    SeriesReleaseCard(volume, saga.author ?: saga.name, saga.isAudio, onOpen = { onOpen(saga, volume) }, modifier = Modifier.width(cardWidth), language = saga.language)
                 }
             }
         }

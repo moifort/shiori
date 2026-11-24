@@ -15,6 +15,10 @@ import com.polyforms.shiori.features.series.SeriesClient
 import com.polyforms.shiori.features.series.SeriesShelfViewModel
 import com.polyforms.shiori.features.series.keeps
 import com.polyforms.shiori.shared.DataChanges
+import com.polyforms.shiori.shared.L
+import com.polyforms.shiori.shared.platform.ShioriAlert
+import com.polyforms.shiori.features.discover.AnnouncedVolumeScreen
+import com.polyforms.shiori.features.discover.AwaitedEditionScreen
 import com.polyforms.shiori.shared.components.styles.Shiori
 import com.polyforms.shiori.shared.platform.ScreenBar
 import com.polyforms.shiori.shared.platform.currentNavigator
@@ -54,7 +58,18 @@ fun PileScreen(view: ShelvesView = ShelvesView(), client: LibraryClient = Librar
                 is PileAction.OpenSeries -> open(LibraryDestination.Series(action.series.seriesId))
                 is PileAction.SelectGenre -> viewModel.select(action.genre)
                 is PileAction.Menu -> quick(action.book, action.action)
+                is PileAction.OpenVolume -> navigator.push { AnnouncedVolumeScreen(action.volume.saga, action.volume.volume) }
                 PileAction.OpenWishlist -> open(LibraryDestination.Wishlist)
+                is PileAction.DropWished -> viewModel.dropWished(action.book)
+                is PileAction.OpenWished -> {
+                    val edition = viewModel.wishlist.edition(action.book)
+                    // The wish's own page comes with the books-not-held port; until then, the list.
+                    if (edition != null) {
+                        navigator.push { AwaitedEditionScreen(edition, onStop = { navigator.pop() }) }
+                    } else {
+                        open(LibraryDestination.Wishlist)
+                    }
+                }
                 PileAction.Refresh -> {
                     scope.launch { series.load() }
                     viewModel.load()
@@ -62,5 +77,8 @@ fun PileScreen(view: ShelvesView = ShelvesView(), client: LibraryClient = Librar
             }
         }
         ScreenBar()
+        viewModel.actionError?.let { message ->
+            ShioriAlert(L("Action impossible"), message, onDismiss = { viewModel.actionError = null })
+        }
     }
 }
