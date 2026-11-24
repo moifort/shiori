@@ -1,5 +1,6 @@
 package com.polyforms.shiori.features.scan
 
+import com.polyforms.shiori.features.scan.components.organisms.CameraBarTitle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,7 +21,6 @@ import androidx.compose.ui.unit.dp
 import com.polyforms.shiori.features.book.BookDraft
 import com.polyforms.shiori.features.book.BookScreen
 import com.polyforms.shiori.features.discover.ReleaseFormat
-import com.polyforms.shiori.features.scan.components.organisms.CameraControls
 import com.polyforms.shiori.features.scan.components.organisms.ScanAnalyzingPage
 import com.polyforms.shiori.features.scan.components.organisms.ScanFailedPage
 import com.polyforms.shiori.features.scan.components.organisms.ScanNoResultPage
@@ -101,11 +101,11 @@ fun ScanScreen(
             ScanViewModel.Step.CAMERA -> {
                 CameraView(captureRequest, Modifier.fillMaxSize()) { jpeg -> scope.launch { viewModel.capture(jpeg) } }
                 ViewfinderOverlay(leavesRoomForShutter = true)
-                CameraControls(
-                    L("Scanner une couverture"),
-                    L("Cadrez la couverture dans le viseur, bien éclairée."),
-                    Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 24.dp),
-                ) { captureRequest += 1 }
+                // On a phone, as iOS: the shutter alone under the frame, the page's name in the bar.
+                Box(Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 48.dp)) {
+                    com.polyforms.shiori.features.scan.components.organisms.Shutter { captureRequest += 1 }
+                }
+                CameraBarTitle(L("Scanner une couverture"))
             }
             ScanViewModel.Step.ANALYZING -> ScanAnalyzingPage()
             ScanViewModel.Step.REVIEW -> viewModel.draft?.let { draft ->

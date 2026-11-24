@@ -1,5 +1,8 @@
 package com.polyforms.shiori.features.scan.components.organisms
 
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -138,11 +141,20 @@ fun CameraControls(title: String, hint: String, modifier: Modifier = Modifier, a
     }
 }
 
+/** A camera page's name, inline at the top as iOS's navigation title over the viewfinder. */
+@Composable
+fun BoxScope.CameraBarTitle(title: String) {
+    Box(Modifier.align(Alignment.TopCenter).fillMaxWidth().statusBarsPadding().padding(top = 16.dp).height(44.dp), contentAlignment = Alignment.Center) {
+        Text(title, style = Shiori.type.headline, color = Color.White, maxLines = 1)
+    }
+}
+
 @Preview(showBackground = true)
 @Composable
 private fun ScanPartsPreview() = PreviewSurface {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         ScanFailedPage("Le serveur ne répond pas.", onRetry = {}, onRetake = {})
         CameraControls("Couverture", "Cadrez la couverture entière.") {}
+        Box(Modifier.fillMaxWidth().height(80.dp).background(Color.Black)) { CameraBarTitle("Scanner une couverture") }
     }
 }
