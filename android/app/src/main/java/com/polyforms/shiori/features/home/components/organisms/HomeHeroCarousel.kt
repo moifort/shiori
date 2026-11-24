@@ -445,7 +445,9 @@ fun DoneStack(mark: StackMark, modifier: Modifier = Modifier, scale: Float = 0.8
         Blank(Modifier.offset(x = (-14).dp * scale, y = 4.dp * scale).rotate(-7f))
         Blank(Modifier.offset(x = 14.dp * scale, y = 6.dp * scale).rotate(6f))
         Box(contentAlignment = Alignment.Center) {
-            Blank(Modifier.shadow(18.dp, shape))
+            // No elevation: Android draws it from the outline, whole, through the glassy fill,
+            // where SwiftUI's shadow of a cover this clear barely shows.
+            Blank(Modifier)
             when (mark) {
                 is StackMark.Symbol -> Icon(Symbol(mark.name), null, Modifier.size(40.dp * scale), tint = Color.White.copy(alpha = 0.92f))
                 is StackMark.Logo -> Icon(painterResource(mark.drawable), null, Modifier.size(60.dp * scale), tint = Color.White.copy(alpha = 0.92f))
