@@ -46,7 +46,6 @@ import com.polyforms.shiori.features.discover.Suggestion
 import com.polyforms.shiori.features.discover.components.organisms.DiscoveryButtons
 import com.polyforms.shiori.features.discover.components.organisms.DiscoveryChoice
 import com.polyforms.shiori.features.discover.components.organisms.DiscoveryChoices
-import com.polyforms.shiori.features.discover.components.organisms.DiscoveryMark
 import com.polyforms.shiori.features.home.HomePrompt
 import com.polyforms.shiori.R
 import com.polyforms.shiori.shared.components.molecules.ActionToggle
@@ -248,7 +247,7 @@ fun HomeHeroCarousel(
     }
     val shown = items.getOrNull(pager.currentPage)
     // A discovery turned down from the eye: black and white, cover and wash, as on its page.
-    val turnedDown = shown is HomeHeroItem.Discovery && choices.marks[shown.suggestion.id] == DiscoveryMark.NOT_INTERESTED
+    val turnedDown = shown is HomeHeroItem.Discovery && choices.isTurnedDown(shown.suggestion)
     val saturation by animateFloatAsState(if (turnedDown) 0f else 1f, tween(600), label = "turnedDown")
     Box(Modifier.fillMaxWidth().height(height)) {
         Crossfade(backdrop(shown), Modifier.saturation(saturation), label = "backdrop") { url ->
@@ -266,7 +265,7 @@ fun HomeHeroCarousel(
                             is HomeHeroItem.Discovery -> DiscoveryTop(
                                 item.suggestion,
                                 discoveryMonth,
-                                isTurnedDown = choices.marks[item.suggestion.id] == DiscoveryMark.NOT_INTERESTED,
+                                isTurnedDown = choices.isTurnedDown(item.suggestion),
                             )
                             is HomeHeroItem.NeedsRatings -> ClosingTop(
                                 StackMark.Symbol("star.fill"),
