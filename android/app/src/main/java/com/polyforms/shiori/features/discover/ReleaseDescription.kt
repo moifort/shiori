@@ -1,5 +1,8 @@
 package com.polyforms.shiori.features.discover
 
+import com.polyforms.shiori.shared.BookLanguage
+import com.polyforms.shiori.shared.SeriesMembership
+import kotlinx.serialization.Serializable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -70,62 +73,14 @@ object SeedReleaseApi {
     }
 }
 
-/**
- * Describes a book to come once, the pill shown only when the answer takes a moment: a cached
- * description lands before the pill would.
- */
-class ReleaseDescriber(private val describeSeed: suspend (ReleaseSeed) -> ReleaseDescription = SeedReleaseApi::describe) {
-    var description by mutableStateOf<ReleaseDescription?>(null)
-        private set
-    var isDescribing by mutableStateOf(false)
-        private set
-    private var inFlight = false
-
-    suspend fun describe(seed: ReleaseSeed) {
-        if (description != null || inFlight) return
-        inFlight = true
-        coroutineScope {
-            val announce = launch {
-                delay(400)
-                isDescribing = true
-            }
-            try {
-                description = describeSeed(seed)
-            } catch (error: Throwable) {
-                if (!isCancellation(error) && (error as? ApiError)?.domainCode != "QUOTA_EXHAUSTED") reportError(error)
-            } finally {
-                announce.cancel()
-                inFlight = false
-                isDescribing = false
-            }
-        }
-    }
-}
-
-/** What an awaited edition is described from: the original while it is unannounced. */
-val AwaitedEdition.seed: ReleaseSeed
-    get() = ReleaseSeed(
-        title = if (state == AwaitedState.UNANNOUNCED) originalTitle else title,
-        authors = authors,
-        format = if (format == ReleaseFormat.AUDIOBOOK) BookFormat.AUDIOBOOK else BookFormat.BOOK,
-        language = if (state == AwaitedState.UNANNOUNCED) originalLanguage else null,
-        releasedOn = date,
-        coverURL = coverURL,
-    )
-
-/** The shelf entry an awaited edition becomes, onto the pile. */
-fun AwaitedEdition.draft(shown: Book): BookDraft = BookDraft(
-    title = shown.title,
-    authors = shown.authors,
-    format = if (format == ReleaseFormat.AUDIOBOOK) BookFormat.AUDIOBOOK else shown.format,
-    genre = shown.genre,
-    subgenres = shown.subgenres,
-    synopsis = shown.synopsis,
-    publisher = shown.publisher,
-    firstPublishedIn = shown.firstPublishedIn,
-    pageCount = shown.pageCount,
-    isbn13 = shown.isbn13,
-    series = shown.series,
-    coverURL = shown.coverURL,
-    status = ReadingStatus.TO_READ,
+/** What a release description is asked from: a title to come, its authors, its edition. */
+data class ReleaseSeed(
+    val title: String,
+    val authors: List<String>,
+    val format: BookFormat,
+    val language: BookLanguage? = null,
+    val series: SeriesMembership? = null,
+    val isbn13: String? = null,
+    val releasedOn: String? = null,
+    val coverURL: String? = null,
 )

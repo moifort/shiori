@@ -6,6 +6,7 @@ import androidx.compose.runtime.setValue
 import com.polyforms.shiori.features.book.BookAddition
 import com.polyforms.shiori.features.book.BookDraft
 import com.polyforms.shiori.features.discover.AwaitedApi
+import com.polyforms.shiori.features.discover.AwaitedEdition
 import com.polyforms.shiori.shared.AnalyticsEvent
 import com.polyforms.shiori.shared.BookFormat
 import com.polyforms.shiori.shared.ReadingStatus
@@ -84,6 +85,16 @@ class WishlistViewModel(private val client: WishlistClient, private val scope: C
     suspend fun add(wish: Wish, status: ReadingStatus) = act(wish) { client.addBook(wish.draft(status)) }
 
     suspend fun remove(wish: Wish) = act(wish) { client.remove(wish.id) }
+
+    /** An edition awaited, off the list from the long press: no longer watched. */
+    suspend fun stopAwaiting(edition: AwaitedEdition) {
+        try {
+            client.stopAwaiting(edition.id)
+            wishlist = wishlist.copy(awaited = wishlist.awaited.filter { it.id != edition.id })
+        } catch (error: Exception) {
+            if (!isCancellation(error)) actionError = reportError(error)
+        }
+    }
 
     private suspend fun act(wish: Wish, work: suspend () -> Unit) {
         try {

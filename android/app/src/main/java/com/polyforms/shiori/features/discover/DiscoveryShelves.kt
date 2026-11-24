@@ -116,51 +116,6 @@ val List<AwaitedEdition>.soonOrder: List<AwaitedEdition>
 
 val DiscoveryVolume.isComing: Boolean get() = volume.date?.let { ReleaseDateText.isUpcoming(it) } ?: true
 
-val DiscoveryVolume.caption: String get() = volume.date?.let(ReleaseDateText::short) ?: L("Annoncé")
-
-/** The volume drawn as a book: its cover, its title, the saga's author. */
-val DiscoveryVolume.cover: Book
-    get() {
-        val series = saga.series
-        return Book(
-            id = "release-${series.id}-${volume.number}",
-            title = volume.title,
-            authors = listOfNotNull(series.author),
-            format = if (series.isAudio) BookFormat.AUDIOBOOK else BookFormat.BOOK,
-            language = series.language,
-            coverURL = volume.coverURL,
-            status = ReadingStatus.TO_READ,
-        )
-    }
-
-/** The volume as its page describes it: the cover, its ISBN and its place in the saga. */
-val DiscoveryVolume.book: Book
-    get() = cover.copy(isbn13 = volume.isbn13, series = SeriesMembership(saga.series.seriesId, saga.series.name, volume.number, VolumeKind.MAIN))
-
-val DiscoveryVolume.seed: ReleaseSeed
-    get() {
-        val book = book
-        return ReleaseSeed(book.title, book.authors, book.format, book.language, book.series, volume.isbn13, volume.date, volume.coverURL)
-    }
-
-/** The shelf entry a described volume becomes, onto the pile. */
-fun DiscoveryVolume.draft(shown: Book): BookDraft = BookDraft(
-    title = shown.title,
-    authors = shown.authors,
-    format = shown.format,
-    genre = shown.genre ?: saga.series.genre,
-    subgenres = shown.subgenres,
-    synopsis = shown.synopsis,
-    publisher = shown.publisher,
-    firstPublishedIn = shown.firstPublishedIn,
-    pageCount = shown.pageCount,
-    isbn13 = shown.isbn13,
-    language = saga.series.language,
-    series = shown.series,
-    coverURL = shown.coverURL,
-    status = ReadingStatus.TO_READ,
-)
-
 /** A line of the Books shelf's summary card. */
 enum class DiscoverCategory {
     SOON, AWARDS, FRIENDS;

@@ -33,8 +33,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.polyforms.shiori.features.discover.AwaitedEdition
 import com.polyforms.shiori.features.discover.ReleaseFormat
-import com.polyforms.shiori.features.home.components.organisms.PosterRow
-import com.polyforms.shiori.features.home.components.organisms.PosterRowItem
 import com.polyforms.shiori.features.library.shelfLabel
 import com.polyforms.shiori.features.series.components.organisms.SeriesReleaseCard
 import com.polyforms.shiori.features.wishlist.Wish
@@ -50,15 +48,22 @@ import com.polyforms.shiori.shared.components.molecules.FilterPills
 import com.polyforms.shiori.shared.components.molecules.RowHeader
 import com.polyforms.shiori.shared.components.molecules.RowHeaderStyle
 import com.polyforms.shiori.shared.components.styles.Shiori
-import com.polyforms.shiori.shared.platform.LargeTitle
+import com.polyforms.shiori.shared.Book
+import com.polyforms.shiori.shared.book.PosterCover
+import com.polyforms.shiori.shared.book.WishContextMenuBox
+import androidx.compose.foundation.layout.statusBarsPadding
 import kotlinx.coroutines.launch
 import androidx.compose.ui.tooling.preview.Preview
-import com.polyforms.shiori.DebugFixtures
 import com.polyforms.shiori.PreviewSurface
 
+/** Everything the wishlist's page can ask for. */
 sealed interface WishlistAction {
     data class OpenEdition(val edition: AwaitedEdition) : WishlistAction
-    data class ChooseWish(val wish: Wish) : WishlistAction
+    data class OpenWish(val wish: Wish) : WishlistAction
+
+    /** "Retirer", from a cover's long press: off the list. */
+    data class DropWish(val wish: Wish) : WishlistAction
+    data class DropEdition(val edition: AwaitedEdition) : WishlistAction
     data class SelectFormat(val format: BookFormat?) : WishlistAction
     data object Refresh : WishlistAction
 }
@@ -67,7 +72,18 @@ sealed interface WishlistAction {
 val AwaitedEdition.volume: DiscoveredVolume
     get() = DiscoveredVolume(0, title, date, null, coverURL, if (format == ReleaseFormat.AUDIOBOOK) storeURL else null)
 
-/** The wishlist: coming releases, what is out, the friends' and Découvrir's picks, the scans. */
+/** Over the card's title: the author. "Audio" is a tag under the title. */
+val AwaitedEdition.place: String get() = authors.firstOrNull() ?: ""
+
+/** One cover of a wishlist rail: opened by a tap, offering "Retirer" on a long press. */
+private data class WishedItem(val book: Book, val caption: String, val open: () -> Unit, val drop: () -> Unit)
+
+/**
+ * The wishlist: the editions awaited announced for a day, as its "Prochaines sorties" cards; then a
+ * rail per way the books came — the editions out, a friend's, the discoveries, the scans — and the
+ * editions nobody announced yet. Each cover says where it came from, and a long press on it offers
+ * "Retirer". A section with nothing in it is not drawn. The screen's bar draws the title.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WishlistPage(
@@ -85,17 +101,27 @@ fun WishlistPage(
     var refreshing by remember { mutableStateOf(false) }
 
     @Composable
-    fun Rail(title: String, items: List<PosterRowItem>) {
+    fun Rail(title: String, items: List<WishedItem>) {
         if (items.isEmpty()) return
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             RowHeader(title, Modifier.padding(horizontal = 20.dp), style = RowHeaderStyle.INLINE)
-            PosterRow(items) {}
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 20.dp),
+                horizontalArrangement = Arrangement.spacedBy(13.dp),
+                verticalAlignment = Alignment.Top,
+            ) {
+                items(items, key = { it.book.id }) { item ->
+                    WishContextMenuBox(onOpen = item.open, onDrop = item.drop) { PosterCover(item.book, item.caption, width = 102.dp) }
+                }
+            }
         }
     }
-    fun editions(list: List<AwaitedEdition>, caption: (AwaitedEdition) -> String) =
-        list.map { edition -> PosterRowItem(edition.cover, caption(edition)) { send(WishlistAction.OpenEdition(edition)) } }
-    fun wishes(list: List<Wish>, caption: (Wish) -> String) =
-        list.map { wish -> PosterRowItem(wish.cover, caption(wish)) { send(WishlistAction.ChooseWish(wish)) } }
+    fun editions(list: List<AwaitedEdition>, caption: (AwaitedEdition) -> String) = list.map { edition ->
+        WishedItem(edition.cover, caption(edition), { send(WishlistAction.OpenEdition(edition)) }, { send(WishlistAction.DropEdition(edition)) })
+    }
+    fun wishes(list: List<Wish>, caption: (Wish) -> String) = list.map { wish ->
+        WishedItem(wish.cover, caption(wish), { send(WishlistAction.OpenWish(wish)) }, { send(WishlistAction.DropWish(wish)) })
+    }
 
     PullToRefreshBox(refreshing, onRefresh = {
         refreshing = true
@@ -104,8 +130,10 @@ fun WishlistPage(
             refreshing = false
         }
     }, Modifier.fillMaxSize()) {
-        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(30.dp)) {
-            LargeTitle(L("Liste d'envies"))
+        Column(
+            Modifier.fillMaxSize().verticalScroll(rememberScrollState()).statusBarsPadding().padding(top = 60.dp, bottom = 32.dp),
+            verticalArrangement = Arrangement.spacedBy(30.dp),
+        ) {
             if (formats.size > 1) {
                 FilterPills(formats.map { FilterPill(it.name, it.shelfLabel) }, selectedFormat?.name, { id -> send(WishlistAction.SelectFormat(id?.let { BookFormat.valueOf(it) })) })
             }
@@ -149,7 +177,7 @@ private fun ReleaseRail(editions: List<AwaitedEdition>, onOpen: (AwaitedEdition)
                         edition.format == ReleaseFormat.AUDIOBOOK,
                         onOpen = { onOpen(edition) },
                         modifier = Modifier.width(cardWidth),
-                        place = edition.authors.firstOrNull() ?: "",
+                        place = edition.place,
                     )
                 }
             }
@@ -168,8 +196,8 @@ private fun ReleaseRail(editions: List<AwaitedEdition>, onOpen: (AwaitedEdition)
 @Composable
 private fun WishlistPagePreview() = PreviewSurface {
     WishlistPage(
-        wishlist = com.polyforms.shiori.features.wishlist.Wishlist(awaited = DebugFixtures.discoverAwaited),
-        formats = emptyList(),
+        wishlist = com.polyforms.shiori.features.wishlist.WishlistFixtures.wishlist,
+        formats = listOf(BookFormat.BOOK, BookFormat.AUDIOBOOK),
         selectedFormat = null,
         isLoading = false,
         errorMessage = null,

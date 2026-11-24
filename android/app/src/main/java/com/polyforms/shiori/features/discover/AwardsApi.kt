@@ -20,10 +20,15 @@ import com.polyforms.shiori.shared.SystemTint
 import com.polyforms.shiori.shared.asDomain
 import kotlinx.serialization.Serializable
 
-/** Something Découvrir proposes that the reader may await in some formats. */
+/** What a discovery's buttons decide on: a suggestion, an award winner. */
 interface Discovery {
     val id: String
+    /** The format it is listed in. */
+    val format: ReleaseFormat
+    /** The formats its edition may be awaited in. */
     val awaitableFormats: List<ReleaseFormat>
+    /** The edition the reader awaits already in `format`, when they do. */
+    val awaitedEditionId: String?
 }
 
 @Serializable
@@ -62,24 +67,75 @@ enum class LiteraryAward(val graphQLName: String) {
 @Serializable
 data class AwardMention(val award: LiteraryAward, val year: Int)
 
+/**
+ * A novel an award crowned, as its edition stands in one format and the language of the app: out,
+ * announced, or not found — not found also while nobody awaited it, which `watched` tells apart.
+ */
 @Serializable
 data class AwardWinner(
     override val id: String,
-    val format: ReleaseFormat,
-    val title: String,
-    val originalTitle: String,
-    val originalLanguage: BookLanguage?,
-    val authors: List<String>,
+    override val format: ReleaseFormat,
+    /** Newest first. */
     val mentions: List<AwardMention>,
-    val state: AwaitedState,
-    val watched: Boolean,
-    val date: String?,
-    val coverURL: String?,
-    val storeURL: String?,
+    /** Its edition as every list and its page draw it. */
+    val release: Release,
     override val awaitableFormats: List<ReleaseFormat>,
-    val awaitedEditionId: String?,
+    override val awaitedEditionId: String?,
+    /** The novel whatever its format, which "Pas intéressé" turns down. */
     val key: String? = null,
+    /** Whether the reader holds the novel in any format. Null on a snapshot saved before it was sent. */
+    val inLibrary: Boolean? = null,
 ) : Discovery {
+    /** A winner known only by what a fixture says of it: nothing described yet. */
+    constructor(
+        id: String,
+        format: ReleaseFormat,
+        title: String,
+        originalTitle: String,
+        originalLanguage: BookLanguage?,
+        authors: List<String>,
+        mentions: List<AwardMention>,
+        state: AwaitedState,
+        watched: Boolean,
+        date: String?,
+        coverURL: String?,
+        storeURL: String?,
+        awaitableFormats: List<ReleaseFormat>,
+        awaitedEditionId: String?,
+        key: String? = null,
+    ) : this(
+        id,
+        format,
+        mentions,
+        Release.listed(
+            key = id,
+            title = title,
+            originalTitle = originalTitle,
+            authors = authors,
+            releaseFormat = format,
+            originalLanguage = originalLanguage,
+            state = state,
+            watched = watched,
+            date = date,
+            coverURL = coverURL,
+            storeURL = storeURL,
+        ),
+        awaitableFormats,
+        awaitedEditionId,
+        key,
+    )
+
+    /** Its title in the app's language once found, else the one it won under. */
+    val title: String get() = release.title
+    val originalTitle: String get() = release.originalTitle
+    val originalLanguage: BookLanguage? get() = release.originalLanguage
+    val authors: List<String> get() = release.authors
+    val state: AwaitedState get() = release.state
+    val watched: Boolean get() = release.watched
+    val date: String? get() = release.date
+    val coverURL: String? get() = release.coverURL
+    val storeURL: String? get() = release.storeURL
+
     val caption: String get() = mentions.firstOrNull()?.let { "${it.award.stripName} ${it.year}" } ?: ""
 
     val stateLine: String
@@ -99,13 +155,10 @@ data class AwardWinner(
     val awardsLine: String get() = mentions.joinToString(" · ") { "${it.award.displayName} ${it.year}" }
     val mentionsLine: String get() = mentions.joinToString(" · ") { "${it.award.shortName} ${it.year}" }
 
-    val cover: Book
-        get() = Book(id = "award-$id", title = title, authors = authors, format = if (format == ReleaseFormat.AUDIOBOOK) BookFormat.AUDIOBOOK else BookFormat.BOOK, coverURL = coverURL, status = ReadingStatus.TO_READ)
+    /** Drawn as the Books tab draws a book: on its tile and on its page alike. */
+    val cover: Book get() = release.book("award-$id")
 
     val draft: BookDraft get() = BookDraft(title = originalTitle, authors = authors, format = BookFormat.BOOK, language = originalLanguage)
-
-    val seed: ReleaseSeed
-        get() = ReleaseSeed(title, authors, if (format == ReleaseFormat.AUDIOBOOK) BookFormat.AUDIOBOOK else BookFormat.BOOK, if (state == AwaitedState.UNANNOUNCED) originalLanguage else null, releasedOn = date, coverURL = coverURL)
 
     val pileDraft: BookDraft
         get() {
@@ -152,17 +205,10 @@ val AwardWinnerFields.asDomain: AwardWinner
     get() = AwardWinner(
         id = id,
         format = format.asRelease(),
-        title = title,
-        originalTitle = originalTitle,
-        originalLanguage = originalLanguage.asDomain,
-        authors = authors,
         mentions = awards.mapNotNull { m -> LiteraryAward.of(m.award.rawValue)?.let { AwardMention(it, m.year) } },
-        state = state.asAwaited(),
-        watched = watched,
-        date = date,
-        coverURL = coverUrl,
-        storeURL = storeUrl,
+        release = release.releaseFields.asRelease,
         awaitableFormats = awaitableFormats.mapNotNull(ReleaseFormat::of),
         awaitedEditionId = awaitedEditionId,
         key = key,
+        inLibrary = inLibrary,
     )

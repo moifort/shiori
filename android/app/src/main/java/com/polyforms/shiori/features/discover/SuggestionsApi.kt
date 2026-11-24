@@ -47,27 +47,78 @@ enum class DismissalReason { NOT_INTERESTED, DISLIKED }
 @Serializable
 data class Suggestion(
     override val id: String,
-    val format: ReleaseFormat,
-    val title: String,
-    val originalTitle: String,
-    val originalLanguage: BookLanguage?,
-    val authors: List<String>,
+    override val format: ReleaseFormat,
+    /** Why, in one sentence citing a book of the reader's. */
     val reason: String,
+    /** "comme Gagner la guerre". */
     val short: String,
     val references: List<SuggestionReference>,
-    val state: AwaitedState,
-    val watched: Boolean,
-    val date: String?,
-    val coverURL: String?,
-    val storeURL: String?,
     override val awaitableFormats: List<ReleaseFormat>,
-    val awaitedEditionId: String?,
+    override val awaitedEditionId: String?,
+    /** What the model named it, for a drawn story; a book otherwise. */
     val drawnFormat: BookFormat? = null,
+    /** Its edition as every list and its page draw it. */
+    val release: Release,
 ) : Discovery {
+    /** A suggestion known only by what a fixture says of it: nothing described yet. */
+    constructor(
+        id: String,
+        format: ReleaseFormat,
+        title: String,
+        originalTitle: String,
+        originalLanguage: BookLanguage?,
+        authors: List<String>,
+        reason: String,
+        short: String,
+        references: List<SuggestionReference>,
+        state: AwaitedState,
+        watched: Boolean,
+        date: String?,
+        coverURL: String?,
+        storeURL: String?,
+        awaitableFormats: List<ReleaseFormat>,
+        awaitedEditionId: String?,
+        drawnFormat: BookFormat? = null,
+    ) : this(
+        id,
+        format,
+        reason,
+        short,
+        references,
+        awaitableFormats,
+        awaitedEditionId,
+        drawnFormat,
+        Release.listed(
+            key = id,
+            title = title,
+            originalTitle = originalTitle,
+            authors = authors,
+            releaseFormat = format,
+            format = if (format == ReleaseFormat.AUDIOBOOK) BookFormat.AUDIOBOOK else drawnFormat ?: BookFormat.BOOK,
+            originalLanguage = originalLanguage,
+            state = state,
+            watched = watched,
+            date = date,
+            coverURL = coverURL,
+            storeURL = storeURL,
+        ),
+    )
+
+    /** Its title in the app's language: the edition's once found, else the model's. */
+    val title: String get() = release.title
+    val originalTitle: String get() = release.originalTitle
+    val originalLanguage: BookLanguage? get() = release.originalLanguage
+    val authors: List<String> get() = release.authors
+    val state: AwaitedState get() = release.state
+    val watched: Boolean get() = release.watched
+    val date: String? get() = release.date
+    val coverURL: String? get() = release.coverURL
+    val storeURL: String? get() = release.storeURL
+
     val leadReference: SuggestionReference? get() = references.firstOrNull()
 
-    val cover: Book
-        get() = Book(id = "suggestion-$id", title = title, authors = authors, format = if (format == ReleaseFormat.AUDIOBOOK) BookFormat.AUDIOBOOK else drawnFormat ?: BookFormat.BOOK, coverURL = coverURL, status = ReadingStatus.TO_READ)
+    /** Drawn as the Books tab draws a book: on its tile and on its page alike. */
+    val cover: Book get() = release.book("suggestion-$id")
 
     val draft: BookDraft get() = BookDraft(title = originalTitle, authors = authors, format = drawnFormat ?: BookFormat.BOOK, language = originalLanguage)
 
@@ -84,9 +135,6 @@ data class Suggestion(
             AwaitedState.ANNOUNCED -> SystemTint.ORANGE
             AwaitedState.UNANNOUNCED -> SystemTint.GRAY
         }
-
-    val seed: ReleaseSeed
-        get() = ReleaseSeed(title, authors, if (format == ReleaseFormat.AUDIOBOOK) BookFormat.AUDIOBOOK else drawnFormat ?: BookFormat.BOOK, if (state == AwaitedState.UNANNOUNCED) originalLanguage else null, releasedOn = date, coverURL = coverURL)
 }
 
 /** The month's discoveries Claude chose for the reader. */
@@ -165,18 +213,9 @@ val SuggestionFields.asDomain: Suggestion
     get() = Suggestion(
         id = id,
         format = format.asRelease(),
-        title = title,
-        originalTitle = originalTitle,
-        originalLanguage = originalLanguage.asDomain,
-        authors = authors,
         reason = reason,
         short = short,
         references = references.map { SuggestionReference(it.bookId, it.seriesId, it.title, it.favorite, it.rating, it.viaSeries, it.coverUrl, it.citesSaga) },
-        state = state.asAwaited(),
-        watched = watched,
-        date = date,
-        coverURL = coverUrl,
-        storeURL = storeUrl,
         awaitableFormats = awaitableFormats.mapNotNull(ReleaseFormat::of),
         awaitedEditionId = awaitedEditionId,
         drawnFormat = when (kind) {
@@ -185,6 +224,7 @@ val SuggestionFields.asDomain: Suggestion
             SuggestionKind.MANGA -> BookFormat.MANGA
             else -> null
         },
+        release = release.releaseFields.asRelease,
     )
 
 /** The suggestion as a book of the reader's shelf, in the edition it was proposed in. */

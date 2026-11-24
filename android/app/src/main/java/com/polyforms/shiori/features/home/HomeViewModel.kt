@@ -12,6 +12,7 @@ import com.polyforms.shiori.features.discover.ReleaseFormat
 import com.polyforms.shiori.features.discover.Suggestion
 import com.polyforms.shiori.features.discover.components.organisms.DiscoveryChoice
 import com.polyforms.shiori.features.discover.components.organisms.DiscoveryChoices
+import com.polyforms.shiori.features.discover.components.organisms.taken
 import com.polyforms.shiori.features.discover.shelfDraft
 import com.polyforms.shiori.shared.Book
 import com.polyforms.shiori.shared.ReadingStatus
@@ -268,7 +269,7 @@ class HomeViewModel(
         val recentVolumes = rows.flatMap { saga -> saga.recent.map { HomeRelease.Volume(DiscoveryVolume(saga, it)) } }
         val since = LocalDate.now().minusDays(RECENT_DAYS).toString()
         val recentAwaited = awaited
-            .filter { it.state == AwaitedState.AVAILABLE && it.date?.length == 10 && it.date >= since }
+            .filter { edition -> edition.state == AwaitedState.AVAILABLE && edition.date?.let { it.length == 10 && it >= since } == true }
             .map { HomeRelease.Awaited(it) }
         val recent = (recentVolumes + recentAwaited).sortedWith { a, b ->
             val byDate = (b.date ?: "").compareTo(a.date ?: "")
@@ -296,10 +297,24 @@ class HomeViewModel(
         hold(suggestion)
         return try {
             when (choice) {
-                DiscoveryChoice.Add -> booksAdded[suggestion.id] = client.addBook(suggestion.shelfDraft(ReadingStatus.TO_READ))
+                is DiscoveryChoice.Add -> booksAdded[suggestion.id] = client.addBook(suggestion.shelfDraft(ReadingStatus.TO_READ).taken(choice.format, ReadingStatus.TO_READ))
                 is DiscoveryChoice.Await -> awaitedIds.getOrPut(suggestion.id) { mutableMapOf() }[choice.format] = client.awaitEdition(suggestion.draft, choice.format)
-                DiscoveryChoice.AlreadyRead -> booksRead[suggestion.id] = client.addBook(suggestion.shelfDraft(ReadingStatus.READ))
+                is DiscoveryChoice.AlreadyRead -> booksRead[suggestion.id] = client.addBook(suggestion.shelfDraft(ReadingStatus.READ).taken(choice.format, ReadingStatus.READ))
                 DiscoveryChoice.Wish -> wishIds[suggestion.id] = client.wish(suggestion.shelfDraft(ReadingStatus.TO_READ))
+                DiscoveryChoice.Unwish -> {
+                    wishIds[suggestion.id]?.let { client.removeWish(it) }
+                    wishIds.remove(suggestion.id)
+                }
+                DiscoveryChoice.UndoAdd -> {
+                    booksAdded[suggestion.id]?.let { client.deleteBook(it) }
+                    booksAdded.remove(suggestion.id)
+                }
+                is DiscoveryChoice.Unawait -> {
+                    // Awaited here, or already when the line was read.
+                    val id = awaitedIds[suggestion.id]?.get(choice.format) ?: if (suggestion.format == choice.format) suggestion.awaitedEditionId else null
+                    id?.let { client.stopAwaiting(it) }
+                    awaitedIds[suggestion.id]?.remove(choice.format)
+                }
                 DiscoveryChoice.UndoAlreadyRead -> {
                     booksRead[suggestion.id]?.let { client.deleteBook(it) }
                     booksRead.remove(suggestion.id)

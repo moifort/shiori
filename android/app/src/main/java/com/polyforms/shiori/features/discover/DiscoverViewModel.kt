@@ -22,8 +22,8 @@ import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.builtins.MapSerializer
 import java.time.Instant
 
-/** Everything Découvrir asks of the server. */
-interface DiscoverClient {
+/** Everything the old Découvrir screen asks of the server, until Actu replaces it. */
+interface DiscoverFeedClient {
     suspend fun discovery(format: ReleaseFormat): DiscoveryPage
     /** The first look at a format: everything followed in it looked up on the web. */
     suspend fun lookUp(format: ReleaseFormat): DiscoveryPage
@@ -38,7 +38,7 @@ interface DiscoverClient {
     suspend fun requestAlerts()
 
     companion object {
-        val live: DiscoverClient = object : DiscoverClient {
+        val live: DiscoverFeedClient = object : DiscoverFeedClient {
             override suspend fun discovery(format: ReleaseFormat) = DiscoverApi.discovery(format)
             override suspend fun lookUp(format: ReleaseFormat) = DiscoverApi.lookUp(format)
             override suspend fun picks() = FriendsApi.picks()
@@ -71,7 +71,7 @@ sealed interface DiscoveriesLine {
  * it last showed — the rows, the friends' picks, the editions awaited — kept on disk, brought up
  * to date silently underneath.
  */
-class DiscoverViewModel(private val client: DiscoverClient, private val scope: CoroutineScope, caching: Boolean = true) {
+class DiscoverViewModel(private val client: DiscoverFeedClient, private val scope: CoroutineScope, caching: Boolean = true) {
     private sealed interface Section {
         data class Rows(val format: ReleaseFormat) : Section
         data object Picks : Section

@@ -2,6 +2,7 @@ package com.polyforms.shiori.features.discover
 
 import com.polyforms.shiori.features.authors.FollowedAuthor
 import com.polyforms.shiori.features.friends.FriendPicks
+import com.polyforms.shiori.shared.Book
 import com.polyforms.shiori.shared.BookFormat
 import com.polyforms.shiori.shared.BookLanguage
 import com.polyforms.shiori.shared.DiscoveredVolume
@@ -9,18 +10,6 @@ import com.polyforms.shiori.shared.FollowedSeries
 import com.polyforms.shiori.shared.ReleaseDateText
 import com.polyforms.shiori.shared.SeriesMembership
 import kotlinx.serialization.Serializable
-
-/** What a release description is asked from: a title to come, its authors, its edition. */
-data class ReleaseSeed(
-    val title: String,
-    val authors: List<String>,
-    val format: BookFormat,
-    val language: BookLanguage? = null,
-    val series: SeriesMembership? = null,
-    val isbn13: String? = null,
-    val releasedOn: String? = null,
-    val coverURL: String? = null,
-)
 
 /** The next volume announced that the reader does not hold, and whether the saga was looked up. */
 @Serializable
@@ -35,6 +24,26 @@ data class SagaDiscovery(
     val recent: List<DiscoveredVolume> = emptyList(),
 ) {
     val id: String get() = series.id
+
+    companion object {
+        /**
+         * The saga of a book the reader holds, as the page of a volume of it they lack reads it: the
+         * edition of their copy, followed as the saga's screen opens one.
+         */
+        fun holding(book: Book, series: SeriesMembership, ownedCount: Int) = SagaDiscovery(
+            series = FollowedSeries(
+                seriesId = series.id,
+                name = series.name,
+                isAudio = book.format == BookFormat.AUDIOBOOK,
+                author = book.authors.firstOrNull(),
+                language = book.language,
+                state = null,
+                genre = book.genre,
+                ownedCount = ownedCount,
+            ),
+            releases = SagaReleases(true, null),
+        )
+    }
 }
 
 /** A work of an author outside the sagas the reader holds. */

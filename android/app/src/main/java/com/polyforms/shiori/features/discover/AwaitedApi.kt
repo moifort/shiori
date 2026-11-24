@@ -67,18 +67,64 @@ enum class AwaitedState { UNANNOUNCED, ANNOUNCED, AVAILABLE }
 data class AwaitedEdition(
     val id: String,
     val format: ReleaseFormat,
-    val state: AwaitedState,
-    val title: String,
-    val originalTitle: String,
-    val originalLanguage: BookLanguage?,
-    val authors: List<String>,
-    val date: String?,
-    val coverURL: String?,
-    val storeURL: String?,
+    /** The edition as every list and its page draw it. */
+    val release: Release,
+    /** When the reader started awaiting it. */
     @Serializable(InstantSerializer::class) val awaitedAt: Instant?,
+    /** The book it was awaited from, on its owner's shelf. Null for one awaited from a scan. */
     val bookId: String?,
+    /** The reader's own id for their copy, a friend's for theirs. */
     val ownerId: String,
+    /** The first name of the friend it was awaited at: who recommended it. */
+    val recommendedBy: String? = null,
 ) {
+    /** An edition known only by what a page or a fixture says of it: nothing described yet. */
+    constructor(
+        id: String,
+        format: ReleaseFormat,
+        state: AwaitedState,
+        title: String,
+        originalTitle: String,
+        originalLanguage: BookLanguage?,
+        authors: List<String>,
+        date: String?,
+        coverURL: String?,
+        storeURL: String?,
+        awaitedAt: Instant?,
+        bookId: String?,
+        ownerId: String,
+    ) : this(
+        id,
+        format,
+        Release.listed(
+            key = id,
+            title = title,
+            originalTitle = originalTitle,
+            authors = authors,
+            releaseFormat = format,
+            originalLanguage = originalLanguage,
+            state = state,
+            date = date,
+            coverURL = coverURL,
+            storeURL = storeURL,
+        ),
+        awaitedAt,
+        bookId,
+        ownerId,
+    )
+
+    val state: AwaitedState get() = release.state
+    /** Its title in the language awaited once found, else the original's. */
+    val title: String get() = release.title
+    val originalTitle: String get() = release.originalTitle
+    val originalLanguage: BookLanguage? get() = release.originalLanguage
+    val authors: List<String> get() = release.authors
+    /** `YYYY`, `YYYY-MM` or `YYYY-MM-DD`; null until found, and for one announced with no date. */
+    val date: String? get() = release.date
+    val coverURL: String? get() = release.coverURL
+    /** The recording on Audible, the printed edition on Amazon; null until a store confirmed it. */
+    val storeURL: String? get() = release.storeURL
+
     val caption: String
         get() = when (state) {
             AwaitedState.AVAILABLE -> L("Disponible")
@@ -100,20 +146,16 @@ data class AwaitedEdition(
             AwaitedState.UNANNOUNCED -> null
         }
 
-    val cover: Book
-        get() = Book(
-            id = "awaited-$id",
-            title = title,
-            authors = authors,
-            format = if (format == ReleaseFormat.AUDIOBOOK) BookFormat.AUDIOBOOK else BookFormat.BOOK,
-            coverURL = coverURL,
-            status = ReadingStatus.TO_READ,
-        )
+    /** Drawn as the Books tab draws a book: on its tile and on its page alike. */
+    val cover: Book get() = release.book("awaited-$id")
 
     val isAddable: Boolean get() = state != AwaitedState.UNANNOUNCED
 
     val announcedDate: String?
-        get() = if (state == AwaitedState.ANNOUNCED && date != null && ReleaseDateText.isUpcoming(date)) date else null
+        get() {
+            val date = date ?: return null
+            return if (state == AwaitedState.ANNOUNCED && ReleaseDateText.isUpcoming(date)) date else null
+        }
 
     val pageState: BookState?
         get() = if (announcedDate == null) BookState(stateLine, stateTint ?: SystemTint.GRAY) else null
@@ -156,21 +198,11 @@ val AwaitedEditionFields.asDomain: AwaitedEdition
     get() = AwaitedEdition(
         id = id,
         format = if (format == GReleaseFormat.AUDIOBOOK) ReleaseFormat.AUDIOBOOK else ReleaseFormat.BOOK,
-        state = when (state) {
-            GAwaitedState.AVAILABLE -> AwaitedState.AVAILABLE
-            GAwaitedState.ANNOUNCED -> AwaitedState.ANNOUNCED
-            else -> AwaitedState.UNANNOUNCED
-        },
-        title = title,
-        originalTitle = originalTitle,
-        originalLanguage = originalLanguage.asDomain,
-        authors = authors,
-        date = date,
-        coverURL = coverUrl,
-        storeURL = storeUrl,
+        release = release.releaseFields.asRelease,
         awaitedAt = parseISO8601(awaitedAt),
         bookId = sourceBookId,
         ownerId = ownerId,
+        recommendedBy = recommendedBy,
     )
 
 private val EditionOfferFields.asDomain: EditionOffer
