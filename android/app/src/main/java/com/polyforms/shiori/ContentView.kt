@@ -4,9 +4,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableStateSetOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
@@ -100,6 +102,9 @@ class AppRouter {
 /** The routing of the tabs, for the screens that send the reader to another tab. */
 val LocalAppRouter = staticCompositionLocalOf { AppRouter() }
 
+/** Whether the tab the calling screen is in is the one shown: false while it waits under another. */
+val LocalTabIsShown = compositionLocalOf { true }
+
 /**
  * The app once signed in: four tabs, each its own navigation stack kept alive, and the scan
  * button detached at the bar's end, which opens the add sheet rather than a tab. The bar folds
@@ -110,6 +115,7 @@ fun ContentView(router: AppRouter = remember { AppRouter() }) {
     val navigators = remember { TabSelection.entries.associateWith { Navigator() } }
     val holder = rememberSaveableStateHolder()
     val fold = remember { TabBarFold() }
+    val opened = remember { mutableStateSetOf(TabSelection.HOME) }
     var backgroundedAt by remember { mutableStateOf<Instant?>(null) }
 
     // A return to the front after a while: every open screen reads again, as on iOS.
@@ -147,14 +153,18 @@ fun ContentView(router: AppRouter = remember { AppRouter() }) {
     }
     val contentTabs = listOf(TabSelection.HOME, TabSelection.LIBRARY, TabSelection.NEWS, TabSelection.FRIENDS)
     val backdrop = com.polyforms.shiori.shared.components.styles.rememberBackdrop()
+    LaunchedEffect(router.selectedTab) { opened += router.selectedTab }
     Box(Modifier.fillMaxSize().nestedScroll(fold.connection)) {
         // The tabs' pages, recorded so the floating bar blurs what scrolls under it.
         Box(Modifier.fillMaxSize().backdropSource(backdrop)) {
         contentTabs.forEach { tab ->
             val visible = router.selectedTab == tab
             Box(Modifier.fillMaxSize().graphicsLayer { alpha = if (visible) 1f else 0f }.zIndex(if (visible) 1f else 0f)) {
-                if (visible || navigators.getValue(tab).depth > 0 || tab == TabSelection.HOME) {
+                // A tab once opened stays alive under the others, as iOS keeps a TabView's tabs:
+                // coming back finds it as it was left, with nothing to compose or load again.
+                if (visible || tab in opened) {
                     holder.SaveableStateProvider(tab) {
+                        CompositionLocalProvider(LocalTabIsShown provides visible) {
                         NavigationStack(navigators.getValue(tab), active = visible) {
                             when (tab) {
                                 TabSelection.HOME -> HomeScreen()
@@ -166,6 +176,7 @@ fun ContentView(router: AppRouter = remember { AppRouter() }) {
                                 }
                                 TabSelection.SCAN -> Unit
                             }
+                        }
                         }
                     }
                 }

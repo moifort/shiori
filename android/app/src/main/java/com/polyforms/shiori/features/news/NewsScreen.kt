@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -14,6 +15,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.polyforms.shiori.LocalAppRouter
+import com.polyforms.shiori.LocalTabIsShown
 import com.polyforms.shiori.features.authors.AuthorScreen
 import com.polyforms.shiori.features.discover.AwardWinnerScreen
 import com.polyforms.shiori.features.discover.SuggestionScreen
@@ -35,6 +37,16 @@ import com.polyforms.shiori.shared.platform.currentNavigator
 import kotlinx.coroutines.launch
 
 /**
+ * Runs `action` each time the tab comes to the front, as iOS's `.task` on a tab kept alive. On its
+ * own, so that showing and hiding the tab recomposes this and not the screen.
+ */
+@Composable
+private fun OnEachVisit(action: suspend () -> Unit) {
+    val isShown = LocalTabIsShown.current
+    LaunchedEffect(isShown) { if (isShown) action() }
+}
+
+/**
  * The Actu tab, connected: owns the ViewModel, its loads, and what a tap opens. Draws `NewsPage`.
  *
  * What opens is what the app already has: a friend's book on its read-only page, an author's
@@ -47,9 +59,11 @@ fun NewsScreen(client: NewsClient = NewsClient.live) {
     val navigator = currentNavigator
     val router = LocalAppRouter.current
     var showsAlerts by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) { viewModel.loadOnAppear() }
+    OnEachVisit { viewModel.loadOnAppear() }
     LaunchedEffect(Unit) { DataChanges.notices.collect { viewModel.load() } }
-    NewsPage(viewModel.agenda(), viewModel.wished, viewModel.isLoading, viewModel.errorMessage, viewModel.alertsSilenced) { action ->
+    // Laid out again only when what it is made of changes, not on each recomposition of the screen.
+    val agenda by remember { derivedStateOf { viewModel.agenda() } }
+    NewsPage(agenda, viewModel.wished, viewModel.isLoading, viewModel.errorMessage, viewModel.alertsSilenced) { action ->
         when (action) {
             is NewsAction.Open -> navigator.open(action.card)
             is NewsAction.Wish -> viewModel.wish(action.card)

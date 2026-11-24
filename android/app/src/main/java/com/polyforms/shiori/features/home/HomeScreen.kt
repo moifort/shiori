@@ -8,6 +8,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -84,7 +85,9 @@ fun HomeScreen(
     LaunchedEffect(Unit) { DataChanges.notices.collect { viewModel.load() } }
     // Left for another tab or a page pushed over it: the discoveries taken and the releases seen
     // from the carousel leave the line while out of sight.
-    val inSight = router.selectedTab == TabSelection.HOME && navigator.depth == 0
+    // Derived, so the home hears of a tab change only when it is the one left or come back to:
+    // read as it is, every switch between two other tabs recomposed this screen under them.
+    val inSight by remember { derivedStateOf { router.selectedTab == TabSelection.HOME && navigator.depth == 0 } }
     LaunchedEffect(inSight) { if (!inSight) viewModel.releaseTaken() }
     val context = LocalContext.current
 
