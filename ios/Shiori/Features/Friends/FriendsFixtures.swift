@@ -1,7 +1,7 @@
 import Foundation
 
 // The friends' screens' preview and test data: a friend's shelf, two friends
-// as the Partagé list draws them, a book on a friend's shelf, an invitation.
+// as the Amis tab draws them, a book on a friend's shelf, an invitation.
 
 extension FriendProfile {
     static let preview: FriendProfile = {

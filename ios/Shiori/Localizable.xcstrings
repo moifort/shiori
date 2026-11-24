@@ -481,22 +481,6 @@
         }
       }
     },
-    "%@ voit votre bibliothèque, et vous voyez la sienne." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ sees your library, and you see theirs."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ voit votre bibliothèque, et vous voyez la sienne."
-          }
-        }
-      }
-    },
     "%@ vs %@" : {
       "localizations" : {
         "en" : {
@@ -749,50 +733,6 @@
         }
       }
     },
-    "%lld en cours" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld reading"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld en cours"
-          }
-        }
-      }
-    },
-    "%lld favoris" : {
-      "localizations" : {
-        "en" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld favorite"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld favorites"
-                }
-              }
-            }
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld favoris"
-          }
-        }
-      }
-    },
     "%lld jours" : {
       "localizations" : {
         "en" : {
@@ -961,34 +901,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld livres"
-          }
-        }
-      }
-    },
-    "%lld livres partagés" : {
-      "localizations" : {
-        "en" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld book shared"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld books shared"
-                }
-              }
-            }
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld livres partagés"
           }
         }
       }
@@ -1501,22 +1413,6 @@
         }
       }
     },
-    "%llde" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "#%lld"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%llde"
-          }
-        }
-      }
-    },
     "%lldh" : {
       "localizations" : {
         "en" : {
@@ -1855,16 +1751,16 @@
     },
     "Abandonnées" : {
       "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Abandonnées"
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dropped"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abandonnées"
           }
         }
       }
@@ -1881,22 +1777,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Abandonnés"
-          }
-        }
-      }
-    },
-    "Accepter" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Accept"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Accepter"
           }
         }
       }
@@ -2613,22 +2493,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Amis"
-          }
-        }
-      }
-    },
-    "Amis indisponibles" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Friends unavailable"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Amis indisponibles"
           }
         }
       }
@@ -3387,16 +3251,16 @@
     },
     "Aucune série" : {
       "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aucune série"
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "No series"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucune série"
           }
         }
       }
@@ -4201,22 +4065,6 @@
         }
       }
     },
-    "Ce que vous partagez" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "What you share"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ce que vous partagez"
-          }
-        }
-      }
-    },
     "Ce que vous touchez s'ouvre sur cette page." : {
       "localizations" : {
         "en" : {
@@ -4697,22 +4545,6 @@
         }
       }
     },
-    "Code ou lien" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Code or link"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Code ou lien"
-          }
-        }
-      }
-    },
     "Coller l'adresse d'une image" : {
       "localizations" : {
         "en" : {
@@ -4725,22 +4557,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Coller l'adresse d'une image"
-          }
-        }
-      }
-    },
-    "Collez le code à huit caractères, ou le lien que l'on vous a envoyé." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Paste the eight-character code, or the link you were sent."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Collez le code à huit caractères, ou le lien que l'on vous a envoyé."
           }
         }
       }
@@ -5353,22 +5169,6 @@
         }
       }
     },
-    "Copier la liste" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Copy the list"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Copier la liste"
-          }
-        }
-      }
-    },
     "Copier le lecteur" : {
       "localizations" : {
         "en" : {
@@ -5429,22 +5229,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Coréen"
-          }
-        }
-      }
-    },
-    "Coude à coude avec %@ pour la première place !" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Neck and neck with %@ for first place!"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Coude à coude avec %@ pour la première place !"
           }
         }
       }
@@ -6185,22 +5969,6 @@
         }
       }
     },
-    "Défi lecture %@" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Reading challenge %@"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Défi lecture %@"
-          }
-        }
-      }
-    },
     "Déjà chez vous" : {
       "localizations" : {
         "en" : {
@@ -6393,38 +6161,6 @@
         }
       }
     },
-    "Encore %lld livres pour doubler %@. À vos pages !" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$lld more books to overtake %2$@. Get reading!"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "Encore %1$lld livres pour doubler %2$@. À vos pages !"
-          }
-        }
-      }
-    },
-    "Encore un livre et vous doublez %@ !" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "One more book and you overtake %@!"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Encore un livre et vous doublez %@ !"
-          }
-        }
-      }
-    },
     "Ender" : {
       "localizations" : {
         "en" : {
@@ -6533,38 +6269,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Envoyer"
-          }
-        }
-      }
-    },
-    "Envoyer une invitation" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Send an invitation"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Envoyer une invitation"
-          }
-        }
-      }
-    },
-    "Envoyer…" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Send…"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Envoyer…"
           }
         }
       }
@@ -8025,22 +7729,6 @@
         }
       }
     },
-    "Invitez un ami : vous verrez sa bibliothèque et il verra la vôtre. Chacun pourra piocher des livres chez l'autre." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Invite a friend: you’ll see their library and they’ll see yours. You can each pick books from the other’s shelves."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Invitez un ami : vous verrez sa bibliothèque et il verra la vôtre. Chacun pourra piocher des livres chez l'autre."
-          }
-        }
-      }
-    },
     "Invitez un ami : voyez ce qu'il lit et ses coups de cœur, et piochez dans sa bibliothèque." : {
       "localizations" : {
         "en" : {
@@ -8089,22 +7777,6 @@
         }
       }
     },
-    "J'ai reçu une invitation" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "I received an invitation"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "J'ai reçu une invitation"
-          }
-        }
-      }
-    },
     "Jack Reacher" : {
       "localizations" : {
         "en" : {
@@ -8139,16 +7811,16 @@
     },
     "Je t'ouvre ma bibliothèque sur Shiori" : {
       "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Je t'ouvre ma bibliothèque sur Shiori"
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "I'm opening my library to you on Shiori"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Je t'ouvre ma bibliothèque sur Shiori"
           }
         }
       }
@@ -8453,22 +8125,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "La Créature"
-          }
-        }
-      }
-    },
-    "La course est ouverte : le premier livre terminé prend la tête." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The race is on: the first book finished takes the lead."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "La course est ouverte : le premier livre terminé prend la tête."
           }
         }
       }
@@ -9877,22 +9533,6 @@
         }
       }
     },
-    "Mes amis" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "My friends"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mes amis"
-          }
-        }
-      }
-    },
     "Mes coups de cœur 📚" : {
       "localizations" : {
         "en" : {
@@ -9905,22 +9545,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mes coups de cœur 📚"
-          }
-        }
-      }
-    },
-    "Mes favoris" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "My favorites"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mes favoris"
           }
         }
       }
@@ -10321,22 +9945,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ne plus guetter la traduction ?"
-          }
-        }
-      }
-    },
-    "Ne plus partager avec %@ ?" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Stop sharing with %@?"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ne plus partager avec %@ ?"
           }
         }
       }
@@ -11301,22 +10909,6 @@
         }
       }
     },
-    "Parfait" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Great"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Parfait"
-          }
-        }
-      }
-    },
     "Partage" : {
       "localizations" : {
         "en" : {
@@ -11345,54 +10937,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Partager"
-          }
-        }
-      }
-    },
-    "Partager mes favoris" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Share my favorites"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Partager mes favoris"
-          }
-        }
-      }
-    },
-    "Partagez vos lectures" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Share your reading"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Partagez vos lectures"
-          }
-        }
-      }
-    },
-    "Partagé" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Shared"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Partagé"
           }
         }
       }
@@ -11969,22 +11513,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Poésie"
-          }
-        }
-      }
-    },
-    "Premier" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "First"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Premier"
           }
         }
       }
@@ -13937,22 +13465,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sessions par jour"
-          }
-        }
-      }
-    },
-    "Seul en piste : invitez un ami à vous défier !" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Alone on the track: invite a friend to challenge you!"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Seul en piste : invitez un ami à vous défier !"
           }
         }
       }
@@ -16469,38 +15981,6 @@
         }
       }
     },
-    "Vous menez la course avec %lld livres d'avance sur %@ !" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You lead the race by %1$lld books over %2$@!"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "Vous menez la course avec %1$lld livres d'avance sur %2$@ !"
-          }
-        }
-      }
-    },
-    "Vous menez la course, un livre devant %@. Ne relâchez rien !" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You lead the race, one book ahead of %@. Keep going!"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vous menez la course, un livre devant %@. Ne relâchez rien !"
-          }
-        }
-      }
-    },
     "Vous ne serez plus prévenu de sa sortie." : {
       "localizations" : {
         "en" : {
@@ -16513,38 +15993,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vous ne serez plus prévenu de sa sortie."
-          }
-        }
-      }
-    },
-    "Vous ne verrez plus sa bibliothèque, et il ne verra plus la vôtre." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You won’t see their library anymore, and they won’t see yours."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vous ne verrez plus sa bibliothèque, et il ne verra plus la vôtre."
-          }
-        }
-      }
-    },
-    "Vous partagez vos bibliothèques" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You’re sharing your libraries"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vous partagez vos bibliothèques"
           }
         }
       }
@@ -17841,22 +17289,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Éditions guettées"
-          }
-        }
-      }
-    },
-    "Égalité en tête : %lld lecteurs se disputent la première place !" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tied at the top: %lld readers are fighting for first place!"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Égalité en tête : %lld lecteurs se disputent la première place !"
           }
         }
       }
