@@ -18,7 +18,7 @@
  *   bun scripts/check-strings.ts <derived-data>           # check, as CI does
  *   bun scripts/check-strings.ts <derived-data> --write   # sync the catalogues in place
  */
-import { copyFile, mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises'
+import { copyFile, mkdir, mkdtemp, readFile, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { basename, dirname, join } from 'node:path'
 import { $, Glob } from 'bun'
@@ -57,15 +57,45 @@ function flatten(value: unknown, keys: Record<string, true> = {}): Record<string
   return keys
 }
 
+/**
+ * The strings the last build of a product extracted. A build never deletes
+ * what it extracted before: the file of a removed screen stays, and so does
+ * another configuration's older copy of a file since changed. A Release build
+ * files them badly besides, a whole batch's strings under one file. Read
+ * them all and the strings the code dropped come back into the catalogue. So
+ * only the folder of the last build is read (its `SwiftFileList` is written
+ * on every build), and in it only the files that build compiled.
+ */
+async function extractionOf(product: string): Promise<string[]> {
+  const name = basename(product, '.build')
+  const lists = await Array.fromAsync(
+    new Glob(`**/*-iphone*/${product}/Objects-normal/*/${name}.SwiftFileList`).scan({
+      cwd: derivedData,
+      absolute: true,
+    }),
+  )
+  const dated = await Promise.all(
+    lists.map(async (list) => ({ list, modified: (await stat(list)).mtimeMs })),
+  )
+  const last = dated.sort((a, b) => b.modified - a.modified)[0]?.list
+  if (!last) return []
+  const compiled = new Set(
+    (await readFile(last, 'utf8'))
+      .split('\n')
+      .filter(Boolean)
+      .map((source) => basename(source.replaceAll('\\ ', ' '), '.swift')),
+  )
+  const folder = dirname(last)
+  return (await Array.fromAsync(new Glob('*.stringsdata').scan({ cwd: folder })))
+    .filter((file) => compiled.has(basename(file, '.stringsdata')))
+    .map((file) => join(folder, file))
+}
+
 const work = await mkdtemp(join(tmpdir(), 'shiori-strings-'))
 const missing: string[] = []
 
 for (const { path, product } of CATALOGUES) {
-  // Under the configuration's folder: the project's own folder is named
-  // Shiori.build too, and holds the extension's strings.
-  const extracted = await Array.fromAsync(
-    new Glob(`**/*-iphone*/${product}/**/*.stringsdata`).scan({ cwd: derivedData, absolute: true }),
-  )
+  const extracted = await extractionOf(product)
   if (extracted.length === 0)
     throw new Error(`No ${product} strings under ${derivedData}: build the app first`)
 
