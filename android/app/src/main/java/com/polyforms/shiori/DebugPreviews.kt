@@ -268,6 +268,8 @@ fun DebugPreviews(name: String) {
                     null,
                     isLoading = false,
                     errorMessage = null,
+                ) {}
+            }
             else -> ShioriRoot()
         }
     }
