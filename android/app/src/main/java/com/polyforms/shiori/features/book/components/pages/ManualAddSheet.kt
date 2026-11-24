@@ -20,6 +20,7 @@ import com.polyforms.shiori.features.book.BookApi
 import com.polyforms.shiori.features.book.BookDraft
 import com.polyforms.shiori.shared.AnalyticsEvent
 import com.polyforms.shiori.shared.Book
+import com.polyforms.shiori.shared.BookOrigin
 import com.polyforms.shiori.shared.BookFormat
 import com.polyforms.shiori.shared.BookMedium
 import com.polyforms.shiori.shared.L
@@ -91,7 +92,7 @@ fun ManualAddSheet(onDismiss: () -> Unit, onAdd: suspend (BookDraft) -> String?)
 fun ManualAddScreen(onDismiss: () -> Unit, onAdded: (Book) -> Unit) {
     ManualAddSheet(onDismiss) { draft ->
         try {
-            val book = BookApi.add(draft)
+            val book = BookApi.add(draft.copy(origin = BookOrigin(BookOrigin.Kind.MANUAL)))
             track(AnalyticsEvent.BookAdded(AnalyticsEvent.BookSource.MANUAL))
             onAdded(book)
             null

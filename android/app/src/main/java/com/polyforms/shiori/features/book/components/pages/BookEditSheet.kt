@@ -42,6 +42,7 @@ import com.polyforms.shiori.shared.BookLanguage
 import com.polyforms.shiori.shared.BookMedium
 import com.polyforms.shiori.shared.DateText
 import com.polyforms.shiori.shared.L
+import com.polyforms.shiori.shared.ReadingStatus
 import com.polyforms.shiori.shared.book.BookFact
 import com.polyforms.shiori.shared.book.MediaToggles
 import com.polyforms.shiori.shared.components.atoms.AsyncToolbarButton
@@ -96,12 +97,14 @@ fun BookEditSheet(
     book: Book,
     loadVocabulary: suspend () -> BookVocabulary?,
     onDismiss: () -> Unit,
-    onSave: suspend (BookCorrection, Double?) -> String?,
+    /** The status is the one chosen, sent only when it moved. */
+    onSave: suspend (BookCorrection, ReadingStatus?, Double?) -> String?,
 ) {
     var title by remember { mutableStateOf(book.title) }
     var authors by remember { mutableStateOf(book.authors.joinToString(", ")) }
     var format by remember { mutableStateOf(book.format) }
     var media by remember { mutableStateOf(book.media.ifEmpty { listOf(BookMedium.PRINT) }) }
+    var status by remember { mutableStateOf(book.status) }
     var rating by remember { mutableDoubleStateOf(book.rating ?: 0.0) }
     var synopsis by remember { mutableStateOf(book.synopsis ?: "") }
     var publisher by remember { mutableStateOf(book.publisher ?: "") }
@@ -153,6 +156,10 @@ fun BookEditSheet(
         if (list(authors).isEmpty() && !held && name != book.series?.name) L("Ajoutez un auteur pour créer une nouvelle série.") else null
     }
     val isValid = title.trim().isNotEmpty() && publicationProblem == null && seriesProblem == null
+    // A start the book holds and the chosen status keeps: back on the pile, it was never opened.
+    val showsStartedAt = book.startedAt != null && status != ReadingStatus.TO_READ
+    // A finish the book holds and the chosen status keeps: only a read book was finished.
+    val showsFinishedAt = book.finishedAt != null && status == ReadingStatus.READ
     fun correction(): BookCorrection {
         val audio = format == BookFormat.AUDIOBOOK
         return BookCorrection(
@@ -177,8 +184,8 @@ fun BookEditSheet(
                 },
             ),
             addedAt = if (book.addedAt != null && addedAt != book.addedAt) addedAt else null,
-            startedAt = if (book.startedAt != null && startedAt != book.startedAt) startedAt else null,
-            finishedAt = if (book.finishedAt != null && finishedAt != book.finishedAt) finishedAt else null,
+            startedAt = if (showsStartedAt && startedAt != book.startedAt) startedAt else null,
+            finishedAt = if (showsFinishedAt && finishedAt != book.finishedAt) finishedAt else null,
         )
     }
     val colors = Shiori.colors
@@ -189,7 +196,7 @@ fun BookEditSheet(
             leading = { ToolbarIconButton(L("Annuler"), "xmark") { dismiss() } },
             trailing = {
                 AsyncToolbarButton(L("Enregistrer"), "checkmark", prominent = true, enabled = isValid) {
-                    val failure = onSave(correction(), if (rating == 0.0) null else rating)
+                    val failure = onSave(correction(), status.takeIf { it != book.status }, if (rating == 0.0) null else rating)
                     if (failure != null) error = failure else dismiss()
                 }
             },
@@ -206,7 +213,13 @@ fun BookEditSheet(
                 MenuPicker(format, BookFormat.entries, { it.label }, { format = it }, divider = format != BookFormat.AUDIOBOOK, symbol = { it.symbol }) { RowLabel(L("Format"), "books.vertical") }
                 if (format != BookFormat.AUDIOBOOK) MediaToggles(media) { media = it }
             }
-            FormSection(L("Ma lecture"), if (rating == 0.0) L("Noter un livre le marque comme lu.") else L("Touchez l'étoile sélectionnée pour retirer la note.")) {
+            val readingFooter = listOfNotNull(
+                L("Revenir à « À lire » efface les dates de lecture et la progression à l'enregistrement.")
+                    .takeIf { status == ReadingStatus.TO_READ && book.status != ReadingStatus.TO_READ },
+                if (rating == 0.0) L("Noter un livre le marque comme lu.") else L("Touchez l'étoile sélectionnée pour retirer la note."),
+            ).joinToString("\n")
+            FormSection(L("Ma lecture"), readingFooter) {
+                MenuPicker(status, ReadingStatus.progression + ReadingStatus.DROPPED, { it.label }, { status = it }, symbol = { it.symbol }) { RowLabel(L("Statut"), "flag") }
                 Column(Modifier.padding(horizontal = 16.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                         Icon(Symbol("star"), null, Modifier.size(18.dp), tint = colors.secondaryLabel)
@@ -216,17 +229,17 @@ fun BookEditSheet(
                 }
                 if (book.addedAt != null) DateRow(L("Ajouté le"), "tray.and.arrow.down", addedAt, latest) {
                     addedAt = it
-                    if (book.startedAt != null && startedAt < it) startedAt = it
-                    if (book.finishedAt != null && finishedAt < it) finishedAt = it
+                    if (showsStartedAt && startedAt < it) startedAt = it
+                    if (showsFinishedAt && finishedAt < it) finishedAt = it
                 }
-                if (book.startedAt != null) DateRow(L("Commencé le"), "calendar.badge.plus", startedAt, latest) {
+                if (showsStartedAt) DateRow(L("Commencé le"), "calendar.badge.plus", startedAt, latest) {
                     startedAt = it
                     if (book.addedAt != null && addedAt > it) addedAt = it
-                    if (book.finishedAt != null && finishedAt < it) finishedAt = it
+                    if (showsFinishedAt && finishedAt < it) finishedAt = it
                 }
-                if (book.finishedAt != null) DateRow(L("Terminé le"), "calendar.badge.checkmark", finishedAt, latest) {
+                if (showsFinishedAt) DateRow(L("Terminé le"), "calendar.badge.checkmark", finishedAt, latest) {
                     finishedAt = it
-                    if (book.startedAt != null && startedAt > it) startedAt = it
+                    if (showsStartedAt && startedAt > it) startedAt = it
                     if (book.addedAt != null && addedAt > it) addedAt = it
                 }
             }
@@ -336,5 +349,5 @@ private fun DateRow(title: String, symbol: String, date: Instant, latest: Instan
 @Preview(showBackground = true)
 @Composable
 private fun BookEditSheetPreview() = PreviewSurface {
-    BookEditSheet(DebugFixtures.reading[0], loadVocabulary = { null }, onDismiss = {}) { _, _ -> null }
+    BookEditSheet(DebugFixtures.reading[0], loadVocabulary = { null }, onDismiss = {}) { _, _, _ -> null }
 }

@@ -18,7 +18,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.runtime.Composable
+import com.polyforms.shiori.shared.components.styles.pressEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -127,8 +131,11 @@ fun ReadingProgressSheet(
             }
             Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(top = 16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 listOf(ReadingStatus.READ to L("Lu"), ReadingStatus.DROPPED to L("Abandonné")).forEach { (status, label) ->
+                    val interaction = remember { MutableInteractionSource() }
+                    val pressed by interaction.collectIsPressedAsState()
                     Row(
-                        Modifier.weight(1f).height(50.dp).clip(CircleShape).glass(CircleShape).plainClickable { scope.launch { save(status) } },
+                        Modifier.weight(1f).pressEffect(pressed, 0.96f).height(50.dp).clip(CircleShape).glass(CircleShape)
+                            .clickable(interaction, null) { scope.launch { save(status) } },
                         horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {

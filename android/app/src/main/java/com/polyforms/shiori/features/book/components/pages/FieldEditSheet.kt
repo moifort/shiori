@@ -48,6 +48,7 @@ fun FieldEditSheet(book: Book, field: BookField, onDismiss: () -> Unit, onSave: 
     var text by remember {
         mutableStateOf(
             when (field) {
+                BookField.PUBLISHER -> book.publisher ?: ""
                 BookField.FIRST_PUBLISHED_IN -> book.firstPublishedIn?.toString() ?: ""
                 BookField.PAGE_COUNT -> book.pageCount?.toString() ?: ""
                 BookField.ISBN13 -> book.isbn13 ?: ""
@@ -126,7 +127,7 @@ fun FieldEditSheet(book: Book, field: BookField, onDismiss: () -> Unit, onSave: 
                     ),
                 )
             } else {
-                RoundedTextField(text, { text = it }, field.title, keyboardType = KeyboardType.Number, focusRequester = focus)
+                RoundedTextField(text, { text = it }, field.title, keyboardType = if (field == BookField.PUBLISHER) KeyboardType.Text else KeyboardType.Number, focusRequester = focus)
                 Text(
                     problem ?: L("Un champ vidé est effacé."),
                     style = Shiori.type.footnote,

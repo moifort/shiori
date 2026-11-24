@@ -131,7 +131,7 @@ fun CoverPickerSheet(
                                         Modifier.align(Alignment.TopEnd).offset(8.dp, (-8).dp).size(26.dp)
                                             .background(colors.accent, CircleShape).border(2.5.dp, colors.groupedBackground, CircleShape),
                                         contentAlignment = Alignment.Center,
-                                    ) { Icon(Symbol("checkmark"), null, Modifier.size(13.dp), tint = Color.White) }
+                                    ) { Icon(Symbol("checkmark"), null, Modifier.size(13.dp), tint = colors.onAccent) }
                                 }
                             }
                             Text(choice.source.label(), style = Shiori.type.caption, color = if (isPicked) colors.label else colors.secondaryLabel, maxLines = 1)

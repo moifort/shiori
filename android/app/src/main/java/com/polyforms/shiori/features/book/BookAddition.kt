@@ -7,6 +7,7 @@ import com.polyforms.shiori.shared.Book
 import com.polyforms.shiori.shared.BookFormat
 import com.polyforms.shiori.shared.BookLanguage
 import com.polyforms.shiori.shared.BookMedium
+import com.polyforms.shiori.shared.BookOrigin
 import com.polyforms.shiori.shared.SeriesMembership
 import com.polyforms.shiori.shared.track
 
@@ -33,6 +34,9 @@ object BookAddition {
             val found = runCatching { find(lookUp) }.getOrNull()
             if (found != null && found.recognized) completed = draft.completedBy(found.asDraft)
         }
+        // The caller may know better than the screen: a wish keeps where it was come across, an
+        // awaited edition says it was awaited.
+        if (completed.origin == null) completed = completed.copy(origin = BookOrigin(source.origin))
         val added = BookApi.add(completed)
         track(AnalyticsEvent.BookAdded(source))
         return added
@@ -43,3 +47,14 @@ object BookAddition {
         is LookUp.Volume -> ScanApi.lookUpVolume(lookUp.title, lookUp.author, lookUp.membership, lookUp.format, lookUp.media, lookUp.language)
     }
 }
+
+/** The origin a book added from here is recorded with. */
+val AnalyticsEvent.BookSource.origin: BookOrigin.Kind
+    get() = when (this) {
+        AnalyticsEvent.BookSource.SCAN -> BookOrigin.Kind.SCAN
+        AnalyticsEvent.BookSource.MANUAL -> BookOrigin.Kind.MANUAL
+        AnalyticsEvent.BookSource.SERIES -> BookOrigin.Kind.SERIES
+        AnalyticsEvent.BookSource.DISCOVER -> BookOrigin.Kind.DISCOVER
+        AnalyticsEvent.BookSource.AUTHOR -> BookOrigin.Kind.AUTHOR
+        AnalyticsEvent.BookSource.SHELF -> BookOrigin.Kind.SHELF
+    }

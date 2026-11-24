@@ -36,11 +36,17 @@ import com.polyforms.shiori.features.book.components.pages.ReadingProgressSheet
 import com.polyforms.shiori.features.book.components.pages.RecommendationSheet
 import com.polyforms.shiori.features.book.components.pages.SeriesJoinSheet
 import com.polyforms.shiori.features.discover.AwaitedApi
+import com.polyforms.shiori.features.discover.AnnouncedVolumeScreen
 import com.polyforms.shiori.features.discover.AwaitedEditionScreen
+import com.polyforms.shiori.features.discover.SagaDiscovery
+import com.polyforms.shiori.features.discover.SagaReleases
 import com.polyforms.shiori.features.narrators.NarratorScreen
 import com.polyforms.shiori.features.search.RecentlyViewed
 import com.polyforms.shiori.features.series.SeriesScreen
 import com.polyforms.shiori.shared.Book
+import com.polyforms.shiori.shared.BookFormat
+import com.polyforms.shiori.shared.FollowedSeries
+import com.polyforms.shiori.shared.SeriesMembership
 import com.polyforms.shiori.shared.DataChanges
 import com.polyforms.shiori.shared.L
 import com.polyforms.shiori.shared.SeriesStripItem
@@ -118,6 +124,17 @@ fun BookScreen(
                     onOpenAwaited = { edition -> navigator.push { AwaitedEditionScreen(edition) { scope.launch { viewModel.stopAwaiting(edition) } } } },
                     onStopAwaiting = { edition -> scope.launch { viewModel.stopAwaiting(edition) } },
                     isComposingNote = composingNote,
+                    onOpenLacking = { volume ->
+                        book.series?.let { series ->
+                            val saga = sagaHolding(book, series, viewModel.ownedVolumeCount)
+                            navigator.push { AnnouncedVolumeScreen(saga, volume) }
+                        }
+                    },
+                    // The Audible player (Lot 7) fills these: the play button's state, its press,
+                    // and whether the title is kept on the phone.
+                    listening = null,
+                    onListen = {},
+                    isDownloaded = false,
                     contentPadding = PaddingValues(bottom = 24.dp),
                 )
                 AnimatedVisibility(
@@ -182,8 +199,8 @@ fun BookScreen(
     val dismiss = { sheet = null }
     if (book != null) {
         when (val current = sheet) {
-            Sheet.Edit -> BookEditSheet(book, { runCatching { client.vocabulary() }.getOrNull() }, dismiss) { correction, rating ->
-                failure(viewModel.save(correction, rating))
+            Sheet.Edit -> BookEditSheet(book, { runCatching { client.vocabulary() }.getOrNull() }, dismiss) { correction, status, rating ->
+                failure(viewModel.save(correction, rating, status))
             }
             Sheet.Genre -> GenreEditSheet(book, { runCatching { client.subgenres() }.getOrDefault(emptyList()) }, dismiss) { correction ->
                 failure(viewModel.save(correction, book.rating))
@@ -215,6 +232,24 @@ fun BookScreen(
     if (error != null && book != null && sheet == null) ShioriAlert(L("Une erreur est survenue"), error, onDismiss = viewModel::dismissError)
     viewModel.awaitFailed?.let { ShioriAlert(L("Impossible de suivre ce livre"), it, onDismiss = { viewModel.awaitFailed = null }) }
 }
+
+/**
+ * The saga of the reader's book as a lacking volume's page reads it: the edition of their copy,
+ * followed as the saga's screen opens one.
+ */
+private fun sagaHolding(book: Book, series: SeriesMembership, ownedCount: Int) = SagaDiscovery(
+    series = FollowedSeries(
+        seriesId = series.id,
+        name = series.name,
+        isAudio = book.format == BookFormat.AUDIOBOOK,
+        author = book.authors.firstOrNull(),
+        language = book.language,
+        state = null,
+        genre = book.genre,
+        ownedCount = ownedCount,
+    ),
+    releases = SagaReleases(watched = true, next = null),
+)
 
 private const val NOTE_MAX_LENGTH = 10_000
 

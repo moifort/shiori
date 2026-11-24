@@ -49,6 +49,8 @@ class BookViewModel(
         private set
     var offer by mutableStateOf(EditionOffer())
         private set
+    /** How many volumes of the saga the reader holds, as the row has them. */
+    val ownedVolumeCount: Int get() = sagaVolumes.count { it is SeriesStripItem.Owned }
     var sagaVolumes by mutableStateOf<List<SeriesStripItem>>(emptyList())
         private set
     var awaitFailed by mutableStateOf<String?>(null)
@@ -132,10 +134,17 @@ class BookViewModel(
 
     suspend fun rate(stars: Double) = mutate { client.rate(bookId, stars) }
 
-    suspend fun save(correction: BookCorrection, rating: Double?): Boolean {
+    /**
+     * Saves the edit form: the status when it moved, the corrected facts, then the rating when it
+     * moved. Returns false when a call failed, so the form stays open.
+     */
+    suspend fun save(correction: BookCorrection, rating: Double?, status: ReadingStatus? = null): Boolean {
         val current = book ?: return false
         isSaving = true
         try {
+            // The status first: a move stamps or clears the reading dates, and the dates the form
+            // corrects are those of the status it shows.
+            if (status != null && status != current.status) show(client.setStatus(bookId, status))
             val change = when {
                 rating == current.rating -> null
                 rating == null -> RatingChange.Unrate

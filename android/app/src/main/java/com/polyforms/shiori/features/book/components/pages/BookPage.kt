@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -35,6 +37,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.polyforms.shiori.features.discover.AwaitedEdition
 import com.polyforms.shiori.features.discover.AwaitedState
@@ -42,6 +45,7 @@ import com.polyforms.shiori.features.discover.components.organisms.AwaitedEditio
 import com.polyforms.shiori.shared.Book
 import com.polyforms.shiori.shared.BookFormat
 import com.polyforms.shiori.shared.DateText
+import com.polyforms.shiori.shared.DiscoveredVolume
 import com.polyforms.shiori.shared.L
 import com.polyforms.shiori.shared.ReadingStatus
 import com.polyforms.shiori.shared.SeriesStripItem
@@ -60,7 +64,12 @@ import com.polyforms.shiori.shared.book.storeFactLinks
 import com.polyforms.shiori.shared.components.atoms.RatingStars
 import com.polyforms.shiori.shared.components.molecules.MessageBubble
 import com.polyforms.shiori.shared.components.molecules.RowHeader
+import com.polyforms.shiori.shared.components.styles.ActionFill
+import com.polyforms.shiori.shared.components.styles.IconGesture
 import com.polyforms.shiori.shared.components.styles.Shiori
+import com.polyforms.shiori.shared.components.styles.actionFill
+import com.polyforms.shiori.shared.components.styles.iconGesture
+import com.polyforms.shiori.shared.components.styles.pressEffect
 import com.polyforms.shiori.shared.components.styles.ShioriDivider
 import com.polyforms.shiori.shared.components.styles.Symbol
 import com.polyforms.shiori.shared.platform.MenuEntries
@@ -72,10 +81,11 @@ import com.polyforms.shiori.PreviewSurface
 
 /** The fields a date or number tile edits on its own. */
 enum class BookField {
-    FIRST_PUBLISHED_IN, PAGE_COUNT, ISBN13, ADDED_AT, STARTED_AT, FINISHED_AT;
+    PUBLISHER, FIRST_PUBLISHED_IN, PAGE_COUNT, ISBN13, ADDED_AT, STARTED_AT, FINISHED_AT;
 
     val title: String
         get() = when (this) {
+            PUBLISHER -> L("Éditeur")
             FIRST_PUBLISHED_IN -> L("Première parution")
             PAGE_COUNT -> L("Pages")
             ISBN13 -> L("ISBN")
@@ -87,7 +97,7 @@ enum class BookField {
     val isDate: Boolean get() = this == ADDED_AT || this == STARTED_AT || this == FINISHED_AT
 
     fun isEditable(book: Book): Boolean = when (this) {
-        FIRST_PUBLISHED_IN, PAGE_COUNT, ISBN13 -> true
+        PUBLISHER, FIRST_PUBLISHED_IN, PAGE_COUNT, ISBN13 -> true
         ADDED_AT -> book.addedAt != null
         STARTED_AT -> book.startedAt != null
         FINISHED_AT -> book.finishedAt != null
@@ -95,6 +105,7 @@ enum class BookField {
 
     val fact: BookFact?
         get() = when (this) {
+            PUBLISHER -> BookFact.PUBLISHER
             FIRST_PUBLISHED_IN -> BookFact.FIRST_PUBLISHED_IN
             PAGE_COUNT -> BookFact.PAGE_COUNT
             ISBN13 -> BookFact.ISBN13
@@ -112,6 +123,12 @@ data class NextStep(val title: String, val symbol: String, val status: ReadingSt
         }
     }
 }
+
+/**
+ * The play button of an Audible audiobook, as the player words it: "Écouter", "Reprendre",
+ * "Pause". The player (Lot 7) maps its own state onto it; the page only draws it.
+ */
+data class HeroListening(val title: String, val symbol: String)
 
 /** The reader's own book: its hero, synopsis, saga, facts, awaited editions and comments. */
 @Composable
@@ -136,6 +153,16 @@ fun BookPage(
     onOpenAwaited: (AwaitedEdition) -> Unit = {},
     onStopAwaiting: (AwaitedEdition) -> Unit = {},
     isComposingNote: Boolean = false,
+    /** The page of a volume of the saga the reader lacks. */
+    onOpenLacking: ((DiscoveredVolume) -> Unit)? = null,
+    /**
+     * The play button of an Audible audiobook, in a build with the player: it leads the hero, and
+     * the rating and the remarks stand beside it. Null draws the hero as for any book.
+     */
+    listening: HeroListening? = null,
+    onListen: () -> Unit = {},
+    /** The audiobook is kept on the phone: a tag in the hero says so. */
+    isDownloaded: Boolean = false,
     contentPadding: PaddingValues = PaddingValues(),
 ) {
     val scroll = rememberScrollState()
@@ -159,24 +186,33 @@ fun BookPage(
             onOpenAuthor = onOpenAuthor,
             onOpenNarrator = onOpenNarrator,
             onOpenProgress = onOpenProgress,
+            isDownloaded = isDownloaded,
         ) {
-            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            // The next step white, the rating on glass and the reader's remarks as a round glass
+            // icon, at the 50 dp of every other book page's buttons. Sideways past the width,
+            // from edge to edge, rather than a label cut or an icon dropped.
+            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 val statusEntries = (ReadingStatus.progression + ReadingStatus.DROPPED).map { status ->
                     MenuEntry.Item(status.label, status.symbol, checked = status == book.status) { onSetStatus(status) }
                 }
                 val step = NextStep.of(book.status)
                 when {
-                    book.tracksPages -> HeroButton(L("Progression"), "bookmark.fill", prominent = true, menu = statusEntries, onClick = onOpenProgress)
-                    step != null -> HeroButton(step.title, step.symbol, prominent = true, menu = statusEntries) { onSetStatus(step.status) }
-                    else -> HeroButton(book.status.label, book.status.symbol, prominent = true, menu = statusEntries, menuOnTap = true) {}
+                    // The play button stands for the status: the edit form changes a status set
+                    // by mistake.
+                    listening != null -> HeroButton(listening.title, listening.symbol, prominent = true, height = HERO_BUTTON_HEIGHT, onClick = onListen)
+                    book.tracksPages -> HeroButton(L("Progression"), "bookmark.fill", prominent = true, menu = statusEntries, height = HERO_BUTTON_HEIGHT, onClick = onOpenProgress)
+                    step != null -> HeroButton(step.title, step.symbol, prominent = true, menu = statusEntries, height = HERO_BUTTON_HEIGHT) { onSetStatus(step.status) }
+                    else -> HeroButton(book.status.label, book.status.symbol, prominent = true, menu = statusEntries, menuOnTap = true, height = HERO_BUTTON_HEIGHT) {}
                 }
                 val rating = book.rating
                 if (rating != null) {
-                    HeroButton(null, null, content = { RatingStars(rating, size = 13.dp, monochrome = true, tint = Color.White) }, onClick = onRate)
+                    HeroButton(null, null, height = HERO_BUTTON_HEIGHT, content = {
+                        Box(Modifier.iconGesture(IconGesture.HOP, rating)) { RatingStars(rating, size = 15.dp, monochrome = true, tint = Color.White) }
+                    }, onClick = onRate)
                 } else {
-                    HeroButton(L("Noter"), "star", onClick = onRate)
+                    HeroButton(L("Noter"), "star", height = HERO_BUTTON_HEIGHT, onClick = onRate)
                 }
-                HeroButton(L("Remarques"), "text.bubble") {
+                HeroButton(null, "text.bubble", height = HERO_BUTTON_HEIGHT, isRound = true, contentDescription = L("Remarques")) {
                     if (book.note == null) onEditNote() else revealNote++
                 }
             }
@@ -193,6 +229,7 @@ fun BookPage(
                     book.id,
                     onOpenSeries,
                     onOpenVolume,
+                    onOpenLacking,
                 )
             }
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -268,11 +305,17 @@ private fun factTiles(book: Book, onEdit: () -> Unit, onEditGenre: () -> Unit, o
     val year = book.editionYear
     if (BookFact.EDITION_YEAR.applies(book) && year != null) add(FactTile("editionYear", L("Année d'édition"), year.toString(), action = onEdit))
     if (book.format != BookFormat.AUDIOBOOK) add(FactTile("isbn13", L("ISBN"), book.isbn13, monospaced = true, action = { onEditField(BookField.ISBN13) }))
+    // Read only: how the book arrived is not the reader's to correct.
+    book.origin?.let { add(FactTile("origin", L("Origine"), it.label)) }
 }
 
+/** The 50 dp of every book page's hero buttons (a suggestion, a friend's book). */
+private val HERO_BUTTON_HEIGHT = 50.dp
+
 /**
- * A hero button: a glass capsule, white and prominent for the first one. A menu opens on a long
- * press, as a SwiftUI `Menu` with a primary action does, or on the tap when it has no action.
+ * A hero button: an action button, white for the first one, glass beside it, round when its icon
+ * says it all. It presses as every action button does. A menu opens on a long press, as a SwiftUI
+ * `Menu` with a primary action does, or on the tap when it has no action.
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -282,32 +325,47 @@ fun HeroButton(
     prominent: Boolean = false,
     menu: List<MenuEntry> = emptyList(),
     menuOnTap: Boolean = false,
+    height: Dp = 40.dp,
+    isRound: Boolean = false,
+    contentDescription: String? = null,
     content: (@Composable () -> Unit)? = null,
     onClick: () -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
     val foreground = if (prominent) Color.Black else Color.White
+    val large = height >= 46.dp
     Box {
         Row(
             Modifier
-                .height(40.dp)
-                .clip(CircleShape)
-                .then(if (prominent) Modifier.background(Color.White, CircleShape) else Modifier.background(Color.White.copy(alpha = 0.18f), CircleShape))
+                .pressEffect(pressed)
+                .height(height)
+                .then(if (isRound) Modifier.width(height) else Modifier)
+                .actionFill(if (prominent) ActionFill.WHITE else ActionFill.GLASS, CircleShape)
                 .combinedClickable(
-                    interactionSource = remember { MutableInteractionSource() },
+                    interactionSource = interaction,
                     indication = null,
+                    onClickLabel = contentDescription,
                     onClick = { if (menuOnTap) expanded = true else onClick() },
                     onLongClick = if (menu.isNotEmpty()) ({ expanded = true }) else null,
                 )
-                .padding(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                .then(if (isRound) Modifier else Modifier.padding(horizontal = if (large) 20.dp else 16.dp)),
+            horizontalArrangement = Arrangement.spacedBy(if (large) 8.dp else 6.dp, Alignment.CenterHorizontally),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             if (content != null) {
                 content()
             } else {
-                if (symbol != null) Icon(Symbol(symbol), null, Modifier.size(18.dp), tint = foreground)
-                if (title != null) Text(title, style = Shiori.type.subheadline.copy(fontWeight = FontWeight.SemiBold), color = foreground, maxLines = 1)
+                if (symbol != null) Icon(Symbol(symbol), contentDescription, Modifier.size(if (isRound) 22.dp else if (large) 20.dp else 18.dp), tint = foreground)
+                if (title != null) {
+                    Text(
+                        title,
+                        style = if (large) Shiori.type.headline else Shiori.type.subheadline.copy(fontWeight = FontWeight.SemiBold),
+                        color = foreground,
+                        maxLines = 1,
+                    )
+                }
             }
         }
         if (menu.isNotEmpty()) MenuEntries(menu, expanded) { expanded = false }

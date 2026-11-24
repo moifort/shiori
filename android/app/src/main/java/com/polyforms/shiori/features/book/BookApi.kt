@@ -28,6 +28,8 @@ import com.polyforms.shiori.shared.AnalyticsEvent
 import com.polyforms.shiori.shared.Book
 import com.polyforms.shiori.shared.BookFormat
 import com.polyforms.shiori.shared.BookGenre
+import com.polyforms.shiori.shared.BookOrigin
+import com.polyforms.shiori.shared.asInput
 import com.polyforms.shiori.shared.BookLanguage
 import com.polyforms.shiori.shared.BookMedium
 import com.polyforms.shiori.shared.BookRecommendation
@@ -73,6 +75,8 @@ data class BookDraft(
     val hidden: Boolean = false,
     val rating: Double = 0.0,
     val favorite: Boolean = false,
+    /** The screen the book is added from, recorded once on the new record. */
+    val origin: BookOrigin? = null,
 ) {
     val asInput: NewBookInput
         get() = NewBookInput(
@@ -86,6 +90,7 @@ data class BookDraft(
             isbn13 = isbn13.asOptional(),
             language = language?.graphQL.present(),
             media = if (format == BookFormat.AUDIOBOOK) Optional.Absent else Optional.present(media.map { it.graphQL }),
+            origin = origin?.asInput.present(),
             pageCount = pageCount.present(),
             publisher = publisher.asOptional(),
             series = series?.let { SeriesMembershipInput(id = it.id, kind = it.kind.graphQL, name = it.name, volume = it.volume.present()) }.present(),
@@ -105,6 +110,7 @@ data class BookDraft(
         series = series ?: found.series,
         language = language ?: found.language,
         status = status,
+        origin = origin,
     )
 }
 

@@ -46,7 +46,7 @@ fun BookActionsMenu(book: Book, offer: EditionOffer, onAction: (BookMenuAction) 
         if (book.series == null) add(MenuEntry.Item(L("Ajouter à une série"), "square.stack") { onAction(BookMenuAction.JoinSeries) })
         add(MenuEntry.Item(L("Conseillé par…"), "person.badge.plus") { onAction(BookMenuAction.Recommend) })
         offer.awaitable.forEach { format ->
-            add(MenuEntry.Item(format.awaitLabel, if (format == ReleaseFormat.AUDIOBOOK) "headphones" else "character.book.closed") {
+            add(MenuEntry.Item(format.awaitLabel, if (format == ReleaseFormat.AUDIOBOOK) "headphones" else "binoculars") {
                 onAction(BookMenuAction.AwaitEdition(format))
             })
         }
@@ -54,7 +54,7 @@ fun BookActionsMenu(book: Book, offer: EditionOffer, onAction: (BookMenuAction) 
             val title = if (edition.format == ReleaseFormat.AUDIOBOOK) L("Ne plus guetter en audio") else L("Ne plus guetter en français")
             add(MenuEntry.Item(title, "bell.slash") { onAction(BookMenuAction.StopAwaiting(edition)) })
         }
-        add(MenuEntry.Item(L("Ne pas partager"), "eye.slash", checked = book.hidden) { onAction(BookMenuAction.ToggleHidden) })
+        add(MenuEntry.Item(L("Ne pas partager"), "lock", checked = book.hidden) { onAction(BookMenuAction.ToggleHidden) })
         if (book.status == ReadingStatus.DROPPED) {
             add(MenuEntry.Item(L("Reprendre"), "arrow.uturn.backward") { onAction(BookMenuAction.SetStatus(ReadingStatus.READING)) })
         } else {
