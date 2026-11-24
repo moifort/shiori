@@ -41,6 +41,27 @@ enum TakenState: Equatable, Sendable {
         }
     }
 
+    /// Asked before the choice is taken back, in a dialog hung on the
+    /// capsule: what the tap will undo.
+    var undoQuestion: LocalizedStringKey {
+        switch self {
+        case .wished: "Retirer de la liste d'envies ?"
+        case let .toRead(isAudio): isAudio ? "Retirer de la pile à écouter ?" : "Retirer de la pile à lire ?"
+        case let .read(isAudio): isAudio ? "Retirer des livres écoutés ?" : "Retirer des livres lus ?"
+        case let .awaited(format):
+            format == .audiobook ? "Ne plus guetter l'audio ?" : "Ne plus guetter la traduction ?"
+        case .owned: ""
+        }
+    }
+
+    /// The dialog's red button, as short as it can be.
+    var undoAction: LocalizedStringKey {
+        switch self {
+        case .awaited: "Ne plus guetter"
+        default: "Retirer"
+        }
+    }
+
     /// Said by VoiceOver.
     var accessibilityTitle: String {
         switch self {
@@ -63,8 +84,9 @@ enum TakenState: Equatable, Sendable {
 ///
 /// Once the choice went through, the button turns to glass and says what was
 /// done, with the icon of the entry chosen: "Envie", "À lire", "À écouter",
-/// "Lu", "Écouté", "Traduction", "Audio". A second tap undoes it and gives
-/// "+ Ajouter" back. A book held already says "Ajouté" with a check.
+/// "Lu", "Écouté", "Traduction", "Audio". A second tap asks first, in a
+/// dialog hung on the capsule ("Retirer de la liste d'envies ?"), then undoes
+/// it and gives "+ Ajouter" back. A book held already says "Ajouté" with a check.
 ///
 /// Turned down (the closed eye beside it), the button greys but stays live:
 /// a tap says the book interests the reader after all, and takes the refusal
@@ -103,6 +125,8 @@ struct AddMenuButton<MenuItems: View>: View {
 
     /// Bumped as the capsule appears: its icon plays its gesture then.
     @State private var capsuleShown = 0
+    /// The capsule was tapped: its dialog asks before undoing.
+    @State private var confirmsUndo = false
 
     var body: some View {
         Group {
@@ -164,10 +188,10 @@ struct AddMenuButton<MenuItems: View>: View {
         }
     }
 
-    /// What was done, in words beside its icon, on glass; a second tap
-    /// undoes it.
+    /// What was done, in words beside its icon, on glass; a second tap asks
+    /// before undoing it.
     private func capsule(_ done: TakenState) -> some View {
-        Button { onUndo?() } label: {
+        Button { confirmsUndo = true } label: {
             ZStack {
                 HStack(spacing: size == .card ? 5 : 8) {
                     Image(systemName: done.symbol)
@@ -188,6 +212,13 @@ struct AddMenuButton<MenuItems: View>: View {
         .accessibilityLabel(Text(done.accessibilityTitle))
         .accessibilityHint(onUndo == nil ? "" : String(localized: "Annule ce choix"))
         .accessibilityIdentifier("add-taken")
+        // Attached to the capsule, as "Supprimer" asks: the dialog rises
+        // from the button that asked, and nothing changes until confirmed.
+        .confirmationDialog(done.undoQuestion, isPresented: $confirmsUndo, titleVisibility: .visible) {
+            Button(done.undoAction, role: .destructive) { onUndo?() }
+                .accessibilityIdentifier("add-taken-confirm")
+            Button("Annuler", role: .cancel) {}
+        }
     }
 }
 

@@ -9047,16 +9047,16 @@
     },
     "Les livres audio en cours et à lire s'enchaîneront ici, une fois ce livre fini." : {
       "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Les livres audio en cours et à lire s'enchaîneront ici, une fois ce livre fini."
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "The audiobooks under way and on your pile will follow here once this one ends."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les livres audio en cours et à lire s'enchaîneront ici, une fois ce livre fini."
           }
         }
       }
@@ -10373,6 +10373,22 @@
         }
       }
     },
+    "Ne plus guetter" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stop watching"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ne plus guetter"
+          }
+        }
+      }
+    },
     "Ne plus guetter en audio" : {
       "localizations" : {
         "en" : {
@@ -10401,6 +10417,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ne plus guetter en français"
+          }
+        }
+      }
+    },
+    "Ne plus guetter l'audio ?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stop watching for the audio edition?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ne plus guetter l'audio ?"
+          }
+        }
+      }
+    },
+    "Ne plus guetter la traduction ?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stop watching for the translation?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ne plus guetter la traduction ?"
           }
         }
       }
@@ -12935,16 +12983,16 @@
     },
     "Replier la file" : {
       "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Replier la file"
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Fold the queue"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Replier la file"
           }
         }
       }
@@ -13045,6 +13093,38 @@
         }
       }
     },
+    "Retirer de la pile à lire ?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove from your reading pile?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Retirer de la pile à lire ?"
+          }
+        }
+      }
+    },
+    "Retirer de la pile à écouter ?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove from your listening pile?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Retirer de la pile à écouter ?"
+          }
+        }
+      }
+    },
     "Retirer des coups de cœur" : {
       "localizations" : {
         "en" : {
@@ -13073,6 +13153,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Retirer des favoris"
+          }
+        }
+      }
+    },
+    "Retirer des livres lus ?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove from books read?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Retirer des livres lus ?"
+          }
+        }
+      }
+    },
+    "Retirer des livres écoutés ?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove from books listened to?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Retirer des livres écoutés ?"
           }
         }
       }
@@ -13255,16 +13367,16 @@
     },
     "Rien à suivre" : {
       "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rien à suivre"
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nothing up next"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rien à suivre"
           }
         }
       }
@@ -17831,16 +17943,16 @@
     },
     "À suivre" : {
       "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "À suivre"
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Up Next"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "À suivre"
           }
         }
       }
@@ -17943,16 +18055,16 @@
     },
     "Écouter %@" : {
       "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Écouter %@"
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Listen to %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Écouter %@"
           }
         }
       }
