@@ -191,7 +191,12 @@ fun DebugPreviews(name: String) {
                     suggestions = emptyList(),
                 )
                 HomePage(
-                    if (name == "home-empty") com.polyforms.shiori.features.home.HomeFixtures.emptyDashboard else DebugFixtures.dashboard,
+                    when (name) {
+                        "home-empty" -> com.polyforms.shiori.features.home.HomeFixtures.emptyDashboard
+                        // The audiobook's card first, where its play button shows.
+                        "home-listening" -> DebugFixtures.dashboard.copy(reading = DebugFixtures.reading.sortedBy { it.format != com.polyforms.shiori.shared.BookFormat.AUDIOBOOK })
+                        else -> DebugFixtures.dashboard
+                    },
                     emptyList(),
                     emptySet(),
                     done,
