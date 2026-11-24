@@ -63,6 +63,8 @@ import com.polyforms.shiori.shared.book.FactTile
 import com.polyforms.shiori.shared.book.MediaToggles
 import com.polyforms.shiori.shared.book.SeriesVolumesRow
 import com.polyforms.shiori.shared.components.atoms.ToolbarIconButton
+import com.polyforms.shiori.shared.components.atoms.ToolbarIconGroup
+import com.polyforms.shiori.shared.components.atoms.ToolbarIconItem
 import com.polyforms.shiori.shared.components.molecules.MenuPicker
 import com.polyforms.shiori.shared.components.molecules.RowHeader
 import com.polyforms.shiori.shared.components.molecules.RowLabel
@@ -295,8 +297,8 @@ fun ScanReviewPage(
             Modifier.statusBarsPadding().fillMaxWidth().height(56.dp).padding(horizontal = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            onClose?.let { close -> ToolbarIconButton(L("Fermer"), "xmark", onClick = close) }
-            ToolbarIconButton(L("Reprendre"), "arrow.counterclockwise") { send(ScanReviewAction.Retake) }
+            val retake = ToolbarIconItem(L("Reprendre"), "arrow.counterclockwise") { send(ScanReviewAction.Retake) }
+            ToolbarIconGroup(listOfNotNull(onClose?.let { ToolbarIconItem(L("Fermer"), "xmark", it) }, retake))
             Text(L("Vérifier"), style = Shiori.type.headline, color = colors.label, textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.weight(1f))
             Box {
                 ToolbarIconButton(L("Ajouter"), "plus", prominent = true, enabled = !isSaving) { addMenu = true }

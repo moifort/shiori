@@ -73,6 +73,25 @@ fun ToolbarIconButton(
     }
 }
 
+/** One button of a [ToolbarIconGroup]: its accessible title, its symbol, its action. */
+data class ToolbarIconItem(val title: String, val symbol: String, val onClick: () -> Unit)
+
+/**
+ * Toolbar buttons that share one glass capsule, as iOS 26 merges the items of one toolbar
+ * placement: "Fermer" and "Reprendre" side by side in a single pill.
+ */
+@Composable
+fun ToolbarIconGroup(items: List<ToolbarIconItem>, modifier: Modifier = Modifier, size: Dp = 44.dp) {
+    val tint = Shiori.colors.label
+    Row(modifier.height(size).clip(CircleShape).glass(CircleShape), verticalAlignment = Alignment.CenterVertically) {
+        items.forEach { item ->
+            Box(Modifier.size(size).clip(CircleShape).clickable(onClick = item.onClick), contentAlignment = Alignment.Center) {
+                Icon(Symbol(item.symbol), item.title, Modifier.size(size * 0.48f), tint = tint)
+            }
+        }
+    }
+}
+
 /** A toolbar button whose action is a request: a spinner until it ends. */
 @Composable
 fun AsyncToolbarButton(
@@ -132,6 +151,7 @@ private fun ButtonsPreview() = PreviewSurface {
         ToolbarIconButton("Modifier", "pencil") {}
         ToolbarIconButton("Supprimer", "trash", destructive = true) {}
         AsyncToolbarButton("Valider", "checkmark", prominent = true) {}
+        ToolbarIconGroup(listOf(ToolbarIconItem("Fermer", "xmark") {}, ToolbarIconItem("Reprendre", "arrow.counterclockwise") {}))
         HeroProminentButton({}) { Text("Découvrir") }
     }
 }
