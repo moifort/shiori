@@ -50,7 +50,8 @@ private fun Monogram(initials: String, size: Dp) {
     ) {
         Text(
             initials,
-            style = TextStyle(fontSize = maxOf(13f, size.value / 3.4f).sp, fontWeight = FontWeight.SemiBold),
+            // A pill's tiny face keeps its initials inside the circle.
+            style = TextStyle(fontSize = (if (size.value < 24f) size.value * 0.42f else maxOf(13f, size.value / 3.4f)).sp, fontWeight = FontWeight.SemiBold),
             color = Color.White.copy(alpha = 0.9f),
         )
     }

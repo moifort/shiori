@@ -1,5 +1,9 @@
 package com.polyforms.shiori.features.authors.components.pages
 
+import com.polyforms.shiori.features.authors.components.organisms.FavoriteAuthorReleasesRail
+import com.polyforms.shiori.features.news.UpcomingRelease
+import com.polyforms.shiori.shared.components.molecules.RowHeader
+import com.polyforms.shiori.shared.components.molecules.RowHeaderStyle
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -86,6 +90,11 @@ fun <Person : ShelvedPerson> PersonShelfPage(
     errorMessage: String?,
     hasMore: Boolean,
     loadMoreFailed: Boolean,
+    /** "Prochaines sorties" over the pills: what the hearted people announced. Empty, the section is left out. */
+    releases: List<UpcomingRelease> = emptyList(),
+    onOpenRelease: (UpcomingRelease) -> Unit = {},
+    /** The heading over the pills, as "Toutes les séries" heads the series'; null leaves the pills alone. */
+    allTitle: String? = null,
     onAction: suspend (PersonShelfAction<Person>) -> Unit,
 ) {
     val scope = rememberCoroutineScope()
@@ -106,6 +115,14 @@ fun <Person : ShelvedPerson> PersonShelfPage(
             verticalArrangement = Arrangement.spacedBy(if (order == AuthorListOrder.NAME) 0.dp else 26.dp),
         ) {
             item(key = "title") { LargeTitle(title) }
+            if (releases.isNotEmpty()) {
+                item(key = "releases") {
+                    Box(Modifier.padding(top = 8.dp, bottom = if (allTitle == null) 0.dp else 18.dp)) { FavoriteAuthorReleasesRail(releases, onOpenRelease) }
+                }
+            }
+            if (allTitle != null) {
+                item(key = "all-title") { RowHeader(allTitle, Modifier.padding(horizontal = 20.dp).padding(top = 8.dp), style = RowHeaderStyle.INLINE) }
+            }
             item(key = "pills") {
                 Box(Modifier.padding(vertical = 8.dp)) {
                     FilterPills(orders.map { FilterPill(it.name, it.pillLabel) }, order.name, { id ->

@@ -1,5 +1,8 @@
 package com.polyforms.shiori.features.library.components.pages
 
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -98,7 +101,9 @@ fun LibraryShelvesPage(
     }, Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = 120.dp), verticalArrangement = Arrangement.spacedBy(30.dp)) {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                LargeTitle(genre?.label ?: L("Bibliothèque"))
+                // The tab's root draws its name in the bar that scrolls away, with the avatar; a
+                // genre page, pushed, keeps its own large title.
+                if (genre != null) LargeTitle(genre.label) else Spacer(Modifier.statusBarsPadding().height(64.dp))
                 if (genre == null && !shelves.isEmpty) {
                     LibraryLinkRows(shelves.series.isNotEmpty(), shelves.authors.isNotEmpty(), shelves.narrators.isNotEmpty()) { link ->
                         send(

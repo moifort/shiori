@@ -1,5 +1,9 @@
 package com.polyforms.shiori.features.library
 
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import com.polyforms.shiori.shared.L
+import com.polyforms.shiori.shared.platform.ScrollAwayBar
+import com.polyforms.shiori.shared.platform.rememberScrollAwayState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -51,7 +55,8 @@ fun LibraryShelvesScreen(
         open(LibraryDestination.SeriesShelf(if (asked.state == SeriesState.IN_PROGRESS) SeriesShelfFilter.IN_PROGRESS else SeriesShelfFilter.ALL))
     }
 
-    Box(Modifier.fillMaxSize().background(Shiori.colors.groupedBackground)) {
+    val bar = rememberScrollAwayState()
+    Box(Modifier.fillMaxSize().background(Shiori.colors.groupedBackground).nestedScroll(bar.connection)) {
         LibraryShelvesPage(
             viewModel.shelves,
             viewModel.formats,
@@ -67,9 +72,9 @@ fun LibraryShelvesScreen(
                 is LibraryShelvesAction.OpenShelf -> open(LibraryDestination.Shelf(action.shelf, viewModel.view, formats = viewModel.formats))
                 LibraryShelvesAction.OpenSeriesShelf -> open(LibraryDestination.SeriesShelf())
                 is LibraryShelvesAction.OpenSeries -> open(LibraryDestination.Series(action.series.seriesId))
-                LibraryShelvesAction.OpenAuthors -> open(LibraryDestination.Authors)
+                LibraryShelvesAction.OpenAuthors -> open(LibraryDestination.Authors())
                 is LibraryShelvesAction.OpenAuthor -> open(LibraryDestination.Author(AuthorDestination(action.author)))
-                LibraryShelvesAction.OpenNarrators -> open(LibraryDestination.Narrators)
+                LibraryShelvesAction.OpenNarrators -> open(LibraryDestination.Narrators())
                 is LibraryShelvesAction.OpenNarrator -> open(LibraryDestination.Narrator(NarratorDestination(action.narrator.key, action.narrator.name)))
                 LibraryShelvesAction.OpenWishlist -> open(LibraryDestination.Wishlist)
                 is LibraryShelvesAction.OpenGenre -> open(LibraryDestination.Genre(action.genre))
@@ -79,6 +84,6 @@ fun LibraryShelvesScreen(
                 LibraryShelvesAction.Refresh -> viewModel.load()
             }
         }
-        if (genre != null) ScreenBar()
+        if (genre != null) ScreenBar() else ScrollAwayBar(L("Bibliothèque"), bar)
     }
 }

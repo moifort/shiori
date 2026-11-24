@@ -1,5 +1,11 @@
 package com.polyforms.shiori.features.authors.components.pages
 
+import com.polyforms.shiori.features.discover.DiscoveryVolume
+import com.polyforms.shiori.features.discover.SagaDiscovery
+import com.polyforms.shiori.features.discover.SagaReleases
+import com.polyforms.shiori.features.series.SeriesRelease
+import com.polyforms.shiori.shared.DiscoveredVolume
+import com.polyforms.shiori.shared.FollowedSeries
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -58,10 +64,22 @@ import com.polyforms.shiori.DebugFixtures
 import com.polyforms.shiori.PreviewSurface
 
 /** What the author page asks of its screen. */
+/**
+ * An announced volume's cover opens its own page, as everywhere a cover opens its book; one with
+ * no number to be filed at opens its saga.
+ */
+private fun announcedAction(release: SeriesRelease, saga: FollowedSeries): AuthorAction {
+    val number = release.number ?: return AuthorAction.OpenSeries(saga.seriesId)
+    val volume = saga.announced?.takeIf { it.number == number } ?: DiscoveredVolume(number, release.title, release.date, null, release.coverURL)
+    return AuthorAction.OpenVolume(DiscoveryVolume(SagaDiscovery(saga, SagaReleases(watched = true, next = volume)), volume))
+}
+
 sealed interface AuthorAction {
     data class OpenBook(val book: Book) : AuthorAction
     data class OpenSeries(val seriesId: String, val proposal: SeriesProposal? = null) : AuthorAction
     data class OpenWork(val work: AuthorWork) : AuthorAction
+    /** A volume announced of one of their sagas, on its own page. */
+    data class OpenVolume(val volume: DiscoveryVolume) : AuthorAction
     data class Menu(val book: Book, val action: BookQuickAction) : AuthorAction
     data object Refresh : AuthorAction
 }
@@ -203,7 +221,7 @@ private fun discoveries(page: AuthorPage, send: (AuthorAction) -> Unit): List<Po
             coverURL = release.coverURL,
             status = ReadingStatus.TO_READ,
         )
-        PosterRowItem(book, PosterLabel(ReleaseDateText.short(release.date), dimming = dimming)) { send(AuthorAction.OpenSeries(saga.seriesId)) }
+        PosterRowItem(book, PosterLabel(ReleaseDateText.short(release.date), dimming = dimming)) { send(announcedAction(release, saga)) }
     }
     val sagas = page.sagasNotHeld.map { saga ->
         val book = Book(

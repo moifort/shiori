@@ -19,9 +19,11 @@ class PersonListViewModel<Person : ShelvedPerson>(
     private val serializer: KSerializer<Person>,
     private val scope: CoroutineScope,
     private val caching: Boolean = true,
+    /** Opens by date, as the Books and Series shelves do, unless the opener asks for another order. */
+    openedOrder: AuthorListOrder = AuthorListOrder.RECENT,
     private val list: suspend (limit: Int, after: String?, order: AuthorListOrder) -> CursorPage<Person>,
 ) {
-    var order by mutableStateOf(AuthorListOrder.RECENT)
+    var order by mutableStateOf(openedOrder)
         private set
     var people by mutableStateOf<List<Person>>(emptyList())
         private set

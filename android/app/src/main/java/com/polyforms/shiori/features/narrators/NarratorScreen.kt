@@ -1,5 +1,7 @@
 package com.polyforms.shiori.features.narrators
 
+import com.polyforms.shiori.shared.components.styles.IconGesture
+import com.polyforms.shiori.shared.components.styles.iconGesture
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -68,6 +70,7 @@ fun NarratorScreen(key: String, name: String, client: NarratorsClient = Narrator
                 AsyncToolbarButton(
                     if (viewModel.isFavorite) L("Retirer des préférés") else L("Préféré"),
                     if (viewModel.isFavorite) "heart.fill" else "heart",
+                    Modifier.iconGesture(IconGesture.BEAT, viewModel.isFavorite),
                 ) { viewModel.toggleFavorite() }
                 if (page.bookCount > 0) {
                     PersonActionsMenu { action ->

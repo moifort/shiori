@@ -32,6 +32,8 @@ import com.polyforms.shiori.shared.BookFormat
 import com.polyforms.shiori.shared.DataChanges
 import com.polyforms.shiori.shared.L
 import com.polyforms.shiori.shared.components.atoms.AsyncToolbarButton
+import com.polyforms.shiori.shared.components.styles.IconGesture
+import com.polyforms.shiori.shared.components.styles.iconGesture
 import com.polyforms.shiori.shared.components.molecules.GeneratingPillHost
 import com.polyforms.shiori.shared.components.styles.Shiori
 import com.polyforms.shiori.shared.platform.ScreenBar
@@ -78,6 +80,7 @@ fun SeriesScreen(seriesId: String, proposal: SeriesProposal? = null, friend: Ser
             releases = viewModel.releases,
             takenFormat = viewModel.takenFormat,
             announcedVolume = viewModel::announcedVolume,
+            unownedVolume = viewModel::unownedVolume,
         ) { action ->
             when (action) {
                 is SeriesAction.OpenBook -> navigator.push {
@@ -102,7 +105,7 @@ fun SeriesScreen(seriesId: String, proposal: SeriesProposal? = null, friend: Ser
         if (viewModel.isSaving) Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
         ScreenBar(title = if (viewModel.series == null) viewModel.name.ifEmpty { L("Série") } else null) {
             if (viewModel.friend == null) {
-                AsyncToolbarButton(if (viewModel.isFavorite) L("Retirer des favoris") else L("Ajouter aux favoris"), if (viewModel.isFavorite) "heart.fill" else "heart") {
+                AsyncToolbarButton(if (viewModel.isFavorite) L("Retirer des favoris") else L("Ajouter aux favoris"), if (viewModel.isFavorite) "heart.fill" else "heart", Modifier.iconGesture(IconGesture.BEAT, viewModel.isFavorite)) {
                     viewModel.setFavorite(!viewModel.isFavorite)
                 }
                 val series = viewModel.series

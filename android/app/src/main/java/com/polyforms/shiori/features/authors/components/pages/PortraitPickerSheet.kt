@@ -159,7 +159,7 @@ private fun Tile(initials: String, choice: PortraitChoice, isPicked: Boolean, on
                     Modifier.align(Alignment.TopEnd).size(26.dp).background(colors.groupedBackground, CircleShape).padding(2.5.dp).background(colors.accent, CircleShape),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Icon(Symbol("checkmark"), null, Modifier.size(13.dp), tint = Color.White)
+                    Icon(Symbol("checkmark"), null, Modifier.size(13.dp), tint = colors.onAccent)
                 }
             }
         }

@@ -2,6 +2,7 @@ package com.polyforms.shiori.features.library
 
 import androidx.compose.runtime.Composable
 import com.polyforms.shiori.features.authors.AuthorDestination
+import com.polyforms.shiori.features.authors.AuthorListOrder
 import com.polyforms.shiori.features.authors.AuthorScreen
 import com.polyforms.shiori.features.authors.AuthorShelfScreen
 import com.polyforms.shiori.features.book.BookScreen
@@ -25,15 +26,16 @@ sealed interface LibraryDestination {
     data class SeriesShelf(val filter: SeriesShelfFilter = SeriesShelfFilter.ALL) : LibraryDestination
     data object SetAsideSeries : LibraryDestination
     data class Series(val id: String) : LibraryDestination
-    data object Authors : LibraryDestination
+    /** The authors, in the order asked: Découvrir opens them on "Préférés". */
+    data class Authors(val order: AuthorListOrder = AuthorListOrder.RECENT) : LibraryDestination
     data class Author(val author: AuthorDestination) : LibraryDestination
-    data object Narrators : LibraryDestination
+    data class Narrators(val order: AuthorListOrder = AuthorListOrder.RECENT) : LibraryDestination
     data class Narrator(val narrator: NarratorDestination) : LibraryDestination
     data class Genre(val genre: BookGenre) : LibraryDestination
     data object Wishlist : LibraryDestination
 
     companion object {
-        fun of(request: LibraryRequest): LibraryDestination? = when (val filter = request.filter) {
+        fun of(request: LibraryRequest): LibraryDestination? = if (request.opensWishlist) Wishlist else when (val filter = request.filter) {
             is LibraryFilter.Status -> when (filter.status) {
                 ReadingStatus.TO_READ -> Shelf(BookShelf.TO_READ)
                 ReadingStatus.READ -> Shelf(BookShelf.READ)
@@ -58,9 +60,9 @@ fun LibraryDestinationScreen(destination: LibraryDestination, client: LibraryCli
         is LibraryDestination.SeriesShelf -> SeriesShelfScreen(destination.filter)
         LibraryDestination.SetAsideSeries -> SetAsideSeriesScreen()
         is LibraryDestination.Series -> SeriesScreen(destination.id)
-        LibraryDestination.Authors -> AuthorShelfScreen()
+        is LibraryDestination.Authors -> AuthorShelfScreen(destination.order)
         is LibraryDestination.Author -> AuthorScreen(destination.author.key, destination.author.name)
-        LibraryDestination.Narrators -> NarratorShelfScreen(client)
+        is LibraryDestination.Narrators -> NarratorShelfScreen(destination.order, library = client)
         is LibraryDestination.Narrator -> NarratorScreen(destination.narrator.key, destination.narrator.name)
         is LibraryDestination.Genre -> LibraryShelvesScreen(destination.genre, client)
         LibraryDestination.Wishlist -> WishlistScreen()

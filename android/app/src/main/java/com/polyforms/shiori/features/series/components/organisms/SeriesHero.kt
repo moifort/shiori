@@ -1,5 +1,9 @@
 package com.polyforms.shiori.features.series.components.organisms
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.runtime.getValue
+import com.polyforms.shiori.shared.components.atoms.setAsideAnimation
+import com.polyforms.shiori.shared.components.styles.saturation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -64,9 +68,12 @@ fun SeriesHero(
     fan: SeriesFan,
     language: BookLanguage? = null,
     onOpenAuthor: (() -> Unit)? = null,
+    /** Set aside by the reader: the covers and their colours turn black and white, as the saga's card does on the shelf. */
+    isSetAside: Boolean = false,
     actions: @Composable () -> Unit = {},
 ) {
     val coverWidth = 156.dp
+    val saturation by animateFloatAsState(if (isSetAside) 0f else 1f, setAsideAnimation(), label = "setAside")
     Box(Modifier.fillMaxWidth()) {
         CoverBackdrop(
             fan.middle?.coverURL,
@@ -75,14 +82,14 @@ fun SeriesHero(
                 val bottom = 170.dp.roundToPx()
                 val placeable = measurable.measure(constraints.copy(minHeight = constraints.maxHeight + top + bottom, maxHeight = constraints.maxHeight + top + bottom))
                 layout(constraints.maxWidth, constraints.maxHeight) { placeable.place(0, -top) }
-            },
+            }.saturation(saturation),
             fadeHeight = 320.dp,
         )
         Column(
             Modifier.fillMaxWidth().statusBarsPadding().padding(top = 52.dp).padding(horizontal = 20.dp).padding(bottom = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Box(Modifier.fillMaxWidth().height(coverWidth * 1.5f).padding(top = 8.dp), contentAlignment = Alignment.Center) {
+            Box(Modifier.fillMaxWidth().height(coverWidth * 1.5f).padding(top = 8.dp).saturation(saturation), contentAlignment = Alignment.Center) {
                 fan.leading?.let { Box(Modifier.offset(x = (-78).dp, y = 14.dp).rotate(-10f).scale(0.9f)) { Dimmed(it, coverWidth, 0.6f) } }
                 fan.trailing?.let { Box(Modifier.offset(x = 78.dp, y = 14.dp).rotate(10f).scale(0.9f)) { Dimmed(it, coverWidth, 0.75f) } }
                 fan.middle?.let { Box(Modifier.shadow(16.dp)) { BookCover(it, coverWidth, showsFormatBadge = false) } }

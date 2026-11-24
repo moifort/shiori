@@ -1,5 +1,8 @@
 package com.polyforms.shiori.features.authors
 
+import com.polyforms.shiori.features.discover.AnnouncedVolumeScreen
+import com.polyforms.shiori.shared.components.styles.IconGesture
+import com.polyforms.shiori.shared.components.styles.iconGesture
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -63,6 +66,7 @@ fun AuthorScreen(
                     BookScreen(action.book.id, onChanged = { scope.launch { viewModel.load() } }, onDeleted = { scope.launch { viewModel.load() } })
                 }
                 is AuthorAction.OpenSeries -> navigator.push { SeriesScreen(action.seriesId, action.proposal) }
+                is AuthorAction.OpenVolume -> navigator.push { AnnouncedVolumeScreen(action.volume.saga, action.volume.volume) }
                 is AuthorAction.OpenWork -> navigator.push {
                     val author = viewModel.page?.author?.name ?: viewModel.name
                     AuthorWorkPage(action.work, author, viewModel.adding == action.work.id) {
@@ -81,6 +85,7 @@ fun AuthorScreen(
                 AsyncToolbarButton(
                     if (viewModel.isFavorite) L("Retirer des préférés") else L("Préféré"),
                     if (viewModel.isFavorite) "heart.fill" else "heart",
+                    Modifier.iconGesture(IconGesture.BEAT, viewModel.isFavorite),
                 ) { viewModel.toggleFavorite() }
                 if (page.author.bookCount > 0) {
                     PersonActionsMenu { action ->

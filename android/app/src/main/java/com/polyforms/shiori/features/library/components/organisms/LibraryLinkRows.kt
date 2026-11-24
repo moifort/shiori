@@ -31,16 +31,17 @@ enum class LibraryLink { BOOKS, SERIES, AUTHORS, NARRATORS, WISHLIST }
 @Composable
 fun LibraryLinkRows(showsSeries: Boolean, showsAuthors: Boolean, showsNarrators: Boolean, onOpen: (LibraryLink) -> Unit) {
     Column(Modifier.padding(horizontal = 20.dp)) {
-        LinkRow("book.pages", L("Livres")) { onOpen(LibraryLink.BOOKS) }
-        if (showsSeries) LinkRow("square.stack", L("Séries")) { onOpen(LibraryLink.SERIES) }
-        if (showsAuthors) LinkRow("author", L("Auteurs")) { onOpen(LibraryLink.AUTHORS) }
-        if (showsNarrators) LinkRow("music.mic", L("Narrateurs")) { onOpen(LibraryLink.NARRATORS) }
-        LinkRow("bookmark", L("Liste d'envies")) { onOpen(LibraryLink.WISHLIST) }
+        LibraryLinkRow("book.pages", L("Livres")) { onOpen(LibraryLink.BOOKS) }
+        if (showsSeries) LibraryLinkRow("square.stack", L("Séries")) { onOpen(LibraryLink.SERIES) }
+        if (showsAuthors) LibraryLinkRow("author", L("Auteurs")) { onOpen(LibraryLink.AUTHORS) }
+        if (showsNarrators) LibraryLinkRow("music.mic", L("Narrateurs")) { onOpen(LibraryLink.NARRATORS) }
+        LibraryLinkRow("bookmark", L("Liste d'envies")) { onOpen(LibraryLink.WISHLIST) }
     }
 }
 
+/** One of the library's rows: the symbol, the title, the chevron, the hairline. The Amis tab draws its own with it. */
 @Composable
-private fun LinkRow(symbol: String, title: String, onClick: () -> Unit) {
+fun LibraryLinkRow(symbol: String, title: String, onClick: () -> Unit) {
     val colors = Shiori.colors
     Box(Modifier.fillMaxWidth().height(52.dp).plainClickable(onClick = onClick)) {
         Row(Modifier.fillMaxWidth().align(Alignment.CenterStart), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {

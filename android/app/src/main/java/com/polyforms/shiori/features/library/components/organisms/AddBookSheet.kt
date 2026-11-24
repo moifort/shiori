@@ -1,5 +1,10 @@
 package com.polyforms.shiori.features.library.components.organisms
 
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.semantics.semantics
+import com.polyforms.shiori.shared.components.organisms.SiriOrb
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -105,61 +110,91 @@ fun AddBookSheet(isPremium: Boolean?, searchTitle: suspend (String) -> List<Titl
                 Text(L("Ajouter un livre"), style = Shiori.type.title3.copy(fontWeight = FontWeight.SemiBold), color = colors.label, modifier = Modifier.weight(1f))
                 Text(L("Toutes les photos"), style = Shiori.type.subheadline, color = colors.accent, modifier = Modifier.plainClickable { onChoose(AddBookSource.Library) })
             }
-            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Tile("camera.viewfinder", L("Scanner la couverture")) { onChoose(AddBookSource.Camera) }
-                Tile("books.vertical", L("Plusieurs livres"), badge = if (isPremium == false) L("Premium") else null) { onChoose(AddBookSource.Shelf) }
-                Tile("photo.on.rectangle", L("Choisir une photo")) { onChoose(AddBookSource.Library) }
-            }
-            Row(
-                Modifier.fillMaxWidth().heightIn(min = 60.dp).clip(RoundedCornerShape(18.dp)).background(colors.secondaryGroupedBackground).padding(horizontal = 16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Icon(Symbol("sparkles.rectangle.stack"), null, Modifier.size(22.dp), tint = colors.label)
-                PlainTextField(title, {
-                    title = it
-                    if (search != TitleSearch.Searching) search = TitleSearch.Idle
-                }, L("Un titre, l'IA cherche le reste"), Modifier.weight(1f), onDone = ::submit)
-                when {
-                    search == TitleSearch.Searching -> CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp)
-                    title.isNotBlank() -> Icon(Symbol("arrow.right.circle.fill"), L("Rechercher"), Modifier.size(28.dp).plainClickable(onClick = ::submit), tint = colors.accent)
+            if (search == TitleSearch.Searching) {
+                SearchingOrb(title.trim())
+            } else {
+                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Tile("camera.viewfinder", L("Scanner la couverture")) { onChoose(AddBookSource.Camera) }
+                    Tile("books.vertical", L("Plusieurs livres"), badge = if (isPremium == false) L("Premium") else null) { onChoose(AddBookSource.Shelf) }
+                    Tile("photo.on.rectangle", L("Choisir une photo")) { onChoose(AddBookSource.Library) }
                 }
-            }
-            when (val state = search) {
-                is TitleSearch.Candidates -> Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(L("Plusieurs livres correspondent"), style = Shiori.type.subheadline, color = colors.secondaryLabel)
-                    Column(Modifier.clip(RoundedCornerShape(18.dp)).background(colors.secondaryGroupedBackground)) {
-                        state.list.forEachIndexed { index, candidate ->
-                            if (index > 0) ShioriDivider(Modifier.padding(start = 16.dp))
-                            Row(Modifier.fillMaxWidth().plainClickable { onChoose(AddBookSource.Title(candidate.lookUpQuery)) }.padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                                    Text(candidate.title, style = Shiori.type.body.copy(fontWeight = FontWeight.Medium), color = colors.label, maxLines = 2)
-                                    val byline = listOfNotNull(candidate.authors.ifEmpty { null }?.joinToString(", "), candidate.firstPublishedIn?.toString()).joinToString(" · ")
-                                    if (byline.isNotEmpty()) Text(byline, style = Shiori.type.subheadline, color = colors.secondaryLabel, maxLines = 1)
-                                    candidate.seriesName?.let { series ->
-                                        Text(candidate.volume?.let { "$series · ${L("Tome %lld", it)}" } ?: series, style = Shiori.type.footnote, color = colors.secondaryLabel, maxLines = 1)
+                Row(
+                    Modifier.fillMaxWidth().heightIn(min = 60.dp).clip(RoundedCornerShape(18.dp)).background(colors.secondaryGroupedBackground).padding(horizontal = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Icon(Symbol("sparkles.rectangle.stack"), null, Modifier.size(22.dp), tint = colors.label)
+                    PlainTextField(title, {
+                        title = it
+                        if (search != TitleSearch.Searching) search = TitleSearch.Idle
+                    }, L("Un titre, l'IA cherche le reste"), Modifier.weight(1f), onDone = ::submit)
+                    when {
+                            title.isNotBlank() -> Icon(Symbol("arrow.right.circle.fill"), L("Rechercher"), Modifier.size(28.dp).plainClickable(onClick = ::submit), tint = colors.accent)
+                    }
+                }
+                when (val state = search) {
+                    is TitleSearch.Candidates -> Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(L("Plusieurs livres correspondent"), style = Shiori.type.subheadline, color = colors.secondaryLabel)
+                        Column(Modifier.clip(RoundedCornerShape(18.dp)).background(colors.secondaryGroupedBackground)) {
+                            state.list.forEachIndexed { index, candidate ->
+                                if (index > 0) ShioriDivider(Modifier.padding(start = 16.dp))
+                                Row(Modifier.fillMaxWidth().plainClickable { onChoose(AddBookSource.Title(candidate.lookUpQuery)) }.padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                        Text(candidate.title, style = Shiori.type.body.copy(fontWeight = FontWeight.Medium), color = colors.label, maxLines = 2)
+                                        val byline = listOfNotNull(candidate.authors.ifEmpty { null }?.joinToString(", "), candidate.firstPublishedIn?.toString()).joinToString(" · ")
+                                        if (byline.isNotEmpty()) Text(byline, style = Shiori.type.subheadline, color = colors.secondaryLabel, maxLines = 1)
+                                        candidate.seriesName?.let { series ->
+                                            Text(candidate.volume?.let { "$series · ${L("Tome %lld", it)}" } ?: series, style = Shiori.type.footnote, color = colors.secondaryLabel, maxLines = 1)
+                                        }
                                     }
+                                    Icon(Symbol("chevron.right"), null, Modifier.size(12.dp), tint = colors.tertiaryLabel)
                                 }
-                                Icon(Symbol("chevron.right"), null, Modifier.size(12.dp), tint = colors.tertiaryLabel)
                             }
                         }
                     }
+                    TitleSearch.NoMatch -> Message(L("Aucun livre trouvé, essayez un autre titre"), "magnifyingglass")
+                    is TitleSearch.Failed -> Message(state.reason, "exclamationmark.triangle")
+                    else -> Unit
                 }
-                TitleSearch.NoMatch -> Message(L("Aucun livre trouvé, essayez un autre titre"), "magnifyingglass")
-                is TitleSearch.Failed -> Message(state.reason, "exclamationmark.triangle")
-                else -> Unit
-            }
-            Row(
-                Modifier.fillMaxWidth().heightIn(min = 60.dp).clip(RoundedCornerShape(18.dp)).background(colors.secondaryGroupedBackground)
-                    .plainClickable { onChoose(AddBookSource.Manual) }.padding(horizontal = 16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Icon(Symbol("square.and.pencil"), null, Modifier.size(22.dp), tint = colors.label)
-                Text(L("Ajouter à la main"), style = Shiori.type.body, color = colors.label)
+                Row(
+                    Modifier.fillMaxWidth().heightIn(min = 60.dp).clip(RoundedCornerShape(18.dp)).background(colors.secondaryGroupedBackground)
+                        .plainClickable { onChoose(AddBookSource.Manual) }.padding(horizontal = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Icon(Symbol("square.and.pencil"), null, Modifier.size(22.dp), tint = colors.label)
+                    Text(L("Ajouter à la main"), style = Shiori.type.body, color = colors.label)
+                }
             }
             Spacer(Modifier.size(12.dp))
         }
+    }
+}
+
+/**
+ * The AI looking the typed title up: Siri's orb in the room the tiles and rows leave, the title it
+ * looks for under it. Added as light in the dark, so its black falls away into the sheet; drawn as
+ * it is in the light.
+ */
+@Composable
+private fun SearchingOrb(title: String) {
+    val dark = isSystemInDarkTheme()
+    Column(
+        Modifier.fillMaxWidth().padding(vertical = 40.dp).semantics(mergeDescendants = true) {},
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        SiriOrb(
+            Modifier.graphicsLayer { if (dark) blendMode = BlendMode.Plus },
+            size = 200.dp,
+        )
+        Text(
+            L("Recherche de « %@ »", title),
+            style = Shiori.type.headline,
+            color = Shiori.colors.label,
+            maxLines = 2,
+            textAlign = TextAlign.Center,
+        )
     }
 }
 

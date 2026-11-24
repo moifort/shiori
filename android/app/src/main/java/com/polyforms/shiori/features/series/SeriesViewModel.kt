@@ -314,6 +314,19 @@ class SeriesViewModel(
         return DiscoveredVolume(number, release.title, release.date, null, release.coverURL)
     }
 
+    /**
+     * The page of a volume of the saga the reader lacks: the announcement when the release watch
+     * found one, else what the catalogue keeps of it — its title, date and cover in the edition
+     * opened, or its title and year. Null for an annex, which has no number to file it at.
+     */
+    fun unownedVolume(volume: Volume): DiscoveredVolume? {
+        announcedVolume(volume)?.let { return it }
+        if (volume.kind != VolumeKind.MAIN) return null
+        val number = volume.number ?: return null
+        val release = language?.let { volume.release(it) }
+        return DiscoveredVolume(number, release?.title ?: volume.title, release?.date ?: volume.publishedIn?.toString(), null, release?.coverURL)
+    }
+
     val announcedSaga: SagaDiscovery?
         get() {
             val series = series ?: return null

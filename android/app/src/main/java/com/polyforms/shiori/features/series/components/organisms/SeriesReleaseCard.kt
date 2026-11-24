@@ -43,6 +43,7 @@ import com.polyforms.shiori.shared.components.atoms.OutlinedTag
 import com.polyforms.shiori.shared.components.molecules.ReleaseDateBadge
 import com.polyforms.shiori.shared.components.organisms.BookCover
 import com.polyforms.shiori.shared.components.styles.Shiori
+import com.polyforms.shiori.shared.components.styles.ActionButton
 import com.polyforms.shiori.shared.components.styles.Symbol
 import com.polyforms.shiori.shared.components.styles.plainClickable
 import java.net.URLEncoder
@@ -85,7 +86,8 @@ fun SeriesReleaseCard(
     val store: Pair<String, Int>? = if (isAudio) volume.audibleURL?.let { it to R.drawable.audible_logo } else volume.amazonURL(author) to R.drawable.amazon_logo
     Box(modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).plainClickable(onClick = onOpen)) {
         CoverBackdrop(volume.coverURL, Modifier.matchParentSize(), ground = Color.Transparent)
-        Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min).heightIn(min = 150.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+        // One height for every card of a rail, whatever its title.
+        Row(Modifier.fillMaxWidth().height(150.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
             Box(Modifier.width(100.dp).fillMaxHeight()) { BookCover(book, 100.dp, showsFormatBadge = false, minHeight = 150.dp, cornerRadius = 0.dp) }
             Column(Modifier.weight(1f).padding(vertical = 12.dp).padding(end = 12.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                 val room = if (volume.date == null) 0.dp else 48.dp
@@ -99,11 +101,7 @@ fun SeriesReleaseCard(
                 }
                 Spacer(Modifier.weight(1f).heightIn(min = 8.dp))
                 if (store != null) {
-                    Row(
-                        Modifier.clip(CircleShape).background(Color.White).plainClickable { uri.openUri(store.first) }.padding(horizontal = 12.dp, vertical = 6.dp),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
+                    ActionButton(onClick = { uri.openUri(store.first) }, height = 28.dp) {
                         Text(L("Précommander"), style = Shiori.type.caption.copy(fontWeight = FontWeight.SemiBold), color = Color.Black, maxLines = 1)
                         Image(painterResource(store.second), null, Modifier.size(24.dp, 12.dp), colorFilter = ColorFilter.tint(Color.Black))
                     }

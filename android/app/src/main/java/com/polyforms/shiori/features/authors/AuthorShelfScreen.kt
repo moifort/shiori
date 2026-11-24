@@ -1,5 +1,16 @@
 package com.polyforms.shiori.features.authors
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import com.polyforms.shiori.features.news.NewsApi
+import com.polyforms.shiori.features.news.UpcomingRelease
+import com.polyforms.shiori.shared.SnapshotCache
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
+import kotlinx.serialization.builtins.ListSerializer
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,17 +31,50 @@ import com.polyforms.shiori.shared.components.styles.Shiori
 import com.polyforms.shiori.shared.platform.ScreenBar
 import com.polyforms.shiori.shared.platform.currentNavigator
 
-/** The Authors shelf, connected. */
+/** The section's last rows on disk, so the shelf opens on them. Bump the version whenever `UpcomingRelease` changes shape. */
+private val authorReleasesCache = SnapshotCache("author-releases", 1, ListSerializer(UpcomingRelease.serializer()))
+
+/**
+ * The Authors shelf, connected. "Prochaines sorties" — what the hearted authors announced — opens
+ * on last session's snapshot and is brought up to date underneath.
+ */
 @Composable
-fun AuthorShelfScreen(client: AuthorsClient = AuthorsClient.live, library: LibraryClient = LibraryClient.live) {
+fun AuthorShelfScreen(
+    order: AuthorListOrder = AuthorListOrder.RECENT,
+    client: AuthorsClient = AuthorsClient.live,
+    library: LibraryClient = LibraryClient.live,
+    upcoming: suspend () -> List<UpcomingRelease> = NewsApi::upcoming,
+) {
     val scope = rememberCoroutineScope()
-    val viewModel = remember { PersonListViewModel("authors", FollowedAuthor.serializer(), scope, list = client::myAuthorsPage) }
+    val viewModel = remember { PersonListViewModel("authors", FollowedAuthor.serializer(), scope, openedOrder = order, list = client::myAuthorsPage) }
+    var releases by remember { mutableStateOf(FavoriteAuthorReleases.stillAhead(authorReleasesCache.read() ?: emptyList())) }
     val navigator = currentNavigator
     fun open(destination: LibraryDestination) = navigator.push { LibraryDestinationScreen(destination, library) }
     val quick = rememberBookQuickActions(library, ::open)
 
+    // Everything announced, read off the release watches with no web lookup, kept to the hearted
+    // authors. A failure leaves the section as it was: it is gone when it has nothing to show.
+    suspend fun loadReleases() {
+        val fresh = runCatching {
+            coroutineScope {
+                val all = async { upcoming() }
+                val loved = async { client.myAuthorsPage(200, null, AuthorListOrder.LOVED) }
+                FavoriteAuthorReleases.of(all.await(), loved.await().items.filter { it.favorite }.map { it.name })
+            }
+        }.getOrNull() ?: return
+        if (fresh == releases) return
+        releases = fresh
+        scope.launch(Dispatchers.IO) { authorReleasesCache.write(fresh) }
+    }
+
     LaunchedEffect(Unit) { viewModel.loadOnAppear() }
-    LaunchedEffect(Unit) { DataChanges.notices.collect { viewModel.load(keepingDepth = true) } }
+    LaunchedEffect(Unit) { loadReleases() }
+    LaunchedEffect(Unit) {
+        DataChanges.notices.collect {
+            scope.launch { viewModel.load(keepingDepth = true) }
+            scope.launch { loadReleases() }
+        }
+    }
 
     Box(Modifier.fillMaxSize().background(Shiori.colors.groupedBackground)) {
         PersonShelfPage(
@@ -44,6 +88,9 @@ fun AuthorShelfScreen(client: AuthorsClient = AuthorsClient.live, library: Libra
             viewModel.errorMessage,
             viewModel.hasMore,
             viewModel.loadMoreFailed,
+            releases = releases,
+            onOpenRelease = { release -> releaseDestination(release)?.let(::open) },
+            allTitle = L("Tous les auteurs"),
         ) { action ->
             when (action) {
                 is PersonShelfAction.OpenPerson -> open(LibraryDestination.Author(AuthorDestination(action.person)))
@@ -57,4 +104,20 @@ fun AuthorShelfScreen(client: AuthorsClient = AuthorsClient.live, library: Libra
         }
         ScreenBar()
     }
+}
+
+/**
+ * Where a release of "Prochaines sorties" leads without a lookup: an author's release on its author,
+ * a recording on its narrator ("narrator~<narrator key>~<title>"), a saga's volume on its author
+ * when the release names one.
+ */
+fun releaseDestination(release: UpcomingRelease): LibraryDestination? {
+    if (release.source == com.polyforms.shiori.features.news.ReleaseSource.NARRATOR) {
+        val parts = release.id.split("~")
+        val name = release.narrator
+        if (parts.size >= 2 && name != null) {
+            return LibraryDestination.Narrator(com.polyforms.shiori.features.narrators.NarratorDestination(parts[1], name))
+        }
+    }
+    return release.author?.let { LibraryDestination.Author(AuthorDestination(it.key, it.name)) }
 }

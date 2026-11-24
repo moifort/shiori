@@ -1,5 +1,17 @@
 package com.polyforms.shiori.features.series.components.pages
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import com.polyforms.shiori.shared.SeriesState
+import com.polyforms.shiori.shared.components.atoms.setAsideAnimation
+import com.polyforms.shiori.shared.components.molecules.ActionToggle
+import com.polyforms.shiori.shared.components.styles.IconGesture
+import com.polyforms.shiori.shared.components.styles.iconGesture
+import com.polyforms.shiori.shared.components.styles.saturation
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -87,8 +99,10 @@ sealed interface SeriesAction {
     data class OpenBook(val book: Book) : SeriesAction
     data object Rate : SeriesAction
     data object EditGenre : SeriesAction
+    /** The bell: the saga followed again, or set aside. */
     data class SetFollowed(val followed: Boolean) : SeriesAction
     data class OpenAuthor(val author: AuthorDestination) : SeriesAction
+    /** A volume the reader lacks, announced or out, on its own page. */
     data class OpenAnnounced(val volume: DiscoveredVolume) : SeriesAction
     data class Add(val volume: Volume, val author: String, val format: BookFormat, val status: ReadingStatus) : SeriesAction
     data object Retry : SeriesAction
@@ -98,7 +112,11 @@ sealed interface SeriesAction {
 /** The formats a volume can be added in: the saga's own (paper when heard), and audio. */
 val BookFormat.takenAs: List<BookFormat> get() = listOf(if (this == BookFormat.AUDIOBOOK) BookFormat.BOOK else this, BookFormat.AUDIOBOOK)
 
-/** A saga's page: the fanned hero, its progress and rating, the next release, the volumes. */
+/**
+ * A saga's page: the fanned hero, its progress and rating, the next release, the volumes. The
+ * missing volumes are dimmed: a tap opens their page and a long press offers to add them. Set
+ * aside, every cover of the saga turns black and white, and "Suivre" takes the stars' room.
+ */
 @Composable
 fun SeriesPage(
     series: BookSeries?,
@@ -113,6 +131,8 @@ fun SeriesPage(
     releases: SagaReleases?,
     takenFormat: BookFormat,
     announcedVolume: (Volume) -> DiscoveredVolume?,
+    /** The page of a volume out the reader lacks; null for an annex. */
+    unownedVolume: (Volume) -> DiscoveredVolume? = { null },
     onAction: suspend (SeriesAction) -> Unit,
 ) {
     val scope = rememberCoroutineScope()
@@ -121,7 +141,7 @@ fun SeriesPage(
     }
     when {
         isLoading && series == null && owned.isEmpty() -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
-        series != null -> Catalogue(series, owned, opinion, language, friend, isFollowed, addingTitle, releases, takenFormat, announcedVolume, ::act)
+        series != null -> Catalogue(series, owned, opinion, language, friend, isFollowed, addingTitle, releases, takenFormat, announcedVolume, unownedVolume, onAction, ::act)
         else -> Box(Modifier.fillMaxSize().statusBarsPadding(), contentAlignment = Alignment.Center) {
             EmptyState(
                 "square.stack.3d.up.slash",
@@ -148,8 +168,16 @@ private fun Catalogue(
     releases: SagaReleases?,
     takenFormat: BookFormat,
     announcedVolume: (Volume) -> DiscoveredVolume?,
+    unownedVolume: (Volume) -> DiscoveredVolume?,
+    onAction: suspend (SeriesAction) -> Unit,
     act: (SeriesAction) -> Unit,
 ) {
+    // Following is the reader's: not on a friend's shelf, nor over a saga they hold nothing of.
+    val followsHere = friend == null && owned.isNotEmpty()
+    // The reader stopped following the saga: said by the slashed bell and in black and white on
+    // every cover, with no pill to push the hero down.
+    val isSetAside = followsHere && !isFollowed
+    val saturation by animateFloatAsState(if (isSetAside) 0f else 1f, setAsideAnimation(), label = "setAside")
     val datedUpTo = series.spine.datedUpTo(language, series.catalogedAt)
     val published = series.spine.filter { it.counts(currentYear, language, datedUpTo) }
     val read = published.count { v -> owned.any { v.matches(it) && it.status == ReadingStatus.READ } }
@@ -173,17 +201,25 @@ private fun Catalogue(
             SeriesFan.of(fanVolumes, fanVolumes.indexOfFirst { it.coverURL != null }.coerceAtLeast(0)),
             language,
             onOpenAuthor = authorDestination?.let { a -> { act(SeriesAction.OpenAuthor(AuthorDestination(a.key, a.name))) } },
+            isSetAside = isSetAside,
         ) {
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
                 ProgressCapsule(read, published.size, Modifier.weight(1f))
-                RatingCapsule(opinion, friend != null) { act(SeriesAction.Rate) }
-                if (friend == null && owned.isNotEmpty()) {
-                    Box(
-                        Modifier.size(50.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.18f)).plainClickable { act(SeriesAction.SetFollowed(!isFollowed)) },
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(Symbol(if (isFollowed) "eye.slash" else "eye.slash.fill"), if (isFollowed) L("Ne plus suivre") else L("Suivre"), Modifier.size(22.dp), tint = Color.White)
-                    }
+                // Set aside, "Suivre" takes the stars' room: the saga is rated again once followed.
+                if (!isSetAside) RatingCapsule(opinion, friend != null) { act(SeriesAction.Rate) }
+                if (followsHere) {
+                    // The bell on white while followed, slashed on glass once set aside. Setting it
+                    // aside asks first, as "Supprimer" does; following it again does not.
+                    ActionToggle(
+                        isOn = isFollowed,
+                        symbol = "bell",
+                        turnOnLabel = L("Suivre"),
+                        turnOffLabel = L("Ne plus suivre"),
+                        offSymbol = SeriesState.UNFOLLOWED.symbol,
+                        size = 50.dp,
+                        gesture = IconGesture.SWING,
+                        turnOffConfirmation = L("Ne plus suivre la série ?"),
+                    ) { followed -> onAction(SeriesAction.SetFollowed(followed)) }
                 }
             }
         }
@@ -191,22 +227,24 @@ private fun Catalogue(
             Column(verticalArrangement = Arrangement.spacedBy(22.dp)) {
                 val next = releases?.next
                 if (friend == null && next != null && next.number !in heldNumbers) {
-                    SeriesReleaseCard(next, series.author, series.isAudio, onOpen = { act(SeriesAction.OpenAnnounced(next)) }, language = language)
+                    Box(Modifier.saturation(saturation)) {
+                        SeriesReleaseCard(next, series.author, series.isAudio, onOpen = { act(SeriesAction.OpenAnnounced(next)) }, language = language)
+                    }
                 }
                 SeriesFigures(series, owned, read, published.size, language, datedUpTo)
             }
             series.description?.let { BookSynopsisBlock(it) }
-            val spinePosters = posters(series.spine, owned)
-            val nextToRead = owned.filter { it.series?.kind == VolumeKind.MAIN }.sortedBy { it.series?.volume ?: Int.MAX_VALUE }
-                .let { main -> main.firstOrNull { it.status == ReadingStatus.READING } ?: main.firstOrNull { it.status == ReadingStatus.TO_READ } }
-            val ringed = nextToRead?.id ?: spinePosters.firstOrNull { it.book == null }?.id
-            SeriesPosterRail(L("Tomes"), spinePosters, { it.id }, ringed) { poster ->
-                PosterView(poster, series, language, friend, addingTitle, releases, takenFormat, datedUpTo, announcedVolume, act)
-            }
-            val annexes = annexPosters(series.relatedWorks, owned)
-            if (annexes.isNotEmpty()) {
-                SeriesPosterRail(L("Hors-série"), annexes, { it.id }) { poster ->
-                    PosterView(poster, series, language, friend, addingTitle, releases, takenFormat, datedUpTo, announcedVolume, act)
+            // None is ringed: a saga's page is about the saga, no volume of it is open here. Set
+            // aside, every cover of the saga turns black and white, the hero's and the volumes'.
+            Column(Modifier.saturation(saturation), verticalArrangement = Arrangement.spacedBy(28.dp)) {
+                SeriesPosterRail(L("Tomes"), posters(series.spine, owned), { it.id }) { poster ->
+                    PosterView(poster, series, language, friend, addingTitle, releases, takenFormat, datedUpTo, announcedVolume, unownedVolume, act)
+                }
+                val annexes = annexPosters(series.relatedWorks, owned)
+                if (annexes.isNotEmpty()) {
+                    SeriesPosterRail(L("Hors-série"), annexes, { it.id }) { poster ->
+                        PosterView(poster, series, language, friend, addingTitle, releases, takenFormat, datedUpTo, announcedVolume, unownedVolume, act)
+                    }
                 }
             }
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -251,6 +289,7 @@ private fun caption(book: Book, volume: Volume): String {
     return L("Hors-série %lld", number)
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun PosterView(
     poster: Poster,
@@ -262,6 +301,7 @@ private fun PosterView(
     takenFormat: BookFormat,
     datedUpTo: Int?,
     announcedVolume: (Volume) -> DiscoveredVolume?,
+    unownedVolume: (Volume) -> DiscoveredVolume?,
     act: (SeriesAction) -> Unit,
 ) {
     val book = poster.book
@@ -273,17 +313,35 @@ private fun PosterView(
     val release = language?.let { volume.release(it) }
     val title = release?.title ?: volume.title
     val forthcoming = volume.isForthcoming(currentYear, language, datedUpTo)
-    val day = if (forthcoming) release?.let { ReleaseDateText.short(it.date) } else null
+    // Its day as the edition, the release watch or the card above dates it, else "Annoncé": an
+    // announced volume never shows a bare number.
+    val date = release?.date
+        ?: announcedVolume(volume)?.date
+        ?: releases?.next?.takeIf { it.number == volume.number && volume.kind == VolumeKind.MAIN }?.date
+    val day = if (forthcoming) date?.let { ReleaseDateText.short(it) } ?: L("Annoncé") else null
     val coverURL = release?.coverURL
         ?: (if (forthcoming) announcedVolume(volume)?.coverURL else null)
         ?: releases?.next?.takeIf { it.number == volume.number && volume.kind == VolumeKind.MAIN }?.coverURL
     var menu by remember { mutableStateOf(false) }
+    val haptics = LocalHapticFeedback.current
+    // Out, a tap opens the volume's page and a long press offers to add it; an annex has no page,
+    // a tap offers to add it. Announced, a tap opens its page once the release watch found one.
+    val page = if (forthcoming) announcedVolume(volume) else unownedVolume(volume)
+    val adds = !forthcoming && friend == null
     Box(
         Modifier.then(
             when {
-                forthcoming -> announcedVolume(volume)?.let { page -> Modifier.plainClickable { act(SeriesAction.OpenAnnounced(page)) } } ?: Modifier
-                friend != null -> Modifier
-                else -> Modifier.plainClickable(enabled = addingTitle == null) { menu = true }
+                page != null -> Modifier.combinedClickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    enabled = addingTitle == null || forthcoming,
+                    onLongClick = if (adds) ({
+                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                        menu = true
+                    }) else null,
+                ) { act(SeriesAction.OpenAnnounced(page)) }
+                adds -> Modifier.plainClickable(enabled = addingTitle == null) { menu = true }
+                else -> Modifier
             },
         ),
     ) {
@@ -299,7 +357,7 @@ private fun PosterView(
             )
         }
         if (addingTitle == volume.title) CircularProgressIndicator(Modifier.align(Alignment.Center))
-        if (!forthcoming && friend == null) {
+        if (adds) {
             MenuEntries(
                 takenFormat.takenAs.flatMap { format ->
                     listOf(
@@ -359,7 +417,7 @@ private fun RatingCapsule(opinion: SeriesOpinion?, isFriend: Boolean, onRate: ()
         verticalAlignment = Alignment.CenterVertically,
     ) {
         when {
-            rating != null -> RatingStars(rating, size = 14.dp, tint = Color.White)
+            rating != null -> Box(Modifier.iconGesture(IconGesture.HOP, rating)) { RatingStars(rating, size = 14.dp, monochrome = true, tint = Color.White) }
             !isFriend -> {
                 Icon(Symbol("star"), null, Modifier.size(16.dp), tint = Color.White)
                 Text(L("Noter"), style = Shiori.type.subheadline.copy(fontWeight = FontWeight.SemiBold), color = Color.White)

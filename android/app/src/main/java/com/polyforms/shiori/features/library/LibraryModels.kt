@@ -51,7 +51,7 @@ enum class BookShelf {
             READ -> L("Lus récemment")
             LOVED -> L("Coups de cœur")
             DROPPED -> L("Abandonnés")
-            ALL -> L("Tous les livres")
+            ALL -> L("Livres")
         }
 
     val status: ReadingStatus?
@@ -92,7 +92,13 @@ sealed interface LibraryFilter {
 }
 
 /** What another tab asked the Library to show. */
-data class LibraryRequest(val mode: LibraryMode = LibraryMode.ALL, val filter: LibraryFilter? = null, val focus: String? = null)
+data class LibraryRequest(
+    val mode: LibraryMode = LibraryMode.ALL,
+    val filter: LibraryFilter? = null,
+    val focus: String? = null,
+    /** The wishlist, opened over the shelves: where a scan's book goes when it is wished for or its edition awaited. */
+    val opensWishlist: Boolean = false,
+)
 
 @Serializable
 enum class PileSectionKind(val graphQLName: String) {
