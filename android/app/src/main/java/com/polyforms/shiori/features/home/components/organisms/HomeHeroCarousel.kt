@@ -73,6 +73,7 @@ import com.polyforms.shiori.shared.components.atoms.OutlinedTag
 import com.polyforms.shiori.shared.components.atoms.coverTagsAreEmpty
 import com.polyforms.shiori.shared.components.molecules.ReleaseDateBadge
 import com.polyforms.shiori.shared.components.organisms.BookCover
+import com.polyforms.shiori.shared.components.styles.Motion
 import com.polyforms.shiori.shared.components.styles.Shiori
 import com.polyforms.shiori.shared.components.styles.Symbol
 import com.polyforms.shiori.shared.components.styles.plainClickable
@@ -241,7 +242,7 @@ fun HomeHeroCarousel(
     val density = LocalDensity.current
     val shownId = items.getOrNull(pager.currentPage)?.id
     val top = maxOf(coverHeight, shownId?.let { topHeights[it] } ?: 0.dp)
-    val height by animateDpAsState(topPadding + top + buttonsGap + buttonsHeight + dotsGap + dotsHeight + bottomPadding, label = "hero")
+    val height by animateDpAsState(topPadding + top + buttonsGap + buttonsHeight + dotsGap + dotsHeight + bottomPadding, Motion.snappy(), label = "hero")
 
     fun backdrop(item: HomeHeroItem?): String? = when (item) {
         is HomeHeroItem.Release -> releaseTile(item.release).coverURL
@@ -339,7 +340,7 @@ fun HomeHeroCarousel(
             Row(Modifier.align(Alignment.BottomCenter).padding(bottom = bottomPadding), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
                 items.indices.forEach { page ->
                     val on = page == pager.currentPage
-                    val width by animateDpAsState(if (on) 22.dp else 7.dp, label = "dot")
+                    val width by animateDpAsState(if (on) 22.dp else 7.dp, Motion.snappy(), label = "dot")
                     Box(Modifier.size(width, dotsHeight).background(Color.White.copy(alpha = if (on) 0.95f else 0.4f), CircleShape))
                 }
             }

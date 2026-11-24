@@ -3,7 +3,6 @@ package com.polyforms.shiori.features.listening
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutLinearInEasing
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.Orientation
@@ -40,6 +39,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -49,6 +49,7 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.polyforms.shiori.features.listening.components.organisms.PlayerArtwork
+import com.polyforms.shiori.shared.components.styles.Motion
 import com.polyforms.shiori.features.listening.components.pages.LocalPlayerArtworkFrame
 import kotlinx.coroutines.launch
 import kotlin.math.max
@@ -135,12 +136,12 @@ fun PlayerSheet(
             isClosing = true
             scope.launch {
                 pull.animateTo(max(pull.value, geometry.pullToPill), tween(200, easing = FastOutLinearInEasing))
-                morph.animateTo(1f, spring(dampingRatio = 0.9f, stiffness = 220f))
+                morph.animateTo(1f, Motion.spring(0.42, 0.08))
                 onClosed()
             }
         }
         BackHandler { close() }
-        LaunchedEffect(Unit) { morph.animateTo(0f, spring(dampingRatio = 0.85f, stiffness = 180f)) }
+        LaunchedEffect(Unit) { morph.animateTo(0f, Motion.spring(0.5, 0.12)) }
 
         // The spring runs a little past its ends: what is drawn stays between them.
         val m = morph.value.coerceIn(0f, 1f)
@@ -151,7 +152,9 @@ fun PlayerSheet(
         // by its edges.
         val frame = lerp(sheet, geometry.pill, eased)
         val radius = with(density) { mix(38.dp.toPx(), geometry.pill.height / 2, eased).toDp() }
-        val shape = RoundedCornerShape(topStart = radius, topEnd = radius, bottomStart = radius * eased, bottomEnd = radius * eased)
+        // One radius on every corner, as iOS clips it: a plain rounded rectangle is clipped and
+        // shadowed by the GPU, where uneven corners make a path worked out again on each frame.
+        val shape = RoundedCornerShape(radius)
 
         Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.4f * (1 - m) * max(0f, 1 - pull.value / geometry.sheetHeight))))
 
@@ -165,7 +168,7 @@ fun PlayerSheet(
                 if (pull.value > geometry.sheetHeight / 4 || pull.value + velocity * 0.2f > geometry.sheetHeight / 2) {
                     close()
                 } else {
-                    pull.animateTo(0f, spring(dampingRatio = 0.8f, stiffness = 300f))
+                    pull.animateTo(0f, Motion.spring(0.35, 0.15))
                 }
             },
         )
@@ -173,11 +176,11 @@ fun PlayerSheet(
             Modifier
                 .offset { IntOffset(frame.left.roundToInt(), frame.top.roundToInt()) }
                 .size(with(density) { frame.width.toDp() }, with(density) { frame.height.toDp() })
-                .shadow((20 * (1 - m)).dp, shape)
+                .shadow(20.dp, shape, ambientColor = Color.Black.copy(alpha = 1 - m), spotColor = Color.Black.copy(alpha = 1 - m))
                 .clip(shape)
                 .then(pullDown),
         ) {
-            Box(Modifier.fillMaxSize().alpha(fade(m, 0.55f, 0.95f, out = true))) { backdrop() }
+            Box(Modifier.fillMaxSize().fading(fade(m, 0.55f, 0.95f, out = true))) { backdrop() }
             if (m < 0.25f) {
                 Box(
                     Modifier
@@ -189,6 +192,7 @@ fun PlayerSheet(
                             scaleY = scale
                             transformOrigin = TransformOrigin(0f, 0f)
                             alpha = fade(m, 0f, 0.25f, out = true)
+                            compositingStrategy = CompositingStrategy.ModulateAlpha
                         }
                         .padding(bottom = with(density) { bottomInset.toDp() }),
                 ) {
@@ -212,7 +216,7 @@ fun PlayerSheet(
                     Modifier
                         .wrapContentSize(Alignment.TopStart, unbounded = true)
                         .requiredSize(with(density) { geometry.pill.width.toDp() }, with(density) { geometry.pill.height.toDp() })
-                        .alpha(fade(m, 0.6f, 1f, out = false))
+                        .fading(fade(m, 0.6f, 1f, out = false))
                         .clearAndSetSemantics {},
                 ) { pill() }
             }
@@ -240,6 +244,16 @@ fun PlayerSheet(
             )
         }
     }
+}
+
+/**
+ * An opacity that costs no offscreen buffer: each thing drawn is faded on its own, where a plain
+ * `alpha` first draws the whole screen aside. Over the fifth of a second a fade lasts here, the
+ * difference does not show.
+ */
+private fun Modifier.fading(alpha: Float) = graphicsLayer {
+    this.alpha = alpha
+    compositingStrategy = CompositingStrategy.ModulateAlpha
 }
 
 private fun mix(from: Float, to: Float, t: Float) = from + (to - from) * t

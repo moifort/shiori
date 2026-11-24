@@ -83,6 +83,7 @@ import com.polyforms.shiori.features.listening.components.organisms.PlayerArtwor
 import com.polyforms.shiori.features.listening.preview
 import com.polyforms.shiori.shared.CoverEffect
 import com.polyforms.shiori.shared.CoverEffectImage
+import com.polyforms.shiori.shared.components.styles.Motion
 import com.polyforms.shiori.shared.L
 import com.polyforms.shiori.shared.components.molecules.EmptyState
 import com.polyforms.shiori.shared.components.molecules.Pill
@@ -186,7 +187,7 @@ fun PlayerPage(item: PlayerPageItem, queueProgress: Float = 0f, onAction: (Playe
     // The spring runs a little past its ends: what is drawn stays between them.
     val progress = queue.value.coerceIn(0f, 1f)
     fun setQueueOpen(open: Boolean) {
-        scope.launch { queue.animateTo(if (open) 1f else 0f, spring(dampingRatio = 0.85f, stiffness = 300f)) }
+        scope.launch { queue.animateTo(if (open) 1f else 0f, Motion.snappy()) }
     }
     CompositionLocalProvider(LocalShioriColors provides DarkColors) {
         BoxWithConstraints(Modifier.fillMaxSize().background(Color.Black)) {
