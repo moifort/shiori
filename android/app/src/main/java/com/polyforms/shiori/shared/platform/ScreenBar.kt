@@ -1,6 +1,21 @@
 package com.polyforms.shiori.shared.platform
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.text.font.FontWeight
+import com.polyforms.shiori.features.onboarding.LocalAccount
+import com.polyforms.shiori.features.settings.SettingsHomeScreen
+import com.polyforms.shiori.shared.components.molecules.AccountAvatarButton
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Row
@@ -64,4 +79,85 @@ fun LargeTitle(title: String, modifier: Modifier = Modifier) {
         color = Shiori.colors.label,
         modifier = modifier.statusBarsPadding().padding(top = 56.dp).padding(horizontal = 20.dp, vertical = 4.dp),
     )
+}
+
+/**
+ * Whether a bar that scrolls away is called: sent away while the reader scrolls down, called
+ * back by scrolling up, as Safari brings its bar back, and always shown at the very top. Hand
+ * [connection] to the page's scroll container (`Modifier.nestedScroll`), or to any of its
+ * ancestors, which hear every scroll beneath them.
+ */
+@Stable
+class ScrollAwayState {
+    var isCalled by mutableStateOf(true)
+        private set
+
+    fun call(called: Boolean) {
+        isCalled = called
+    }
+
+    val connection = object : NestedScrollConnection {
+        override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
+            when {
+                // Pulled down past the top: the page is at its start.
+                available.y > 0f -> call(true)
+                consumed.y < -4f -> call(false)
+                consumed.y > 4f -> call(true)
+            }
+            return Offset.Zero
+        }
+    }
+}
+
+@Composable
+fun rememberScrollAwayState() = remember { ScrollAwayState() }
+
+/**
+ * The bar the home draws, on a page that scrolls: the page's name on the left, the page's buttons
+ * on the right, each on its own glass, all sent away together while the reader scrolls down and
+ * called back by scrolling up. The bar has no ground of its own: the page runs under it. The
+ * reader's avatar comes last on the right, as on every tab's root.
+ */
+@Composable
+fun BoxScope.ScrollAwayBar(
+    title: String,
+    state: ScrollAwayState,
+    showsAccount: Boolean = true,
+    trailing: @Composable RowScope.() -> Unit = {},
+) {
+    val alpha by animateFloatAsState(if (state.isCalled) 1f else 0f, tween(250), label = "scrollAway")
+    Row(
+        Modifier
+            .align(Alignment.TopCenter)
+            .fillMaxWidth()
+            .statusBarsPadding()
+            .height(56.dp)
+            .padding(horizontal = 16.dp)
+            .graphicsLayer { this.alpha = alpha },
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(title, style = Shiori.type.title2.copy(fontWeight = FontWeight.Bold), color = Shiori.colors.label, maxLines = 1, modifier = Modifier.weight(1f))
+        if (state.isCalled) {
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                trailing()
+                if (showsAccount) AccountSettingsButton()
+            }
+        }
+    }
+}
+
+/**
+ * The reader's avatar, opening the settings: the last button on the right of every tab's root bar,
+ * so the account is one tap away wherever the reader is. Pushed pages keep their own bar.
+ */
+@Composable
+fun AccountSettingsButton() {
+    val account = LocalAccount.current
+    var showsSettings by remember { mutableStateOf(false) }
+    AccountAvatarButton(account.avatar, account.firstName) { showsSettings = true }
+    if (showsSettings) {
+        ShioriSheet({ showsSettings = false }) {
+            Box(Modifier.fillMaxSize()) { NavigationStack { SettingsHomeScreen() } }
+        }
+    }
 }

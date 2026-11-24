@@ -16,17 +16,16 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
-import com.polyforms.shiori.features.friends.InvitationAcceptSheet
+import com.polyforms.shiori.features.friends.FriendsOverlays
+import com.polyforms.shiori.features.friends.FriendsScreen
 import com.polyforms.shiori.features.friends.InvitationRequest
-import com.polyforms.shiori.features.friends.SharedScreen
+import com.polyforms.shiori.features.listening.playerAccessory
 import com.polyforms.shiori.features.home.HomeScreen
-import com.polyforms.shiori.shared.platform.ShioriSheet
 import com.polyforms.shiori.features.library.AddBookFlow
 import com.polyforms.shiori.features.library.LibraryRequest
 import com.polyforms.shiori.features.library.LibraryTab
 import com.polyforms.shiori.features.series.SeriesRequest
 import com.polyforms.shiori.features.news.NewsScreen
-import com.polyforms.shiori.features.search.LibrarySearchScreen
 import com.polyforms.shiori.shared.DataChanges
 import com.polyforms.shiori.shared.PushRegistrar
 import androidx.compose.runtime.LaunchedEffect
@@ -34,18 +33,20 @@ import com.polyforms.shiori.shared.L
 import com.polyforms.shiori.shared.platform.FloatingTabBar
 import com.polyforms.shiori.shared.platform.NavigationStack
 import com.polyforms.shiori.shared.platform.Navigator
+import com.polyforms.shiori.shared.platform.TabBarFold
 import com.polyforms.shiori.shared.platform.TabItem
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import java.time.Instant
 
 enum class TabSelection {
-    HOME, LIBRARY, NEWS, SEARCH, SCAN;
+    HOME, LIBRARY, NEWS, FRIENDS, SCAN;
 
     val label: String
         get() = when (this) {
             HOME -> L("Accueil")
             LIBRARY -> L("Bibliothèque")
             NEWS -> L("Actu")
-            SEARCH -> L("Rechercher")
+            FRIENDS -> L("Amis")
             SCAN -> L("Scanner")
         }
 
@@ -54,12 +55,12 @@ enum class TabSelection {
             HOME -> "house"
             LIBRARY -> "book"
             NEWS -> "newspaper"
-            SEARCH -> "magnifyingglass"
+            FRIENDS -> "person.2"
             SCAN -> "camera.viewfinder"
         }
 }
 
-/** Mutable routing the tabs share: what the dashboard asked the Library or Découvrir to show. */
+/** Mutable routing the tabs share: what the dashboard asked the Library, Découvrir or Amis to show. */
 class AppRouter {
     var selectedTab by mutableStateOf(TabSelection.HOME)
     var showAddSheet by mutableStateOf(false)
@@ -68,6 +69,18 @@ class AppRouter {
     var showShared by mutableStateOf(false)
     var invitation by mutableStateOf<InvitationRequest?>(null)
     var opensDiscover by mutableStateOf(false)
+
+    /** The friend a Découvrir pill asked for, handed to the Amis tab. */
+    var friendRequest by mutableStateOf<String?>(null)
+
+    /** The friend an invitation just joined, celebrated on the Amis tab. */
+    var welcomedFriend by mutableStateOf<String?>(null)
+
+    /** Opens the Amis tab on a friend. */
+    fun showFriend(friendId: String) {
+        friendRequest = friendId
+        selectedTab = TabSelection.FRIENDS
+    }
 
     /** Opens Découvrir, in the News tab. */
     fun showDiscover() {
@@ -93,12 +106,14 @@ val LocalAppRouter = staticCompositionLocalOf { AppRouter() }
 
 /**
  * The app once signed in: four tabs, each its own navigation stack kept alive, and the scan
- * button detached at the bar's end, which opens the add sheet rather than a tab.
+ * button detached at the bar's end, which opens the add sheet rather than a tab. The bar folds
+ * away while a page scrolls down; the search waits, hidden, as on iOS, until it finds a new home.
  */
 @Composable
 fun ContentView(router: AppRouter = remember { AppRouter() }) {
     val navigators = remember { TabSelection.entries.associateWith { Navigator() } }
     val holder = rememberSaveableStateHolder()
+    val fold = remember { TabBarFold() }
     var backgroundedAt by remember { mutableStateOf<Instant?>(null) }
 
     // A return to the front after a while: every open screen reads again, as on iOS.
@@ -133,8 +148,9 @@ fun ContentView(router: AppRouter = remember { AppRouter() }) {
             router.invitation = InvitationRequest(it)
         }
     }
-    Box(Modifier.fillMaxSize()) {
-        listOf(TabSelection.HOME, TabSelection.LIBRARY, TabSelection.NEWS, TabSelection.SEARCH).forEach { tab ->
+    val contentTabs = listOf(TabSelection.HOME, TabSelection.LIBRARY, TabSelection.NEWS, TabSelection.FRIENDS)
+    Box(Modifier.fillMaxSize().nestedScroll(fold.connection)) {
+        contentTabs.forEach { tab ->
             val visible = router.selectedTab == tab
             Box(Modifier.fillMaxSize().graphicsLayer { alpha = if (visible) 1f else 0f }.zIndex(if (visible) 1f else 0f)) {
                 if (visible || navigators.getValue(tab).depth > 0 || tab == TabSelection.HOME) {
@@ -144,7 +160,10 @@ fun ContentView(router: AppRouter = remember { AppRouter() }) {
                                 TabSelection.HOME -> HomeScreen()
                                 TabSelection.LIBRARY -> LibraryTab()
                                 TabSelection.NEWS -> NewsScreen()
-                                TabSelection.SEARCH -> LibrarySearchScreen()
+                                TabSelection.FRIENDS -> FriendsScreen(router.friendRequest, router.welcomedFriend) {
+                                    router.friendRequest = null
+                                    router.welcomedFriend = null
+                                }
                                 TabSelection.SCAN -> Unit
                             }
                         }
@@ -156,25 +175,21 @@ fun ContentView(router: AppRouter = remember { AppRouter() }) {
         if (navigators.getValue(router.selectedTab).depth == 0) {
             Box(Modifier.align(Alignment.BottomCenter).zIndex(2f)) {
                 FloatingTabBar(
-                    tabs = listOf(TabSelection.HOME, TabSelection.LIBRARY, TabSelection.NEWS, TabSelection.SEARCH).map { TabItem(it, it.label, it.symbol) },
+                    tabs = contentTabs.map { TabItem(it, it.label, it.symbol) },
                     selected = router.selectedTab,
                     onSelect = { tab ->
                         if (tab == router.selectedTab) navigators.getValue(tab).popToRoot() else router.selectedTab = tab
                     },
                     trailing = TabItem(TabSelection.SCAN, TabSelection.SCAN.label, TabSelection.SCAN.symbol),
                     onTrailing = { router.showAddSheet = true },
+                    minimized = fold.isMinimized,
+                    onExpand = { fold.isMinimized = false },
+                    accessory = playerAccessory(),
                 )
             }
         }
     }
         AddBookFlow(router)
-        if (router.showShared) {
-            ShioriSheet({ router.showShared = false }) {
-                Box(Modifier.fillMaxSize()) { NavigationStack { SharedScreen() } }
-            }
-        }
-        // The invitation is asked about rather than accepted: the link came from somewhere the
-        // reader does not control, and accepting opens their library to whoever sent it.
-        router.invitation?.let { InvitationAcceptSheet(it, { router.invitation = null }) }
+        FriendsOverlays(router)
     }
 }
