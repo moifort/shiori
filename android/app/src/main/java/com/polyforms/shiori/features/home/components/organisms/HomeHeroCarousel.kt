@@ -1,5 +1,6 @@
 package com.polyforms.shiori.features.home.components.organisms
 
+import com.polyforms.shiori.shared.components.styles.ShioriTheme
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
@@ -231,6 +232,8 @@ fun HomeHeroCarousel(
     backdropCover: String?,
     discoveryMonth: String,
 ) {
+    // Drawn dark in either appearance, as iOS forces `.colorScheme(.dark)` on it.
+    ShioriTheme(dark = true) {
     val pager = rememberPagerState { items.size }
     val topHeights = remember { mutableStateMapOf<String, Dp>() }
     val seen = remember { mutableStateMapOf<String, Boolean>() }
@@ -343,6 +346,7 @@ fun HomeHeroCarousel(
         }
     }
 
+}
 }
 
 /** A hero page's first action: white, 50 high, as wide as the room beside the round buttons. */

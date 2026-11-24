@@ -1,5 +1,6 @@
 package com.polyforms.shiori.features.series.components.organisms
 
+import com.polyforms.shiori.shared.components.styles.ShioriTheme
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -84,31 +85,34 @@ fun SeriesReleaseCard(
     val uri = LocalUriHandler.current
     val book = Book(id = "release-${volume.number}", title = volume.title, authors = listOf(author), format = if (isAudio) BookFormat.AUDIOBOOK else BookFormat.BOOK, coverURL = volume.coverURL, status = ReadingStatus.TO_READ)
     val store: Pair<String, Int>? = if (isAudio) volume.audibleURL?.let { it to R.drawable.audible_logo } else volume.amazonURL(author) to R.drawable.amazon_logo
-    Box(modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).plainClickable(onClick = onOpen)) {
-        CoverBackdrop(volume.coverURL, Modifier.matchParentSize(), ground = Color.Transparent)
-        // One height for every card of a rail, whatever its title.
-        Row(Modifier.fillMaxWidth().height(150.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-            Box(Modifier.width(100.dp).fillMaxHeight()) { BookCover(book, 100.dp, showsFormatBadge = false, minHeight = 150.dp, cornerRadius = 0.dp) }
-            Column(Modifier.weight(1f).padding(vertical = 12.dp).padding(end = 12.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                val room = if (volume.date == null) 0.dp else 48.dp
-                Text(place ?: "$author · ${L("Tome %lld", volume.number)}", style = Shiori.type.caption, color = Color.White.copy(alpha = 0.75f), maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(end = room))
-                Text(volume.title, style = Shiori.type.headline, color = Color.White, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(end = room))
-                Row(Modifier.padding(top = 3.dp).height(18.dp), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                    volume.date?.let { ReleaseDateText.countdown(it) }?.let { OutlinedTag(it, isFrosted = false) }
-                    if (isAudio) OutlinedTag(L("Audio"), isFrosted = false)
-                    if (language != null && language.isForeign) OutlinedTag(language.code, isFrosted = false)
-                    if (isAwaited) Icon(Symbol("binoculars"), L("Suivi"), Modifier.size(14.dp), tint = Color.White)
-                }
-                Spacer(Modifier.weight(1f).heightIn(min = 8.dp))
-                if (store != null) {
-                    ActionButton(onClick = { uri.openUri(store.first) }, height = 28.dp) {
-                        Text(L("Précommander"), style = Shiori.type.caption.copy(fontWeight = FontWeight.SemiBold), color = Color.Black, maxLines = 1)
-                        Image(painterResource(store.second), null, Modifier.size(24.dp, 12.dp), colorFilter = ColorFilter.tint(Color.Black))
+    ShioriTheme(dark = true) {
+        // Drawn dark in either appearance, as iOS forces `.colorScheme(.dark)` on it.
+        Box(modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).plainClickable(onClick = onOpen)) {
+            CoverBackdrop(volume.coverURL, Modifier.matchParentSize(), ground = Color.Transparent)
+            // One height for every card of a rail, whatever its title.
+            Row(Modifier.fillMaxWidth().height(150.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                Box(Modifier.width(100.dp).fillMaxHeight()) { BookCover(book, 100.dp, showsFormatBadge = false, minHeight = 150.dp, cornerRadius = 0.dp) }
+                Column(Modifier.weight(1f).padding(vertical = 12.dp).padding(end = 12.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                    val room = if (volume.date == null) 0.dp else 48.dp
+                    Text(place ?: "$author · ${L("Tome %lld", volume.number)}", style = Shiori.type.caption, color = Color.White.copy(alpha = 0.75f), maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(end = room))
+                    Text(volume.title, style = Shiori.type.headline, color = Color.White, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(end = room))
+                    Row(Modifier.padding(top = 3.dp).height(18.dp), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                        volume.date?.let { ReleaseDateText.countdown(it) }?.let { OutlinedTag(it, isFrosted = false) }
+                        if (isAudio) OutlinedTag(L("Audio"), isFrosted = false)
+                        if (language != null && language.isForeign) OutlinedTag(language.code, isFrosted = false)
+                        if (isAwaited) Icon(Symbol("binoculars"), L("Suivi"), Modifier.size(14.dp), tint = Color.White)
+                    }
+                    Spacer(Modifier.weight(1f).heightIn(min = 8.dp))
+                    if (store != null) {
+                        ActionButton(onClick = { uri.openUri(store.first) }, height = 28.dp) {
+                            Text(L("Précommander"), style = Shiori.type.caption.copy(fontWeight = FontWeight.SemiBold), color = Color.Black, maxLines = 1)
+                            Image(painterResource(store.second), null, Modifier.size(24.dp, 12.dp), colorFilter = ColorFilter.tint(Color.Black))
+                        }
                     }
                 }
             }
+            volume.date?.let { Box(Modifier.align(Alignment.TopEnd).padding(10.dp)) { ReleaseDateBadge(it, onGlass = true) } }
         }
-        volume.date?.let { Box(Modifier.align(Alignment.TopEnd).padding(10.dp)) { ReleaseDateBadge(it, onGlass = true) } }
     }
 }
 

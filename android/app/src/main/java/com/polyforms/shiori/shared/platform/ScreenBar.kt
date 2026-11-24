@@ -228,8 +228,11 @@ fun AccountSettingsButton() {
     var showsSettings by remember { mutableStateOf(false) }
     AccountAvatarButton(account.avatar, account.firstName) { showsSettings = true }
     if (showsSettings) {
-        ShioriSheet({ showsSettings = false }) { dismiss ->
-            Box(Modifier.fillMaxSize()) { NavigationStack { SettingsHomeScreen(onClose = dismiss) } }
+        // In the phone's appearance, whatever the bar it was opened from is drawn in.
+        com.polyforms.shiori.shared.components.styles.ShioriTheme {
+            ShioriSheet({ showsSettings = false }) { dismiss ->
+                Box(Modifier.fillMaxSize()) { NavigationStack { SettingsHomeScreen(onClose = dismiss) } }
+            }
         }
     }
 }

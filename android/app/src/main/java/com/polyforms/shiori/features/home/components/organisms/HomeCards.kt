@@ -1,5 +1,6 @@
 package com.polyforms.shiori.features.home.components.organisms
 
+import com.polyforms.shiori.shared.components.styles.ShioriTheme
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -129,6 +130,8 @@ fun ReadingFeatureCard(
     /** An Audible title kept on the phone: a download symbol tagged after "Audio". */
     isDownloaded: Boolean = false,
 ) {
+    // Drawn dark in either appearance, as iOS forces `.colorScheme(.dark)` on it.
+    ShioriTheme(dark = true) {
     val series = book.series
     val overline = when {
         series == null -> book.authorLine
@@ -183,6 +186,7 @@ fun ReadingFeatureCard(
         }
     }
 }
+}
 
 /** As tall as its parent plus `rise`, drawn from `rise` above it: a hero's wash up under the bar and the figures. */
 private fun Modifier.risingAbove(rise: androidx.compose.ui.unit.Dp): Modifier = layout { measurable, constraints ->
@@ -194,6 +198,8 @@ private fun Modifier.risingAbove(rise: androidx.compose.ui.unit.Dp): Modifier = 
 /** The Home of an empty library: three blank covers and the scan button. */
 @Composable
 fun HomeEmptyHero(onScan: () -> Unit) {
+    // Drawn dark in either appearance, as iOS forces `.colorScheme(.dark)` on it.
+    ShioriTheme(dark = true) {
     Box(Modifier.fillMaxWidth()) {
         // The wash runs up under the bar and down past the hero, taking no room of its own.
         Box(Modifier.matchParentSize()) { Box(
@@ -226,10 +232,13 @@ fun HomeEmptyHero(onScan: () -> Unit) {
         }
     }
 }
+}
 
 /** The Home while the month's discoveries are being chosen: a turning ring over the wash. */
 @Composable
 fun HomeSearchingHero(month: String, bookCount: Int, backdropCover: String?) {
+    // Drawn dark in either appearance, as iOS forces `.colorScheme(.dark)` on it.
+    ShioriTheme(dark = true) {
     var angle by remember { mutableFloatStateOf(0f) }
     LaunchedEffect(Unit) {
         val start = withFrameMillis { it }
@@ -278,6 +287,7 @@ fun HomeSearchingHero(month: String, bookCount: Int, backdropCover: String?) {
         }
     }
 }
+}
 
 /** A card of the empty Home: a mark, a title, a line, and its buttons, on a tinted dark ground. */
 @Composable
@@ -297,6 +307,8 @@ private fun StartCard(mark: @Composable () -> Unit, title: String, text: String,
 /** Audible and Kindle, side by side, each with its connect button. */
 @Composable
 fun ImportSourcesRow(onConnect: (ImportSource) -> Unit) {
+    // Drawn dark in either appearance, as iOS forces `.colorScheme(.dark)` on it.
+    ShioriTheme(dark = true) {
     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         ImportSource.entries.forEach { source ->
             val tint = if (source == ImportSource.AUDIBLE) Color(0.97f, 0.6f, 0.11f) else Color(0.34f, 0.71f, 0.91f)
@@ -317,6 +329,7 @@ fun ImportSourcesRow(onConnect: (ImportSource) -> Unit) {
             ) { CardProminentButton(L("Connecter"), null) { onConnect(source) } }
         }
     }
+}
 }
 
 @Preview(showBackground = true)

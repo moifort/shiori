@@ -222,11 +222,14 @@ fun NewsPage(
                 }
             }
         }
-        DarkCards {
+        // White over the day's first cover colours, as iOS's dark bar; with no cards there is no
+        // cover under it, and the title keeps the page's colour so it reads in light mode too.
+        val topBar: @Composable () -> Unit = {
             ScrollAwayBar(L("Actualité"), bar) {
                 ToolbarIconButton(L("Notifications"), if (alertsSilenced) "bell.slash" else "bell") { act(NewsAction.OpenAlerts) }
             }
         }
+        if (agenda.isEmpty) topBar() else DarkCards(topBar)
     }
 }
 

@@ -1,5 +1,6 @@
 package com.polyforms.shiori.shared.components.molecules
 
+import com.polyforms.shiori.shared.components.styles.ShioriTheme
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -46,23 +47,26 @@ fun GeneratingPill() {
     val turn by transition.animateFloat(0f, 360f, infiniteRepeatable(tween(3400, easing = LinearEasing)), label = "turn")
     val breath by transition.animateFloat(0f, 1f, infiniteRepeatable(tween(1000), RepeatMode.Reverse), label = "breath")
     val c = Shiori.colors
-    Box(Modifier.clip(CircleShape)) {
-        Box(
-            Modifier
-                .matchParentSize()
-                .rotate(turn)
-                .background(Brush.sweepGradient(listOf(c.cyan, c.blue, c.purple, c.pink, c.orange, c.cyan))),
-        )
-        Text(
-            L("L'IA prépare la fiche"),
-            style = Shiori.type.subheadline.copy(
-                fontWeight = FontWeight.SemiBold,
-                shadow = Shadow(Color.White.copy(alpha = 0.7f + 0.3f * breath), Offset.Zero, 6f + 4f * breath),
-            ),
-            color = Color.White,
-            maxLines = 1,
-            modifier = Modifier.background(Color.Black.copy(alpha = 0.15f), CircleShape).padding(horizontal = 14.dp, vertical = 7.dp),
-        )
+    ShioriTheme(dark = true) {
+        // Drawn dark in either appearance, as iOS forces `.colorScheme(.dark)` on it.
+        Box(Modifier.clip(CircleShape)) {
+            Box(
+                Modifier
+                    .matchParentSize()
+                    .rotate(turn)
+                    .background(Brush.sweepGradient(listOf(c.cyan, c.blue, c.purple, c.pink, c.orange, c.cyan))),
+            )
+            Text(
+                L("L'IA prépare la fiche"),
+                style = Shiori.type.subheadline.copy(
+                    fontWeight = FontWeight.SemiBold,
+                    shadow = Shadow(Color.White.copy(alpha = 0.7f + 0.3f * breath), Offset.Zero, 6f + 4f * breath),
+                ),
+                color = Color.White,
+                maxLines = 1,
+                modifier = Modifier.background(Color.Black.copy(alpha = 0.15f), CircleShape).padding(horizontal = 14.dp, vertical = 7.dp),
+            )
+        }
     }
 }
 

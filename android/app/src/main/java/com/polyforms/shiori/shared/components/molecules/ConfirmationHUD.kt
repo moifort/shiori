@@ -1,5 +1,6 @@
 package com.polyforms.shiori.shared.components.molecules
 
+import com.polyforms.shiori.shared.components.styles.ShioriTheme
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
@@ -51,24 +52,27 @@ import java.util.UUID
 @Composable
 fun ConfirmationHUD(symbol: String, label: String, modifier: Modifier = Modifier) {
     val shape = RoundedCornerShape(30.dp)
-    Column(
-        modifier
-            .size(190.dp)
-            .background(Color(0xE0262628), shape)
-            .background(Color.White.copy(alpha = 0.08f), shape)
-            .border(0.5.dp, Color.White.copy(alpha = 0.22f), shape)
-            .clearAndSetSemantics { contentDescription = label },
-        verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Icon(Symbol(symbol), null, Modifier.height(64.dp).size(60.dp), tint = Color.White)
-        Text(
-            label,
-            style = Shiori.type.callout.copy(fontWeight = FontWeight.SemiBold),
-            color = Color.White,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 18.dp),
-        )
+    ShioriTheme(dark = true) {
+        // Drawn dark in either appearance, as iOS forces `.colorScheme(.dark)` on it.
+        Column(
+            modifier
+                .size(190.dp)
+                .background(Color(0xE0262628), shape)
+                .background(Color.White.copy(alpha = 0.08f), shape)
+                .border(0.5.dp, Color.White.copy(alpha = 0.22f), shape)
+                .clearAndSetSemantics { contentDescription = label },
+            verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Icon(Symbol(symbol), null, Modifier.height(64.dp).size(60.dp), tint = Color.White)
+            Text(
+                label,
+                style = Shiori.type.callout.copy(fontWeight = FontWeight.SemiBold),
+                color = Color.White,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 18.dp),
+            )
+        }
     }
 }
 

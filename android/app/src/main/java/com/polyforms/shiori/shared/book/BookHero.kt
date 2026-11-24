@@ -1,5 +1,6 @@
 package com.polyforms.shiori.shared.book
 
+import com.polyforms.shiori.shared.components.styles.ShioriTheme
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Spacer
@@ -99,74 +100,77 @@ fun BookHero(
             fadeHeight = 320.dp,
             tint = book.coverGround(dark),
         )
-        Column(
-            // Under the floating bar: the status bar, then the bar's own height.
-            Modifier.fillMaxWidth().statusBarsPadding().padding(start = 20.dp, end = 20.dp, top = 12.dp + 52.dp, bottom = 28.dp),
-            verticalArrangement = Arrangement.spacedBy(18.dp),
-        ) {
-            Box(Modifier.fillMaxWidth()) {
-                Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.Bottom) {
-                    Box(Modifier.shadow(16.dp, ambientColor = Color.Black.copy(alpha = 0.45f)).saturation(saturation)) {
-                        // No format badge: the outlined tags over the saga say it.
-                        BookCover(book, coverWidth, showsFormatBadge = false)
-                    }
-                    Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(3.dp, Alignment.Bottom)) {
-                        if (owner != null) {
-                            // Level with the cover's top while the text leaves room.
-                            owner()
-                            Spacer(Modifier.weight(1f).heightIn(min = 10.dp))
+        ShioriTheme(dark = true) {
+            // Drawn dark in either appearance, as iOS forces `.colorScheme(.dark)` on it.
+            Column(
+                // Under the floating bar: the status bar, then the bar's own height.
+                Modifier.fillMaxWidth().statusBarsPadding().padding(start = 20.dp, end = 20.dp, top = 12.dp + 52.dp, bottom = 28.dp),
+                verticalArrangement = Arrangement.spacedBy(18.dp),
+            ) {
+                Box(Modifier.fillMaxWidth()) {
+                    Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.Bottom) {
+                        Box(Modifier.shadow(16.dp, ambientColor = Color.Black.copy(alpha = 0.45f)).saturation(saturation)) {
+                            // No format badge: the outlined tags over the saga say it.
+                            BookCover(book, coverWidth, showsFormatBadge = false)
                         }
-                        if (overTitle != null) Box(Modifier.padding(bottom = 6.dp)) { overTitle() }
-                        HeroTags(book, isDownloaded, isAwaited, Modifier.padding(end = if (releaseDate != null) 58.dp else 0.dp, bottom = 3.dp))
-                        book.series?.let { series ->
+                        Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(3.dp, Alignment.Bottom)) {
+                            if (owner != null) {
+                                // Level with the cover's top while the text leaves room.
+                                owner()
+                                Spacer(Modifier.weight(1f).heightIn(min = 10.dp))
+                            }
+                            if (overTitle != null) Box(Modifier.padding(bottom = 6.dp)) { overTitle() }
+                            HeroTags(book, isDownloaded, isAwaited, Modifier.padding(end = if (releaseDate != null) 58.dp else 0.dp, bottom = 3.dp))
+                            book.series?.let { series ->
+                                Text(
+                                    listOfNotNull(series.name, series.volume?.let { "· ${L("Tome %lld", it)}" }).joinToString(" "),
+                                    style = Shiori.type.subheadline,
+                                    color = Color.White.copy(alpha = 0.8f),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.padding(end = if (releaseDate != null) 58.dp else 0.dp),
+                                )
+                            }
                             Text(
-                                listOfNotNull(series.name, series.volume?.let { "· ${L("Tome %lld", it)}" }).joinToString(" "),
-                                style = Shiori.type.subheadline,
-                                color = Color.White.copy(alpha = 0.8f),
-                                maxLines = 1,
+                                book.title,
+                                style = Shiori.type.title2,
+                                color = Color.White,
+                                maxLines = 4,
                                 overflow = TextOverflow.Ellipsis,
                                 modifier = Modifier.padding(end = if (releaseDate != null) 58.dp else 0.dp),
                             )
-                        }
-                        Text(
-                            book.title,
-                            style = Shiori.type.title2,
-                            color = Color.White,
-                            maxLines = 4,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.padding(end = if (releaseDate != null) 58.dp else 0.dp),
-                        )
-                        PersonLine(book.authorLine, book.authorDestinations, "author", Shiori.type.subheadline, 0.85f, onOpenAuthor)
-                        book.narratorLine?.let { line ->
-                            PersonLine(L("Lu par %@", line), book.narratorDestinations, "music.mic", Shiori.type.caption, 0.7f, onOpenNarrator)
-                        }
-                        Column(Modifier.padding(top = 5.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            val details = buildList {
-                                state?.let { add(it.text) }
-                                if (showsLength) {
-                                    val duration = book.durationLabel
-                                    if (duration != null) add(duration) else book.pageCount?.let { add(L("%lld pages", it)) }
-                                }
-                            }.joinToString(" · ")
-                            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                if (details.isNotEmpty()) {
-                                    Text(details, style = Shiori.type.caption, color = Color.White.copy(alpha = 0.75f), maxLines = 2)
-                                }
-                                if (stateTag != null) OutlinedTag(stateTag, isFrosted = false)
-                                if (countdown != null) OutlinedTag(countdown, isFrosted = false)
+                            PersonLine(book.authorLine, book.authorDestinations, "author", Shiori.type.subheadline, 0.85f, onOpenAuthor)
+                            book.narratorLine?.let { line ->
+                                PersonLine(L("Lu par %@", line), book.narratorDestinations, "music.mic", Shiori.type.caption, 0.7f, onOpenNarrator)
                             }
-                            book.unfinishedListeningProgress?.let { ListeningProgressLine(it, book.durationMinutes) }
-                            ReadingPageLine(book.unfinishedReadingPage, book.pageCount, onOpenProgress)
+                            Column(Modifier.padding(top = 5.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                val details = buildList {
+                                    state?.let { add(it.text) }
+                                    if (showsLength) {
+                                        val duration = book.durationLabel
+                                        if (duration != null) add(duration) else book.pageCount?.let { add(L("%lld pages", it)) }
+                                    }
+                                }.joinToString(" · ")
+                                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    if (details.isNotEmpty()) {
+                                        Text(details, style = Shiori.type.caption, color = Color.White.copy(alpha = 0.75f), maxLines = 2)
+                                    }
+                                    if (stateTag != null) OutlinedTag(stateTag, isFrosted = false)
+                                    if (countdown != null) OutlinedTag(countdown, isFrosted = false)
+                                }
+                                book.unfinishedListeningProgress?.let { ListeningProgressLine(it, book.durationMinutes) }
+                                ReadingPageLine(book.unfinishedReadingPage, book.pageCount, onOpenProgress)
+                            }
+                            if (status != null) StatusPill(status.text, status.symbol, Modifier.padding(top = 8.dp))
                         }
-                        if (status != null) StatusPill(status.text, status.symbol, Modifier.padding(top = 8.dp))
+                    }
+                    // In the corner over the text, level with the cover's top: the day a book to come is out.
+                    if (releaseDate != null) {
+                        Box(Modifier.align(Alignment.TopEnd)) { ReleaseDateBadge(releaseDate, onGlass = true) }
                     }
                 }
-                // In the corner over the text, level with the cover's top: the day a book to come is out.
-                if (releaseDate != null) {
-                    Box(Modifier.align(Alignment.TopEnd)) { ReleaseDateBadge(releaseDate, onGlass = true) }
-                }
+                actions()
             }
-            actions()
         }
     }
 }

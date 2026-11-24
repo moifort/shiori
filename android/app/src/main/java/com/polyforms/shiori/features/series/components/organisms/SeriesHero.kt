@@ -1,5 +1,6 @@
 package com.polyforms.shiori.features.series.components.organisms
 
+import com.polyforms.shiori.shared.components.styles.ShioriTheme
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.runtime.getValue
 import com.polyforms.shiori.shared.components.atoms.setAsideAnimation
@@ -85,28 +86,31 @@ fun SeriesHero(
             }.saturation(saturation),
             fadeHeight = 320.dp,
         )
-        Column(
-            Modifier.fillMaxWidth().statusBarsPadding().padding(top = 52.dp).padding(horizontal = 20.dp).padding(bottom = 24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Box(Modifier.fillMaxWidth().height(coverWidth * 1.5f).padding(top = 8.dp).saturation(saturation), contentAlignment = Alignment.Center) {
-                fan.leading?.let { Box(Modifier.offset(x = (-78).dp, y = 14.dp).rotate(-10f).scale(0.9f)) { Dimmed(it, coverWidth, 0.6f) } }
-                fan.trailing?.let { Box(Modifier.offset(x = 78.dp, y = 14.dp).rotate(10f).scale(0.9f)) { Dimmed(it, coverWidth, 0.75f) } }
-                fan.middle?.let { Box(Modifier.shadow(16.dp)) { BookCover(it, coverWidth, showsFormatBadge = false) } }
-            }
-            Column(Modifier.padding(top = 22.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(name, style = Shiori.type.largeTitle.copy(fontWeight = FontWeight.Black), color = Color.White, textAlign = TextAlign.Center, maxLines = 3, overflow = TextOverflow.Ellipsis)
-                Row(
-                    Modifier.padding(top = 2.dp).then(if (onOpenAuthor != null) Modifier.plainClickable(onClick = onOpenAuthor) else Modifier),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    Text(author, style = Shiori.type.subheadline.copy(fontWeight = FontWeight.Medium), color = Color.White, textAlign = TextAlign.Center, maxLines = 2)
-                    if (onOpenAuthor != null) Icon(Symbol("chevron.right"), null, Modifier.size(12.dp), tint = Color.White.copy(alpha = 0.6f))
+        ShioriTheme(dark = true) {
+            // Drawn dark in either appearance, as iOS forces `.colorScheme(.dark)` on it.
+            Column(
+                Modifier.fillMaxWidth().statusBarsPadding().padding(top = 52.dp).padding(horizontal = 20.dp).padding(bottom = 24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Box(Modifier.fillMaxWidth().height(coverWidth * 1.5f).padding(top = 8.dp).saturation(saturation), contentAlignment = Alignment.Center) {
+                    fan.leading?.let { Box(Modifier.offset(x = (-78).dp, y = 14.dp).rotate(-10f).scale(0.9f)) { Dimmed(it, coverWidth, 0.6f) } }
+                    fan.trailing?.let { Box(Modifier.offset(x = 78.dp, y = 14.dp).rotate(10f).scale(0.9f)) { Dimmed(it, coverWidth, 0.75f) } }
+                    fan.middle?.let { Box(Modifier.shadow(16.dp)) { BookCover(it, coverWidth, showsFormatBadge = false) } }
                 }
-                if (language != null && language.isForeign) Text(language.label, style = Shiori.type.caption, color = Color.White.copy(alpha = 0.75f))
+                Column(Modifier.padding(top = 22.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(name, style = Shiori.type.largeTitle.copy(fontWeight = FontWeight.Black), color = Color.White, textAlign = TextAlign.Center, maxLines = 3, overflow = TextOverflow.Ellipsis)
+                    Row(
+                        Modifier.padding(top = 2.dp).then(if (onOpenAuthor != null) Modifier.plainClickable(onClick = onOpenAuthor) else Modifier),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        Text(author, style = Shiori.type.subheadline.copy(fontWeight = FontWeight.Medium), color = Color.White, textAlign = TextAlign.Center, maxLines = 2)
+                        if (onOpenAuthor != null) Icon(Symbol("chevron.right"), null, Modifier.size(12.dp), tint = Color.White.copy(alpha = 0.6f))
+                    }
+                    if (language != null && language.isForeign) Text(language.label, style = Shiori.type.caption, color = Color.White.copy(alpha = 0.75f))
+                }
+                Box(Modifier.padding(top = 16.dp)) { actions() }
             }
-            Box(Modifier.padding(top = 16.dp)) { actions() }
         }
     }
 }
