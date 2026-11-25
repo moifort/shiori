@@ -13,14 +13,17 @@ final class LibraryPreparation {
     private(set) var isActive = false
     /// The libraries onboarding linked, whose passes the checklist waits on.
     private(set) var sources: [ImportSource] = []
+    /// A Goodreads import started by the onboarding, whose line the checklist shows.
+    private(set) var importsGoodreads = false
     /// Brings the dashboard up to date, and says whether it could: set by the
     /// home tab, already there behind the screen.
     var loadHome: (() async -> Bool)?
 
     private init() {}
 
-    func begin(linking sources: [ImportSource]) {
+    func begin(linking sources: [ImportSource], importingGoodreads: Bool = false) {
         self.sources = sources
+        importsGoodreads = importingGoodreads
         isActive = true
     }
 
@@ -41,6 +44,7 @@ struct LibraryPreparationView: View {
     @State private var preparation = LibraryPreparation.shared
     @State private var audibleSync = AudibleBackgroundSync.shared
     @State private var kindleSync = KindleBackgroundSync.shared
+    @State private var goodreads = GoodreadsBackgroundImport.shared
     /// The step at work: the ones after it are still waiting.
     @State private var current = 0
     /// How the steps over so far ended.
@@ -50,6 +54,7 @@ struct LibraryPreparationView: View {
         case profile
         case welcomeScans
         case library(ImportSource)
+        case goodreads
         case home
     }
 
@@ -72,7 +77,8 @@ struct LibraryPreparationView: View {
     }
 
     private var steps: [Step] {
-        [.profile, .welcomeScans] + preparation.sources.map(Step.library) + [.home]
+        [.profile, .welcomeScans] + preparation.sources.map(Step.library)
+            + (preparation.importsGoodreads ? [.goodreads] : []) + [.home]
     }
 
     private var lines: [PreparationLine] {
@@ -80,7 +86,8 @@ struct LibraryPreparationView: View {
             PreparationLine(
                 id: String(describing: step),
                 label: label(of: step),
-                state: outcomes[step] ?? (index == current ? .working : .waiting)
+                state: outcomes[step] ?? (index == current ? .working : .waiting),
+                detail: detail(of: step)
             )
         }
     }
@@ -91,6 +98,7 @@ struct LibraryPreparationView: View {
         case .welcomeScans: "Vos scans de bienvenue"
         case .library(.audible): "Votre bibliothèque Audible"
         case .library(.kindle): "Votre bibliothèque Kindle"
+        case .goodreads: "Votre bibliothèque Goodreads"
         case .home: "Votre accueil"
         }
     }
@@ -118,9 +126,22 @@ struct LibraryPreparationView: View {
             return await passOutcome(deadline: deadline, isSyncing: { audibleSync.isSyncing }, error: { audibleSync.errorMessage })
         case .library(.kindle):
             return await passOutcome(deadline: deadline, isSyncing: { kindleSync.isSyncing }, error: { kindleSync.errorMessage })
+        case .goodreads:
+            return await passOutcome(deadline: deadline, isSyncing: { goodreads.isRunning }, error: {
+                if case let .failed(message) = goodreads.phase { return message }
+                return nil
+            })
         case .home:
             return await preparation.loadHome?() == true ? .done : .failed
         }
+    }
+
+    /// How far the Goodreads import has got, while it goes on.
+    private func detail(of step: Step) -> String? {
+        guard step == .goodreads, goodreads.isRunning, let outcome = goodreads.outcome,
+              outcome.pendingCovers > 0 else { return nil }
+        let sought = outcome.pendingCovers - goodreads.coversRemaining
+        return String(localized: "\(sought) couvertures sur \(outcome.pendingCovers)")
     }
 
     private func passOutcome(

@@ -3742,7 +3742,7 @@ type Mutation {
   """
   Read a Goodreads library export and answer with its books, each against the library it would join.
   
-  Nothing is saved and no paid service is called: this reads a file. A mutation for the size of its argument, not for what it does. Fails with `BAD_USER_INPUT` for a file above ten megabytes, one that is not a Goodreads export, or one with no book.
+  Nothing is saved and no paid service is called: this reads a file. A mutation for the size of its argument, not for what it does. Fails with `BAD_USER_INPUT` for a file above ten megabytes, `GOODREADS_NOT_AN_EXPORT` for one that is not a Goodreads export and `GOODREADS_EMPTY_EXPORT` for one with no book.
   """
   previewGoodreadsExport(
     """The export file, as text"""

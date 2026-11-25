@@ -95,6 +95,7 @@ extension Wish.Origin {
         case .award: .award
         case .author: .author
         case .scan: .scan
+        case .goodreads: .goodreads
         }
     }
 }
@@ -106,6 +107,7 @@ private extension Wish {
         case .award: .award
         case .author: .author
         case .scan: .scan
+        case .goodreads: .goodreads
         case .discovery, nil: .discovery
         }
         self.init(

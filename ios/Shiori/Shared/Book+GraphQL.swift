@@ -334,6 +334,7 @@ extension ShioriGraphQL.BookOriginKind {
         case .awaited: .awaited
         case .kindle: .kindle
         case .audible: .audible
+        case .goodreads: .goodreads
         }
     }
 }
@@ -360,6 +361,7 @@ extension BookOrigin {
         case .awaited: .awaited
         case .kindle: .kindle
         case .audible: .audible
+        case .goodreads: .goodreads
         }
     }
 }

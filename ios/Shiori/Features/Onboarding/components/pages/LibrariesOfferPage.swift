@@ -4,10 +4,12 @@ import SwiftUI
 /// listens on Audible or reads on Kindle already has a library waiting, and
 /// bringing it in now spares them a first visit to an empty shelf. Each source
 /// is a connection of its own, so the reader switches on only what they use;
-/// everyone else goes on in one tap.
+/// everyone else goes on in one tap. Goodreads is a file, not a connection: it
+/// sits in a box of its own, under the Amazon store.
 struct LibrariesOfferPage: View {
     @Binding var connectsAudible: Bool
     @Binding var connectsKindle: Bool
+    @Binding var importsGoodreads: Bool
     /// The store to sign in on, for both: guessed from the device region, shown
     /// so the reader can confirm it or change it.
     @Binding var marketplace: AmazonMarketplace
@@ -19,7 +21,7 @@ struct LibrariesOfferPage: View {
     @State private var appeared = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    private var hasChoice: Bool { connectsAudible || connectsKindle }
+    private var hasChoice: Bool { connectsAudible || connectsKindle || importsGoodreads }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
@@ -35,7 +37,7 @@ struct LibrariesOfferPage: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Vos bibliothèques")
                     .font(.title.bold())
-                Text("Connectez celles que vous utilisez : elles sont importées pendant que vous découvrez l'application, puis suivies chaque nuit. Vous pourrez aussi le faire plus tard depuis les réglages.")
+                Text("Connectez ou importez celles que vous utilisez : vos livres arrivent pendant que vous découvrez l'application. Vous pourrez aussi le faire plus tard depuis les réglages.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
@@ -76,12 +78,26 @@ struct LibrariesOfferPage: View {
             .opacity(appeared ? 1 : 0)
             .animation(.easeOut(duration: 0.4).delay(0.12), value: appeared)
 
+            sourceToggle(
+                isOn: $importsGoodreads,
+                logo: "goodreads-logo",
+                title: "Goodreads",
+                detail: "Toute votre bibliothèque, avec vos notes et vos dates de lecture.",
+                identifier: "onboarding-import-goodreads"
+            )
+            .padding(.horizontal, 12)
+            .background(Color(.secondarySystemBackground), in: .rect(cornerRadius: 12))
+            .disabled(isWorking)
+            .padding(.top, -12)
+            .opacity(appeared ? 1 : 0)
+            .animation(.easeOut(duration: 0.4).delay(0.14), value: appeared)
+
             Spacer()
 
             VStack(spacing: 12) {
                 Button(action: onConnect) {
                     ZStack {
-                        Label("Connecter", systemImage: "arrow.down.circle")
+                        Text("Continuer")
                             .opacity(isWorking ? 0 : 1)
                         if isWorking { ProgressView() }
                     }
@@ -141,23 +157,27 @@ struct LibrariesOfferPage: View {
 #Preview("Rien de coché") {
     @Previewable @State var audible = false
     @Previewable @State var kindle = false
+    @Previewable @State var goodreads = false
     @Previewable @State var marketplace: AmazonMarketplace = .fr
     LibrariesOfferPage(
         connectsAudible: $audible,
         connectsKindle: $kindle,
+        importsGoodreads: $goodreads,
         marketplace: $marketplace,
         onConnect: {},
         onSkip: {}
     )
 }
 
-#Preview("Les deux") {
+#Preview("Les trois") {
     @Previewable @State var audible = true
     @Previewable @State var kindle = true
+    @Previewable @State var goodreads = true
     @Previewable @State var marketplace: AmazonMarketplace = .fr
     LibrariesOfferPage(
         connectsAudible: $audible,
         connectsKindle: $kindle,
+        importsGoodreads: $goodreads,
         marketplace: $marketplace,
         onConnect: {},
         onSkip: {}

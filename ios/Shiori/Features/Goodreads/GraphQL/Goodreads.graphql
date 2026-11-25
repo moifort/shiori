@@ -1,0 +1,70 @@
+# Importing a Goodreads library: the reader hands the app the export file,
+# the server reads it against the library, the reader decides, the server
+# writes, then the covers are sought a pass at a time.
+
+mutation PreviewGoodreadsExport($csv: String!) {
+  previewGoodreadsExport(csv: $csv) {
+    rows {
+      ...GoodreadsRowFields
+    }
+    shelves {
+      read
+      reading
+      toRead
+      dropped
+    }
+    rated
+    dated
+    reviewed
+  }
+}
+
+fragment GoodreadsRowFields on GoodreadsRow {
+  key
+  title
+  authors
+  series {
+    name
+    volume
+  }
+  format
+  media
+  language
+  rating
+  readOn
+  shelf
+  dropped
+  hasReview
+  verdict
+  heldBookId
+  heldTitle
+  heldCoverUrl
+  coverUrl
+}
+
+mutation ImportGoodreadsExport($csv: String!, $choices: GoodreadsChoicesInput!) {
+  importGoodreadsExport(csv: $csv, choices: $choices) {
+    imported
+    completed
+    wished
+    pendingCovers
+  }
+}
+
+mutation SeekGoodreadsCovers {
+  seekGoodreadsCovers {
+    found
+    remaining
+  }
+}
+
+query GoodreadsImport {
+  goodreadsImport {
+    importedAt
+    imported
+    completed
+    wished
+    pendingCovers
+    withoutCover
+  }
+}

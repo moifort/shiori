@@ -14,6 +14,7 @@ struct SettingsHomeScreen: View {
     @State private var premiumShown = false
     @State private var feedbackShown = false
     @State private var openSource: ImportSource?
+    @State private var goodreadsShown = false
     @State private var notificationsBlocked = false
 
     var body: some View {
@@ -29,6 +30,7 @@ struct SettingsHomeScreen: View {
                 case .showPremium: premiumShown = true
                 case .showFeedback: feedbackShown = true
                 case let .openSource(source): openSource = source
+                case .openGoodreads: goodreadsShown = true
                 }
             }
             .navigationDestination(for: SettingsDestination.self) { destination in
@@ -51,6 +53,9 @@ struct SettingsHomeScreen: View {
                 case .kindle:
                     KindleImportScreen(onImported: { _ in openSource = nil })
                 }
+            }
+            .sheet(isPresented: $goodreadsShown) {
+                GoodreadsSourceScreen(onClose: { goodreadsShown = false })
             }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

@@ -20,6 +20,9 @@ struct AuthRoot: View {
     @State private var subscriptions = SubscriptionStore()
     /// An invitation the reader tapped, held until there is a screen to ask on.
     @State private var invitationRequest: InvitationRequest?
+    /// A Goodreads export handed over by "Ouvrir dans Shiori", held until the
+    /// reader is in the app.
+    @State private var goodreadsFile: GoodreadsFile?
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
@@ -68,7 +71,13 @@ struct AuthRoot: View {
         .onOpenURL { url in
             if let code = InvitationLink.code(from: url) {
                 invitationRequest = InvitationRequest(code: code)
+            } else if url.isFileURL, url.pathExtension.lowercased() == "csv" {
+                goodreadsFile = GoodreadsFile(url: url)
             }
+        }
+        // Only once the reader is in: the onboarding offers Goodreads itself.
+        .fullScreenCover(item: route == .ready ? $goodreadsFile : .constant(nil)) { file in
+            GoodreadsImportScreen(mode: .settings, file: file.url) { _ in goodreadsFile = nil }
         }
     }
 

@@ -6,7 +6,7 @@ import {
 } from '~/domain/goodreads/infrastructure/graphql/types'
 import { GoodreadsUseCase } from '~/domain/goodreads/use-case'
 import { builder } from '~/domain/shared/graphql/builder'
-import { badUserInput } from '~/domain/shared/graphql/errors'
+import { badUserInput, domainError } from '~/domain/shared/graphql/errors'
 
 /** A Goodreads export runs to about 600 bytes a book with its reviews: ten
  *  megabytes holds a library of over ten thousand. */
@@ -19,8 +19,8 @@ const EMPTY = 'This Goodreads export holds no book.'
 
 const unreadable = (outcome: 'not-goodreads' | 'empty') =>
   match(outcome)
-    .with('not-goodreads', () => badUserInput(NOT_GOODREADS))
-    .with('empty', () => badUserInput(EMPTY))
+    .with('not-goodreads', () => domainError('GOODREADS_NOT_AN_EXPORT', NOT_GOODREADS))
+    .with('empty', () => domainError('GOODREADS_EMPTY_EXPORT', EMPTY))
     .exhaustive()
 
 const GoodreadsToReadEnum = builder.enumType('GoodreadsToRead', {
@@ -54,7 +54,8 @@ builder.mutationFields((t) => ({
       'it would join.\n\n' +
       'Nothing is saved and no paid service is called: this reads a file. A mutation for ' +
       'the size of its argument, not for what it does. Fails with `BAD_USER_INPUT` for a ' +
-      'file above ten megabytes, one that is not a Goodreads export, or one with no book.',
+      'file above ten megabytes, `GOODREADS_NOT_AN_EXPORT` for one that is not a Goodreads ' +
+      'export and `GOODREADS_EMPTY_EXPORT` for one with no book.',
     args: { csv: t.arg.string({ required: true, description: 'The export file, as text' }) },
     resolve: async (_root, { csv }, { userId }) => {
       if (csv.length > MAX_EXPORT_BYTES) return badUserInput('Export exceeds the 10 MB limit')

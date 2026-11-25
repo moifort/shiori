@@ -53,7 +53,7 @@ describe('previewing a Goodreads export', () => {
   test('refuses a file that is not a Goodreads export', async () => {
     const result = await execute(PREVIEW, { csv: 'Title,Author\nDune,Frank Herbert' })
 
-    expect(result.errors?.[0]?.extensions?.code).toBe('BAD_USER_INPUT')
+    expect(result.errors?.[0]?.extensions?.code).toBe('GOODREADS_NOT_AN_EXPORT')
   })
 })
 

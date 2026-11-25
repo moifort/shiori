@@ -28,6 +28,12 @@ struct OnboardingScreen: View {
     /// Which libraries the reader asked to connect.
     @State private var connectsAudible = false
     @State private var connectsKindle = false
+    @State private var importsGoodreads = false
+    /// The Goodreads import on screen, after the Amazon sign-ins.
+    @State private var goodreadsShown = false
+    /// Whether the reader started a Goodreads import, which the preparation
+    /// screen goes on to show.
+    @State private var startedGoodreads = false
     /// The store the reader signs in on, for both, proposed from the device
     /// region.
     @State private var marketplace: AmazonMarketplace = .suggested
@@ -65,6 +71,7 @@ struct OnboardingScreen: View {
                 LibrariesOfferPage(
                     connectsAudible: $connectsAudible,
                     connectsKindle: $connectsKindle,
+                    importsGoodreads: $importsGoodreads,
                     marketplace: $marketplace,
                     isWorking: isConnecting,
                     onConnect: connectChosenSources,
@@ -86,6 +93,15 @@ struct OnboardingScreen: View {
                 signIn = nil
                 Task { await connectNextSource() }
             })
+        }
+        // After Amazon's pages, the export file: the import starts in the
+        // background and the preparation screen shows it going on.
+        .fullScreenCover(isPresented: $goodreadsShown) {
+            GoodreadsImportScreen(mode: .onboarding) { started in
+                startedGoodreads = started
+                goodreadsShown = false
+                enterApp()
+            }
         }
         .alert(
             "Connexion impossible",
@@ -133,7 +149,11 @@ struct OnboardingScreen: View {
     private func connectNextSource() async {
         guard !pendingSources.isEmpty else {
             signingIn = nil
-            enterApp()
+            if importsGoodreads, !startedGoodreads {
+                goodreadsShown = true
+            } else {
+                enterApp()
+            }
             return
         }
         let source = pendingSources.removeFirst()
@@ -169,7 +189,7 @@ struct OnboardingScreen: View {
     /// Into the app by way of the preparation screen, drawn until the library
     /// is ready to be shown.
     private func enterApp() {
-        client.beginPreparation(linkedSources)
+        client.beginPreparation(linkedSources, startedGoodreads)
         onCompleted(firstName.trimmingCharacters(in: .whitespacesAndNewlines), avatar)
     }
 

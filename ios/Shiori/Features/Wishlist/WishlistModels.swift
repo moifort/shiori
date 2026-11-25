@@ -7,7 +7,7 @@ import Foundation
 struct Wish: Identifiable, Hashable, Codable, Sendable {
     /// Where the reader came across it.
     enum Origin: String, Codable, Sendable, Hashable {
-        case friend, discovery, award, author, scan
+        case friend, discovery, award, author, scan, goodreads
     }
 
     let id: String
@@ -34,6 +34,7 @@ struct Wish: Identifiable, Hashable, Codable, Sendable {
         case .award: originLabel ?? String(localized: "Prix")
         case .author: String(localized: "Auteur")
         case .scan: String(localized: "Scan")
+        case .goodreads: "Goodreads"
         }
     }
 
@@ -72,6 +73,7 @@ struct Wish: Identifiable, Hashable, Codable, Sendable {
         case .discovery, .award: BookOrigin(.discover)
         case .author: BookOrigin(.author)
         case .scan: BookOrigin(.scan)
+        case .goodreads: BookOrigin(.goodreads)
         }
     }
 }

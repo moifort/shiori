@@ -12,6 +12,7 @@ enum SettingsHomeAction {
     case showPremium
     case showFeedback
     case openSource(ImportSource)
+    case openGoodreads
 }
 
 /// The settings, reached from the dashboard: the account, the subscription,
@@ -79,6 +80,18 @@ struct SettingsHomePage: View {
                     .buttonStyle(.plain)
                     .accessibilityIdentifier("settings-source-\(source.rawValue)")
                 }
+                // A file, not a connection: its own row after the two Amazon ones.
+                Button {
+                    onAction(.openGoodreads)
+                } label: {
+                    SettingsRow(
+                        logo: "goodreads-logo",
+                        title: "Goodreads",
+                        subtitle: String(localized: "Import d'un fichier d'export")
+                    )
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("settings-source-goodreads")
             }
 
             Section("Application") {

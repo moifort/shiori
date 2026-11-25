@@ -281,7 +281,8 @@ struct BookRecommendation: Hashable, Codable, Sendable {
 /// origins were recorded.
 struct BookOrigin: Hashable, Codable, Sendable {
     enum Kind: String, Codable, Sendable, CaseIterable {
-        case scan, shelf, search, manual, share, discover, series, author, friend, awaited, kindle, audible
+        case scan, shelf, search, manual, share, discover, series, author, friend, awaited, kindle, audible,
+            goodreads
     }
 
     var kind: Kind
@@ -309,6 +310,7 @@ struct BookOrigin: Hashable, Codable, Sendable {
         case .awaited: String(localized: "Guetté")
         case .kindle: "Kindle"
         case .audible: "Audible"
+        case .goodreads: "Goodreads"
         }
     }
 }

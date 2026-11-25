@@ -14,6 +14,8 @@ struct PreparationLine: Identifiable {
     let id: String
     let label: LocalizedStringKey
     let state: State
+    /// A figure under the label: what a line found, how far it has got.
+    var detail: String?
 }
 
 /// The todo list of the moment before the first dashboard, each line ticking
@@ -43,7 +45,11 @@ struct PreparationChecklist: View {
                     .font(.body.weight(.semibold))
                     .opacity(line.state == .waiting ? 0.4 : 1)
                 if let note = note(line.state) {
-                    Text(note)
+                    (Text(note) + Text(verbatim: line.detail.map { " · \($0)" } ?? ""))
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                } else if let detail = line.detail {
+                    Text(verbatim: detail)
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
