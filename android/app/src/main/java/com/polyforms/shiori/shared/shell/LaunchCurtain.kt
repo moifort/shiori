@@ -7,8 +7,9 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -40,16 +41,20 @@ fun LaunchCurtain() {
     Box(Modifier.fillMaxSize().background(LaunchBackground), contentAlignment = Alignment.Center) {
         CoverDrift(covers)
         Box(Modifier.fillMaxSize().background(Brush.radialGradient(listOf(LaunchBackground.copy(alpha = 0.7f), LaunchBackground.copy(alpha = 0.4f), Color.Transparent), radius = with(LocalDensity.current) { 200.dp.toPx() })))
-        Image(
-            painterResource(R.drawable.launch_icon),
-            "Shiori",
+        // The launcher icon as the Pixel draws it: the adaptive icon's two layers in a circle,
+        // the 108 dp canvas scaled so its visible 72 dp fill the disc.
+        Box(
             Modifier
                 .size(140.dp)
                 .scale(0.8f + 0.2f * icon.value)
                 .alpha(icon.value.coerceIn(0f, 1f))
-                .shadow(16.dp, RoundedCornerShape(31.dp))
-                .clip(RoundedCornerShape(31.dp)),
-        )
+                .shadow(16.dp, CircleShape)
+                .clip(CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            Image(painterResource(R.drawable.ic_launcher_background), null, Modifier.requiredSize(210.dp))
+            Image(painterResource(R.mipmap.ic_launcher_foreground), "Shiori", Modifier.requiredSize(210.dp))
+        }
     }
 }
 
