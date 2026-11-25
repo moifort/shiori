@@ -30,6 +30,7 @@ struct SetAsideSeriesPage: View {
                 .padding(.horizontal, 20)
             }
             .padding(.vertical, 8)
+            .padding(.bottom, 24)
         }
         .background(Color(.systemGroupedBackground))
         .navigationTitle("Non suivies")

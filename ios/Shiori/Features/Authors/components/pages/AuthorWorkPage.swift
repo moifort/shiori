@@ -38,6 +38,7 @@ struct AuthorWorkPage: View {
                 .disabled(isAdding)
                 .padding(.top, 8)
             }
+            .padding(.bottom, 32)
             .frame(maxWidth: .infinity)
             .background(alignment: .top) {
                 CoverBackdrop(url: work.coverURL, fadeHeight: 140)

@@ -32,7 +32,7 @@ struct UpcomingReleasesPage: View {
                         .padding(.top, 8)
                 }
             }
-            .padding(.bottom, 24)
+            .padding(.bottom, 32)
         }
         .navigationTitle("À venir")
         .accessibilityIdentifier("news-upcoming-list")

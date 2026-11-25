@@ -32,7 +32,7 @@ struct StatisticsPage: View {
                 LastFinishedCard(book: dashboard.lastFinished) { onAction(.openBook($0)) }
             }
             .padding(.horizontal)
-            .padding(.bottom, 24)
+            .padding(.bottom, 32)
         }
         .background(Color(.systemGroupedBackground))
         // The figures roll to their new values when a refresh lands.

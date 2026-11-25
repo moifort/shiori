@@ -38,7 +38,7 @@ struct GenreInsightsPage: View {
                 }
             }
             .padding(.horizontal)
-            .padding(.bottom, 24)
+            .padding(.bottom, 32)
         }
         .background(Color(.systemGroupedBackground))
         .navigationTitle("Genres lus")
