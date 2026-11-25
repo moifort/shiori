@@ -13,7 +13,9 @@ import kotlinx.coroutines.launch
 /**
  * A Goodreads import under way, kept beyond the screen that started it: the books are written in
  * one request, then their covers are sought a pass at a time while the app is open. The
- * onboarding's checklist and the import's progress page both read it.
+ * onboarding's checklist and the import's progress page both read it. Once the app is closed the
+ * server's scheduled pass (`/admin/seek-goodreads-covers`, every quarter of an hour) seeks the
+ * rest.
  */
 object GoodreadsBackgroundImport {
     sealed interface Phase {

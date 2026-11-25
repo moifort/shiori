@@ -161,3 +161,41 @@ describe('seeking the covers after an import', () => {
     lookup.mockRestore()
   })
 })
+
+describe('the scheduled cover pass', () => {
+  test('seeks every waiting cover with the app closed, then finds no one left', async () => {
+    const cover = 'https://covers.example/any.jpg' as CoverUrl
+    const lookup = spyOn(BookQuery, 'publishedCoverOf').mockImplementation(async () => cover)
+    await importAll()
+
+    expect(await GoodreadsUseCase.seekEveryReadersCovers(60_000, Date.now(), now)).toEqual({
+      synced: 1,
+      failed: 0,
+      deferred: 0,
+    })
+    startFakeRequest()
+    expect((await GoodreadsUseCase.lastImport(reader))?.pendingCovers).toEqual([])
+    expect((await byTitle('Le Nom du vent'))?.publishedCoverUrl).toBe(cover)
+
+    startFakeRequest()
+    const before = { docs: fake.docReads, queries: fake.queryReads }
+    const idle = await GoodreadsUseCase.seekEveryReadersCovers(60_000, Date.now(), now)
+    expect(idle).toEqual({ synced: 0, failed: 0, deferred: 0 })
+    expect(fake.queryReads - before.queries).toBe(1)
+    expect(fake.docReads - before.docs).toBe(0)
+    lookup.mockRestore()
+  })
+
+  test('leaves every reader for the next run once the time is spent', async () => {
+    const lookup = spyOn(BookQuery, 'publishedCoverOf').mockImplementation(async () => undefined)
+    await importAll()
+
+    lookup.mockClear()
+    const run = await GoodreadsUseCase.seekEveryReadersCovers(0, Date.now() - 1, now)
+
+    expect(run).toEqual({ synced: 0, failed: 0, deferred: 1 })
+    expect((await GoodreadsUseCase.lastImport(reader))?.pendingCovers.length).toBe(2)
+    expect(lookup).not.toHaveBeenCalled()
+    lookup.mockRestore()
+  })
+})

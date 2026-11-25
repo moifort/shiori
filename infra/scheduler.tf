@@ -238,3 +238,37 @@ resource "google_cloud_scheduler_job" "generate_discoveries" {
 
   depends_on = [google_project_service.apis]
 }
+
+# Seeks the covers of an imported Goodreads library every quarter of an hour, so
+# they keep coming once the app is closed, on iOS and Android alike. Free cover
+# sources only (Amazon, Open Library, ePagine). With nobody waiting a run is one
+# Firestore query on the `seekingCovers` flag and nothing else: about 2,900
+# reads a month, inside the free tier. A 1,500-book library is done in about
+# an hour of runs (up to forty covers a pass, a dozen passes a run).
+#
+# Answers 200 with the counts, and is idempotent: a book whose cover was sought
+# has left the list, so a retry picks up where the last run stopped.
+resource "google_cloud_scheduler_job" "seek_goodreads_covers" {
+  project   = google_project.this.project_id
+  region    = var.region
+  name      = "seek-goodreads-covers"
+  schedule  = "*/15 * * * *"
+  time_zone = "Europe/Paris"
+
+  # The run stops on its own after two minutes of the function's 180s ceiling.
+  attempt_deadline = "180s"
+
+  retry_config {
+    retry_count = 1
+  }
+
+  http_target {
+    http_method = "POST"
+    uri         = "${google_cloudfunctions2_function.server.service_config[0].uri}/admin/seek-goodreads-covers"
+    headers = {
+      Authorization = "Bearer ${local.admin_token_value}"
+    }
+  }
+
+  depends_on = [google_project_service.apis]
+}

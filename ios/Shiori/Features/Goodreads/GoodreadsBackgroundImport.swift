@@ -5,8 +5,8 @@ import Observation
 /// books are written in one request, then their covers are sought a pass at a
 /// time while the app is open. The onboarding's preparation checklist and the
 /// import's own progress page both read it, and the reader may close either:
-/// the work goes on. A cover never sought stays the app's typeset stand-in,
-/// and the next import picks the rest up.
+/// the work goes on. Once the app is closed the server's scheduled pass
+/// (`/admin/seek-goodreads-covers`, every quarter of an hour) seeks the rest.
 @MainActor
 @Observable
 final class GoodreadsBackgroundImport {

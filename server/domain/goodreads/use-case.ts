@@ -27,6 +27,7 @@ import { WishCommand } from '~/domain/wish/command'
 import { WishQuery } from '~/domain/wish/query'
 import { createLogger } from '~/system/logger'
 import { eachWithAtMostInFlight } from '~/utils/concurrency'
+import { NIGHTLY_BUDGET_MS, type NightlyPassRun, passOverReaders } from '~/utils/nightly-pass'
 
 const logger = createLogger('goodreads')
 
@@ -36,6 +37,11 @@ export const COVERS_PER_PASS = 40
 
 /** How many cover lookups run side by side. */
 const COVERS_IN_FLIGHT = 6
+
+/** How many readers the scheduled cover pass serves side by side: each mostly
+ *  waits on the free cover sources, which see every lookup leave from the same
+ *  few Google addresses. */
+const READERS_IN_FLIGHT = 2
 
 /** How many rows are written side by side: Firestore takes far more, the
  *  friend and wish lookups each write makes are what this bounds. */
@@ -205,6 +211,35 @@ export namespace GoodreadsUseCase {
       withoutCover: record.withoutCover + missing,
     })
     return { remaining: pendingCovers.length, found }
+  }
+
+  /** The scheduled cover pass: every reader whose last import still has covers
+   *  to seek gets passes until none is left or the run's time is spent, so the
+   *  covers keep coming once the app is closed, on iOS and Android alike. The
+   *  app's own passes, while it is open, take from the same list: a book is
+   *  sought by whichever comes first, at worst twice. Free sources only. */
+  export const seekEveryReadersCovers = async (
+    budgetMs = NIGHTLY_BUDGET_MS,
+    startedAt = Date.now(),
+    now = new Date(),
+  ): Promise<NightlyPassRun> => {
+    const timeLeft = () => Date.now() - startedAt < budgetMs
+    const run = await passOverReaders(await GoodreadsQuery.readersSeekingCovers(), {
+      syncOne: async (userId) => {
+        let sought = false
+        while (timeLeft()) {
+          sought = true
+          if ((await seekCovers(userId, now)).remaining === 0) break
+        }
+        return sought
+      },
+      onFailure: (userId, error) => logger.warn('scheduled cover pass failed', { error, userId }),
+      budgetMs,
+      startedAt,
+      concurrency: READERS_IN_FLIGHT,
+    })
+    if (run.deferred > 0) logger.info('cover pass budget spent, readers left', { ...run })
+    return run
   }
 
   /** The last import, for the settings page. */
