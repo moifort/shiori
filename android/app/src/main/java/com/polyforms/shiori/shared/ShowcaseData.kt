@@ -34,7 +34,7 @@ object ShowcaseData {
     )
 
     val offers = listOf(
-        PremiumOffer(SubscriptionProducts.YEARLY, L("Annuel"), "34,99 €", 34_990_000, L("1 mois offert"), perMonth = "2,92 €"),
-        PremiumOffer(SubscriptionProducts.MONTHLY, L("Mensuel"), "4,99 €", 4_990_000),
+        PremiumOffer(SubscriptionProducts.YEARLY, L("Premium annuel"), "34,99 €", 34_990_000, L("1 mois offert"), perMonth = "2,92 €"),
+        PremiumOffer(SubscriptionProducts.MONTHLY, L("Premium mensuel"), "4,99 €", 4_990_000),
     )
 }

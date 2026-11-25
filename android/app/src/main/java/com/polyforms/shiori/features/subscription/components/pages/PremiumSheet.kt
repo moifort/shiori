@@ -30,7 +30,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
@@ -244,11 +243,13 @@ private fun OfferButton(offer: PremiumOffer, savings: Double?, isPurchasing: Boo
                 Text(offer.name, style = Shiori.type.headline, color = colors.label)
                 if (savings != null) {
                     val percent = NumberFormat.getPercentInstance().apply { maximumFractionDigits = 0 }.format(savings)
+                    // The accent is white in dark mode: a white label on it vanished. The wall's
+                    // pill, in either appearance.
                     Text(
                         "-$percent",
-                        style = Shiori.type.caption2.copy(fontWeight = FontWeight.Bold),
-                        color = Color.White,
-                        modifier = Modifier.background(colors.accent, CircleShape).padding(horizontal = 7.dp, vertical = 3.dp),
+                        style = Shiori.type.caption.copy(fontWeight = FontWeight.SemiBold),
+                        color = colors.label,
+                        modifier = Modifier.background(colors.label.copy(alpha = 0.16f), CircleShape).padding(horizontal = 8.dp, vertical = 2.dp),
                     )
                 }
             }

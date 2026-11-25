@@ -209,6 +209,16 @@ fun DebugPreviews(name: String) {
             "upcoming" -> androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize().background(com.polyforms.shiori.shared.components.styles.Shiori.colors.groupedBackground)) {
                 com.polyforms.shiori.features.news.components.pages.UpcomingReleasesPage(com.polyforms.shiori.features.news.NewsFixtures.upcoming) {}
             }
+            "subscription-trial", "subscription-lapsed" -> com.polyforms.shiori.features.subscription.components.pages.SubscriptionWallPage(
+                if (name == "subscription-trial") com.polyforms.shiori.features.subscription.components.pages.SubscriptionWallKind.TRIAL else com.polyforms.shiori.features.subscription.components.pages.SubscriptionWallKind.LAPSED,
+                com.polyforms.shiori.shared.ShowcaseData.offers, 0.42, isLoading = false, isPurchasing = false, onBuy = {}, onRestore = {}, onAccount = {},
+            )
+            "premium" -> {
+                val context = androidx.compose.ui.platform.LocalContext.current
+                androidx.compose.runtime.CompositionLocalProvider(com.polyforms.shiori.features.subscription.LocalSubscriptionStore provides remember { com.polyforms.shiori.features.subscription.SubscriptionStore(context) }) {
+                    com.polyforms.shiori.features.subscription.components.pages.PremiumSheet(com.polyforms.shiori.features.subscription.components.pages.PremiumTrigger.DISCOVER) {}
+                }
+            }
             "tabbar" -> TabBarPreview()
             "tabbar-player" -> TabBarPlayerPreview()
             "confirmation" -> androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize().background(com.polyforms.shiori.shared.components.styles.Shiori.colors.groupedBackground)) {

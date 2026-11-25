@@ -286,12 +286,13 @@ private struct OfferButton: View {
                         Text(offer.name)
                             .font(.headline)
                         if let savingsBadge {
+                            // The tint is white in dark mode: a white label on it
+                            // vanished. The wall's pill, in either appearance.
                             Text(savingsBadge)
-                                .font(.caption2.bold())
-                                .foregroundStyle(.white)
-                                .padding(.horizontal, 7)
-                                .padding(.vertical, 3)
-                                .background(.tint, in: Capsule())
+                                .font(.caption.weight(.semibold))
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 2)
+                                .background(.primary.opacity(0.16), in: Capsule())
                         }
                     }
                     if let trial = offer.trial {
