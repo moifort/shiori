@@ -14,6 +14,11 @@ import com.polyforms.shiori.shared.components.styles.ShioriTheme
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // The system splash is the bare black the curtain opens on: removed at once, no fade,
+        // so the opening is one piece and its icon appears once.
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+            splashScreen.setOnExitAnimationListener { it.remove() }
+        }
         enableEdgeToEdge()
         // The captures draw the App Store fixtures alone, without a session.
         if (BuildConfig.DEBUG && intent.getBooleanExtra("showcase", false)) Showcase.isOn = true
