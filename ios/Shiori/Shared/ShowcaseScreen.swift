@@ -17,9 +17,183 @@ struct ShowcaseScreen: View {
         "kindle-library", "audible-library", "kindle-source", "audible-source", "review",
         "scan-no-result", "scan-failed", "shelf-checklist", "settings-blocked", "premium-spent",
         "book", "author-work", "reading-progress",
+                "site-book", "series", "shelf", "scan-review", "player", "wishlist", "pile",
+        "agenda", "news-full",
     ]
 
     @State private var choices = GoodreadsChoices(preview: .preview)
+
+    /// Five showcase covers standing on a dark shelf, the photo a shelf scan
+    /// starts from; the boxes of `shelfBooks` frame them.
+    private static let shelfSlugs = ["dune", "messie-de-dune", "fondation", "sorceleur-01", "etranger"]
+
+    /// The photo's size, and each cover's: a 2:3 book standing on the plank.
+    private static let shelfSize = CGSize(width: 1080, height: 470)
+    private static let coverSize = CGSize(width: 196, height: 294)
+
+    private static let shelfPhoto: UIImage = {
+        UIGraphicsImageRenderer(size: shelfSize).image { context in
+            let cg = context.cgContext
+            // The back of the shelf, warm wood in low light.
+            let wall = CGGradient(
+                colorsSpace: CGColorSpaceCreateDeviceRGB(),
+                colors: [
+                    UIColor(red: 0.20, green: 0.14, blue: 0.10, alpha: 1).cgColor,
+                    UIColor(red: 0.33, green: 0.23, blue: 0.15, alpha: 1).cgColor,
+                ] as CFArray,
+                locations: [0, 1]
+            )!
+            cg.drawLinearGradient(wall, start: .zero, end: CGPoint(x: 0, y: shelfSize.height), options: [])
+            // The plank the books stand on.
+            UIColor(red: 0.45, green: 0.31, blue: 0.19, alpha: 1).setFill()
+            cg.fill(CGRect(x: 0, y: 392, width: shelfSize.width, height: 78))
+            UIColor(red: 0.56, green: 0.40, blue: 0.25, alpha: 1).setFill()
+            cg.fill(CGRect(x: 0, y: 392, width: shelfSize.width, height: 8))
+            for (index, slug) in shelfSlugs.enumerated() {
+                let box = shelfBox(index)
+                let rect = CGRect(
+                    x: box.minX * shelfSize.width, y: box.minY * shelfSize.height,
+                    width: box.width * shelfSize.width, height: box.height * shelfSize.height
+                )
+                cg.saveGState()
+                cg.setShadow(offset: CGSize(width: 0, height: 8), blur: 18, color: UIColor.black.withAlphaComponent(0.6).cgColor)
+                UIColor.black.setFill()
+                cg.fill(rect)
+                cg.restoreGState()
+                if let url = Showcase.cover(slug), let image = UIImage(contentsOfFile: url.path) {
+                    // Aspect-filled into the 2:3 box, never stretched.
+                    let scale = max(rect.width / image.size.width, rect.height / image.size.height)
+                    let drawn = CGSize(width: image.size.width * scale, height: image.size.height * scale)
+                    cg.saveGState()
+                    cg.clip(to: rect)
+                    image.draw(in: CGRect(
+                        x: rect.midX - drawn.width / 2, y: rect.midY - drawn.height / 2,
+                        width: drawn.width, height: drawn.height
+                    ))
+                    cg.restoreGState()
+                }
+            }
+        }
+    }()
+
+    private static func shelfBox(_ index: Int) -> CGRect {
+        let gap = (shelfSize.width - 5 * coverSize.width) / 6
+        let x = gap + Double(index) * (coverSize.width + gap)
+        let y = 392 - coverSize.height
+        return CGRect(
+            x: x / shelfSize.width, y: y / shelfSize.height,
+            width: coverSize.width / shelfSize.width, height: coverSize.height / shelfSize.height
+        )
+    }
+
+    /// A page inside the app's tab bar, on the tab it lives under, as the
+    /// reader sees it: the other tabs stand empty, nothing is ever tapped.
+    private func inTab(_ tab: TabSelection, @ViewBuilder _ page: () -> some View) -> some View {
+        let content = page()
+        return TabView(selection: .constant(tab)) {
+            ForEach([TabSelection.home, .library, .news, .friends]) { item in
+                Tab(item.label, systemImage: item.symbol, value: item) {
+                    if item == tab { content } else { Color.clear }
+                }
+            }
+            Tab(
+                TabSelection.scan.label, systemImage: TabSelection.scan.symbol,
+                value: TabSelection.scan, role: Self.scanRole
+            ) {
+                Color.clear
+            }
+        }
+    }
+
+    /// The scan tab's role, as ContentView sets it.
+    private static var scanRole: TabRole {
+        #if compiler(>=6.4)
+        if #available(iOS 27.0, *) { return .prominent }
+        #endif
+        return .search
+    }
+
+    /// Actu from its fixtures: the agenda with its large cards, the friends'
+    /// news, the month's discoveries and the awards.
+    private static var newsAgenda: NewsAgenda {
+        NewsAgenda(
+            released: NewsFeedLayout.released(
+                releases: UpcomingRelease.releasedPreviews, narrator: [.preview], format: nil
+            ),
+            events: FeedEvent.previews + FeedEvent.sameStartPreviews,
+            upcoming: ReleaseCalendar(releases: UpcomingRelease.previews, now: .now).dated,
+            suggestions: MonthlyDiscoveries.preview.suggestions,
+            awards: AwardSection.previews
+        )
+    }
+
+    /// A wishlist full enough to read as one, on the showcase's own covers.
+    private static let wishlist: Wishlist = {
+        func wish(
+            _ slug: String, _ title: String, _ author: String, _ origin: Wish.Origin,
+            _ label: String? = nil, days: Double
+        ) -> Wish {
+            Wish(
+                id: slug, title: title, authors: [author], format: .book, language: Showcase.language,
+                seriesName: nil, volume: nil, coverURL: Showcase.cover(slug), isbn13: nil,
+                origin: origin, originLabel: label, friendId: label, wishedAt: Showcase.daysAgo(days)
+            )
+        }
+        func awaited(
+            _ slug: String, _ title: String, _ author: String, _ format: ReleaseFormat,
+            _ state: AwaitedState, _ date: String?
+        ) -> AwaitedEdition {
+            AwaitedEdition(
+                id: slug, format: format, state: state, title: title, originalTitle: title,
+                originalLanguage: .en, authors: [author], date: date, coverURL: Showcase.cover(slug),
+                storeURL: nil, awaitedAt: .now, bookId: slug, ownerId: "me"
+            )
+        }
+        func local(_ french: String, _ english: String) -> String { Showcase.local(french, english) }
+        return Wishlist(
+            wishes: [
+                wish("hyperion", local("Hypérion", "Hyperion"), "Dan Simmons", .friend, local("Camille", "Chloe"), days: 1),
+                wish("nom-du-vent", local("Le Nom du vent", "The Name of the Wind"), "Patrick Rothfuss", .friend, local("Hugo", "Jack"), days: 2),
+                wish("horde-du-contrevent", local("La Horde du Contrevent", "The Wind Chasers"), "Alain Damasio", .friend, local("Léa", "Emma"), days: 3),
+                wish("murderbot", local("Journal d'un AssaSynth", "All Systems Red"), "Martha Wells", .friend, local("Camille", "Chloe"), days: 4),
+                wish("foret-sombre", local("La Forêt sombre", "The Dark Forest"), "Liu Cixin", .discovery, days: 5),
+                wish("leviathan", local("L'Éveil du Léviathan", "Leviathan Wakes"), "James S. A. Corey", .award, "Hugo", days: 6),
+                wish("main-gauche-nuit", local("La Main gauche de la nuit", "The Left Hand of Darkness"), "Ursula K. Le Guin", .award, "Nebula", days: 7),
+                wish("depossedes", local("Les Dépossédés", "The Dispossessed"), "Ursula K. Le Guin", .author, days: 8),
+                wish("fondation", local("Fondation", "Foundation"), "Isaac Asimov", .scan, days: 9),
+                wish("rama", local("Rendez-vous avec Rama", "Rendezvous with Rama"), "Arthur C. Clarke", .scan, days: 10),
+                wish("ender", local("La Stratégie Ender", "Ender's Game"), "Orson Scott Card", .scan, days: 11),
+            ],
+            awaited: [
+                awaited("one-piece-114", local("One Piece, tome 114", "One Piece, Vol. 114"), "Eiichiro Oda", .book, .announced, dayFromNow(9)),
+                awaited("frieren-15", local("Frieren, tome 15", "Frieren, Vol. 15"), "Kanehito Yamada", .book, .announced, dayFromNow(23)),
+                awaited("golden-son", "Golden Son", "Pierce Brown", .audiobook, .available, dayFromNow(-6)),
+                awaited("morning-star", "Morning Star", "Pierce Brown", .audiobook, .available, dayFromNow(-20)),
+            ]
+        )
+    }()
+
+    private static func dayFromNow(_ days: Int) -> String {
+        let date = Calendar.current.date(byAdding: .day, value: days, to: .now) ?? .now
+        return date.formatted(.iso8601.year().month().day())
+    }
+
+    private static let shelfBooks: [DetectedBook] = {
+        let fr = Showcase.language == .fr
+        let rows: [(String?, [String], String?, Int?, Bool)] = [
+            ("Dune", ["Frank Herbert"], "Dune", 1, false),
+            (fr ? "Le Messie de Dune" : "Dune Messiah", ["Frank Herbert"], "Dune", 2, false),
+            (fr ? "Fondation" : "Foundation", ["Isaac Asimov"], nil, nil, true),
+            (nil, [], nil, nil, false),
+            (fr ? "L'Étranger" : "The Stranger", ["Albert Camus"], nil, nil, false),
+        ]
+        return rows.enumerated().map { index, row in
+            DetectedBook(
+                id: index, title: row.0, authors: row.1, publisher: nil, language: nil,
+                format: nil, seriesName: row.2, volume: row.3, box: shelfBox(index), owned: row.4
+            )
+        }
+    }()
 
     var body: some View {
         // The imports and the scan are drawn dark (`GoodreadsImportScreen`,
@@ -254,6 +428,87 @@ struct ShowcaseScreen: View {
                     ticked: ShelfImportFixtures.ticked, remainingScans: 94, crop: { _ in nil }
                 ) { _ in }
             }
+        case "site-book":
+            inTab(.library) { NavigationStack { BookPage(previewing: Showcase.featured) } }
+        case "series":
+            let screen = SeriesFixtures.screen
+            inTab(.library) { NavigationStack {
+                SeriesPage(
+                    series: screen.series, owned: screen.owned, opinion: screen.opinion,
+                    isLoading: false, errorMessage: nil, language: Showcase.language, friend: nil,
+                    isFollowed: true, addingTitle: nil,
+                    releases: Showcase.sagaReleases(seriesId: SeriesFixtures.followed[0].seriesId),
+                    takenFormat: .book, announcedVolume: { _ in nil }
+                ) { _ in }
+            } }
+        case "shelf":
+            NavigationStack {
+                ShelfChecklistPage(
+                    photo: Self.shelfPhoto, books: Self.shelfBooks,
+                    ticked: [0, 1, 4], remainingScans: 24, crop: { _ in nil }
+                ) { _ in }
+            }
+        case "scan-review":
+            NavigationStack {
+                ScanReviewPage(
+                    draft: BookDraft(
+                        title: Showcase.local("L'Œil de la Veuve du Chaos", "The Eye of the Bedlam Bride"),
+                        authors: ["Matt Dinniman"],
+                        publisher: Showcase.local("Bragelonne", "Ace"),
+                        firstPublishedIn: 2023,
+                        synopsis: Showcase.local(
+                            """
+                            Sixième étage du donjon : Carl et Princesse Beignet affrontent un \
+                            immense jeu de chasse où chaque proie peut devenir chasseur, pendant \
+                            que les spectateurs de la galaxie parient sur leur survie.
+                            """,
+                            """
+                            The sixth floor of the dungeon: Carl and Princess Donut face a vast \
+                            hunting game where any prey can turn hunter, while the galaxy's \
+                            viewers bet on their survival.
+                            """
+                        ),
+                        genre: .scienceFiction,
+                        subgenres: ["LitRPG"],
+                        pageCount: 712,
+                        coverURL: Showcase.cover("dcc-06"),
+                        series: SeriesMembership(
+                            id: "dungeon-crawler-carl", name: "Dungeon Crawler Carl",
+                            volume: 6, kind: .main
+                        )
+                    ),
+                    isSaving: false,
+                    sagaVolumes: Showcase.seriesPage(limit: 200, after: nil, mode: .all, state: nil)
+                        .items.first { $0.seriesId == "dungeon-crawler-carl" }?.strip ?? []
+                ) { _ in }
+            }
+        case "player":
+            PlayerPage(item: .preview) { _ in }
+        case "wishlist":
+            inTab(.library) { NavigationStack {
+                WishlistPage(
+                    wishlist: Self.wishlist, formats: [.book, .audiobook], isLoading: false,
+                    errorMessage: nil
+                ) { _ in }
+                .toolbarTitleDisplayMode(.inlineLarge)
+            } }
+        case "pile":
+            let pile = Showcase.pile(view: ShelvesView())
+            inTab(.library) { NavigationStack {
+                PilePage(
+                    pile: pile,
+                    upNext: Showcase.seriesPage(limit: 200, after: nil, mode: .all, state: nil)
+                        .items.filter { !$0.isSetAside }.upNext,
+                    genres: pile.genres, isLoading: false, errorMessage: nil
+                ) { _ in }
+            } }
+        case "agenda", "news-full":
+            inTab(.news) { NavigationStack {
+                NewsPage(
+                    agenda: name == "agenda" ? Self.newsAgenda.agendaOnly(cards: 3) : Self.newsAgenda,
+                    isLoading: false, errorMessage: nil, alertsSilenced: false, onAction: { _ in }
+                )
+            } }
         case "goodreads-done":
             NavigationStack {
                 GoodreadsDonePage(

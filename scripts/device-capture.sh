@@ -18,6 +18,8 @@
 #              | kindle-library | audible-library | kindle-source | audible-source
 #              | review | scan-no-result | scan-failed | shelf-checklist
 #              | settings-blocked | premium-spent | book | author-work | reading-progress
+#              site extras: site-book | series | shelf | scan-review | player | wishlist
+#              | pile | agenda | news-full
 #   -- -showcase-anchor center|bottom  opens a long page scrolled, for a stitched capture
 #   [light|dark]  the appearance, whatever the phone is set to (default: the phone's)
 #   -- …       more launch arguments for the app, e.g. -- -showcase-prompts audible
@@ -38,7 +40,7 @@
 set -euo pipefail
 
 usage() {
-  sed -n '8,24p' "$0" >&2
+  sed -n '8,25p' "$0" >  sed -n '8,26p' "$0" >&22
   exit 2
 }
 
@@ -62,7 +64,8 @@ case "$SCREEN" in
     | goodreads-same-book | goodreads-progress | goodreads-not-goodreads | goodreads-empty | player-sleep \
     | settings | preparation | kindle | audible | kindle-library | audible-library | kindle-source \
     | audible-source | review | scan-no-result | scan-failed | shelf-checklist | settings-blocked \
-    | premium-spent | book | author-work | reading-progress)
+    | premium-spent | book | author-work | reading-progress \
+    | site-book | series | shelf | scan-review | player | wishlist | pile | agenda | news-full)
     SCREEN_FLAG=-showcase-screen ;;
   *) echo "error: unknown screen '$SCREEN' (home, library, news, friends, goodreads…)" >&2; exit 2 ;;
 esac

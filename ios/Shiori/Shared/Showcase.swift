@@ -137,6 +137,10 @@ enum Showcase {
         }
     }
 
+    /// `-showcase-hero-dcc`: Dungeon Crawler Carl's sixth volume out this month,
+    /// in place of Frieren's, for the website's captures.
+    static let heroIsDungeonCrawlerCarl = ProcessInfo.processInfo.arguments.contains("-showcase-hero-dcc")
+
     static let sagas: [Saga] = [
         Saga(
             id: "one-piece", name: "One Piece", authors: ["Eiichirō Oda"], format: .manga,
@@ -159,7 +163,8 @@ enum Showcase {
             id: "frieren", name: local("Frieren", "Frieren: Beyond Journey’s End"),
             authors: ["Kanehito Yamada", "Tsukasa Abe"],
             format: .manga, publisher: local("Ki-oon", "Viz Media"), genre: .fantasy, subgenres: ["Shōnen"], pages: 192,
-            published: 15, owned: 14, read: 14, readBetween: (420, 45), outDaysAgo: 9,
+            published: 15, owned: 14, read: 14, readBetween: (420, 45),
+            outDaysAgo: heroIsDungeonCrawlerCarl ? nil : 9,
             rating: 5, favorite: true, slug: "frieren",
             firstPublishedIn: 2020
         ),
@@ -185,8 +190,10 @@ enum Showcase {
                     5: "The Butcher’s Masquerade", 6: "The Eye of the Bedlam Bride",
                 ]
             ),
-            published: 5, owned: 5, read: 5, readBetween: (300, 1),
-            announced: (6, nil, 12), rating: 5, favorite: true, slug: "dcc", firstPublishedIn: 2020,
+            published: heroIsDungeonCrawlerCarl ? 6 : 5, owned: 5, read: 5, readBetween: (300, 1),
+            announced: heroIsDungeonCrawlerCarl ? nil : (6, nil, 12),
+            outDaysAgo: heroIsDungeonCrawlerCarl ? 4 : nil,
+            rating: 5, favorite: true, slug: "dcc", firstPublishedIn: 2020,
             description: local(
                 """
                 Quand la Terre est rasée pour devenir le décor d'un jeu télévisé intergalactique, \
