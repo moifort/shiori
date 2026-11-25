@@ -40,7 +40,7 @@ value it does not know as a neutral one (`Book+GraphQL.swift`).
    element it finds, in git, the first build whose operations no longer select it, and
    compares it with the build on sale:
    - **removable** — a build without it has been on the App Store for fourteen days, counted
-     from the `ios-v<version>` tag; or no build ever asked for it;
+     from the `v<version>` tag (`ios-v<version>` before the shared tag); or no build ever asked for it;
    - **in grace until `<date>`** — on sale, not for fourteen days yet;
    - **waiting for a release** — the App Store still sells a build that asks for it;
    - **still asked by the app** — an operation at `HEAD` selects it;

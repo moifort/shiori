@@ -29,7 +29,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          fetch-depth: 0   # the ios-v* tags decide whether a version has shipped
+          fetch-depth: 0   # the release tags (v*, formerly ios-v*) decide whether a version has shipped
 
       # The version the next release will carry. The latest versioned heading of
       # CHANGELOG.md is that release until its tag exists; once it has shipped, App Store
@@ -41,7 +41,8 @@ jobs:
           LATEST=$(grep -m1 -oE '^## [0-9]+(\.[0-9]+)+' CHANGELOG.md | cut -c4- || true)
           if [ -z "$LATEST" ]; then
             MARKETING=1.0
-          elif git rev-parse -q --verify "refs/tags/ios-v$LATEST" >/dev/null; then
+          elif git rev-parse -q --verify "refs/tags/v$LATEST" >/dev/null \
+            || git rev-parse -q --verify "refs/tags/ios-v$LATEST" >/dev/null; then
             MARKETING=$(echo "$LATEST" | awk -F. '{ print $1 "." $2 + 1 }')
           else
             MARKETING="$LATEST"

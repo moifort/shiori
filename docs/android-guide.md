@@ -80,3 +80,37 @@ adb shell am start -n com.polyforms.shiori.app/com.polyforms.shiori.MainActivity
 
 and the App Store fixtures with `--ez showcase true`. The app's language is set per app:
 `adb shell cmd locale set-app-locales com.polyforms.shiori.app --locales fr-FR`.
+
+## Releasing on Google Play
+
+One tag ships both apps: `v<version>` starts `release-ios.yml` and `release-android.yml` with the
+same version. `android-v<version>` (or a manual run of Release Android, which picks the track)
+reruns Android alone. The Android workflow:
+
+- refuses a tag whose version is not the first heading of `CHANGELOG.md`, and sends the first
+  section of `CHANGELOG.md` / `CHANGELOG.fr.md` as Play's "What's new" (500 characters each);
+- builds a signed App Bundle with R8 (`bundleRelease`), `versionCode` = 1000 + the run number
+  (Play refuses a code it has seen), `versionName` = the tag's version;
+- uploads it with its R8 mapping to the **internal** track. Promotion to closed, open or
+  production testing is done by hand in Play Console.
+
+Play accepts only drafts until the app's first release has been rolled out by hand in the
+Console. After that rollout, set the repository variable `PLAY_RELEASE_STATUS` to `completed`
+so the internal track goes live on its own. Production stays a draft.
+
+**Signing.** Play App Signing holds the app signing key. The upload key was generated on
+2026-11-25 and lives outside git, in `~/Code/.shiori-android/` (`upload.jks`, `upload.env`,
+mode 600, alias `upload`). CI reads it from the secrets `ANDROID_UPLOAD_KEYSTORE` (base64),
+`ANDROID_UPLOAD_KEYSTORE_PASSWORD`, `ANDROID_UPLOAD_KEY_ALIAS`, `ANDROID_UPLOAD_KEY_PASSWORD`.
+A lost upload key is reset through Play Console support, never by changing the app signing key.
+
+**Fingerprints.** Google sign-in (Firebase) and the invitation App Links
+(`/.well-known/assetlinks.json`) trust the certificates listed in the repository variables
+`ANDROID_CERT_SHA1` / `ANDROID_CERT_SHA256` (bare hex JSON lists), applied by the Deploy
+workflow: the debug key, the upload key, and the Play app signing key (Play Console > Test and
+release > App integrity), which must be added once the app exists.
+
+**Secrets.** `PLAY_SERVICE_ACCOUNT_JSON` is the key of the service account that uploads (Play
+Console user with release rights). The server verifies purchases with its own runtime service
+account, which Play Console lists with "View financial data" and "Manage orders and
+subscriptions".
