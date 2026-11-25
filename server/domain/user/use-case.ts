@@ -11,6 +11,7 @@ import { DiscoveryCommand } from '~/domain/discovery/command'
 import { EntitlementCommand } from '~/domain/entitlement/command'
 import { FriendshipCommand } from '~/domain/friendship/command'
 import { FriendshipQuery } from '~/domain/friendship/query'
+import { GoodreadsCommand } from '~/domain/goodreads/command'
 import { KindleCommand } from '~/domain/kindle/command'
 import { KindleQuery } from '~/domain/kindle/query'
 import { NarratorCommand } from '~/domain/narrator/command'
@@ -131,6 +132,7 @@ export namespace UserUseCase {
       QuotaCommand.deleteAllForUser(userId),
       AudibleCommand.deleteForUser(userId),
       KindleCommand.deleteForUser(userId),
+      GoodreadsCommand.deleteForUser(userId),
       SeriesOpinionCommand.deleteAllForUser(userId),
       AuthorCommand.deleteFavoritesOf(userId),
       NarratorCommand.deleteFavoritesOf(userId),

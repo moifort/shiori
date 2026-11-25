@@ -166,5 +166,6 @@ export const BookOriginKindEnum = builder.enumType('BookOriginKind', {
     AWAITED: { value: 'awaited', description: 'An awaited edition, added once it came out.' },
     KINDLE: { value: 'kindle', description: 'A Kindle import or sync.' },
     AUDIBLE: { value: 'audible', description: 'An Audible import or sync.' },
+    GOODREADS: { value: 'goodreads', description: 'A Goodreads library export.' },
   } as const,
 })

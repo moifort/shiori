@@ -20,6 +20,7 @@ import {
 } from '~/domain/book/business-rules'
 import { openLibraryCoverByTitle } from '~/domain/book/infrastructure/open-library'
 import {
+  languageOfIsbn as isbnLanguage,
   publishedCoverOf as publishedCover,
   isImageAt as servesImage,
 } from '~/domain/book/infrastructure/published-cover'
@@ -188,6 +189,9 @@ export namespace BookQuery {
    *  for any domain that names a book by its ISBN. Never throws. */
   export const publishedCoverOf = (isbn13: Isbn13): Promise<CoverUrl | undefined> =>
     publishedCover(isbn13)
+
+  /** The language an ISBN's registration group publishes in, if it says. */
+  export const languageOfIsbn = (isbn: string): BookLanguage | undefined => isbnLanguage(isbn)
 
   /** The cover Open Library files under a work's title and author: the
    *  original edition's, for a bibliography. Throws when Open Library fails. */

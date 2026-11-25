@@ -30,6 +30,7 @@ const perReader: Record<string, (userId: UserId) => string> = {
   'ai-credits': (userId) => userId,
   'audible-connections': (userId) => userId,
   'kindle-connections': (userId) => userId,
+  'goodreads-imports': (userId) => userId,
   'series-opinions': (userId) => `${userId}~saga`,
   'author-favorites': (userId) => `${userId}~author`,
   'narrator-favorites': (userId) => `${userId}~narrator`,

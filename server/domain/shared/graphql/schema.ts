@@ -83,6 +83,9 @@ import '~/domain/kindle/infrastructure/graphql/enums'
 import '~/domain/kindle/infrastructure/graphql/types'
 import '~/domain/kindle/infrastructure/graphql/queries'
 import '~/domain/kindle/infrastructure/graphql/mutations'
+import '~/domain/goodreads/infrastructure/graphql/types'
+import '~/domain/goodreads/infrastructure/graphql/queries'
+import '~/domain/goodreads/infrastructure/graphql/mutations'
 
 // Friendship (sharing a library with somebody). After book and series: a
 // friend's shelf borrows their scalars and enums.

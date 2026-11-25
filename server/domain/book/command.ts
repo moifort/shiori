@@ -129,6 +129,11 @@ export type NewBook = {
    *  would all sit in the month of the import. Defaults to the moment of the
    *  write. */
   addedAt?: Date
+  /** The stars the reader gave elsewhere, which only an import from another
+   *  reading app knows. Ignored on a book not finished or given up. */
+  rating?: StarRating
+  /** What the reader wrote of it elsewhere: an import's review. */
+  note?: ReadingNote
 }
 
 /** The fields a reader may correct after the fact. Absent means untouched; the
@@ -182,6 +187,8 @@ const recordOf = (userId: UserId, input: NewBook, now: Date): Book => {
     input.status ?? 'to-read',
     now,
   )
+  // Stars judge a reading: one finished, or given up on.
+  const rating = input.status === 'read' || input.status === 'dropped' ? input.rating : undefined
   const book: Book = {
     id: BookIdOf(randomUUID()),
     userId,
@@ -220,6 +227,8 @@ const recordOf = (userId: UserId, input: NewBook, now: Date): Book => {
     // the only status that is true of every book the moment it is catalogued.
     status: input.status ?? 'to-read',
     hidden: input.hidden ?? false,
+    rating,
+    note: input.note,
     recommendation: storedRecommendation(input.recommendation),
     origin: input.origin && {
       kind: input.origin.kind,

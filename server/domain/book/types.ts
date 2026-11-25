@@ -218,6 +218,7 @@ export const BOOK_ORIGINS = [
   'awaited',
   'kindle',
   'audible',
+  'goodreads',
 ] as const
 export type BookOriginKind = (typeof BOOK_ORIGINS)[number]
 

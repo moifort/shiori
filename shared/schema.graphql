@@ -1329,6 +1329,9 @@ enum BookOriginKind {
   """Taken from a friend's shelf or feed."""
   FRIEND
 
+  """A Goodreads library export."""
+  GOODREADS
+
   """A Kindle import or sync."""
   KINDLE
 
@@ -2667,6 +2670,160 @@ type GenreTaste {
   subgenre: Subgenre
 }
 
+"""What the reader decided on the preview."""
+input GoodreadsChoicesInput {
+  keepDates: Boolean!
+  keepRatings: Boolean!
+
+  """Reviews become the book's note."""
+  keepReviews: Boolean!
+
+  """The keys of the rows to import."""
+  keys: [String!]!
+
+  """Uncertain rows the reader said are the book they already hold."""
+  sameBooks: [String!]!
+  toRead: GoodreadsToRead!
+}
+
+"""One pass of the cover search after an import."""
+type GoodreadsCovers {
+  """Covers written by this pass."""
+  found: Int!
+
+  """Books still waiting: call again while it is above zero."""
+  remaining: Int!
+}
+
+"""The reader's last Goodreads import, for the settings page."""
+type GoodreadsImport {
+  completed: Int!
+  imported: Int!
+  importedAt: DateTime!
+  pendingCovers: Int!
+  wished: Int!
+
+  """Books no source had a cover for: they keep the app's typeset stand-in."""
+  withoutCover: Int!
+}
+
+"""What an import wrote."""
+type GoodreadsImportOutcome {
+  """Books already held that took the Goodreads stars, date or review."""
+  completed: Int!
+
+  """Books created."""
+  imported: Int!
+
+  """Books whose cover `seekGoodreadsCovers` is still to look for."""
+  pendingCovers: Int!
+
+  """Wishes created from the to-read shelf."""
+  wished: Int!
+}
+
+"""What a Goodreads export holds, against the library it would join."""
+type GoodreadsPreview {
+  """Books carrying a reading date."""
+  dated: Int!
+
+  """Books carrying the reader's stars."""
+  rated: Int!
+
+  """Books carrying a review."""
+  reviewed: Int!
+  rows: [GoodreadsRow!]!
+  shelves: GoodreadsShelves!
+}
+
+"""
+One book of a Goodreads library export, read and checked, before anything is saved.
+"""
+type GoodreadsRow {
+  authors: [AuthorName!]!
+
+  """
+  An Open Library address guessed from the ISBN, never fetched: it answers 404 when there is no cover, and the app then draws its typeset stand-in.
+  """
+  coverUrl: CoverUrl
+
+  """
+  On a shelf of the reader's own saying they gave it up: "dnf", "abandoned".
+  """
+  dropped: Boolean!
+  format: BookFormat!
+  hasReview: Boolean!
+
+  """The record a held or uncertain row would complete."""
+  heldBookId: BookId
+  heldCoverUrl: CoverUrl
+  heldTitle: BookTitle
+  isbn13: Isbn13
+
+  """What to tick: pass the wanted ones to `importGoodreadsExport`."""
+  key: String!
+
+  """Read off the ISBN registration group, when it says."""
+  language: BookLanguage
+  media: [BookMedium!]!
+  rating: StarRating
+  readOn: DateTime
+  series: GoodreadsSeries
+  shelf: GoodreadsShelf!
+  title: BookTitle!
+  verdict: GoodreadsVerdict!
+}
+
+"""The saga a Goodreads title names: "Title (Saga, #2)"."""
+type GoodreadsSeries {
+  name: SeriesName!
+  volume: VolumeNumber
+}
+
+"""
+The Goodreads shelf a book sits on: every book is on exactly one of these three.
+"""
+enum GoodreadsShelf {
+  CURRENTLY_READING
+  READ
+  TO_READ
+}
+
+"""
+How many books each shelf holds; `dropped` is counted apart from the other three.
+"""
+type GoodreadsShelves {
+  dropped: Int!
+  read: Int!
+  reading: Int!
+  toRead: Int!
+}
+
+"""Where the to-read shelf goes."""
+enum GoodreadsToRead {
+  """The pile: books the reader owns and has not read."""
+  PILE
+
+  """The wishlist: books the reader would like."""
+  WISHLIST
+}
+
+"""How a row of the export stands against the library it would join."""
+enum GoodreadsVerdict {
+  """
+  Already in the library: the record takes what it lacks — stars, date, review.
+  """
+  HELD
+
+  """Not in the library: it becomes a book or a wish."""
+  NEW
+
+  """
+  Maybe a book the library holds — the same title by an author spelled otherwise, a volume titled after its saga. The reader says whether it is the same book.
+  """
+  UNCERTAIN
+}
+
 """
 Something the home screen’s hero asks the reader to set up, until it is done or they turn it down. A build that does not know a newer prompt leaves it out.
 """
@@ -3493,6 +3650,18 @@ type Mutation {
   ): [Book!]!
 
   """
+  Catalogue the rows the reader ticked, from a second read of the same file: the keys and choices say what was wanted, every stored field comes from the export.
+  
+  New rows become books, or wishes when the to-read shelf goes to the wishlist; held rows complete their record with what it lacks. Running the same export twice adds nothing new. Covers are sought afterwards by `seekGoodreadsCovers`.
+  """
+  importGoodreadsExport(
+    choices: GoodreadsChoicesInput!
+
+    """The same export file, as text"""
+    csv: String!
+  ): GoodreadsImportOutcome!
+
+  """
   Catalogue the titles the reader ticked, from the keys `readKindleExport` answered with.
   
   The file is sent again rather than the records: it is read a second time and the keys only say which of its rows were wanted, so every stored field comes from the export. A title already on the shelf is skipped however it was ticked.
@@ -3569,6 +3738,16 @@ type Mutation {
     number: VolumeNumber!
     seriesId: SeriesId!
   ): AnnouncedVolumePreview! @deprecated(reason: "The volume page draws what `discovery` already carries, with no model call.")
+
+  """
+  Read a Goodreads library export and answer with its books, each against the library it would join.
+  
+  Nothing is saved and no paid service is called: this reads a file. A mutation for the size of its argument, not for what it does. Fails with `BAD_USER_INPUT` for a file above ten megabytes, one that is not a Goodreads export, or one with no book.
+  """
+  previewGoodreadsExport(
+    """The export file, as text"""
+    csv: String!
+  ): GoodreadsPreview!
 
   """
   Give a book one to five stars. Rating marks it as read: the reader is saying they finished it, and leaving it on the pile would make every filter lie.
@@ -3725,6 +3904,11 @@ type Mutation {
     """The title as remembered"""
     title: BookTitle!
   ): [TitleCandidate!]!
+
+  """
+  Look for the published covers of up to forty books the last import wrote, from free sources only (Amazon, Open Library, ePagine). Call again while `remaining` is above zero; a book no source has keeps the typeset stand-in.
+  """
+  seekGoodreadsCovers: GoodreadsCovers!
 
   """Switch one alert on or off."""
   setAlert(enabled: Boolean!, kind: AlertKind!): NotificationSettings!
@@ -4544,6 +4728,11 @@ type Query {
   ```
   """
   genreInsights: GenreInsights!
+
+  """
+  The reader's last Goodreads import, or null when they never imported one.
+  """
+  goodreadsImport: GoodreadsImport
 
   """
   The reader's Kindle connection, or null when there is none.
@@ -5862,6 +6051,9 @@ enum WishOrigin {
 
   """On a friend’s shelf."""
   FRIEND
+
+  """The to-read shelf of a Goodreads export."""
+  GOODREADS
 
   """Scanned, and not added."""
   SCAN

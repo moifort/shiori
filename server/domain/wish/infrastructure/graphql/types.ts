@@ -12,6 +12,7 @@ export const WishOriginEnum = builder.enumType('WishOrigin', {
     AWARD: { value: 'award', description: 'Among an award’s winners.' },
     AUTHOR: { value: 'author', description: 'Among the works of an author.' },
     SCAN: { value: 'scan', description: 'Scanned, and not added.' },
+    GOODREADS: { value: 'goodreads', description: 'The to-read shelf of a Goodreads export.' },
   } as const,
 })
 

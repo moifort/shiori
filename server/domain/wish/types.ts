@@ -7,7 +7,7 @@ import type { AuthorName, BookTitle, UserId } from '~/domain/shared/types'
 export type WishId = Brand<string, 'WishId'>
 
 /** Where the reader came across the book they wish for. */
-export type WishOriginKind = 'friend' | 'discovery' | 'award' | 'author' | 'scan'
+export type WishOriginKind = 'friend' | 'discovery' | 'award' | 'author' | 'scan' | 'goodreads'
 
 export type WishOrigin = {
   kind: WishOriginKind

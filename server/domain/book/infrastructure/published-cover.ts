@@ -56,6 +56,13 @@ const ISBN_GROUPS: Partial<Record<BookLanguage, string[]>> = {
   nl: ['97890', '97894'],
 }
 
+/** The language an ISBN's registration group publishes in, when the group
+ *  says one: 978-2 is French, 978-0 and 978-1 English. */
+export const languageOfIsbn = (isbn: string): BookLanguage | undefined =>
+  (Object.entries(ISBN_GROUPS) as [BookLanguage, string[]][]).find(([, groups]) =>
+    groups.some((group) => isbn.startsWith(group)),
+  )?.[0]
+
 /** How many of a work's ISBNs are tried for a cover: each costs two lookups. */
 const ISBNS_TRIED = 3
 
