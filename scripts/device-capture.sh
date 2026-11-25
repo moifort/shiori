@@ -7,7 +7,10 @@
 #
 #   scripts/device-capture.sh <screen> [light|dark] <out.png> [-- <app arguments>…]
 #
-#   <screen>   home | library | news | friends — the tab the app opens on
+#   <screen>   home | library | news | friends — the tab the app opens on;
+#              or a page drawn alone from its fixtures, named as Android's
+#              preview extras: goodreads | goodreads-explain | goodreads-reading
+#              | goodreads-books | goodreads-done | goodreads-source
 #   [light|dark]  the appearance, whatever the phone is set to (default: the phone's)
 #   -- …       more launch arguments for the app, e.g. -- -showcase-prompts audible
 #
@@ -27,7 +30,7 @@
 set -euo pipefail
 
 usage() {
-  sed -n '6,13p' "$0" >&2
+  sed -n '8,16p' "$0" >&2
   exit 2
 }
 
@@ -45,8 +48,10 @@ shift
 EXTRA_ARGS=("$@")
 
 case "$SCREEN" in
-  home | library | news | friends) ;;
-  *) echo "error: unknown screen '$SCREEN' (home, library, news, friends)" >&2; exit 2 ;;
+  home | library | news | friends) SCREEN_FLAG=-showcase-tab ;;
+  goodreads | goodreads-explain | goodreads-reading | goodreads-books | goodreads-done | goodreads-source)
+    SCREEN_FLAG=-showcase-screen ;;
+  *) echo "error: unknown screen '$SCREEN' (home, library, news, friends, goodreads…)" >&2; exit 2 ;;
 esac
 case "$OUT" in
   /*) ;;
@@ -228,7 +233,7 @@ fi
 step "Opening $SCREEN${APPEARANCE:+ ($APPEARANCE)} from the showcase"
 t=$(date +%s)
 launch_json=$(mktemp)
-args=(-showcase -showcase-tab "$SCREEN")
+args=(-showcase "$SCREEN_FLAG" "$SCREEN")
 [ -n "$APPEARANCE" ] && args+=(-showcase-appearance "$APPEARANCE")
 xcrun devicectl device process launch -q --device "$DEVICE_ID" --terminate-existing \
   -j "$launch_json" "$BUNDLE_ID" -- "${args[@]}" ${EXTRA_ARGS[@]+"${EXTRA_ARGS[@]}"} >/dev/null

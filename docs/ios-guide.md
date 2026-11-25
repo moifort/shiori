@@ -422,8 +422,10 @@ it, which the showcase guarantees in Debug builds (`ShowcaseDevice.swift`):
 
 What the iPhone cannot do, and the way round:
 
-- **Free taps.** `devicectl` has no tap. A tab opens from `-showcase-tab`; a screen deeper
-  than a tab goes through a UI test: `ShioriUITests/DeviceScreenTest` (or a test of its own
+- **Free taps.** `devicectl` has no tap. A tab opens from `-showcase-tab`; a page drawn from
+  its fixtures alone opens from `-showcase-screen <name>` (`ShowcaseScreen.swift`, the names of
+  Android's `preview` extras, e.g. `scripts/device-capture.sh goodreads-books dark out.png`);
+  any other screen deeper than a tab goes through a UI test: `ShioriUITests/DeviceScreenTest` (or a test of its own
   that taps its way there) with
   `TEST_RUNNER_SHIORI_SCREEN=news TEST_RUNNER_SHIORI_APPEARANCE=dark xcodebuild test
   -destination 'id=00008130-000A2068029A001C' -only-testing:ShioriUITests/DeviceScreenTest

@@ -27,6 +27,13 @@ enum ShowcaseDevice {
         }
     }
 
+    /// A page deeper than a tab, named after `-showcase-screen` (see
+    /// `ShowcaseScreen.names`), drawn alone from its fixtures.
+    static var screen: String? {
+        guard let name = value(after: "-showcase-screen") else { return nil }
+        return ShowcaseScreen.names.contains(name) ? name : nil
+    }
+
     /// The appearance the showcase draws in, named after
     /// `-showcase-appearance` (`light` or `dark`), whatever the phone is set to.
     static var colorScheme: ColorScheme? {

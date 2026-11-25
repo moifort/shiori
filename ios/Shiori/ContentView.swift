@@ -111,7 +111,7 @@ struct ContentView: View {
     }
 
     var body: some View {
-        tabs
+        root
             .sheet(isPresented: $showAddSheet, onDismiss: actOnPendingSource) {
                 AddBookSheet(searchTitle: ScanClient.live.searchTitle, onChoose: choose)
             }
@@ -312,6 +312,19 @@ struct ContentView: View {
         Showcase.isOn
         #else
         false
+        #endif
+    }
+
+    /// The tabs, or the one page a showcase capture names (`-showcase-screen`).
+    @ViewBuilder private var root: some View {
+        #if DEBUG
+        if Showcase.isOn, let screen = ShowcaseDevice.screen {
+            ShowcaseScreen(name: screen)
+        } else {
+            tabs
+        }
+        #else
+        tabs
         #endif
     }
 
