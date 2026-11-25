@@ -104,8 +104,12 @@ mkdir -p "$MAIN_CHECKOUT/build" "$WORKTREE/build"
 waited=0
 until mkdir "$LOCK" 2>/dev/null; do
   owner_pid=$(sed -n 's/^pid=//p' "$LOCK/owner" 2>/dev/null || true)
-  if [ -n "$owner_pid" ] && ! kill -0 "$owner_pid" 2>/dev/null; then
-    echo "    the lock's owner ($owner_pid) is gone: taking it over" >&2
+  # A lock with no owner file for half a minute was left by a run that died
+  # between the mkdir and the write: it would hold every other session forever.
+  lock_age=$(($(date +%s) - $(stat -f %m "$LOCK" 2>/dev/null || date +%s)))
+  if { [ -n "$owner_pid" ] && ! kill -0 "$owner_pid" 2>/dev/null; } \
+    || { [ -z "$owner_pid" ] && [ "$lock_age" -gt 30 ]; }; then
+    echo "    the lock's owner (${owner_pid:-none}) is gone: taking it over" >&2
     rm -rf "$LOCK"
     continue
   fi
@@ -186,10 +190,19 @@ if [ "${SKIP_BUILD:-}" != 1 ]; then
   elapsed "$t"
 fi
 [ -d "$APP" ] || { echo "error: no build at $APP" >&2; exit 1; }
+# A worktree without the gitignored Firebase config builds an app that dies at
+# launch: never put that on the reader's phone.
+if [ ! -f "$APP/GoogleService-Info.plist" ]; then
+  echo "error: the build has no GoogleService-Info.plist (copy ios/Shiori/GoogleService-Info.plist" >&2
+  echo "       from the main checkout, then build again); nothing installed." >&2
+  exit 1
+fi
 
-# Installs only when the binary changed since the last install from here.
-stamp="$DERIVED_DATA/.installed-on-$DEVICE_ID"
-digest=$(shasum -a 256 "$APP/Shiori" "$APP/Info.plist" | shasum -a 256 | cut -c1-16)
+# Installs only when the build on the phone is this one. The stamp is shared by
+# every worktree: another session's install replaces it, and this run installs
+# its own build again rather than capturing theirs.
+stamp="$MAIN_CHECKOUT/build/ios-device.installed"
+digest="$WORKTREE $(shasum -a 256 "$APP/Shiori" "$APP/Info.plist" | shasum -a 256 | cut -c1-16)"
 if [ "$(cat "$stamp" 2>/dev/null)" != "$digest" ]; then
   step "Installing (keeps the account and its data)"
   t=$(date +%s)
