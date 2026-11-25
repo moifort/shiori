@@ -1813,6 +1813,22 @@
         }
       }
     },
+    "30 scans par mois" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "30 scans par mois"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "30 scans a month"
+          }
+        }
+      }
+    },
     "978…" : {
       "localizations" : {
         "en" : {
@@ -2509,6 +2525,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ajoutés"
+          }
+        }
+      }
+    },
+    "Alertes de sortie" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alertes de sortie"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Release alerts"
           }
         }
       }
@@ -4081,22 +4113,6 @@
         }
       }
     },
-    "Catalogue complet des séries" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Complete series catalogue"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Catalogue complet des séries"
-          }
-        }
-      }
-    },
     "Catalogue des sagas" : {
       "localizations" : {
         "en" : {
@@ -4461,6 +4477,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Chapitre suivant"
+          }
+        }
+      }
+    },
+    "Chaque livre reconnu, avec son résumé et sa série. 30 scans par mois." : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chaque livre reconnu, avec son résumé et sa série. 30 scans par mois."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Every book recognized, with its summary and its series. 30 scans a month."
           }
         }
       }
@@ -4845,6 +4877,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Commencer la lecture"
+          }
+        }
+      }
+    },
+    "Commencer le mois offert" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Commencer le mois offert"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start the free month"
           }
         }
       }
@@ -6977,22 +7025,6 @@
         }
       }
     },
-    "Fiches enrichies par l'IA" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "AI-enriched records"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fiches enrichies par l'IA"
-          }
-        }
-      }
-    },
     "Filtre" : {
       "localizations" : {
         "en" : {
@@ -8561,6 +8593,22 @@
         }
       }
     },
+    "Kindle et Audible à jour" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kindle et Audible à jour"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kindle and Audible up to date"
+          }
+        }
+      }
+    },
     "Kvothe" : {
       "localizations" : {
         "en" : {
@@ -8929,22 +8977,6 @@
         }
       }
     },
-    "Le catalogue complet de vos séries, tomes à paraître compris" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The complete catalogue of your series, upcoming volumes included"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Le catalogue complet de vos séries, tomes à paraître compris"
-          }
-        }
-      }
-    },
     "Le fichier .csv arrive dans vos Téléchargements." : {
       "localizations" : {
         "en" : {
@@ -9101,6 +9133,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Le plus dévoré"
+          }
+        }
+      }
+    },
+    "Le prochain tome de vos séries, dès que sa date est connue." : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le prochain tome de vos séries, dès que sa date est connue."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The next volume of your series, as soon as its date is known."
           }
         }
       }
@@ -11517,6 +11565,22 @@
         }
       }
     },
+    "Ou %@ par mois, sans essai" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ou %@ par mois, sans essai"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Or %@ a month, no trial"
+          }
+        }
+      }
+    },
     "Ouvre la fiche de l'auteur" : {
       "localizations" : {
         "en" : {
@@ -12093,18 +12157,18 @@
         }
       }
     },
-    "Photographiez une couverture : le livre rejoint votre bibliothèque avec son résumé et sa série. Passez en Premium pour scanner sans limite." : {
+    "Photographiez une couverture : le livre rejoint votre bibliothèque avec son résumé et sa série. Premium vous donne 30 scans par mois." : {
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Take a photo of a cover: the book joins your library with its summary and its series. Go Premium to scan without limits."
-          }
-        },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Photographiez une couverture : le livre rejoint votre bibliothèque avec son résumé et sa série. Passez en Premium pour scanner sans limite."
+            "value" : "Photographiez une couverture : le livre rejoint votre bibliothèque avec son résumé et sa série. Premium vous donne 30 scans par mois."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Take a photo of a cover: the book joins your library with its summary and its series. Premium gives you 30 scans a month."
           }
         }
       }
@@ -13261,6 +13325,22 @@
         }
       }
     },
+    "Renouvellement automatique, résiliable à tout moment dans les réglages du compte App Store." : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Renouvellement automatique, résiliable à tout moment dans les réglages du compte App Store."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Renews automatically, cancel anytime in your App Store account settings."
+          }
+        }
+      }
+    },
     "Renouvellement le %@" : {
       "localizations" : {
         "en" : {
@@ -13933,6 +14013,22 @@
         }
       }
     },
+    "Résiliable à tout moment" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Résiliable à tout moment"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancel anytime"
+          }
+        }
+      }
+    },
     "Résumé" : {
       "localizations" : {
         "en" : {
@@ -14205,22 +14301,6 @@
         }
       }
     },
-    "Scannez sans compter" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Scan without counting"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Scannez sans compter"
-          }
-        }
-      }
-    },
     "Scannés" : {
       "localizations" : {
         "en" : {
@@ -14269,18 +14349,18 @@
         }
       }
     },
-    "Scans illimités" : {
+    "Scans du mois utilisés" : {
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Unlimited scans"
-          }
-        },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Scans illimités"
+            "value" : "Scans du mois utilisés"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This month's scans used"
           }
         }
       }
@@ -14489,6 +14569,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Shiori n'est pas autorisé à vous prévenir. Activez ses notifications dans les réglages de l'iPhone pour recevoir ces alertes."
+          }
+        }
+      }
+    },
+    "Shiori s’utilise avec un abonnement. Le premier mois est offert, et rien n’est prélevé si vous résiliez avant sa fin." : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shiori s’utilise avec un abonnement. Le premier mois est offert, et rien n’est prélevé si vous résiliez avant sa fin."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shiori is used with a subscription. The first month is free, and nothing is charged if you cancel before it ends."
           }
         }
       }
@@ -14809,22 +14905,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sous-genres"
-          }
-        }
-      }
-    },
-    "Soutenez l’application pour qu’elle puisse s’autofinancer" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Support the app so it can pay its own way"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Soutenez l’application pour qu’elle puisse s’autofinancer"
           }
         }
       }
@@ -15453,6 +15533,22 @@
         }
       }
     },
+    "S’abonner" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "S’abonner"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Subscribe"
+          }
+        }
+      }
+    },
     "Tendances" : {
       "localizations" : {
         "en" : {
@@ -15981,18 +16077,18 @@
         }
       }
     },
-    "Tous vos scans ont été utilisés. Passez en Premium pour scanner sans limite." : {
+    "Tous vos scans ont été utilisés. Premium vous en donne 30 par mois, et tient votre bibliothèque à jour." : {
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You’ve used all your scans. Go Premium to scan without limits."
-          }
-        },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tous vos scans ont été utilisés. Passez en Premium pour scanner sans limite."
+            "value" : "Tous vos scans ont été utilisés. Premium vous en donne 30 par mois, et tient votre bibliothèque à jour."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All your scans have been used. Premium gives you 30 a month, and keeps your library up to date."
           }
         }
       }
@@ -16365,6 +16461,22 @@
         }
       }
     },
+    "Un mois offert" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un mois offert"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "One month free"
+          }
+        }
+      }
+    },
     "Un titre, l'IA cherche le reste" : {
       "localizations" : {
         "en" : {
@@ -16377,6 +16489,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Un titre, l'IA cherche le reste"
+          }
+        }
+      }
+    },
+    "Une couverture ou une étagère en photo" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Une couverture ou une étagère en photo"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A cover or a shelf in a photo"
           }
         }
       }
@@ -16653,6 +16781,54 @@
         }
       }
     },
+    "Vos 30 scans du mois sont utilisés. Le compteur repart le %@." : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vos 30 scans du mois sont utilisés. Le compteur repart le %@."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your 30 scans for the month are used. The count starts again on %@."
+          }
+        }
+      }
+    },
+    "Vos 30 scans du mois sont utilisés. Le compteur repart le mois prochain." : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vos 30 scans du mois sont utilisés. Le compteur repart le mois prochain."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your 30 scans for the month are used. The count starts again next month."
+          }
+        }
+      }
+    },
+    "Vos achats et vos lectures arrivent chaque nuit, sans rien faire." : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vos achats et vos lectures arrivent chaque nuit, sans rien faire."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your purchases and your reading arrive every night, with nothing to do."
+          }
+        }
+      }
+    },
     "Vos bibliothèques" : {
       "localizations" : {
         "en" : {
@@ -16841,6 +17017,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vos livres n’ont pas pu être chargés."
+          }
+        }
+      }
+    },
+    "Vos livres, vos séries et vos notes sont gardés. Abonnez-vous pour retrouver votre bibliothèque." : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vos livres, vos séries et vos notes sont gardés. Abonnez-vous pour retrouver votre bibliothèque."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your books, your series and your notes are kept. Subscribe to get your library back."
           }
         }
       }
@@ -17053,6 +17245,22 @@
         }
       }
     },
+    "Votre essai est terminé" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Votre essai est terminé"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your trial has ended"
+          }
+        }
+      }
+    },
     "Votre export Goodreads" : {
       "localizations" : {
         "en" : {
@@ -17065,6 +17273,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Votre export Goodreads"
+          }
+        }
+      }
+    },
+    "Votre mois offert" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Votre mois offert"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your free month"
           }
         }
       }
@@ -17965,6 +18189,22 @@
         }
       }
     },
+    "puis %@ par an" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "puis %@ par an"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "then %@ a year"
+          }
+        }
+      }
+    },
     "sans titre" : {
       "localizations" : {
         "en" : {
@@ -17977,6 +18217,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "sans titre"
+          }
+        }
+      }
+    },
+    "soit %@ par mois" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "soit %@ par mois"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "that is %@ a month"
           }
         }
       }

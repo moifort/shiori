@@ -89,7 +89,11 @@ fun AuthRoot() {
                                 }
                             })
                         }
-                        OnboardingGate.State.Ready -> Box(Modifier.fillMaxSize()) {
+                        // No free plan: the wall stands in for the app until the account subscribes,
+                        // the library's preparation going on behind it.
+                        OnboardingGate.State.Ready -> if (!showcase && subscriptions.isPremium == false) {
+                            com.polyforms.shiori.features.subscription.SubscriptionWallScreen()
+                        } else Box(Modifier.fillMaxSize()) {
                             ContentView()
                             if (com.polyforms.shiori.features.home.LibraryPreparation.isActive) {
                                 ShioriTheme(dark = true) {

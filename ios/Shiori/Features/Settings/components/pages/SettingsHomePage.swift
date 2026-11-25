@@ -124,8 +124,8 @@ struct SettingsHomePage: View {
     /// itself, argued from the account's own numbers.
     private var subscriptionSubtitle: String? {
         switch isPremium {
-        case true: String(localized: "Scans illimités")
-        case false: String(localized: "Scannez sans compter")
+        case true: String(localized: "30 scans par mois")
+        case false: String(localized: "Un mois offert")
         case nil: nil
         }
     }

@@ -11,6 +11,7 @@
 #              or a page drawn alone from its fixtures, named as Android's
 #              preview extras: goodreads | goodreads-explain | goodreads-reading
 #              | goodreads-books | goodreads-done | goodreads-source
+#              | subscription-trial | subscription-lapsed
 #   [light|dark]  the appearance, whatever the phone is set to (default: the phone's)
 #   -- …       more launch arguments for the app, e.g. -- -showcase-prompts audible
 #
@@ -30,7 +31,7 @@
 set -euo pipefail
 
 usage() {
-  sed -n '8,16p' "$0" >&2
+  sed -n '8,17p' "$0" >&2
   exit 2
 }
 
@@ -49,7 +50,8 @@ EXTRA_ARGS=("$@")
 
 case "$SCREEN" in
   home | library | news | friends) SCREEN_FLAG=-showcase-tab ;;
-  goodreads | goodreads-explain | goodreads-reading | goodreads-books | goodreads-done | goodreads-source)
+  goodreads | goodreads-explain | goodreads-reading | goodreads-books | goodreads-done | goodreads-source \
+    | subscription-trial | subscription-lapsed)
     SCREEN_FLAG=-showcase-screen ;;
   *) echo "error: unknown screen '$SCREEN' (home, library, news, friends, goodreads…)" >&2; exit 2 ;;
 esac

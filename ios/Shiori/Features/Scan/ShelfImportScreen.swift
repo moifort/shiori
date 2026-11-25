@@ -33,9 +33,7 @@ struct ShelfImportScreen: View {
                     }
                 }
         }
-        .sheet(isPresented: $viewModel.paywallShown, onDismiss: onDismiss) {
-            PremiumSheet(trigger: .shelfImport)
-        }
+        .allowanceSpent(isPresented: $viewModel.paywallShown, trigger: .shelfImport, onDismiss: onDismiss)
         .task {
             if case let .photo(data) = start { await detect(imageData: data) }
         }

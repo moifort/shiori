@@ -120,13 +120,20 @@ class SubscriptionStore(context: Context) {
     }
 
     /** Starts Play's purchase sheet; true once the server granted Premium. */
-    suspend fun purchase(activity: Activity, product: ProductDetails): Boolean {
+    suspend fun purchase(activity: Activity, product: ProductDetails, withTrial: Boolean = false): Boolean {
         val token = appAccountToken
         if (token == null) {
             errorMessage = L("Impossible de préparer l’achat. Réessayez dans un instant.")
             return false
         }
-        val offer = product.subscriptionOfferDetails?.firstOrNull() ?: return false
+        // The free month's offer when it is asked for and Play still lists it; the base plan
+        // otherwise, which charges from the first day.
+        val offers = product.subscriptionOfferDetails.orEmpty()
+        val trialOffer = offers.firstOrNull { offer -> offer.pricingPhases.pricingPhaseList.any { it.priceAmountMicros == 0L } }
+        val offer = (if (withTrial) trialOffer else null)
+            ?: offers.firstOrNull { it.offerId == null }
+            ?: offers.firstOrNull()
+            ?: return false
         isPurchasing = true
         try {
             val deferred = CompletableDeferred<Boolean>()

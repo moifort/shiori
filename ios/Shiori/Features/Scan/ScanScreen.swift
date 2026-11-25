@@ -83,9 +83,7 @@ struct ScanScreen: View {
         }
         .allowsHitTesting(confirmation == nil)
         .confirmationHUD($confirmation)
-        .sheet(isPresented: $viewModel.paywallShown, onDismiss: onDismiss) {
-            PremiumSheet(trigger: .scanAllowanceSpent)
-        }
+        .allowanceSpent(isPresented: $viewModel.paywallShown, trigger: .scanAllowanceSpent, onDismiss: onDismiss)
         .alert(
             "Le scan a échoué",
             isPresented: .init(

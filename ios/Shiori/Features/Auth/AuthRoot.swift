@@ -108,6 +108,12 @@ struct AuthRoot: View {
         return gate.state == .loading || gate.state == .required || preparation.isActive
     }
 
+    /// Whether the account must subscribe before the app opens: the server said it holds no
+    /// Premium. Unknown is not a no: the app opens, and the wall comes once the plan is read.
+    private var requiresSubscription: Bool {
+        !isShowcase && subscriptions.isPremium == false
+    }
+
     /// A new reader goes straight to the wizard, from the very first frame
     /// after signing in: the gate only hears of them once its request starts.
     private var route: OnboardingGate.State {
@@ -132,6 +138,10 @@ struct AuthRoot: View {
                     UserDefaults.standard.set(true, forKey: PastedInvitation.pendingKey)
                 }
             })
+        case .ready where requiresSubscription:
+            // No free plan: the wall stands in for the app until the account subscribes,
+            // the library's preparation going on behind it.
+            SubscriptionWallScreen()
         case .ready:
             ZStack {
                 // Kept running out of sight: the checklist's last line is its

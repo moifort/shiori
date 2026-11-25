@@ -30,9 +30,9 @@ enum PremiumTrigger {
         case .scanAllowanceSpent:
             // Not "this month": the granted scans run out on their own schedule,
             // and this is shown once nothing is left anywhere.
-            return String(localized: "Tous vos scans ont été utilisés. Passez en Premium pour scanner sans limite.")
+            return String(localized: "Tous vos scans ont été utilisés. Premium vous en donne 30 par mois, et tient votre bibliothèque à jour.")
         case .discover:
-            return String(localized: "Photographiez une couverture : le livre rejoint votre bibliothèque avec son résumé et sa série. Passez en Premium pour scanner sans limite.")
+            return String(localized: "Photographiez une couverture : le livre rejoint votre bibliothèque avec son résumé et sa série. Premium vous donne 30 scans par mois.")
         case .shelfImport:
             return String(localized: "Photographiez une étagère entière : chaque livre est reconnu, vous cochez ceux à ajouter. Réservé à Shiori Premium.")
         }
@@ -120,16 +120,9 @@ struct PremiumSheet: View {
         }
     }
 
+    /// The same three lines as the wall: there is no free plan, so they are the app.
     private var benefits: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            BenefitRow(icon: "camera.viewfinder", text: "Scans illimités")
-            BenefitRow(
-                icon: "square.stack",
-                text: "Le catalogue complet de vos séries, tomes à paraître compris"
-            )
-            BenefitRow(icon: "heart", text: "Soutenez l’application pour qu’elle puisse s’autofinancer")
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        PremiumPromise()
     }
 
     /// The plans in the order they are declared in, not whatever the App Store
@@ -213,23 +206,6 @@ enum SubscriptionLinks {
     static let privacy = URL(string: "https://shiori.polyforms.co/privacy.html")!
 }
 
-private struct BenefitRow: View {
-    let icon: String
-    let text: LocalizedStringKey
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: icon)
-                .font(.body)
-                .foregroundStyle(.tint)
-                .frame(width: 26)
-            Text(text)
-                .font(.subheadline)
-            Spacer(minLength: 0)
-        }
-    }
-}
-
 /// One plan as the sheet draws it. The price and the period come from the
 /// `Product`, never from a string in the app: Apple shows the storefront's own
 /// currency and amount. Held apart from the `Product` because StoreKit's cannot
@@ -243,13 +219,19 @@ struct PremiumOffer: Identifiable {
     var trial: String?
     /// What a tap buys. Nil on a plan drawn for a capture.
     var product: Product?
+    /// The yearly price over twelve months, written out for a plan drawn without a store.
+    var perMonthForCapture: String?
 
-    init(id: String, name: String, displayPrice: String, price: Decimal, trial: String? = nil) {
+    init(
+        id: String, name: String, displayPrice: String, price: Decimal, trial: String? = nil,
+        perMonthForCapture: String? = nil
+    ) {
         self.id = id
         self.name = name
         self.displayPrice = displayPrice
         self.price = price
         self.trial = trial
+        self.perMonthForCapture = perMonthForCapture
     }
 
     init(product: Product) {
@@ -349,15 +331,6 @@ private struct OfferButton: View {
         formatter.maximumFractionDigits = 0
         return formatter
     }()
-}
-
-#Preview("Benefit rows") {
-    VStack(alignment: .leading, spacing: 14) {
-        BenefitRow(icon: "infinity", text: "Scans illimités")
-        BenefitRow(icon: "sparkles", text: "Fiches enrichies par l'IA")
-        BenefitRow(icon: "square.stack", text: "Catalogue complet des séries")
-    }
-    .padding()
 }
 
 #Preview("Allowance spent") {

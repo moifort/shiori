@@ -109,8 +109,8 @@ fun SettingsHomePage(profileSubtitle: String?, isPremium: Boolean?, notification
                 "sparkles",
                 if (isPremium == true) L("Shiori Premium") else L("Découvrir Premium"),
                 when (isPremium) {
-                    true -> L("Scans illimités")
-                    false -> L("Scannez sans compter")
+                    true -> L("30 scans par mois")
+                    false -> L("Un mois offert")
                     null -> null
                 },
             ) { onAction(SettingsHomeAction.ShowPremium) }

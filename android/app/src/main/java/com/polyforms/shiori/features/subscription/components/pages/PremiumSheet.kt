@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import com.android.billingclient.api.ProductDetails
 import com.polyforms.shiori.features.subscription.LocalSubscriptionStore
 import com.polyforms.shiori.features.subscription.SubscriptionProducts
+import com.polyforms.shiori.features.subscription.components.molecules.PremiumPromise
 import com.polyforms.shiori.features.subscription.components.molecules.QuotaGauge
 import com.polyforms.shiori.shared.AnalyticsEvent
 import com.polyforms.shiori.shared.L
@@ -72,8 +73,8 @@ enum class PremiumTrigger(val analyticsName: String) {
 
     val message: String
         get() = when (this) {
-            SCAN_ALLOWANCE_SPENT -> L("Tous vos scans ont été utilisés. Passez en Premium pour scanner sans limite.")
-            DISCOVER -> L("Photographiez une couverture : le livre rejoint votre bibliothèque avec son résumé et sa série. Passez en Premium pour scanner sans limite.")
+            SCAN_ALLOWANCE_SPENT -> L("Tous vos scans ont été utilisés. Premium vous en donne 30 par mois, et tient votre bibliothèque à jour.")
+            DISCOVER -> L("Photographiez une couverture : le livre rejoint votre bibliothèque avec son résumé et sa série. Premium vous donne 30 scans par mois.")
             SHELF_IMPORT -> L("Photographiez une étagère entière : chaque livre est reconnu, vous cochez ceux à ajouter. Réservé à Shiori Premium.")
         }
 }
@@ -86,13 +87,24 @@ data class PremiumOffer(
     val priceMicros: Long,
     val trial: String? = null,
     val product: ProductDetails? = null,
+    /** The yearly price over twelve months, in the plan's currency. */
+    val perMonth: String? = null,
 ) {
     companion object {
+        /** The plan at its paid price, and the free period Play offers this account, if any: Play
+         *  lists a free-trial offer only while the account may still start it. */
         fun of(product: ProductDetails): PremiumOffer? {
-            val offer = product.subscriptionOfferDetails?.firstOrNull() ?: return null
-            val phases = offer.pricingPhases.pricingPhaseList
-            val paid = phases.lastOrNull() ?: return null
-            val free = phases.firstOrNull { it.priceAmountMicros == 0L }
+            val offers = product.subscriptionOfferDetails.orEmpty()
+            val paid = offers.flatMap { it.pricingPhases.pricingPhaseList }.lastOrNull { it.priceAmountMicros > 0L } ?: return null
+            val free = offers.flatMap { it.pricingPhases.pricingPhaseList }.firstOrNull { it.priceAmountMicros == 0L }
+            val perMonth = if (paid.billingPeriod == "P1Y") {
+                runCatching {
+                    java.text.NumberFormat.getCurrencyInstance().apply { currency = java.util.Currency.getInstance(paid.priceCurrencyCode) }
+                        .format(paid.priceAmountMicros / 12_000_000.0)
+                }.getOrNull()
+            } else {
+                null
+            }
             return PremiumOffer(
                 id = product.productId,
                 name = product.name,
@@ -100,6 +112,7 @@ data class PremiumOffer(
                 priceMicros = paid.priceAmountMicros,
                 trial = free?.let { trialLabel(it.billingPeriod) },
                 product = product,
+                perMonth = perMonth,
             )
         }
 
@@ -161,11 +174,8 @@ fun PremiumSheet(trigger: PremiumTrigger, onDismiss: () -> Unit) {
             store.quota?.let { quota ->
                 if (!quota.isPremium) QuotaGauge(quota.used, quota.limit, quota.renewsOn, quota.welcomeRemaining)
             }
-            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                Benefit("camera.viewfinder", L("Scans illimités"))
-                Benefit("square.stack", L("Le catalogue complet de vos séries, tomes à paraître compris"))
-                Benefit("heart", L("Soutenez l’application pour qu’elle puisse s’autofinancer"))
-            }
+            // The same three lines as the wall: there is no free plan, so they are the app.
+            PremiumPromise()
             when {
                 store.isLoading && plans.isEmpty() -> Box(Modifier.fillMaxWidth().heightIn(min = 120.dp), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
@@ -203,14 +213,6 @@ fun PremiumSheet(trigger: PremiumTrigger, onDismiss: () -> Unit) {
     }
     store.errorMessage?.let { message ->
         ShioriAlert(L("Achat impossible"), message, onDismiss = { store.errorMessage = null })
-    }
-}
-
-@Composable
-private fun Benefit(symbol: String, text: String) {
-    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-        Icon(Symbol(symbol), null, Modifier.width(26.dp).size(22.dp), tint = Shiori.colors.accent)
-        Text(text, style = Shiori.type.subheadline, color = Shiori.colors.label)
     }
 }
 

@@ -50,7 +50,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.polyforms.shiori.features.subscription.components.pages.PremiumSheet
 import com.polyforms.shiori.features.subscription.components.pages.PremiumTrigger
 import com.polyforms.shiori.shared.AnalyticsEvent
 import com.polyforms.shiori.shared.ApiError
@@ -272,7 +271,7 @@ fun ShelfImportScreen(onDismiss: () -> Unit, startJpeg: ByteArray? = null, clien
         Box(Modifier.statusBarsPadding().padding(16.dp)) { ToolbarIconButton(L("Fermer"), "xmark", onClick = onDismiss) }
     }
     if (viewModel.paywallShown) {
-        PremiumSheet(PremiumTrigger.SHELF_IMPORT) {
+        com.polyforms.shiori.features.subscription.AllowanceSpent(PremiumTrigger.SHELF_IMPORT) {
             viewModel.paywallShown = false
             onDismiss()
         }

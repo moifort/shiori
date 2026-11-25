@@ -27,7 +27,6 @@ import com.polyforms.shiori.features.scan.components.organisms.ScanNoResultPage
 import com.polyforms.shiori.features.scan.components.organisms.ViewfinderOverlay
 import com.polyforms.shiori.features.scan.components.pages.ScanReviewAction
 import com.polyforms.shiori.features.scan.components.pages.ScanReviewPage
-import com.polyforms.shiori.features.subscription.components.pages.PremiumSheet
 import com.polyforms.shiori.features.subscription.components.pages.PremiumTrigger
 import com.polyforms.shiori.shared.Book
 import com.polyforms.shiori.shared.BookOrigin
@@ -145,7 +144,7 @@ fun ScanScreen(
         ConfirmationHost(confirmation) { confirmation = null }
     }
     if (viewModel.paywallShown) {
-        PremiumSheet(PremiumTrigger.SCAN_ALLOWANCE_SPENT) {
+        com.polyforms.shiori.features.subscription.AllowanceSpent(PremiumTrigger.SCAN_ALLOWANCE_SPENT) {
             viewModel.paywallShown = false
             onDismiss()
         }

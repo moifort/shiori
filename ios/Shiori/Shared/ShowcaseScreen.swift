@@ -11,7 +11,7 @@ struct ShowcaseScreen: View {
     /// The names this view draws; any other leaves the app on its tabs.
     static let names: Set<String> = [
         "goodreads", "goodreads-explain", "goodreads-reading", "goodreads-books",
-        "goodreads-done", "goodreads-source",
+        "goodreads-done", "goodreads-source", "subscription-trial", "subscription-lapsed",
     ]
 
     @State private var choices = GoodreadsChoices(preview: .preview)
@@ -28,6 +28,14 @@ struct ShowcaseScreen: View {
             NavigationStack {
                 GoodreadsBooksPage(preview: .preview, choices: $choices, filter: .all, onDecide: { _ in })
             }
+        case "subscription-trial", "subscription-lapsed":
+            SubscriptionWallPage(
+                kind: name == "subscription-trial" ? .trial : .lapsed,
+                offers: PremiumOffer.previewOffers, savings: 0.42,
+                onBuy: { _ in }, onRestore: {}, onAccount: {}
+            )
+            .background { CoverVeil(covering: true) }
+            .environment(\.colorScheme, .dark)
         case "goodreads-done":
             NavigationStack {
                 GoodreadsDonePage(
