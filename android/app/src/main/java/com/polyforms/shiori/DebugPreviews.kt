@@ -174,6 +174,7 @@ fun DebugPreviews(name: String) {
                 com.polyforms.shiori.features.news.components.pages.UpcomingReleasesPage(com.polyforms.shiori.features.news.NewsFixtures.upcoming) {}
             }
             "tabbar" -> TabBarPreview()
+            "tabbar-player" -> TabBarPlayerPreview()
             "confirmation" -> androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize().background(com.polyforms.shiori.shared.components.styles.Shiori.colors.groupedBackground)) {
                 // A confirmation anchored to the bell that asks it, as iOS 26's popover.
                 androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.align(androidx.compose.ui.Alignment.Center)) {
@@ -503,6 +504,43 @@ private fun PageEndPreview(page: String) {
                             accessory = accessory,
                         )
                     }
+                }
+            }
+        }
+    }
+}
+
+/** The real tab bar with a title in the player's capsule, over a long list: the capsule slides into the folded bar. */
+@Composable
+private fun TabBarPlayerPreview() {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    remember { AudiblePlayers.app(context).apply { showPreview(ListeningTitlePreview, Playback.preview) } }
+    com.polyforms.shiori.features.listening.PlayerHost {
+        val fold = remember { com.polyforms.shiori.shared.platform.TabBarFold() }
+        val tabs = listOf(TabSelection.HOME, TabSelection.LIBRARY, TabSelection.NEWS, TabSelection.FRIENDS)
+        val colors = com.polyforms.shiori.shared.components.styles.Shiori.colors
+        val backdrop = com.polyforms.shiori.shared.components.styles.rememberBackdrop()
+        val accessory = com.polyforms.shiori.features.listening.playerAccessory()
+        androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize().background(colors.groupedBackground).nestedScroll(fold.connection)) {
+            androidx.compose.foundation.lazy.LazyColumn(
+                androidx.compose.ui.Modifier.fillMaxSize().backdropSource(backdrop).background(colors.groupedBackground).statusBarsPadding(),
+            ) {
+                items(DebugFixtures.reading.size * 6) { index ->
+                    val book = DebugFixtures.reading[index % DebugFixtures.reading.size]
+                    com.polyforms.shiori.shared.components.organisms.BookRow(book)
+                }
+            }
+            androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.align(androidx.compose.ui.Alignment.BottomCenter)) {
+                androidx.compose.runtime.CompositionLocalProvider(com.polyforms.shiori.shared.components.styles.LocalBackdrop provides backdrop) {
+                    com.polyforms.shiori.shared.platform.FloatingTabBar(
+                        tabs = tabs.map { com.polyforms.shiori.shared.platform.TabItem(it, it.label, it.symbol) },
+                        selected = TabSelection.HOME,
+                        onSelect = {},
+                        trailing = com.polyforms.shiori.shared.platform.TabItem(TabSelection.SCAN, TabSelection.SCAN.label, TabSelection.SCAN.symbol),
+                        minimized = fold.isMinimized,
+                        onExpand = { fold.isMinimized = false },
+                        accessory = accessory,
+                    )
                 }
             }
         }
