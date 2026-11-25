@@ -83,6 +83,15 @@ and the App Store fixtures with `--ez showcase true`. The app's language is set 
 
 ## Releasing on Google Play
 
+**The account is personal** (decided 2026-11-25: no company, so no D-U-N-S; owner
+`thibaut@polyforms.co`). A personal account created after 2023-11-13 has no production track
+until a **closed test** has had **12 testers opted in for 14 days in a row**; then "Apply for
+production" on the Dashboard, reviewed in about seven days. Testers need an Android phone and
+a Google account; the closed track is `alpha` in the API, so a manual run of Release Android
+with the track `alpha` (or a promotion in the Console) feeds them. Keep the 12 opted in until
+production access is granted.
+
+
 One tag ships both apps: `v<version>` starts `release-ios.yml` and `release-android.yml` with the
 same version. `android-v<version>` (or a manual run of Release Android, which picks the track)
 reruns Android alone. The Android workflow:
