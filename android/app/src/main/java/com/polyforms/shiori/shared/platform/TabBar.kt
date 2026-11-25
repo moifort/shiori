@@ -1,6 +1,19 @@
 package com.polyforms.shiori.shared.platform
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Animatable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.layout.layoutId
+import androidx.compose.ui.unit.Constraints
+import com.polyforms.shiori.shared.components.styles.Motion
+import com.polyforms.shiori.features.listening.components.organisms.PlayerAccessoryHeights
+import kotlin.math.roundToInt
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.navigationBars
@@ -44,12 +57,29 @@ import com.polyforms.shiori.shared.components.styles.plainClickable
 data class TabItem<T>(val value: T, val label: String, val symbol: String)
 
 /**
+ * How far the tab bar has folded, 0 unfolded to 1 folded, for what floats with it (the title
+ * playing) to follow the same spring. A lambda read in layout or draw, so a fold moves things
+ * without composing anything again.
+ */
+val LocalBarFold = staticCompositionLocalOf<() -> Float> { { 0f } }
+
+/** The fold of the bar, sprung as iOS folds its tab bar, from `minimized`. */
+@Composable
+fun animatedBarFold(minimized: Boolean): () -> Float {
+    val progress = remember { Animatable(if (minimized) 1f else 0f) }
+    LaunchedEffect(minimized) { progress.animateTo(if (minimized) 1f else 0f, Motion.snappy()) }
+    return remember(progress) { { progress.value } }
+}
+
+/**
  * The iOS 26 tab bar: a floating glass capsule of tabs, the chosen one on a lighter pill, and
  * one detached round button at its trailing end (the scanner).
  *
- * `minimized` folds it away while a page scrolls down, as iOS's `.onScrollDown`: only the chosen
- * tab stays, as a round button that unfolds the bar, beside the scanner. `accessory` (the title
- * playing) floats over the bar, and slides between the chosen tab and the scanner once folded.
+ * `minimized` folds it away while a page scrolls down, as iOS's `.onScrollDown`: the capsule of
+ * tabs shrinks to the chosen tab alone, a round button that unfolds the bar, beside the scanner.
+ * `accessory` (the title playing) floats over the bar and, as the bar folds, slides down and
+ * narrows into the room between the chosen tab and the scanner, one capsule all the way. The
+ * whole move is laid out from `fold`, never composed again frame by frame.
  */
 @Composable
 fun <T> FloatingTabBar(
@@ -61,40 +91,34 @@ fun <T> FloatingTabBar(
     minimized: Boolean = false,
     onExpand: () -> Unit = {},
     accessory: (@Composable () -> Unit)? = null,
+    fold: () -> Float = animatedBarFold(minimized),
 ) {
     val colors = Shiori.colors
-    Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 20.dp, vertical = BottomRoom.BarPadding)) {
-        if (accessory != null && !minimized) {
-            Box(Modifier.fillMaxWidth().padding(bottom = BottomRoom.AccessoryGap)) { accessory() }
-        }
-        Row(
-            Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            if (minimized) {
-                val tab = tabs.firstOrNull { it.value == selected } ?: tabs.first()
-                Box(
-                    Modifier
-                        .size(BottomRoom.BarHeight)
-                        .shadow(12.dp, CircleShape, ambientColor = colors.label.copy(alpha = 0.2f), spotColor = colors.label.copy(alpha = 0.2f))
-                        .clip(CircleShape)
-                        .glass(CircleShape)
-                        .plainClickable(onClick = onExpand)
-                        .semantics { contentDescription = tab.label },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(Symbol(tab.symbol), null, Modifier.size(26.dp), tint = colors.accent)
-                }
-                Box(Modifier.weight(1f)) { accessory?.invoke() }
-            } else {
+    val shadowColor = colors.label.copy(alpha = 0.2f)
+    val chosen = tabs.firstOrNull { it.value == selected } ?: tabs.first()
+    // The capsule of tabs' unfolded width, set as the bar is laid out, for its tabs to keep it.
+    val fullTabsWidth = remember { IntArray(1) }
+    Layout(
+        modifier = Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 20.dp, vertical = BottomRoom.BarPadding),
+        content = {
+            // The capsule of tabs, which folds into the chosen tab's round button.
+            Box(
+                Modifier
+                    .layoutId(BarPart.Tabs)
+                    .shadow(12.dp, CircleShape, ambientColor = shadowColor, spotColor = shadowColor)
+                    .clip(CircleShape)
+                    .glass(CircleShape),
+            ) {
+                // Laid out at the capsule's unfolded width, whatever its width now: the tabs fade
+                // in place as the capsule closes over them rather than squeezing.
                 Row(
                     Modifier
-                        .weight(1f)
-                        .height(BottomRoom.BarHeight)
-                        .shadow(12.dp, CircleShape, ambientColor = colors.label.copy(alpha = 0.2f), spotColor = colors.label.copy(alpha = 0.2f))
-                        .clip(CircleShape)
-                        .glass(CircleShape)
+                        .layout { measurable, constraints ->
+                            val full = constraints.maxWidth.coerceAtLeast(fullTabsWidth[0])
+                            val placeable = measurable.measure(Constraints.fixed(full, constraints.maxHeight))
+                            layout(constraints.maxWidth, constraints.maxHeight) { placeable.placeRelative(0, 0) }
+                        }
+                        .graphicsLayer { alpha = (1f - fold() / 0.6f).coerceIn(0f, 1f) }
                         .padding(4.dp),
                 ) {
                     tabs.forEach { tab ->
@@ -106,7 +130,7 @@ fun <T> FloatingTabBar(
                                 .height(54.dp)
                                 .clip(CircleShape)
                                 .background(if (on) colors.fill else colors.fill.copy(alpha = 0f))
-                                .plainClickable { onSelect(tab.value) },
+                                .plainClickable(enabled = !minimized) { onSelect(tab.value) },
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.Center,
                         ) {
@@ -115,12 +139,27 @@ fun <T> FloatingTabBar(
                         }
                     }
                 }
+                // Folded, the chosen tab alone, centred in the round button it became.
+                Box(
+                    Modifier
+                        .matchParentSize()
+                        .graphicsLayer { alpha = ((fold() - 0.4f) / 0.6f).coerceIn(0f, 1f) }
+                        .then(if (minimized) Modifier.plainClickable(onClick = onExpand).semantics { contentDescription = chosen.label } else Modifier),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(Symbol(chosen.symbol), null, Modifier.size(26.dp), tint = colors.accent)
+                }
+            }
+            if (accessory != null) {
+                Box(Modifier.layoutId(BarPart.Accessory)) {
+                    CompositionLocalProvider(LocalBarFold provides fold) { accessory() }
+                }
             }
             if (trailing != null) {
                 Box(
                     Modifier
-                        .size(BottomRoom.BarHeight)
-                        .shadow(12.dp, CircleShape, ambientColor = colors.label.copy(alpha = 0.2f), spotColor = colors.label.copy(alpha = 0.2f))
+                        .layoutId(BarPart.Trailing)
+                        .shadow(12.dp, CircleShape, ambientColor = shadowColor, spotColor = shadowColor)
                         .clip(CircleShape)
                         .glass(CircleShape)
                         .plainClickable(onClick = onTrailing),
@@ -129,9 +168,44 @@ fun <T> FloatingTabBar(
                     Icon(Symbol(trailing.symbol), trailing.label, Modifier.size(28.dp), tint = colors.label)
                 }
             }
+        },
+    ) { measurables, constraints ->
+        val p = fold()
+        val width = constraints.maxWidth
+        val bar = BottomRoom.BarHeight.roundToPx()
+        val spacing = 10.dp.roundToPx()
+        val gap = BottomRoom.AccessoryGap.roundToPx()
+        val hasTrailing = measurables.any { it.layoutId == BarPart.Trailing }
+        val tabsFull = width - if (hasTrailing) bar + spacing else 0
+        val accessoryMeasurable = measurables.firstOrNull { it.layoutId == BarPart.Accessory }
+        val over = PlayerAccessoryHeights.expanded.roundToPx()
+        val inline = PlayerAccessoryHeights.inline.roundToPx()
+
+        val tabsWidth = lerp(tabsFull, bar, p)
+        fullTabsWidth[0] = tabsFull
+        val tabs = measurables.first { it.layoutId == BarPart.Tabs }.measure(Constraints.fixed(tabsWidth, bar))
+        val trailingPlaceable = measurables.firstOrNull { it.layoutId == BarPart.Trailing }?.measure(Constraints.fixed(bar, bar))
+
+        // Over the bar, the whole width; folded, the room between the round tab and the scanner.
+        val accessoryX = lerp(0, bar + spacing, p)
+        val accessoryWidth = lerp(width, width - (bar + spacing) - if (hasTrailing) bar + spacing else 0, p)
+        val accessoryHeight = lerp(over, inline, p)
+        val accessoryPlaceable = accessoryMeasurable?.measure(Constraints.fixed(accessoryWidth, accessoryHeight))
+
+        // The bar's row sits at the foot; what floats over it takes its room only while unfolded.
+        val height = bar + if (accessoryPlaceable != null) lerp(over + gap, 0, p) else 0
+        val barTop = height - bar
+        layout(width, height) {
+            tabs.placeRelative(0, barTop)
+            trailingPlaceable?.placeRelative(width - bar, barTop)
+            accessoryPlaceable?.placeRelative(accessoryX, barTop + lerp(-(over + gap), (bar - inline) / 2, p))
         }
     }
 }
+
+private enum class BarPart { Tabs, Accessory, Trailing }
+
+private fun lerp(from: Int, to: Int, fraction: Float): Int = (from + (to - from) * fraction).roundToInt()
 
 /**
  * Folds the tab bar away while a page scrolls down and calls it back on the way up, as iOS's

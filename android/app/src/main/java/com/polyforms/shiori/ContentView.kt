@@ -40,6 +40,8 @@ import com.polyforms.shiori.shared.platform.FloatingTabBar
 import com.polyforms.shiori.shared.platform.NavigationStack
 import com.polyforms.shiori.shared.platform.Navigator
 import com.polyforms.shiori.shared.platform.TabBarFold
+import com.polyforms.shiori.shared.platform.LocalBarFold
+import com.polyforms.shiori.shared.platform.animatedBarFold
 import com.polyforms.shiori.shared.platform.BottomRoom
 import com.polyforms.shiori.shared.platform.LocalBottomCovered
 import com.polyforms.shiori.features.listening.components.organisms.PlayerAccessoryHeight
@@ -161,6 +163,9 @@ fun ContentView(router: AppRouter = remember { AppRouter() }) {
     val backdrop = com.polyforms.shiori.shared.components.styles.rememberBackdrop()
     LaunchedEffect(router.selectedTab) { opened += router.selectedTab }
     val accessory = playerAccessory()
+    // One spring for the bar's fold, shared by the bar, the capsule riding it and the player
+    // shrinking back into that capsule.
+    val barFold = animatedBarFold(fold.isMinimized)
     // What the bar and the title playing cover, handed to every page beneath for its foot.
     val covered = BottomRoom.covered(
         navigation = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding(),
@@ -212,6 +217,7 @@ fun ContentView(router: AppRouter = remember { AppRouter() }) {
                     minimized = fold.isMinimized,
                     onExpand = { fold.isMinimized = false },
                     accessory = accessory,
+                    fold = barFold,
                 )
                 }
             }
@@ -220,7 +226,9 @@ fun ContentView(router: AppRouter = remember { AppRouter() }) {
     }
         AddBookFlow(router)
         FriendsOverlays(router)
-        PlayerOverlay { bookId -> navigators.getValue(router.selectedTab).push { BookScreen(bookId) } }
+        CompositionLocalProvider(LocalBarFold provides barFold) {
+            PlayerOverlay { bookId -> navigators.getValue(router.selectedTab).push { BookScreen(bookId) } }
+        }
     }
     }
 }
