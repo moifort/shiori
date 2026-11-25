@@ -40,6 +40,7 @@ struct AuthRoot: View {
         // Down until the app knows where to open: the sign-in, or the account's
         // own route once the launch request has answered, whatever it said.
         .launchCurtain(until: session.user == nil || gate.state != .loading)
+        .preferredColorScheme(showcaseColorScheme)
         .environment(session)
         .environment(subscriptions)
         .environment(\.isAdmin, gate.isAdmin)
@@ -69,6 +70,15 @@ struct AuthRoot: View {
                 invitationRequest = InvitationRequest(code: code)
             }
         }
+    }
+
+    /// The appearance a showcase capture asked for, else the phone's own.
+    private var showcaseColorScheme: ColorScheme? {
+        #if DEBUG
+        isShowcase ? ShowcaseDevice.colorScheme : nil
+        #else
+        nil
+        #endif
     }
 
     /// The App Store captures: signed in as the showcase reader, without Apple.

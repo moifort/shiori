@@ -45,10 +45,15 @@ struct AuthenticatedInterceptorProvider: InterceptorProvider {
     func httpInterceptors<Operation: GraphQLOperation>(
         for operation: Operation
     ) -> [any HTTPInterceptor] {
-        [
+        var interceptors: [any HTTPInterceptor] = [
             FirebaseTokenInterceptor(),
             AcceptLanguageInterceptor(),
             ResponseCodeInterceptor(),
         ]
+        #if DEBUG
+        // The showcase never reaches the server, least of all with a real token.
+        interceptors.insert(ShowcaseNetworkGuard(), at: 0)
+        #endif
+        return interceptors
     }
 }

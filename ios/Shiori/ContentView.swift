@@ -41,9 +41,9 @@ struct ContentView: View {
 
     @Environment(\.isAdmin) private var isAdmin
 
-    @State private var selectedTab: TabSelection = .home
+    @State private var selectedTab: TabSelection = Self.openingTab
     /// The last real content tab, restored when the scan cover is dismissed.
-    @State private var lastContentTab: TabSelection = .home
+    @State private var lastContentTab: TabSelection = Self.openingTab
     /// The Library view the dashboard asked for, handed to the Library tab.
     @State private var libraryMode: LibraryRequest?
     /// The same for the Library tab's series shelf.
@@ -74,7 +74,7 @@ struct ContentView: View {
     @State private var backgroundedAt: Date?
     /// The Audible player: one for the whole app, so the title plays on
     /// whatever tab is open.
-    @State private var player = AudiblePlayer(restoresLastTitle: true)
+    @State private var player = AudiblePlayer(restoresLastTitle: !Self.isShowcase)
     @State private var showPlayer = false
     /// The book the player's three dots asked for, pushed on the tab in front
     /// once the player has closed.
@@ -289,6 +289,10 @@ struct ContentView: View {
     /// shared image goes through the scan, a page through its link, a selection
     /// through the title lookup. Nothing to take is the ordinary case.
     private func takeSharedIntake() {
+        #if DEBUG
+        // What the share extension left belongs to the reader's real app.
+        if Showcase.isOn { return }
+        #endif
         guard sharedStart == nil, scanStart == nil, let taken = SharedIntake.take() else { return }
         if let image = taken.image {
             sharedStart = .photo(image)
@@ -299,6 +303,24 @@ struct ContentView: View {
         {
             sharedStart = .title(text)
         }
+    }
+
+    /// The showcase leaves the reader's own listening alone: no pill of the
+    /// title they last played over its captures, no licence asked for it.
+    private static var isShowcase: Bool {
+        #if DEBUG
+        Showcase.isOn
+        #else
+        false
+        #endif
+    }
+
+    /// The tab the app opens on: Accueil, or the one a showcase capture names.
+    private static var openingTab: TabSelection {
+        #if DEBUG
+        if Showcase.isOn, let tab = ShowcaseDevice.tab { return tab }
+        #endif
+        return .home
     }
 
     private var tabs: some View {

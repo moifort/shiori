@@ -65,8 +65,11 @@ enum Showcase {
     /// edition's in English, else the French one's. Nil when no file is on
     /// disk, so a missing cover draws initials, as in the app.
     static func cover(_ slug: String) -> URL? {
-        let candidates = (isEnglish ? [covers.appending(path: "en/\(slug).jpg")] : [])
-            + [covers.appending(path: "\(slug).jpg")]
+        // The Mac's folder on a simulator, its copy in the caches on an iPhone.
+        let candidates = [covers, ShowcaseDevice.covers].flatMap { folder in
+            (isEnglish ? [folder.appending(path: "en/\(slug).jpg")] : [])
+                + [folder.appending(path: "\(slug).jpg")]
+        }
         return candidates.first { FileManager.default.fileExists(atPath: $0.path) }
     }
 

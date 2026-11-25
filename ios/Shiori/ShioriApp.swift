@@ -7,6 +7,11 @@ struct ShioriApp: App {
     @UIApplicationDelegateAdaptor(ShioriAppDelegate.self) private var appDelegate
 
     init() {
+        #if DEBUG
+        // Before anything reads them: a showcase run on the reader's iPhone
+        // must leave their defaults as it found them.
+        ShowcaseDevice.preserveReaderDefaults()
+        #endif
         FirebaseApp.configure()
         #if DEBUG
         // Points Auth at the local emulator and signs in, but only when the UI

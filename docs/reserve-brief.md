@@ -22,6 +22,9 @@ When a mission arrives, read CLAUDE.md (Workflow rules 5 to 13) and docs/board.m
   `SendUserFile`, a « Valider » question in your wrap-up. iOS only after that yes, a simulator
   capture, a second validation. Every validation ask comes with a capture of the board as it
   stands now, sent in the same turn: a new edit means a new capture before asking again.
+- **Captures on the iPhone first**: `scripts/device-capture.sh <screen> [light|dark] <out.png>`
+  (the iPhone section of [ios-guide.md](ios-guide.md#captures-the-iphone-first-the-simulator-as-fallback)),
+  the simulator only when the iPhone is unplugged or busy too long.
 - **The simulator is shared and stays in the background.** One at a time, each session its turn.
   Never take the user's screen: DeviceHub opened in the background only (`open -g -a …`),
   captures with `xcrun simctl io <udid> screenshot`, taps through the headless simulator tool.

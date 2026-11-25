@@ -362,9 +362,74 @@ English; the copy inside is French like the app's.
 - **A view that resists previewing is a design smell**: pull the pure part out (as
   `FriendBookPage` was out of `FriendBookView`) rather than skip the preview. The one accepted
   exception is a view built on a StoreKit `Product`, which has no public initializer.
-- To screenshot a screen with data, feed its page the committed fixtures through the
-  launch-argument harness in `ShioriApp.swift`, or launch with `-showcase` (the App Store
-  fixtures, no sign-in). Revert the harness; keep the fixtures and previews.
+- To screenshot a screen with data, launch with `-showcase` (the App Store fixtures, no
+  sign-in), on the iPhone first ([Captures](#captures-the-iphone-first-the-simulator-as-fallback)),
+  or feed its page the committed fixtures through a temporary launch-argument harness in
+  `ShioriApp.swift`. Revert the harness; keep the fixtures and previews.
+
+## Captures: the iPhone first, the simulator as fallback
+
+A capture for a validation is taken on the reader's iPhone ("TiPhone junior", plugged in by
+USB): it costs the Mac no simulator, no gigabytes of RAM and no CPU, and shows the real
+device. The simulator is the fallback, when the iPhone is not plugged in or another session
+holds it for too long.
+
+```bash
+scripts/device-capture.sh home build/captures/home.png
+scripts/device-capture.sh library dark build/captures/library-dark.png
+scripts/device-capture.sh home light out.png -- -showcase-prompts audible,kindle
+SKIP_BUILD=1 scripts/device-capture.sh news out.png   # the build already on the phone
+```
+
+The script builds (Debug, `generic/platform=iOS`, DerivedData fixed at `<worktree>/build/dd`
+with the main checkout's `SourcePackages`), installs only when the binary changed, copies
+`screenshots/covers/` once into the app's caches (the iPhone cannot read the Mac's disk as a
+simulator does), opens the screen with `-showcase -showcase-tab <screen>
+[-showcase-appearance light|dark]`, captures with `devicectl device capture screenshot`, and
+closes the app. One session at a time: the lock is `build/ios-device.lock` in the main
+checkout, with an `owner` file; a session waits for it, and a dead owner's lock is taken over.
+
+Measured on 2026-11-25 (iPhone 15 Pro, iOS 27.2.1):
+
+| Step | Time |
+|---|---|
+| First build into a fresh `build/dd` | ~6 min (plus any wait on the shared package cache) |
+| Rebuild after a Swift edit | 40–50 s |
+| Install over the existing app | 4–11 s |
+| Covers copied (once) | 2 s |
+| Launch, settle and capture | 6–7 s |
+| A capture with no rebuild (`SKIP_BUILD=1`) | 7.5 s end to end |
+| UI test route (`DeviceScreenTest`, built) | ~56 s |
+
+**The iPhone is signed in to the reader's real account.** A capture must leave it as it found
+it, which the showcase guarantees in Debug builds (`ShowcaseDevice.swift`):
+
+- `ShowcaseNetworkGuard`, first in the HTTP chain, refuses every GraphQL request: no read or
+  write reaches the server with the reader's token, and no 401 can sign them out.
+- The app's defaults are saved before the first showcase screen and put back on the next
+  ordinary launch; the share extension's waiting item and the last Audible title are left
+  alone.
+- Never uninstall the app (it holds the sign-in and the Audible downloads), never write
+  through a screen outside the showcase, never change a phone setting.
+
+What the iPhone cannot do, and the way round:
+
+- **Free taps.** `devicectl` has no tap. A tab opens from `-showcase-tab`; a screen deeper
+  than a tab goes through a UI test: `ShioriUITests/DeviceScreenTest` (or a test of its own
+  that taps its way there) with
+  `TEST_RUNNER_SHIORI_SCREEN=news TEST_RUNNER_SHIORI_APPEARANCE=dark xcodebuild test
+  -destination 'id=00008130-000A2068029A001C' -only-testing:ShioriUITests/DeviceScreenTest
+  -resultBundlePath <path>`, then `xcrun xcresulttool export attachments --path <xcresult>
+  --output-path <dir>`. Remove the `ShioriUITests-Runner` app it installs afterwards
+  (`devicectl device uninstall app … com.shiori.app.uitests.xctrunner`): never the app itself.
+- **Light and dark.** The phone's setting is the reader's: `-showcase-appearance` forces one
+  in the app alone.
+- **Several sessions at once.** One iPhone, one lock: sessions take turns. A session that
+  cannot wait uses the simulator.
+- **A locked phone.** Installing works locked, launching does not: the script stops and says
+  to unlock it. Auto-Lock set to Never keeps it ready while plugged in.
+- **The status bar** shows the phone's real time and battery, not Apple's 9:41: the App Store
+  captures stay on the simulator (`scripts/screenshots.sh`).
 
 ## Tests
 
