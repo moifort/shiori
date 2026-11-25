@@ -1,6 +1,7 @@
 package com.polyforms.shiori.features.friends.components.organisms
 
 import com.polyforms.shiori.shared.book.backdropFrame
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -20,7 +21,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -132,7 +132,7 @@ private fun Place(size: Dp, faded: Boolean) {
     Box(
         Modifier
             .size(size)
-            .alpha(if (faded) 0.6f else 1f)
+            .graphicsLayer { alpha = if (faded) 0.6f else 1f }
             .background(Color.Black.copy(alpha = 0.25f), CircleShape)
             .drawBehind {
                 val stroke = 1.5.dp.toPx()

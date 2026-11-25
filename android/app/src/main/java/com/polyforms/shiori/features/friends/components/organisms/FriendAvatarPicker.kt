@@ -1,6 +1,7 @@
 package com.polyforms.shiori.features.friends.components.organisms
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -29,7 +30,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
@@ -144,7 +144,7 @@ private fun FriendAvatar(
             Box(Modifier.welcome(isWelcomed), contentAlignment = Alignment.Center) {
                 if (isWelcomed) ConfettiBurst(Modifier.requiredSize(420.dp))
                 Box(Modifier.border(ring.dp, Color.White, CircleShape).padding(4.dp)) {
-                    AccountAvatarView(item.avatar, item.name, AvatarSize, Modifier.alpha(fade))
+                    AccountAvatarView(item.avatar, item.name, AvatarSize, Modifier.graphicsLayer { alpha = fade })
                 }
                 if (isWelcomed) Box(Modifier.requiredSize(AvatarSize + 8.dp).border(3.dp, Color.White, CircleShape))
             }

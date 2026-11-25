@@ -1,6 +1,7 @@
 package com.polyforms.shiori.features.book.components.pages
 
 import com.polyforms.shiori.shared.platform.pageEndRoom
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -32,7 +33,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -273,7 +273,7 @@ fun BookPage(
                             )
                         }
                         book.note?.let { note ->
-                            Box(Modifier.alpha(if (isComposingNote) 0.4f else 1f)) { MessageBubble(note, isMine = true, action = onEditNote) }
+                            Box(Modifier.graphicsLayer { alpha = if (isComposingNote) 0.4f else 1f }) { MessageBubble(note, isMine = true, action = onEditNote) }
                         }
                     }
                 }

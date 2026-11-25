@@ -32,7 +32,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
@@ -206,7 +205,7 @@ fun PlayerSheet(
                     ) { content() }
                 }
                 Box(
-                    Modifier.fillMaxSize().alpha(fade(m, 0f, 0.15f, out = true)).clearAndSetSemantics {},
+                    Modifier.fillMaxSize().graphicsLayer { alpha = fade(m, 0f, 0.15f, out = true) }.clearAndSetSemantics {},
                     contentAlignment = Alignment.TopCenter,
                 ) {
                     Box(Modifier.padding(top = 6.dp).size(36.dp, 5.dp).background(Color.White.copy(alpha = 0.5f), CircleShape))

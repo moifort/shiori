@@ -1,6 +1,7 @@
 package com.polyforms.shiori.features.series.components.pages
 
 import com.polyforms.shiori.shared.platform.pageEndRoom
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
@@ -42,7 +43,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
@@ -352,7 +352,7 @@ private fun PosterView(
             PosterCover(
                 Book(id = volume.id, title = title, authors = listOf(series.author), format = if (series.isAudio) BookFormat.AUDIOBOOK else BookFormat.BOOK, coverURL = coverURL, status = ReadingStatus.TO_READ),
                 day ?: caption(volume),
-                Modifier.alpha(if (day == null) 0.45f else 1f),
+                Modifier.graphicsLayer { alpha = if (day == null) 0.45f else 1f },
                 showsEditionTags = false,
                 dimming = if (day == null) 0.12 else 0.5,
             )

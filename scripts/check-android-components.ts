@@ -10,6 +10,7 @@
  * - holds a ViewModel;
  * - listens to or posts change notices (`DataChanges`);
  * - reads the application context or the push registrar;
+ * - fades with a changing `Modifier.alpha` rather than `graphicsLayer { alpha = … }`;
  * - declares a composable and no `@Preview`.
  *
  * Connected code — Screens, ViewModels, clients — lives beside the
@@ -31,6 +32,12 @@ const RULES: { pattern: RegExp; says: string }[] = [
   {
     pattern: /\b(AppContext|PushRegistrar)\.\w/,
     says: 'reads a singleton: pass the value down, or provide it through a CompositionLocal',
+  },
+  {
+    // `Modifier.alpha` drops its layer at 1: a value that changes reshapes the chain, and in a
+    // sheet the node stopped drawing (the portrait picker's confirm button, 2026-11-25).
+    pattern: /\.alpha\((?!\s*[0-9.]+f\s*\))/,
+    says: 'fades with a changing Modifier.alpha: use graphicsLayer { alpha = … }, which keeps its layer',
   },
 ]
 

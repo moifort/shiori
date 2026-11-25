@@ -1,6 +1,7 @@
 package com.polyforms.shiori.shared.book
 
 import com.polyforms.shiori.shared.DiscoveredVolume
+import androidx.compose.ui.graphics.graphicsLayer
 
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -15,7 +16,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.unit.dp
 import com.polyforms.shiori.shared.Book
 import com.polyforms.shiori.shared.L
@@ -83,7 +83,7 @@ fun SeriesVolumesRow(
                             PosterCover(
                                 Book(id = item.id, title = item.title, authors = emptyList(), coverURL = item.coverURL, status = ReadingStatus.TO_READ),
                                 day ?: caption,
-                                Modifier.alpha(if (day == null) 0.45f else 1f),
+                                Modifier.graphicsLayer { alpha = if (day == null) 0.45f else 1f },
                                 showsEditionTags = false,
                                 dimming = if (day == null) 0.12 else 0.5,
                             )

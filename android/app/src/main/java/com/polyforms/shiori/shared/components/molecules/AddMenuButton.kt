@@ -1,6 +1,7 @@
 package com.polyforms.shiori.shared.components.molecules
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -24,7 +25,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -172,7 +172,7 @@ fun AddMenuButton(
             } else {
                 ActionButton(
                     onClick = { if (isTurnedDown) onReconsider() else expanded = true },
-                    modifier = Modifier.alpha(if (isTurnedDown || isDisabled) 0.45f else 1f),
+                    modifier = Modifier.graphicsLayer { alpha = if (isTurnedDown || isDisabled) 0.45f else 1f },
                     fill = if (isRound) ActionFill.GLASS else ActionFill.WHITE,
                     shape = if (isRound) ActionShape.CIRCLE else ActionShape.CAPSULE,
                     height = height,
@@ -199,7 +199,7 @@ fun AddMenuButton(
 private fun Working(isWorking: Boolean, label: @Composable () -> Unit) {
     Box(contentAlignment = Alignment.Center) {
         androidx.compose.foundation.layout.Row(
-            Modifier.alpha(if (isWorking) 0f else 1f),
+            Modifier.graphicsLayer { alpha = if (isWorking) 0f else 1f },
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) { label() }

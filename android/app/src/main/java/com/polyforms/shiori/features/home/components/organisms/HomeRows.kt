@@ -1,6 +1,7 @@
 package com.polyforms.shiori.features.home.components.organisms
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.border
@@ -27,7 +28,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -213,7 +213,7 @@ fun SeriesShowCard(
             .border(1.dp, Color.White.copy(alpha = 0.22f), shape)
             .combinedClickable(interactionSource = null, indication = null, onLongClick = onLongPress, onClick = onOpen),
     ) {
-        Box(Modifier.matchParentSize().alpha(if (isSetAside) 0.55f else 1f)) {
+        Box(Modifier.matchParentSize().graphicsLayer { alpha = if (isSetAside) 0.55f else 1f }) {
             Box(Modifier.fillMaxSize().background(Color(0xFF262626)))
             series.coverURL?.let { url ->
                 CoverImage(url, Modifier.fillMaxSize())

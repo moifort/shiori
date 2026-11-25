@@ -1,6 +1,7 @@
 package com.polyforms.shiori.shared.components.atoms
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
@@ -11,7 +12,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.layout.RowScope
@@ -60,7 +60,7 @@ fun AsyncAction(
     }
     content(onClick, inProgress) { inner ->
         Box(contentAlignment = Alignment.Center) {
-            Box(Modifier.alpha(if (inProgress) 0f else 1f)) { inner() }
+            Box(Modifier.graphicsLayer { alpha = if (inProgress) 0f else 1f }) { inner() }
             if (inProgress) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
         }
     }
@@ -118,7 +118,7 @@ fun AsyncActionButton(
         contentDescription = contentDescription,
     ) {
         Box(contentAlignment = Alignment.Center) {
-            Row(Modifier.alpha(if (inProgress) 0f else 1f), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) { content() }
+            Row(Modifier.graphicsLayer { alpha = if (inProgress) 0f else 1f }, horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) { content() }
             if (inProgress) CircularProgressIndicator(Modifier.size(18.dp), color = LocalContentColor.current, strokeWidth = 2.dp)
         }
     }

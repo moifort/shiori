@@ -303,7 +303,7 @@ fun PosterCover(
                             Icon(
                                 Symbol(symbol.symbol),
                                 null,
-                                Modifier.size(13.dp).alpha(if (symbol == StarSymbol.EMPTY) 0.7f else 1f),
+                                Modifier.size(13.dp).graphicsLayer { alpha = if (symbol == StarSymbol.EMPTY) 0.7f else 1f },
                                 tint = captionColor,
                             )
                         }

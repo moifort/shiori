@@ -1,6 +1,7 @@
 package com.polyforms.shiori.features.book.components.pages
 
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -31,7 +32,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -111,7 +111,7 @@ fun ReadingProgressSheet(
                         style = Shiori.type.largeTitle.copy(fontSize = 76.sp, lineHeight = 80.sp, fontWeight = FontWeight.Black, letterSpacing = (-2.5).sp),
                         color = if (digits.isEmpty()) colors.tertiaryLabel else colors.label,
                     )
-                    Box(Modifier.size(3.dp, 62.dp).alpha(if (caret) 1f else 0f).background(colors.label, RoundedCornerShape(2.dp)))
+                    Box(Modifier.size(3.dp, 62.dp).graphicsLayer { alpha = if (caret) 1f else 0f }.background(colors.label, RoundedCornerShape(2.dp)))
                 }
                 if (pageCount != null) Text(LMarkdown("sur **%lld** pages", pageCount), style = Shiori.type.subheadline, color = colors.secondaryLabel)
             }

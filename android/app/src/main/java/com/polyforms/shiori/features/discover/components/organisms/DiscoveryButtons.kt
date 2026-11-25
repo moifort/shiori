@@ -1,6 +1,7 @@
 package com.polyforms.shiori.features.discover.components.organisms
 
 import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -19,7 +20,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
@@ -235,7 +235,7 @@ fun <Item : Discovery> RowScope.DiscoveryButtons(
     )
     // Offered while nothing else was chosen: a book taken is not turned down.
     val taken = mark != null && !isTurnedDown
-    Box(Modifier.alpha(if (taken) 0.45f else 1f)) {
+    Box(Modifier.graphicsLayer { alpha = if (taken) 0.45f else 1f }) {
         NotInterestedToggle(isOn = isTurnedDown, size = AddMenuSize.PAGE) { turnDown ->
             choose(if (turnDown) DiscoveryChoice.NotInterested else DiscoveryChoice.Reconsider, DiscoveryButton.EYE, if (turnDown) DiscoveryMark.NotInterested else null)
         }
@@ -250,7 +250,7 @@ fun <Item : Discovery> RowScope.DiscoveryButtons(
 @Composable
 fun RoundGlass(title: String, tint: Color? = null, enabled: Boolean = true, onClick: () -> Unit, content: @Composable () -> Unit) {
     Box(
-        Modifier.size(52.dp).clip(CircleShape).heroGlass(tint).alpha(if (enabled) 1f else 0.45f)
+        Modifier.size(52.dp).clip(CircleShape).heroGlass(tint).graphicsLayer { alpha = if (enabled) 1f else 0.45f }
             .plainClickable(enabled = enabled, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) { content() }

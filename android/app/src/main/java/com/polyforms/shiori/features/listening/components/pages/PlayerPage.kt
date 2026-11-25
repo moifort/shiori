@@ -40,7 +40,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.shadow
@@ -245,8 +244,8 @@ fun PlayerPage(item: PlayerPageItem, queueProgress: Float = 0f, onAction: (Playe
                         .onGloballyPositioned { reportArtwork?.invoke(it.boundsInRoot()) },
                     cornerRadius = (mix(12f, 8f, progress) / scale).dp,
                 )
-                Box(Modifier.alpha(ramp(progress, 0.3f, 0f)).unread(progress >= 0.3f)) { Heading(item, progress < 0.3f, onAction) }
-                Box(Modifier.alpha(ramp(progress, 0.55f, 1f)).unread(progress < 0.5f)) { Banner(item, progress >= 0.5f, onAction) }
+                Box(Modifier.graphicsLayer { alpha = ramp(progress, 0.3f, 0f) }.unread(progress >= 0.3f)) { Heading(item, progress < 0.3f, onAction) }
+                Box(Modifier.graphicsLayer { alpha = ramp(progress, 0.55f, 1f) }.unread(progress < 0.5f)) { Banner(item, progress >= 0.5f, onAction) }
                 ChapterBar(item, onAction)
                 Box(
                     Modifier.graphicsLayer {
@@ -257,7 +256,7 @@ fun PlayerPage(item: PlayerPageItem, queueProgress: Float = 0f, onAction: (Playe
                     },
                 ) { Controls(item, onAction) }
                 Column(
-                    Modifier.alpha(ramp(progress, 0.3f, 0f)).unread(progress > 0f),
+                    Modifier.graphicsLayer { alpha = ramp(progress, 0.3f, 0f) }.unread(progress > 0f),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(22.dp),
                 ) {
@@ -266,15 +265,15 @@ fun PlayerPage(item: PlayerPageItem, queueProgress: Float = 0f, onAction: (Playe
                     item.failure?.let { Text(it, style = Shiori.type.footnote, color = White70) }
                     SleepTimerRow(item, progress == 0f, onAction)
                 }
-                Box(Modifier.alpha(ramp(progress, 0.3f, 0f)).unread(progress >= 0.5f).then(if (progress < 0.5f) handleDrag else Modifier)) {
+                Box(Modifier.graphicsLayer { alpha = ramp(progress, 0.3f, 0f) }.unread(progress >= 0.5f).then(if (progress < 0.5f) handleDrag else Modifier)) {
                     OpenQueueHandle(progress < 0.5f) { setQueueOpen(true) }
                 }
-                Box(Modifier.alpha(ramp(progress, 0.2f, 0.55f)).unread(progress < 0.5f).then(if (progress >= 0.5f) handleDrag else Modifier)) {
+                Box(Modifier.graphicsLayer { alpha = ramp(progress, 0.2f, 0.55f) }.unread(progress < 0.5f).then(if (progress >= 0.5f) handleDrag else Modifier)) {
                     QueueHeader(progress >= 0.5f) { setQueueOpen(false) }
                 }
                 // Only there once pulled; its rows play only once it is wholly up.
                 if (progress > 0f) {
-                    Box(Modifier.alpha(progress).unread(progress < 1f).nestedScroll(listPull)) {
+                    Box(Modifier.graphicsLayer { alpha = progress }.unread(progress < 1f).nestedScroll(listPull)) {
                         QueueList(item.queue, progress == 1f) {
                             setQueueOpen(false)
                             onAction(PlayerAction.Play(it))
@@ -342,7 +341,7 @@ private fun BookButton(item: PlayerPageItem, enabled: Boolean, onAction: (Player
     Box(
         Modifier
             .size(36.dp)
-            .alpha(if (item.hasBook) 1f else 0.45f)
+            .graphicsLayer { alpha = if (item.hasBook) 1f else 0.45f }
             .clip(CircleShape)
             .glassOnDark(CircleShape)
             .tappable(enabled && item.hasBook) { onAction(PlayerAction.OpenBook) }
@@ -526,7 +525,7 @@ private fun Controls(item: PlayerPageItem, onAction: (PlayerAction) -> Unit) {
 @Composable
 private fun ControlButton(symbol: String, size: Dp, label: String, enabled: Boolean, action: () -> Unit) {
     Box(
-        Modifier.size(52.dp).alpha(if (enabled) 1f else 0.4f).plainClickable(enabled = enabled, onClick = action)
+        Modifier.size(52.dp).graphicsLayer { alpha = if (enabled) 1f else 0.4f }.plainClickable(enabled = enabled, onClick = action)
             .semantics { contentDescription = label },
         contentAlignment = Alignment.Center,
     ) {

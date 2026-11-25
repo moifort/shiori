@@ -1,6 +1,7 @@
 package com.polyforms.shiori.shared.components.styles
 
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -33,7 +34,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
@@ -95,7 +95,7 @@ fun ShioriButton(
                     }
                 }
             }
-            .alpha(if (enabled) 1f else 0.4f)
+            .graphicsLayer { alpha = if (enabled) 1f else 0.4f }
             .padding(horizontal = if (kind == ButtonKind.PLAIN) 4.dp else 16.dp),
         horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically,

@@ -1,6 +1,7 @@
 package com.polyforms.shiori.features.home.components.pages
 
 import com.polyforms.shiori.shared.platform.pageEndRoom
+import androidx.compose.ui.graphics.graphicsLayer
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -30,7 +31,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
@@ -229,7 +229,7 @@ fun HomePage(
                 ShioriTheme(dark = true) {
                     Column(Modifier.zIndex(1f).statusBarsPadding()) {
                         header(true)
-                        Figures(Modifier.alpha(if (dashboard.libraryIsEmpty) 0.45f else 1f).padding(start = 24.dp, end = 24.dp, top = 6.dp, bottom = 12.dp))
+                        Figures(Modifier.graphicsLayer { alpha = if (dashboard.libraryIsEmpty) 0.45f else 1f }.padding(start = 24.dp, end = 24.dp, top = 6.dp, bottom = 12.dp))
                     }
                 }
                 when {

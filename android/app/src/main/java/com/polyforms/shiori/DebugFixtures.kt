@@ -292,4 +292,23 @@ object DebugFixtures {
         key = "jean-pierre-michael", name = "Jean-Pierre Michaël", portraitURL = null, favorite = false, bookCount = 3,
         readCount = 1, seriesCount = 1, averageRating = 4.0, sagas = emptyList(), books = listOf(reading[1]),
     )
+
+    /** Stephen King's faces, as the server offers them: Wikipedia's drawn now. */
+    val portraitChoices = listOf(
+        com.polyforms.shiori.features.authors.PortraitChoice(
+            com.polyforms.shiori.features.authors.PortraitChoice.Source.WIKIPEDIA,
+            "https://upload.wikimedia.org/wikipedia/commons/thumb/2/24/Stephen_King_at_the_2024_Toronto_International_Film_Festival_2_%28cropped%29.jpg/330px-Stephen_King_at_the_2024_Toronto_International_Film_Festival_2_%28cropped%29.jpg",
+            isCurrent = true,
+        ),
+        com.polyforms.shiori.features.authors.PortraitChoice(
+            com.polyforms.shiori.features.authors.PortraitChoice.Source.WIKIDATA,
+            "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/Stephen_King%2C_Comicon.jpg/330px-Stephen_King%2C_Comicon.jpg",
+            isCurrent = false,
+        ),
+        com.polyforms.shiori.features.authors.PortraitChoice(
+            com.polyforms.shiori.features.authors.PortraitChoice.Source.OPEN_LIBRARY,
+            "https://covers.openlibrary.org/a/id/14853840-L.jpg",
+            isCurrent = false,
+        ),
+    )
 }

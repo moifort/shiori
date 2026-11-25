@@ -1,6 +1,7 @@
 package com.polyforms.shiori.features.goodreads.components.pages
 
 import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -28,7 +29,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Brush
@@ -374,7 +374,7 @@ fun GoodreadsBooksPage(preview: GoodreadsPreview, choices: GoodreadsChoices, fil
             items(rows, key = { it.key }) { row ->
                 val ticked = row.key in choices.keys
                 Row(
-                    Modifier.fillMaxWidth().alpha(if (row.verdict == GoodreadsVerdict.HELD) 0.55f else 1f).clickable(enabled = row.verdict != GoodreadsVerdict.HELD) {
+                    Modifier.fillMaxWidth().graphicsLayer { alpha = if (row.verdict == GoodreadsVerdict.HELD) 0.55f else 1f }.clickable(enabled = row.verdict != GoodreadsVerdict.HELD) {
                         when {
                             row.verdict == GoodreadsVerdict.UNCERTAIN -> onDecide(row)
                             ticked -> onChoices(choices.copy(keys = choices.keys - row.key))

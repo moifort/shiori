@@ -1,6 +1,7 @@
 package com.polyforms.shiori.features.import.components.pages
 
 import com.polyforms.shiori.shared.platform.bottomCovered
+import androidx.compose.ui.graphics.graphicsLayer
 
 import com.polyforms.shiori.shared.platform.pageEndRoom
 
@@ -26,7 +27,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -164,7 +164,7 @@ fun ImportSourcePage(
             }
             FormRow(divider = false, onClick = if ((totalCount ?: 0) == 0) null else onPickBooks) {
                 Icon(Symbol("checklist"), null, Modifier.size(18.dp), tint = colors.accent)
-                Text(L("Choisir des livres à importer"), style = Shiori.type.body, color = colors.accent, modifier = Modifier.padding(start = 12.dp).alpha(if ((totalCount ?: 0) == 0) 0.4f else 1f))
+                Text(L("Choisir des livres à importer"), style = Shiori.type.body, color = colors.accent, modifier = Modifier.padding(start = 12.dp).graphicsLayer { alpha = if ((totalCount ?: 0) == 0) 0.4f else 1f })
             }
         }
         FormSection {
@@ -212,7 +212,7 @@ fun <Item : ImportItem> ImportLibraryPage(
             else -> LazyColumn(Modifier.fillMaxSize().statusBarsPadding(), contentPadding = PaddingValues(top = 64.dp, bottom = bottomCovered() + 120.dp)) {
                 items(books, key = { it.asin }) { book ->
                     Row(
-                        Modifier.fillMaxWidth().plainClickable(enabled = !book.alreadyInLibrary) { onToggle(book) }.alpha(if (book.alreadyInLibrary) 0.55f else 1f)
+                        Modifier.fillMaxWidth().plainClickable(enabled = !book.alreadyInLibrary) { onToggle(book) }.graphicsLayer { alpha = if (book.alreadyInLibrary) 0.55f else 1f }
                             .padding(horizontal = 16.dp, vertical = 8.dp),
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {

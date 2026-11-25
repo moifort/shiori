@@ -1,6 +1,7 @@
 package com.polyforms.shiori.features.home.components.organisms
 
 import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,7 +17,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -50,7 +50,7 @@ fun PreparationChecklist(lines: List<PreparationLine>) {
                     }
                 }
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Text(line.label, style = Shiori.type.body.copy(fontWeight = FontWeight.SemiBold), color = Color.White, modifier = Modifier.alpha(if (line.state == PreparationState.WAITING) 0.4f else 1f))
+                    Text(line.label, style = Shiori.type.body.copy(fontWeight = FontWeight.SemiBold), color = Color.White, modifier = Modifier.graphicsLayer { alpha = if (line.state == PreparationState.WAITING) 0.4f else 1f })
                     val note = when (line.state) {
                         PreparationState.CONTINUING -> L("Se poursuit en arrière-plan")
                         PreparationState.FAILED -> L("Vous pourrez réessayer depuis les réglages")

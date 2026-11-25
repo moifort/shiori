@@ -65,6 +65,11 @@ translucent fills (`styles/Glass.kt`), the floating tab bar and the floating bar
 screen. Android conventions win only where the platform imposes them: the back gesture,
 system bars, the share sheet, permissions, date pickers.
 
+A fade that changes — disabled, in progress, set aside — is `graphicsLayer { alpha = … }`, never
+`Modifier.alpha(…)`: the latter drops its layer at 1, and in a sheet the reshaped node stopped
+drawing (the portrait picker's confirm button vanished once a face was picked, 2026-11-25).
+`scripts/check-android-components.ts` refuses it in components.
+
 The design conventions of [ios-guide.md](ios-guide.md#design-conventions) hold on Android
 word for word — large cards at one fixed height, a card never growing past its frame, the date
 box on every Actualité card, a series' countdown over its name, and the rest: a port follows them, and

@@ -34,7 +34,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
@@ -322,7 +321,7 @@ private fun LibrariesOfferPage(
             }
         }
         Entrance(120) {
-            Column(Modifier.background(Shiori.colors.secondaryGroupedBackground, RoundedCornerShape(12.dp)).padding(horizontal = 12.dp).alpha(if (isWorking) 0.6f else 1f)) {
+            Column(Modifier.background(Shiori.colors.secondaryGroupedBackground, RoundedCornerShape(12.dp)).padding(horizontal = 12.dp).graphicsLayer { alpha = if (isWorking) 0.6f else 1f }) {
                 SourceToggle(ImportSource.AUDIBLE.logo, "Audible", L("Vos livres audio, avec ce que vous avez déjà écouté."), audible, onAudible)
                 ShioriDivider(Modifier.padding(start = 44.dp))
                 SourceToggle(ImportSource.KINDLE.logo, "Kindle", L("Vos livres numériques, avec ceux que vous avez finis."), kindle, onKindle)
@@ -334,7 +333,7 @@ private fun LibrariesOfferPage(
         }
         // Goodreads is a file, not a connection: a box of its own, under the Amazon store.
         Entrance(140) {
-            Column(Modifier.padding(top = (-12).dp).background(Shiori.colors.secondaryGroupedBackground, RoundedCornerShape(12.dp)).padding(horizontal = 12.dp).alpha(if (isWorking) 0.6f else 1f)) {
+            Column(Modifier.padding(top = (-12).dp).background(Shiori.colors.secondaryGroupedBackground, RoundedCornerShape(12.dp)).padding(horizontal = 12.dp).graphicsLayer { alpha = if (isWorking) 0.6f else 1f }) {
                 SourceToggle(R.drawable.logo_goodreads, "Goodreads", L("Toute votre bibliothèque, avec vos notes et vos dates de lecture."), goodreads, onGoodreads)
             }
         }
@@ -343,7 +342,7 @@ private fun LibrariesOfferPage(
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 ActionButton(onConnect, Modifier.fillMaxWidth(), size = ActionSize.LARGE, spansWidth = true, enabled = !isWorking && (audible || kindle || goodreads)) {
                     Box(contentAlignment = Alignment.Center) {
-                        Row(Modifier.alpha(if (isWorking) 0f else 1f), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Row(Modifier.graphicsLayer { alpha = if (isWorking) 0f else 1f }, horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                             ActionLabel(L("Continuer"), null, ActionSize.LARGE.side)
                         }
                         if (isWorking) CircularProgressIndicator(Modifier.size(20.dp), color = Color.Black, strokeWidth = 2.dp)

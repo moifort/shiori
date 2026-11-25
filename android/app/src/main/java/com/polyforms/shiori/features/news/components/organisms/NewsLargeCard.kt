@@ -1,6 +1,7 @@
 package com.polyforms.shiori.features.news.components.organisms
 
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -26,7 +27,6 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
@@ -252,7 +252,7 @@ fun NewsCardButtons(card: NewsCard, isWished: Boolean = false, wishes: NewsWishe
         )
         if (card.isDismissable) {
             val locked = done != null && !isTurnedDown
-            NotInterestedToggle(isTurnedDown, Modifier.alpha(if (locked) 0.45f else 1f)) { turnDown ->
+            NotInterestedToggle(isTurnedDown, Modifier.graphicsLayer { alpha = if (locked) 0.45f else 1f }) { turnDown ->
                 if (!locked) onAction(if (turnDown) NewsAction.Dismiss(card) else NewsAction.Reconsider(card))
             }
         }

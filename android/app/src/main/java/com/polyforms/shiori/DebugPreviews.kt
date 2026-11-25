@@ -219,6 +219,16 @@ fun DebugPreviews(name: String) {
                     com.polyforms.shiori.features.subscription.components.pages.PremiumSheet(com.polyforms.shiori.features.subscription.components.pages.PremiumTrigger.DISCOVER) {}
                 }
             }
+            "portrait" -> androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color.Black)) {
+                // The portrait picker as an author page opens it: the face drawn now and two others.
+                com.polyforms.shiori.features.authors.components.pages.PortraitPickerSheet(
+                    initials = "SK",
+                    choices = DebugFixtures.portraitChoices,
+                    loadFailed = null,
+                    onLoad = {},
+                    onDismiss = {},
+                ) { null }
+            }
             "tabbar" -> TabBarPreview()
             "tabbar-player" -> TabBarPlayerPreview()
             "confirmation" -> androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize().background(com.polyforms.shiori.shared.components.styles.Shiori.colors.groupedBackground)) {

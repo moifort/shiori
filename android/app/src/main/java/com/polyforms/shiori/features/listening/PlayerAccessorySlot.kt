@@ -1,12 +1,12 @@
 package com.polyforms.shiori.features.listening
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -43,7 +43,7 @@ fun playerAccessory(): (@Composable () -> Unit)? {
             player,
             // Under the player while it is open, so the sheet lands on it.
             Modifier
-                .alpha(if (presentation.isOpen) 0f else 1f)
+                .graphicsLayer { alpha = if (presentation.isOpen) 0f else 1f }
                 .onGloballyPositioned { presentation.pillFrame = it.boundsInRoot() },
         ) { presentation.isOpen = true }
     }

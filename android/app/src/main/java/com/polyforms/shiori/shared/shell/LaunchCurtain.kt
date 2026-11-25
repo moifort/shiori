@@ -1,6 +1,7 @@
 package com.polyforms.shiori.shared.shell
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
@@ -18,7 +19,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
@@ -47,7 +47,7 @@ fun LaunchCurtain() {
             Modifier
                 .size(140.dp)
                 .scale(0.8f + 0.2f * icon.value)
-                .alpha(icon.value.coerceIn(0f, 1f))
+                .graphicsLayer { alpha = icon.value.coerceIn(0f, 1f) }
                 .shadow(16.dp, CircleShape)
                 .clip(CircleShape),
             contentAlignment = Alignment.Center,
@@ -76,6 +76,6 @@ fun LaunchCurtainHost(ready: Boolean, content: @Composable () -> Unit) {
     }
     Box(Modifier.fillMaxSize()) {
         content()
-        if (!gone) Box(Modifier.fillMaxSize().alpha(fade.value)) { LaunchCurtain() }
+        if (!gone) Box(Modifier.fillMaxSize().graphicsLayer { alpha = fade.value }) { LaunchCurtain() }
     }
 }

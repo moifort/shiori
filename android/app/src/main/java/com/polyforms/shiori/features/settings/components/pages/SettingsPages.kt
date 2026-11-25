@@ -1,6 +1,7 @@
 package com.polyforms.shiori.features.settings.components.pages
 
 import com.polyforms.shiori.shared.platform.pageEndRoom
+import androidx.compose.ui.graphics.graphicsLayer
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.background
@@ -27,7 +28,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -165,7 +165,7 @@ fun ProfileSettingsPage(
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Box(contentAlignment = Alignment.Center) {
-                AccountAvatarView(avatar, firstName, 96.dp, Modifier.alpha(if (isSavingAvatar) 0.5f else 1f))
+                AccountAvatarView(avatar, firstName, 96.dp, Modifier.graphicsLayer { alpha = if (isSavingAvatar) 0.5f else 1f })
                 if (isSavingAvatar) CircularProgressIndicator()
             }
             Text(L("Modifier"), style = Shiori.type.subheadline.copy(fontWeight = FontWeight.SemiBold), color = colors.accent)
@@ -233,7 +233,7 @@ fun NotificationSettingsPage(settings: NotificationSettings?, blocked: Boolean, 
                 }
             }
             if (settings != null) {
-                FormSection(L("Me prévenir"), modifier = Modifier.alpha(if (blocked) 0.5f else 1f)) {
+                FormSection(L("Me prévenir"), modifier = Modifier.graphicsLayer { alpha = if (blocked) 0.5f else 1f }) {
                     val kinds = listOf(AlertKind.DIGEST, AlertKind.TRANSLATION, AlertKind.DISCOVERIES)
                     kinds.forEachIndexed { index, kind ->
                         FormRow(divider = index < kinds.lastIndex) {
@@ -243,7 +243,7 @@ fun NotificationSettingsPage(settings: NotificationSettings?, blocked: Boolean, 
                         }
                     }
                 }
-                FormSection(modifier = Modifier.alpha(if (blocked) 0.5f else 1f)) {
+                FormSection(modifier = Modifier.graphicsLayer { alpha = if (blocked) 0.5f else 1f }) {
                     FormRow(divider = false) {
                         Icon(Symbol("bell.slash"), null, Modifier.size(18.dp), tint = colors.accent)
                         Text(L("Tout désactiver"), style = Shiori.type.body, color = colors.label, modifier = Modifier.weight(1f).padding(start = 12.dp))

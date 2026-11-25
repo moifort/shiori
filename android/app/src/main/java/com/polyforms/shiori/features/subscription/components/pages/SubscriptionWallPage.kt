@@ -1,6 +1,7 @@
 package com.polyforms.shiori.features.subscription.components.pages
 
 import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -30,7 +31,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalUriHandler
@@ -143,7 +143,7 @@ fun SubscriptionWallPage(
             val buyable = if (trial) yearly else selected
             ActionButton({ buyable?.let { scope.launch { onBuy(it) } } }, Modifier.fillMaxWidth(), size = ActionSize.LARGE, spansWidth = true, enabled = !isPurchasing && buyable != null) {
                 Box(contentAlignment = Alignment.Center) {
-                    Row(Modifier.alpha(if (isPurchasing) 0f else 1f)) {
+                    Row(Modifier.graphicsLayer { alpha = if (isPurchasing) 0f else 1f }) {
                         ActionLabel(if (trial) L("Commencer le mois offert") else L("S’abonner"), null, ActionSize.LARGE.side)
                     }
                     if (isPurchasing) CircularProgressIndicator(Modifier.size(20.dp), color = Color.Black, strokeWidth = 2.dp)
