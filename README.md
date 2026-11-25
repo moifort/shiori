@@ -100,13 +100,13 @@ notes stay private, and a hidden book is never shared.
 
 ## Shiori Premium
 
-Shiori is free, with scans included every month. **Premium** unlocks:
+Shiori is used with a subscription, and the first month is free. **Premium** includes:
 
-- unlimited scans,
-- scanning a whole shelf in one photo,
-- the complete catalogue of your series, upcoming volumes included.
+- Kindle and Audible kept up to date every night,
+- release alerts for your series,
+- 30 scans a month, a cover or a whole shelf, and 200 more with the first payment.
 
-Choose a monthly or a yearly plan; the yearly plan starts with a free month.
+34.99 € a year, the first month free, or 4.99 € a month with no trial.
 
 <p align="center">
   <a href="https://shiori.polyforms.co/">Website</a> ·

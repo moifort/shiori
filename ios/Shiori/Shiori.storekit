@@ -16,7 +16,7 @@
       "id" : "21470001",
       "localizations" : [
         {
-          "description" : "Scanner ses livres sans compter.",
+          "description" : "Shiori s’utilise avec un abonnement.",
           "displayName" : "Shiori Premium",
           "locale" : "fr_FR"
         }
@@ -37,7 +37,7 @@
           },
           "localizations" : [
             {
-              "description" : "Scans illimités et le catalogue complet de vos séries.",
+              "description" : "Kindle et Audible à jour, alertes de sortie, 30 scans par mois.",
               "displayName" : "Premium annuel",
               "locale" : "fr_FR"
             }
@@ -57,7 +57,7 @@
           "internalID" : "6760002",
           "localizations" : [
             {
-              "description" : "Scans illimités et le catalogue complet de vos séries.",
+              "description" : "Kindle et Audible à jour, alertes de sortie, 30 scans par mois.",
               "displayName" : "Premium mensuel",
               "locale" : "fr_FR"
             }

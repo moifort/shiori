@@ -28,21 +28,21 @@ export const SUBSCRIPTION_TEXT: Record<
   'com.polyforms.shiori.app.premium.yearly': {
     'fr-FR': {
       name: 'Premium annuel',
-      description: 'Scans illimités et séries complètes, pour un an',
+      description: 'Kindle, Audible, alertes, 30 scans par mois, pour un an',
     },
     'en-US': {
       name: 'Premium Yearly',
-      description: 'Unlimited scans and complete series, for a year',
+      description: 'Kindle, Audible, alerts, 30 scans a month, for a year',
     },
   },
   'com.polyforms.shiori.app.premium.monthly': {
     'fr-FR': {
       name: 'Premium mensuel',
-      description: 'Scans illimités et séries complètes, pour un mois',
+      description: 'Kindle, Audible, alertes, 30 scans par mois, un mois',
     },
     'en-US': {
       name: 'Premium Monthly',
-      description: 'Unlimited scans and complete series, for a month',
+      description: 'Kindle, Audible, alerts, 30 scans a month, for a month',
     },
   },
 }

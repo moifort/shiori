@@ -45,12 +45,12 @@ const REVIEW_NOTES =
   'propre identifiant Apple : un compte est créé automatiquement, aucun compte de démonstration ' +
   "n'est nécessaire. Le backend est en production. Fonctionnalité principale : photographier la " +
   'couverture d’un livre (appareil photo requis) pour créer sa fiche. Abonnement Shiori Premium ' +
-  '(achat intégré) : le paywall s’ouvre depuis Réglages > Shiori Premium, et quand les scans ' +
-  'gratuits du mois sont épuisés.'
+  '(achat intégré) : Shiori s’utilise avec un abonnement : sans abonnement actif, l’écran ' +
+  'd’abonnement s’ouvre à la fin de la configuration, premier mois offert sur l’offre annuelle.'
 
 const SUBSCRIPTION_REVIEW_NOTE =
-  'Débloque les scans de couverture illimités, le scan d’une étagère entière et le catalogue ' +
-  'complet des séries. Le paywall s’ouvre depuis Réglages > Shiori Premium.'
+  'Kindle et Audible à jour chaque nuit, les alertes de sortie, et 30 scans par mois d’une ' +
+  'couverture ou d’une étagère entière. L’écran d’abonnement s’ouvre à la fin de la configuration.'
 
 type Plan = {
   productId: string

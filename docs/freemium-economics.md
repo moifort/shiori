@@ -87,8 +87,8 @@ and the Premium welcome from 500 to 200. At the old figures a month at the ceili
 cost more than the yearly plan nets a month (2.07 €), and the welcome alone (15 to 75 €) could
 exceed a first year's net (24.78 €). At the new ones a subscriber who uses everything costs at
 most 6 to 30 € once, then 0.90 to 4.50 € a month: still above the net at the paid rate, which
-is why the ceiling exists, and within it while the free searches last. The app's copy still
-says "Scans illimités"; it is to be reworded with the Premium promise.
+is why the ceiling exists, and within it while the free searches last. The app, the site and
+the store copy now state the ceiling ("30 scans par mois"); "Scans illimités" is gone.
 
 ## Fixed costs and break-even
 

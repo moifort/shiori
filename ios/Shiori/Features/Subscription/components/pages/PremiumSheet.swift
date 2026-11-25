@@ -99,7 +99,7 @@ struct PremiumSheet: View {
 
     /// What the free allowance stands at right now, so the offer below argues
     /// from the account's own numbers rather than in the abstract. Nothing is
-    /// shown to a subscriber, whose scanning is sold as unlimited, and nothing
+    /// shown to a subscriber, who is told the ceiling in the promise, and nothing
     /// when the reading failed: the sheet must still sell without it.
     @ViewBuilder
     private var allowance: some View {

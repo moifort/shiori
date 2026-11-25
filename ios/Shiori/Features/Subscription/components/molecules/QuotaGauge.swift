@@ -5,9 +5,8 @@ import SwiftUI
 /// plain numbers, never the API's state, so it stays previewable and the caller
 /// decides who deserves to see it.
 ///
-/// Shown to free accounts only. A subscriber is metered too — an anti-abuse
-/// ceiling — but showing it would contradict the unlimited scanning the very same
-/// sheet is selling, and no real subscriber ever approaches it.
+/// The caller decides where it shows: the Premium promise states the monthly
+/// ceiling (30 scans) in words.
 struct QuotaGauge: View {
     let used: Int
     let limit: Int

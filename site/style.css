@@ -881,6 +881,8 @@ section {
 .plan-table .sf.no { color: rgba(60, 60, 67, 0.3); }
 .plan-tag { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); white-space: nowrap; padding: 5px 12px; border-radius: 99px; background: linear-gradient(120deg, var(--red-deep), var(--red), var(--amber)); color: #fff !important; font-size: 12px !important; font-weight: 600; }
 @media (max-width: 560px) { .plan-table { font-size: 14px; } .plan-table td { width: 30%; } .plan-table thead th b { font-size: 20px; } }
+.plan-table.single { max-width: 580px; }
+.plan-table.single td { width: 36%; }
 .prices-note { max-width: 460px; margin: 0 auto 44px; font-size: 12px; color: var(--text-dim); line-height: 1.5; }
 
 /* ---------- Footer ---------- */
