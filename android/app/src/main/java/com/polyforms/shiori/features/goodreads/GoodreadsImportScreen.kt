@@ -55,6 +55,15 @@ private sealed interface Step {
  */
 @Composable
 fun GoodreadsImportScreen(mode: GoodreadsImportMode = GoodreadsImportMode.SETTINGS, file: Uri? = null, onFinished: (started: Boolean) -> Unit) {
+    // Drawn on black like the onboarding it starts from, as on iOS: its white and glass
+    // buttons vanish on a light page.
+    com.polyforms.shiori.shared.components.styles.ShioriTheme(dark = true) {
+        GoodreadsImport(mode, file, onFinished)
+    }
+}
+
+@Composable
+private fun GoodreadsImport(mode: GoodreadsImportMode, file: Uri?, onFinished: (started: Boolean) -> Unit) {
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
     val scope = rememberCoroutineScope()

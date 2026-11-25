@@ -77,6 +77,10 @@ struct GoodreadsImportScreen: View {
         .task {
             if let file, csv == nil { read(file) }
         }
+        // Drawn on black like the onboarding it starts from: its white and glass
+        // buttons vanish on a light page. Always a full-screen cover, so the
+        // preference holds for the cover and its sheets alone.
+        .preferredColorScheme(.dark)
     }
 
     @ViewBuilder private var content: some View {

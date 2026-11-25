@@ -13,18 +13,24 @@ struct GoodreadsMosaic: View {
     private static let rows = 4
     private static let coverWidth: CGFloat = 78
 
+    /// The wall is wider than any phone: it hangs in an overlay of the black
+    /// ground, so the page keeps the screen's width rather than the wall's.
     var body: some View {
-        ZStack {
-            Color.black
-            wall
-                .rotationEffect(.degrees(-8))
-                .offset(x: -20, y: -24)
-            // Under the title at the foot, then under the status bar.
-            blur(clearUntil: 0.3, solidFrom: 0.78)
-            blur(clearUntil: 0.45, solidFrom: 0, height: 130)
-                .scaleEffect(y: -1)
-                .frame(maxHeight: .infinity, alignment: .top)
-        }
+        Color.black
+            .overlay {
+                wall
+                    .rotationEffect(.degrees(-8))
+                    .offset(x: -20, y: -24)
+            }
+            .overlay {
+                // Under the title at the foot, then under the status bar.
+                ZStack {
+                    blur(clearUntil: 0.3, solidFrom: 0.78)
+                    blur(clearUntil: 0.45, solidFrom: 0, height: 130)
+                        .scaleEffect(y: -1)
+                        .frame(maxHeight: .infinity, alignment: .top)
+                }
+            }
         .frame(height: height)
         .clipped()
         .accessibilityHidden(true)
