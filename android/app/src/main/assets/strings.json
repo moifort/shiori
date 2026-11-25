@@ -153,6 +153,13 @@
    "other": "%lld years free"
   }
  },
+ "%lld couvertures sur %lld": {
+  "fr": "%1$lld couvertures sur %2$lld",
+  "en": "%lld of %lld covers"
+ },
+ "%lld critiques, dans la note du livre": {
+  "en": "%lld reviews, in the book's note"
+ },
  "%lld jours": {
   "en": "%lld days"
  },
@@ -190,11 +197,24 @@
    "other": "%lld books"
   }
  },
+ "%lld livres datés": {
+  "en": "%lld books dated"
+ },
+ "%lld livres importés": {
+  "en": "%lld books imported"
+ },
+ "%lld livres notés": {
+  "en": "%lld books rated"
+ },
  "%lld livres trouvés": {
   "en": {
    "one": "%lld book found",
    "other": "%lld books found"
   }
+ },
+ "%lld lus · %lld en cours · %lld à lire · %lld abandonnés": {
+  "fr": "%1$lld lus · %2$lld en cours · %3$lld à lire · %4$lld abandonnés",
+  "en": "%lld read · %lld reading · %lld to read · %lld dropped"
  },
  "%lld min": {
   "en": "%lld min"
@@ -288,6 +308,9 @@
    "one": "%lld star",
    "other": "%lld stars"
   }
+ },
+ "%lld ›": {
+  "en": "%lld ›"
  },
  "%lld%%": {
   "en": "%lld%%"
@@ -598,6 +621,9 @@
  "Aucun livre audio sur ce compte.": {
   "en": "No audiobooks on this account."
  },
+ "Aucun livre dans ce fichier": {
+  "en": "No book in this file"
+ },
  "Aucun livre de ce genre": {
   "en": "No books in this genre"
  },
@@ -790,6 +816,9 @@
  "Catégorie": {
   "en": "Category"
  },
+ "Ce fichier ne vient pas de Goodreads": {
+  "en": "This file is not from Goodreads"
+ },
  "Ce lien n'est pas une invitation Shiori.": {
   "en": "This link is not a Shiori invitation."
  },
@@ -883,8 +912,17 @@
  "Choisir des livres à importer": {
   "en": "Choose books to import"
  },
+ "Choisir le fichier": {
+  "en": "Choose the file"
+ },
+ "Choisir un autre fichier": {
+  "en": "Choose another file"
+ },
  "Choisir une photo": {
   "en": "Choose a photo"
+ },
+ "Choisissez le fichier goodreads_library_export.csv préparé par Goodreads.": {
+  "en": "Choose the goodreads_library_export.csv file Goodreads prepared."
  },
  "Choisissez une série de votre bibliothèque pour y ranger ce livre avec les autres tomes, ou nommez-en une nouvelle.": {
   "en": "Choose a series from your library to file this book with its other volumes, or name a new one."
@@ -922,6 +960,9 @@
  "Commencée": {
   "en": "Started"
  },
+ "Comment exporter depuis Goodreads": {
+  "en": "How to export from Goodreads"
+ },
  "Comment vous appelez-vous ?": {
   "en": "What’s your name?"
  },
@@ -933,6 +974,15 @@
  },
  "Compagnon": {
   "en": "Companion"
+ },
+ "Comparaison avec vos livres": {
+  "en": "Comparing with your books"
+ },
+ "Compléter vos livres": {
+  "en": "Complete your books"
+ },
+ "Complété": {
+  "en": "Completed"
  },
  "Compte": {
   "en": "Account"
@@ -964,8 +1014,8 @@
  "Connectez Kindle : vos ebooks arrivent avec couverture et série, et ceux que vous avez finis sont marqués lus.": {
   "en": "Connect Kindle: your ebooks arrive with their cover and series, and the ones you finished are marked read."
  },
- "Connectez celles que vous utilisez : elles sont importées pendant que vous découvrez l'application, puis suivies chaque nuit. Vous pourrez aussi le faire plus tard depuis les réglages.": {
-  "en": "Connect the ones you use: they’re imported while you explore the app, then kept in sync every night. You can also do it later from Settings."
+ "Connectez ou importez celles que vous utilisez : vos livres arrivent pendant que vous découvrez l'application. Vous pourrez aussi le faire plus tard depuis les réglages.": {
+  "en": "Connect or import the ones you use: your books arrive while you discover the app. You can also do it later from the settings."
  },
  "Connectez votre compte Amazon une fois, puis choisissez les livres audio à ajouter. Ils rejoignent votre bibliothèque avec leur couverture, leur série et votre avancement d'écoute.": {
   "en": "Connect your Amazon account once, then choose the audiobooks to add. They join your library with their cover, their series and your listening progress."
@@ -975,6 +1025,9 @@
  },
  "Connecté le": {
   "en": "Connected on"
+ },
+ "Connecté à votre compte Goodreads.": {
+  "en": "Signed in to your Goodreads account."
  },
  "Connexion Amazon": {
   "en": "Amazon sign-in"
@@ -1042,11 +1095,17 @@
  "Couverture": {
   "en": "Cover"
  },
+ "Couvertures et séries": {
+  "en": "Covers and series"
+ },
  "Coût du mois": {
   "en": "Cost this month"
  },
  "Coûts par jour": {
   "en": "Costs per day"
+ },
+ "Critiques": {
+  "en": "Reviews"
  },
  "Cuisine": {
   "en": "Cooking"
@@ -1059,6 +1118,9 @@
  },
  "Dans %@": {
   "en": "In %@"
+ },
+ "Dans Shiori": {
+  "en": "In Shiori"
  },
  "Dans la pile de %@": {
   "en": "On %@'s pile"
@@ -1078,8 +1140,17 @@
  "Date": {
   "en": "Date"
  },
+ "Dates de lecture": {
+  "en": "Reading dates"
+ },
  "Depuis %@": {
   "en": "Since %@"
+ },
+ "Depuis Goodreads": {
+  "en": "From Goodreads"
+ },
+ "Dernier import": {
+  "en": "Last import"
  },
  "Dernier livre terminé": {
   "en": "Last book finished"
@@ -1095,6 +1166,12 @@
  },
  "Dernière synchronisation": {
   "en": "Last sync"
+ },
+ "Deux livres": {
+  "en": "Two books"
+ },
+ "Deux livres différents": {
+  "en": "Two different books"
  },
  "Disponible": {
   "en": "Available"
@@ -1165,6 +1242,12 @@
  "Déjà chez vous": {
   "en": "Already yours"
  },
+ "Déjà chez vous ?": {
+  "en": "Already yours?"
+ },
+ "Déjà chez vous, complétés": {
+  "en": "Already yours, completed"
+ },
  "Déjà dans votre bibliothèque": {
   "en": "Already in your library"
  },
@@ -1231,6 +1314,9 @@
  "Essai gratuit": {
   "en": "Free trial"
  },
+ "Est-ce le même livre ?": {
+  "en": "Is it the same book?"
+ },
  "Facturation indisponible": {
   "en": "Billing unavailable"
  },
@@ -1266,6 +1352,9 @@
  },
  "Fiches enrichies par l'IA": {
   "en": "AI-enriched records"
+ },
+ "Filtre": {
+  "en": "Filter"
  },
  "Format": {
   "en": "Format"
@@ -1314,6 +1403,15 @@
  },
  "Geralt": {
   "en": "Geralt"
+ },
+ "Goodreads": {
+  "en": "Goodreads"
+ },
+ "Goodreads ne partage pas vos livres avec d'autres apps : tout passe par son fichier d'export, qui garde vos étagères, vos notes et vos dates de lecture.": {
+  "en": "Goodreads does not share your books with other apps: everything goes through its export file, which keeps your shelves, ratings and reading dates."
+ },
+ "Goodreads réserve cette page à l'ordinateur. Si son site mobile s'affiche, touchez aA › Version pour ordinateur. Depuis Fichiers, Partager › Shiori fonctionne aussi.": {
+  "en": "Goodreads keeps this page for computers. If its mobile site shows, tap aA › Request Desktop Website. From Files, Share › Shiori works too."
  },
  "Guetter": {
   "en": "Watch"
@@ -1424,14 +1522,26 @@
  "Il y a 1 an": {
   "en": "1 year ago"
  },
+ "Ils prennent la note et la date de Goodreads quand ils n'en ont pas. Un livre papier et sa version Kindle restent un seul livre.": {
+  "en": "They take the Goodreads rating and date when they have none. A paper book and its Kindle edition stay one book."
+ },
  "Import Audible interrompu": {
   "en": "Audible import interrupted"
+ },
+ "Import Goodreads": {
+  "en": "Goodreads import"
  },
  "Import Kindle interrompu": {
   "en": "Kindle import interrupted"
  },
+ "Import d'un fichier d'export": {
+  "en": "Import from an export file"
+ },
  "Import en cours, gardez l'écran ouvert...": {
   "en": "Importing, keep the screen open…"
+ },
+ "Import impossible": {
+  "en": "Import failed"
  },
  "Importer %lld livre(s)": {
   "en": {
@@ -1439,8 +1549,17 @@
    "other": "Import %lld books"
   }
  },
+ "Importer %lld livres": {
+  "en": "Import %lld books"
+ },
  "Importer depuis Audible": {
   "en": "Import from Audible"
+ },
+ "Importer ma bibliothèque": {
+  "en": "Import my library"
+ },
+ "Importer un nouvel export": {
+  "en": "Import a new export"
  },
  "Importer vos livres": {
   "en": "Import your books"
@@ -1450,6 +1569,9 @@
  },
  "Importez votre bibliothèque Kindle": {
   "en": "Import your Kindle library"
+ },
+ "Importé le": {
+  "en": "Imported on"
  },
  "Impossible d'ajouter ce livre": {
   "en": "Couldn’t add this book"
@@ -1565,6 +1687,9 @@
  "L'année doit être un nombre.": {
   "en": "The year must be a number."
  },
+ "L'aperçu s'ouvre dès la comparaison faite. Les couvertures se cherchent ensuite en arrière-plan.": {
+  "en": "The preview opens as soon as the comparison is done. Covers are then looked for in the background."
+ },
  "L'audio": {
   "en": "The audio"
  },
@@ -1598,8 +1723,20 @@
  "Le catalogue complet de vos séries, tomes à paraître compris": {
   "en": "The complete catalogue of your series, upcoming volumes included"
  },
+ "Le fichier .csv arrive dans vos Téléchargements.": {
+  "en": "The .csv file lands in your Downloads."
+ },
+ "Le fichier n'a pas pu être lu.": {
+  "en": "The file could not be read."
+ },
+ "Le fichier se prépare, quelques minutes pour une grande bibliothèque.": {
+  "en": "The file gets ready, a few minutes for a large library."
+ },
  "Le livre vous intéresse finalement": {
   "en": "The book interests you after all"
+ },
+ "Le même : votre livre prend la note et la date de Goodreads.": {
+  "en": "The same: your book takes the Goodreads rating and date."
  },
  "Le nombre de pages doit être un nombre positif.": {
   "en": "The page count must be a positive number."
@@ -1636,6 +1773,12 @@
  },
  "Lecture de votre bibliothèque Kindle...": {
   "en": "Reading your Kindle library…"
+ },
+ "Lecture du dernier import…": {
+  "en": "Reading the last import…"
+ },
+ "Lecture du fichier": {
+  "en": "Reading the file"
  },
  "Lecture en cours": {
   "en": "Currently reading"
@@ -1739,6 +1882,9 @@
  },
  "Livres audio sur Audible": {
   "en": "Audiobooks on Audible"
+ },
+ "Livres importés": {
+  "en": "Books imported"
  },
  "Livres lus": {
   "en": "Books read"
@@ -1878,6 +2024,9 @@
  "Métriques indisponibles": {
   "en": "Metrics unavailable"
  },
+ "Même livre": {
+  "en": "Same book"
+ },
  "Naissance": {
   "en": "Born"
  },
@@ -1988,6 +2137,9 @@
  "Noter un livre le marque comme lu.": {
   "en": "Rating a book marks it as read."
  },
+ "Notes": {
+  "en": "Ratings"
+ },
  "Notes de version indisponibles": {
   "en": "Release notes unavailable"
  },
@@ -2004,6 +2156,9 @@
   "fr": "Noté %1$lld sur 5 par %2$@",
   "en": "Rated %1$lld out of 5 by %2$@"
  },
+ "Notés": {
+  "en": "Rated"
+ },
  "Nous écrire": {
   "en": "Write to us"
  },
@@ -2018,6 +2173,9 @@
  },
  "Nouveautés": {
   "en": "New releases"
+ },
+ "Nouveaux": {
+  "en": "New"
  },
  "Nouveaux auteurs": {
   "en": "New authors"
@@ -2060,6 +2218,12 @@
  },
  "Ouvre le lecteur": {
   "en": "Opens the player"
+ },
+ "Ouvrez la page d'export": {
+  "en": "Open the export page"
+ },
+ "Ouvrir Goodreads": {
+  "en": "Open Goodreads"
  },
  "Ouvrir dans %@": {
   "en": "Open in %@"
@@ -2139,6 +2303,9 @@
  },
  "Pause": {
   "en": "Pause"
+ },
+ "Peut-être déjà chez vous": {
+  "en": "Maybe already yours"
  },
  "Photo": {
   "en": "Photo"
@@ -2290,6 +2457,9 @@
  "Préparation de votre bibliothèque…": {
   "en": "Preparing your library…"
  },
+ "Préparation de votre import": {
+  "en": "Preparing your import"
+ },
  "Préquelle": {
   "en": "Prequel"
  },
@@ -2382,6 +2552,9 @@
  },
  "Reprendre une photo": {
   "en": "Retake the photo"
+ },
+ "Repris de Goodreads": {
+  "en": "Carried over from Goodreads"
  },
  "Restaurer mes achats": {
   "en": "Restore purchases"
@@ -2505,6 +2678,9 @@
  },
  "Saisie": {
   "en": "Typed in"
+ },
+ "Sans couverture": {
+  "en": "Without a cover"
  },
  "Sans date": {
   "en": "No date"
@@ -2695,6 +2871,9 @@
  "Supprimer mon compte": {
   "en": "Delete my account"
  },
+ "Sur Goodreads": {
+  "en": "On Goodreads"
+ },
  "Sur leur pile": {
   "en": "On their pile"
  },
@@ -2852,6 +3031,12 @@
  "Touchez pour saisir le titre": {
   "en": "Tap to enter the title"
  },
+ "Touchez « Export Library »": {
+  "en": "Tap “Export Library”"
+ },
+ "Touchez « Your export from… »": {
+  "en": "Tap “Your export from…”"
+ },
  "Tous": {
   "en": "All"
  },
@@ -2878,6 +3063,9 @@
  },
  "Tout sélectionner": {
   "en": "Select all"
+ },
+ "Toute votre bibliothèque, avec vos notes et vos dates de lecture.": {
+  "en": "Your whole library, with your ratings and reading dates."
  },
  "Toutes": {
   "en": "All"
@@ -2923,6 +3111,9 @@
  },
  "Un champ vidé est effacé.": {
   "en": "A cleared field is erased."
+ },
+ "Un export plus récent ajoute vos nouveaux livres et met à jour statuts, notes et dates, sans créer de doublon.": {
+  "en": "A newer export adds your new books and updates statuses, ratings and dates, without duplicates."
  },
  "Un lecteur": {
   "en": "A reader"
@@ -2993,6 +3184,9 @@
  "Vos coups de cœur d'abord": {
   "en": "Your favorites first"
  },
+ "Vos livres arrivent dans la bibliothèque au fil de l'import. Vous pouvez fermer cet écran : l'import continue.": {
+  "en": "Your books arrive in the library as the import goes. You can close this screen: the import goes on."
+ },
  "Vos livres audio, avec ce que vous avez déjà écouté.": {
   "en": "Your audiobooks, with what you’ve already listened to."
  },
@@ -3023,6 +3217,12 @@
  "Vos tomes prendront leur place dans la série, et ceux qui vous manquent seront listés par leur numéro. Le catalogue complet remplacera ce décompte dès que Shiori pourra le constituer.": {
   "en": "Your volumes will take their place in the series, and the ones you’re missing will be listed by number. The complete catalogue will replace this count as soon as Shiori can put it together."
  },
+ "Vos étagères": {
+  "en": "Your shelves"
+ },
+ "Vos étagères, vos notes et vos dates de lecture arrivent depuis le fichier d'export de Goodreads.": {
+  "en": "Your shelves, ratings and reading dates come from the Goodreads export file."
+ },
  "Votre Kindle, rangé": {
   "en": "Your Kindle, sorted"
  },
@@ -3031,6 +3231,9 @@
  },
  "Votre bibliothèque Audible": {
   "en": "Your Audible library"
+ },
+ "Votre bibliothèque Goodreads": {
+  "en": "Your Goodreads library"
  },
  "Votre bibliothèque Kindle": {
   "en": "Your Kindle library"
@@ -3046,6 +3249,9 @@
  },
  "Votre bibliothèque, vos notes et vos séries seront effacées sans possibilité de récupération. Un abonnement Premium éventuel n'est pas résilié et reste à annuler dans l'App Store.": {
   "en": "Your library, your ratings and your series will be erased with no way to recover them. Any Premium subscription isn’t cancelled and must be cancelled in the App Store."
+ },
+ "Votre export Goodreads": {
+  "en": "Your Goodreads export"
  },
  "Votre note sera perdue. Cette action est définitive.": {
   "en": "Your rating will be lost. This can’t be undone."
@@ -3082,6 +3288,9 @@
  },
  "Vérifier": {
   "en": "Review"
+ },
+ "Vérifiez que vous étiez connecté au bon compte Goodreads au moment de l'export.": {
+  "en": "Check you were signed in to the right Goodreads account when exporting."
  },
  "Wallander": {
   "en": "Wallander"
@@ -3246,6 +3455,9 @@
  "votre voix": {
   "en": "your narrator"
  },
+ "« À lire » est souvent une liste d'envies sur Goodreads. Si vous possédez ces livres, choisissez Pile à lire.": {
+  "en": "“Want to Read” is often a wishlist on Goodreads. If you own these books, choose To-read pile."
+ },
  "À commencer": {
   "en": "To Start"
  },
@@ -3275,6 +3487,12 @@
  },
  "À venir": {
   "en": "Coming soon"
+ },
+ "À vérifier": {
+  "en": "To check"
+ },
+ "À vérifier · %lld": {
+  "en": "To check · %lld"
  },
  "À écouter": {
   "en": "To listen"
@@ -3311,6 +3529,9 @@
  },
  "Étagère": {
   "en": "Shelf"
+ },
+ "Étagères": {
+  "en": "Shelves"
  },
  "Être prévenu de la sortie": {
   "en": "Alert me on release"

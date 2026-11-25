@@ -38,6 +38,17 @@ class MainActivity : ComponentActivity() {
     private fun route(intent: Intent) {
         if (PushRegistrar.isTappedAlert(intent)) PushRegistrar.openNews.tryEmit(Unit)
         intent.data?.let(InvitationLink::code)?.let { invitations.tryEmit(it) }
+        if (intent.type in CSV_TYPES) {
+            val file = if (intent.action == Intent.ACTION_VIEW) {
+                intent.data
+            } else if (android.os.Build.VERSION.SDK_INT >= 33) {
+                intent.getParcelableExtra(Intent.EXTRA_STREAM, android.net.Uri::class.java)
+            } else {
+                @Suppress("DEPRECATION") intent.getParcelableExtra(Intent.EXTRA_STREAM)
+            }
+            file?.let { goodreadsFiles.tryEmit(it) }
+            return
+        }
         if (intent.action == Intent.ACTION_SEND) {
             val image = if (android.os.Build.VERSION.SDK_INT >= 33) {
                 intent.getParcelableExtra(Intent.EXTRA_STREAM, android.net.Uri::class.java)
@@ -54,6 +65,11 @@ class MainActivity : ComponentActivity() {
 
     companion object {
         const val OPEN_NEWS = "openNews"
+
+        private val CSV_TYPES = setOf("text/csv", "text/comma-separated-values")
+
+        /** A Goodreads export opened in Shiori, kept until the signed-in app imports it. */
+        val goodreadsFiles = MutableSharedFlow<android.net.Uri>(replay = 1, extraBufferCapacity = 1)
 
         /** Invitation codes from tapped links, kept until the signed-in app takes them. */
         val invitations = MutableSharedFlow<String>(replay = 1, extraBufferCapacity = 1)

@@ -29,6 +29,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.polyforms.shiori.features.goodreads.GoodreadsBackgroundImport
+import com.polyforms.shiori.features.home.components.organisms.PreparationChecklist
+import com.polyforms.shiori.features.home.components.organisms.PreparationLine
+import com.polyforms.shiori.features.home.components.organisms.PreparationState
 import com.polyforms.shiori.features.import.BackgroundSync
 import com.polyforms.shiori.features.import.ImportSource
 import com.polyforms.shiori.shared.L
@@ -45,8 +49,13 @@ object LibraryPreparation {
         private set
     var loadHome: (suspend () -> Boolean)? = null
 
-    fun begin(linking: List<ImportSource>) {
+    /** A Goodreads import started by the onboarding, whose line the checklist shows. */
+    var importsGoodreads by mutableStateOf(false)
+        private set
+
+    fun begin(linking: List<ImportSource>, importingGoodreads: Boolean = false) {
         sources = linking
+        importsGoodreads = importingGoodreads
         isActive = true
     }
 
@@ -55,19 +64,22 @@ object LibraryPreparation {
     }
 }
 
-enum class PreparationState { WAITING, WORKING, DONE, CONTINUING, FAILED }
-
 private sealed interface Step {
     data object Profile : Step
     data object WelcomeScans : Step
     data class Library(val source: ImportSource) : Step
+    data object Goodreads : Step
     data object Home : Step
 }
 
 /** "Préparation de votre bibliothèque": the profile, the welcome scans, each library, the Home. */
 @Composable
 fun LibraryPreparationView() {
-    val steps = remember { listOf(Step.Profile, Step.WelcomeScans) + LibraryPreparation.sources.map(Step::Library) + Step.Home }
+    val steps = remember {
+        listOf(Step.Profile, Step.WelcomeScans) + LibraryPreparation.sources.map(Step::Library) +
+            (if (LibraryPreparation.importsGoodreads) listOf(Step.Goodreads) else emptyList()) + Step.Home
+    }
+    val goodreads = GoodreadsBackgroundImport
     var current by remember { mutableIntStateOf(0) }
     val outcomes = remember { mutableStateMapOf<Step, PreparationState>() }
     LaunchedEffect(Unit) {
@@ -82,6 +94,14 @@ fun LibraryPreparationView() {
             outcomes[step] = when (step) {
                 Step.Profile, Step.WelcomeScans -> PreparationState.DONE
                 is Step.Library -> pass(if (step.source == ImportSource.AUDIBLE) BackgroundSync.audible else BackgroundSync.kindle)
+                Step.Goodreads -> {
+                    while (goodreads.isRunning && System.currentTimeMillis() < deadline) delay(300)
+                    when {
+                        goodreads.isRunning -> PreparationState.CONTINUING
+                        goodreads.phase is GoodreadsBackgroundImport.Phase.Failed -> PreparationState.FAILED
+                        else -> PreparationState.DONE
+                    }
+                }
                 Step.Home -> if (LibraryPreparation.loadHome?.invoke() == true) PreparationState.DONE else PreparationState.FAILED
             }
             delay(700)
@@ -90,37 +110,23 @@ fun LibraryPreparationView() {
     }
     Column(Modifier.fillMaxSize().padding(horizontal = 20.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
         Text(L("Préparation de votre bibliothèque"), style = Shiori.type.headline, color = Color.White, textAlign = TextAlign.Center, modifier = Modifier.padding(bottom = 20.dp))
-        val shape = RoundedCornerShape(26.dp)
-        Column(Modifier.fillMaxWidth().background(Color.White.copy(alpha = 0.1f), shape).border(0.5.dp, Color.White.copy(alpha = 0.2f), shape).padding(horizontal = 18.dp, vertical = 4.dp)) {
-            steps.forEachIndexed { index, step ->
-                if (index > 0) ShioriDivider()
-                val state = outcomes[step] ?: if (index == current) PreparationState.WORKING else PreparationState.WAITING
+        PreparationChecklist(
+            steps.mapIndexed { index, step ->
                 val label = when (step) {
                     Step.Profile -> L("Votre profil")
                     Step.WelcomeScans -> L("Vos scans de bienvenue")
                     is Step.Library -> if (step.source == ImportSource.AUDIBLE) L("Votre bibliothèque Audible") else L("Votre bibliothèque Kindle")
+                    Step.Goodreads -> L("Votre bibliothèque Goodreads")
                     Step.Home -> L("Votre accueil")
                 }
-                Row(Modifier.padding(vertical = 13.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Box(Modifier.size(22.dp), contentAlignment = Alignment.Center) {
-                        when (state) {
-                            PreparationState.WAITING -> Icon(Symbol("circle"), null, Modifier.size(22.dp), tint = Color.White.copy(alpha = 0.3f))
-                            PreparationState.WORKING -> CircularProgressIndicator(Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
-                            PreparationState.DONE -> Icon(Symbol("checkmark.circle.fill"), L("Terminé"), Modifier.size(22.dp), tint = Color.White)
-                            PreparationState.CONTINUING -> Icon(Symbol("clock"), null, Modifier.size(20.dp), tint = Color.White)
-                            PreparationState.FAILED -> Icon(Symbol("exclamationmark.circle"), L("Échec"), Modifier.size(20.dp), tint = Color.White)
-                        }
-                    }
-                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        Text(label, style = Shiori.type.body.copy(fontWeight = FontWeight.SemiBold), color = Color.White, modifier = Modifier.alpha(if (state == PreparationState.WAITING) 0.4f else 1f))
-                        when (state) {
-                            PreparationState.CONTINUING -> Text(L("Se poursuit en arrière-plan"), style = Shiori.type.footnote, color = Color.White.copy(alpha = 0.6f))
-                            PreparationState.FAILED -> Text(L("Vous pourrez réessayer depuis les réglages"), style = Shiori.type.footnote, color = Color.White.copy(alpha = 0.6f))
-                            else -> Unit
-                        }
-                    }
+                val outcome = goodreads.outcome
+                val detail = if (step == Step.Goodreads && goodreads.isRunning && outcome != null && outcome.pendingCovers > 0) {
+                    L("%lld couvertures sur %lld", outcome.pendingCovers - goodreads.coversRemaining, outcome.pendingCovers)
+                } else {
+                    null
                 }
-            }
-        }
+                PreparationLine(step.toString(), label, outcomes[step] ?: if (index == current) PreparationState.WORKING else PreparationState.WAITING, detail)
+            },
+        )
     }
 }

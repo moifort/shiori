@@ -75,6 +75,9 @@ fun SettingsHomeScreen(onClose: (() -> Unit)? = null) {
                         ImportSource.KINDLE -> KindleImportScreen { navigator.pop() }
                     }
                 }
+                SettingsHomeAction.OpenGoodreads -> navigator.push {
+                    com.polyforms.shiori.features.goodreads.GoodreadsSourceScreen { navigator.pop() }
+                }
             }
         }
         ScreenBar(title = L("Réglages"), onClose = onClose)

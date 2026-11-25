@@ -152,6 +152,19 @@ fun ContentView(router: AppRouter = remember { AppRouter() }) {
         PushRegistrar.refreshRegistration()
     }
     LaunchedEffect(Unit) { PushRegistrar.openNews.collect { router.selectedTab = TabSelection.NEWS } }
+    var goodreadsFile by remember { mutableStateOf<android.net.Uri?>(null) }
+    LaunchedEffect(Unit) {
+        MainActivity.goodreadsFiles.collect {
+            @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+            MainActivity.goodreadsFiles.resetReplayCache()
+            goodreadsFile = it
+        }
+    }
+    goodreadsFile?.let { file ->
+        com.polyforms.shiori.shared.platform.FullScreenCover(onDismiss = { goodreadsFile = null }) {
+            com.polyforms.shiori.features.goodreads.GoodreadsImportScreen(file = file) { goodreadsFile = null }
+        }
+    }
     LaunchedEffect(Unit) {
         MainActivity.invitations.collect {
             @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)

@@ -257,7 +257,7 @@ data class BookRecommendation(val recommenderName: String? = null, val comment: 
 @Serializable
 data class BookOrigin(val kind: Kind, val friendName: String? = null) {
     @Serializable
-    enum class Kind { SCAN, SHELF, SEARCH, MANUAL, SHARE, DISCOVER, SERIES, AUTHOR, FRIEND, AWAITED, KINDLE, AUDIBLE }
+    enum class Kind { SCAN, SHELF, SEARCH, MANUAL, SHARE, DISCOVER, SERIES, AUTHOR, FRIEND, AWAITED, KINDLE, AUDIBLE, GOODREADS }
 
     /** The tile's value on the book page: "Scan", "Chez Léa", "Audible". */
     val label: String
@@ -274,6 +274,7 @@ data class BookOrigin(val kind: Kind, val friendName: String? = null) {
             Kind.AWAITED -> L("Guetté")
             Kind.KINDLE -> "Kindle"
             Kind.AUDIBLE -> "Audible"
+            Kind.GOODREADS -> "Goodreads"
         }
 }
 

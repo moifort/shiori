@@ -142,6 +142,40 @@ fun DebugPreviews(name: String) {
                 }
             }
             "audible" -> com.polyforms.shiori.features.import.components.pages.ImportConnectPage(com.polyforms.shiori.features.import.ImportSource.AUDIBLE, com.polyforms.shiori.features.import.AmazonMarketplace.FR, {}, false) {}
+            "goodreads" -> com.polyforms.shiori.shared.components.styles.ShioriTheme(dark = true) {
+                com.polyforms.shiori.features.goodreads.components.pages.GoodreadsPreviewPage(
+                    com.polyforms.shiori.features.goodreads.GoodreadsFixtures.preview,
+                    com.polyforms.shiori.features.goodreads.GoodreadsChoices.of(com.polyforms.shiori.features.goodreads.GoodreadsFixtures.preview),
+                    isImporting = false,
+                    onChoices = {},
+                    onAction = {},
+                )
+            }
+            "goodreads-explain" -> com.polyforms.shiori.shared.components.styles.ShioriTheme(dark = true) {
+                androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize().background(com.polyforms.shiori.shared.components.styles.Shiori.colors.background)) {
+                    com.polyforms.shiori.features.goodreads.components.pages.GoodreadsExplainPage({}, {})
+                }
+            }
+            "goodreads-reading" -> com.polyforms.shiori.shared.components.styles.ShioriTheme(dark = true) {
+                com.polyforms.shiori.features.goodreads.components.pages.GoodreadsReadingPage(com.polyforms.shiori.features.goodreads.GoodreadsFixtures.preview)
+            }
+            "goodreads-books" -> com.polyforms.shiori.shared.components.styles.ShioriTheme(dark = true) {
+                com.polyforms.shiori.features.goodreads.components.pages.GoodreadsBooksPage(
+                    com.polyforms.shiori.features.goodreads.GoodreadsFixtures.preview,
+                    com.polyforms.shiori.features.goodreads.GoodreadsChoices.of(com.polyforms.shiori.features.goodreads.GoodreadsFixtures.preview),
+                    com.polyforms.shiori.features.goodreads.components.pages.GoodreadsFilter.ALL, {}, {}, {},
+                )
+            }
+            "goodreads-done" -> com.polyforms.shiori.shared.components.styles.ShioriTheme(dark = true) {
+                com.polyforms.shiori.features.goodreads.components.pages.GoodreadsDonePage(
+                    com.polyforms.shiori.features.goodreads.GoodreadsFixtures.outcome,
+                    com.polyforms.shiori.features.goodreads.GoodreadsFixtures.preview,
+                    com.polyforms.shiori.features.goodreads.GoodreadsChoices.of(com.polyforms.shiori.features.goodreads.GoodreadsFixtures.preview),
+                ) {}
+            }
+            "goodreads-source" -> com.polyforms.shiori.shared.components.styles.ShioriTheme(dark = true) {
+                com.polyforms.shiori.features.goodreads.components.pages.GoodreadsSourcePage(com.polyforms.shiori.features.goodreads.GoodreadsFixtures.summary, false, {}, {})
+            }
             "settings" -> androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize().background(com.polyforms.shiori.shared.components.styles.Shiori.colors.groupedBackground)) {
                 com.polyforms.shiori.features.settings.components.pages.SettingsHomePage("Thibaut Mottet", false, false, "1.0", "1") {}
             }

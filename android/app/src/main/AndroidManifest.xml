@@ -55,6 +55,14 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="shiori" android:host="invite" />
             </intent-filter>
+            <!-- A Goodreads library export, opened or shared from Files or a browser's downloads. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/csv" />
+                <data android:mimeType="text/comma-separated-values" />
+            </intent-filter>
             <!-- A page shared from a browser or a bookshop app, or a photo of a cover. -->
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />

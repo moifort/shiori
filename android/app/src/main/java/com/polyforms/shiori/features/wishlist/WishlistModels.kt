@@ -34,7 +34,7 @@ data class Wish(
     val friendId: String?,
     val wishedAt: Instant,
 ) {
-    enum class Origin { FRIEND, DISCOVERY, AWARD, AUTHOR, SCAN }
+    enum class Origin { FRIEND, DISCOVERY, AWARD, AUTHOR, SCAN, GOODREADS }
 
     val originCaption: String
         get() = when (origin) {
@@ -43,6 +43,7 @@ data class Wish(
             Origin.AWARD -> originLabel ?: L("Prix")
             Origin.AUTHOR -> L("Auteur")
             Origin.SCAN -> L("Scan")
+            Origin.GOODREADS -> "Goodreads"
         }
 
     val cover: Book get() = Book(id = "wish-$id", title = title, authors = authors, format = format, language = language, coverURL = coverURL, status = ReadingStatus.TO_READ)
@@ -66,6 +67,7 @@ data class Wish(
             Origin.DISCOVERY, Origin.AWARD -> BookOrigin(BookOrigin.Kind.DISCOVER)
             Origin.AUTHOR -> BookOrigin(BookOrigin.Kind.AUTHOR)
             Origin.SCAN -> BookOrigin(BookOrigin.Kind.SCAN)
+            Origin.GOODREADS -> BookOrigin(BookOrigin.Kind.GOODREADS)
         }
 }
 

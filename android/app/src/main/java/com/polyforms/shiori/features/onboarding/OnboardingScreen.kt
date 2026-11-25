@@ -1,5 +1,9 @@
 package com.polyforms.shiori.features.onboarding
 
+import com.polyforms.shiori.features.goodreads.GoodreadsImportMode
+import com.polyforms.shiori.features.goodreads.GoodreadsImportScreen
+import com.polyforms.shiori.shared.platform.FullScreenCover
+import com.polyforms.shiori.R
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -77,7 +81,7 @@ interface OnboardingClient {
     suspend fun changeAvatar(avatar: AccountAvatar): AccountAvatar
     suspend fun startSignIn(source: ImportSource, marketplace: AmazonMarketplace): AmazonLogin
     suspend fun completeSignIn(source: ImportSource, code: String)
-    fun beginPreparation(sources: List<ImportSource>)
+    fun beginPreparation(sources: List<ImportSource>, goodreads: Boolean)
 
     companion object {
         val live: OnboardingClient = object : OnboardingClient {
@@ -94,7 +98,7 @@ interface OnboardingClient {
                     BackgroundSync.kindle.start(AppScope)
                 }
             }
-            override fun beginPreparation(sources: List<ImportSource>) = LibraryPreparation.begin(sources)
+            override fun beginPreparation(sources: List<ImportSource>, goodreads: Boolean) = LibraryPreparation.begin(sources, goodreads)
         }
     }
 }
@@ -113,6 +117,9 @@ fun OnboardingScreen(onCompleted: (String, AccountAvatar) -> Unit, client: Onboa
     var error by remember { mutableStateOf<String?>(null) }
     var connectsAudible by remember { mutableStateOf(false) }
     var connectsKindle by remember { mutableStateOf(false) }
+    var importsGoodreads by remember { mutableStateOf(false) }
+    var goodreadsShown by remember { mutableStateOf(false) }
+    var startedGoodreads by remember { mutableStateOf(false) }
     var marketplace by remember { mutableStateOf(AmazonMarketplace.suggested) }
     val pending = remember { mutableListOf<ImportSource>() }
     val linked = remember { mutableListOf<ImportSource>() }
@@ -123,13 +130,13 @@ fun OnboardingScreen(onCompleted: (String, AccountAvatar) -> Unit, client: Onboa
     LaunchedEffect(Unit) { track(AnalyticsEvent.OnboardingStarted) }
 
     fun enterApp() {
-        client.beginPreparation(linked.toList())
+        client.beginPreparation(linked.toList(), startedGoodreads)
         onCompleted(firstName.trim(), avatar)
     }
     suspend fun connectNext() {
         if (pending.isEmpty()) {
             signingIn = null
-            enterApp()
+            if (importsGoodreads && !startedGoodreads) goodreadsShown = true else enterApp()
             return
         }
         val source = pending.removeAt(0)
@@ -189,6 +196,7 @@ fun OnboardingScreen(onCompleted: (String, AccountAvatar) -> Unit, client: Onboa
                 OnboardingStep.LIBRARIES -> LibrariesOfferPage(
                     connectsAudible, { connectsAudible = it },
                     connectsKindle, { connectsKindle = it },
+                    importsGoodreads, { importsGoodreads = it },
                     marketplace, { marketplace = it },
                     isConnecting,
                     onConnect = {
@@ -202,6 +210,17 @@ fun OnboardingScreen(onCompleted: (String, AccountAvatar) -> Unit, client: Onboa
             }
         }
         if (isSaving) CircularProgressIndicator(Modifier.align(Alignment.Center), color = Color.White)
+    }
+    // After Amazon's pages, the export file: the import starts in the background and the
+    // preparation screen shows it going on.
+    if (goodreadsShown) {
+        FullScreenCover(onDismiss = { goodreadsShown = false; enterApp() }) {
+            GoodreadsImportScreen(GoodreadsImportMode.ONBOARDING) { started ->
+                startedGoodreads = started
+                goodreadsShown = false
+                enterApp()
+            }
+        }
     }
     signIn?.let { login ->
         AmazonSignInSheet(login, onCode = { scope.launch { finishSignIn(it) } }, onCancel = {
@@ -271,13 +290,15 @@ private fun FirstNamePage(firstName: String, onFirstName: (String) -> Unit, avat
     if (picking) AvatarPickerSheet(avatar, trimmed, { picking = false }, onAvatar)
 }
 
-/** "Vos bibliothèques": Audible and Kindle to connect, the store, now or later. */
+/** "Vos bibliothèques": Audible and Kindle to connect, the store, Goodreads to import, now or later. */
 @Composable
 private fun LibrariesOfferPage(
     audible: Boolean,
     onAudible: (Boolean) -> Unit,
     kindle: Boolean,
     onKindle: (Boolean) -> Unit,
+    goodreads: Boolean,
+    onGoodreads: (Boolean) -> Unit,
     marketplace: AmazonMarketplace,
     onMarketplace: (AmazonMarketplace) -> Unit,
     isWorking: Boolean,
@@ -294,7 +315,7 @@ private fun LibrariesOfferPage(
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(L("Vos bibliothèques"), style = Shiori.type.title.copy(fontWeight = FontWeight.Bold), color = Color.White)
                 Text(
-                    L("Connectez celles que vous utilisez : elles sont importées pendant que vous découvrez l'application, puis suivies chaque nuit. Vous pourrez aussi le faire plus tard depuis les réglages."),
+                    L("Connectez ou importez celles que vous utilisez : vos livres arrivent pendant que vous découvrez l'application. Vous pourrez aussi le faire plus tard depuis les réglages."),
                     style = Shiori.type.subheadline,
                     color = Color.White.copy(alpha = 0.6f),
                 )
@@ -311,13 +332,19 @@ private fun LibrariesOfferPage(
                 }
             }
         }
+        // Goodreads is a file, not a connection: a box of its own, under the Amazon store.
+        Entrance(140) {
+            Column(Modifier.padding(top = (-12).dp).background(Shiori.colors.secondaryGroupedBackground, RoundedCornerShape(12.dp)).padding(horizontal = 12.dp).alpha(if (isWorking) 0.6f else 1f)) {
+                SourceToggle(R.drawable.logo_goodreads, "Goodreads", L("Toute votre bibliothèque, avec vos notes et vos dates de lecture."), goodreads, onGoodreads)
+            }
+        }
         Spacer(Modifier.weight(1f))
         Entrance(160) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                ActionButton(onConnect, Modifier.fillMaxWidth(), size = ActionSize.LARGE, spansWidth = true, enabled = !isWorking && (audible || kindle)) {
+                ActionButton(onConnect, Modifier.fillMaxWidth(), size = ActionSize.LARGE, spansWidth = true, enabled = !isWorking && (audible || kindle || goodreads)) {
                     Box(contentAlignment = Alignment.Center) {
                         Row(Modifier.alpha(if (isWorking) 0f else 1f), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                            ActionLabel(L("Connecter"), "arrow.down.circle", ActionSize.LARGE.side)
+                            ActionLabel(L("Continuer"), null, ActionSize.LARGE.side)
                         }
                         if (isWorking) CircularProgressIndicator(Modifier.size(20.dp), color = Color.Black, strokeWidth = 2.dp)
                     }

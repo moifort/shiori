@@ -96,6 +96,7 @@ sealed interface SettingsHomeAction {
     data object ShowPremium : SettingsHomeAction
     data object ShowFeedback : SettingsHomeAction
     data class OpenSource(val source: ImportSource) : SettingsHomeAction
+    data object OpenGoodreads : SettingsHomeAction
 }
 
 /** The settings: profile, Premium, notifications, the sources, the version, a word to us. */
@@ -121,9 +122,11 @@ fun SettingsHomePage(profileSubtitle: String?, isPremium: Boolean?, notification
             ) { onAction(SettingsHomeAction.Open(SettingsDestination.NOTIFICATIONS)) }
         }
         FormSection(L("Sources")) {
-            ImportSource.entries.forEachIndexed { index, source ->
-                SettingsRow("", source.label, source.subtitle, divider = index < ImportSource.entries.lastIndex, logo = source.logo) { onAction(SettingsHomeAction.OpenSource(source)) }
+            ImportSource.entries.forEach { source ->
+                SettingsRow("", source.label, source.subtitle, logo = source.logo) { onAction(SettingsHomeAction.OpenSource(source)) }
             }
+            // A file, not a connection: its own row after the two Amazon ones.
+            SettingsRow("", "Goodreads", L("Import d'un fichier d'export"), divider = false, logo = com.polyforms.shiori.R.drawable.logo_goodreads) { onAction(SettingsHomeAction.OpenGoodreads) }
         }
         FormSection(L("Application")) {
             SettingsRow("doc.text.fill", L("Version et nouveautés"), "v$appVersion ($buildNumber)") { onAction(SettingsHomeAction.Open(SettingsDestination.CHANGELOG)) }
