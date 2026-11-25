@@ -1,8 +1,8 @@
 import SwiftUI
 
 /// The head of the Goodreads pages: a tilted wall of the covers the export
-/// found, sharp in the middle, melting into a blur under the status bar and
-/// under the title at its foot — blurred, never darkened. A book with no
+/// found, sharp from the top, melting into a blur under the title at its foot
+/// and from there into the page's black, with no hard edge. A book with no
 /// cover draws the app's typeset stand-in, so the wall is never a grid of
 /// grey boxes.
 struct GoodreadsMosaic: View {
@@ -12,6 +12,8 @@ struct GoodreadsMosaic: View {
     private static let columns = 8
     private static let rows = 4
     private static let coverWidth: CGFloat = 78
+    /// How far the foot fades to black, as Android's veil does.
+    private static let fade: CGFloat = 80
 
     /// The wall is wider than any phone: it hangs in an overlay of the black
     /// ground, so the page keeps the screen's width rather than the wall's.
@@ -23,12 +25,13 @@ struct GoodreadsMosaic: View {
                     .offset(x: -20, y: -24)
             }
             .overlay {
-                // Under the title at the foot, then under the status bar.
+                // Under the title at the foot; the top stays sharp under the status bar.
                 ZStack {
                     blur(clearUntil: 0.3, solidFrom: 0.78)
-                    blur(clearUntil: 0.45, solidFrom: 0, height: 130)
-                        .scaleEffect(y: -1)
-                        .frame(maxHeight: .infinity, alignment: .top)
+                    // The foot melts into the page's black: no hard edge under the title.
+                    LinearGradient(colors: [.clear, .black], startPoint: .top, endPoint: .bottom)
+                        .frame(height: Self.fade)
+                        .frame(maxHeight: .infinity, alignment: .bottom)
                 }
             }
         .frame(height: height)

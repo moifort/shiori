@@ -119,10 +119,10 @@ fun GoodreadsMosaic(books: List<Book>, height: Dp = 400.dp) {
     }
     Box(Modifier.fillMaxWidth().height(height).background(Color.Black).clip(RoundedCornerShape(0.dp)), contentAlignment = Alignment.Center) {
         Wall()
-        // The frosted veil the cover wall wears on Android (`CoverVeil`), under the status bar
-        // and rising under the title at the foot, into the page's black.
+        // The frosted veil the cover wall wears on Android (`CoverVeil`), rising under the title
+        // at the foot, into the page's black; the top stays sharp under the status bar.
         val veil = Color(0xE61C1C1E)
-        Box(Modifier.matchParentSize().background(Brush.verticalGradient(0f to veil, 0.16f to Color.Transparent, 0.4f to Color.Transparent, 0.8f to veil, 1f to Color.Black)))
+        Box(Modifier.matchParentSize().background(Brush.verticalGradient(0f to Color.Transparent, 0.4f to Color.Transparent, 0.8f to veil, 1f to Color.Black)))
     }
 }
 
