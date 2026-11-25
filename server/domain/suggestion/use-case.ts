@@ -9,6 +9,7 @@ import { BookQuery } from '~/domain/book/query'
 import type { Book } from '~/domain/book/types'
 import { todayOf } from '~/domain/discovery/business-rules'
 import { RELEASE_FORMATS, type ReleaseFormat } from '~/domain/discovery/types'
+import { EntitlementQuery } from '~/domain/entitlement/query'
 import { wantsAlert } from '~/domain/notification/business-rules'
 import { NotificationQuery } from '~/domain/notification/query'
 import { NotificationUseCase } from '~/domain/notification/use-case'
@@ -184,7 +185,9 @@ export namespace SuggestionUseCase {
       await SuggestionCommand.markTold(userId, month)
       return true
     }
-    const queues = await SuggestionQuery.all()
+    // Subscribers only: there is no free plan, and each selection is a paid Claude call.
+    const subscribers = await EntitlementQuery.subscribers(now)
+    const queues = (await SuggestionQuery.all()).filter((queue) => subscribers.has(queue.userId))
     const due = await hearing(queues.filter((queue) => mayGenerate(queue, queue.language)))
     const made = await hearing(queues.filter(mayTell))
     const generated = await Promise.all(

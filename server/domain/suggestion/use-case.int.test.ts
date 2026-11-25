@@ -8,6 +8,8 @@ import {
 } from '~/test/fake-firestore'
 
 mock.module('~/system/firebase', () => ({ db: fakeDb }))
+// The reader subscribes: the scheduled passes serve subscribers only.
+mock.module('~/system/config', () => ({ config: () => ({ premiumUserIds: ['reader'] }) }))
 
 /** Stands in for Claude: what it answers, and every prompt it was sent. */
 let configured = true

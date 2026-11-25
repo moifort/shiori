@@ -6,7 +6,10 @@ import { fakeDb, resetFakeFirestore, startFakeRequest } from '~/test/fake-firest
 
 mock.module('~/system/firebase', () => ({ db: fakeDb }))
 const kindleKey = randomBytes(32).toString('base64')
-mock.module('~/system/config', () => ({ config: () => ({ kindleKey }) }))
+// Both readers subscribe: the nightly pass serves subscribers only.
+mock.module('~/system/config', () => ({
+  config: () => ({ kindleKey, premiumUserIds: ['reader-1', 'reader-2'] }),
+}))
 
 /** What Amazon would answer, and how often it was asked: an import must make
  *  one trip, not one per title. Refusals are handed out one per call, oldest

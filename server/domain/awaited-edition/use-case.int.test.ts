@@ -10,6 +10,10 @@ import {
 } from '~/test/fake-firestore'
 
 mock.module('~/system/firebase', () => ({ db: fakeDb }))
+// The readers subscribe: the scheduled passes serve subscribers only.
+mock.module('~/system/config', () => ({
+  config: () => ({ premiumUserIds: ['reader', 'other'] }),
+}))
 // The BnF is a network call: a French edition falls through to the grounded step.
 mock.module('~/domain/scan/infrastructure/bnf', () => ({ bnfEditionsOf: async () => [] }))
 mock.module('~/system/object-store', () => ({

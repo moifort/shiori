@@ -294,6 +294,23 @@ describe('applying what Apple pushed to the webhook', () => {
   })
 })
 
+describe('listing who subscribes', () => {
+  test('holds the active entitlements and the comped accounts, and no one else', async () => {
+    compedUserIds = ['maker']
+    verifiedTransaction = aTransaction()
+    await EntitlementUseCase.sync(user('u1'), 'signed-jws')
+    verifiedTransaction = aTransaction({
+      appAccountToken: tokenOf('u2'),
+      originalTransactionId: '2000000900000002',
+      expiresAt: new Date('2026-01-01T00:00:00.000Z'),
+    })
+    await EntitlementUseCase.sync(user('u2'), 'signed-jws')
+
+    expect(await EntitlementQuery.subscribers()).toEqual(new Set([user('maker'), user('u1')]))
+    expect(await EntitlementQuery.subscribersAmong([user('u2'), user('u1')])).toEqual([user('u1')])
+  })
+})
+
 describe('reading the plan', () => {
   test('is free for an account that never bought anything', async () => {
     expect(await EntitlementQuery.planOf(user('u1'))).toBe('free')

@@ -3,6 +3,8 @@ import type { UserId } from '~/domain/shared/types'
 import { type FakeFirestore, fakeDb, resetFakeFirestore } from '~/test/fake-firestore'
 
 mock.module('~/system/firebase', () => ({ db: fakeDb }))
+// The reader subscribes: the scheduled passes serve subscribers only.
+mock.module('~/system/config', () => ({ config: () => ({ premiumUserIds: ['reader'] }) }))
 mock.module('~/system/object-store', () => ({
   objectStore: () => ({ downloadUrl: async () => 'https://fake.store/cover' }),
 }))

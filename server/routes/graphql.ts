@@ -1,10 +1,16 @@
 import { type ApolloServer, HeaderMap } from '@apollo/server'
+import { EntitlementQuery } from '~/domain/entitlement/query'
 import type { UserId } from '~/domain/shared/types'
+import type { SubscriberGateContext } from '~/system/subscriber-gate'
 
 export default defineEventHandler(async (event) => {
   const apollo = useApollo()
   const userId = (event.context as { userId?: UserId }).userId
-  if (!userId) throw createError({ statusCode: 401, statusMessage: 'Missing user context' })
+  if (!userId)
+    throw createError({ statusCode: 401, statusMessage: 'Missing user context' })
+    // No free plan: the paid model calls this request makes need its caller to be Premium.
+  ;(event.context as SubscriberGateContext)._isSubscriber = async () =>
+    (await EntitlementQuery.planOf(userId)) === 'premium'
   // No loader set: a book carries its series name and volume number, so grouping
   // a library reads no catalogue document. The request cache in the repositories
   // covers the rest.

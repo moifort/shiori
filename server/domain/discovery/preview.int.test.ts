@@ -6,7 +6,8 @@ mock.module('~/system/firebase', () => ({ db: fakeDb }))
 // The BnF is a network call: a French edition falls through to the grounded step.
 mock.module('~/domain/scan/infrastructure/bnf', () => ({ bnfEditionsOf: async () => [] }))
 mock.module('~/system/config', () => ({
-  config: () => ({ googleApiKey: 'test-key', premiumUserIds: [] }),
+  // The readers subscribe: there is no free plan, so a described page is a subscriber's.
+  config: () => ({ googleApiKey: 'test-key', premiumUserIds: ['reader', 'other'] }),
 }))
 
 /** Stands in for Gemini's grounded step: what it was asked about, and a
@@ -159,7 +160,7 @@ describe('an announced volume’s page', () => {
 
   test('is refused once the allowance is used up', async () => {
     watch(printed, { number: 4, title: 'Carl 4', date: '2027-02-12' })
-    fake.seed('ai-quotas', quotaDoc(), { userId: reader, month: monthOf(new Date()), scans: 5 })
+    fake.seed('ai-quotas', quotaDoc(), { userId: reader, month: monthOf(new Date()), scans: 30 })
 
     const preview = await DiscoveryUseCase.previewAnnouncedVolume(
       reader,

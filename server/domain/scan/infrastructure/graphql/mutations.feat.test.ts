@@ -34,7 +34,8 @@ beforeEach(() => {
   fake = resetFakeFirestore()
   answers = []
   prompts = []
-  premiumUserIds = []
+  // A subscriber by default: there is no free plan, so every scan is a subscriber's.
+  premiumUserIds = [userId]
 })
 
 const searchTitle = (title: string) =>
@@ -89,11 +90,20 @@ describe('searchTitle', () => {
     })
   })
 
+  test('is refused with QUOTA_EXHAUSTED without a subscription', async () => {
+    premiumUserIds = []
+
+    const result = await searchTitle('Dune')
+
+    expect(result.errors?.[0]?.extensions?.code).toBe('QUOTA_EXHAUSTED')
+    expect(answers).toEqual([])
+  })
+
   test('is refused with QUOTA_EXHAUSTED once the allowance is used up', async () => {
     fake.seed('ai-quotas', `${userId}~${monthOf(new Date())}`, {
       userId,
       month: monthOf(new Date()),
-      scans: 5,
+      scans: 30,
     })
 
     const result = await searchTitle('Dune')
@@ -154,6 +164,7 @@ describe('detectBooks', () => {
   })
 
   test('is refused to a free account with PREMIUM_REQUIRED', async () => {
+    premiumUserIds = []
     const result = await detectBooks()
 
     expect(result.errors?.[0]?.extensions?.code).toBe('PREMIUM_REQUIRED')
@@ -264,7 +275,7 @@ describe('adding a shelf book, then opening it', () => {
     fake.seed('ai-quotas', `${userId}~${monthOf(new Date())}`, {
       userId,
       month: monthOf(new Date()),
-      scans: 5,
+      scans: 30,
     })
 
     const result = await addDetectedBook()

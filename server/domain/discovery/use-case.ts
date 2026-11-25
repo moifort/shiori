@@ -98,6 +98,7 @@ import {
   withCover,
   withoutAsin,
 } from '~/domain/discovery/web-lookups'
+import { EntitlementQuery } from '~/domain/entitlement/query'
 import { shelvedNarratorsOf } from '~/domain/narrator/business-rules'
 import { NarratorQuery } from '~/domain/narrator/query'
 import { NotificationUseCase } from '~/domain/notification/use-case'
@@ -524,12 +525,19 @@ export namespace DiscoveryUseCase {
     changedReaders: UserId[]
   }> => {
     const overBudget = () => Date.now() - startedAt > budgetMs
-    const [userIds, stored] = await Promise.all([UserQuery.allIds(), DiscoveryQuery.allReaders()])
+    const [userIds, stored, subscribers] = await Promise.all([
+      UserQuery.allIds(),
+      DiscoveryQuery.allReaders(),
+      EntitlementQuery.subscribers(now),
+    ])
     const readers = new Map(await withoutAccountsGone(stored, userIds))
     let synced = 0
     let failed = 0
     for (const userId of userIds) {
       if (overBudget()) break
+      // Subscribers only: a lapsed account's sagas are not looked up for it, its reader
+      // kept as it was for the day it subscribes again.
+      if (!subscribers.has(userId)) continue
       const reader = readers.get(userId)
       if (!readerIsStale(reader, now)) continue
       try {
@@ -542,7 +550,10 @@ export namespace DiscoveryUseCase {
         logger.warn('discovery reader sync failed', { error, userId })
       }
     }
-    const pass = await watchesForThePass([...readers.values()], now)
+    const pass = await watchesForThePass(
+      [...readers.values()].filter((reader) => subscribers.has(reader.userId)),
+      now,
+    )
     const { watches, authorWatches, narratorWatches } = pass
     // The lookups replace the watches they write in these maps: what differs
     // from this copy afterwards is what changed.
@@ -639,7 +650,7 @@ export namespace DiscoveryUseCase {
    *  knows the dates. A reader's books are read only when one of their
    *  authors or narrators has something out. */
   export const sendAlertsToEveryReader = async (now = new Date()): Promise<{ readers: number }> => {
-    const readers = await DiscoveryQuery.allReaders()
+    const readers = await subscribingReaders(now)
     const [watches, authorWatches, narratorWatches] = await everyWatchOf(readers)
     const today = todayOf(now)
     let reached = 0
@@ -700,7 +711,7 @@ export namespace DiscoveryUseCase {
    *  left out, each named once. No model is called; each reader's library is
    *  read to know what they hold. A reader with nothing new hears nothing. */
   export const sendDigestToEveryReader = async (now = new Date()): Promise<{ readers: number }> => {
-    const readers = await DiscoveryQuery.allReaders()
+    const readers = await subscribingReaders(now)
     const [watches, authorWatches, narratorWatches] = await everyWatchOf(readers)
     const today = todayOf(now)
     let reached = 0
@@ -1095,6 +1106,15 @@ const withTheRestRead = async <W extends { key: string }>(
  *  pass that read an account just before it was deleted writes its reader back
  *  after the deletion erased it, and the reader's sagas would then be looked
  *  up every two weeks for nobody. One that cannot be forgotten now is next hour. */
+/** The readers the alerts go to: subscribers only, there being no free plan. */
+const subscribingReaders = async (now: Date): Promise<DiscoveryReader[]> => {
+  const [readers, subscribers] = await Promise.all([
+    DiscoveryQuery.allReaders(),
+    EntitlementQuery.subscribers(now),
+  ])
+  return readers.filter((reader) => subscribers.has(reader.userId))
+}
+
 const withoutAccountsGone = async (
   stored: readonly DiscoveryReader[],
   userIds: readonly UserId[],

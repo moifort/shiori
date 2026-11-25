@@ -8,7 +8,8 @@ mock.module('~/system/firebase', () => ({ db: fakeDb }))
 // The BnF is a network call: a French edition falls through to the grounded step.
 mock.module('~/domain/scan/infrastructure/bnf', () => ({ bnfEditionsOf: async () => [] }))
 mock.module('~/system/config', () => ({
-  config: () => ({ googleApiKey: 'test-key', premiumUserIds: [] }),
+  // The reader subscribes: there is no free plan, so every scan is a subscriber's.
+  config: () => ({ googleApiKey: 'test-key', premiumUserIds: ['reader-1'] }),
 }))
 
 /** Queued Gemini answers, consumed in call order. An Error is thrown. */
@@ -382,7 +383,7 @@ describe('a book added from a shelf photo', () => {
     fake.seed('ai-quotas', `${reader}~${monthOf(new Date())}`, {
       userId: reader,
       month: monthOf(new Date()),
-      scans: 5,
+      scans: 30,
     })
 
     expect(await BookUseCase.addFromShelf(reader, onePiece)).toBe('quota-exhausted')
@@ -427,7 +428,7 @@ describe('a book added from a shelf photo', () => {
     fake.seed('ai-quotas', `${reader}~${monthOf(new Date())}`, {
       userId: reader,
       month: monthOf(new Date()),
-      scans: 5,
+      scans: 30,
     })
     publishedCovers['9782352942832'] = 'https://m.media-amazon.com/images/P/2352942837.jpg'
     answers = [description]
@@ -443,7 +444,7 @@ describe('a book added from a shelf photo', () => {
       publishedCoverUrl: 'https://m.media-amazon.com/images/P/2352942837.jpg',
     })
     expect(stored).not.toHaveProperty('awaitingDescription')
-    expect(spent()).toBe(5)
+    expect(spent()).toBe(30)
   })
 
   test('takes the spelling the lookup found for every name its spine misread', async () => {

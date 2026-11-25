@@ -3,11 +3,12 @@ import type { Quota, QuotaMonth, ScanCredit, ScanDebit } from '~/domain/quota/ty
 import { Count } from '~/domain/shared/primitives'
 import type { Count as CountType, Plan, UserId } from '~/domain/shared/types'
 
-// What a free account gets each calendar month. The AI scan is the app's only
-// variable cost, so this one number is the whole free tier: books, series, notes
-// and sharing stay unlimited, and a book can always be added by hand.
-// Single source of truth — the GraphQL surface and the gate both read it here.
-export const FREE_MONTHLY_SCANS: CountType = Count(5)
+// What an account without Premium gets each calendar month: nothing, since 2026-11-25.
+// Shiori has no free plan: a new reader starts a free trial, which is Premium, and an
+// account whose trial or subscription ended is offered one again. Kept as a number
+// because builds on sale read it to draw their gauge, and an empty gauge is what sends
+// them to the offer. Single source of truth — the GraphQL surface and the gate read it.
+export const FREE_MONTHLY_SCANS: CountType = Count(0)
 
 // What one scan costs, in euros, as measured on the bill (see docs/freemium-economics.md,
 // measured 2026-11-25 on the October 2026 billing export and AI-usage counters). A scan runs
@@ -101,9 +102,10 @@ export const debitFor = (plan: Plan, quota: Quota, credit: ScanCredit): ScanDebi
       ? { on: 'credit' }
       : { on: 'nothing' }
 
-// Nothing left anywhere — the only state that refuses a scan.
+// Nothing a scan may be taken from: no Premium (there is no free plan, and the scans an
+// account was granted wait for its subscription), or nothing left anywhere.
 export const exhausted = (plan: Plan, quota: Quota, credit: ScanCredit): boolean =>
-  debitFor(plan, quota, credit).on === 'nothing'
+  plan !== 'premium' || debitFor(plan, quota, credit).on === 'nothing'
 
 // The quota once a scan has been spent.
 export const consumed = (quota: Quota): Quota => ({ ...quota, scans: Count(quota.scans + 1) })

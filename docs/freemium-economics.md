@@ -1,4 +1,4 @@
-# Freemium economics
+# Subscription economics
 
 What a reader costs and what a subscriber pays, so the allowances in
 `server/domain/quota/business-rules.ts` can be sized against real figures. Measured on
@@ -17,6 +17,7 @@ Every figure below is either **measured** (read from a bill or a counter) or **e
 | Active Premium | 0 | `admin-metrics/current`, measured |
 | Version on sale | 1.1, subscriptions approved | App Store Connect, measured |
 | Products | yearly 34.99 € with a one-month free trial; monthly 4.99 €, no trial (17.99 € and 1.99 € until 2026-11-25) | `scripts/appstore/prices.ts` |
+| Free plan | none since 2026-11-25: the trial is the way in, and an account without Premium waits behind the offer | owner's decision |
 
 ## What a scan costs
 
@@ -58,14 +59,22 @@ at 17.99 €; the real figure was 1.06 €, and is 2.07 € at the current price
 
 ## What the allowances cost per reader
 
-Estimated at 0.03 € (low) and 0.15 € (high) a scan, if the allowance is used in full.
+Estimated at 0.03 € (low) and 0.15 € (high) a scan, if the allowance is used in full. There is
+no free plan since 2026-11-25: an account without Premium scans nothing, its granted scans
+waiting for a subscription (`exhausted`), and makes no paid model call at all — the GraphQL
+route refuses grounded searches and Claude calls for it (`requireSubscriber`), and the
+scheduled passes (nightly Kindle and Audible syncs, release watches, alerts, the month's
+discoveries) serve subscribers only (`EntitlementQuery.subscribers`).
 
 | Allowance | Scans | Cost if used |
 |---|---|---|
-| Welcome credit, once, every account (`WELCOME_SCANS`) | 50 | 1.50 to 7.50 € |
-| Free monthly allowance (`FREE_MONTHLY_SCANS`) | 5 a month | 1.80 to 9 € a year |
+| Welcome credit, once, at the end of onboarding (`WELCOME_SCANS`), spent during the trial | 50 | 1.50 to 7.50 € |
+| Without Premium (`FREE_MONTHLY_SCANS`) | 0 (5 a month until 2026-11-25) | nothing |
 | Premium welcome credit, once, first paid period (`PREMIUM_WELCOME_SCANS`) | 200 (500 until 2026-11-25) | 6 to 30 € |
 | Premium monthly ceiling (`PREMIUM_MONTHLY_SCANS`) | 30 a month (100 until 2026-11-25) | 0.90 to 4.50 € a month |
+
+A trial costs at most its 50 welcome scans and 30 monthly ones, 2.40 to 12 €, plus the page
+lookups it opens; it earns nothing if cancelled, which the conversion rate has to pay for.
 
 The Premium welcome credit was handed at the start of a free trial until 2026-11-25, and a
 credit outlives the subscription: a trial started and cancelled could keep 500 scans worth 15

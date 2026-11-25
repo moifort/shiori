@@ -41,6 +41,7 @@ import { watchKeyOf } from '~/domain/discovery/business-rules'
 import { DiscoveryCommand } from '~/domain/discovery/command'
 import { DiscoveryQuery } from '~/domain/discovery/query'
 import { DiscoveryUseCase } from '~/domain/discovery/use-case'
+import { EntitlementQuery } from '~/domain/entitlement/query'
 import { SeriesQuery } from '~/domain/series/query'
 import type { SagaKey, SeriesName, VolumeNumber } from '~/domain/series/types'
 import { SeriesUseCase } from '~/domain/series/use-case'
@@ -382,14 +383,19 @@ export namespace AudibleUseCase {
     budgetMs = NIGHTLY_BUDGET_MS,
     startedAt = Date.now(),
   ): Promise<SyncRun> =>
-    syncEveryConnectedReader(await AudibleQuery.readersToSync(), {
-      syncLibrary: (userId) => syncLibrary(userId),
-      // Outside any request: their Découvrir projections are told here.
-      afterSync: (userId) => DiscoveryCommand.recordLibraryChange([userId]),
-      logger,
-      budgetMs,
-      startedAt,
-    })
+    // Subscribers only: there is no free plan, and an account without Premium waits behind
+    // the offer, its library kept as it was.
+    syncEveryConnectedReader(
+      await EntitlementQuery.subscribersAmong(await AudibleQuery.readersToSync()),
+      {
+        syncLibrary: (userId) => syncLibrary(userId),
+        // Outside any request: their Découvrir projections are told here.
+        afterSync: (userId) => DiscoveryCommand.recordLibraryChange([userId]),
+        logger,
+        budgetMs,
+        startedAt,
+      },
+    )
 }
 
 /** One trip to Amazon, with the rotated access token written back.

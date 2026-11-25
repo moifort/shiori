@@ -12,6 +12,7 @@ import { KindlePosition } from '~/domain/book/primitives'
 import { BookQuery } from '~/domain/book/query'
 import type { Book, BookLanguage, KindlePosition as KindlePositionValue } from '~/domain/book/types'
 import { DiscoveryCommand } from '~/domain/discovery/command'
+import { EntitlementQuery } from '~/domain/entitlement/query'
 import {
   bookFrom,
   drawnBooksOf,
@@ -219,19 +220,24 @@ export namespace KindleUseCase {
     budgetMs = NIGHTLY_BUDGET_MS,
     startedAt = Date.now(),
   ): Promise<KindleSyncRun> =>
-    syncEveryConnectedReader(await KindleQuery.readersToSync(), {
-      syncLibrary: (userId) => syncLibrary(userId),
-      // Outside any request: their Découvrir projections are told here.
-      afterSync: (userId) => DiscoveryCommand.recordLibraryChange([userId]),
-      // Kept for the app, which offers to connect again.
-      afterFailure: (userId) =>
-        KindleCommand.recordFailure(userId).catch((error) =>
-          logger.warn('Kindle sync failure could not be recorded', { error, userId }),
-        ),
-      logger,
-      budgetMs,
-      startedAt,
-    })
+    // Subscribers only: there is no free plan, and an account without Premium waits behind
+    // the offer, its library kept as it was.
+    syncEveryConnectedReader(
+      await EntitlementQuery.subscribersAmong(await KindleQuery.readersToSync()),
+      {
+        syncLibrary: (userId) => syncLibrary(userId),
+        // Outside any request: their Découvrir projections are told here.
+        afterSync: (userId) => DiscoveryCommand.recordLibraryChange([userId]),
+        // Kept for the app, which offers to connect again.
+        afterFailure: (userId) =>
+          KindleCommand.recordFailure(userId).catch((error) =>
+            logger.warn('Kindle sync failure could not be recorded', { error, userId }),
+          ),
+        logger,
+        budgetMs,
+        startedAt,
+      },
+    )
 
   /** What an Amazon data export holds, ticked against the library it would join.
    *  Saves nothing. Kept for the deprecated export import. */

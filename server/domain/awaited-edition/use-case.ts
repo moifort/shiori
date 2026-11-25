@@ -39,6 +39,7 @@ import type { BookFormat, BookId, BookView } from '~/domain/book/types'
 import { todayOf } from '~/domain/discovery/business-rules'
 import type { ReleaseFormat } from '~/domain/discovery/types'
 import { DiscoveryUseCase } from '~/domain/discovery/use-case'
+import { EntitlementQuery } from '~/domain/entitlement/query'
 import { NotificationUseCase } from '~/domain/notification/use-case'
 import { ReleaseQuery } from '~/domain/release/query'
 import type { ReleaseView } from '~/domain/release/types'
@@ -268,9 +269,15 @@ export namespace AwaitedEditionUseCase {
     changedReaders: UserId[]
   }> => {
     const overBudget = () => Date.now() - startedAt > budgetMs
-    const { all, watches, stateBefore, stateAfter } = await editionsForThePass(now)
+    const [{ all, watches, stateBefore, stateAfter }, subscribers] = await Promise.all([
+      editionsForThePass(now),
+      EntitlementQuery.subscribers(now),
+    ])
     const lookedUp = new Set<string>()
-    const due = dueWatchesOf(all, watches, now, todayOf(now))
+    // Looked up for subscribers only: there is no free plan.
+    const due = dueWatchesOf(all, watches, now, todayOf(now)).filter((awaited) =>
+      subscribers.has(awaited.userId),
+    )
     let watched = 0
     let failed = 0
     let refusal: unknown
@@ -317,7 +324,11 @@ export namespace AwaitedEditionUseCase {
    *  its reader once. No model is called; the hourly pass knows the dates. An
    *  edition found out too long ago is passed over silently. */
   export const sendAlerts = async (now = new Date()): Promise<{ readers: number }> => {
-    const all = await AwaitedEditionQuery.all()
+    const subscribers = await EntitlementQuery.subscribers(now)
+    // Told to subscribers only: there is no free plan.
+    const all = (await AwaitedEditionQuery.all()).filter((awaited) =>
+      subscribers.has(awaited.userId),
+    )
     const watches = await AwaitedEditionQuery.watches(all.map((awaited) => awaited.watchKey))
     const today = todayOf(now)
     const reached = new Set<UserId>()

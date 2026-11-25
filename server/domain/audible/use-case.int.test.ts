@@ -11,7 +11,10 @@ mock.module('~/system/firebase', () => ({ db: fakeDb }))
 // One key for the whole file: config() is read on every seal and every open, and
 // a fresh key per call would make a sealed value unreadable a line later.
 const audibleKey = randomBytes(32).toString('base64')
-mock.module('~/system/config', () => ({ config: () => ({ audibleKey }) }))
+// Both readers subscribe: the nightly pass serves subscribers only.
+mock.module('~/system/config', () => ({
+  config: () => ({ audibleKey, premiumUserIds: ['reader-1', 'reader-2'] }),
+}))
 
 /** What Amazon would answer, and what it was handed. `libraryCalls` is how the
  *  read budget against a third party is asserted: an import must make one trip,
@@ -952,6 +955,14 @@ describe('running the nightly job over every reader', () => {
     items = [anItem()]
 
     expect(await AudibleUseCase.syncEveryReader()).toEqual({ synced: 1, failed: 1, deferred: 0 })
+  })
+
+  test('leaves out a connected reader who holds no subscription', async () => {
+    const lapsed = 'reader-3' as UserId
+    await connect(lapsed)
+
+    expect(await AudibleUseCase.syncEveryReader()).toEqual({ synced: 0, failed: 0, deferred: 0 })
+    expect(libraryCalls).toHaveLength(0)
   })
 
   test('counts a reader who turned the sync off as nobody to sync', async () => {

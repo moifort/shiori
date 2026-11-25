@@ -6,6 +6,7 @@ import * as repository from '~/system/gemini/repository'
 import { SpendCapReached } from '~/system/gemini/spend-cap'
 import { type AiStepUsage, freeSearchesSpent, summedUsage } from '~/system/gemini/usage'
 import { createLogger } from '~/system/logger'
+import { requireSubscriber } from '~/system/subscriber-gate'
 
 /** The model every scan step calls.
  *
@@ -79,6 +80,8 @@ type GenerateOptions = {
 export const generate = async <T>(
   options: GenerateOptions,
 ): Promise<{ value: T; usage?: AiStepUsage }> => {
+  // A grounded step bills searches: a subscriber's only, inside a request.
+  if (options.grounded) await requireSubscriber()
   if (options.grounded && (await searchesOnClaude())) {
     try {
       return await searchedWithClaude<T>({

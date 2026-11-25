@@ -53,7 +53,8 @@ beforeEach(() => {
   answers = []
   calls.length = 0
   pageTitle = undefined
-  premiumUserIds = []
+  // A subscriber by default: there is no free plan.
+  premiumUserIds = [reader]
 })
 
 const quotaDoc = () => `${reader}~${monthOf(new Date())}`
@@ -81,7 +82,7 @@ describe('a metered scan', () => {
   })
 
   test('refuses before calling the model once the allowance is used up', async () => {
-    fake.seed('ai-quotas', quotaDoc(), { userId: reader, month: monthOf(new Date()), scans: 5 })
+    fake.seed('ai-quotas', quotaDoc(), { userId: reader, month: monthOf(new Date()), scans: 30 })
 
     expect(await ScanUseCase.lookUpTitle(reader, BookTitle('Dune'), 'fr')).toBe('quota-exhausted')
     expect(calls).toHaveLength(0)
@@ -123,7 +124,7 @@ describe('a title search', () => {
   })
 
   test('refuses before calling the model once the allowance is used up', async () => {
-    fake.seed('ai-quotas', quotaDoc(), { userId: reader, month: monthOf(new Date()), scans: 5 })
+    fake.seed('ai-quotas', quotaDoc(), { userId: reader, month: monthOf(new Date()), scans: 30 })
 
     expect(await ScanUseCase.searchTitle(reader, BookTitle('Dune'), 'fr')).toBe('quota-exhausted')
     expect(calls).toHaveLength(0)
@@ -200,6 +201,7 @@ describe('a shelf photo', () => {
   })
 
   test('is refused to a free account before the model is called', async () => {
+    premiumUserIds = []
     expect(await ScanUseCase.detectBooks(reader, image, 'fr')).toBe('premium-required')
     expect(calls).toHaveLength(0)
   })

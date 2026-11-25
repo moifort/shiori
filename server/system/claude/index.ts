@@ -1,4 +1,5 @@
 import { config } from '~/system/config'
+import { requireSubscriber } from '~/system/subscriber-gate'
 
 /** The Anthropic Messages API, shared by every caller of Claude. Each caller
  *  keeps its own model, token ceiling, timeout and tools: this is the
@@ -23,8 +24,8 @@ export type ClaudeAnswer = {
  *  it is absent, and nothing else changes. */
 export const isClaudeConfigured = () => config().anthropicApiKey !== undefined
 
-/** One call to the Messages API. Throws without a key, and on any answer that
- *  is not a success, with the start of what Claude said: the caller decides
+/** One call to the Messages API. Throws without a key, for a caller without Premium inside
+ *  a request (`SubscriptionRequired`), and on any answer that is not a success, with the start of what Claude said: the caller decides
  *  what a failure means. */
 export const askClaude = async (
   request: {
@@ -37,6 +38,8 @@ export const askClaude = async (
 ): Promise<ClaudeAnswer> => {
   const key = config().anthropicApiKey
   if (!key) throw new Error('Anthropic API key is not configured')
+  // Every Claude call is paid: a subscriber's only, inside a request.
+  await requireSubscriber()
   const response = await fetch(API_URL, {
     method: 'POST',
     headers: {

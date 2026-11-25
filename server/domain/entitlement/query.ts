@@ -1,4 +1,4 @@
-import { appAccountToken, planOf as planFrom } from '~/domain/entitlement/business-rules'
+import { appAccountToken, isActive, planOf as planFrom } from '~/domain/entitlement/business-rules'
 import * as repository from '~/domain/entitlement/infrastructure/repository'
 import type { AppAccountToken, Entitlement } from '~/domain/entitlement/types'
 import type { Plan, UserId } from '~/domain/shared/types'
@@ -24,6 +24,22 @@ export namespace EntitlementQuery {
   export const planOf = async (userId: UserId): Promise<Plan> => {
     if (config().premiumUserIds.includes(userId)) return 'premium'
     return planFrom(await of(userId), new Date())
+  }
+
+  // Who is Premium right now: every active entitlement, and the comped accounts. The
+  // scheduled passes read it once to serve subscribers only, since there is no free plan.
+  export const subscribers = async (now = new Date()): Promise<Set<UserId>> =>
+    new Set([
+      ...config().premiumUserIds.map((id) => id as UserId),
+      ...(await repository.findAll())
+        .filter((entitlement) => isActive(entitlement, now))
+        .map((entitlement) => entitlement.userId),
+    ])
+
+  // The subscribers among these accounts, in the same order.
+  export const subscribersAmong = async (userIds: readonly UserId[]): Promise<UserId[]> => {
+    const premium = await subscribers()
+    return userIds.filter((userId) => premium.has(userId))
   }
 
   // Every entitlement ever recorded, active or not — the admin metrics refresh
