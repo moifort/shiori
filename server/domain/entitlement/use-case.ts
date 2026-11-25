@@ -1,4 +1,4 @@
-import { isActive } from '~/domain/entitlement/business-rules'
+import { earnsPremiumWelcome } from '~/domain/entitlement/business-rules'
 import { EntitlementCommand } from '~/domain/entitlement/command'
 import { AppAccountToken } from '~/domain/entitlement/primitives'
 import { EntitlementQuery } from '~/domain/entitlement/query'
@@ -18,14 +18,19 @@ type SubscriptionTransaction = AppleTransaction & { expiresAt: Date; appAccountT
 const grantsTime = (transaction: AppleTransaction): transaction is SubscriptionTransaction =>
   transaction.expiresAt !== undefined && transaction.appAccountToken !== undefined
 
-// Record what the App Store sold and, when it makes the account Premium, hand it
-// the Premium welcome. Every sync and every renewal passes here, so the grant
-// keeps its own once-only guard rather than guessing a first purchase from the
-// event: an account subscribed before the grant existed gets it on its next
-// launch.
+// The Premium welcome goes to an account whose Premium has been paid for, never to a free
+// trial. Every sync and every renewal passes here, so the grant keeps its own once-only guard
+// rather than guessing a first payment from the event: the trial's sync grants nothing, the
+// renewal that ends the trial grants it, and an account subscribed before the grant existed
+// gets it on its next launch.
+const welcomeIfPaid = async (userId: UserId, entitlement: Entitlement) => {
+  if (earnsPremiumWelcome(entitlement, new Date())) await QuotaCommand.grantPremiumWelcome(userId)
+}
+
+// Record what the App Store sold and hand the Premium welcome when it is earned.
 const recordAndWelcome = async (userId: UserId, transaction: SubscriptionTransaction) => {
   const entitlement = await EntitlementCommand.record(userId, transaction)
-  if (isActive(entitlement, new Date())) await QuotaCommand.grantPremiumWelcome(userId)
+  await welcomeIfPaid(userId, entitlement)
   return entitlement
 }
 
@@ -71,7 +76,7 @@ export namespace EntitlementUseCase {
       return 'transaction-not-yours'
 
     const entitlement = await EntitlementCommand.recordPlay(userId, subscription)
-    if (isActive(entitlement, new Date())) await QuotaCommand.grantPremiumWelcome(userId)
+    await welcomeIfPaid(userId, entitlement)
     if (subscription.needsAcknowledgement) await GooglePlay.acknowledge(subscription)
     return entitlement
   }

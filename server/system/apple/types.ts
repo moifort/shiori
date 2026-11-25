@@ -25,6 +25,9 @@ export type AppleTransaction = {
   /** When the chain began, a free trial included: Apple's `originalPurchaseDate`,
    *  the same on every renewal. */
   startedAt?: Date
+  /** True while the period this transaction covers is a free trial: nothing has been paid
+   *  yet. Absent on a paid period. */
+  freeTrial?: boolean
 }
 
 /** What Apple tells us happened, from an App Store Server Notification. The

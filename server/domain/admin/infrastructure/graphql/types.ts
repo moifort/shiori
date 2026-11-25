@@ -183,6 +183,13 @@ export const AdminMetricsType = builder.objectRef<AdminMetricsView>('AdminMetric
       description: 'Active Premium subscribers right now, e.g. `5`',
       resolve: (metrics) => metrics.premium.total,
     }),
+    premiumTrial: t.int({
+      description:
+        'Active Premium subscribers still in their free trial, who have paid nothing yet, ' +
+        'e.g. `2`. Counted within `premiumTotal`; 0 on metrics refreshed before trials were told ' +
+        'apart.',
+      resolve: (metrics) => metrics.premium.trial ?? 0,
+    }),
     newPremium: t.int({
       description:
         'Subscriptions that began this month, a free trial included, whether or not they are ' +

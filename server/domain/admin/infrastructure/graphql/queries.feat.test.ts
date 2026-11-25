@@ -46,6 +46,7 @@ const metricsQuery = `query {
     totalUsers
     newUsers
     premiumTotal
+    premiumTrial
     newPremium
     revenueProceedsEur
     revenueGrossEur
@@ -87,6 +88,7 @@ describe('who may read the admin metrics', () => {
       totalUsers: 0,
       newUsers: 0,
       premiumTotal: 0,
+      premiumTrial: 0,
       newPremium: 0,
       revenueProceedsEur: null,
       scans: 0,
@@ -103,7 +105,7 @@ describe('who may read the admin metrics', () => {
     fake.seed('admin-metrics', 'current', {
       totalUsers: 42,
       newUsers: 6,
-      premium: { total: 5, monthly: 2, yearly: 3 },
+      premium: { total: 5, monthly: 2, yearly: 3, trial: 1 },
       newPremium: 2,
       revenue: { month, proceedsEur: 12.4, grossEur: 17.9 },
       costs: {
@@ -139,6 +141,7 @@ describe('who may read the admin metrics', () => {
       totalUsers: 42,
       newUsers: 6,
       premiumTotal: 5,
+      premiumTrial: 1,
       newPremium: 2,
       revenueProceedsEur: 12.4,
       revenueGrossEur: 17.9,

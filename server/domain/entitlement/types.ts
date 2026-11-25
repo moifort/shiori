@@ -36,4 +36,7 @@ export type Entitlement = {
   startedAt?: Date
   updatedAt: Date
   store?: EntitlementStore
+  /** True while the period running is a free trial: the account is Premium but has paid
+   *  nothing yet. Absent on a paid period, and on entitlements recorded before it was kept. */
+  freeTrial?: boolean
 }

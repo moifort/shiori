@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { parseSubscription } from './subscription'
+import { inFreeTrial, parseSubscription } from './subscription'
 
 const now = new Date('2026-11-06T10:00:00.000Z')
 
@@ -76,5 +76,51 @@ describe('reading what Google answered for a purchase token', () => {
 
   test('answers nothing for a purchase that names no product', () => {
     expect(parseSubscription('token-1', { lineItems: [] }, now)).toBeUndefined()
+  })
+
+  test('reads a line item in its free trial phase as a trial', () => {
+    const subscription = parseSubscription(
+      'token-1',
+      {
+        lineItems: [
+          {
+            productId: 'yearly',
+            expiryTime: '2026-12-06T00:00:00.000Z',
+            offerDetails: { offerId: 'free-month' },
+            offerPhase: { freeTrial: {} },
+          },
+        ],
+      },
+      now,
+    )
+
+    expect(subscription?.freeTrial).toBe(true)
+  })
+
+  test('reads the base price phase of the same offer as paid', () => {
+    const subscription = parseSubscription(
+      'token-1',
+      {
+        lineItems: [
+          {
+            productId: 'yearly',
+            expiryTime: '2027-12-06T00:00:00.000Z',
+            offerDetails: { offerId: 'free-month' },
+            offerPhase: { basePrice: {} },
+          },
+        ],
+      },
+      now,
+    )
+
+    expect(subscription?.freeTrial).toBeUndefined()
+  })
+
+  test('reads the base plan bought with no offer as paid', () => {
+    expect(inFreeTrial({ productId: 'yearly' })).toBe(false)
+  })
+
+  test('reads an offer that does not say its phase as a trial, to grant nothing too early', () => {
+    expect(inFreeTrial({ productId: 'yearly', offerDetails: { offerId: 'free-month' } })).toBe(true)
   })
 })

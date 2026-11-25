@@ -72,6 +72,11 @@ type AdminMetrics {
   """Active Premium subscribers right now, e.g. `5`"""
   premiumTotal: Int!
 
+  """
+  Active Premium subscribers still in their free trial, who have paid nothing yet, e.g. `2`. Counted within `premiumTotal`; 0 on metrics refreshed before trials were told apart.
+  """
+  premiumTrial: Int!
+
   """Active subscribers on the yearly plan, e.g. `3`"""
   premiumYearly: Int! @deprecated(reason: "The admin screen no longer splits subscribers by plan.")
 

@@ -9,12 +9,23 @@ import type { Count as CountType, Plan, UserId } from '~/domain/shared/types'
 // Single source of truth — the GraphQL surface and the gate both read it here.
 export const FREE_MONTHLY_SCANS: CountType = Count(5)
 
+// What one scan costs, in euros, as measured on the bill (see docs/freemium-economics.md,
+// measured 2026-11-25 on the October 2026 billing export and AI-usage counters). A scan runs
+// grounded lookups (enrichment, plus a series and an author when they are new), so its cost
+// depends on whether the month's 5,000 free Google searches are spent:
+// - `withFreeSearches`: October's Gemini bill shared by its scans, ~0.034.
+// - `allSearchesPaid`: one book added once every search is paid (2026-10-17), ~0.15; the
+//   Claude Haiku fallback that takes over past the free searches costs the same order.
+// Estimates, not invoices per scan: recalibrate here when the bill moves.
+export const SCAN_COST_EUR = { withFreeSearches: 0.03, allSearchesPaid: 0.15 } as const
+
 // A subscriber is not metered, but no single account may cost more than it pays:
 // past this, a month's scans are refused as abuse rather than served at a loss.
-// Sized so a month at the ceiling costs at most 70% of the cheapest plan's net
-// proceeds (the annual one, ~1.48 EUR/month) at the current ~0.01 EUR scan cost,
-// while staying far above real use: a full shelf scanned book by book is ~30. To
-// recalibrate when the scan cost changes, see docs/freemium-economics.md.
+// Sized on 2026-10 against a ~0.01 EUR scan and ~1.48 EUR of monthly net proceeds. Both
+// figures were wrong: a scan costs SCAN_COST_EUR, and the annual plan nets ~1.06 EUR a
+// month after VAT and Apple's 15% (docs/freemium-economics.md). At the measured cost a
+// month at this ceiling costs 3 to 15 EUR, several times what the subscriber pays; resizing
+// it is a product decision left to the owner, recorded in that document.
 export const PREMIUM_MONTHLY_SCANS: CountType = Count(100)
 
 // What a new account is handed when it finishes onboarding, once and for good.

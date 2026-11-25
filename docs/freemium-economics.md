@@ -1,0 +1,98 @@
+# Freemium economics
+
+What a reader costs and what a subscriber pays, so the allowances in
+`server/domain/quota/business-rules.ts` can be sized against real figures. Measured on
+2026-11-25 from production, read-only: the billing export (`vinarium-prod.billing_export`), the
+`ai-usage` and `admin-metrics` documents, and App Store Connect. Recalibrate the constants and
+this page together whenever the bill moves.
+
+Every figure below is either **measured** (read from a bill or a counter) or **estimated**
+(derived, with its assumption stated).
+
+## Where the app stands
+
+| | Value | Source |
+|---|---|---|
+| Accounts | 7 (3 created in November) | `admin-metrics/current`, measured |
+| Active Premium | 0 | `admin-metrics/current`, measured |
+| Version on sale | 1.1, subscriptions approved | App Store Connect, measured |
+| Products | yearly 17.99 € with a one-month free trial; monthly 1.99 €, no trial | `scripts/appstore-setup.ts` |
+
+## What a scan costs
+
+A scan is the app's only variable cost. It runs a vision call and grounded lookups: the book's
+enrichment, plus its series and its author when they are new to the shared catalogue. A
+grounded Gemini call bills about four Google searches; the first 5,000 a month are free, then
+≈ 0.012 € each. Past the free searches, the grounded steps switch to Claude Haiku (since
+2026-10-21), billed by Anthropic rather than on the GCP export.
+
+| | Value | How |
+|---|---|---|
+| October 2026 Gemini bill | 53.12 € | billing export, measured |
+| October scans | 787 | `ai-usage/2026-10`, measured |
+| Scans' share of October searches | ~50% (enrichment 950 + catalogue 657 of 3,229; the rest is Découvrir's watch) | `ai-usage/2026-10`, measured |
+| **Cost per scan, free searches not yet spent** | **≈ 0.03 €** (53.12 € × 50% ÷ 787) | estimated |
+| **Cost per book added, every search paid** | **≈ 0.15 €** (2026-10-17, two shelf scans of ~21 books) | measured, `gemini-spend-investigation` |
+| Claude Haiku past the free searches | ≈ 0.05 $ a call, 1 to 3 calls a new book | estimated, logged token counts; the Anthropic invoice was not read |
+
+`SCAN_COST_EUR` carries the two ends: `withFreeSearches` 0.03, `allSearchesPaid` 0.15. The code
+used to assume 0.01.
+
+## What a subscriber pays
+
+French prices, VAT 20%. Apple keeps 15% under the Small Business Program, 30% without it;
+whether the account is enrolled was not checked. Google Play keeps 15% on subscriptions.
+
+| Plan | Price | Before VAT | Net at 15% | Net at 30% |
+|---|---|---|---|---|
+| Yearly | 17.99 € / year | 14.99 € | **12.74 € / year (1.06 € / month)** | 10.49 € / year |
+| Monthly | 1.99 € / month | 1.66 € | **1.41 € / month** | 1.16 € / month |
+
+The quota code used to size the Premium ceiling on 1.48 € of monthly net for the yearly plan;
+the real figure is 1.06 €.
+
+## What the allowances cost per reader
+
+Estimated at 0.03 € (low) and 0.15 € (high) a scan, if the allowance is used in full.
+
+| Allowance | Scans | Cost if used |
+|---|---|---|
+| Welcome credit, once, every account (`WELCOME_SCANS`) | 50 | 1.50 to 7.50 € |
+| Free monthly allowance (`FREE_MONTHLY_SCANS`) | 5 a month | 1.80 to 9 € a year |
+| Premium welcome credit, once, first paid period (`PREMIUM_WELCOME_SCANS`) | 500 | 15 to 75 € |
+| Premium monthly ceiling (`PREMIUM_MONTHLY_SCANS`) | 100 a month | 3 to 15 € a month |
+
+The Premium welcome credit was handed at the start of a free trial until 2026-11-25, and a
+credit outlives the subscription: a trial started and cancelled could keep 500 scans worth 15
+to 75 €, more than a year of the yearly plan nets. It is now handed at the first **paid**
+period only (`earnsPremiumWelcome`). Credits already handed to trials were left alone: with no
+subscriber yet there were none worth a migration.
+
+**Open, for the owner to decide:** at the measured cost, a month at the Premium ceiling (3 to
+15 €) is several times what the yearly plan nets (1.06 €), and the 500-scan welcome alone can
+exceed a first year's net. The constants were not changed, since they decide what a subscriber
+receives; resizing them is a product decision.
+
+## Fixed costs and break-even
+
+| | October 2026 | November 2026, to the 25th |
+|---|---|---|
+| Gemini API | 53.12 € | 0.19 € |
+| App Engine, Scheduler, Secret Manager, Artifact Registry, Storage | ≈ 5.1 € | ≈ 1.5 € |
+| Line labelled "Invoice" on the export | 11.65 € | — |
+| Claude (Anthropic) | not on the export | not on the export |
+
+Without the scans, a month costs roughly the infrastructure (≈ 2 to 5 €) plus Découvrir's
+weekly watch, which ran about half of October's searches (≈ 26 €) once the free searches were
+spent. Call it **≈ 30 € a month** at October's activity, an estimate.
+
+Break-even on that fixed cost, before each subscriber's own scans: **≈ 28 yearly subscribers**
+at 12.74 € net (30 € × 12 ÷ 12.74).
+
+## Measuring it
+
+- `admin-metrics` counts active Premium and, since 2026-11-25, those still in a free trial
+  (`premiumTrial`), so paying subscribers are `premiumTotal − premiumTrial`.
+- App Store proceeds reach the admin screen only once the repository variable
+  `ASC_VENDOR_NUMBER` is set (App Store Connect → Payments and Financial Reports, the number
+  at the top left); the Deploy workflow carries it into `NITRO_ASC_VENDOR_NUMBER`.

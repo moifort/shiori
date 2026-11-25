@@ -1,6 +1,8 @@
 import {
   Environment,
   type JWSTransactionDecodedPayload,
+  OfferDiscountType,
+  OfferType,
   SignedDataVerifier,
   VerificationException,
   VerificationStatus,
@@ -79,6 +81,17 @@ const verifyAcrossEnvironments = async <T>(
   return 'invalid-signature'
 }
 
+// Whether the period a transaction covers is a free trial. Apple marks it with an
+// introductory offer whose discount is FREE_TRIAL. An introductory offer that names no
+// discount type (payloads signed before Apple added the field) is read as a trial too: the
+// only introductory offer this app sells is the free month, and taking a paid period for a
+// trial only delays a grant, while the reverse hands it away.
+export const isFreeTrial = (
+  payload: Pick<JWSTransactionDecodedPayload, 'offerType' | 'offerDiscountType'>,
+): boolean =>
+  payload.offerDiscountType === OfferDiscountType.FREE_TRIAL ||
+  (payload.offerType === OfferType.INTRODUCTORY_OFFER && payload.offerDiscountType === undefined)
+
 // Apple's payload → the shape the domain acts on. A transaction with no product
 // or no original id is not one we can attach to an account.
 const toTransaction = (payload: JWSTransactionDecodedPayload): AppleTransaction | undefined =>
@@ -92,6 +105,7 @@ const toTransaction = (payload: JWSTransactionDecodedPayload): AppleTransaction 
         ...(payload.originalPurchaseDate
           ? { startedAt: new Date(payload.originalPurchaseDate) }
           : {}),
+        ...(isFreeTrial(payload) ? { freeTrial: true } : {}),
       }
     : undefined
 

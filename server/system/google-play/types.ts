@@ -14,6 +14,9 @@ export type PlaySubscription = {
   /** Set when Play ended the subscription before its paid period ran out: a refund. */
   revokedAt?: Date
   startedAt?: Date
+  /** True while the running period is a free trial: nothing has been paid yet. Absent on a
+   *  paid period. */
+  freeTrial?: boolean
   /** Play cancels and refunds a purchase not acknowledged within three days. */
   needsAcknowledgement: boolean
 }

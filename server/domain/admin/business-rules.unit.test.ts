@@ -145,6 +145,22 @@ describe('counting who is Premium', () => {
     expect(breakdown.yearly as number).toBe(2)
   })
 
+  test('counts the active subscribers still in a free trial apart', () => {
+    const breakdown = premiumBreakdown(
+      [
+        {
+          ...entitlement('u1', 'com.polyforms.shiori.app.premium.yearly', future),
+          freeTrial: true,
+        },
+        entitlement('u2', 'com.polyforms.shiori.app.premium.yearly', future),
+        { ...entitlement('u3', 'com.polyforms.shiori.app.premium.yearly', past), freeTrial: true },
+      ],
+      now,
+    )
+    expect(breakdown.total as number).toBe(2)
+    expect(breakdown.trial as number).toBe(1)
+  })
+
   test('an expired or revoked entitlement counts for nothing', () => {
     const revoked = {
       ...entitlement('u2', 'com.polyforms.shiori.app.premium.monthly', future),
@@ -172,6 +188,7 @@ describe('counting who is Premium', () => {
       total: 0 as Count,
       monthly: 0 as Count,
       yearly: 0 as Count,
+      trial: 0 as Count,
     })
   })
 })

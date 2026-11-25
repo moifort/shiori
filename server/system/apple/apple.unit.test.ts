@@ -6,8 +6,10 @@ mock.module('~/system/config/index', () => ({
   config: () => ({ appleEnvironment }),
 }))
 
-const { Apple, verificationEnvironments } = await import('~/system/apple')
-const { Environment } = await import('@apple/app-store-server-library')
+const { Apple, isFreeTrial, verificationEnvironments } = await import('~/system/apple')
+const { Environment, OfferDiscountType, OfferType } = await import(
+  '@apple/app-store-server-library'
+)
 
 beforeEach(() => {
   appleEnvironment = undefined
@@ -53,5 +55,33 @@ describe('verifying something Apple did not sign', () => {
     ].join('.')
 
     expect(await Apple.verifyTransaction(forged)).toBe('invalid-signature')
+  })
+})
+
+describe('telling a free trial from a paid period', () => {
+  test('reads an introductory free trial as a trial', () => {
+    expect(
+      isFreeTrial({
+        offerType: OfferType.INTRODUCTORY_OFFER,
+        offerDiscountType: OfferDiscountType.FREE_TRIAL,
+      }),
+    ).toBe(true)
+  })
+
+  test('reads a renewal carrying no offer as paid', () => {
+    expect(isFreeTrial({})).toBe(false)
+  })
+
+  test('reads a paid introductory price as paid', () => {
+    expect(
+      isFreeTrial({
+        offerType: OfferType.INTRODUCTORY_OFFER,
+        offerDiscountType: OfferDiscountType.PAY_UP_FRONT,
+      }),
+    ).toBe(false)
+  })
+
+  test('reads an introductory offer naming no discount as a trial, the only one sold', () => {
+    expect(isFreeTrial({ offerType: OfferType.INTRODUCTORY_OFFER })).toBe(true)
   })
 })

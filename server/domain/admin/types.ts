@@ -36,11 +36,13 @@ export type AiUsage = {
 }
 
 /** Active subscribers right now, split by the billing period their product id
- *  carries. */
+ *  carries. `trial` counts those of them still in a free trial, who have paid nothing yet;
+ *  absent on a projection refreshed before it was counted. */
 export type PremiumBreakdown = {
   total: Count
   monthly: Count
   yearly: Count
+  trial?: Count
 }
 
 /** What the App Store sold over one month: `grossEur` is what customers paid,

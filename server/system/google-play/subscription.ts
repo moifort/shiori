@@ -6,8 +6,26 @@ export type SubscriptionPurchaseV2 = {
   subscriptionState?: string
   acknowledgementState?: string
   externalAccountIdentifiers?: { obfuscatedExternalAccountId?: string }
-  lineItems?: { productId?: string; expiryTime?: string }[]
+  lineItems?: {
+    productId?: string
+    expiryTime?: string
+    /** The offer the line item was bought through; absent on the base plan alone. */
+    offerDetails?: { offerId?: string }
+    /** Which phase of that offer runs now: exactly one of its keys is set. */
+    offerPhase?: { freeTrial?: object; introductoryPrice?: object; basePrice?: object }
+  }[]
 }
+
+type LineItem = NonNullable<SubscriptionPurchaseV2['lineItems']>[number]
+
+// Whether a line item is still in its free trial. Google says so in `offerPhase`. A line item
+// bought through an offer that does not say which phase it is in is read as a trial: taking a
+// paid period for a trial only delays a grant, while the reverse hands it away. The base plan
+// bought with no offer is paid from its first day.
+export const inFreeTrial = (item: LineItem): boolean =>
+  item.offerPhase
+    ? item.offerPhase.freeTrial !== undefined
+    : item.offerDetails?.offerId !== undefined
 
 const dateOf = (value: string | undefined) => {
   if (!value) return undefined
@@ -25,7 +43,11 @@ export const parseSubscription = (
 ): PlaySubscription | undefined => {
   const items = purchase.lineItems ?? []
   const latest = items
-    .map((item) => ({ productId: item.productId, expiresAt: dateOf(item.expiryTime) }))
+    .map((item) => ({
+      productId: item.productId,
+      expiresAt: dateOf(item.expiryTime),
+      freeTrial: inFreeTrial(item),
+    }))
     .sort((a, b) => (b.expiresAt?.getTime() ?? 0) - (a.expiresAt?.getTime() ?? 0))[0]
   if (!latest?.productId) return undefined
   const expired = purchase.subscriptionState === 'SUBSCRIPTION_STATE_EXPIRED'
@@ -39,6 +61,7 @@ export const parseSubscription = (
     ...(latest.expiresAt ? { expiresAt: latest.expiresAt } : {}),
     ...(endedEarly ? { revokedAt: now } : {}),
     ...(startedAt ? { startedAt } : {}),
+    ...(latest.freeTrial ? { freeTrial: true } : {}),
     needsAcknowledgement: purchase.acknowledgementState === 'ACKNOWLEDGEMENT_STATE_PENDING',
   }
 }

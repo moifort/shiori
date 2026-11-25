@@ -181,6 +181,67 @@ describe('the scans handed to an account turning Premium', () => {
     expect(await creditOf('u1')).toBe(PREMIUM_WELCOME_SCANS)
   })
 
+  test('is not handed for a free trial, which has paid nothing', async () => {
+    verifiedTransaction = aTransaction({ freeTrial: true })
+
+    await EntitlementUseCase.sync(user('u1'), 'signed-jws')
+
+    expect(await EntitlementQuery.planOf(user('u1'))).toBe('premium')
+    expect(await creditOf('u1')).toBe(0)
+  })
+
+  test('is handed once the trial turns into a first paid period, and never again', async () => {
+    verifiedTransaction = aTransaction({ freeTrial: true })
+    await EntitlementUseCase.sync(user('u1'), 'signed-jws')
+
+    verifiedNotification = { type: 'DID_RENEW', transaction: aTransaction() }
+    await EntitlementUseCase.applyNotification('signed-payload')
+    expect(await creditOf('u1')).toBe(PREMIUM_WELCOME_SCANS)
+
+    verifiedNotification = {
+      type: 'DID_RENEW',
+      transaction: aTransaction({ expiresAt: new Date('2100-01-01T00:00:00.000Z') }),
+    }
+    await EntitlementUseCase.applyNotification('signed-payload')
+    await EntitlementUseCase.sync(user('u1'), 'signed-jws')
+    expect(await creditOf('u1')).toBe(PREMIUM_WELCOME_SCANS)
+  })
+
+  test('is not handed for a trial cancelled before it was ever paid', async () => {
+    verifiedTransaction = aTransaction({ freeTrial: true })
+    await EntitlementUseCase.sync(user('u1'), 'signed-jws')
+
+    verifiedNotification = {
+      type: 'EXPIRED',
+      transaction: aTransaction({
+        freeTrial: true,
+        expiresAt: new Date('2026-01-01T00:00:00.000Z'),
+      }),
+    }
+    await EntitlementUseCase.applyNotification('signed-payload')
+
+    expect(await EntitlementQuery.planOf(user('u1'))).toBe('free')
+    expect(await creditOf('u1')).toBe(0)
+  })
+
+  test('is not handed for a refunded purchase', async () => {
+    verifiedTransaction = aTransaction({ revokedAt: new Date('2026-07-21T00:00:00.000Z') })
+
+    await EntitlementUseCase.sync(user('u1'), 'signed-jws')
+
+    expect(await creditOf('u1')).toBe(0)
+  })
+
+  test('remembers the trial on the entitlement, and forgets it once paid', async () => {
+    verifiedTransaction = aTransaction({ freeTrial: true })
+    await EntitlementUseCase.sync(user('u1'), 'signed-jws')
+    expect((await EntitlementQuery.of(user('u1')))?.freeTrial).toBe(true)
+
+    verifiedTransaction = aTransaction()
+    await EntitlementUseCase.sync(user('u1'), 'signed-jws')
+    expect((await EntitlementQuery.of(user('u1')))?.freeTrial).toBeUndefined()
+  })
+
   test('is not handed for a purchase refused as another account s', async () => {
     verifiedTransaction = aTransaction({ appAccountToken: tokenOf('someone-else') })
 
@@ -318,6 +379,25 @@ describe('syncing a Google Play purchase the Android app hands over', () => {
   test('hands the Premium welcome scans, as an App Store purchase does', async () => {
     verifiedPlay = aPlayPurchase()
 
+    await EntitlementUseCase.syncPlay(user('u1'), 'play-token-1')
+
+    expect((await QuotaQuery.creditOf(user('u1'))).scans as number).toBe(PREMIUM_WELCOME_SCANS)
+  })
+
+  test('hands no Premium welcome scans during a free trial', async () => {
+    verifiedPlay = aPlayPurchase({ freeTrial: true })
+
+    await EntitlementUseCase.syncPlay(user('u1'), 'play-token-1')
+
+    expect(await EntitlementQuery.planOf(user('u1'))).toBe('premium')
+    expect((await QuotaQuery.creditOf(user('u1'))).scans as number).toBe(0)
+  })
+
+  test('hands them once the trial is paid for', async () => {
+    verifiedPlay = aPlayPurchase({ freeTrial: true })
+    await EntitlementUseCase.syncPlay(user('u1'), 'play-token-1')
+    verifiedPlay = aPlayPurchase()
+    await EntitlementUseCase.syncPlay(user('u1'), 'play-token-1')
     await EntitlementUseCase.syncPlay(user('u1'), 'play-token-1')
 
     expect((await QuotaQuery.creditOf(user('u1'))).scans as number).toBe(PREMIUM_WELCOME_SCANS)

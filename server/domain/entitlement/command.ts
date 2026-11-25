@@ -21,6 +21,7 @@ export namespace EntitlementCommand {
       expiresAt: transaction.expiresAt,
       ...(transaction.revokedAt ? { revokedAt: transaction.revokedAt } : {}),
       ...(transaction.startedAt ? { startedAt: transaction.startedAt } : {}),
+      ...(transaction.freeTrial ? { freeTrial: true } : {}),
       updatedAt: new Date(),
     })
 
@@ -38,6 +39,7 @@ export namespace EntitlementCommand {
       expiresAt: subscription.expiresAt,
       ...(subscription.revokedAt ? { revokedAt: subscription.revokedAt } : {}),
       ...(subscription.startedAt ? { startedAt: subscription.startedAt } : {}),
+      ...(subscription.freeTrial ? { freeTrial: true } : {}),
       updatedAt: new Date(),
       store: 'google-play',
     })

@@ -107,14 +107,20 @@ const stepsOf = (usage: AiUsage) => [
 export const searchesOf = (usage: AiUsage): CountType =>
   Count(stepsOf(usage).reduce((total, step) => total + step.searches, 0))
 
-// Who is Premium right now, split by the billing period the product id names.
+// Who is Premium right now, split by the billing period the product id names, and how many
+// of them are still in a free trial rather than paying.
 // `total` counts every active entitlement, so an unexpected product id still
 // shows up there even if it lands in neither split.
 export const premiumBreakdown = (entitlements: Entitlement[], now: Date): PremiumBreakdown => {
   const active = entitlements.filter((entitlement) => isActive(entitlement, now))
   const of = (suffix: string) =>
     Count(active.filter(({ productId }) => (productId as string).endsWith(suffix)).length)
-  return { total: Count(active.length), monthly: of('.monthly'), yearly: of('.yearly') }
+  return {
+    total: Count(active.length),
+    monthly: of('.monthly'),
+    yearly: of('.yearly'),
+    trial: Count(active.filter(({ freeTrial }) => freeTrial === true).length),
+  }
 }
 
 // Who subscribed during the month, a free trial included — whether or not they

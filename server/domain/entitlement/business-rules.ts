@@ -36,6 +36,14 @@ export const appAccountToken = (userId: UserId): AppAccountToken => {
 export const isActive = (entitlement: Entitlement, now: Date): boolean =>
   entitlement.revokedAt === undefined && entitlement.expiresAt > now
 
+// Whether an entitlement has earned the Premium welcome credit: Premium now, and paid for.
+// A free trial is Premium without a payment, and the credit outlives the subscription, so
+// handing it at the trial's start let anyone scan a whole library for nothing and cancel.
+// The first paid period earns it; the grant's own once-only guard keeps every later renewal
+// from earning it again.
+export const earnsPremiumWelcome = (entitlement: Entitlement, now: Date): boolean =>
+  isActive(entitlement, now) && entitlement.freeTrial !== true
+
 // The plan an account is on. Absent entitlement, expired entitlement, revoked
 // entitlement: all three are `free`. There is no other way to be Premium.
 export const planOf = (entitlement: Entitlement | undefined, now: Date): Plan =>
