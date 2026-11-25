@@ -60,9 +60,9 @@ describe('previewing a Goodreads export', () => {
 describe('importing a Goodreads export', () => {
   test('catalogues the ticked rows and answers what it wrote', async () => {
     const preview = await execute(PREVIEW, { csv: GOODREADS_EXPORT })
-    const keys = (preview.data?.previewGoodreadsExport as { rows: { key: string }[] }).rows.map(
-      (row) => row.key,
-    )
+    const exported = preview.data?.previewGoodreadsExport as { rows: { key: string }[] } | undefined
+    const keys = (exported?.rows ?? []).map((row) => row.key)
+    expect(keys.length).toBe(5)
 
     const result = await execute(IMPORT, {
       csv: GOODREADS_EXPORT,

@@ -119,9 +119,38 @@ describe('rowsOf', () => {
   test('takes the ISBN-13, else turns the ISBN-10 into one', () => {
     const [kings] = rows()
     expect(String(kings.isbn13)).toBe('9780765326355')
-    const tenOnly = rowsOf(GOODREADS_EXPORT.replace('="9780765326355"', '=""'))
+    const tenOnly = rowsOf(GOODREADS_EXPORT.replace('"=""9780765326355"""', '"="""""'))
     if (typeof tenOnly === 'string') throw new Error(tenOnly)
     expect(String(tenOnly[0].isbn13)).toBe('9780765326355')
+  })
+
+  test('reads a real export end to end, every column as Goodreads writes it', () => {
+    const [kings, wind, hyperion, foundation, problem] = rows()
+    expect(kings).toMatchObject({
+      title: BookTitle('The Way of Kings'),
+      authors: [AuthorName('Brandon Sanderson')],
+      series: { name: 'The Stormlight Archive', volume: 1 },
+      shelf: 'read',
+      dropped: false,
+      format: 'book',
+      media: ['print'],
+      publisher: 'Tor Books',
+      pageCount: 1007,
+      firstPublishedIn: 2010,
+    })
+    expect(kings.readOn).toEqual(new Date('2024-05-12T12:00:00Z'))
+    expect(kings.addedOn).toEqual(new Date('2024-04-01T12:00:00Z'))
+    expect(String(kings.review)).toBe('Loved it.\n\nKaladin!')
+    expect(String(wind.isbn13)).toBe('9782352942573')
+    expect(Number(wind.firstPublishedIn)).toBe(2007)
+    expect(hyperion.isbn13).toBeUndefined()
+    expect(hyperion.shelf).toBe('currently-reading')
+    expect(hyperion.media).toEqual(['digital'])
+    expect(foundation.shelf).toBe('to-read')
+    expect(foundation.dropped).toBe(false)
+    expect(String(foundation.isbn13)).toBe('9782070360536')
+    expect(problem.dropped).toBe(true)
+    expect(problem.authors).toEqual([AuthorName('Liu Cixin')])
   })
 
   test('refuses a file without the Goodreads headings, and one with no book', () => {
