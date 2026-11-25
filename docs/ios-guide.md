@@ -381,8 +381,8 @@ scripts/device-capture.sh home light out.png -- -showcase-prompts audible,kindle
 SKIP_BUILD=1 scripts/device-capture.sh news out.png   # the build already on the phone
 ```
 
-The script builds (Debug, `generic/platform=iOS`, DerivedData fixed at `<worktree>/build/dd`
-with the main checkout's `SourcePackages`), installs only when the binary changed, copies
+The script builds (Debug, `generic/platform=iOS`, in Xcode's own DerivedData from the main
+checkout, at `<worktree>/build/dd` with the main checkout's `SourcePackages` from a worktree), installs only when the binary changed, copies
 `screenshots/covers/` once into the app's caches (the iPhone cannot read the Mac's disk as a
 simulator does), opens the screen with `-showcase -showcase-tab <screen>
 [-showcase-appearance light|dark]`, captures with `devicectl device capture screenshot`, and
@@ -436,6 +436,18 @@ What the iPhone cannot do, and the way round:
   cannot wait uses the simulator.
 - **A locked phone.** Installing works locked, launching does not: the script stops and says
   to unlock it. Auto-Lock set to Never keeps it ready while plugged in.
+- **Unit tests** run on the iPhone too, with no simulator: under `build/build-slot-1.lock` and
+  `build/ios-device.lock`,
+  `xcodebuild test -jobs 4 -project ios/Shiori.xcodeproj -scheme Shiori
+  -destination 'id=00008130-000A2068029A001C' -only-testing:ShioriTests
+  SWIFT_ENABLE_EXPLICIT_MODULES=NO -resultBundlePath <path>`, then
+  `xcrun xcresulttool get test-results summary --path <xcresult>` for the count. The host app
+  stays an empty screen while XCTest drives it (`ShioriApp.hostsUnitTests`), so it neither
+  reads the account nor registers the phone; the tests write only to throwaway defaults
+  suites. On 2026-11-25: 337 tests passed in 196 s with the build, about 300 CPU-seconds
+  (173 % on average, 396 % at the peak). Building for `id=<udid>` and for
+  `generic/platform=iOS` do not share their products: the next `device-capture.sh` rebuilds
+  (about 3.5 min, 310 CPU-seconds).
 - **The status bar** shows the phone's real time and battery, not Apple's 9:41: the App Store
   captures stay on the simulator (`scripts/screenshots.sh`).
 

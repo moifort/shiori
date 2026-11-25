@@ -24,9 +24,20 @@ struct ShioriApp: App {
 
     var body: some Scene {
         WindowGroup {
-            AuthRoot()
+            if Self.hostsUnitTests {
+                // The unit tests run inside this process: on the reader's
+                // iPhone, a real launch would read their account and register
+                // their device while the tests run. An empty screen does neither.
+                Color.clear
+            } else {
+                AuthRoot()
+            }
         }
     }
+
+    /// Launched by XCTest as the unit tests' host, not by the reader or a UI test.
+    private static let hostsUnitTests =
+        ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
 
     private func startSentry() {
         #if DEBUG

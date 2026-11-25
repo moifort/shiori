@@ -25,6 +25,8 @@ When a mission arrives, read CLAUDE.md (Workflow rules 5 to 13) and docs/board.m
 - **Captures on the iPhone first**: `scripts/device-capture.sh <screen> [light|dark] <out.png>`
   (the iPhone section of [ios-guide.md](ios-guide.md#captures-the-iphone-first-the-simulator-as-fallback)),
   the simulator only when the iPhone is unplugged or busy too long.
+  iOS unit tests run on the iPhone as well (`-destination 'id=<udid>' -only-testing:ShioriTests`,
+  same section), under both locks.
 - **The simulator is shared and stays in the background.** One at a time, each session its turn.
   Never take the user's screen: DeviceHub opened in the background only (`open -g -a …`),
   captures with `xcrun simctl io <udid> screenshot`, taps through the headless simulator tool.

@@ -61,8 +61,19 @@ export DEVELOPER_DIR="${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Develope
 DEVICE="${SHIORI_DEVICE:-TiPhone junior}"
 BUNDLE_ID="com.polyforms.shiori.app"
 SETTLE="${SETTLE:-5}"
-# Fixed per worktree, reused build after build: never a fresh path, never /tmp.
-DERIVED_DATA="$WORKTREE/build/dd"
+# Xcode's own DerivedData for the main checkout, as every other build of it
+# uses; a fixed folder per worktree otherwise. Never a fresh path, never /tmp.
+MAIN_DERIVED_DATA=""
+for info in "$HOME"/Library/Developer/Xcode/DerivedData/Shiori-*/info.plist; do
+  if [ "$(plutil -extract WorkspacePath raw "$info" 2>/dev/null)" = "$MAIN_CHECKOUT/ios/Shiori.xcodeproj" ]; then
+    MAIN_DERIVED_DATA="$(dirname "$info")"
+  fi
+done
+if [ "$WORKTREE" = "$MAIN_CHECKOUT" ] && [ -n "$MAIN_DERIVED_DATA" ]; then
+  DERIVED_DATA="$MAIN_DERIVED_DATA"
+else
+  DERIVED_DATA="$WORKTREE/build/dd"
+fi
 APP="$DERIVED_DATA/Build/Products/Debug-iphoneos/Shiori.app"
 COVERS_ON_DEVICE="Library/Caches/showcase-covers"
 
@@ -129,12 +140,7 @@ fi
 if [ "${SKIP_BUILD:-}" != 1 ]; then
   step "Building (Debug, generic iOS device)"
   t=$(date +%s)
-  packages=""
-  for info in "$HOME"/Library/Developer/Xcode/DerivedData/Shiori-*/info.plist; do
-    if [ "$(plutil -extract WorkspacePath raw "$info" 2>/dev/null)" = "$MAIN_CHECKOUT/ios/Shiori.xcodeproj" ]; then
-      packages="$(dirname "$info")/SourcePackages"
-    fi
-  done
+  packages="${MAIN_DERIVED_DATA:+$MAIN_DERIVED_DATA/SourcePackages}"
   log="$WORKTREE/build/device-capture-build.log"
   # One heavy build at a time on this Mac, Gradle and xcodebuild alike: the
   # shared slot is taken for the build alone and released the moment it ends.
