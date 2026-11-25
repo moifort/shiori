@@ -247,8 +247,8 @@ extension Showcase {
     )
 
     static let quota = QuotaState(
-        isPremium: false, used: 3, limit: 5, remaining: 2, welcomeRemaining: 38,
-        totalRemaining: 40, renewsOn: calendar.date(byAdding: .day, value: 29, to: .now)
+        isPremium: false, used: 0, limit: 0, remaining: 0, welcomeRemaining: 38,
+        totalRemaining: 38, renewsOn: calendar.date(byAdding: .day, value: 29, to: .now)
     )
 
     // MARK: - The month's discoveries

@@ -38,7 +38,6 @@ import com.android.billingclient.api.ProductDetails
 import com.polyforms.shiori.features.subscription.LocalSubscriptionStore
 import com.polyforms.shiori.features.subscription.SubscriptionProducts
 import com.polyforms.shiori.features.subscription.components.molecules.PremiumPromise
-import com.polyforms.shiori.features.subscription.components.molecules.QuotaGauge
 import com.polyforms.shiori.shared.AnalyticsEvent
 import com.polyforms.shiori.shared.L
 import com.polyforms.shiori.shared.Showcase
@@ -168,9 +167,6 @@ fun PremiumSheet(trigger: PremiumTrigger, onDismiss: () -> Unit) {
                 Icon(Symbol("sparkles"), null, Modifier.size(48.dp), tint = colors.accent)
                 Text(trigger.title, style = Shiori.type.title2, color = colors.label, textAlign = TextAlign.Center)
                 Text(trigger.message, style = Shiori.type.subheadline, color = colors.secondaryLabel, textAlign = TextAlign.Center)
-            }
-            store.quota?.let { quota ->
-                if (!quota.isPremium) QuotaGauge(quota.used, quota.limit, quota.renewsOn, quota.welcomeRemaining)
             }
             // The same three lines as the wall: there is no free plan, so they are the app.
             PremiumPromise()

@@ -673,22 +673,6 @@
         }
       }
     },
-    "%lld / %lld" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$lld / %2$lld"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$lld / %2$lld"
-          }
-        }
-      }
-    },
     "%lld ans" : {
       "localizations" : {
         "en" : {
@@ -1177,62 +1161,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld restantes"
-          }
-        }
-      }
-    },
-    "%lld scans offerts en réserve" : {
-      "localizations" : {
-        "en" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld free scan in reserve"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld free scans in reserve"
-                }
-              }
-            }
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld scans offerts en réserve"
-          }
-        }
-      }
-    },
-    "%lld scans restants" : {
-      "localizations" : {
-        "en" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld scan left"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld scans left"
-                }
-              }
-            }
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld scans restants"
           }
         }
       }
@@ -1815,16 +1743,16 @@
     },
     "30 scans par mois" : {
       "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "30 scans par mois"
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "30 scans a month"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "30 scans par mois"
           }
         }
       }
@@ -2531,16 +2459,16 @@
     },
     "Alertes de sortie" : {
       "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Alertes de sortie"
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Release alerts"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alertes de sortie"
           }
         }
       }
@@ -4483,16 +4411,16 @@
     },
     "Chaque livre reconnu, avec son résumé et sa série. 30 scans par mois." : {
       "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Chaque livre reconnu, avec son résumé et sa série. 30 scans par mois."
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Every book recognized, with its summary and its series. 30 scans a month."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chaque livre reconnu, avec son résumé et sa série. 30 scans par mois."
           }
         }
       }
@@ -4883,16 +4811,16 @@
     },
     "Commencer le mois offert" : {
       "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Commencer le mois offert"
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Start the free month"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Commencer le mois offert"
           }
         }
       }
@@ -8595,16 +8523,16 @@
     },
     "Kindle et Audible à jour" : {
       "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kindle et Audible à jour"
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Kindle and Audible up to date"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kindle et Audible à jour"
           }
         }
       }
@@ -9139,16 +9067,16 @@
     },
     "Le prochain tome de vos séries, dès que sa date est connue." : {
       "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Le prochain tome de vos séries, dès que sa date est connue."
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "The next volume of your series, as soon as its date is known."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le prochain tome de vos séries, dès que sa date est connue."
           }
         }
       }
@@ -11567,16 +11495,16 @@
     },
     "Ou %@ par mois, sans essai" : {
       "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ou %@ par mois, sans essai"
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Or %@ a month, no trial"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ou %@ par mois, sans essai"
           }
         }
       }
@@ -12159,16 +12087,16 @@
     },
     "Photographiez une couverture : le livre rejoint votre bibliothèque avec son résumé et sa série. Premium vous donne 30 scans par mois." : {
       "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Photographiez une couverture : le livre rejoint votre bibliothèque avec son résumé et sa série. Premium vous donne 30 scans par mois."
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Take a photo of a cover: the book joins your library with its summary and its series. Premium gives you 30 scans a month."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Photographiez une couverture : le livre rejoint votre bibliothèque avec son résumé et sa série. Premium vous donne 30 scans par mois."
           }
         }
       }
@@ -13327,32 +13255,16 @@
     },
     "Renouvellement automatique, résiliable à tout moment dans les réglages du compte App Store." : {
       "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Renouvellement automatique, résiliable à tout moment dans les réglages du compte App Store."
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Renews automatically, cancel anytime in your App Store account settings."
           }
-        }
-      }
-    },
-    "Renouvellement le %@" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Renews on %@"
-          }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Renouvellement le %@"
+            "value" : "Renouvellement automatique, résiliable à tout moment dans les réglages du compte App Store."
           }
         }
       }
@@ -14015,16 +13927,16 @@
     },
     "Résiliable à tout moment" : {
       "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Résiliable à tout moment"
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Cancel anytime"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Résiliable à tout moment"
           }
         }
       }
@@ -14333,34 +14245,18 @@
         }
       }
     },
-    "Scans ce mois-ci" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Scans this month"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Scans ce mois-ci"
-          }
-        }
-      }
-    },
     "Scans du mois utilisés" : {
       "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Scans du mois utilisés"
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "This month's scans used"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scans du mois utilisés"
           }
         }
       }
@@ -14575,16 +14471,16 @@
     },
     "Shiori s’utilise avec un abonnement. Le premier mois est offert, et rien n’est prélevé si vous résiliez avant sa fin." : {
       "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Shiori s’utilise avec un abonnement. Le premier mois est offert, et rien n’est prélevé si vous résiliez avant sa fin."
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Shiori is used with a subscription. The first month is free, and nothing is charged if you cancel before it ends."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shiori s’utilise avec un abonnement. Le premier mois est offert, et rien n’est prélevé si vous résiliez avant sa fin."
           }
         }
       }
@@ -15535,16 +15431,16 @@
     },
     "S’abonner" : {
       "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "S’abonner"
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Subscribe"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "S’abonner"
           }
         }
       }
@@ -16079,16 +15975,16 @@
     },
     "Tous vos scans ont été utilisés. Premium vous en donne 30 par mois, et tient votre bibliothèque à jour." : {
       "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tous vos scans ont été utilisés. Premium vous en donne 30 par mois, et tient votre bibliothèque à jour."
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "All your scans have been used. Premium gives you 30 a month, and keeps your library up to date."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tous vos scans ont été utilisés. Premium vous en donne 30 par mois, et tient votre bibliothèque à jour."
           }
         }
       }
@@ -16463,16 +16359,16 @@
     },
     "Un mois offert" : {
       "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Un mois offert"
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "One month free"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un mois offert"
           }
         }
       }
@@ -16495,16 +16391,16 @@
     },
     "Une couverture ou une étagère en photo" : {
       "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Une couverture ou une étagère en photo"
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "A cover or a shelf in a photo"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Une couverture ou une étagère en photo"
           }
         }
       }
@@ -16783,48 +16679,48 @@
     },
     "Vos 30 scans du mois sont utilisés. Le compteur repart le %@." : {
       "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vos 30 scans du mois sont utilisés. Le compteur repart le %@."
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Your 30 scans for the month are used. The count starts again on %@."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vos 30 scans du mois sont utilisés. Le compteur repart le %@."
           }
         }
       }
     },
     "Vos 30 scans du mois sont utilisés. Le compteur repart le mois prochain." : {
       "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vos 30 scans du mois sont utilisés. Le compteur repart le mois prochain."
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Your 30 scans for the month are used. The count starts again next month."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vos 30 scans du mois sont utilisés. Le compteur repart le mois prochain."
           }
         }
       }
     },
     "Vos achats et vos lectures arrivent chaque nuit, sans rien faire." : {
       "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vos achats et vos lectures arrivent chaque nuit, sans rien faire."
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Your purchases and your reading arrive every night, with nothing to do."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vos achats et vos lectures arrivent chaque nuit, sans rien faire."
           }
         }
       }
@@ -17023,16 +16919,16 @@
     },
     "Vos livres, vos séries et vos notes sont gardés. Abonnez-vous pour retrouver votre bibliothèque." : {
       "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vos livres, vos séries et vos notes sont gardés. Abonnez-vous pour retrouver votre bibliothèque."
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Your books, your series and your notes are kept. Subscribe to get your library back."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vos livres, vos séries et vos notes sont gardés. Abonnez-vous pour retrouver votre bibliothèque."
           }
         }
       }
@@ -17247,16 +17143,16 @@
     },
     "Votre essai est terminé" : {
       "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Votre essai est terminé"
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Your trial has ended"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Votre essai est terminé"
           }
         }
       }
@@ -17279,16 +17175,16 @@
     },
     "Votre mois offert" : {
       "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Votre mois offert"
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Your free month"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Votre mois offert"
           }
         }
       }
@@ -18191,16 +18087,16 @@
     },
     "puis %@ par an" : {
       "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "puis %@ par an"
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "then %@ a year"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "puis %@ par an"
           }
         }
       }
@@ -18223,16 +18119,16 @@
     },
     "soit %@ par mois" : {
       "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "soit %@ par mois"
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "that is %@ a month"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "soit %@ par mois"
           }
         }
       }

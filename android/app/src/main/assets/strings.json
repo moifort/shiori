@@ -140,10 +140,6 @@
  "%lld": {
   "en": "%lld"
  },
- "%lld / %lld": {
-  "fr": "%1$lld / %2$lld",
-  "en": "%1$lld / %2$lld"
- },
  "%lld ans": {
   "en": "%lld years"
  },
@@ -245,18 +241,6 @@
  },
  "%lld restantes": {
   "en": "%lld left"
- },
- "%lld scans offerts en réserve": {
-  "en": {
-   "one": "%lld free scan in reserve",
-   "other": "%lld free scans in reserve"
-  }
- },
- "%lld scans restants": {
-  "en": {
-   "one": "%lld scan left",
-   "other": "%lld scans left"
-  }
  },
  "%lld sem.": {
   "en": "%lld wk"
@@ -2553,9 +2537,6 @@
  "Renouvellement automatique, résiliable à tout moment dans les réglages du compte App Store.": {
   "en": "Renews automatically, cancel anytime in your App Store account settings."
  },
- "Renouvellement le %@": {
-  "en": "Renews on %@"
- },
  "Replier la file": {
   "en": "Fold the queue"
  },
@@ -2738,9 +2719,6 @@
  },
  "Scans": {
   "en": "Scans"
- },
- "Scans ce mois-ci": {
-  "en": "Scans this month"
  },
  "Scans du mois utilisés": {
   "en": "This month's scans used"

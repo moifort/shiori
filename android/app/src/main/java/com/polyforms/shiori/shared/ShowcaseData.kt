@@ -25,11 +25,11 @@ object ShowcaseData {
 
     val quota = QuotaState(
         isPremium = false,
-        used = 3,
-        limit = 5,
-        remaining = 2,
-        welcomeRemaining = 10,
-        totalRemaining = 12,
+        used = 0,
+        limit = 0,
+        remaining = 0,
+        welcomeRemaining = 38,
+        totalRemaining = 38,
         renewsOn = Instant.now().plus(18, ChronoUnit.DAYS),
     )
 

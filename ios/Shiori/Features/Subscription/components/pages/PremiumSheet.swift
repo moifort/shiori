@@ -52,7 +52,6 @@ struct PremiumSheet: View {
             ScrollView {
                 VStack(spacing: 28) {
                     header
-                    allowance
                     benefits
                     offers
                     legal
@@ -94,29 +93,6 @@ struct PremiumSheet: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
-        }
-    }
-
-    /// What the free allowance stands at right now, so the offer below argues
-    /// from the account's own numbers rather than in the abstract. Nothing is
-    /// shown to a subscriber, who is told the ceiling in the promise, and nothing
-    /// when the reading failed: the sheet must still sell without it.
-    @ViewBuilder
-    private var allowance: some View {
-        if let quota = store.quota {
-            if !quota.isPremium {
-                QuotaGauge(
-                    used: quota.used,
-                    limit: quota.limit,
-                    welcomeRemaining: quota.welcomeRemaining,
-                    renewsOn: quota.renewsOn
-                )
-            }
-        } else if store.isLoading {
-            // Placeholder numbers, redacted: the network read is visible and the
-            // layout does not jump once the real ones land.
-            QuotaGauge(used: 0, limit: 5, renewsOn: Date())
-                .redacted(reason: .placeholder)
         }
     }
 
