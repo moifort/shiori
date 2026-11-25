@@ -233,12 +233,12 @@ extension Showcase {
     static let offers = [
         PremiumOffer(
             id: SubscriptionProducts.yearly, name: local("Premium annuel", "Premium Yearly"),
-            displayPrice: local("17,99 €", "$14.99"), price: Decimal(string: local("17.99", "14.99"))!,
+            displayPrice: local("34,99 €", "$29.99"), price: Decimal(string: local("34.99", "29.99"))!,
             trial: local("1 mois offert", "1 month free")
         ),
         PremiumOffer(
             id: SubscriptionProducts.monthly, name: local("Premium mensuel", "Premium Monthly"),
-            displayPrice: local("1,99 €", "$1.99"), price: Decimal(string: "1.99")!
+            displayPrice: local("4,99 €", "$3.99"), price: Decimal(string: local("4.99", "3.99"))!
         ),
     ]
 

@@ -34,6 +34,7 @@ import {
   type Single,
 } from './appstore/connect'
 import { nameSubscriptions, pushListing } from './appstore/listing'
+import { PREMIUM_PRICES_EUR } from './appstore/prices'
 
 const VINARIUM_APP_ID = '6789688303'
 const metadata = join(import.meta.dir, '../infra/fastlane/metadata')
@@ -68,7 +69,7 @@ const PLANS: Plan[] = [
     name: 'Premium annuel',
     period: 'ONE_YEAR',
     level: 1,
-    price: '17.99',
+    price: PREMIUM_PRICES_EUR['com.polyforms.shiori.app.premium.yearly'],
     freeTrial: 'ONE_MONTH',
   },
   {
@@ -76,7 +77,7 @@ const PLANS: Plan[] = [
     name: 'Premium mensuel',
     period: 'ONE_MONTH',
     level: 2,
-    price: '1.99',
+    price: PREMIUM_PRICES_EUR['com.polyforms.shiori.app.premium.monthly'],
   },
 ]
 

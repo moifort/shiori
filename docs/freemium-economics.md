@@ -16,7 +16,7 @@ Every figure below is either **measured** (read from a bill or a counter) or **e
 | Accounts | 7 (3 created in November) | `admin-metrics/current`, measured |
 | Active Premium | 0 | `admin-metrics/current`, measured |
 | Version on sale | 1.1, subscriptions approved | App Store Connect, measured |
-| Products | yearly 17.99 € with a one-month free trial; monthly 1.99 €, no trial | `scripts/appstore-setup.ts` |
+| Products | yearly 34.99 € with a one-month free trial; monthly 4.99 €, no trial (17.99 € and 1.99 € until 2026-11-25) | `scripts/appstore/prices.ts` |
 
 ## What a scan costs
 
@@ -40,16 +40,21 @@ used to assume 0.01.
 
 ## What a subscriber pays
 
-French prices, VAT 20%. Apple keeps 15% under the Small Business Program, 30% without it;
-whether the account is enrolled was not checked. Google Play keeps 15% on subscriptions.
+Prices since 2026-11-26 (`scripts/appstore/prices.ts`), decided by the owner on 2026-11-25; they
+were 17.99 € a year and 1.99 € a month before, with no subscriber at the time of the change.
+French prices, VAT 20%. Apple keeps 15% under the Small Business Program, 30% without it: the
+enrolment form was sent on 2026-11-25 and awaits Apple's answer. Google Play keeps 15% on
+subscriptions.
 
 | Plan | Price | Before VAT | Net at 15% | Net at 30% |
 |---|---|---|---|---|
-| Yearly | 17.99 € / year | 14.99 € | **12.74 € / year (1.06 € / month)** | 10.49 € / year |
-| Monthly | 1.99 € / month | 1.66 € | **1.41 € / month** | 1.16 € / month |
+| Yearly, one free month first | 34.99 € / year | 29.16 € | **24.78 € / year (2.07 € / month)** | 20.41 € / year |
+| Monthly | 4.99 € / month | 4.16 € | **3.53 € / month** | 2.91 € / month |
 
-The quota code used to size the Premium ceiling on 1.48 € of monthly net for the yearly plan;
-the real figure is 1.06 €.
+Apple's equivalents elsewhere: 29.99 $ a year and 3.99 $ a month in the United States.
+
+The quota code used to size the Premium ceiling on 1.48 € of monthly net for the yearly plan
+at 17.99 €; the real figure was 1.06 €, and is 2.07 € at the current price.
 
 ## What the allowances cost per reader
 
@@ -64,13 +69,13 @@ Estimated at 0.03 € (low) and 0.15 € (high) a scan, if the allowance is used
 
 The Premium welcome credit was handed at the start of a free trial until 2026-11-25, and a
 credit outlives the subscription: a trial started and cancelled could keep 500 scans worth 15
-to 75 €, more than a year of the yearly plan nets. It is now handed at the first **paid**
+to 75 €, more than a year of the yearly plan netted. It is now handed at the first **paid**
 period only (`earnsPremiumWelcome`). Credits already handed to trials were left alone: with no
 subscriber yet there were none worth a migration.
 
 **Open, for the owner to decide:** at the measured cost, a month at the Premium ceiling (3 to
-15 €) is several times what the yearly plan nets (1.06 €), and the 500-scan welcome alone can
-exceed a first year's net. The constants were not changed, since they decide what a subscriber
+15 €) is more than the yearly plan nets (2.07 €), and the 500-scan welcome alone (15 to 75 €)
+can exceed a first year's net (24.78 €). The constants were not changed, since they decide what a subscriber
 receives; resizing them is a product decision.
 
 ## Fixed costs and break-even
@@ -86,8 +91,8 @@ Without the scans, a month costs roughly the infrastructure (≈ 2 to 5 €) plu
 weekly watch, which ran about half of October's searches (≈ 26 €) once the free searches were
 spent. Call it **≈ 30 € a month** at October's activity, an estimate.
 
-Break-even on that fixed cost, before each subscriber's own scans: **≈ 28 yearly subscribers**
-at 12.74 € net (30 € × 12 ÷ 12.74).
+Break-even on that fixed cost, before each subscriber's own scans: **≈ 15 yearly subscribers**
+at 24.78 € net (30 € × 12 ÷ 24.78).
 
 ## Measuring it
 

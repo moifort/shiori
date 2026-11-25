@@ -22,9 +22,10 @@ export const SCAN_COST_EUR = { withFreeSearches: 0.03, allSearchesPaid: 0.15 } a
 // A subscriber is not metered, but no single account may cost more than it pays:
 // past this, a month's scans are refused as abuse rather than served at a loss.
 // Sized on 2026-10 against a ~0.01 EUR scan and ~1.48 EUR of monthly net proceeds. Both
-// figures were wrong: a scan costs SCAN_COST_EUR, and the annual plan nets ~1.06 EUR a
-// month after VAT and Apple's 15% (docs/freemium-economics.md). At the measured cost a
-// month at this ceiling costs 3 to 15 EUR, several times what the subscriber pays; resizing
+// figures were wrong: a scan costs SCAN_COST_EUR, and the annual plan netted ~1.06 EUR a
+// month after VAT and Apple's 15%, ~2.07 EUR since the 2026-11-26 price
+// (docs/freemium-economics.md). At the measured cost a month at this ceiling costs 3 to
+// 15 EUR, more than the subscriber pays; resizing
 // it is a product decision left to the owner, recorded in that document.
 export const PREMIUM_MONTHLY_SCANS: CountType = Count(100)
 
