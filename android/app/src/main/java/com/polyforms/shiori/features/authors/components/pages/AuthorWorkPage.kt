@@ -1,6 +1,5 @@
 package com.polyforms.shiori.features.authors.components.pages
 
-import com.polyforms.shiori.shared.book.backdropFrame
 import com.polyforms.shiori.shared.platform.pageEndRoom
 
 import androidx.compose.foundation.background
@@ -46,8 +45,11 @@ fun AuthorWorkPage(work: AuthorWork, author: String, isAdding: Boolean, onAdd: s
     Box(Modifier.fillMaxSize().background(colors.groupedBackground)) {
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = pageEndRoom())) {
             Box(Modifier.fillMaxWidth()) {
-                CoverBackdrop(work.coverURL, Modifier.backdropFrame(420.dp), fadeHeight = 140.dp)
-                Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                // White over the cover's colours, as on iOS and as a book page's hero: the
+                // backdrop runs under the button, whose white would vanish on a light page.
+                CoverBackdrop(work.coverURL, Modifier.matchParentSize())
+                com.polyforms.shiori.shared.components.styles.ShioriTheme(dark = true) {
+                Column(Modifier.fillMaxWidth().padding(bottom = 32.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     PosterCover(
                         Book(id = "work-${work.id}", title = work.title, authors = listOf(author), coverURL = work.coverURL, status = ReadingStatus.TO_READ),
                         "",
@@ -55,8 +57,8 @@ fun AuthorWorkPage(work: AuthorWork, author: String, isAdding: Boolean, onAdd: s
                         width = 170.dp,
                     )
                     Column(Modifier.padding(horizontal = 24.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text(work.title, style = Shiori.type.title2.copy(fontWeight = FontWeight.Bold), color = colors.label, textAlign = TextAlign.Center)
-                        Text(work.publishedIn?.let { "$author · $it" } ?: author, style = Shiori.type.subheadline, color = colors.secondaryLabel)
+                        Text(work.title, style = Shiori.type.title2.copy(fontWeight = FontWeight.Bold), color = Shiori.colors.label, textAlign = TextAlign.Center)
+                        Text(work.publishedIn?.let { "$author · $it" } ?: author, style = Shiori.type.subheadline, color = Shiori.colors.secondaryLabel)
                     }
                     ShioriButton(
                         L("Ajouter à ma pile"),
@@ -67,6 +69,7 @@ fun AuthorWorkPage(work: AuthorWork, author: String, isAdding: Boolean, onAdd: s
                         large = true,
                         action = onAdd,
                     )
+                }
                 }
             }
         }

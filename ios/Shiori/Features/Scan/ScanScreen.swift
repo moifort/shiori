@@ -103,6 +103,10 @@ struct ScanScreen: View {
             case let .link(link): await viewModel.lookUp(link: link)
             }
         }
+        // Drawn dark around its black camera, as the Goodreads import is: the
+        // review's and the failures' white and glass buttons vanish on a light
+        // page. Always a full-screen cover, so the preference holds for it alone.
+        .preferredColorScheme(.dark)
     }
 
     /// Says what was done over the review, where its button was, and moves on

@@ -45,6 +45,9 @@ struct ShelfImportScreen: View {
                 await detect(imageData: data)
             }
         }
+        // Drawn dark around its black camera, as the Goodreads import is: the
+        // checklist's white button vanishes on a light page.
+        .preferredColorScheme(.dark)
     }
 
     @ViewBuilder

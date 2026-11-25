@@ -73,81 +73,84 @@ fun ScanScreen(
     origin: BookOrigin.Kind? = null,
     client: ScanClient = ScanClient.live,
 ) {
-    val scope = rememberCoroutineScope()
-    val viewModel = remember { ScanViewModel(client, origin ?: start.origin) }
-    // What was just done, said over the screen whose button did it.
-    var confirmation by remember { mutableStateOf<Confirmation?>(null) }
-    // Says what was done over the review, where its button was, and moves on only once the word
-    // has been read.
-    suspend fun confirm(done: Confirmation, next: () -> Unit) {
-        confirmation = done
-        delay(Confirmation.HOLD_MILLIS)
-        next()
-    }
-    val navigator = currentNavigator
-    var captureRequest by remember { mutableIntStateOf(0) }
-    LaunchedEffect(Unit) {
-        when (start) {
-            ScanStart.Camera -> Unit
-            is ScanStart.Photo -> viewModel.capture(start.jpeg)
-            is ScanStart.Title -> viewModel.lookUpTitle(start.title)
-            is ScanStart.Link -> viewModel.lookUp(start.link)
+    // Drawn dark, as on iOS and as the Goodreads import is: its white and glass buttons vanish on a light page.
+    com.polyforms.shiori.shared.components.styles.ShioriTheme(dark = true) {
+        val scope = rememberCoroutineScope()
+        val viewModel = remember { ScanViewModel(client, origin ?: start.origin) }
+        // What was just done, said over the screen whose button did it.
+        var confirmation by remember { mutableStateOf<Confirmation?>(null) }
+        // Says what was done over the review, where its button was, and moves on only once the word
+        // has been read.
+        suspend fun confirm(done: Confirmation, next: () -> Unit) {
+            confirmation = done
+            delay(Confirmation.HOLD_MILLIS)
+            next()
         }
-    }
-    val onCamera = viewModel.step == ScanViewModel.Step.CAMERA
-    Box(Modifier.fillMaxSize().background(if (onCamera) Color.Black else Shiori.colors.groupedBackground)) {
-        when (viewModel.step) {
-            ScanViewModel.Step.CAMERA -> {
-                CameraView(captureRequest, Modifier.fillMaxSize()) { jpeg -> scope.launch { viewModel.capture(jpeg) } }
-                ViewfinderOverlay(leavesRoomForShutter = true)
-                // On a phone, as iOS: the shutter alone under the frame, the page's name in the bar.
-                Box(Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 48.dp)) {
-                    com.polyforms.shiori.features.scan.components.organisms.Shutter { captureRequest += 1 }
-                }
-                CameraBarTitle(L("Scanner une couverture"))
+        val navigator = currentNavigator
+        var captureRequest by remember { mutableIntStateOf(0) }
+        LaunchedEffect(Unit) {
+            when (start) {
+                ScanStart.Camera -> Unit
+                is ScanStart.Photo -> viewModel.capture(start.jpeg)
+                is ScanStart.Title -> viewModel.lookUpTitle(start.title)
+                is ScanStart.Link -> viewModel.lookUp(start.link)
             }
-            ScanViewModel.Step.ANALYZING -> ScanAnalyzingPage()
-            ScanViewModel.Step.REVIEW -> viewModel.draft?.let { draft ->
-                ScanReviewPage(
-                    draft,
-                    viewModel.ownedCopy,
-                    viewModel.isSaving,
-                    viewModel.awaitable,
-                    viewModel::subgenres,
-                    viewModel::vocabulary,
-                    sagaVolumes = viewModel.sagaVolumes,
-                    onClose = onDismiss,
-                ) { action ->
-                    when (action) {
-                        is ScanReviewAction.Save -> viewModel.save(action.draft, action.series)?.let { book ->
-                            confirm(Confirmation.addedToLibrary) { onAdded(book) }
+        }
+        val onCamera = viewModel.step == ScanViewModel.Step.CAMERA
+        Box(Modifier.fillMaxSize().background(if (onCamera) Color.Black else Shiori.colors.groupedBackground)) {
+            when (viewModel.step) {
+                ScanViewModel.Step.CAMERA -> {
+                    CameraView(captureRequest, Modifier.fillMaxSize()) { jpeg -> scope.launch { viewModel.capture(jpeg) } }
+                    ViewfinderOverlay(leavesRoomForShutter = true)
+                    // On a phone, as iOS: the shutter alone under the frame, the page's name in the bar.
+                    Box(Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(bottom = 48.dp)) {
+                        com.polyforms.shiori.features.scan.components.organisms.Shutter { captureRequest += 1 }
+                    }
+                    CameraBarTitle(L("Scanner une couverture"))
+                }
+                ScanViewModel.Step.ANALYZING -> ScanAnalyzingPage()
+                ScanViewModel.Step.REVIEW -> viewModel.draft?.let { draft ->
+                    ScanReviewPage(
+                        draft,
+                        viewModel.ownedCopy,
+                        viewModel.isSaving,
+                        viewModel.awaitable,
+                        viewModel::subgenres,
+                        viewModel::vocabulary,
+                        sagaVolumes = viewModel.sagaVolumes,
+                        onClose = onDismiss,
+                    ) { action ->
+                        when (action) {
+                            is ScanReviewAction.Save -> viewModel.save(action.draft, action.series)?.let { book ->
+                                confirm(Confirmation.addedToLibrary) { onAdded(book) }
+                            }
+                            ScanReviewAction.Retake -> viewModel.retake()
+                            is ScanReviewAction.AwaitEdition -> confirm(Confirmation.awaited) { onAwait(action.draft, action.format) }
+                            is ScanReviewAction.Wish -> if (viewModel.wish(action.draft)) confirm(Confirmation.addedToWishlist, onWished)
+                            is ScanReviewAction.LanguageOrFormatChanged -> coroutineScope {
+                                launch { viewModel.loadAwaitable(action.language, action.format) }
+                                launch { viewModel.loadSagaVolumes(action.language) }
+                            }
+                            is ScanReviewAction.OpenOwnedCopy -> navigator.push { BookScreen(action.book.id) }
                         }
-                        ScanReviewAction.Retake -> viewModel.retake()
-                        is ScanReviewAction.AwaitEdition -> confirm(Confirmation.awaited) { onAwait(action.draft, action.format) }
-                        is ScanReviewAction.Wish -> if (viewModel.wish(action.draft)) confirm(Confirmation.addedToWishlist, onWished)
-                        is ScanReviewAction.LanguageOrFormatChanged -> coroutineScope {
-                            launch { viewModel.loadAwaitable(action.language, action.format) }
-                            launch { viewModel.loadSagaVolumes(action.language) }
-                        }
-                        is ScanReviewAction.OpenOwnedCopy -> navigator.push { BookScreen(action.book.id) }
                     }
                 }
+                ScanViewModel.Step.NO_RESULT -> ScanNoResultPage(onRetake = viewModel::retake, onDismiss = onDismiss)
+                ScanViewModel.Step.FAILED -> ScanFailedPage(viewModel.failure, onRetry = { scope.launch { viewModel.retry() } }, onRetake = viewModel::retake)
             }
-            ScanViewModel.Step.NO_RESULT -> ScanNoResultPage(onRetake = viewModel::retake, onDismiss = onDismiss)
-            ScanViewModel.Step.FAILED -> ScanFailedPage(viewModel.failure, onRetry = { scope.launch { viewModel.retry() } }, onRetake = viewModel::retake)
+            if (viewModel.step != ScanViewModel.Step.REVIEW) {
+                Box(Modifier.statusBarsPadding().padding(16.dp)) { ToolbarIconButton(L("Fermer"), "xmark", onClick = onDismiss) }
+            }
+            // Nothing is tapped while the word is said.
+            if (confirmation != null) Box(Modifier.fillMaxSize().pointerInput(Unit) { awaitPointerEventScope { while (true) awaitPointerEvent().changes.forEach { it.consume() } } })
+            ConfirmationHost(confirmation) { confirmation = null }
         }
-        if (viewModel.step != ScanViewModel.Step.REVIEW) {
-            Box(Modifier.statusBarsPadding().padding(16.dp)) { ToolbarIconButton(L("Fermer"), "xmark", onClick = onDismiss) }
+        if (viewModel.paywallShown) {
+            com.polyforms.shiori.features.subscription.AllowanceSpent(PremiumTrigger.SCAN_ALLOWANCE_SPENT) {
+                viewModel.paywallShown = false
+                onDismiss()
+            }
         }
-        // Nothing is tapped while the word is said.
-        if (confirmation != null) Box(Modifier.fillMaxSize().pointerInput(Unit) { awaitPointerEventScope { while (true) awaitPointerEvent().changes.forEach { it.consume() } } })
-        ConfirmationHost(confirmation) { confirmation = null }
+        viewModel.error?.let { ShioriAlert(L("Le scan a échoué"), it, onDismiss = { viewModel.error = null }) }
     }
-    if (viewModel.paywallShown) {
-        com.polyforms.shiori.features.subscription.AllowanceSpent(PremiumTrigger.SCAN_ALLOWANCE_SPENT) {
-            viewModel.paywallShown = false
-            onDismiss()
-        }
-    }
-    viewModel.error?.let { ShioriAlert(L("Le scan a échoué"), it, onDismiss = { viewModel.error = null }) }
 }

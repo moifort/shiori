@@ -22,60 +22,63 @@ import kotlinx.coroutines.launch
 /** An Amazon source's import, connected: sign-in, sync, the books to pick. */
 @Composable
 fun <Account : ImportAccount, Item : ImportItem> AmazonImportScreen(source: ImportSource, client: AmazonSourceClient<Account, Item>, onImported: () -> Unit) {
-    val scope = rememberCoroutineScope()
-    val viewModel = remember(source) { AmazonImportViewModel(source, client) }
-    val navigator = currentNavigator
-    LaunchedEffect(source) { viewModel.load() }
-    Box(Modifier.fillMaxSize().background(Shiori.colors.groupedBackground)) {
-        val account = viewModel.account
-        if (account != null) {
-            ImportSourcePage(
-                source,
-                account,
-                viewModel.totalCount,
-                viewModel.catalogedCount,
-                viewModel.isLoading,
-                viewModel.isSyncing,
-                viewModel.lastSyncOutcome,
-                onAutoSyncChange = { scope.launch { viewModel.setAutoSync(it) } },
-                onSyncNow = { scope.launch { viewModel.syncNow() } },
-                onPickBooks = {
-                    navigator.push {
-                        Box(Modifier.fillMaxSize().background(Shiori.colors.groupedBackground)) {
-                            ImportLibraryPage(
-                                source,
-                                viewModel.books,
-                                viewModel.isLoading,
-                                viewModel.isImporting,
-                                viewModel.selected.size,
-                                viewModel.canImport,
-                                viewModel::isSelected,
-                                viewModel::toggle,
-                                viewModel::selectAll,
-                                viewModel::deselectAll,
-                            ) {
-                                val imported = viewModel.importSelected()
-                                if (imported.isNotEmpty()) {
-                                    navigator.pop()
-                                    onImported()
+    // Drawn dark, as on iOS and as the Goodreads import is: its white and glass buttons vanish on a light page.
+    com.polyforms.shiori.shared.components.styles.ShioriTheme(dark = true) {
+        val scope = rememberCoroutineScope()
+        val viewModel = remember(source) { AmazonImportViewModel(source, client) }
+        val navigator = currentNavigator
+        LaunchedEffect(source) { viewModel.load() }
+        Box(Modifier.fillMaxSize().background(Shiori.colors.groupedBackground)) {
+            val account = viewModel.account
+            if (account != null) {
+                ImportSourcePage(
+                    source,
+                    account,
+                    viewModel.totalCount,
+                    viewModel.catalogedCount,
+                    viewModel.isLoading,
+                    viewModel.isSyncing,
+                    viewModel.lastSyncOutcome,
+                    onAutoSyncChange = { scope.launch { viewModel.setAutoSync(it) } },
+                    onSyncNow = { scope.launch { viewModel.syncNow() } },
+                    onPickBooks = {
+                        navigator.push {
+                            Box(Modifier.fillMaxSize().background(Shiori.colors.groupedBackground)) {
+                                ImportLibraryPage(
+                                    source,
+                                    viewModel.books,
+                                    viewModel.isLoading,
+                                    viewModel.isImporting,
+                                    viewModel.selected.size,
+                                    viewModel.canImport,
+                                    viewModel::isSelected,
+                                    viewModel::toggle,
+                                    viewModel::selectAll,
+                                    viewModel::deselectAll,
+                                ) {
+                                    val imported = viewModel.importSelected()
+                                    if (imported.isNotEmpty()) {
+                                        navigator.pop()
+                                        onImported()
+                                    }
                                 }
+                                ScreenBar(title = L("Choisir des livres"))
                             }
-                            ScreenBar(title = L("Choisir des livres"))
                         }
-                    }
-                },
-                onReconnect = { scope.launch { viewModel.startSignIn() } },
-                onDisconnect = { viewModel.disconnect() },
-            )
-        } else {
-            ImportConnectPage(source, viewModel.marketplace, { viewModel.marketplace = it }, viewModel.isLoading) { scope.launch { viewModel.startSignIn() } }
+                    },
+                    onReconnect = { scope.launch { viewModel.startSignIn() } },
+                    onDisconnect = { viewModel.disconnect() },
+                )
+            } else {
+                ImportConnectPage(source, viewModel.marketplace, { viewModel.marketplace = it }, viewModel.isLoading) { scope.launch { viewModel.startSignIn() } }
+            }
+            ScreenBar(title = source.label)
         }
-        ScreenBar(title = source.label)
+        viewModel.signIn?.let { login ->
+            AmazonSignInSheet(login, onCode = { code -> scope.launch { viewModel.finishSignIn(code) } }, onCancel = viewModel::cancelSignIn)
+        }
+        viewModel.errorMessage?.let { ShioriAlert(L("Une erreur est survenue"), it, onDismiss = { viewModel.errorMessage = null }) }
     }
-    viewModel.signIn?.let { login ->
-        AmazonSignInSheet(login, onCode = { code -> scope.launch { viewModel.finishSignIn(code) } }, onCancel = viewModel::cancelSignIn)
-    }
-    viewModel.errorMessage?.let { ShioriAlert(L("Une erreur est survenue"), it, onDismiss = { viewModel.errorMessage = null }) }
 }
 
 @Composable

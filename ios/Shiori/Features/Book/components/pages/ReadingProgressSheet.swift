@@ -76,6 +76,9 @@ struct ReadingProgressSheet: View {
         }
         .presentationDetents([.height(542)])
         .presentationDragIndicator(.visible)
+        // Drawn dark, as the scan and the imports are: its glass buttons
+        // vanish on a light sheet. A sheet, so the preference holds for it alone.
+        .preferredColorScheme(.dark)
     }
 
     // MARK: - Figure

@@ -60,6 +60,9 @@ struct AudibleImportScreen: View {
             Text(viewModel.errorMessage ?? "")
         }
         .task { await viewModel.load() }
+        // Drawn dark, as the Goodreads import is: its white and glass buttons
+        // vanish on a light page. A sheet, so the preference holds for it alone.
+        .preferredColorScheme(.dark)
     }
 
     @ViewBuilder

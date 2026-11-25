@@ -215,65 +215,68 @@ class ShelfImportViewModel(private val client: ScanClient, private val scope: Co
 /** Several books from one photo: the camera, the reading, the checklist, the adding. */
 @Composable
 fun ShelfImportScreen(onDismiss: () -> Unit, startJpeg: ByteArray? = null, client: ScanClient = ScanClient.live) {
-    val scope = rememberCoroutineScope()
-    val viewModel = remember { ShelfImportViewModel(client, scope) }
-    val context = LocalContext.current
-    var captureRequest by remember { mutableIntStateOf(0) }
-    val picker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-        if (uri == null) return@rememberLauncherForActivityResult
-        scope.launch {
-            val jpeg = withContext(Dispatchers.IO) {
-                context.contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it) }?.scaledJpeg(2000)
-            } ?: return@launch
-            viewModel.detect(jpeg)
-        }
-    }
-    LaunchedEffect(Unit) { startJpeg?.let { viewModel.detect(it) } }
-    val onCamera = viewModel.step == ShelfImportViewModel.Step.CAMERA
-    Box(Modifier.fillMaxSize().background(if (onCamera) Color.Black else Shiori.colors.groupedBackground)) {
-        when (viewModel.step) {
-            ShelfImportViewModel.Step.CAMERA -> {
-                CameraView(captureRequest, Modifier.fillMaxSize(), maxDimension = 2000) { jpeg -> scope.launch { viewModel.detect(jpeg) } }
-                Column(
-                    Modifier.align(Alignment.BottomCenter).fillMaxWidth().navigationBarsPadding().padding(bottom = 48.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                ) {
-                    Text(
-                        L("Tranches bien lisibles, ou couvertures posées à plat. Jusqu'à 30 livres."),
-                        style = Shiori.type.footnote,
-                        color = Color.White,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(horizontal = 24.dp).background(Color.Black.copy(alpha = 0.4f), CircleShape).padding(horizontal = 12.dp, vertical = 6.dp),
-                    )
-                    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        com.polyforms.shiori.features.scan.components.organisms.Shutter { captureRequest += 1 }
-                        Box(
-                            Modifier.align(Alignment.CenterStart).padding(start = 32.dp).size(52.dp).background(Color.Black.copy(alpha = 0.4f), CircleShape)
-                                .plainClickable { picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
-                            contentAlignment = Alignment.Center,
-                        ) { Icon(Symbol("photo.on.rectangle"), L("Choisir une photo"), Modifier.size(24.dp), tint = Color.White) }
-                    }
-                }
-                CameraBarTitle(L("Livres sur étagère"))
+    // Drawn dark, as on iOS and as the Goodreads import is: its white and glass buttons vanish on a light page.
+    com.polyforms.shiori.shared.components.styles.ShioriTheme(dark = true) {
+        val scope = rememberCoroutineScope()
+        val viewModel = remember { ShelfImportViewModel(client, scope) }
+        val context = LocalContext.current
+        var captureRequest by remember { mutableIntStateOf(0) }
+        val picker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+            if (uri == null) return@rememberLauncherForActivityResult
+            scope.launch {
+                val jpeg = withContext(Dispatchers.IO) {
+                    context.contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it) }?.scaledJpeg(2000)
+                } ?: return@launch
+                viewModel.detect(jpeg)
             }
-            // The AI at work: Siri's orb on a dark page, with the one thing happening said under it.
-            ShelfImportViewModel.Step.DETECTING -> com.polyforms.shiori.features.scan.components.organisms.AIWaitPage(L("Analyse de l'étagère"))
-            ShelfImportViewModel.Step.CHECKLIST -> ShelfChecklistPage(viewModel)
-            ShelfImportViewModel.Step.NO_RESULT -> com.polyforms.shiori.features.scan.components.organisms.ScanNoResultPage(
-                L("Photographiez les tranches de face, bien éclairées, ou posez les couvertures à plat sans qu'elles se chevauchent. Rien n'a été décompté."),
-                onRetake = viewModel::retake,
-                onDismiss = onDismiss,
-            )
-            ShelfImportViewModel.Step.FAILED -> com.polyforms.shiori.features.scan.components.organisms.ScanFailedPage(viewModel.failure, onRetry = { scope.launch { viewModel.retry() } }, onRetake = viewModel::retake)
-            ShelfImportViewModel.Step.ADDING -> ShelfAddingPage(viewModel, onDismiss)
         }
-        Box(Modifier.statusBarsPadding().padding(16.dp)) { ToolbarIconButton(L("Fermer"), "xmark", onClick = onDismiss) }
-    }
-    if (viewModel.paywallShown) {
-        com.polyforms.shiori.features.subscription.AllowanceSpent(PremiumTrigger.SHELF_IMPORT) {
-            viewModel.paywallShown = false
-            onDismiss()
+        LaunchedEffect(Unit) { startJpeg?.let { viewModel.detect(it) } }
+        val onCamera = viewModel.step == ShelfImportViewModel.Step.CAMERA
+        Box(Modifier.fillMaxSize().background(if (onCamera) Color.Black else Shiori.colors.groupedBackground)) {
+            when (viewModel.step) {
+                ShelfImportViewModel.Step.CAMERA -> {
+                    CameraView(captureRequest, Modifier.fillMaxSize(), maxDimension = 2000) { jpeg -> scope.launch { viewModel.detect(jpeg) } }
+                    Column(
+                        Modifier.align(Alignment.BottomCenter).fillMaxWidth().navigationBarsPadding().padding(bottom = 48.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                    ) {
+                        Text(
+                            L("Tranches bien lisibles, ou couvertures posées à plat. Jusqu'à 30 livres."),
+                            style = Shiori.type.footnote,
+                            color = Color.White,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(horizontal = 24.dp).background(Color.Black.copy(alpha = 0.4f), CircleShape).padding(horizontal = 12.dp, vertical = 6.dp),
+                        )
+                        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                            com.polyforms.shiori.features.scan.components.organisms.Shutter { captureRequest += 1 }
+                            Box(
+                                Modifier.align(Alignment.CenterStart).padding(start = 32.dp).size(52.dp).background(Color.Black.copy(alpha = 0.4f), CircleShape)
+                                    .plainClickable { picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+                                contentAlignment = Alignment.Center,
+                            ) { Icon(Symbol("photo.on.rectangle"), L("Choisir une photo"), Modifier.size(24.dp), tint = Color.White) }
+                        }
+                    }
+                    CameraBarTitle(L("Livres sur étagère"))
+                }
+                // The AI at work: Siri's orb on a dark page, with the one thing happening said under it.
+                ShelfImportViewModel.Step.DETECTING -> com.polyforms.shiori.features.scan.components.organisms.AIWaitPage(L("Analyse de l'étagère"))
+                ShelfImportViewModel.Step.CHECKLIST -> ShelfChecklistPage(viewModel)
+                ShelfImportViewModel.Step.NO_RESULT -> com.polyforms.shiori.features.scan.components.organisms.ScanNoResultPage(
+                    L("Photographiez les tranches de face, bien éclairées, ou posez les couvertures à plat sans qu'elles se chevauchent. Rien n'a été décompté."),
+                    onRetake = viewModel::retake,
+                    onDismiss = onDismiss,
+                )
+                ShelfImportViewModel.Step.FAILED -> com.polyforms.shiori.features.scan.components.organisms.ScanFailedPage(viewModel.failure, onRetry = { scope.launch { viewModel.retry() } }, onRetake = viewModel::retake)
+                ShelfImportViewModel.Step.ADDING -> ShelfAddingPage(viewModel, onDismiss)
+            }
+            Box(Modifier.statusBarsPadding().padding(16.dp)) { ToolbarIconButton(L("Fermer"), "xmark", onClick = onDismiss) }
+        }
+        if (viewModel.paywallShown) {
+            com.polyforms.shiori.features.subscription.AllowanceSpent(PremiumTrigger.SHELF_IMPORT) {
+                viewModel.paywallShown = false
+                onDismiss()
+            }
         }
     }
 }

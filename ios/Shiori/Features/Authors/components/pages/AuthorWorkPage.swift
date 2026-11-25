@@ -40,9 +40,12 @@ struct AuthorWorkPage: View {
             }
             .padding(.bottom, 32)
             .frame(maxWidth: .infinity)
-            .background(alignment: .top) {
-                CoverBackdrop(url: work.coverURL, fadeHeight: 140)
-                    .frame(height: 420)
+            // White over the cover's colours, as a book page's hero: the
+            // backdrop runs under the button, whose white would vanish on a
+            // light page.
+            .environment(\.colorScheme, .dark)
+            .background {
+                CoverBackdrop(url: work.coverURL)
             }
         }
         .ignoresSafeArea(edges: .top)
