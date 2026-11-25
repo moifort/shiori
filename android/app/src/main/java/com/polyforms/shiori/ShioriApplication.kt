@@ -20,6 +20,8 @@ class ShioriApplication : Application(), SingletonImageLoader.Factory {
     override fun onCreate() {
         super.onCreate()
         AppContext.set(this)
+        // The launch curtain's covers, decoded while the rest starts, ready for its first frame.
+        com.polyforms.shiori.shared.shell.LaunchCovers.preload(this)
         Strings.load(this)
         FirebaseApp.initializeApp(this)
         Analytics.start(this)
