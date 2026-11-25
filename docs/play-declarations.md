@@ -59,3 +59,19 @@ not count as sharing.
 Not collected: location, the address book (the contact picker only copies the one name the
 reader picks into a book's "recommended by", stored as their own content, with no permission), financial or payment info (Google Play
 bills), health, messages, audio, files, calendar, web history.
+
+## Subscriptions (Monetize > Products > Subscriptions)
+
+Prices decided by the user on 2026-11-25, the same as the App Store's from 2026-11-26
+(`scripts/appstore/prices.ts`).
+
+| Product id | Base plan | Price (EUR) | Offer |
+|---|---|---|---|
+| `com.polyforms.shiori.app.premium.yearly` | `yearly`, auto-renewing, 1 year | 34.99 | `free-month`: free trial of 1 month, new customers only |
+| `com.polyforms.shiori.app.premium.monthly` | `monthly`, auto-renewing, 1 month | 4.99 | none |
+
+The free month is an **offer** on the yearly base plan, never a base plan priced at zero: the
+server grants the Premium welcome credit at the first paid period only, reading
+`lineItems[].offerPhase` of `purchases.subscriptionsv2.get` (a line item bought through an offer
+with no `offerPhase` counts as a trial). Other countries take Play's converted prices from the
+EUR ones. No real-time developer notifications yet: a renewal is seen at the app's next sync.
