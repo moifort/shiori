@@ -64,8 +64,8 @@ Estimated at 0.03 € (low) and 0.15 € (high) a scan, if the allowance is used
 |---|---|---|
 | Welcome credit, once, every account (`WELCOME_SCANS`) | 50 | 1.50 to 7.50 € |
 | Free monthly allowance (`FREE_MONTHLY_SCANS`) | 5 a month | 1.80 to 9 € a year |
-| Premium welcome credit, once, first paid period (`PREMIUM_WELCOME_SCANS`) | 500 | 15 to 75 € |
-| Premium monthly ceiling (`PREMIUM_MONTHLY_SCANS`) | 100 a month | 3 to 15 € a month |
+| Premium welcome credit, once, first paid period (`PREMIUM_WELCOME_SCANS`) | 200 (500 until 2026-11-25) | 6 to 30 € |
+| Premium monthly ceiling (`PREMIUM_MONTHLY_SCANS`) | 30 a month (100 until 2026-11-25) | 0.90 to 4.50 € a month |
 
 The Premium welcome credit was handed at the start of a free trial until 2026-11-25, and a
 credit outlives the subscription: a trial started and cancelled could keep 500 scans worth 15
@@ -73,10 +73,13 @@ to 75 €, more than a year of the yearly plan netted. It is now handed at the f
 period only (`earnsPremiumWelcome`). Credits already handed to trials were left alone: with no
 subscriber yet there were none worth a migration.
 
-**Open, for the owner to decide:** at the measured cost, a month at the Premium ceiling (3 to
-15 €) is more than the yearly plan nets (2.07 €), and the 500-scan welcome alone (15 to 75 €)
-can exceed a first year's net (24.78 €). The constants were not changed, since they decide what a subscriber
-receives; resizing them is a product decision.
+**Decided by the owner on 2026-11-25:** the Premium ceiling went from 100 to 30 scans a month
+and the Premium welcome from 500 to 200. At the old figures a month at the ceiling (3 to 15 €)
+cost more than the yearly plan nets a month (2.07 €), and the welcome alone (15 to 75 €) could
+exceed a first year's net (24.78 €). At the new ones a subscriber who uses everything costs at
+most 6 to 30 € once, then 0.90 to 4.50 € a month: still above the net at the paid rate, which
+is why the ceiling exists, and within it while the free searches last. The app's copy still
+says "Scans illimités"; it is to be reworded with the Premium promise.
 
 ## Fixed costs and break-even
 

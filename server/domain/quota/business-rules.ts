@@ -19,15 +19,13 @@ export const FREE_MONTHLY_SCANS: CountType = Count(5)
 // Estimates, not invoices per scan: recalibrate here when the bill moves.
 export const SCAN_COST_EUR = { withFreeSearches: 0.03, allSearchesPaid: 0.15 } as const
 
-// A subscriber is not metered, but no single account may cost more than it pays:
-// past this, a month's scans are refused as abuse rather than served at a loss.
-// Sized on 2026-10 against a ~0.01 EUR scan and ~1.48 EUR of monthly net proceeds. Both
-// figures were wrong: a scan costs SCAN_COST_EUR, and the annual plan netted ~1.06 EUR a
-// month after VAT and Apple's 15%, ~2.07 EUR since the 2026-11-26 price
-// (docs/freemium-economics.md). At the measured cost a month at this ceiling costs 3 to
-// 15 EUR, more than the subscriber pays; resizing
-// it is a product decision left to the owner, recorded in that document.
-export const PREMIUM_MONTHLY_SCANS: CountType = Count(100)
+// A subscriber is not metered in what the app shows, but no single account may cost more
+// than it pays: past this, a month's scans are refused rather than served at a loss.
+// Thirty since 2026-11-25, down from 100: the yearly plan nets ~2.07 EUR a month after VAT
+// and the store's 15% (docs/freemium-economics.md), and a month at the ceiling costs 0.90 EUR
+// while the free searches last, 4.50 EUR once they are spent. A reader adds five to ten
+// printed books a month; Kindle and Audible imports cost no scan and are not counted.
+export const PREMIUM_MONTHLY_SCANS: CountType = Count(30)
 
 // What a new account is handed when it finishes onboarding, once and for good.
 // Books are catalogued in bursts: a new reader empties a shelf in one evening
@@ -42,12 +40,12 @@ export const PREMIUM_MONTHLY_SCANS: CountType = Count(100)
 // pipeline captures on every call.
 export const WELCOME_SCANS: CountType = Count(50)
 
-// What an account is handed the first time it turns Premium, once and for good,
-// on top of whatever it still holds. Subscribing is when a reader brings in the
-// whole library rather than a shelf, and the monthly ceiling alone would refuse
-// that evening as abuse: a reader cataloguing 130 books in two days is exactly
-// the use Premium is sold for.
-export const PREMIUM_WELCOME_SCANS: CountType = Count(500)
+// What an account is handed at its first paid Premium period, once and for good, on top of
+// whatever it still holds. Subscribing is when a reader brings in the printed library rather
+// than a shelf, and the monthly ceiling alone would refuse that evening. Two hundred since
+// 2026-11-25, down from 500: 6 to 30 EUR at SCAN_COST_EUR, against 24.78 EUR netted by a
+// first year, where 500 could cost three years of it.
+export const PREMIUM_WELCOME_SCANS: CountType = Count(200)
 
 // The month a moment belongs to, `"2026-07"`. UTC on purpose: the window must not
 // move with the caller's timezone, and someone scanning near midnight on the 1st
