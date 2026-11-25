@@ -7,12 +7,14 @@ import coil3.SingletonImageLoader
 import coil3.disk.DiskCache
 import coil3.disk.directory
 import coil3.memory.MemoryCache
+import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import coil3.request.crossfade
 import com.google.firebase.FirebaseApp
 import com.polyforms.shiori.shared.Analytics
 import com.polyforms.shiori.shared.AppContext
 import com.polyforms.shiori.shared.Strings
 import io.sentry.android.core.SentryAndroid
+import okhttp3.OkHttpClient
 
 class ShioriApplication : Application(), SingletonImageLoader.Factory {
     override fun onCreate() {
@@ -39,11 +41,25 @@ class ShioriApplication : Application(), SingletonImageLoader.Factory {
         }
     }
 
-    /** Covers: a quarter of the memory class in memory, 250 MB on disk, as iOS keeps them. */
+    /**
+     * Covers: a quarter of the memory class in memory, 250 MB on disk, as iOS keeps them.
+     *
+     * Every image is asked under Shiori's name. Wikimedia answers 403 to OkHttp's default
+     * `okhttp/x` agent, so without it every Wikipedia and Wikidata portrait drew as initials
+     * (iOS sends `Shiori/… CFNetwork/…` and was never refused).
+     */
     override fun newImageLoader(context: PlatformContext): ImageLoader =
         ImageLoader.Builder(context)
+            .components { add(OkHttpNetworkFetcherFactory(callFactory = { imageClient })) }
             .memoryCache { MemoryCache.Builder().maxSizePercent(context, 0.25).build() }
             .diskCache { DiskCache.Builder().directory(cacheDir.resolve("covers")).maxSizeBytes(250L * 1024 * 1024).build() }
             .crossfade(true)
             .build()
+
+    private val imageClient: OkHttpClient by lazy {
+        val agent = "Shiori/${BuildConfig.VERSION_NAME} (Android; ${BuildConfig.APPLICATION_ID})"
+        OkHttpClient.Builder()
+            .addNetworkInterceptor { chain -> chain.proceed(chain.request().newBuilder().header("User-Agent", agent).build()) }
+            .build()
+    }
 }
