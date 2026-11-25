@@ -136,17 +136,35 @@ if [ "${SKIP_BUILD:-}" != 1 ]; then
     fi
   done
   log="$WORKTREE/build/device-capture-build.log"
-  if ! xcodebuild -project ios/Shiori.xcodeproj -scheme Shiori \
+  # One heavy build at a time on this Mac, Gradle and xcodebuild alike: the
+  # shared slot is taken for the build alone and released the moment it ends.
+  SLOT="$MAIN_CHECKOUT/build/build-slot-1.lock"
+  slot_waited=0
+  until mkdir "$SLOT" 2>/dev/null; do
+    if [ "$slot_waited" -eq 0 ]; then
+      echo "    the build slot is taken, waiting:" >&2
+      sed 's/^/      /' "$SLOT/owner" >&2 2>/dev/null || true
+    fi
+    sleep 15
+    slot_waited=$((slot_waited + 15))
+  done
+  printf 'device-capture.sh pid=%s worktree=%s started=%s\n' \
+    "$$" "$WORKTREE" "$(date '+%Y-%m-%d %H:%M:%S')" >"$SLOT/owner"
+  trap 'rm -rf "$SLOT" "$LOCK"' EXIT
+  if ! xcodebuild -jobs 4 -project ios/Shiori.xcodeproj -scheme Shiori \
     -destination "generic/platform=iOS" \
     -derivedDataPath "$DERIVED_DATA" \
     ${packages:+-clonedSourcePackagesDirPath "$packages"} \
     -allowProvisioningUpdates \
     SWIFT_ENABLE_EXPLICIT_MODULES=NO \
     build >"$log" 2>&1; then
+    rm -rf "$SLOT"
     grep -E "error:" "$log" | head -20 >&2
     echo "error: build failed, see $log" >&2
     exit 1
   fi
+  rm -rf "$SLOT"
+  trap 'rm -rf "$LOCK"' EXIT
   elapsed "$t"
 fi
 [ -d "$APP" ] || { echo "error: no build at $APP" >&2; exit 1; }

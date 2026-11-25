@@ -388,6 +388,9 @@ simulator does), opens the screen with `-showcase -showcase-tab <screen>
 [-showcase-appearance light|dark]`, captures with `devicectl device capture screenshot`, and
 closes the app. One session at a time: the lock is `build/ios-device.lock` in the main
 checkout, with an `owner` file; a session waits for it, and a dead owner's lock is taken over.
+The build itself also takes the Mac's single heavy-build slot, `build/build-slot-1.lock`
+(shared with Gradle and every `xcodebuild`), runs with `-jobs 4`, and releases it the moment
+it ends.
 
 Measured on 2026-11-25 (iPhone 15 Pro, iOS 27.2.1):
 
@@ -400,6 +403,11 @@ Measured on 2026-11-25 (iPhone 15 Pro, iOS 27.2.1):
 | Launch, settle and capture | 6–7 s |
 | A capture with no rebuild (`SKIP_BUILD=1`) | 7.5 s end to end |
 | UI test route (`DeviceScreenTest`, built) | ~56 s |
+
+What it costs the Mac (8 cores, sampled every 1–2 s over the build tools and `devicectl`): a
+capture after a one-file edit took 54 s and about 37 CPU-seconds, 69 % of one core on average,
+221 % at its peak; a capture with no rebuild took 8 s and under 1 CPU-second. No simulator
+stays up between captures, so nothing is spent while idle.
 
 **The iPhone is signed in to the reader's real account.** A capture must leave it as it found
 it, which the showcase guarantees in Debug builds (`ShowcaseDevice.swift`):
