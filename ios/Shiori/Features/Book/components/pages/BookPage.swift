@@ -624,7 +624,8 @@ extension Book {
     )
 }
 
-private extension BookPage {
+extension BookPage {
+    /// The page drawn from a fixture, for the previews and the showcase captures.
     init(previewing book: Book, volumes: [SeriesStripItem] = [], isComposingNote: Bool = false) {
         self.init(
             book: book,

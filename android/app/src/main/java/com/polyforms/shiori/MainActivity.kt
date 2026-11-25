@@ -23,9 +23,11 @@ class MainActivity : ComponentActivity() {
         // The captures draw the App Store fixtures alone, without a session.
         if (BuildConfig.DEBUG && intent.getBooleanExtra("showcase", false)) Showcase.isOn = true
         val preview = if (BuildConfig.DEBUG) intent.getStringExtra("preview") else null
+        // `--es appearance light|dark`: a capture in either mode, whatever the phone is set to.
+        val appearance = if (BuildConfig.DEBUG) intent.getStringExtra("appearance") else null
         route(intent)
         setContent {
-            ShioriTheme {
+            ShioriTheme(dark = appearance?.let { it == "dark" } ?: androidx.compose.foundation.isSystemInDarkTheme()) {
                 if (preview != null) DebugPreviews(preview) else ShioriRoot()
             }
         }

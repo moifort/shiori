@@ -270,6 +270,21 @@ fun DebugPreviews(name: String) {
                 isLoading = false, isImporting = false, selectedCount = 1, canImport = true,
                 isSelected = { it.asin == "B002V1OF70" }, onToggle = {}, onSelectAll = {}, onDeselectAll = {}, onImport = {},
             )
+            "kindle-source", "audible-source" -> com.polyforms.shiori.features.import.components.pages.ImportSourcePage(
+                if (name == "kindle-source") com.polyforms.shiori.features.import.ImportSource.KINDLE else com.polyforms.shiori.features.import.ImportSource.AUDIBLE,
+                if (name == "kindle-source") {
+                    com.polyforms.shiori.features.import.KindleAccount(com.polyforms.shiori.features.import.AmazonMarketplace.FR, java.time.Instant.now().minusSeconds(86_400L * 12), java.time.Instant.now().minusSeconds(86_400L), true, null)
+                } else {
+                    com.polyforms.shiori.features.import.AudibleAccount(com.polyforms.shiori.features.import.AmazonMarketplace.FR, java.time.Instant.now().minusSeconds(86_400L * 40), java.time.Instant.now().minusSeconds(86_400L * 2), true)
+                },
+                totalCount = if (name == "kindle-source") 1424 else 128,
+                catalogedCount = if (name == "kindle-source") 1203 else 124,
+                isLoading = false, isSyncing = false,
+                lastSyncOutcome = com.polyforms.shiori.features.import.SyncOutcome(1, 2),
+                onAutoSyncChange = {}, onSyncNow = {}, onPickBooks = {}, onReconnect = {}, onDisconnect = {},
+            )
+            "scan-no-result" -> com.polyforms.shiori.features.scan.components.organisms.ScanNoResultPage(onRetake = {}, onDismiss = {})
+            "scan-failed" -> com.polyforms.shiori.features.scan.components.organisms.ScanFailedPage("La requête a expiré.", {}, {})
             "audible-empty" -> com.polyforms.shiori.features.import.components.pages.ImportLibraryPage(
                 com.polyforms.shiori.features.import.ImportSource.AUDIBLE, emptyList<com.polyforms.shiori.features.import.ImportableBook>(),
                 isLoading = false, isImporting = false, selectedCount = 0, canImport = false,
