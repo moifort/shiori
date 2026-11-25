@@ -32,7 +32,7 @@ struct PlayerPage: View {
         /// Why it does not play, in place of the time left.
         let failure: String?
         /// The sleep timer's choice, while it runs.
-        let sleepMinutes: Int?
+        var sleepMinutes: Int?
         /// Whether the title has a book in the library to open.
         var hasBook = true
         /// What follows this title; nil while it loads.
@@ -99,6 +99,8 @@ struct PlayerPage: View {
                     }
                     sleepTimer
                 }
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity)
                 .opacity(ramp(progress, from: 0.3, to: 0))
                 .allowsHitTesting(progress == 0)
                 .accessibilityHidden(progress > 0)
@@ -626,6 +628,12 @@ extension PlayerPage.Item {
         failure: nil,
         sleepMinutes: nil
     )
+
+    func withSleep(_ minutes: Int?) -> Self {
+        var item = self
+        item.sleepMinutes = minutes
+        return item
+    }
 
     func withQueue(_ queue: [ListeningQueueEntry]?) -> Self {
         var item = self

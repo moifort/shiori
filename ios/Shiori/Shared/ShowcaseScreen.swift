@@ -13,7 +13,7 @@ struct ShowcaseScreen: View {
         "goodreads", "goodreads-explain", "goodreads-reading", "goodreads-books",
         "goodreads-done", "goodreads-source", "subscription-trial", "subscription-lapsed",
         "premium", "libraries", "libraries-all", "goodreads-same-book", "goodreads-progress",
-        "goodreads-not-goodreads", "goodreads-empty",
+        "goodreads-not-goodreads", "goodreads-empty", "player-sleep",
     ]
 
     @State private var choices = GoodreadsChoices(preview: .preview)
@@ -113,6 +113,9 @@ struct ShowcaseScreen: View {
                 onConnect: {},
                 onSkip: {}
             )
+        case "player-sleep":
+            PlayerPage(item: .preview.withSleep(20)) { _ in }
+                .environment(\.colorScheme, .dark)
         case "goodreads-done":
             NavigationStack {
                 GoodreadsDonePage(

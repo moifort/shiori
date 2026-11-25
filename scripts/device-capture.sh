@@ -14,7 +14,7 @@
 #              | subscription-trial | subscription-lapsed | premium
 #              | libraries | libraries-all (the onboarding's libraries step)
 #              | goodreads-same-book | goodreads-progress | goodreads-not-goodreads
-#              | goodreads-empty
+#              | goodreads-empty | player-sleep
 #   -- -showcase-anchor center|bottom  opens a long page scrolled, for a stitched capture
 #   [light|dark]  the appearance, whatever the phone is set to (default: the phone's)
 #   -- …       more launch arguments for the app, e.g. -- -showcase-prompts audible
@@ -56,7 +56,7 @@ case "$SCREEN" in
   home | library | news | friends) SCREEN_FLAG=-showcase-tab ;;
   goodreads | goodreads-explain | goodreads-reading | goodreads-books | goodreads-done | goodreads-source \
     | subscription-trial | subscription-lapsed | premium | libraries | libraries-all \
-    | goodreads-same-book | goodreads-progress | goodreads-not-goodreads | goodreads-empty)
+    | goodreads-same-book | goodreads-progress | goodreads-not-goodreads | goodreads-empty | player-sleep)
     SCREEN_FLAG=-showcase-screen ;;
   *) echo "error: unknown screen '$SCREEN' (home, library, news, friends, goodreads…)" >&2; exit 2 ;;
 esac
