@@ -256,7 +256,7 @@ fun ShelfImportScreen(onDismiss: () -> Unit, startJpeg: ByteArray? = null, clien
                         ) { Icon(Symbol("photo.on.rectangle"), L("Choisir une photo"), Modifier.size(24.dp), tint = Color.White) }
                     }
                 }
-                CameraBarTitle(L("Plusieurs livres"))
+                CameraBarTitle(L("Livres sur étagère"))
             }
             // The AI at work: Siri's orb on a dark page, with the one thing happening said under it.
             ShelfImportViewModel.Step.DETECTING -> com.polyforms.shiori.features.scan.components.organisms.AIWaitPage(L("Analyse de l'étagère"))

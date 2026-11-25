@@ -178,7 +178,7 @@ struct AddBookSheet: View {
                 VStack(spacing: 6) {
                     Image(systemName: "books.vertical")
                         .font(.title2)
-                    Text("Plusieurs livres")
+                    Text("Livres sur étagère")
                         .font(.footnote)
                         .lineLimit(2)
                         .minimumScaleFactor(0.7)

@@ -9069,6 +9069,22 @@
         }
       }
     },
+    "Livres sur étagère" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Books on a shelf"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Livres sur étagère"
+          }
+        }
+      }
+    },
     "Livres · %lld" : {
       "localizations" : {
         "en" : {
@@ -11353,22 +11369,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Plus tôt en %@"
-          }
-        }
-      }
-    },
-    "Plusieurs livres" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Several books"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Plusieurs livres"
           }
         }
       }

@@ -100,7 +100,7 @@ struct ShelfImportScreen: View {
             viewfinder
         } second: {
             CameraControlsPage(
-                title: "Plusieurs livres",
+                title: "Livres sur étagère",
                 hint: "Tranches bien lisibles, ou couvertures posées à plat. Jusqu'à 30 livres.",
                 shutterLabel: "Photographier les livres",
                 shutterIdentifier: "shelf-shutter"
@@ -113,7 +113,7 @@ struct ShelfImportScreen: View {
             singlePageCamera
         }
         .background(.black)
-        .navigationTitle("Plusieurs livres")
+        .navigationTitle("Livres sur étagère")
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.hidden, for: .navigationBar)
     }

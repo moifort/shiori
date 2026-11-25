@@ -1746,6 +1746,9 @@
  "Livres sur Kindle": {
   "en": "Books on Kindle"
  },
+ "Livres sur étagère": {
+  "en": "Books on a shelf"
+ },
  "Livres · %lld": {
   "en": "Books · %lld"
  },
@@ -2178,9 +2181,6 @@
  },
  "Plus tôt en %@": {
   "en": "Earlier in %@"
- },
- "Plusieurs livres": {
-  "en": "Several books"
  },
  "Plusieurs livres correspondent": {
   "en": "Several books match"

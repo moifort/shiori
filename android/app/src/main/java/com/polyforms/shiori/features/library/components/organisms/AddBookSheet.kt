@@ -115,7 +115,7 @@ fun AddBookSheet(isPremium: Boolean?, searchTitle: suspend (String) -> List<Titl
             } else {
                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Tile("camera.viewfinder", L("Scanner la couverture")) { onChoose(AddBookSource.Camera) }
-                    Tile("books.vertical", L("Plusieurs livres"), badge = if (isPremium == false) L("Premium") else null) { onChoose(AddBookSource.Shelf) }
+                    Tile("books.vertical", L("Livres sur étagère"), badge = if (isPremium == false) L("Premium") else null) { onChoose(AddBookSource.Shelf) }
                     Tile("photo.on.rectangle", L("Choisir une photo")) { onChoose(AddBookSource.Library) }
                 }
                 Row(
