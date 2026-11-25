@@ -1,5 +1,6 @@
 package com.polyforms.shiori.features.friends.components.pages
 
+import com.polyforms.shiori.shared.book.backdropFrame
 import com.polyforms.shiori.shared.platform.pageEndRoom
 
 import androidx.compose.foundation.background
@@ -155,7 +156,7 @@ private fun Content(friends: List<Friend>, selected: List<String>, shelf: Friend
         // The colours under the avatars: the first book in progress, or the first of any rail.
         val backdrop = (shelf.reading.firstOrNull() ?: shelf.favorites.firstOrNull() ?: shelf.finished.firstOrNull() ?: shelf.pile.firstOrNull())?.book?.book?.coverURL
         // iOS's 760 points raised by 300: what is left of it below the bar.
-        CoverBackdrop(backdrop, Modifier.fillMaxWidth().height(top + 460.dp), fadeHeight = 160.dp, ground = ground)
+        CoverBackdrop(backdrop, Modifier.backdropFrame(top + 460.dp), fadeHeight = 160.dp, ground = ground)
         Column(Modifier.fillMaxWidth().padding(top = top + 4.dp, bottom = pageEndRoom()), verticalArrangement = Arrangement.spacedBy(30.dp)) {
             ShioriTheme(dark = true) {
                 // Over the rails, so a welcome's confetti fall in front of them.

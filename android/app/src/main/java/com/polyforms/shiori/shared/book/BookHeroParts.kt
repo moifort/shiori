@@ -41,6 +41,8 @@ import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -102,6 +104,16 @@ fun CoverBackdrop(
                 ),
         )
     }
+}
+
+/**
+ * iOS's `.background(alignment: .top) { CoverBackdrop(…).frame(height:) }`: the wash is drawn
+ * [height] tall from the top of its box but takes no room, so the content alone sizes the box and
+ * the next section follows it rather than the foot of the wash.
+ */
+fun Modifier.backdropFrame(height: Dp): Modifier = layout { measurable, constraints ->
+    val placeable = measurable.measure(Constraints.fixed(constraints.maxWidth, height.roundToPx()))
+    layout(constraints.maxWidth, 0) { placeable.place(0, 0) }
 }
 
 /** The bar and figure of a recording under way: "6h12 restantes · 42%". */

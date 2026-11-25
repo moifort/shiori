@@ -1,5 +1,6 @@
 package com.polyforms.shiori.features.friends.components.organisms
 
+import com.polyforms.shiori.shared.book.backdropFrame
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -62,7 +63,7 @@ fun FriendsEmptyInvite(myShelf: FriendProfile?, isInviting: Boolean, onInvite: s
     Column(Modifier.fillMaxWidth().padding(bottom = 32.dp)) {
         Box(Modifier.fillMaxWidth()) {
             // iOS's 760 points raised by 300, under the bar's room [top].
-            CoverBackdrop(shown.firstOrNull()?.book?.coverURL, Modifier.fillMaxWidth().height(top + 460.dp), fadeHeight = 160.dp, ground = ground)
+            CoverBackdrop(shown.firstOrNull()?.book?.coverURL, Modifier.backdropFrame(top + 460.dp), fadeHeight = 160.dp, ground = ground)
             ShioriTheme(dark = true) {
                 Column(Modifier.fillMaxWidth().padding(top = top).padding(horizontal = 20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                     Row(

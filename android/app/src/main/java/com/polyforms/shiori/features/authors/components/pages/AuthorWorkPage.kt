@@ -1,5 +1,6 @@
 package com.polyforms.shiori.features.authors.components.pages
 
+import com.polyforms.shiori.shared.book.backdropFrame
 import com.polyforms.shiori.shared.platform.pageEndRoom
 
 import androidx.compose.foundation.background
@@ -45,7 +46,7 @@ fun AuthorWorkPage(work: AuthorWork, author: String, isAdding: Boolean, onAdd: s
     Box(Modifier.fillMaxSize().background(colors.groupedBackground)) {
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = pageEndRoom())) {
             Box(Modifier.fillMaxWidth()) {
-                CoverBackdrop(work.coverURL, Modifier.fillMaxWidth().height(420.dp), fadeHeight = 140.dp)
+                CoverBackdrop(work.coverURL, Modifier.backdropFrame(420.dp), fadeHeight = 140.dp)
                 Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     PosterCover(
                         Book(id = "work-${work.id}", title = work.title, authors = listOf(author), coverURL = work.coverURL, status = ReadingStatus.TO_READ),

@@ -1,5 +1,6 @@
 package com.polyforms.shiori.features.authors.components.pages
 
+import com.polyforms.shiori.shared.book.backdropFrame
 import com.polyforms.shiori.shared.platform.pageEndRoom
 import com.polyforms.shiori.features.discover.DiscoveryVolume
 import com.polyforms.shiori.features.discover.SagaDiscovery
@@ -181,7 +182,7 @@ fun PersonHero(
 ) {
     val colors = Shiori.colors
     Box(Modifier.fillMaxWidth()) {
-        CoverBackdrop(backdropURL, Modifier.fillMaxWidth().height(600.dp), fadeHeight = 240.dp)
+        CoverBackdrop(backdropURL, Modifier.backdropFrame(600.dp), fadeHeight = 240.dp)
         Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(14.dp)) {
             AuthorAvatar(
                 initials,

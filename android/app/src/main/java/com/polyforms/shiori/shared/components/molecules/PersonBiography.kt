@@ -1,15 +1,9 @@
 package com.polyforms.shiori.shared.components.molecules
 
 import androidx.compose.animation.animateContentSize
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.IntrinsicSize
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -19,6 +13,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -31,31 +33,59 @@ import androidx.compose.foundation.layout.Column
 import com.polyforms.shiori.DebugFixtures
 import com.polyforms.shiori.PreviewSurface
 
-/** A person's biography: three lines ending on PLUS, the whole text at a tap. */
+/**
+ * A person's biography: three lines, the last fading out where PLUS sits, the whole text at a tap.
+ * The fade cuts the text itself rather than laying a patch of the page's colour over it, so the
+ * cover's colours run on under PLUS, as on iOS.
+ */
 @Composable
-fun PersonBiography(text: String, modifier: Modifier = Modifier, ground: Color = Shiori.colors.groupedBackground) {
+fun PersonBiography(text: String, modifier: Modifier = Modifier) {
     var isWhole by remember { mutableStateOf(false) }
     var overflows by remember(text) { mutableStateOf(false) }
+    var lastLine by remember(text) { mutableStateOf(0f) }
+    var moreWidth by remember { mutableIntStateOf(0) }
     val colors = Shiori.colors
+    val cut = !isWhole && overflows
     Box(modifier.fillMaxWidth().animateContentSize().plainClickable { isWhole = !isWhole }) {
         Text(
             text,
             style = Shiori.type.callout,
             color = colors.label.copy(alpha = 0.85f),
             maxLines = if (isWhole) Int.MAX_VALUE else 3,
-            onTextLayout = { if (!isWhole) overflows = it.hasVisualOverflow },
-            modifier = Modifier.fillMaxWidth(),
+            onTextLayout = {
+                if (!isWhole) {
+                    overflows = it.hasVisualOverflow
+                    val last = it.lineCount - 1
+                    lastLine = it.getLineBottom(last) - it.getLineTop(last)
+                }
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+                .drawWithContent {
+                    drawContent()
+                    if (cut) {
+                        val fade = 24.dp.toPx()
+                        val hole = moreWidth + 6.dp.toPx()
+                        val top = size.height - lastLine
+                        val start = size.width - hole
+                        drawRect(
+                            Brush.horizontalGradient(listOf(Color.Transparent, Color.Black), startX = start - fade, endX = start),
+                            topLeft = Offset(start - fade, top),
+                            size = Size(fade, lastLine),
+                            blendMode = BlendMode.DstOut,
+                        )
+                        drawRect(Color.Black, Offset(start, top), Size(hole, lastLine), blendMode = BlendMode.DstOut)
+                    }
+                },
         )
-        if (!isWhole && overflows) {
-            Row(Modifier.align(Alignment.BottomEnd).height(IntrinsicSize.Min)) {
-                Box(Modifier.width(24.dp).fillMaxHeight().background(Brush.horizontalGradient(listOf(Color.Transparent, ground))))
-                Text(
-                    L("PLUS"),
-                    style = Shiori.type.callout.copy(fontWeight = FontWeight.Bold),
-                    color = colors.secondaryLabel,
-                    modifier = Modifier.background(ground).padding(start = 6.dp),
-                )
-            }
+        if (cut) {
+            Text(
+                L("PLUS"),
+                style = Shiori.type.callout.copy(fontWeight = FontWeight.Bold),
+                color = colors.secondaryLabel,
+                modifier = Modifier.align(Alignment.BottomEnd).onSizeChanged { moreWidth = it.width },
+            )
         }
     }
 }
