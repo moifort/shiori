@@ -35,14 +35,28 @@ struct SubscriptionWallPage: View {
                 header
                 promise
                 offersView
-                VStack(spacing: 14) {
-                    action
-                    legal
+                if kind == .lapsed {
+                    VStack(spacing: 14) {
+                        action
+                        legal
+                    }
                 }
             }
             .padding()
         }
         .scrollBounceBehavior(.basedOnSize)
+        .safeAreaInset(edge: .bottom) {
+            // The free month ends the onboarding as its other pages do: the
+            // terms, then the button, held at the foot of the screen.
+            if kind == .trial {
+                VStack(spacing: 14) {
+                    legal
+                    action
+                }
+                .padding(.horizontal)
+                .padding(.bottom, 8)
+            }
+        }
     }
 
     @ViewBuilder

@@ -78,86 +78,101 @@ fun SubscriptionWallPage(
     val monthly = offers.firstOrNull { it.id == SubscriptionProducts.MONTHLY }
     val selected = offers.firstOrNull { it.id == chosen } ?: offers.firstOrNull()
     val trial = kind == SubscriptionWallKind.TRIAL
-    Column(
-        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).statusBarsPadding().navigationBarsPadding().padding(16.dp),
-        horizontalAlignment = if (trial) Alignment.Start else Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(24.dp),
-    ) {
-        if (trial) {
-            Box(Modifier.size(88.dp).background(colors.orange, RoundedCornerShape(22.dp)), contentAlignment = Alignment.Center) {
-                Icon(Symbol("books.vertical.fill"), null, Modifier.size(44.dp), tint = Color.White)
-            }
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(L("Votre mois offert"), style = Shiori.type.title.copy(fontWeight = FontWeight.Bold), color = Color.White)
-                Text(L("Shiori s’utilise avec un abonnement. Le premier mois est offert, et rien n’est prélevé si vous résiliez avant sa fin."), style = Shiori.type.subheadline, color = colors.secondaryLabel)
-            }
-            PremiumPromise(Modifier.clip(RoundedCornerShape(12.dp)).background(colors.secondaryGroupedBackground).padding(horizontal = 12.dp))
-        } else {
-            Column(Modifier.padding(top = 12.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Icon(Symbol("sparkles"), null, Modifier.size(44.dp), tint = Color.White)
-                Text(L("Votre essai est terminé"), style = Shiori.type.title2.copy(fontWeight = FontWeight.Bold), color = Color.White, textAlign = TextAlign.Center)
-                Text(L("Vos livres, vos séries et vos notes sont gardés. Abonnez-vous pour retrouver votre bibliothèque."), style = Shiori.type.subheadline, color = colors.secondaryLabel, textAlign = TextAlign.Center)
-            }
-            PremiumPromise()
-        }
-        when {
-            offers.isEmpty() && isLoading -> Box(Modifier.fillMaxWidth().heightIn(min = 80.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
-            offers.isEmpty() -> Text(L("Les offres ne sont pas disponibles pour le moment."), style = Shiori.type.footnote, color = colors.secondaryLabel, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
-            trial -> yearly?.let { offer ->
-                Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(colors.tertiaryGroupedBackground).padding(horizontal = 16.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        Text(offer.trial ?: L("1 mois offert"), style = Shiori.type.headline, color = Color.White)
-                        Text(L("puis %@ par an", offer.displayPrice), style = Shiori.type.caption, color = colors.secondaryLabel)
-                    }
-                    Pill(L("Résiliable à tout moment"))
+    val buyable = if (trial) yearly else selected
+    val buy: @Composable () -> Unit = {
+        ActionButton({ buyable?.let { scope.launch { onBuy(it) } } }, Modifier.fillMaxWidth(), size = ActionSize.LARGE, spansWidth = true, enabled = !isPurchasing && buyable != null) {
+            Box(contentAlignment = Alignment.Center) {
+                Row(Modifier.graphicsLayer { alpha = if (isPurchasing) 0f else 1f }) {
+                    ActionLabel(if (trial) L("Commencer le mois offert") else L("S’abonner"), null, ActionSize.LARGE.side)
                 }
+                if (isPurchasing) CircularProgressIndicator(Modifier.size(20.dp), color = Color.Black, strokeWidth = 2.dp)
             }
-            else -> Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                offers.forEach { offer ->
-                    val isSelected = offer.id == selected?.id
-                    Row(
-                        Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(colors.tertiaryGroupedBackground)
-                            .then(if (isSelected) Modifier.border(2.dp, Color.White, RoundedCornerShape(16.dp)) else Modifier)
-                            .plainClickable { chosen = offer.id }
-                            .padding(horizontal = 16.dp, vertical = 14.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
+        }
+        if (trial) monthly?.let { offer ->
+            Text(
+                L("Ou %@ par mois, sans essai", offer.displayPrice),
+                style = Shiori.type.subheadline,
+                color = Color.White,
+                modifier = Modifier.plainClickable(enabled = !isPurchasing) { scope.launch { onBuy(offer) } },
+            )
+        }
+    }
+    Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
+        Column(
+            Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(16.dp),
+            horizontalAlignment = if (trial) Alignment.Start else Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(24.dp),
+        ) {
+            if (trial) {
+                Box(Modifier.size(88.dp).background(colors.orange, RoundedCornerShape(22.dp)), contentAlignment = Alignment.Center) {
+                    Icon(Symbol("books.vertical.fill"), null, Modifier.size(44.dp), tint = Color.White)
+                }
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(L("Votre mois offert"), style = Shiori.type.title.copy(fontWeight = FontWeight.Bold), color = Color.White)
+                    Text(L("Shiori s’utilise avec un abonnement. Le premier mois est offert, et rien n’est prélevé si vous résiliez avant sa fin."), style = Shiori.type.subheadline, color = colors.secondaryLabel)
+                }
+                PremiumPromise(Modifier.clip(RoundedCornerShape(12.dp)).background(colors.secondaryGroupedBackground).padding(horizontal = 12.dp))
+            } else {
+                Column(Modifier.padding(top = 12.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Icon(Symbol("sparkles"), null, Modifier.size(44.dp), tint = Color.White)
+                    Text(L("Votre essai est terminé"), style = Shiori.type.title2.copy(fontWeight = FontWeight.Bold), color = Color.White, textAlign = TextAlign.Center)
+                    Text(L("Vos livres, vos séries et vos notes sont gardés. Abonnez-vous pour retrouver votre bibliothèque."), style = Shiori.type.subheadline, color = colors.secondaryLabel, textAlign = TextAlign.Center)
+                }
+                PremiumPromise()
+            }
+            when {
+                offers.isEmpty() && isLoading -> Box(Modifier.fillMaxWidth().heightIn(min = 80.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+                offers.isEmpty() -> Text(L("Les offres ne sont pas disponibles pour le moment."), style = Shiori.type.footnote, color = colors.secondaryLabel, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                trial -> yearly?.let { offer ->
+                    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(colors.tertiaryGroupedBackground).padding(horizontal = 16.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Text(offer.name, style = Shiori.type.headline, color = Color.White)
-                                if (offer.id == SubscriptionProducts.YEARLY && savings != null) {
-                                    Pill("-" + NumberFormat.getPercentInstance().apply { maximumFractionDigits = 0 }.format(savings))
+                            Text(offer.trial ?: L("1 mois offert"), style = Shiori.type.headline, color = Color.White)
+                            Text(L("puis %@ par an", offer.displayPrice), style = Shiori.type.caption, color = colors.secondaryLabel)
+                        }
+                        Pill(L("Résiliable à tout moment"))
+                    }
+                }
+                else -> Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    offers.forEach { offer ->
+                        val isSelected = offer.id == selected?.id
+                        Row(
+                            Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(colors.tertiaryGroupedBackground)
+                                .then(if (isSelected) Modifier.border(2.dp, Color.White, RoundedCornerShape(16.dp)) else Modifier)
+                                .plainClickable { chosen = offer.id }
+                                .padding(horizontal = 16.dp, vertical = 14.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Text(offer.name, style = Shiori.type.headline, color = Color.White)
+                                    if (offer.id == SubscriptionProducts.YEARLY && savings != null) {
+                                        Pill("-" + NumberFormat.getPercentInstance().apply { maximumFractionDigits = 0 }.format(savings))
+                                    }
+                                }
+                                if (offer.id == SubscriptionProducts.YEARLY) offer.perMonth?.let {
+                                    Text(L("soit %@ par mois", it), style = Shiori.type.caption, color = colors.secondaryLabel)
                                 }
                             }
-                            if (offer.id == SubscriptionProducts.YEARLY) offer.perMonth?.let {
-                                Text(L("soit %@ par mois", it), style = Shiori.type.caption, color = colors.secondaryLabel)
-                            }
+                            Spacer(Modifier.width(8.dp))
+                            Text(offer.displayPrice, style = Shiori.type.headline, color = Color.White)
                         }
-                        Spacer(Modifier.width(8.dp))
-                        Text(offer.displayPrice, style = Shiori.type.headline, color = Color.White)
                     }
+                }
+            }
+            if (!trial) {
+                Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                    buy()
+                    Legal(isPurchasing, onRestore, onAccount)
                 }
             }
         }
-        Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            val buyable = if (trial) yearly else selected
-            ActionButton({ buyable?.let { scope.launch { onBuy(it) } } }, Modifier.fillMaxWidth(), size = ActionSize.LARGE, spansWidth = true, enabled = !isPurchasing && buyable != null) {
-                Box(contentAlignment = Alignment.Center) {
-                    Row(Modifier.graphicsLayer { alpha = if (isPurchasing) 0f else 1f }) {
-                        ActionLabel(if (trial) L("Commencer le mois offert") else L("S’abonner"), null, ActionSize.LARGE.side)
-                    }
-                    if (isPurchasing) CircularProgressIndicator(Modifier.size(20.dp), color = Color.Black, strokeWidth = 2.dp)
-                }
+        // The free month ends the onboarding as its other pages do: the terms, then the button,
+        // held at the foot of the screen.
+        if (trial) {
+            Column(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 8.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                Legal(isPurchasing, onRestore, onAccount)
+                buy()
             }
-            if (trial) monthly?.let { offer ->
-                Text(
-                    L("Ou %@ par mois, sans essai", offer.displayPrice),
-                    style = Shiori.type.subheadline,
-                    color = Color.White,
-                    modifier = Modifier.plainClickable(enabled = !isPurchasing) { scope.launch { onBuy(offer) } },
-                )
-            }
-            Legal(isPurchasing, onRestore, onAccount)
         }
     }
 }
