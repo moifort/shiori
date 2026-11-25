@@ -45,6 +45,7 @@ import com.polyforms.shiori.features.home.GenreInsights
 import com.polyforms.shiori.shared.BookFormat
 import com.polyforms.shiori.shared.BookGenre
 import com.polyforms.shiori.shared.L
+import com.polyforms.shiori.shared.grouped
 import com.polyforms.shiori.shared.components.molecules.Pill
 import com.polyforms.shiori.shared.components.molecules.WidgetCard
 import com.polyforms.shiori.shared.components.styles.AudibleOrange
@@ -174,7 +175,7 @@ fun GenreSignatureCard(readCount: Int, shares: List<GenreInsights.Share>) {
         }
         ShioriDivider()
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Figure(readCount.toString(), L("livres lus"), Modifier.weight(1f))
+            Figure(readCount.grouped(), L("livres lus"), Modifier.weight(1f))
             ShioriVerticalDivider(Modifier.height(32.dp))
             Figure(L("%lld sur %lld", shares.size, genreCount), L("genres explorés"), Modifier.weight(1f))
         }
@@ -217,7 +218,7 @@ fun FormatsCard(formats: List<GenreInsights.FormatShare>) {
                         share.topGenre?.let { Text(L("Surtout %@", it.label), style = Shiori.type.subheadline, color = colors.secondaryLabel) }
                     }
                     Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        Text("${share.count}", style = Shiori.type.subheadline.copy(fontWeight = FontWeight.SemiBold), color = colors.label)
+                        Text(share.count.grouped(), style = Shiori.type.subheadline.copy(fontWeight = FontWeight.SemiBold), color = colors.label)
                         Text("${(share.count * 100.0 / total).roundToInt()}%", style = Shiori.type.caption, color = colors.secondaryLabel)
                     }
                 }
@@ -273,7 +274,7 @@ fun TasteMap(tastes: List<GenreInsights.Taste>, averageRating: Double, gem: Genr
                 val step = if (countCeiling > 12) 5 else 2
                 var tick = 0
                 while (tick <= countCeiling) {
-                    val layout = measurer.measure("$tick", TextStyle(fontSize = 10.sp, color = axisColor))
+                    val layout = measurer.measure(tick.grouped(), TextStyle(fontSize = 10.sp, color = axisColor))
                     drawText(layout, topLeft = Offset(x(tick.toDouble()) - layout.size.width / 2, plot.height + 3.dp.toPx()))
                     tick += step
                 }

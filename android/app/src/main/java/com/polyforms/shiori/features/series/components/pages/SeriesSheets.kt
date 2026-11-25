@@ -33,6 +33,7 @@ import com.polyforms.shiori.features.series.SeriesCorrection
 import com.polyforms.shiori.shared.BookFormat
 import com.polyforms.shiori.shared.FollowedSeries
 import com.polyforms.shiori.shared.L
+import com.polyforms.shiori.shared.grouped
 import com.polyforms.shiori.shared.components.atoms.AsyncToolbarButton
 import com.polyforms.shiori.shared.components.atoms.LanguageTag
 import com.polyforms.shiori.shared.components.atoms.SagaName
@@ -195,7 +196,7 @@ fun MergeSeriesSheet(
                                     candidate.author?.let { Text(it, style = Shiori.type.subheadline, color = colors.secondaryLabel) }
                                 }
                                 candidate.language?.takeIf { it.isForeign }?.let { LanguageTag(it) }
-                                Text("${candidate.ownedCount}", style = Shiori.type.subheadline, color = colors.secondaryLabel)
+                                Text(candidate.ownedCount.grouped(), style = Shiori.type.subheadline, color = colors.secondaryLabel)
                             }
                         }
                     }

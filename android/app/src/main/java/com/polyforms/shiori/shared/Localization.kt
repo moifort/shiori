@@ -62,10 +62,14 @@ object Strings {
         return ((forms[category] ?: forms["other"]) as? JsonPrimitive)?.content ?: ""
     }
 
-    /** Swift's specifiers in Java's words: `%lld` → `%d`, `%@` → `%s`, positions kept. */
+    /**
+     * Swift's specifiers in Java's words: `%lld` → `%,d`, `%@` → `%s`, positions kept. The
+     * comma groups thousands as `String(localized:)` does on iOS (« 1 424 », "1,424"); a year
+     * is passed as a string (`%@`), never as a number.
+     */
     private fun apply(pattern: String, args: Array<out Any?>): String {
         val java = pattern
-            .replace(Regex("%(\\d+\\$)?ll?d")) { "%${it.groupValues[1]}d" }
+            .replace(Regex("%(\\d+\\$)?ll?d")) { "%${it.groupValues[1]},d" }
             .replace(Regex("%(\\d+\\$)?@")) { "%${it.groupValues[1]}s" }
         val values = args.map { if (it is Int) it.toLong() else it }.toTypedArray()
         return try {
@@ -80,6 +84,9 @@ object Strings {
 
 /** `String(localized:)`: the copy for a French key, with Swift-style arguments. */
 fun L(key: String, vararg args: Any?): String = Strings.format(key, args)
+
+/** A count as the phone's locale writes it, thousands grouped: « 1 424 », "1,424" — `Int.formatted()`. */
+fun Number.grouped(): String = java.text.NumberFormat.getIntegerInstance(Locale.getDefault()).format(this)
 
 /** The copy for a key that carries Markdown emphasis (`**…**`), drawn bold. */
 fun LMarkdown(key: String, vararg args: Any?): AnnotatedString = markdown(Strings.format(key, args))

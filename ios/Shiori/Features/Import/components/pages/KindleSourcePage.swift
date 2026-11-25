@@ -97,8 +97,8 @@ struct KindleSourcePage: View {
     private var librarySection: some View {
         Section {
             if let totalCount, let catalogedCount {
-                LabeledContent("Livres sur Kindle", value: "\(totalCount)")
-                LabeledContent("Déjà dans votre bibliothèque", value: "\(catalogedCount)")
+                LabeledContent("Livres sur Kindle", value: totalCount.formatted())
+                LabeledContent("Déjà dans votre bibliothèque", value: catalogedCount.formatted())
             } else {
                 HStack {
                     Text("Lecture de votre bibliothèque Kindle...")

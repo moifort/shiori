@@ -54,6 +54,7 @@ import com.polyforms.shiori.features.home.components.organisms.PreparationLine
 import com.polyforms.shiori.features.home.components.organisms.PreparationState
 import com.polyforms.shiori.shared.Book
 import com.polyforms.shiori.shared.L
+import com.polyforms.shiori.shared.grouped
 import com.polyforms.shiori.shared.ReadingStatus
 import com.polyforms.shiori.shared.book.PosterCover
 import com.polyforms.shiori.shared.components.molecules.EmptyState
@@ -466,12 +467,12 @@ fun GoodreadsDonePage(outcome: GoodreadsImportOutcome, preview: GoodreadsPreview
             }
             Column(Modifier.padding(top = 30.dp, bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(30.dp)) {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    SectionTitle(L("Ajoutés"), "${outcome.imported}")
+                    SectionTitle(L("Ajoutés"), outcome.imported.grouped())
                     Rail(added) { PosterCover(it.cover, it.caption(choices.toRead)) }
                 }
                 if (outcome.completed > 0) {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        SectionTitle(L("Déjà chez vous"), "${outcome.completed}")
+                        SectionTitle(L("Déjà chez vous"), outcome.completed.grouped())
                         Rail(preview.heldRows) { PosterCover(it.heldCover ?: it.cover, L("Complété")) }
                     }
                 }
@@ -491,9 +492,9 @@ fun GoodreadsSourcePage(summary: GoodreadsImportSummary?, isLoading: Boolean, on
         if (summary != null) {
             FormSection(L("Dernier import")) {
                 InfoRow(L("Importé le"), summary.importedAt?.atZone(ZoneId.systemDefault())?.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)) ?: "—")
-                InfoRow(L("Livres importés"), "${summary.imported}")
-                InfoRow(L("Déjà chez vous, complétés"), "${summary.completed}", divider = summary.withoutCover > 0)
-                if (summary.withoutCover > 0) InfoRow(L("Sans couverture"), "${summary.withoutCover}", divider = false)
+                InfoRow(L("Livres importés"), summary.imported.grouped())
+                InfoRow(L("Déjà chez vous, complétés"), summary.completed.grouped(), divider = summary.withoutCover > 0)
+                if (summary.withoutCover > 0) InfoRow(L("Sans couverture"), summary.withoutCover.grouped(), divider = false)
             }
             FormSection(footer = L("Un export plus récent ajoute vos nouveaux livres et met à jour statuts, notes et dates, sans créer de doublon.")) {
                 FormRow(divider = false, onClick = onImport) { Text(L("Importer un nouvel export"), style = Shiori.type.body, color = colors.accent) }

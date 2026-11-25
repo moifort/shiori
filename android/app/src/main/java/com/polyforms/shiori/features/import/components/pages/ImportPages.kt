@@ -38,6 +38,7 @@ import com.polyforms.shiori.features.import.ImportSource
 import com.polyforms.shiori.features.import.SyncOutcome
 import com.polyforms.shiori.shared.DateText
 import com.polyforms.shiori.shared.L
+import com.polyforms.shiori.shared.grouped
 import com.polyforms.shiori.shared.ReadingStatus
 import com.polyforms.shiori.shared.components.atoms.AsyncActionButton
 import com.polyforms.shiori.shared.components.molecules.EmptyState
@@ -154,8 +155,8 @@ fun ImportSourcePage(
             footer = if (!audible && totalCount == 0) L("Aucun livre Kindle sur ce compte. Vérifiez la boutique : une bibliothèque française ne s'ouvre pas depuis amazon.com.") else null,
         ) {
             if (totalCount != null && catalogedCount != null) {
-                Value(if (audible) L("Livres audio sur Audible") else L("Livres sur Kindle"), "$totalCount")
-                Value(L("Déjà dans votre bibliothèque"), "$catalogedCount")
+                Value(if (audible) L("Livres audio sur Audible") else L("Livres sur Kindle"), totalCount.grouped())
+                Value(L("Déjà dans votre bibliothèque"), catalogedCount.grouped())
             } else {
                 FormRow {
                     Text(if (audible) L("Lecture de votre bibliothèque Audible...") else L("Lecture de votre bibliothèque Kindle..."), style = Shiori.type.body, color = colors.secondaryLabel, modifier = Modifier.weight(1f))
