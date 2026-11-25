@@ -1,5 +1,6 @@
 package com.polyforms.shiori
 
+import com.polyforms.shiori.shared.components.molecules.GeneratingPillHost
 import com.polyforms.shiori.shared.components.styles.backdropSource
 import com.polyforms.shiori.shared.platform.ScreenBar
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -201,6 +202,9 @@ fun DebugPreviews(name: String) {
                 com.polyforms.shiori.shared.platform.NavigationStack(navigator) {}
             }
             "components" -> com.polyforms.shiori.shared.components.styles.ShioriTheme(dark = true) { ComponentsPreview() }
+            "home-searching" -> androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color.Black)) { com.polyforms.shiori.features.home.components.organisms.HomeSearchingHero("2026-11", 214, null) }
+            "generating-pill" -> com.polyforms.shiori.shared.components.molecules.GeneratingPillStages()
+            "generating-pill-page" -> androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color.Black)) { GeneratingPillHost(true) }
             "kindle" -> com.polyforms.shiori.features.import.components.pages.ImportConnectPage(com.polyforms.shiori.features.import.ImportSource.KINDLE, com.polyforms.shiori.features.import.AmazonMarketplace.FR, {}, false) {}
             "kindle-library" -> com.polyforms.shiori.features.import.components.pages.ImportLibraryPage(
                 com.polyforms.shiori.features.import.ImportSource.KINDLE, com.polyforms.shiori.features.import.ImportFixtures.kindleBooks,

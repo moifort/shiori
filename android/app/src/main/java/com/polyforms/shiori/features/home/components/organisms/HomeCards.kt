@@ -36,7 +36,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -239,32 +240,44 @@ fun HomeEmptyHero(onScan: () -> Unit) {
 fun HomeSearchingHero(month: String, bookCount: Int, backdropCover: String?) {
     // Drawn dark in either appearance, as iOS forces `.colorScheme(.dark)` on it.
     ShioriTheme(dark = true) {
-    var angle by remember { mutableFloatStateOf(0f) }
-    LaunchedEffect(Unit) {
-        val start = withFrameMillis { it }
-        while (true) withFrameMillis { angle = ((it - start) / 1000f * 240f) % 360f }
-    }
+    // Turns 240° a second, read only while drawing; still with animations off.
+    val clock = com.polyforms.shiori.shared.components.styles.rememberEffectClock()
+    val density = androidx.compose.ui.platform.LocalDensity.current
     Box(Modifier.fillMaxWidth()) {
         Box(Modifier.matchParentSize()) {
             CoverBackdrop(backdropCover, Modifier.risingAbove(180.dp), fadeHeight = 240.dp)
         }
         Column(Modifier.fillMaxWidth().padding(start = 28.dp, end = 28.dp, bottom = 44.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Box(Modifier.padding(top = 26.dp).size(140.dp, 206.dp), contentAlignment = Alignment.Center) {
-                val colors = listOf(
-                    Color.Transparent,
-                    Color(0.6f, 0.42f, 1f).copy(alpha = 0.5f),
-                    Color(0.32f, 0.68f, 1f),
-                    Color(1f, 0.42f, 0.68f),
-                    Color(1f, 0.62f, 0.3f),
+                // iOS's stops, on the arc trimmed from 0.08 to 0.78 of the turn: a tail from nothing.
+                val stops = arrayOf(
+                    0.08f to Color(0.6f, 0.42f, 1f).copy(alpha = 0f),
+                    0.25f to Color(0.6f, 0.42f, 1f).copy(alpha = 0.5f),
+                    0.45f to Color(0.32f, 0.68f, 1f),
+                    0.62f to Color(1f, 0.42f, 0.68f),
+                    0.78f to Color(1f, 0.62f, 0.3f),
                 )
+                // Each arc's canvas leaves room past the 64-point ring for its stroke and its blur.
+                val room = 40.dp
                 listOf(Triple(14.dp, 12.dp, 0.85f), Triple(6.dp, 4.dp, 0.9f), Triple(2.5.dp, 0.dp, 1f)).forEach { (width, blur, alpha) ->
-                    Canvas(Modifier.size(64.dp).rotate(angle).blur(blur)) {
+                    Canvas(
+                        Modifier.requiredSize(64.dp + room * 2).graphicsLayer {
+                            rotationZ = (clock.value * 240f) % 360f
+                            this.alpha = alpha
+                            if (blur > 0.dp && com.polyforms.shiori.shared.components.styles.AIGlow.canBlur) {
+                                val r = com.polyforms.shiori.shared.components.styles.AIGlow.blurRadius(blur, density)
+                                renderEffect = androidx.compose.ui.graphics.BlurEffect(r, r, androidx.compose.ui.graphics.TileMode.Decal)
+                            }
+                        },
+                    ) {
+                        val inset = room.toPx()
                         drawArc(
-                            Brush.sweepGradient(colors),
+                            Brush.sweepGradient(*stops, center = center),
                             startAngle = 0.08f * 360f,
                             sweepAngle = 0.7f * 360f,
                             useCenter = false,
-                            alpha = alpha,
+                            topLeft = androidx.compose.ui.geometry.Offset(inset, inset),
+                            size = androidx.compose.ui.geometry.Size(size.width - 2 * inset, size.height - 2 * inset),
                             style = Stroke(width.toPx(), cap = StrokeCap.Round),
                         )
                     }
