@@ -67,7 +67,7 @@ fun FriendsScreen(friendRequest: String?, welcomedFriend: String?, client: Frien
     Box(Modifier.fillMaxSize()) {
         FriendsPage(
             friends = viewModel.friends,
-            selected = viewModel.selected,
+            selected = viewModel.picked,
             shelf = viewModel.shelf,
             soleFriend = viewModel.soleFriend,
             myShelf = viewModel.myShelf,

@@ -17,7 +17,8 @@ import kotlinx.serialization.builtins.ListSerializer
 /**
  * Owns the Amis tab: the friends, the ones the reader picked, and the rails drawn from their
  * shelves. Picking nobody shows every friend; each friend tapped narrows the page to the friends
- * picked, and tapping them again widens it back.
+ * picked, and tapping them again widens it back. A reader with a single friend has no "every
+ * friend": that friend is the pick, and the page is theirs.
  *
  * The tab opens on what it last showed for the same pick: one snapshot per pick, read before a
  * byte is asked of the network, brought up to date silently underneath.
@@ -62,8 +63,11 @@ class FriendsViewModel(private val client: FriendsClient, private val scope: Cor
     val hasNoFriend: Boolean get() = loaded && friends.isEmpty()
     val isEmpty: Boolean get() = friends.isEmpty() && shelf.isEmpty
 
-    /** The one friend picked, whose library and series the rows open. */
-    val soleFriend: Friend? get() = selected.singleOrNull()?.let { id -> friends.firstOrNull { it.userId == id } }
+    /** The friends the page shows: the ones picked, or the only friend, who stands picked. */
+    val picked: List<String> get() = FriendsPick.shown(friends.map { it.userId }, selected)
+
+    /** The one friend shown, whose library and series the rows open. */
+    val soleFriend: Friend? get() = picked.singleOrNull()?.let { id -> friends.firstOrNull { it.userId == id } }
 
     suspend fun loadOnAppear() {
         if (loaded || isLoading) return
@@ -84,8 +88,7 @@ class FriendsViewModel(private val client: FriendsClient, private val scope: Cor
             }
             if (current != generation) return
             friends = newFriends
-            // A friend gone since drops out of the pick.
-            selected = selected.filter { id -> newFriends.any { it.userId == id } }
+            selected = FriendsPick.kept(newFriends.map { it.userId }, selected)
             shelf = newShelf
             loaded = true
             loadFailed = null
@@ -102,6 +105,8 @@ class FriendsViewModel(private val client: FriendsClient, private val scope: Cor
 
     /** A friend's avatar tapped: picked, or let go when already picked. The pick's last rails show at once. */
     suspend fun toggle(friendId: String) {
+        // The only friend cannot be let go: there is nobody else to show.
+        if (friends.size < 2) return
         selected = if (friendId in selected) selected - friendId else selected + friendId
         shelfCache(selected)?.read()?.let { shelf = it }
         load()
@@ -133,7 +138,7 @@ class FriendsViewModel(private val client: FriendsClient, private val scope: Cor
         try {
             client.remove(friendId)
             friends = friends.filter { it.userId != friendId }
-            selected = selected - friendId
+            selected = FriendsPick.kept(friends.map { it.userId }, selected)
             DataChanges.post(null)
         } catch (error: Throwable) {
             if (!isCancellation(error)) errorMessage = reportError(error)
@@ -162,4 +167,18 @@ class FriendsViewModel(private val client: FriendsClient, private val scope: Cor
             shelfCache?.write(shelf)
         }
     }
+}
+
+/** Who the Amis tab shows, as a rule apart from the screen. */
+object FriendsPick {
+    /** The friends picked, or the only friend, who stands picked since there is nobody to narrow them from. */
+    fun shown(friendIds: List<String>, selected: List<String>): List<String> =
+        if (friendIds.size == 1) friendIds else selected
+
+    /**
+     * The pick once the friends change: a friend gone drops out of it, and an only friend is
+     * picked without being chosen, so a second one arriving later finds the page on everyone.
+     */
+    fun kept(friendIds: List<String>, selected: List<String>): List<String> =
+        if (friendIds.size < 2) emptyList() else selected.filter { it in friendIds }
 }

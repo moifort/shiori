@@ -4,7 +4,8 @@ import SwiftUI
 /// Owns the Amis tab: the friends, the ones the reader picked, and the rails
 /// drawn from their shelves. Picking nobody shows every friend; each friend
 /// tapped narrows the page to the friends picked, and tapping them again
-/// widens it back.
+/// widens it back. A reader with a single friend has no "every friend":
+/// that friend is the pick, and the page is theirs.
 ///
 /// The tab opens on what it last showed for the same pick: one snapshot per
 /// pick, read before a byte is asked of the network, brought up to date
@@ -51,10 +52,16 @@ final class FriendsViewModel {
     var hasNoFriend: Bool { loaded && friends.isEmpty }
     var isEmpty: Bool { friends.isEmpty && shelf.isEmpty }
 
-    /// The one friend picked, whose library and series the rows open.
+    /// The friends the page shows: the ones picked, or the only friend, who
+    /// stands picked since there is nobody to narrow them from.
+    var picked: [String] {
+        friends.count == 1 ? [friends[0].userId] : selected
+    }
+
+    /// The one friend shown, whose library and series the rows open.
     var soleFriend: Friend? {
-        guard selected.count == 1 else { return nil }
-        return friends.first { $0.userId == selected[0] }
+        guard picked.count == 1 else { return nil }
+        return friends.first { $0.userId == picked[0] }
     }
 
     func loadOnAppear() async {
@@ -77,8 +84,12 @@ final class FriendsViewModel {
             guard current == generation else { return }
             withAnimation(isEmpty ? nil : .smooth) {
                 friends = newFriends
-                // A friend gone since drops out of the pick.
-                selected = selected.filter { id in newFriends.contains { $0.userId == id } }
+                // A friend gone since drops out of the pick, and an only
+                // friend is picked without being chosen: a second one arriving
+                // later finds the page on everyone.
+                selected = newFriends.count < 2
+                    ? []
+                    : selected.filter { id in newFriends.contains { $0.userId == id } }
                 shelf = newShelf
             }
             loaded = true
@@ -95,6 +106,8 @@ final class FriendsViewModel {
     /// A friend's avatar tapped: picked, or let go when already picked. The
     /// page shows that pick's last rails at once, then asks for them.
     func toggle(_ friendId: String) async {
+        // The only friend cannot be let go: there is nobody else to show.
+        guard friends.count > 1 else { return }
         if selected.contains(friendId) {
             selected.removeAll { $0 == friendId }
         } else {
@@ -136,6 +149,7 @@ final class FriendsViewModel {
             withAnimation(.smooth) {
                 friends.removeAll { $0.userId == friendId }
                 selected.removeAll { $0 == friendId }
+                if friends.count < 2 { selected = [] }
             }
             NotificationCenter.default.post(name: .shioriDataDidChange, object: nil)
         } catch {

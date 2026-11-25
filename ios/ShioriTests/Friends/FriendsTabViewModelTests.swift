@@ -135,4 +135,75 @@ struct FriendsTabViewModelTests {
         #expect(viewModel.friends.contains { $0.userId == "camille" })
         #expect(viewModel.errorMessage != nil)
     }
+
+    @Test func anOnlyFriendIsPickedAndOpensTheirLibrary() async {
+        var client = FriendsClient.preview
+        client.friends = { [Friend.previews[0]] }
+        let viewModel = FriendsViewModel(client: client, caching: false)
+
+        await viewModel.load()
+
+        #expect(viewModel.picked == [Friend.previews[0].userId])
+        #expect(viewModel.soleFriend?.userId == Friend.previews[0].userId)
+    }
+
+    @Test func anOnlyFriendCannotBeLetGo() async {
+        var client = FriendsClient.preview
+        client.friends = { [Friend.previews[0]] }
+        let viewModel = FriendsViewModel(client: client, caching: false)
+        await viewModel.load()
+
+        await viewModel.toggle(Friend.previews[0].userId)
+
+        #expect(viewModel.selected.isEmpty)
+        #expect(viewModel.soleFriend?.userId == Friend.previews[0].userId)
+    }
+
+    @Test func removingTheSecondToLastFriendLeavesTheOtherPicked() async {
+        let viewModel = FriendsViewModel(client: .preview, caching: false)
+        await viewModel.load()
+        let others = Friend.previews.dropFirst().map(\.userId)
+        await viewModel.toggle(others[0])
+
+        for id in others { await viewModel.remove(id) }
+
+        #expect(viewModel.selected.isEmpty)
+        #expect(viewModel.soleFriend?.userId == Friend.previews[0].userId)
+    }
+
+    @Test func aSecondFriendArrivingShowsEveryoneAgain() async {
+        let friendsNow = Box([Friend.previews[0]])
+        var client = FriendsClient.preview
+        client.friends = { friendsNow.value }
+        let viewModel = FriendsViewModel(client: client, caching: false)
+        await viewModel.load()
+        await viewModel.show(only: Friend.previews[0].userId)
+
+        friendsNow.value = Array(Friend.previews.prefix(2))
+        await viewModel.load()
+
+        #expect(viewModel.picked.isEmpty)
+        #expect(viewModel.soleFriend == nil)
+    }
+
+    @Test func removingTheOnlyFriendLeavesTheInvitation() async {
+        let friendsNow = Box([Friend.previews[0]])
+        var client = FriendsClient.preview
+        client.friends = { friendsNow.value }
+        client.remove = { _ in friendsNow.value = [] }
+        let viewModel = FriendsViewModel(client: client, caching: false)
+        await viewModel.load()
+
+        await viewModel.remove(Friend.previews[0].userId)
+
+        #expect(viewModel.hasNoFriend)
+        #expect(viewModel.picked.isEmpty)
+        #expect(viewModel.soleFriend == nil)
+    }
+}
+
+/// A value the test changes under a client closure.
+private final class Box<Value>: @unchecked Sendable {
+    var value: Value
+    init(_ value: Value) { self.value = value }
 }

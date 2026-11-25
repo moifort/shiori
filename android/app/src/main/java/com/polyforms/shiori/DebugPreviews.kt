@@ -146,6 +146,7 @@ fun DebugPreviews(name: String) {
             }
             "friends" -> FriendsPreview(emptyList())
             "friends-one" -> FriendsPreview(listOf("sophie"))
+            "friends-only" -> FriendsPreview(listOf("sophie"), onlyPicked = true)
             "friends-none" -> androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize()) {
                 com.polyforms.shiori.features.friends.components.pages.FriendsPage(
                     emptyList(), emptyList(), com.polyforms.shiori.features.friends.FriendsShelf(), null, DebugFixtures.myShelf,
@@ -458,10 +459,11 @@ private fun TabBarPreview() {
 private fun DebugPreviewGround(content: @Composable () -> Unit) =
     androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize().background(com.polyforms.shiori.shared.components.styles.Shiori.colors.groupedBackground)) { content() }
 
-/** The Amis tab drawn from its fixtures, nobody or some friends picked. */
+/** The Amis tab drawn from its fixtures, nobody or some friends picked, or a single friend. */
 @Composable
-private fun FriendsPreview(selected: List<String>, welcomed: String? = null) {
-    val friends = com.polyforms.shiori.features.friends.FriendsFixtures.friends
+private fun FriendsPreview(selected: List<String>, welcomed: String? = null, onlyPicked: Boolean = false) {
+    // `onlyPicked`: the reader has that one friend alone, who stands picked.
+    val friends = com.polyforms.shiori.features.friends.FriendsFixtures.friends.filter { !onlyPicked || it.userId in selected }
     androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize()) {
         com.polyforms.shiori.features.friends.components.pages.FriendsPage(
             friends, selected, com.polyforms.shiori.features.friends.FriendsFixtures.shelf.narrowed(selected),

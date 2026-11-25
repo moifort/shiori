@@ -15,7 +15,8 @@ enum FriendsAction {
 
 /// The Amis tab, as the Library tab lays itself out: the friends' avatars at
 /// the top, which narrow the whole page — nobody picked shows every friend,
-/// each one tapped narrows it to the friends picked — then, for one friend,
+/// each one tapped narrows it to the friends picked, and an only friend
+/// stands picked — then, for one friend,
 /// the rows of their books and series, and the rails: what they are reading,
 /// what they hearted, what they finished, what waits on their pile. A rail
 /// with nothing in it is not drawn. With more than one friend shown, each
@@ -160,6 +161,17 @@ struct FriendsPage: View {
     NavigationStack {
         FriendsPage(
             friends: Friend.previews, selected: ["camille"], shelf: FriendsShelf.preview.narrowed(to: ["camille"]),
+            soleFriend: Friend.previews[0], myShelf: nil,
+            hasNoFriend: false, isWaiting: false, loadFailed: nil, isInviting: false
+        ) { _ in }
+    }
+}
+
+#Preview("Only friend") {
+    NavigationStack {
+        FriendsPage(
+            friends: [Friend.previews[0]], selected: [Friend.previews[0].userId],
+            shelf: FriendsShelf.preview.narrowed(to: [Friend.previews[0].userId]),
             soleFriend: Friend.previews[0], myShelf: nil,
             hasNoFriend: false, isWaiting: false, loadFailed: nil, isInviting: false
         ) { _ in }

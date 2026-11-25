@@ -33,7 +33,7 @@ struct FriendsScreen: View {
         DetailSplit(item: $openedBook) {
             FriendsPage(
                 friends: viewModel.friends,
-                selected: viewModel.selected,
+                selected: viewModel.picked,
                 shelf: viewModel.shelf,
                 soleFriend: viewModel.soleFriend,
                 myShelf: viewModel.myShelf,
