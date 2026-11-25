@@ -70,7 +70,6 @@ import com.polyforms.shiori.shared.platform.MenuEntries
 import com.polyforms.shiori.shared.platform.MenuEntry
 import kotlinx.coroutines.launch
 import java.time.Instant
-import java.time.LocalDate
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 import java.util.Locale
@@ -245,7 +244,7 @@ private fun friendState(book: Book, name: String, now: Instant = Instant.now()):
             val text = if (started == null) {
                 if (heard) L("%@ l'écoute en ce moment", name) else L("%@ le lit en ce moment", name)
             } else {
-                val days = ChronoUnit.DAYS.between(started.atZone(zone).toLocalDate(), LocalDate.ofInstant(now, zone))
+                val days = ChronoUnit.DAYS.between(started.atZone(zone).toLocalDate(), now.atZone(zone).toLocalDate())
                 when {
                     days <= 0 -> L("%@ l'a commencé aujourd'hui", name)
                     days == 1L -> if (heard) L("%@ l'écoute depuis hier", name) else L("%@ le lit depuis hier", name)

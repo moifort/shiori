@@ -1,6 +1,6 @@
 package com.polyforms.shiori.features.subscription.components.pages
 
-import android.app.Activity
+import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -30,7 +30,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -138,7 +137,7 @@ object SubscriptionLinks {
 @Composable
 fun PremiumSheet(trigger: PremiumTrigger, onDismiss: () -> Unit) {
     val store = LocalSubscriptionStore.current
-    val activity = LocalContext.current as? Activity
+    val activity = LocalActivity.current
     val uri = LocalUriHandler.current
     val scope = rememberCoroutineScope()
     LaunchedEffect(Unit) {

@@ -1,6 +1,6 @@
 package com.polyforms.shiori.features.subscription
 
-import android.app.Activity
+import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -10,7 +10,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import com.polyforms.shiori.features.settings.ProfileSettingsScreen
 import com.polyforms.shiori.features.subscription.components.pages.PremiumOffer
 import com.polyforms.shiori.features.subscription.components.pages.SubscriptionWallKind
@@ -31,7 +30,7 @@ import com.polyforms.shiori.shared.track
 @Composable
 fun SubscriptionWallScreen() {
     val store = LocalSubscriptionStore.current
-    val activity = LocalContext.current as? Activity
+    val activity = LocalActivity.current
     var showsAccount by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { track(AnalyticsEvent.PaywallShown("wall")) }
     val offers = SubscriptionProducts.all.mapNotNull { id -> store.products.firstOrNull { it.productId == id }?.let(PremiumOffer::of) }

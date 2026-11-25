@@ -1,6 +1,12 @@
+// This file is the app's Media3 integration: a forwarding player for the session and Widevine
+// DRM, both marked unstable by Media3, so the whole file opts in.
+@file:OptIn(UnstableApi::class)
+
 package com.polyforms.shiori.features.listening
 
 import android.content.ComponentName
+import androidx.annotation.OptIn
+import androidx.media3.common.util.UnstableApi
 import android.content.Context
 import android.hardware.Sensor
 import android.hardware.SensorEvent
@@ -700,7 +706,7 @@ class AudiblePlayer(
         /** How hard the phone is moved, in g, to count as a shake. */
         private const val SHAKE_FORCE = 2.7f
 
-        private fun isConnectivityLoss(error: Throwable): Boolean {
+            private fun isConnectivityLoss(error: Throwable): Boolean {
             var current: Throwable? = error
             while (current != null) {
                 if (current is IOException && current !is androidx.media3.exoplayer.drm.MediaDrmCallbackException) return true

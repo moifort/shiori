@@ -79,6 +79,15 @@ android {
         targetCompatibility = JavaVersion.VERSION_21
     }
 
+    // Android Lint runs before every commit and in CI; an error fails the build. No baseline:
+    // an error is fixed at its cause, and a check wrong for this app is disabled alone, with why.
+    lint {
+        // Compose does not recompose on Locale.getDefault(), but the activity declares no
+        // configChanges, so a system or per-app language change recreates it and every screen
+        // reads the new locale; the app's formatters (DateText, L) read the default throughout.
+        disable += "NonObservableLocale"
+    }
+
     testOptions {
         unitTests.isReturnDefaultValues = true
     }
