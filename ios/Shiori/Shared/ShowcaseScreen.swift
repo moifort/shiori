@@ -12,7 +12,7 @@ struct ShowcaseScreen: View {
     static let names: Set<String> = [
         "goodreads", "goodreads-explain", "goodreads-reading", "goodreads-books",
         "goodreads-done", "goodreads-source", "subscription-trial", "subscription-lapsed",
-        "premium",
+        "premium", "libraries", "libraries-all",
     ]
 
     @State private var choices = GoodreadsChoices(preview: .preview)
@@ -41,6 +41,15 @@ struct ShowcaseScreen: View {
             PremiumSheet(trigger: .discover)
                 .environment(SubscriptionStore())
                 .environment(\.colorScheme, .dark)
+        case "libraries", "libraries-all":
+            LibrariesOfferPage(
+                connectsAudible: .constant(name == "libraries-all"),
+                connectsKindle: .constant(name == "libraries-all"),
+                importsGoodreads: .constant(name == "libraries-all"),
+                marketplace: .constant(.fr),
+                onConnect: {},
+                onSkip: {}
+            )
         case "goodreads-done":
             NavigationStack {
                 GoodreadsDonePage(
