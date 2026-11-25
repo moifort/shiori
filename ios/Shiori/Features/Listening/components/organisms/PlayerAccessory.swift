@@ -25,15 +25,23 @@ struct PlayerAccessory: View {
 
     @Environment(\.tabViewBottomAccessoryPlacement) private var placement
 
+    /// The glass left between the cover and the capsule's edge.
+    static let artworkInset: CGFloat = 5
+
     private var isInline: Bool { placement == .inline }
 
     var body: some View {
         HStack(spacing: isInline ? 4 : 8) {
             Button(action: onOpen) {
                 HStack(spacing: isInline ? 8 : 10) {
-                    // Close to the capsule's edge, round as its end is.
+                    // Round as the capsule's end is, with a thin ring of glass around it.
                     GeometryReader { proxy in
-                        PlayerArtwork(url: item.coverURL, size: proxy.size.height, isRound: true)
+                        PlayerArtwork(
+                            url: item.coverURL,
+                            size: max(proxy.size.height - 2 * Self.artworkInset, 0),
+                            isRound: true
+                        )
+                        .frame(width: proxy.size.width, height: proxy.size.height)
                     }
                     .aspectRatio(1, contentMode: .fit)
                     VStack(alignment: .leading, spacing: isInline ? 0 : 1) {

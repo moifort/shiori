@@ -63,6 +63,9 @@ data class PlayerAccessoryItem(
 /** The accessory's height: the pill over the tab bar, and between its two round buttons. */
 val PlayerAccessoryHeight = 56.dp
 
+/** The glass left between the cover and the capsule's edge. */
+val PlayerArtworkInset = 5.dp
+
 /**
  * The title playing, over the tab bar on every page: its cover, its title and, with room, the
  * chapter and the time left, pause and −30 s. When the bar folds away on a scroll, it slides
@@ -89,7 +92,7 @@ fun PlayerAccessory(
                 .shadow(12.dp, CircleShape, ambientColor = colors.label.copy(alpha = 0.2f), spotColor = colors.label.copy(alpha = 0.2f))
                 .clip(CircleShape)
                 .glass(CircleShape)
-                .padding(start = 4.dp, end = if (isInline) 4.dp else 8.dp),
+                .padding(start = PlayerArtworkInset, end = if (isInline) 4.dp else 8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(if (isInline) 4.dp else 8.dp),
         ) {
@@ -102,8 +105,8 @@ fun PlayerAccessory(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(if (isInline) 8.dp else 10.dp),
             ) {
-                // Close to the capsule's edge, round as its end is.
-                PlayerArtwork(item.coverURL, PlayerAccessoryHeight - 8.dp, isRound = true)
+                // Round as the capsule's end is, with a thin ring of glass around it.
+                PlayerArtwork(item.coverURL, PlayerAccessoryHeight - PlayerArtworkInset * 2, isRound = true)
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(if (isInline) 0.dp else 1.dp)) {
                     Text(
                         item.title,

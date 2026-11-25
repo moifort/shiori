@@ -49,6 +49,7 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.polyforms.shiori.features.listening.components.organisms.PlayerArtwork
+import com.polyforms.shiori.features.listening.components.organisms.PlayerArtworkInset
 import com.polyforms.shiori.shared.components.styles.Motion
 import com.polyforms.shiori.features.listening.components.pages.LocalPlayerArtworkFrame
 import kotlinx.coroutines.launch
@@ -77,7 +78,7 @@ internal data class PlayerSheetGeometry(
      */
     val pullToPill: Float get() = max(0f, pill.top - (if (artwork.isEmpty) top else artwork.top))
 
-    /** The pill's round cover, at its leading end. */
+    /** The pill's round cover, at its leading end, before its ring of glass. */
     val pillCover: Rect get() = Rect(pill.left, pill.top, pill.left + pill.height, pill.bottom)
 }
 
@@ -226,7 +227,7 @@ fun PlayerSheet(
         // pill's round cover, rounding on the way.
         if (!geometry.artwork.isEmpty && m > 0f) {
             val start = geometry.artwork.translate(0f, pull.value)
-            val rect = lerp(start, geometry.pillCover, m)
+            val rect = lerp(start, geometry.pillCover.deflate(with(density) { PlayerArtworkInset.toPx() }), m)
             val side = with(density) { start.width.toDp() }
             val scale = rect.width / start.width
             PlayerArtwork(

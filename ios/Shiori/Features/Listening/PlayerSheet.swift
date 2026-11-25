@@ -134,8 +134,11 @@ struct PlayerSheetGeometry {
     /// The pull that brings the big cover down level with the pill, from
     /// where it draws itself into it; the sheet's top when it is not measured.
     var pullToPill: CGFloat { max(0, pill.minY - (artwork.isEmpty ? top : artwork.minY)) }
-    /// The pill's round cover, at its leading end.
-    var pillCover: CGRect { CGRect(x: pill.minX, y: pill.minY, width: pill.height, height: pill.height) }
+    /// The pill's round cover, at its leading end, inside its ring of glass.
+    var pillCover: CGRect {
+        CGRect(x: pill.minX, y: pill.minY, width: pill.height, height: pill.height)
+            .insetBy(dx: PlayerAccessory.artworkInset, dy: PlayerAccessory.artworkInset)
+    }
 
     /// Where a pill sits over the tab bar when the system has not drawn one.
     static func fallbackPill(in screen: CGSize, bottom: CGFloat) -> CGRect {
