@@ -50,6 +50,21 @@ theme, a navigator, the grouped background) from `DebugFixtures`, never from the
 `bun scripts/check-android-components.ts` enforces both rules, and the Build Android workflow
 runs it.
 
+## Lint
+
+Android Lint runs before every commit that touches `android/`, with the unit tests and the debug
+build, and in the Build Android and Release Android workflows; an error fails them.
+
+```bash
+cd android && ./gradlew :app:lintDebug :app:testDebugUnitTest :app:assembleDebug
+```
+
+The report is `android/app/build/reports/lint-results-debug.txt`. An error is fixed at its
+cause: no baseline file. A check wrong for this app is disabled alone in the `lint { }` block of
+`app/build.gradle.kts`, with a comment saying why; today only `NonObservableLocale`, since a
+language change recreates the activity. Media3's unstable APIs are opted into in
+`AudiblePlayer.kt` alone (`@file:OptIn(UnstableApi::class)`).
+
 ## Copy
 
 Strings come from the iOS catalogue: `bun scripts/android-strings.ts` writes

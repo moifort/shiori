@@ -43,6 +43,7 @@ cut, from the commits since the previous one, under that release's version and d
 | Android strings | `bun scripts/android-strings.ts` (the iOS catalogue → `android/…/assets/strings.json`) |
 | Android build | `cd android && ./gradlew :app:assembleDebug` (JDK 21: `JAVA_HOME=$(brew --prefix openjdk@21)/libexec/openjdk.jdk/Contents/Home`) |
 | Android tests | `cd android && ./gradlew :app:testDebugUnitTest` |
+| Android lint | `cd android && ./gradlew :app:lintDebug` (report in `app/build/reports/lint-results-debug.txt`) |
 | Dev server | `bun run dev` |
 | Build | `bun run build` |
 
@@ -51,7 +52,9 @@ Runtime: always `bun` / `bunx`, never `npm` / `npx`.
 ## Workflow
 
 1. Verify the build before committing: `bunx nitro prepare && bunx tsc --noEmit`, `bun test`,
-   `bunx biome check`, and `bun run schema:check` when the schema changed. CI is not a linter — a lint error must never be discovered from a red
+   `bunx biome check`, and `bun run schema:check` when the schema changed; when `android/`
+   changed, `./gradlew :app:lintDebug :app:testDebugUnitTest :app:assembleDebug` and
+   `bun scripts/check-android-components.ts`. CI is not a linter — a lint error must never be discovered from a red
    pipeline.
 2. Run `bunx nitro prepare` before `tsc` if routes changed.
 3. Commit freely, grouping changes as you see fit. Never touch `CHANGELOG.md` /

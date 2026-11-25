@@ -66,6 +66,10 @@ jobs:
           printf '%s' "$UPLOAD_KEYSTORE" | base64 --decode > "$RUNNER_TEMP/upload.jks"
           echo "SHIORI_UPLOAD_KEYSTORE=$RUNNER_TEMP/upload.jks" >> "$GITHUB_ENV"
 
+      - name: Lint
+        working-directory: android
+        run: ./gradlew :app:lintDebug
+
       - name: Test
         working-directory: android
         run: ./gradlew :app:testDebugUnitTest

@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   build:
-    name: 🤖 Build and test
+    name: 🤖 Lint, test and build
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -28,6 +28,10 @@ jobs:
         # declaring a composable has a @Preview.
         run: bun scripts/check-android-components.ts
       - uses: gradle/actions/setup-gradle@v4
+      - name: Lint
+        # Android Lint: an error fails the build; no baseline (docs/android-guide.md#lint).
+        working-directory: android
+        run: ./gradlew :app:lintDebug
       - name: Unit tests
         working-directory: android
         run: ./gradlew :app:testDebugUnitTest
