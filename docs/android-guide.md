@@ -83,13 +83,11 @@ and the App Store fixtures with `--ez showcase true`. The app's language is set 
 
 ## Releasing on Google Play
 
-**The account is personal** (decided 2026-11-25: no company, so no D-U-N-S; owner
-`thibaut@polyforms.co`). A personal account created after 2023-11-13 has no production track
-until a **closed test** has had **12 testers opted in for 14 days in a row**; then "Apply for
-production" on the Dashboard, reviewed in about seven days. Testers need an Android phone and
-a Google account; the closed track is `alpha` in the API, so a manual run of Release Android
-with the track `alpha` (or a promotion in the Console) feeds them. Keep the 12 opted in until
-production access is granted.
+**The account is an organisation** (decided 2026-11-25), owned by `thibaut@polyforms.co`, for
+the user's sole proprietorship (entreprise individuelle, SIREN registered since 2017) through its
+free D-U-N-S number. An organisation account has no closed-test requirement: production opens
+once the listing and declarations are complete. A personal account would have needed 12 testers
+opted in to a closed test for 14 days in a row first.
 
 
 One tag ships both apps: `v<version>` starts `release-ios.yml` and `release-android.yml` with the
