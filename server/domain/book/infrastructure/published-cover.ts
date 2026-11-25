@@ -1,10 +1,10 @@
+import { isbnsInLanguage } from '~/domain/book/business-rules'
 import { amazonCoverOf } from '~/domain/book/infrastructure/amazon-cover'
 import { epagineCoverOf } from '~/domain/book/infrastructure/epagine-cover'
 import { openLibraryCoverOf, openLibraryIsbnsOf } from '~/domain/book/infrastructure/open-library'
-import { Isbn13 as Isbn13Of } from '~/domain/book/primitives'
 import type { BookLanguage, CoverUrl, Isbn13 } from '~/domain/book/types'
 import { createLogger } from '~/system/logger'
-import { isPresent, optionally } from '~/utils/input'
+import { isPresent } from '~/utils/input'
 
 const logger = createLogger('published-cover')
 
@@ -41,42 +41,8 @@ export const isbnCoversOf = async (
   return { amazon, openLibrary, epagine }
 }
 
-/** The ISBN registration groups an edition in each language is published under:
- *  978-2 and 979-10 are French-speaking publishers, 978-0 and 978-1 English-
- *  speaking ones. A language missing here has no group a cover can be trusted
- *  from, and its shelf books keep the placeholder until they are described. */
-const ISBN_GROUPS: Partial<Record<BookLanguage, string[]>> = {
-  fr: ['9782', '97910'],
-  en: ['9780', '9781', '9798'],
-  de: ['9783'],
-  ja: ['9784'],
-  es: ['97884'],
-  it: ['97888', '97912'],
-  pt: ['97885', '97865', '978972', '978989'],
-  nl: ['97890', '97894'],
-}
-
-/** The language an ISBN's registration group publishes in, when the group
- *  says one: 978-2 is French, 978-0 and 978-1 English. */
-export const languageOfIsbn = (isbn: string): BookLanguage | undefined =>
-  (Object.entries(ISBN_GROUPS) as [BookLanguage, string[]][]).find(([, groups]) =>
-    groups.some((group) => isbn.startsWith(group)),
-  )?.[0]
-
 /** How many of a work's ISBNs are tried for a cover: each costs two lookups. */
 const ISBNS_TRIED = 3
-
-/** The ISBNs of a work that belong to an edition in this language, in the order
- *  given. A work's list mixes every edition Open Library knows — the English
- *  omnibus, the Japanese original — and a cover from one of those is a wrong
- *  cover, which reads worse than the placeholder. */
-export const isbnsInLanguage = (isbns: readonly string[], language: BookLanguage): Isbn13[] => {
-  const groups = ISBN_GROUPS[language] ?? []
-  return isbns
-    .filter((isbn) => groups.some((group) => isbn.startsWith(group)))
-    .map((isbn) => optionally(isbn, Isbn13Of))
-    .filter(isPresent)
-}
 
 /** A cover for a book known only by what its spine printed — a book added from
  *  a shelf photo, before anything looked it up. Open Library names the work's

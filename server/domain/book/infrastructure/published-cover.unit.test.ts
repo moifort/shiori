@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, spyOn, test } from 'bun:test'
 import {
-  isbnsInLanguage,
   isCoverGone,
   isImageAt,
   publishedCoverOf,
@@ -134,24 +133,6 @@ describe('isCoverGone', () => {
   test('is kept when the source answers an error of its own', async () => {
     coverAnswers(new Response(null, { status: 503 }))
     expect(await isCoverGone(stored)).toBe(false)
-  })
-})
-
-describe('isbnsInLanguage', () => {
-  // Le Petit Prince: an English, a French and a Japanese edition, and an ISBN-10.
-  const work = ['9780156012195', '9782070612758', '9784001156768', '2070612759', '9791030703184']
-
-  test('keeps the editions published in the language, in their order', () => {
-    expect(isbnsInLanguage(work, 'fr').map(String)).toEqual(['9782070612758', '9791030703184'])
-    expect(isbnsInLanguage(work, 'en').map(String)).toEqual(['9780156012195'])
-  })
-
-  test('keeps nothing for a language with no group to trust', () => {
-    expect(isbnsInLanguage(work, 'ko')).toEqual([])
-  })
-
-  test('drops an ISBN whose check digit does not match', () => {
-    expect(isbnsInLanguage(['9782070612750'], 'fr')).toEqual([])
   })
 })
 

@@ -13,7 +13,7 @@ export const QuotaType = builder.objectRef<QuotaState>('Quota').implement({
     'The scan allowance: what the month holds, what was granted on top, what has been spent and ' +
     'when the month renews.\n\n' +
     'Only the AI scan is metered. Adding a book by hand, the library, notes and sharing are ' +
-    'unlimited on every plan, so a spent allowance never stops the app being used.',
+    "not, so a subscriber who spends the month's scans keeps using the app.",
   fields: (t) => ({
     plan: t.field({
       type: PlanEnum,

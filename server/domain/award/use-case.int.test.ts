@@ -47,7 +47,6 @@ mock.module('~/domain/book/infrastructure/published-cover', () => ({
   isImageAt: async () => true,
   isbnCoversOf: async () => ({}),
   otherEditionCoversOf: async () => [],
-  isbnsInLanguage: () => [],
 }))
 
 const { AwardUseCase } = await import('~/domain/award/use-case')

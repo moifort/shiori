@@ -10,12 +10,12 @@ export const PlanEnum = builder.enumType('Plan', {
     FREE: {
       value: 'free',
       description:
-        'The plan every account starts on. The app is fully usable; only the AI scan is metered ' +
-        'against a monthly allowance.',
+        'An account without a running subscription. The app waits behind the subscription offer, ' +
+        'the library kept; no scan or paid lookup is made for it.',
     },
     PREMIUM: {
       value: 'premium',
-      description: 'A running subscription. Scanning is unlimited, within a fair-use ceiling.',
+      description: 'A running subscription, the free trial included: 30 scans a month.',
     },
   } as const,
 })

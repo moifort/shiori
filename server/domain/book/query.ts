@@ -5,6 +5,7 @@ import {
   heartedSagasOf,
   inLibraryView,
   inSagaOrder,
+  languageOfIsbn as isbnLanguage,
   isLovedBook,
   lovedRankOfBook,
   outsideHeartedSagas,
@@ -20,7 +21,6 @@ import {
 } from '~/domain/book/business-rules'
 import { openLibraryCoverByTitle } from '~/domain/book/infrastructure/open-library'
 import {
-  languageOfIsbn as isbnLanguage,
   publishedCoverOf as publishedCover,
   isImageAt as servesImage,
 } from '~/domain/book/infrastructure/published-cover'

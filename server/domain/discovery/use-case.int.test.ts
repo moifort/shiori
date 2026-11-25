@@ -123,7 +123,6 @@ mock.module('~/domain/book/infrastructure/published-cover', () => ({
   publishedCoverOf: async () => 'https://covers.example/carl1.jpg',
   isCoverGone: async () => false,
   isbnCoversOf: async () => ({}),
-  isbnsInLanguage: () => [],
   otherEditionCoversOf: async () => [],
   isImageAt: async () => true,
 }))

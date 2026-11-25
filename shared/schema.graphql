@@ -4368,13 +4368,11 @@ Everyone starts on `FREE`, and `PREMIUM` is only ever the result of a purchase t
 """
 enum Plan {
   """
-  The plan every account starts on. The app is fully usable; only the AI scan is metered against a monthly allowance.
+  An account without a running subscription. The app waits behind the subscription offer, the library kept; no scan or paid lookup is made for it.
   """
   FREE
 
-  """
-  A running subscription. Scanning is unlimited, within a fair-use ceiling.
-  """
+  """A running subscription, the free trial included: 30 scans a month."""
   PREMIUM
 }
 
@@ -5103,7 +5101,7 @@ type Query {
 """
 The scan allowance: what the month holds, what was granted on top, what has been spent and when the month renews.
 
-Only the AI scan is metered. Adding a book by hand, the library, notes and sharing are unlimited on every plan, so a spent allowance never stops the app being used.
+Only the AI scan is metered. Adding a book by hand, the library, notes and sharing are not, so a subscriber who spends the month's scans keeps using the app.
 """
 type Quota {
   """How many the plan allows in a month, e.g. `5`"""

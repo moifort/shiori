@@ -28,6 +28,9 @@ mock.module('~/domain/book/infrastructure/published-cover', () => ({
   shelfCoverOf: async () => undefined,
   publishedCoverOf: async () => undefined,
   isCoverGone: async () => false,
+  isImageAt: async () => false,
+  isbnCoversOf: async () => ({}),
+  otherEditionCoversOf: async () => [],
 }))
 
 /** What a shared page answers for its title. Undefined is a page with none. */

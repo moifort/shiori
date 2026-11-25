@@ -37,7 +37,6 @@ mock.module('~/domain/book/infrastructure/published-cover', () => ({
   shelfCoverOf: async () => undefined,
   publishedCoverOf: async () => undefined,
   isbnCoversOf: async () => ({}),
-  isbnsInLanguage: () => [],
   otherEditionCoversOf: async () => [],
   isImageAt: async () => true,
   isCoverGone: async () => false,

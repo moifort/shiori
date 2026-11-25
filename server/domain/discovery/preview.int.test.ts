@@ -37,6 +37,9 @@ mock.module('~/domain/book/infrastructure/published-cover', () => ({
   shelfCoverOf: async () => undefined,
   publishedCoverOf: async () => undefined,
   isCoverGone: async () => false,
+  isImageAt: async () => false,
+  isbnCoversOf: async () => ({}),
+  otherEditionCoversOf: async () => [],
 }))
 
 /** Audible sells the fourth recording, read by Jeff Hays. */

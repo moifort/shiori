@@ -12,10 +12,12 @@ import {
   groupedBySeries,
   inSagaOrder,
   isbn10Of,
+  isbnsInLanguage,
   KINDLE_POSITIONS_PER_PAGE,
   keepsStory,
   kindleLinkUnder,
   kindleMoveOf,
+  languageOfIsbn,
   lastActivityOf,
   lastAddedOf,
   lastDroppedOf,
@@ -1848,5 +1850,36 @@ describe('lastDroppedOf', () => {
 
   test('answers nothing when no book was dropped', () => {
     expect(lastDroppedOf([{ status: 'read' as const, addedAt: activityDay(1) }])).toBe(undefined)
+  })
+})
+
+describe('isbnsInLanguage', () => {
+  // Le Petit Prince: an English, a French and a Japanese edition, and an ISBN-10.
+  const work = ['9780156012195', '9782070612758', '9784001156768', '2070612759', '9791030703184']
+
+  test('keeps the editions published in the language, in their order', () => {
+    expect(isbnsInLanguage(work, 'fr').map(String)).toEqual(['9782070612758', '9791030703184'])
+    expect(isbnsInLanguage(work, 'en').map(String)).toEqual(['9780156012195'])
+  })
+
+  test('keeps nothing for a language with no group to trust', () => {
+    expect(isbnsInLanguage(work, 'ko')).toEqual([])
+  })
+
+  test('drops an ISBN whose check digit does not match', () => {
+    expect(isbnsInLanguage(['9782070612750'], 'fr')).toEqual([])
+  })
+})
+
+describe('languageOfIsbn', () => {
+  test('reads the language from the registration group', () => {
+    expect(languageOfIsbn('9782070612758')).toBe('fr')
+    expect(languageOfIsbn('9791030703184')).toBe('fr')
+    expect(languageOfIsbn('9780156012195')).toBe('en')
+    expect(languageOfIsbn('9784001156768')).toBe('ja')
+  })
+
+  test('says nothing for a group that names no language', () => {
+    expect(languageOfIsbn('9789500000000')).toBeUndefined()
   })
 })
