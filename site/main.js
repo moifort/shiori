@@ -1,100 +1,93 @@
 /* Shiori landing page.
  *
- * Everything that moves on this page is driven from here:
- *  1. The showcase: three iPhones under the hero that fan out as the page
- *     scrolls.
- *  2. Small loops in the feature cards.
+ *  1. The hero's wall of covers, as the app opens on it.
+ *  2. The screens, in the visitor's language, and each chapter's backdrop:
+ *     its own screen, blurred.
+ *  3. Blocks rising into place as they come into view.
  */
-
 (() => {
   "use strict";
 
-  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  // Set by i18n.js for every browser that is not in French.
-  const english = document.documentElement.lang === "en";
-  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  const lang = document.documentElement.classList.contains("i18n-en") ? "en" : "fr";
+  const version = "20261125i";
 
   // ---------------------------------------------------------------------------
-  // The covers
+  // The wall of covers
   // ---------------------------------------------------------------------------
 
-  // The library's covers.
-  const LIBRARY = [
+  const COVERS = [
     "nom-du-vent", "one-piece-01", "dune", "frieren-01", "trois-corps", "blacksad-01", "projet-derniere-chance",
     "blue-lock-01", "hyperion", "chateau-animaux-01", "fourth-wing", "spy-family-01", "sapiens", "one-piece-05",
     "peur-du-sage", "frieren-03", "veiller-sur-elle", "blue-lock-04", "fondation", "dcc-01", "messie-de-dune",
     "blacksad-03", "jacaranda", "one-piece-12", "foret-sombre", "frieren-07", "demain-et-demain", "blue-lock-09",
     "shibumi", "chateau-animaux-02", "horde-du-contrevent", "one-piece-100", "monte-cristo", "dcc-03",
     "sorceleur-01", "frieren-10", "furtifs", "blue-lock-32", "mort-immortelle", "blacksad-05", "one-piece-110",
-    "dcc-05", "frieren-14", "chateau-animaux-04", "blue-lock-35", "one-piece-114", "blacksad-07", "dcc-06",
-    "frieren-15", "one-piece-08", "blue-lock-15", "blacksad-02", "one-piece-03", "frieren-05", "dcc-02",
+    "dcc-05", "frieren-14", "chateau-animaux-04", "blue-lock-35", "sf-1984", "sf-dispossessed", "sf-neuromancer",
+    "sf-solaris", "sf-rama", "sf-wool", "sf-martian", "sf-snow-crash", "sf-annihilation",
   ];
-  // The science-fiction classics, from scripts/site-covers.ts.
-  const CLASSICS = [
-    "sf-1984", "sf-2001", "sf-ancillary-justice", "sf-androids-dream", "sf-annihilation", "sf-brave-new-world",
-    "sf-canticle-leibowitz", "sf-children-of-time", "sf-dispossessed", "sf-enders-game", "sf-fahrenheit-451",
-    "sf-forever-war", "sf-fourmis", "sf-handmaids-tale", "sf-high-castle", "sf-hitchhiker", "sf-klara",
-    "sf-left-hand-darkness", "sf-leviathan-wakes", "sf-martian", "sf-monde-des-a", "sf-murderbot", "sf-neuromancer",
-    "sf-nuit-des-temps", "sf-planete-singes", "sf-rama", "sf-ready-player-one", "sf-slaughterhouse-five",
-    "sf-snow-crash", "sf-solaris", "sf-stars-destination", "sf-starship-troopers", "sf-station-eleven",
-    "sf-stranger-strange-land", "sf-the-road", "sf-time-machine", "sf-war-of-the-worlds", "sf-wool",
-  ];
-  const COVERS = [...LIBRARY, ...CLASSICS];
-  const SQUARE = new Set(["hyperion-audio-01", "hyperion-audio-02", "hyperion-audio-03", "hyperion-audio-04"]);
 
-  /** Deterministic noise in [0, 1) for a given integer. */
   function hash(n) {
     const x = Math.sin(n * 127.1 + 311.7) * 43758.5453;
     return x - Math.floor(x);
   }
 
-  function shuffled(list, seed) {
-    const out = list.slice();
-    for (let i = out.length - 1; i > 0; i--) {
-      const j = Math.floor(hash(seed * 1000 + i) * (i + 1));
-      [out[i], out[j]] = [out[j], out[i]];
+  const wall = document.querySelector("[data-cover-wall]");
+  if (wall) {
+    const columns = window.innerWidth < 700 ? 6 : 11;
+    wall.style.setProperty("--cols", columns);
+    const count = columns * (window.innerWidth < 700 ? 9 : 7);
+    // A few dozen distinct covers, repeated: the wall stays light on a phone.
+    const distinct = window.innerWidth < 700 ? 22 : 34;
+    const order = COVERS.map((slug, i) => [hash(i + 7), slug]).sort((a, b) => a[0] - b[0]).map((p) => p[1]).slice(0, distinct);
+    for (let i = 0; i < count; i++) {
+      const img = new Image();
+      img.alt = "";
+      img.decoding = "async";
+      img.onload = () => img.classList.add("loaded");
+      img.src = `covers/${order[(i * 5) % order.length]}.jpg`;
+      wall.appendChild(img);
     }
-    return out;
-  }
-
-  function coverImage(slug, eager = false) {
-    const img = document.createElement("img");
-    img.src = `covers/${slug}.jpg`;
-    img.alt = "";
-    img.loading = eager ? "eager" : "lazy";
-    img.decoding = "async";
-    if (SQUARE.has(slug)) img.classList.add("square");
-    return img;
   }
 
   // ---------------------------------------------------------------------------
-  // The showcase
+  // The screens
   // ---------------------------------------------------------------------------
 
-  // The three iPhones: they stand on the first screen, so the side ones wait
-  // behind the library until the page moves, then come out with the scroll,
-  // fully fanned after a third of a screen. Reduced motion leaves them fanned,
-  // as the stylesheet draws them. A browser with scroll-driven animations
-  // fans them in CSS, off the main thread, and needs none of this.
-  const trio = document.querySelector(".trio");
-  if (trio && !reducedMotion && !CSS.supports("animation-timeline: scroll()")) {
-    let pending = false;
-    const fan = () => {
-      pending = false;
-      const progress = scrollY / (innerHeight * 0.33);
-      trio.style.setProperty("--fan", String(Math.min(1, Math.max(0, progress)).toFixed(3)));
-    };
-    const schedule = () => {
-      if (!pending) { pending = true; requestAnimationFrame(fan); }
-    };
-    addEventListener("scroll", schedule, { passive: true });
-    addEventListener("resize", schedule);
-    fan();
+  // The Dynamic Island, over every capture: a screenshot does not show it.
+  for (const phone of document.querySelectorAll(".phone")) {
+    const island = document.createElement("span");
+    island.className = "island";
+    island.setAttribute("aria-hidden", "true");
+    phone.appendChild(island);
+  }
+
+  const shot = (name) => `screens/${lang}-${name}.jpg?v=${version}`;
+
+  // ?capture=1, for the full-page renders: every screen at once, nothing hidden.
+  const params = new URLSearchParams(location.search);
+  const capture = params.has("capture");
+  for (const img of document.querySelectorAll("[data-shot]")) {
+    if (capture) img.loading = "eager";
+    img.src = shot(img.dataset.shot);
+  }
+  for (const section of document.querySelectorAll("[data-bg]")) {
+    const bg = section.querySelector(".chapter-bg");
+    if (bg) bg.style.setProperty("--shot", `url("${shot(section.dataset.bg)}")`);
+  }
+  for (const crop of document.querySelectorAll("[data-crop]")) {
+    crop.style.setProperty("--shot", `url("${shot(crop.dataset.crop)}")`);
+  }
+  for (const bg of document.querySelectorAll("[data-bg-shot]")) {
+    bg.style.setProperty("--shot", `url("${shot(bg.dataset.bgShot)}")`);
   }
 
   // ---------------------------------------------------------------------------
-  // Feature cards
+  // The feature cards' live examples
   // ---------------------------------------------------------------------------
+
+  const english = lang === "en";
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
   /** Runs `loop` only while `el` is on screen. */
   function whenVisible(el, start) {
@@ -106,24 +99,6 @@
       start();
     }, { threshold: 0.3 }).observe(el);
   }
-
-  // The shelf: a box snaps around one spine after another, the count follows.
-  const shelfDemo = document.querySelector("[data-shelf-demo]");
-  whenVisible(shelfDemo, async () => {
-    const spines = Array.from(shelfDemo.querySelectorAll(".spines i"));
-    const count = shelfDemo.querySelector("[data-shelf-count] b");
-    for (;;) {
-      for (const s of spines) s.classList.remove("found");
-      count.textContent = "0";
-      await sleep(900);
-      for (let i = 0; i < spines.length; i++) {
-        spines[i].classList.add("found");
-        count.textContent = String(i + 1);
-        await sleep(reducedMotion ? 60 : 220);
-      }
-      await sleep(3200);
-    }
-  });
 
   const notifDemo = document.querySelector("[data-notif-demo]");
   whenVisible(notifDemo, async () => {
@@ -159,30 +134,23 @@
     }
   });
 
-  // The download icon: a slow drift of covers behind the bookmark.
-  const iconWall = document.querySelector("[data-icon-wall]");
-  if (iconWall) {
-    for (const slug of shuffled(COVERS, 42).slice(0, 24)) iconWall.appendChild(coverImage(slug));
-    if (!reducedMotion) {
-      const drift = (now) => {
-        iconWall.style.transform = `rotate(-8deg) translateY(${-((now / 40000) % 1) * 30}%)`;
-        requestAnimationFrame(drift);
-      };
-      requestAnimationFrame(drift);
-    }
-  }
-
   // ---------------------------------------------------------------------------
-  // Reveal on scroll
+  // Reveal
   // ---------------------------------------------------------------------------
 
-  for (const el of document.querySelectorAll(".card, .faq-list details, .section-title, .section-lead")) {
-    el.classList.add("reveal");
-  }
-  const revealer = new IntersectionObserver((entries) => {
-    for (const entry of entries) {
-      if (entry.isIntersecting) { entry.target.classList.add("in"); revealer.unobserve(entry.target); }
+  const blocks = document.querySelectorAll(".chapter-text, .chapter .phone, .chapter .phones, .offer, .pricing .phone, .faq-list");
+  if ("IntersectionObserver" in window && !capture) {
+    const observer = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("seen");
+          observer.unobserve(entry.target);
+        }
+      }
+    }, { threshold: 0.15 });
+    for (const block of blocks) {
+      block.classList.add("reveal");
+      observer.observe(block);
     }
-  }, { threshold: 0.15 });
-  for (const el of document.querySelectorAll(".reveal")) revealer.observe(el);
+  }
 })();

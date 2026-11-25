@@ -1,34 +1,49 @@
 <!doctype html>
-<!-- The share image: rendered once at 1200×630 into og.jpg, never served as a page. -->
+<!-- The share image: rendered once at 1200×630 into og.jpg, never served as a page.
+     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --hide-scrollbars
+       --window-size=1200,630 --virtual-time-budget=6000 --screenshot=og.png http://localhost:<port>/og.html
+     then: sips -s format jpeg -s formatOptions 82 og.png --out og.jpg -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <link rel="stylesheet" href="style.css">
 <style>
-  html, body { margin: 0; width: 1200px; height: 630px; overflow: hidden; background: var(--bg); }
+  html, body { margin: 0; width: 1200px; height: 630px; overflow: hidden; background: #000; }
   .og { position: relative; width: 1200px; height: 630px; overflow: hidden; }
-  .og-text { position: absolute; left: 72px; top: 0; bottom: 0; width: 480px; display: flex; flex-direction: column; justify-content: center; z-index: 2; }
-  .og-brand { display: flex; align-items: center; gap: 14px; font-weight: 600; font-size: 26px; margin-bottom: 26px; }
-  .og-brand img { width: 44px; height: 44px; border-radius: 11px; box-shadow: 0 0 0 1px rgba(0,0,0,0.06); }
-  .og h1 { font-family: var(--display); font-size: 70px; line-height: 1.02; letter-spacing: -0.015em; font-weight: 600; margin: 0 0 22px; }
-  .og p { font-size: 24px; color: var(--text-muted); margin: 0; max-width: 470px; line-height: 1.35; }
-  /* The landing page's three iPhones, library in front, standing on the right
-     and running off the bottom edge. */
-  .og .trio { --pw: 240px; --fan: 1; position: absolute; right: -50px; top: 80px; z-index: 1; }
+  .og .cover-wall { --cols: 10; animation: none; inset: -30% -10%; }
+  .og .hero-veil {
+    -webkit-mask-image: linear-gradient(to right, #000 50%, transparent 80%);
+    mask-image: linear-gradient(to right, #000 50%, transparent 80%);
+  }
+  .og-text { position: absolute; left: 72px; top: 0; bottom: 0; width: 640px; display: flex; flex-direction: column; justify-content: center; z-index: 2; }
+  .og-brand { display: flex; align-items: center; gap: 14px; font-weight: 600; font-size: 28px; margin-bottom: 28px; }
+  .og-brand img { width: 48px; height: 48px; border-radius: 12px; }
+  .og h1 { font-family: var(--display); font-size: 62px; line-height: 1.02; letter-spacing: -0.03em; font-weight: 700; margin: 0 0 22px; }
+  .og p { font-size: 25px; color: var(--text-muted); margin: 0; line-height: 1.35; }
+  .og .phone { --w: 290px; position: absolute; right: 120px; top: 70px; z-index: 2; }
 </style>
 </head>
 <body>
 <div class="og">
+  <div class="cover-wall" data-cover-wall></div>
+  <div class="hero-veil"></div>
   <div class="og-text">
     <div class="og-brand"><img src="icon-256.png" alt="">Shiori</div>
-    <h1><span class="gradient-text">Your library<br>in your pocket.</span></h1>
-    <p>Snap a cover and the record fills itself in. Your series sorted, every release announced. First month free, on iPhone.</p>
+    <h1>Snap a book.<br>Your library sorts itself.</h1>
+    <p>A cover or a whole shelf, every series kept up to date, Kindle and Audible synced nightly. First month free, on iPhone.</p>
   </div>
-  <div class="trio">
-    <figure class="device device-side"><img src="screens/en-02-home.jpg" alt=""></figure>
-    <figure class="device device-main"><img src="screens/en-01-library.jpg" alt=""></figure>
-    <figure class="device device-side"><img src="screens/en-05-discover.jpg" alt=""></figure>
-  </div>
+  <figure class="phone"><img src="screens/en-home.jpg" alt=""><span class="island"></span></figure>
 </div>
+<script>
+  // The landing page's wall, without its script's screens.
+  const covers = ["dune","one-piece-01","frieren-01","trois-corps","blacksad-01","projet-derniere-chance","blue-lock-01","hyperion","fourth-wing","spy-family-01","sapiens","peur-du-sage","fondation","dcc-01","messie-de-dune","jacaranda","foret-sombre","demain-et-demain","shibumi","horde-du-contrevent","monte-cristo","sorceleur-01","furtifs","sf-1984","sf-dispossessed","sf-neuromancer","sf-solaris","sf-rama","sf-wool","sf-martian"];
+  const wall = document.querySelector("[data-cover-wall]");
+  for (let i = 0; i < 60; i++) {
+    const img = new Image();
+    img.className = "loaded";
+    img.src = `covers/${covers[(i * 7) % covers.length]}.jpg`;
+    wall.appendChild(img);
+  }
+</script>
 </body>
 </html>
