@@ -12,15 +12,78 @@ struct ShowcaseScreen: View {
     static let names: Set<String> = [
         "goodreads", "goodreads-explain", "goodreads-reading", "goodreads-books",
         "goodreads-done", "goodreads-source", "subscription-trial", "subscription-lapsed",
-        "premium", "libraries", "libraries-all",
+        "premium", "libraries", "libraries-all", "goodreads-same-book", "goodreads-progress",
+        "goodreads-not-goodreads", "goodreads-empty",
     ]
 
     @State private var choices = GoodreadsChoices(preview: .preview)
 
     var body: some View {
+        // The import is a full-screen cover drawn dark (`GoodreadsImportScreen`);
+        // only its settings page follows the phone.
+        Group {
+            if name.hasPrefix("goodreads"), name != "goodreads-source" {
+                page.environment(\.colorScheme, .dark)
+            } else {
+                page
+            }
+        }
+        .defaultScrollAnchor(Self.anchor)
+    }
+
+    /// Where a long page opens, after `-showcase-anchor top|center|bottom`:
+    /// three captures of one page, stitched into the board's full-length artboard.
+    private static var anchor: UnitPoint? {
+        let arguments = ProcessInfo.processInfo.arguments
+        guard let index = arguments.firstIndex(of: "-showcase-anchor"), index + 1 < arguments.count
+        else { return nil }
+        switch arguments[index + 1] {
+        case "center": return .center
+        case "bottom": return .bottom
+        default: return .top
+        }
+    }
+
+    @ViewBuilder private var page: some View {
         switch name {
         case "goodreads":
             GoodreadsPreviewPage(preview: .preview, choices: $choices) { _ in }
+        case "goodreads-same-book":
+            NavigationStack {
+                GoodreadsBooksPage(preview: .preview, choices: $choices, filter: .all, onDecide: { _ in })
+            }
+            .sheet(isPresented: .constant(true)) {
+                GoodreadsSameBookSheet(row: GoodreadsPreview.preview.uncertainRows[0], onSame: {}, onDifferent: {})
+            }
+        case "goodreads-progress":
+            NavigationStack {
+                GoodreadsProgressPage(
+                    covers: GoodreadsPreview.preview.newRows.prefix(5).map(\.cover),
+                    done: 640, total: 1424, progress: 0.45, onClose: {}
+                )
+            }
+        case "goodreads-not-goodreads", "goodreads-empty":
+            NavigationStack {
+                Group {
+                    if name == "goodreads-empty" {
+                        EmptyState(
+                            systemImage: "book",
+                            title: "Aucun livre dans ce fichier",
+                            message: "Vérifiez que vous étiez connecté au bon compte Goodreads au moment de l'export.",
+                            primary: EmptyState.Action("Choisir un autre fichier") {}
+                        )
+                    } else {
+                        EmptyState(
+                            systemImage: "doc.questionmark",
+                            title: "Ce fichier ne vient pas de Goodreads",
+                            message: "Choisissez le fichier goodreads_library_export.csv préparé par Goodreads.",
+                            primary: EmptyState.Action("Choisir un autre fichier") {}
+                        )
+                    }
+                }
+                .navigationTitle("Goodreads")
+                .navigationBarTitleDisplayMode(.inline)
+            }
         case "goodreads-explain":
             NavigationStack { GoodreadsExplainPage(onChooseFile: {}, onOpenGoodreads: {}) }
         case "goodreads-reading":

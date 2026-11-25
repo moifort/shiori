@@ -13,6 +13,9 @@
 #              | goodreads-books | goodreads-done | goodreads-source
 #              | subscription-trial | subscription-lapsed | premium
 #              | libraries | libraries-all (the onboarding's libraries step)
+#              | goodreads-same-book | goodreads-progress | goodreads-not-goodreads
+#              | goodreads-empty
+#   -- -showcase-anchor center|bottom  opens a long page scrolled, for a stitched capture
 #   [light|dark]  the appearance, whatever the phone is set to (default: the phone's)
 #   -- …       more launch arguments for the app, e.g. -- -showcase-prompts audible
 #
@@ -32,7 +35,7 @@
 set -euo pipefail
 
 usage() {
-  sed -n '8,18p' "$0" >&2
+  sed -n '8,20p' "$0" >&2
   exit 2
 }
 
@@ -52,7 +55,8 @@ EXTRA_ARGS=("$@")
 case "$SCREEN" in
   home | library | news | friends) SCREEN_FLAG=-showcase-tab ;;
   goodreads | goodreads-explain | goodreads-reading | goodreads-books | goodreads-done | goodreads-source \
-    | subscription-trial | subscription-lapsed | premium | libraries | libraries-all)
+    | subscription-trial | subscription-lapsed | premium | libraries | libraries-all \
+    | goodreads-same-book | goodreads-progress | goodreads-not-goodreads | goodreads-empty)
     SCREEN_FLAG=-showcase-screen ;;
   *) echo "error: unknown screen '$SCREEN' (home, library, news, friends, goodreads…)" >&2; exit 2 ;;
 esac
@@ -96,7 +100,7 @@ elapsed() {
 # --- The lock -----------------------------------------------------------------
 
 LOCK="$MAIN_CHECKOUT/build/ios-device.lock"
-mkdir -p "$MAIN_CHECKOUT/build"
+mkdir -p "$MAIN_CHECKOUT/build" "$WORKTREE/build"
 waited=0
 until mkdir "$LOCK" 2>/dev/null; do
   owner_pid=$(sed -n 's/^pid=//p' "$LOCK/owner" 2>/dev/null || true)
