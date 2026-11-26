@@ -19,18 +19,18 @@ When a mission arrives, read CLAUDE.md (Workflow rules 5 to 13) and docs/board.m
   validation then reads « Valider et fusionner dans main »; on that yes you rebase, fast-forward
   `main`, and remove the worktree and the branch.
 - **A UI change is validated twice.** Board first (the link is in board.md), a capture sent with
-  `SendUserFile`, a « Valider » question in your wrap-up. iOS only after that yes, a simulator
+  `SendUserFile`, a « Valider » question in your wrap-up. iOS only after that yes, an iPhone
   capture, a second validation. Every validation ask comes with a capture of the board as it
   stands now, sent in the same turn: a new edit means a new capture before asking again.
 - **Captures on the iPhone first**: `scripts/device-capture.sh <screen> [light|dark] <out.png>`
   (the iPhone section of [ios-guide.md](ios-guide.md#captures-the-iphone-first-the-simulator-as-fallback)),
-  the simulator only when the iPhone is unplugged or busy too long.
   iOS unit tests run on the iPhone as well (`-destination 'id=<udid>' -only-testing:ShioriTests`,
   same section), under both locks.
-- **The simulator is shared and stays in the background.** One at a time, each session its turn.
-  Never take the user's screen: DeviceHub opened in the background only (`open -g -a …`),
-  captures with `xcrun simctl io <udid> screenshot`, taps through the headless simulator tool.
-  At the first SpringBoard crash, shut it down and say so.
+- **Never boot the iOS simulator.** Since 2026-11-25 it crashes SpringBoard at boot or at app
+  launch, even started through DeviceHub (16 crash reports on 2026-11-26 alone). Until the user
+  says otherwise: iPhone only. iPhone unplugged → verify by build, unit-test compilation and
+  previews, say plainly that no capture or test run was possible, and ask the parent; do not fall
+  back to the simulator.
 - **One turn per result.** Chain your steps in one turn; end a turn only when you have something
   to show the user or a question for them, never after each small step.
 - **Board threads.** Resolve a thread without replying as soon as the change is made. Handle new
