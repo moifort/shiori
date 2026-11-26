@@ -19,7 +19,8 @@ struct GenreInsightsScreen: View {
     @State private var errorMessage: String?
 
     var body: some View {
-        Group {
+        // A ZStack: a Group would run `.task` again for each branch shown.
+        ZStack {
             if let insights {
                 GenreInsightsPage(insights: insights)
             } else if let errorMessage {

@@ -299,7 +299,8 @@ struct CoverImage<Loading: View, Fallback: View>: View {
     @Environment(\.coverMaxPixelSize) private var maxPixelSize
 
     var body: some View {
-        Group {
+        // A ZStack: a Group would run `.task` again once the image replaced the placeholder.
+        ZStack {
             switch phase ?? CoverImages.cached(url, maxPixelSize: maxPixelSize).map(Phase.loaded) {
             case let .loaded(image):
                 Image(uiImage: image).resizable().scaledToFill()
@@ -342,7 +343,8 @@ struct CoverEffectImage<Fallback: View>: View {
     @State private var phase: Phase?
 
     var body: some View {
-        Group {
+        // A ZStack, for the same reason as above.
+        ZStack {
             switch phase ?? CoverImages.cached(url, effect: effect).map(Phase.loaded) {
             case let .loaded(image):
                 Image(uiImage: image).resizable().scaledToFill()

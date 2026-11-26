@@ -38,7 +38,8 @@ struct FriendBookScreen: View {
     }
 
     var body: some View {
-        Group {
+        // A ZStack: a Group would run the loads again once the page replaced the spinner.
+        ZStack {
             if viewModel.isLoading && viewModel.entry == nil {
                 ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if let entry = viewModel.entry {

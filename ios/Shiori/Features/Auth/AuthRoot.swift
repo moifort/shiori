@@ -26,7 +26,10 @@ struct AuthRoot: View {
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
-        Group {
+        // A ZStack, not a Group: a Group hands its modifiers to whichever
+        // branch is showing, so the curtain and the wall below would start over
+        // each time the route changes, the curtain's icon springing in twice.
+        ZStack {
             if case .updateRequired(let appStoreURL) = supportGate.state {
                 UpdateRequiredView(appStoreURL: appStoreURL)
             } else if isShowcase {
