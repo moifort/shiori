@@ -1,4 +1,5 @@
 import type { WriteBatch } from 'firebase-admin/firestore'
+import type { AudibleAsin } from '~/domain/audible/types'
 import { inItsEdition, mediaFor, shelfDateOf } from '~/domain/book/business-rules'
 import type {
   Book,
@@ -146,6 +147,15 @@ export const findBySaga = async (userId: UserId, saga: SagaKey): Promise<Book[]>
   if (isInRequestCache(allCacheKey(userId)))
     return (await findAllByUser(userId)).filter((book) => book.series?.saga === saga)
   const snapshot = await ownedBy(userId).where('series.saga', '==', saga).get()
+  return seen(snapshot.docs.map((doc) => asBook(doc.data())))
+}
+
+// The reader's books linked to one Audible title: what a position saved by
+// Shiori's player moves. Two equalities, merged from their single-field indexes.
+export const findByAudibleAsin = async (userId: UserId, asin: AudibleAsin): Promise<Book[]> => {
+  if (isInRequestCache(allCacheKey(userId)))
+    return (await findAllByUser(userId)).filter((book) => book.audibleAsin === asin)
+  const snapshot = await ownedBy(userId).where('audibleAsin', '==', asin).get()
   return seen(snapshot.docs.map((doc) => asBook(doc.data())))
 }
 

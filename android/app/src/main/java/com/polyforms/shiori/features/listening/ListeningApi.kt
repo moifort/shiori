@@ -10,8 +10,9 @@ import com.polyforms.shiori.shared.parseISO8601
 import kotlin.math.max
 
 /**
- * The Audible player's three calls. None changes the library: a licence, a content key and a
- * saved position are Audible's, not Shiori's.
+ * The Audible player's three calls. A licence and a content key are Audible's; a saved position
+ * also moves the book on the server (under way, progress, read at the end), which the player
+ * announces itself, sparingly ([ListeningLibraryNotice]), rather than at every save.
  */
 object ListeningApi {
     /**

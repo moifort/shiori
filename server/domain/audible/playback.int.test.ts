@@ -15,6 +15,10 @@ const { AudibleCommand } = await import('~/domain/audible/command')
 const { AudibleUseCase } = await import('~/domain/audible/use-case')
 const { AudibleQuery } = await import('~/domain/audible/query')
 const { openCredentials } = await import('~/domain/audible/infrastructure/credentials-vault')
+const { BookCommand } = await import('~/domain/book/command')
+const { BookQuery } = await import('~/domain/book/query')
+const { AuthorName, BookTitle } = await import('~/domain/shared/primitives')
+const { ListeningMinutes } = await import('~/domain/book/primitives')
 
 const reader = 'reader-1' as UserId
 const asin = 'B0H95GDVTN' as AudibleAsin
@@ -49,8 +53,10 @@ const savedPositions: unknown[] = []
 const consumptions: (string | undefined)[] = []
 const drms: (string | undefined)[] = []
 
+let fake = resetFakeFirestore()
+
 beforeEach(() => {
-  resetFakeFirestore()
+  fake = resetFakeFirestore()
   startFakeRequest()
   answeredToken = 'access-1'
   refusal = undefined
@@ -223,5 +229,86 @@ describe('the access token', () => {
 
     startFakeRequest()
     expect((await AudibleQuery.accountOf(reader))?.credentials).toBe(before)
+  })
+})
+
+describe('the book a saved position plays', () => {
+  const ADDED = new Date('2026-11-20T08:00:00.000Z')
+  const NOW = new Date('2026-11-26T09:00:00.000Z')
+  const LATER = new Date('2026-11-26T19:00:00.000Z')
+
+  const shelve = (status: 'to-read' | 'reading' | 'read' = 'to-read') =>
+    BookCommand.add(
+      reader,
+      {
+        title: BookTitle('Le mensonge suffit'),
+        authors: [AuthorName('Gilles Legardinier')],
+        format: 'audiobook',
+        status,
+        audibleAsin: asin,
+        durationMinutes: ListeningMinutes(720),
+      },
+      ADDED,
+    )
+  const save = (positionMs: number, now = NOW) =>
+    AudibleUseCase.savePosition(reader, { asin, contentReference: 'CR!ACR', positionMs }, now)
+  const bookNow = async () => {
+    startFakeRequest()
+    return (await BookQuery.all(reader))[0]
+  }
+
+  // The bug of 2026-11-26: a title played in Shiori stayed on the pile until a
+  // nightly sync, which only subscribers get.
+  test('takes a book off the pile as soon as the player has heard a minute of it', async () => {
+    await connect()
+    await shelve()
+
+    expect(await save(41 * 60 * 1000)).toBe('saved')
+    const book = await bookNow()
+    expect(book?.status).toBe('reading')
+    expect(book?.startedAt).toEqual(NOW)
+    expect(book?.statusChangedAt).toEqual(NOW)
+    expect(book?.listenedMinutes).toBe(ListeningMinutes(41))
+    expect(book?.listenedAt).toEqual(NOW)
+  })
+
+  test('moves the progress at every save, and marks the book read at its end', async () => {
+    await connect()
+    await shelve('reading')
+    await save(60 * 60 * 1000)
+    await save(719 * 60 * 1000, LATER)
+
+    const book = await bookNow()
+    expect(book?.status).toBe('read')
+    expect(book?.finishedAt).toEqual(LATER)
+    expect(book?.listenedMinutes).toBe(ListeningMinutes(719))
+  })
+
+  test('reads one book by its title, not the library, and writes nothing that did not move', async () => {
+    await connect()
+    await shelve('reading')
+    await BookCommand.add(reader, {
+      title: BookTitle('Un autre'),
+      authors: [AuthorName('Quelqu’un')],
+      format: 'book',
+      status: 'to-read',
+    })
+    await save(10 * 60 * 1000)
+
+    startFakeRequest()
+    const before = { docs: fake.docReads, queries: fake.queryReads }
+    await save(10 * 60 * 1000 + 20_000)
+    // The Audible connection, then the one title's books: never the library.
+    expect(fake.queryReads - before.queries).toBe(1)
+    expect(fake.docReads - before.docs).toBe(1)
+    expect((await bookNow())?.updatedAt).toEqual(NOW)
+  })
+
+  test('keeps a book already read where it is when it is heard again', async () => {
+    await connect()
+    await shelve('read')
+    await save(5 * 60 * 1000)
+
+    expect((await bookNow())?.status).toBe('read')
   })
 })

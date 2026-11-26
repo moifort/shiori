@@ -1,3 +1,4 @@
+import type { AudibleAsin } from '~/domain/audible/types'
 import {
   copyOf as copyOfBook,
   coverSourcesOf,
@@ -217,6 +218,11 @@ export namespace BookQuery {
     const kept = edition ? held.filter((book) => book.language === edition) : held
     return withCovers(inSagaOrder(kept))
   }
+
+  /** The reader's books linked to one Audible title — one, as a recording is
+   *  its own record — without reading the whole library. */
+  export const byAudibleAsin = (userId: UserId, asin: AudibleAsin): Promise<Book[]> =>
+    repository.findByAudibleAsin(userId, asin)
 
   export const all = async (userId: UserId): Promise<Book[]> => repository.findAllByUser(userId)
 

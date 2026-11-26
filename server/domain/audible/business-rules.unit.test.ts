@@ -13,6 +13,7 @@ import {
   importableFrom,
   listenedMinutesFor,
   listeningChangesFor,
+  playerMoveOf,
   purchaseDatesFor,
   readersDueForSync,
   recordingOfVolume,
@@ -1158,5 +1159,63 @@ describe('booksFollowed', () => {
       bookId('finished'),
       bookId('paper'),
     ])
+  })
+})
+
+describe('a position saved by Shiori’s player', () => {
+  const now = new Date('2026-11-26T09:00:00.000Z')
+  const minutes = (n: number) => n * 60 * 1000
+  const onThePile = { status: 'to-read' as const, durationMinutes: ListeningMinutes(600) }
+
+  test('opens a book on the pile, with the minutes heard', () => {
+    expect(playerMoveOf(onThePile, minutes(2), now)).toEqual({
+      status: 'reading',
+      listenedMinutes: ListeningMinutes(2),
+      listenedAt: now,
+    })
+  })
+
+  // Half a minute is the first save of any listen, and as far as a wrong tap goes.
+  test('leaves a book on the pile for a wrong tap', () => {
+    expect(playerMoveOf(onThePile, 30_000, now)).toBe(undefined)
+  })
+
+  test('moves the progress of a book under way', () => {
+    const reading = {
+      ...onThePile,
+      status: 'reading' as const,
+      listenedMinutes: ListeningMinutes(2),
+    }
+    expect(playerMoveOf(reading, minutes(3), now)).toEqual({
+      status: 'reading',
+      listenedMinutes: ListeningMinutes(3),
+      listenedAt: now,
+    })
+  })
+
+  test('writes nothing when the minute heard did not change', () => {
+    const reading = {
+      ...onThePile,
+      status: 'reading' as const,
+      listenedMinutes: ListeningMinutes(3),
+    }
+    expect(playerMoveOf(reading, minutes(3) + 20_000, now)).toBe(undefined)
+  })
+
+  test('reads a book heard to its closing credits', () => {
+    const reading = { ...onThePile, status: 'reading' as const }
+    expect(playerMoveOf(reading, minutes(598), now)?.status).toBe('read')
+  })
+
+  test('keeps a book read or dropped where the reader put it', () => {
+    expect(playerMoveOf({ ...onThePile, status: 'read' }, minutes(20), now)?.status).toBe('read')
+    expect(playerMoveOf({ ...onThePile, status: 'dropped' }, minutes(599), now)?.status).toBe(
+      'dropped',
+    )
+  })
+
+  test('does not call a book read without its running time', () => {
+    const unknown = { status: 'reading' as const }
+    expect(playerMoveOf(unknown, minutes(5000), now)?.status).toBe('reading')
   })
 })

@@ -73,6 +73,8 @@ final class AudiblePlayer {
     private var observations: [NSKeyValueObservation] = []
     private var timeObserver: Any?
     private var lastSaved: TimeInterval?
+    /// When a sent position reloads Accueil and the lists: see the type.
+    private var libraryNotice = ListeningLibraryNotice()
     private var lastSaveAt = Date.distantPast
     private var sleepTask: Task<Void, Never>?
     /// The timer's last choice and when it paused the player: a headset press
@@ -449,8 +451,8 @@ final class AudiblePlayer {
 
     private var endObserver: NSObjectProtocol?
 
-    /// The book is over: its end is saved on Audible — the nightly sync then
-    /// files it as read — and the audiobook started most recently among those
+    /// The book is over: its end is saved on Audible and on the book, which
+    /// the server files as read — and the audiobook started most recently among those
     /// under way follows, as the next episode does.
     private func finished() {
         guard let playback else { return }
@@ -533,7 +535,7 @@ final class AudiblePlayer {
     /// Save the position, if it moved since the last save: on the iPhone
     /// first, then on Audible. One Audible cannot have yet waits on the iPhone
     /// and goes once the network is back.
-    private func saveNow() {
+    private func saveNow(periodic: Bool = false) {
         guard let playback, phase == .ready || phase == .waiting else { return }
         let position = elapsed
         if let lastSaved, abs(lastSaved - position) < 1 { return }
@@ -542,14 +544,40 @@ final class AudiblePlayer {
         let savedAt = Date.now
         positions.record(playback.asin, at: position, contentReference: playback.contentReference, now: savedAt)
         guard isOnline else { return }
-        send(playback.asin, contentReference: playback.contentReference, position: position, savedAt: savedAt)
+        // The server moves the book with the position: Accueil hears of it
+        // when the reader stops, not at every half-minute save.
+        let announces = libraryNotice.shouldAnnounce(
+            asin: playback.asin, position: position, duration: duration, periodic: periodic
+        )
+        send(
+            playback.asin,
+            contentReference: playback.contentReference,
+            position: position,
+            savedAt: savedAt,
+            announcing: announces
+        )
     }
 
-    private func send(_ asin: String, contentReference: String, position: TimeInterval, savedAt: Date) {
+    /// With `announcing`, the lists reload once the server has the position,
+    /// and so has moved the book with it: the title's book is named when the
+    /// player knows it, so a list that holds it can patch that row.
+    private func send(
+        _ asin: String,
+        contentReference: String,
+        position: TimeInterval,
+        savedAt: Date,
+        announcing: Bool = false
+    ) {
+        let book: DataChange? = title?.bookID.map(DataChange.book(id:))
         Task { [client, positions] in
             do {
                 try await client.savePosition(asin, contentReference, position)
                 positions.markSent(asin, savedAt: savedAt)
+                if announcing {
+                    await MainActor.run {
+                        NotificationCenter.default.post(name: .shioriDataDidChange, object: book)
+                    }
+                }
             } catch {
                 guard !isCancellation(error) else { return }
                 _ = reportError(error)
@@ -570,7 +598,7 @@ final class AudiblePlayer {
         withAnimation(isPlaying ? .linear(duration: 0.5) : nil) { elapsed = time.seconds }
         if isPlaying { hasPlayed = true }
         if isPlaying, Date.now.timeIntervalSince(lastSaveAt) >= Self.saveInterval {
-            saveNow()
+            saveNow(periodic: true)
         }
     }
 

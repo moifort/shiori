@@ -13,6 +13,7 @@ import {
   listenedMinutesFor,
   listeningChangesFor,
   playbackOf,
+  playerMoveOf,
   purchaseDatesFor,
   recordingOfVolume,
   seriesVolumesFor,
@@ -363,12 +364,18 @@ export namespace AudibleUseCase {
     })
 
   /** Save where the reader stopped, on Audible itself: their other players —
-   *  the Audible app, an Echo — resume there, and so does the nightly sync. */
+   *  the Audible app, an Echo — resume there, and so does the nightly sync.
+   *
+   *  Then on the book the title plays, at once rather than at night: what the
+   *  player heard moves its progress, a book on the pile goes under way and a
+   *  book heard to its end is read (`playerMoveOf`). The nightly sync is for
+   *  what was heard elsewhere, and it waits behind the subscription. */
   export const savePosition = async (
     userId: UserId,
     position: { asin: AudibleAsin; contentReference: string; positionMs: number },
-  ): Promise<'saved' | 'not-connected'> =>
-    withCredentials(userId, async (credentials) => {
+    now = new Date(),
+  ): Promise<'saved' | 'not-connected'> => {
+    const saved = await withCredentials(userId, async (credentials) => {
       const { credentials: rotated } = await api.savePosition(credentials, {
         asin: position.asin,
         acr: position.contentReference,
@@ -376,6 +383,26 @@ export namespace AudibleUseCase {
       })
       return { value: 'saved' as const, credentials: rotated }
     })
+    if (saved === 'saved') await recordHeard(userId, position.asin, position.positionMs, now)
+    return saved
+  }
+
+  /** Move the reader's book of one title to where the player got. A position
+   *  that moves nothing writes nothing, and leaves the dashboard as it was. */
+  const recordHeard = async (
+    userId: UserId,
+    asin: AudibleAsin,
+    positionMs: number,
+    now: Date,
+  ): Promise<void> => {
+    for (const book of await BookQuery.byAudibleAsin(userId, asin)) {
+      const move = playerMoveOf(book, positionMs, now)
+      if (!move) continue
+      await AnalyticsUseCase.afterWrite(userId, (batch) =>
+        BookCommand.recordListening(userId, book.id, move, now, batch),
+      )
+    }
+  }
 
   /** The nightly job: every reader who left the sync on, stalest first. See
    *  `syncEveryConnectedReader`. */

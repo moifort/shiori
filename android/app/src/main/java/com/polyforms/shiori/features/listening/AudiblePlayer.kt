@@ -41,6 +41,8 @@ import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.ListenableFuture
 import com.polyforms.shiori.shared.ApiError
+import com.polyforms.shiori.shared.DataChange
+import com.polyforms.shiori.shared.DataChanges
 import com.polyforms.shiori.shared.L
 import com.polyforms.shiori.shared.isCancellation
 import com.polyforms.shiori.shared.reportError
@@ -127,6 +129,8 @@ class AudiblePlayer(
     private var resumesOnReconnect = true
     private var playback: Playback? = null
     private var lastSaved: Double? = null
+    /** When a sent position reloads Accueil and the lists: see the type. */
+    private val libraryNotice = ListeningLibraryNotice()
     private var lastSaveAt = Instant.EPOCH
     private var sleepJob: Job? = null
 
@@ -413,7 +417,7 @@ class AudiblePlayer(
     }
 
     /**
-     * The book is over: its end is saved on Audible — the nightly sync then files it as read —
+     * The book is over: its end is saved on Audible and on the book, which the server files as read —
      * and the audiobook started most recently among those under way follows, as the next episode
      * does.
      */
@@ -526,7 +530,7 @@ class AudiblePlayer(
      * Save the position, if it moved since the last save: on the phone first, then on Audible.
      * One Audible cannot have yet waits on the phone and goes once the network is back.
      */
-    private fun saveNow() {
+    private fun saveNow(periodic: Boolean = false) {
         val playback = playback ?: return
         if (phase != Phase.Ready && phase != Phase.Waiting) return
         val position = elapsed
@@ -535,14 +539,31 @@ class AudiblePlayer(
         val savedAt = Instant.now()
         lastSaveAt = savedAt
         positions.record(playback.asin, position, playback.contentReference, savedAt)
-        if (isOnline) send(playback.asin, playback.contentReference, position, savedAt)
+        if (!isOnline) return
+        // The server moves the book with the position: Accueil hears of it when the reader
+        // stops, not at every half-minute save.
+        val announces = libraryNotice.shouldAnnounce(playback.asin, position, duration, periodic)
+        send(playback.asin, playback.contentReference, position, savedAt, announcing = announces)
     }
 
-    private fun send(asin: String, contentReference: String, position: Double, savedAt: Instant) {
+    /**
+     * With [announcing], the lists reload once the server has the position, and so has moved the
+     * book with it: the title's book is named when the player knows it, so a list that holds it
+     * can patch that row.
+     */
+    private fun send(
+        asin: String,
+        contentReference: String,
+        position: Double,
+        savedAt: Instant,
+        announcing: Boolean = false,
+    ) {
+        val book = title?.bookID?.let { DataChange.BookChange(it) }
         scope.launch {
             try {
                 client.savePosition(asin, contentReference, position)
                 positions.markSent(asin, savedAt)
+                if (announcing) DataChanges.post(book)
             } catch (error: Throwable) {
                 if (isCancellation(error)) throw error
                 reportError(error)
@@ -561,7 +582,7 @@ class AudiblePlayer(
         if (phase != Phase.Ready || player.playbackState == Player.STATE_IDLE) return
         elapsed = player.currentPosition / 1000.0
         if (player.isPlaying) hasPlayed = true
-        if (isPlaying && Duration.between(lastSaveAt, Instant.now()).seconds >= SAVE_INTERVAL) saveNow()
+        if (isPlaying && Duration.between(lastSaveAt, Instant.now()).seconds >= SAVE_INTERVAL) saveNow(periodic = true)
     }
 
     // Observation

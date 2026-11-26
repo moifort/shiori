@@ -491,15 +491,20 @@ export namespace BookCommand {
   /** Record where the Audible player last stopped in a recording, and when.
    *
    *  Its own command rather than a field of `BookEdit`: the reader never types
-   *  a position, and the only thing that moves it is the sync reading the
-   *  player's own. */
+   *  a position, and the only things that move it are the sync reading the
+   *  player's own and Shiori's player saving one. `status`, from the player,
+   *  moves the book with it, its reading dates stamped as any move does. */
   export const recordListening = (
     userId: UserId,
     bookId: BookId,
-    position: { listenedMinutes: ListeningMinutes; listenedAt: Date },
+    position: { listenedMinutes?: ListeningMinutes; listenedAt: Date; status?: ReadingStatus },
     now = new Date(),
     batch?: WriteBatch,
-  ): Promise<Book | 'not-found'> => rewrite(userId, bookId, now, batch, () => position)
+  ): Promise<Book | 'not-found'> =>
+    rewrite(userId, bookId, now, batch, (book) => {
+      const { status, ...heard } = position
+      return { ...heard, ...(status ? statusMoveOf(book, status, now) : {}) }
+    })
 
   /** Record the page the reader says they reached in a book, and so that they
    *  are reading it: a book on the pile is opened by it, with its start stamped
