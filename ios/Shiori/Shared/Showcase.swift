@@ -141,6 +141,24 @@ enum Showcase {
     /// in place of Frieren's, for the website's captures.
     static let heroIsDungeonCrawlerCarl = ProcessInfo.processInfo.arguments.contains("-showcase-hero-dcc")
 
+    /// `-showcase-hero-turton`: an awaited novel out this week on Accueil, in
+    /// place of Frieren's volume, for the website's captures.
+    static let heroIsTurton = ProcessInfo.processInfo.arguments.contains("-showcase-hero-turton")
+
+    /// The editions the reader awaits, as Accueil's releases read them.
+    static var heroAwaited: [AwaitedEdition] {
+        guard heroIsTurton else { return [] }
+        return [AwaitedEdition(
+            id: "dernier-meurtre", format: .book, state: .available,
+            title: local("Dernier meurtre au bout du monde", "The Last Murder at the End of the World"),
+            originalTitle: "The Last Murder at the End of the World", originalLanguage: .en,
+            authors: ["Stuart Turton"],
+            date: daysAgo(3).formatted(.iso8601.year().month().day()),
+            coverURL: cover("dernier-meurtre"), storeURL: nil, awaitedAt: daysAgo(40),
+            bookId: "dernier-meurtre", ownerId: "me"
+        )]
+    }
+
     static let sagas: [Saga] = [
         Saga(
             id: "one-piece", name: "One Piece", authors: ["Eiichirō Oda"], format: .manga,
@@ -164,7 +182,7 @@ enum Showcase {
             authors: ["Kanehito Yamada", "Tsukasa Abe"],
             format: .manga, publisher: local("Ki-oon", "Viz Media"), genre: .fantasy, subgenres: ["Shōnen"], pages: 192,
             published: 15, owned: 14, read: 14, readBetween: (420, 45),
-            outDaysAgo: heroIsDungeonCrawlerCarl ? nil : 9,
+            outDaysAgo: heroIsDungeonCrawlerCarl || heroIsTurton ? nil : 9,
             rating: 5, favorite: true, slug: "frieren",
             firstPublishedIn: 2020
         ),

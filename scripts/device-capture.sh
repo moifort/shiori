@@ -19,7 +19,7 @@
 #              | review | scan-no-result | scan-failed | shelf-checklist
 #              | settings-blocked | premium-spent | book | author-work | reading-progress
 #              site extras: site-book | series | shelf | scan-review | player | wishlist
-#              | pile | agenda | news-full
+#              | pile | agenda | news-full | suggestion
 #   -- -showcase-anchor center|bottom  opens a long page scrolled, for a stitched capture
 #   [light|dark]  the appearance, whatever the phone is set to (default: the phone's)
 #   -- …       more launch arguments for the app, e.g. -- -showcase-prompts audible
@@ -65,7 +65,7 @@ case "$SCREEN" in
     | settings | preparation | kindle | audible | kindle-library | audible-library | kindle-source \
     | audible-source | review | scan-no-result | scan-failed | shelf-checklist | settings-blocked \
     | premium-spent | book | author-work | reading-progress \
-    | site-book | series | shelf | scan-review | player | wishlist | pile | agenda | news-full)
+    | site-book | series | shelf | scan-review | player | wishlist | pile | agenda | news-full | suggestion)
     SCREEN_FLAG=-showcase-screen ;;
   *) echo "error: unknown screen '$SCREEN' (home, library, news, friends, goodreads…)" >&2; exit 2 ;;
 esac

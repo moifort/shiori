@@ -18,7 +18,7 @@ struct ShowcaseScreen: View {
         "scan-no-result", "scan-failed", "shelf-checklist", "settings-blocked", "premium-spent",
         "book", "author-work", "reading-progress",
                 "site-book", "series", "shelf", "scan-review", "player", "wishlist", "pile",
-        "agenda", "news-full",
+        "agenda", "news-full", "suggestion",
     ]
 
     @State private var choices = GoodreadsChoices(preview: .preview)
@@ -118,12 +118,38 @@ struct ShowcaseScreen: View {
     private static var newsAgenda: NewsAgenda {
         NewsAgenda(
             released: NewsFeedLayout.released(
-                releases: UpcomingRelease.releasedPreviews, narrator: [.preview], format: nil
+                releases: UpcomingRelease.releasedPreviews.map(siteRelease), narrator: [.preview], format: nil
             ),
             events: FeedEvent.previews + FeedEvent.sameStartPreviews,
-            upcoming: ReleaseCalendar(releases: UpcomingRelease.previews, now: .now).dated,
+            upcoming: ReleaseCalendar(releases: UpcomingRelease.previews.map(siteRelease), now: .now).dated,
             suggestions: MonthlyDiscoveries.preview.suggestions,
-            awards: AwardSection.previews
+            awards: AwardSection.previews.map { section in
+                AwardSection(genre: section.genre, winners: section.winners.map { winner in
+                    var winner = winner
+                    let slug = winner.release.title == "La Maison vide" ? "maison-vide" : "buffalo-hunter"
+                    winner.release.coverURL = Showcase.cover(slug)
+                    return winner
+                })
+            }
+        )
+    }
+
+    /// The fixtures' Berserk, a manga, turned into the Three-Body trilogy for
+    /// the site, on the showcase's own covers.
+    private static func siteRelease(_ release: UpcomingRelease) -> UpcomingRelease {
+        guard release.seriesName == "Berserk" else { return release }
+        let second = release.volume == 42
+        let series = Showcase.local("Le Problème à trois corps", "The Three-Body Problem")
+        return UpcomingRelease(
+            id: release.id.replacingOccurrences(of: "berserk", with: "trois-corps"),
+            source: release.source, format: .book,
+            title: second
+                ? Showcase.local("La Forêt sombre", "The Dark Forest")
+                : Showcase.local("La Mort immortelle", "Death's End"),
+            authors: ["Liu Cixin"], date: release.date,
+            coverURL: Showcase.cover(second ? "foret-sombre" : "mort-immortelle"),
+            seriesName: series, volume: second ? 2 : 3, author: release.author,
+            sagaRating: release.sagaRating, sagaFavorite: release.sagaFavorite
         )
     }
 
@@ -502,6 +528,15 @@ struct ShowcaseScreen: View {
                     genres: pile.genres, isLoading: false, errorMessage: nil
                 ) { _ in }
             } }
+        case "suggestion":
+            if let suggestion = Showcase.monthlyDiscoveries.suggestions.first {
+                inTab(.home) { NavigationStack {
+                    SuggestionPage(
+                        suggestion: suggestion, shown: suggestion.cover, isDescribing: false,
+                        choices: DiscoveryChoices(), onChoice: { _, _ in true }
+                    ) { _ in }
+                } }
+            }
         case "agenda", "news-full":
             inTab(.news) { NavigationStack {
                 NewsPage(

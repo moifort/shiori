@@ -64,7 +64,7 @@ enum HomeAPI {
             return HomeReleaseSources(
                 books: Showcase.discovery(format: .book),
                 audiobooks: Showcase.discovery(format: .audiobook),
-                awaited: []
+                awaited: Showcase.heroAwaited
             )
         }
         #endif
