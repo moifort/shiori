@@ -9,21 +9,22 @@
   "use strict";
 
   const lang = document.documentElement.classList.contains("i18n-en") ? "en" : "fr";
-  const version = "20261125i";
+  const version = "20261125k";
 
   // ---------------------------------------------------------------------------
   // The wall of covers
   // ---------------------------------------------------------------------------
 
+  // Novels readers rate highly today: no manga, no comics on the wall.
   const COVERS = [
-    "nom-du-vent", "one-piece-01", "dune", "frieren-01", "trois-corps", "blacksad-01", "projet-derniere-chance",
-    "blue-lock-01", "hyperion", "chateau-animaux-01", "fourth-wing", "spy-family-01", "sapiens", "one-piece-05",
-    "peur-du-sage", "frieren-03", "veiller-sur-elle", "blue-lock-04", "fondation", "dcc-01", "messie-de-dune",
-    "blacksad-03", "jacaranda", "one-piece-12", "foret-sombre", "frieren-07", "demain-et-demain", "blue-lock-09",
-    "shibumi", "chateau-animaux-02", "horde-du-contrevent", "one-piece-100", "monte-cristo", "dcc-03",
-    "sorceleur-01", "frieren-10", "furtifs", "blue-lock-32", "mort-immortelle", "blacksad-05", "one-piece-110",
-    "dcc-05", "frieren-14", "chateau-animaux-04", "blue-lock-35", "sf-1984", "sf-dispossessed", "sf-neuromancer",
-    "sf-solaris", "sf-rama", "sf-wool", "sf-martian", "sf-snow-crash", "sf-annihilation",
+    "projet-derniere-chance", "demain-et-demain", "fourth-wing", "trois-corps", "foret-sombre",
+    "mort-immortelle", "dune", "messie-de-dune", "hyperion", "nom-du-vent", "peur-du-sage", "sapiens",
+    "dernier-meurtre", "buffalo-hunter", "maison-vide", "veiller-sur-elle", "jacaranda", "horde-du-contrevent",
+    "furtifs", "fondation", "sorceleur-01", "shibumi", "dcc-01", "dcc-02", "dcc-03", "dcc-05",
+    "sf-children-of-time", "sf-klara", "sf-station-eleven", "sf-murderbot", "sf-stars-destination",
+    "sf-ancillary-justice", "sf-martian", "sf-leviathan-wakes", "sf-annihilation", "sf-wool",
+    "sf-the-road", "sf-handmaids-tale", "sf-ready-player-one", "friend-blood-of-hercules", "friend-powerful",
+    "friend-wolf-king", "friend-maison-terre-sang", "monte-cristo",
   ];
 
   function hash(n) {
@@ -35,7 +36,12 @@
   if (wall) {
     const columns = window.innerWidth < 700 ? 6 : 11;
     wall.style.setProperty("--cols", columns);
-    const count = columns * (window.innerWidth < 700 ? 9 : 7);
+    // Enough rows to cover the whole hero, however tall, with the wall's tilt
+    // and its slow drift upwards: a cover is (width / columns) * 1.5 tall.
+    const hero = wall.closest(".hero");
+    const coverHeight = ((window.innerWidth * 1.16) / columns) * 1.5;
+    const rows = Math.ceil((hero.offsetHeight * 1.3) / coverHeight) + 3;
+    const count = columns * rows;
     // A few dozen distinct covers, repeated: the wall stays light on a phone.
     const distinct = window.innerWidth < 700 ? 22 : 34;
     const order = COVERS.map((slug, i) => [hash(i + 7), slug]).sort((a, b) => a[0] - b[0]).map((p) => p[1]).slice(0, distinct);
