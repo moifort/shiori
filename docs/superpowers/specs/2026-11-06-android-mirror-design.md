@@ -44,8 +44,9 @@ apps ship the same version.
 
 ## Constraints
 
-- Public release on Google Play goes through the Polyforms **organisation** Play Console account,
-  which can publish to production without the closed-test period imposed on personal accounts.
+- Public release on Google Play goes through an **organisation** Play Console account (the
+  user's sole proprietorship, with its D-U-N-S number), which can publish to production without
+  the closed-test period imposed on personal accounts.
 - The GraphQL schema is not versioned (docs/api-evolution.md): Android builds join the same
   deprecation rule. `MINIMUM_SUPPORTED_IOS_BUILD` gains an Android twin.
 - Every server change follows the existing domain rules (branded types, outcomes, flat

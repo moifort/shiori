@@ -125,13 +125,14 @@ Runtime: always `bun` / `bunx`, never `npm` / `npx`.
    built and validated on iOS only; `android/` is never where a feature starts, and is never
    edited during feature or fix work, even once the iOS change is validated: no Kotlin port, no
    string regeneration (building Android to check a shared `.graphql` edit is fine). Android code
-   is written only when a release is asked for, before tagging `ios-v*`: list the iOS commits
-   since the previous release (`git log ios-v<previous>..HEAD -- ios shared`), port each one to
+   is written only when a release is asked for, before tagging `v<version>`: list the iOS commits
+   since the previous release (`git log <previous tag>..HEAD -- ios shared`), port each one to
    the Kotlin file of the same name, regenerate the strings (`bun scripts/android-strings.ts`),
    build and test Android, capture the changed screens on the emulator, then install the build
    on the user's Pixel 8 and wait for them to test it and validate. Only after that yes are both
-   releases cut with the same version. The release is not cut while Android lags or is
-   unvalidated. The mapping and the rules are in
+   releases cut with the same version, by one tag `v<version>` that starts the App Store and
+   the Google Play workflows (`ios-v*` / `android-v*` rerun one platform alone). The release is
+   not cut while Android lags or is unvalidated. The mapping and the rules are in
    [docs/android-guide.md](docs/android-guide.md).
 11. **A bug is looked for elsewhere before its fix is done.** Once the cause is found, search
    for the same mechanism in the other features (every list, page or job built the same way),

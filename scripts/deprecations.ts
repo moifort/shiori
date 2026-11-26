@@ -83,8 +83,9 @@ type Resource = {
 }
 
 /** The build on sale on the App Store and the day it was released — the date of
- *  its `ios-v<version>` tag, which the release workflow submits for automatic
- *  release. Undefined before the first release. */
+ *  its release tag (`v<version>`, or `ios-v<version>` for the releases before the shared tag),
+ *  which the release workflow submits for automatic release. Undefined before the first
+ *  release. */
 const liveBuild = async (): Promise<LiveBuild | undefined | 'unknown'> => {
   const found = credentials()
   if (!found) return 'unknown'
@@ -106,7 +107,11 @@ const liveBuild = async (): Promise<LiveBuild | undefined | 'unknown'> => {
   const buildId = version.relationships?.build?.data?.id
   const build = included.find((resource) => resource.type === 'builds' && resource.id === buildId)
   if (!build) throw new Error(`The version on sale lists no build: ${JSON.stringify(version)}`)
-  const tag = `ios-v${version.attributes.versionString}`
+  const versionString = version.attributes.versionString
+  const tag = [`v${versionString}`, `ios-v${versionString}`].find(
+    (name) => git('tag', '--list', name).trim() !== '',
+  )
+  if (!tag) throw new Error(`No release tag for the version on sale, ${versionString}`)
   const tagged = git('log', '-1', '--format=%cI', `refs/tags/${tag}`).trim()
   return { build: Number(build.attributes.version), releasedOn: new Date(tagged) }
 }

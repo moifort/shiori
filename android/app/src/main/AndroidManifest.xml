@@ -11,6 +11,11 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- No advertising identifier: Firebase Analytics would add these, and the privacy policy and
+         Play's Data safety form both say Shiori does no ad tracking. -->
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID" tools:node="remove" />
+    <uses-permission android:name="android.permission.ACCESS_ADSERVICES_AD_ID" tools:node="remove" />
+    <uses-permission android:name="android.permission.ACCESS_ADSERVICES_ATTRIBUTION" tools:node="remove" />
 
     <application
         android:name=".ShioriApplication"
@@ -21,6 +26,9 @@
         android:localeConfig="@xml/locales_config"
         android:supportsRtl="true"
         android:theme="@style/Theme.Shiori">
+        <meta-data
+            android:name="google_analytics_adid_collection_enabled"
+            android:value="false" />
         <!-- Sentry starts from ShioriApplication, only in a release build with a DSN. -->
         <meta-data android:name="io.sentry.auto-init" android:value="false" />
         <!-- An alert the system draws while the app is closed: the flat book, in the alerts

@@ -384,7 +384,7 @@ schema, a domain command, or several screens at once; **large** brings in a new 
       The build number stays the commit count, so a commit already on App Store Connect is
       never rebuilt: a night where main did not move stops after one Linux check, and a tag
       on a commit that went up the night before submits that very binary. The marketing
-      version is the latest `CHANGELOG.md` heading until its `ios-v*` tag exists, then the
+      version is the latest `CHANGELOG.md` heading until its `v*` (formerly `ios-v*`) tag exists, then the
       next minor. "What to Test" is the commit subjects since the previous upload.
 
 - [x] **Kindle import from the Amazon data export.** Decided: the reader asks Amazon for
