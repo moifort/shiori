@@ -101,7 +101,12 @@ const COVERS: Cover[] = [
   { slug: 'jacaranda', term: 'jacaranda gaël faye', match: 'jacaranda' },
   { slug: 'hyperion', term: 'hypérion simmons', match: 'hyperion tome 1' },
   { slug: 'fondation', term: 'fondation asimov', match: 'fondation tome 1' },
-  { slug: 'red-rising', term: 'red rising pierce brown', match: 'red rising', avoid: 'golden morning iron dark light' },
+  {
+    slug: 'red-rising',
+    term: 'red rising pierce brown',
+    match: 'red rising',
+    avoid: 'golden morning iron dark light',
+  },
   { slug: 'golden-son', term: 'golden son pierce brown', match: 'golden son' },
   { slug: 'morning-star', term: 'morning star pierce brown red rising', match: 'morning star' },
   { slug: 'fourth-wing', term: 'fourth wing yarros', match: 'fourth wing francaise' },
