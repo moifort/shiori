@@ -82,21 +82,26 @@ fun FullScreenCover(onDismiss: () -> Unit, content: @Composable () -> Unit) {
 @Composable
 fun SheetBar(
     title: String? = null,
+    subtitle: String? = null,
     leading: @Composable RowScope.() -> Unit = {},
     trailing: @Composable RowScope.() -> Unit = {},
 ) {
     Box(Modifier.fillMaxWidth().height(64.dp).padding(horizontal = 16.dp)) {
         Row(Modifier.align(Alignment.CenterStart), horizontalArrangement = Arrangement.spacedBy(8.dp), content = leading)
         if (title != null) {
-            Text(
-                title,
-                style = Shiori.type.headline,
-                color = Shiori.colors.label,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.align(Alignment.Center).padding(horizontal = 64.dp),
-            )
+            Column(Modifier.align(Alignment.Center).padding(horizontal = 64.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    title,
+                    style = Shiori.type.headline,
+                    color = Shiori.colors.label,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center,
+                )
+                if (subtitle != null) {
+                    Text(subtitle, style = Shiori.type.caption, color = Shiori.colors.secondaryLabel, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center)
+                }
+            }
         }
         Row(Modifier.align(Alignment.CenterEnd), horizontalArrangement = Arrangement.spacedBy(8.dp), content = trailing)
     }

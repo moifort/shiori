@@ -19,6 +19,8 @@ struct ShowcaseScreen: View {
         "book", "author-work", "reading-progress",
                 "site-book", "series", "shelf", "scan-review", "player", "wishlist", "pile",
         "agenda", "news-full", "suggestion",
+        "onboarding-audible", "onboarding-kindle", "onboarding-goodreads",
+        "onboarding-audible-connected", "onboarding-audible-failed", "onboarding-amazon",
     ]
 
     @State private var choices = GoodreadsChoices(preview: .preview)
@@ -340,6 +342,39 @@ struct ShowcaseScreen: View {
                 onConnect: {},
                 onSkip: {}
             )
+        case "onboarding-audible", "onboarding-kindle", "onboarding-goodreads":
+            // The onboarding's step for one library, before its sign-in.
+            let library = OnboardingLibrary(rawValue: String(name.dropFirst("onboarding-".count))) ?? .audible
+            let number = (OnboardingLibrary.allCases.firstIndex(of: library) ?? 0) + 1
+            LibraryStepPage(
+                library: library, number: number, count: 3,
+                next: OnboardingLibrary.allCases.dropFirst(number).first,
+                onPrimary: {}, onSecondary: {}
+            )
+            .background { CoverVeil(covering: true) }
+            .environment(\.colorScheme, .dark)
+        case "onboarding-audible-connected", "onboarding-audible-failed":
+            LibraryStepPage(
+                library: .audible, number: 1, count: 3,
+                phase: name.hasSuffix("connected") ? .connected : .failed, next: .kindle,
+                onPrimary: {}, onSecondary: {}
+            )
+            .background { CoverVeil(covering: true) }
+            .environment(\.colorScheme, .dark)
+        case "onboarding-amazon":
+            // Amazon's sheet over the Audible step, its page left blank: the
+            // showcase never reaches Amazon.
+            LibraryStepPage(library: .audible, number: 1, count: 3, next: .kindle, onPrimary: {}, onSecondary: {})
+                .background { CoverVeil(covering: true) }
+                .environment(\.colorScheme, .dark)
+                .sheet(isPresented: .constant(true)) {
+                    AmazonSignInSheet(
+                        login: AmazonLogin(url: "about:blank", redirectURL: "about:blank", cookies: []),
+                        onCode: { _ in }, onCancel: {},
+                        source: .audible, subtitle: "sur amazon.fr · étape 1 sur 3"
+                    )
+                    .environment(\.colorScheme, .dark)
+                }
         case "player-sleep":
             PlayerPage(item: .preview.withSleep(20)) { _ in }
                 .environment(\.colorScheme, .dark)

@@ -28,6 +28,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -43,6 +44,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import com.polyforms.shiori.features.auth.LocalAuthSession
 import com.polyforms.shiori.features.home.LibraryPreparation
+import com.polyforms.shiori.features.onboarding.components.pages.LibraryStepPage
 import com.polyforms.shiori.features.import.AmazonLogin
 import com.polyforms.shiori.features.import.AmazonMarketplace
 import com.polyforms.shiori.features.import.BackgroundSync
@@ -120,35 +122,51 @@ fun OnboardingScreen(onCompleted: (String, AccountAvatar) -> Unit, client: Onboa
     var goodreadsShown by remember { mutableStateOf(false) }
     var startedGoodreads by remember { mutableStateOf(false) }
     var marketplace by remember { mutableStateOf(AmazonMarketplace.suggested) }
-    val pending = remember { mutableListOf<ImportSource>() }
+    // One step per library ticked, each said before its sign-in; none while the libraries page shows.
+    var steps by remember { mutableStateOf<OnboardingLibrarySteps?>(null) }
     val linked = remember { mutableListOf<ImportSource>() }
     var signingIn by remember { mutableStateOf<ImportSource?>(null) }
     var signIn by remember { mutableStateOf<AmazonLogin?>(null) }
     var isConnecting by remember { mutableStateOf(false) }
-    var connectionError by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(Unit) { track(AnalyticsEvent.OnboardingStarted) }
 
     fun enterApp() {
         client.beginPreparation(linked.toList(), startedGoodreads)
         onCompleted(firstName.trim(), avatar)
     }
-    suspend fun connectNext() {
-        if (pending.isEmpty()) {
-            signingIn = null
-            if (importsGoodreads && !startedGoodreads) goodreadsShown = true else enterApp()
-            return
+    // The next library's step, or the app once none is left.
+    fun moveOn() {
+        val advanced = steps?.advance()
+        steps = advanced
+        if (advanced?.isFinished == true) enterApp()
+    }
+    fun beginSteps() {
+        val chosen = buildSet {
+            if (connectsAudible) add(OnboardingLibrary.AUDIBLE)
+            if (connectsKindle) add(OnboardingLibrary.KINDLE)
+            if (importsGoodreads) add(OnboardingLibrary.GOODREADS)
         }
-        val source = pending.removeAt(0)
-        signingIn = source
-        isConnecting = true
-        try {
-            signIn = client.startSignIn(source, marketplace)
-        } catch (failure: Exception) {
-            connectionError = reportError(failure)
-        } finally {
-            isConnecting = false
+        val begun = OnboardingLibrarySteps.of(chosen)
+        if (begun.isFinished) enterApp() else steps = begun
+    }
+    // Amazon's page for an Amazon library, the export screen for Goodreads.
+    fun connect(library: OnboardingLibrary) {
+        val source = library.amazonSource ?: run { goodreadsShown = true; return }
+        scope.launch {
+            signingIn = source
+            isConnecting = true
+            try {
+                signIn = client.startSignIn(source, marketplace)
+            } catch (failure: Exception) {
+                reportError(failure)
+                steps = steps?.failed()
+            } finally {
+                isConnecting = false
+            }
         }
     }
+    // The code Amazon handed back: the library is linked, its pass starts in the background, and
+    // the step confirms it; a failed link is said on the step.
     suspend fun finishSignIn(code: String) {
         signIn = null
         val source = signingIn ?: return
@@ -156,13 +174,13 @@ fun OnboardingScreen(onCompleted: (String, AccountAvatar) -> Unit, client: Onboa
         try {
             client.completeSignIn(source, code)
             linked += source
+            steps = steps?.connected()
         } catch (failure: Exception) {
+            reportError(failure)
+            steps = steps?.failed()
+        } finally {
             isConnecting = false
-            connectionError = reportError(failure)
-            return
         }
-        isConnecting = false
-        connectNext()
     }
     suspend fun complete() {
         val name = firstName.trim()
@@ -192,46 +210,64 @@ fun OnboardingScreen(onCompleted: (String, AccountAvatar) -> Unit, client: Onboa
         Box(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().imePadding().padding(16.dp)) {
             when (step) {
                 OnboardingStep.FIRST_NAME -> FirstNamePage(firstName, { firstName = it }, avatar, { avatar = it }) { scope.launch { complete() } }
-                OnboardingStep.LIBRARIES -> LibrariesOfferPage(
-                    connectsAudible, { connectsAudible = it },
-                    connectsKindle, { connectsKindle = it },
-                    importsGoodreads, { importsGoodreads = it },
-                    marketplace, { marketplace = it },
-                    isConnecting,
-                    onConnect = {
-                        pending.clear()
-                        if (connectsAudible) pending += ImportSource.AUDIBLE
-                        if (connectsKindle) pending += ImportSource.KINDLE
-                        scope.launch { connectNext() }
-                    },
-                    onSkip = ::enterApp,
-                )
+                OnboardingStep.LIBRARIES -> {
+                    val current = steps
+                    val library = current?.current
+                    if (current != null && library != null) {
+                        key(library, current.phase) {
+                            LibraryStepPage(
+                                library,
+                                current.number,
+                                current.count,
+                                current.phase,
+                                current.next,
+                                isConnecting,
+                                onPrimary = {
+                                    when (current.phase) {
+                                        OnboardingLibrarySteps.Phase.CONNECTED -> moveOn()
+                                        else -> connect(library)
+                                    }
+                                },
+                                onSecondary = ::moveOn,
+                            )
+                        }
+                    } else {
+                        LibrariesOfferPage(
+                            connectsAudible, { connectsAudible = it },
+                            connectsKindle, { connectsKindle = it },
+                            importsGoodreads, { importsGoodreads = it },
+                            marketplace, { marketplace = it },
+                            isConnecting,
+                            onConnect = ::beginSteps,
+                            onSkip = ::enterApp,
+                        )
+                    }
+                }
             }
         }
         if (isSaving) CircularProgressIndicator(Modifier.align(Alignment.Center), color = Color.White)
     }
-    // After Amazon's pages, the export file: the import starts in the background and the
-    // preparation screen shows it going on.
+    // The export file: the import starts in the background, and the step confirms it.
     if (goodreadsShown) {
-        FullScreenCover(onDismiss = { goodreadsShown = false; enterApp() }) {
+        FullScreenCover(onDismiss = { goodreadsShown = false }) {
             GoodreadsImportScreen(GoodreadsImportMode.ONBOARDING) { started ->
-                startedGoodreads = started
                 goodreadsShown = false
-                enterApp()
+                if (started) {
+                    startedGoodreads = true
+                    steps = steps?.connected()
+                }
             }
         }
     }
+    // Amazon's page, named after the library it is for. Closing it goes back to that step.
     signIn?.let { login ->
-        AmazonSignInSheet(login, onCode = { scope.launch { finishSignIn(it) } }, onCancel = {
-            signIn = null
-            scope.launch { connectNext() }
-        })
-    }
-    connectionError?.let { message ->
-        ShioriAlert(L("Connexion impossible"), L("%@ Vous pourrez réessayer depuis les réglages.", message), onDismiss = {
-            connectionError = null
-            scope.launch { connectNext() }
-        })
+        AmazonSignInSheet(
+            login,
+            onCode = { scope.launch { finishSignIn(it) } },
+            onCancel = { signIn = null },
+            source = signingIn,
+            subtitle = steps?.let { L("sur %@ · étape %lld sur %lld", marketplace.amazonLabel, it.number, it.count) },
+        )
     }
     error?.let { ShioriAlert(L("Impossible de terminer"), it, onDismiss = { error = null }) }
 }

@@ -101,6 +101,9 @@ import androidx.compose.material.icons.outlined.Collections
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.DocumentScanner
 import androidx.compose.material.icons.outlined.Download
+import androidx.compose.material.icons.outlined.PieChart
+import androidx.compose.material.icons.outlined.Description
+import androidx.compose.material.icons.outlined.Inventory2
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.EditNote
 import androidx.compose.material.icons.outlined.ErrorOutline
@@ -324,7 +327,10 @@ fun Symbol(name: String): ImageVector = when (name) {
     "number" -> Icons.Outlined.Tag
     "bag" -> Icons.Outlined.ShoppingBag
     "arrow.outward" -> Icons.Outlined.ArrowOutward
-    "download" -> Icons.Outlined.Download
+    "download", "arrow.down.to.line" -> Icons.Outlined.Download
+    "chart.pie" -> Icons.Outlined.PieChart
+    "doc" -> Icons.Outlined.Description
+    "tray.2" -> Icons.Outlined.Inventory2
     "star.outline" -> Icons.Outlined.Star
     "book.outlined" -> Icons.Outlined.Book
     "person.add" -> Icons.Outlined.PersonAdd

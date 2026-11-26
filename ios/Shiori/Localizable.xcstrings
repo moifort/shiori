@@ -65,22 +65,6 @@
         }
       }
     },
-    "%@ Vous pourrez réessayer depuis les réglages." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ You can try again from Settings."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ Vous pourrez réessayer depuis les réglages."
-          }
-        }
-      }
-    },
     "%@ Vous pouvez relancer la synchronisation depuis les réglages." : {
       "localizations" : {
         "en" : {
@@ -2553,6 +2537,22 @@
         }
       }
     },
+    "Amazon vous redemande de vous connecter, même avec le compte d'Audible." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Amazon asks you to sign in again, even with your Audible account."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Amazon vous redemande de vous connecter, même avec le compte d'Audible."
+          }
+        }
+      }
+    },
     "Amis" : {
       "localizations" : {
         "en" : {
@@ -3305,6 +3305,22 @@
         }
       }
     },
+    "Aucune donnée de votre compte n'est restée dans Shiori." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No data from your account stayed in Shiori."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucune donnée de votre compte n'est restée dans Shiori."
+          }
+        }
+      }
+    },
     "Aucune envie" : {
       "localizations" : {
         "en" : {
@@ -3397,6 +3413,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Audible"
+          }
+        }
+      }
+    },
+    "Audible connecté" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Audible connected"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Audible connecté"
+          }
+        }
+      }
+    },
+    "Audible n'est pas connecté" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Audible isn't connected"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Audible n'est pas connecté"
           }
         }
       }
@@ -4165,6 +4213,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ce qu'on vous en a dit…"
+          }
+        }
+      }
+    },
+    "Ce que Shiori ne fait pas" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What Shiori doesn't do"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ce que Shiori ne fait pas"
+          }
+        }
+      }
+    },
+    "Ce que Shiori récupère" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What Shiori brings in"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ce que Shiori récupère"
           }
         }
       }
@@ -5257,6 +5337,38 @@
         }
       }
     },
+    "Connexion Audible" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Audible sign-in"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connexion Audible"
+          }
+        }
+      }
+    },
+    "Connexion Kindle" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kindle sign-in"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connexion Kindle"
+          }
+        }
+      }
+    },
     "Connexion impossible" : {
       "localizations" : {
         "en" : {
@@ -5397,6 +5509,54 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Continuer"
+          }
+        }
+      }
+    },
+    "Continuer avec Audible" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue with Audible"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continuer avec Audible"
+          }
+        }
+      }
+    },
+    "Continuer avec Goodreads" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue with Goodreads"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continuer avec Goodreads"
+          }
+        }
+      }
+    },
+    "Continuer avec Kindle" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue with Kindle"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continuer avec Kindle"
           }
         }
       }
@@ -7241,6 +7401,38 @@
         }
       }
     },
+    "Goodreads n'est pas importé" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Goodreads isn't imported"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Goodreads n'est pas importé"
+          }
+        }
+      }
+    },
+    "Goodreads ne partage pas vos livres avec d'autres apps : Shiori lit son fichier d'export." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Goodreads doesn't share your books with other apps: Shiori reads its export file."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Goodreads ne partage pas vos livres avec d'autres apps : Shiori lit son fichier d'export."
+          }
+        }
+      }
+    },
     "Goodreads ne partage pas vos livres avec d'autres apps : tout passe par son fichier d'export, qui garde vos étagères, vos notes et vos dates de lecture." : {
       "localizations" : {
         "en" : {
@@ -7837,6 +8029,22 @@
         }
       }
     },
+    "Ils apparaissent dans votre bibliothèque au fil de l'import." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "They appear in your library as the import goes."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ils apparaissent dans votre bibliothèque au fil de l'import."
+          }
+        }
+      }
+    },
     "Ils prennent la note et la date de Goodreads quand ils n'en ont pas. Un livre papier et sa version Kindle restent un seul livre." : {
       "localizations" : {
         "en" : {
@@ -7885,6 +8093,22 @@
         }
       }
     },
+    "Import Goodreads lancé" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Goodreads import started"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import Goodreads lancé"
+          }
+        }
+      }
+    },
     "Import Kindle interrompu" : {
       "localizations" : {
         "en" : {
@@ -7913,6 +8137,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Import d'un fichier d'export"
+          }
+        }
+      }
+    },
+    "Import en arrière-plan" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Imported in the background"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import en arrière-plan"
           }
         }
       }
@@ -8005,6 +8245,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Importer depuis Audible"
+          }
+        }
+      }
+    },
+    "Importer depuis Goodreads" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import from Goodreads"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importer depuis Goodreads"
           }
         }
       }
@@ -8521,6 +8777,22 @@
         }
       }
     },
+    "Kindle connecté" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kindle connected"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kindle connecté"
+          }
+        }
+      }
+    },
     "Kindle et Audible à jour" : {
       "localizations" : {
         "en" : {
@@ -8533,6 +8805,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Kindle et Audible à jour"
+          }
+        }
+      }
+    },
+    "Kindle n'est pas connecté" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kindle isn't connected"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kindle n'est pas connecté"
           }
         }
       }
@@ -8793,6 +9081,22 @@
         }
       }
     },
+    "La page d'Amazon n'a pas pu terminer la connexion. Vous pouvez réessayer maintenant, ou plus tard depuis les réglages." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Amazon's page couldn't finish signing in. You can try again now, or later from the settings."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La page d'Amazon n'a pas pu terminer la connexion. Vous pouvez réessayer maintenant, ou plus tard depuis les réglages."
+          }
+        }
+      }
+    },
     "La page de connexion est celle d'Amazon : votre mot de passe ne passe jamais par Shiori. L'import ne consomme aucun scan." : {
       "localizations" : {
         "en" : {
@@ -8805,6 +9109,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "La page de connexion est celle d'Amazon : votre mot de passe ne passe jamais par Shiori. L'import ne consomme aucun scan."
+          }
+        }
+      }
+    },
+    "La position d'écoute, et les livres finis." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Where you are in each book, and the ones you finished."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La position d'écoute, et les livres finis."
           }
         }
       }
@@ -8953,6 +9273,22 @@
         }
       }
     },
+    "Le lecteur" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The player"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le lecteur"
+          }
+        }
+      }
+    },
     "Le livre vous intéresse finalement" : {
       "localizations" : {
         "en" : {
@@ -9061,6 +9397,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Le plus dévoré"
+          }
+        }
+      }
+    },
+    "Le pourcentage lu, et les livres finis." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "How far you've read, and the books you finished."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le pourcentage lu, et les livres finis."
           }
         }
       }
@@ -9413,6 +9765,22 @@
         }
       }
     },
+    "Les livres en double avec Audible ou Kindle restent une seule fiche." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Books you also have on Audible or Kindle stay one record."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les livres en double avec Audible ou Kindle restent une seule fiche."
+          }
+        }
+      }
+    },
     "Les livres à lire et ceux en cours s'afficheront ici." : {
       "localizations" : {
         "en" : {
@@ -9473,6 +9841,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Les prochaines sorties de vos séries, de vos auteurs et de vos livres guettés s'afficheront ici."
+          }
+        }
+      }
+    },
+    "Les étoiles que vous avez données." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The stars you gave."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les étoiles que vous avez données."
           }
         }
       }
@@ -10017,6 +10401,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Lus récemment"
+          }
+        }
+      }
+    },
+    "Lus, en cours, à lire : chaque livre garde la sienne." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Read, reading, to read: each book keeps its shelf."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lus, en cours, à lire : chaque livre garde la sienne."
           }
         }
       }
@@ -10817,6 +11217,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Nemo"
+          }
+        }
+      }
+    },
+    "Ni connexion ni mot de passe" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No sign-in, no password"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ni connexion ni mot de passe"
           }
         }
       }
@@ -11637,6 +12053,22 @@
         }
       }
     },
+    "Où vous en êtes" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Where you are"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Où vous en êtes"
+          }
+        }
+      }
+    },
     "PLUS" : {
       "localizations" : {
         "en" : {
@@ -11729,6 +12161,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Papier"
+          }
+        }
+      }
+    },
+    "Papier et Kindle, un seul livre" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paper and Kindle, one book"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Papier et Kindle, un seul livre"
           }
         }
       }
@@ -11969,6 +12417,54 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Pas intéressé"
+          }
+        }
+      }
+    },
+    "Passer à Audible" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skip to Audible"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Passer à Audible"
+          }
+        }
+      }
+    },
+    "Passer à Goodreads" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skip to Goodreads"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Passer à Goodreads"
+          }
+        }
+      }
+    },
+    "Passer à Kindle" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skip to Kindle"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Passer à Kindle"
           }
         }
       }
@@ -12353,6 +12849,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Position dans le chapitre"
+          }
+        }
+      }
+    },
+    "Pour le mettre à jour, importez un nouvel export depuis les réglages." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To update it, import a new export from the settings."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pour le mettre à jour, importez un nouvel export depuis les réglages."
           }
         }
       }
@@ -12897,6 +13409,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Qu'en avez-vous pensé ?"
+          }
+        }
+      }
+    },
+    "Quand vous avez commencé et fini chaque livre." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When you started and finished each book."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quand vous avez commencé et fini chaque livre."
           }
         }
       }
@@ -13685,6 +14213,22 @@
         }
       }
     },
+    "Rien n'a été gardé" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing was kept"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rien n'a été gardé"
+          }
+        }
+      }
+    },
     "Rien à suivre" : {
       "localizations" : {
         "en" : {
@@ -14405,6 +14949,22 @@
         }
       }
     },
+    "Seulement un fichier, que vous choisissez : votre compte Goodreads reste tel quel." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Just a file, which you choose: your Goodreads account stays as it is."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seulement un fichier, que vous choisissez : votre compte Goodreads reste tel quel."
+          }
+        }
+      }
+    },
     "Sherlock Holmes" : {
       "localizations" : {
         "en" : {
@@ -14465,6 +15025,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Shiori n'est pas autorisé à vous prévenir. Activez ses notifications dans les réglages de l'iPhone pour recevoir ces alertes."
+          }
+        }
+      }
+    },
+    "Shiori se connecte à Audible pour ranger vos livres audio avec les autres." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shiori connects to Audible to shelve your audiobooks with the rest."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shiori se connecte à Audible pour ranger vos livres audio avec les autres."
+          }
+        }
+      }
+    },
+    "Shiori se connecte à Kindle pour ranger vos livres numériques avec les autres." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shiori connects to Kindle to shelve your ebooks with the rest."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shiori se connecte à Kindle pour ranger vos livres numériques avec les autres."
           }
         }
       }
@@ -15461,6 +16053,22 @@
         }
       }
     },
+    "Terminer" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Finish"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Terminer"
+          }
+        }
+      }
+    },
     "Terminez un livre pour le retrouver ici." : {
       "localizations" : {
         "en" : {
@@ -15957,6 +16565,38 @@
         }
       }
     },
+    "Tous les titres de votre bibliothèque Audible." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Every title in your Audible library."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tous les titres de votre bibliothèque Audible."
+          }
+        }
+      }
+    },
+    "Tous les titres de votre bibliothèque Kindle." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Every title in your Kindle library."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tous les titres de votre bibliothèque Kindle."
+          }
+        }
+      }
+    },
     "Tous vos livres,\nau même endroit" : {
       "localizations" : {
         "en" : {
@@ -16325,6 +16965,22 @@
         }
       }
     },
+    "Un fichier, une fois" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "One file, once"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un fichier, une fois"
+          }
+        }
+      }
+    },
     "Un lecteur" : {
       "localizations" : {
         "en" : {
@@ -16353,6 +17009,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Un livre a besoin d'un titre."
+          }
+        }
+      }
+    },
+    "Un livre que vous avez aussi en papier garde une seule fiche." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A book you also own in print keeps one record."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un livre que vous avez aussi en papier garde une seule fiche."
           }
         }
       }
@@ -16773,6 +17445,38 @@
         }
       }
     },
+    "Vos dates de lecture" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your reading dates"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vos dates de lecture"
+          }
+        }
+      }
+    },
+    "Vos livres arrivent : Shiori lit le fichier pendant que vous continuez." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your books are on their way: Shiori reads the file while you carry on."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vos livres arrivent : Shiori lit le fichier pendant que vous continuez."
+          }
+        }
+      }
+    },
     "Vos livres arrivent dans la bibliothèque au fil de l'import. Vous pouvez fermer cet écran : l'import continue." : {
       "localizations" : {
         "en" : {
@@ -16785,6 +17489,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vos livres arrivent dans la bibliothèque au fil de l'import. Vous pouvez fermer cet écran : l'import continue."
+          }
+        }
+      }
+    },
+    "Vos livres audio" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your audiobooks"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vos livres audio"
+          }
+        }
+      }
+    },
+    "Vos livres audio arrivent : Shiori les range pendant que vous continuez." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your audiobooks are on their way: Shiori shelves them while you carry on."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vos livres audio arrivent : Shiori les range pendant que vous continuez."
           }
         }
       }
@@ -16885,6 +17621,38 @@
         }
       }
     },
+    "Vos livres numériques" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your ebooks"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vos livres numériques"
+          }
+        }
+      }
+    },
+    "Vos livres numériques arrivent : Shiori les range pendant que vous continuez." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your ebooks are on their way: Shiori shelves them while you carry on."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vos livres numériques arrivent : Shiori les range pendant que vous continuez."
+          }
+        }
+      }
+    },
     "Vos livres numériques, avec ceux que vous avez finis." : {
       "localizations" : {
         "en" : {
@@ -16917,6 +17685,22 @@
         }
       }
     },
+    "Vos livres s'écoutent dans Shiori, là où vous en étiez." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your books play in Shiori, right where you left off."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vos livres s'écoutent dans Shiori, là où vous en étiez."
+          }
+        }
+      }
+    },
     "Vos livres, vos séries et vos notes sont gardés. Abonnez-vous pour retrouver votre bibliothèque." : {
       "localizations" : {
         "en" : {
@@ -16929,6 +17713,54 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vos livres, vos séries et vos notes sont gardés. Abonnez-vous pour retrouver votre bibliothèque."
+          }
+        }
+      }
+    },
+    "Vos notes" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your ratings"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vos notes"
+          }
+        }
+      }
+    },
+    "Vos nouveaux achats et votre lecture suivent, sans rien faire." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New purchases and your reading follow, with nothing to do."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vos nouveaux achats et votre lecture suivent, sans rien faire."
+          }
+        }
+      }
+    },
+    "Vos nouveaux achats et votre écoute suivent, sans rien faire." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New purchases and your listening follow, with nothing to do."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vos nouveaux achats et votre écoute suivent, sans rien faire."
           }
         }
       }
@@ -17189,6 +18021,22 @@
         }
       }
     },
+    "Votre mot de passe reste chez Amazon" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your password stays with Amazon"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Votre mot de passe reste chez Amazon"
+          }
+        }
+      }
+    },
     "Votre note sera perdue. Cette action est définitive." : {
       "localizations" : {
         "en" : {
@@ -17233,6 +18081,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Votre profil"
+          }
+        }
+      }
+    },
+    "Votre progression" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your progress"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Votre progression"
           }
         }
       }
@@ -17329,6 +18193,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Vous pouvez l'ajouter une seconde fois, pour une autre édition par exemple."
+          }
+        }
+      }
+    },
+    "Vous vous connectez sur sa page : Shiori ne le voit pas, et ne change rien à votre compte." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You sign in on its page: Shiori never sees it, and changes nothing on your account."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vous vous connectez sur sa page : Shiori ne le voit pas, et ne change rien à votre compte."
           }
         }
       }
@@ -18149,6 +19029,22 @@
         }
       }
     },
+    "sur %@ · étape %lld sur %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "on %@ · step %lld of %lld"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "sur %1$@ · étape %2$lld sur %3$lld"
+          }
+        }
+      }
+    },
     "sur **%lld** pages" : {
       "localizations" : {
         "en" : {
@@ -18385,6 +19281,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "À finir"
+          }
+        }
+      }
+    },
+    "À jour chaque nuit" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Updated every night"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "À jour chaque nuit"
           }
         }
       }
@@ -18705,6 +19617,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Étagères"
+          }
+        }
+      }
+    },
+    "Étape %lld sur %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Step %lld of %lld"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Étape %1$lld sur %2$lld"
           }
         }
       }

@@ -12,9 +12,6 @@
   "fr": "%1$@ : %2$@ ★ en moyenne, sur %3$lld livres seulement.",
   "en": "%1$@: %2$@ ★ on average, over only %3$lld books."
  },
- "%@ Vous pourrez réessayer depuis les réglages.": {
-  "en": "%@ You can try again from Settings."
- },
  "%@ Vous pouvez relancer la synchronisation depuis les réglages.": {
   "en": "%@ You can restart the sync from Settings."
  },
@@ -515,6 +512,9 @@
  "Amazon a refusé la dernière synchronisation": {
   "en": "Amazon refused the last sync"
  },
+ "Amazon vous redemande de vous connecter, même avec le compte d'Audible.": {
+  "en": "Amazon asks you to sign in again, even with your Audible account."
+ },
  "Amis": {
   "en": "Friends"
  },
@@ -656,6 +656,9 @@
  "Aucune couverture trouvée pour ce livre. Collez l'adresse d'une image.": {
   "en": "No cover found for this book. Paste the address of an image."
  },
+ "Aucune donnée de votre compte n'est restée dans Shiori.": {
+  "en": "No data from your account stayed in Shiori."
+ },
  "Aucune envie": {
   "en": "Nothing on your wishlist"
  },
@@ -673,6 +676,12 @@
  },
  "Audible": {
   "en": "Audible"
+ },
+ "Audible connecté": {
+  "en": "Audible connected"
+ },
+ "Audible n'est pas connecté": {
+  "en": "Audible isn't connected"
  },
  "Audible refuse la lecture": {
   "en": "Audible won't play this title"
@@ -817,6 +826,12 @@
  },
  "Ce qu'on vous en a dit…": {
   "en": "What you were told about it…"
+ },
+ "Ce que Shiori ne fait pas": {
+  "en": "What Shiori doesn't do"
+ },
+ "Ce que Shiori récupère": {
+  "en": "What Shiori brings in"
  },
  "Ce que vous touchez s'ouvre sur cette page.": {
   "en": "Whatever you tap opens on this page."
@@ -1025,6 +1040,12 @@
  "Connexion Amazon": {
   "en": "Amazon sign-in"
  },
+ "Connexion Audible": {
+  "en": "Audible sign-in"
+ },
+ "Connexion Kindle": {
+  "en": "Kindle sign-in"
+ },
  "Connexion impossible": {
   "en": "Couldn’t connect"
  },
@@ -1051,6 +1072,15 @@
  },
  "Continuer": {
   "en": "Continue"
+ },
+ "Continuer avec Audible": {
+  "en": "Continue with Audible"
+ },
+ "Continuer avec Goodreads": {
+  "en": "Continue with Goodreads"
+ },
+ "Continuer avec Kindle": {
+  "en": "Continue with Kindle"
  },
  "Copier": {
   "en": "Copy"
@@ -1397,6 +1427,12 @@
  "Goodreads": {
   "en": "Goodreads"
  },
+ "Goodreads n'est pas importé": {
+  "en": "Goodreads isn't imported"
+ },
+ "Goodreads ne partage pas vos livres avec d'autres apps : Shiori lit son fichier d'export.": {
+  "en": "Goodreads doesn't share your books with other apps: Shiori reads its export file."
+ },
  "Goodreads ne partage pas vos livres avec d'autres apps : tout passe par son fichier d'export, qui garde vos étagères, vos notes et vos dates de lecture.": {
   "en": "Goodreads does not share your books with other apps: everything goes through its export file, which keeps your shelves, ratings and reading dates."
  },
@@ -1512,6 +1548,9 @@
  "Il y a 1 an": {
   "en": "1 year ago"
  },
+ "Ils apparaissent dans votre bibliothèque au fil de l'import.": {
+  "en": "They appear in your library as the import goes."
+ },
  "Ils prennent la note et la date de Goodreads quand ils n'en ont pas. Un livre papier et sa version Kindle restent un seul livre.": {
   "en": "They take the Goodreads rating and date when they have none. A paper book and its Kindle edition stay one book."
  },
@@ -1521,11 +1560,17 @@
  "Import Goodreads": {
   "en": "Goodreads import"
  },
+ "Import Goodreads lancé": {
+  "en": "Goodreads import started"
+ },
  "Import Kindle interrompu": {
   "en": "Kindle import interrupted"
  },
  "Import d'un fichier d'export": {
   "en": "Import from an export file"
+ },
+ "Import en arrière-plan": {
+  "en": "Imported in the background"
  },
  "Import en cours, gardez l'écran ouvert...": {
   "en": "Importing, keep the screen open…"
@@ -1544,6 +1589,9 @@
  },
  "Importer depuis Audible": {
   "en": "Import from Audible"
+ },
+ "Importer depuis Goodreads": {
+  "en": "Import from Goodreads"
  },
  "Importer ma bibliothèque": {
   "en": "Import my library"
@@ -1641,8 +1689,14 @@
  "Kindle": {
   "en": "Kindle"
  },
+ "Kindle connecté": {
+  "en": "Kindle connected"
+ },
  "Kindle et Audible à jour": {
   "en": "Kindle and Audible up to date"
+ },
+ "Kindle n'est pas connecté": {
+  "en": "Kindle isn't connected"
  },
  "Kvothe": {
   "en": "Kvothe"
@@ -1692,8 +1746,14 @@
  "La durée s'écrit comme 14h30, 14 h ou 45 min.": {
   "en": "Write the duration as 14h30, 14h or 45 min."
  },
+ "La page d'Amazon n'a pas pu terminer la connexion. Vous pouvez réessayer maintenant, ou plus tard depuis les réglages.": {
+  "en": "Amazon's page couldn't finish signing in. You can try again now, or later from the settings."
+ },
  "La page de connexion est celle d'Amazon : votre mot de passe ne passe jamais par Shiori. L'import ne consomme aucun scan.": {
   "en": "The sign-in page is Amazon’s: your password never goes through Shiori. Importing doesn’t use any scans."
+ },
+ "La position d'écoute, et les livres finis.": {
+  "en": "Where you are in each book, and the ones you finished."
  },
  "La semaine dernière": {
   "en": "Last week"
@@ -1722,6 +1782,9 @@
  "Le fichier se prépare, quelques minutes pour une grande bibliothèque.": {
   "en": "The file gets ready, a few minutes for a large library."
  },
+ "Le lecteur": {
+  "en": "The player"
+ },
  "Le livre vous intéresse finalement": {
   "en": "The book interests you after all"
  },
@@ -1742,6 +1805,9 @@
  },
  "Le plus dévoré": {
   "en": "Most devoured"
+ },
+ "Le pourcentage lu, et les livres finis.": {
+  "en": "How far you've read, and the books you finished."
  },
  "Le prochain tome de vos séries, dès que sa date est connue.": {
   "en": "The next volume of your series, as soon as its date is known."
@@ -1810,6 +1876,9 @@
  "Les livres de « %@ » rejoindront la série choisie, à leur numéro de tome.": {
   "en": "The books of “%@” will join the chosen series, at their volume number."
  },
+ "Les livres en double avec Audible ou Kindle restent une seule fiche.": {
+  "en": "Books you also have on Audible or Kindle stay one record."
+ },
  "Les livres à lire et ceux en cours s'afficheront ici.": {
   "en": "Books to read and books in progress will show up here."
  },
@@ -1821,6 +1890,9 @@
  },
  "Les prochaines sorties de vos séries, de vos auteurs et de vos livres guettés s'afficheront ici.": {
   "en": "Upcoming releases from your series, authors and awaited books will show up here."
+ },
+ "Les étoiles que vous avez données.": {
+  "en": "The stars you gave."
  },
  "Ligne %lld": {
   "en": "Row %lld"
@@ -1923,6 +1995,9 @@
  },
  "Lus récemment": {
   "en": "Recently Read"
+ },
+ "Lus, en cours, à lire : chaque livre garde la sienne.": {
+  "en": "Read, reading, to read: each book keeps its shelf."
  },
  "L’abonnement se renouvelle automatiquement sauf résiliation au moins 24 heures avant la fin de la période en cours. La gestion et la résiliation se font dans les réglages du compte App Store.": {
   "en": "The subscription renews automatically unless cancelled at least 24 hours before the end of the current period. Manage or cancel it in your App Store account settings."
@@ -2073,6 +2148,9 @@
  },
  "Nemo": {
   "en": "Nemo"
+ },
+ "Ni connexion ni mot de passe": {
+  "en": "No sign-in, no password"
  },
  "Nom": {
   "en": "Name"
@@ -2230,6 +2308,9 @@
  "Où en êtes-vous ?": {
   "en": "Where are you?"
  },
+ "Où vous en êtes": {
+  "en": "Where you are"
+ },
  "PLUS": {
   "en": "MORE"
  },
@@ -2248,6 +2329,9 @@
  },
  "Papier": {
   "en": "Print"
+ },
+ "Papier et Kindle, un seul livre": {
+  "en": "Paper and Kindle, one book"
  },
  "Par %@": {
   "en": "From %@"
@@ -2293,6 +2377,15 @@
  },
  "Pas intéressé": {
   "en": "Not interested"
+ },
+ "Passer à Audible": {
+  "en": "Skip to Audible"
+ },
+ "Passer à Goodreads": {
+  "en": "Skip to Goodreads"
+ },
+ "Passer à Kindle": {
+  "en": "Skip to Kindle"
  },
  "Paul Atréides": {
   "en": "Paul Atreides"
@@ -2365,6 +2458,9 @@
  },
  "Position dans le chapitre": {
   "en": "Position in chapter"
+ },
+ "Pour le mettre à jour, importez un nouvel export depuis les réglages.": {
+  "en": "To update it, import a new export from the settings."
  },
  "Pourquoi ce conseil ?": {
   "en": "Why this recommendation?"
@@ -2467,6 +2563,9 @@
  },
  "Qu'en avez-vous pensé ?": {
   "en": "What did you think?"
+ },
+ "Quand vous avez commencé et fini chaque livre.": {
+  "en": "When you started and finished each book."
  },
  "Rayon": {
   "en": "Shelf"
@@ -2615,6 +2714,9 @@
  "Rien ici pour l'instant": {
   "en": "Nothing here yet"
  },
+ "Rien n'a été gardé": {
+  "en": "Nothing was kept"
+ },
  "Rien à suivre": {
   "en": "Nothing up next"
  },
@@ -2750,6 +2852,9 @@
  "Sessions par jour": {
   "en": "Sessions per day"
  },
+ "Seulement un fichier, que vous choisissez : votre compte Goodreads reste tel quel.": {
+  "en": "Just a file, which you choose: your Goodreads account stays as it is."
+ },
  "Sherlock Holmes": {
   "en": "Sherlock Holmes"
  },
@@ -2761,6 +2866,12 @@
  },
  "Shiori n'est pas autorisé à vous prévenir. Activez ses notifications dans les réglages de l'iPhone pour recevoir ces alertes.": {
   "en": "Shiori isn’t allowed to notify you. Turn its notifications on in the iPhone’s Settings to get these alerts."
+ },
+ "Shiori se connecte à Audible pour ranger vos livres audio avec les autres.": {
+  "en": "Shiori connects to Audible to shelve your audiobooks with the rest."
+ },
+ "Shiori se connecte à Kindle pour ranger vos livres numériques avec les autres.": {
+  "en": "Shiori connects to Kindle to shelve your ebooks with the rest."
  },
  "Shiori s’utilise avec un abonnement. Le premier mois est offert, et rien n’est prélevé si vous résiliez avant sa fin.": {
   "en": "Shiori is used with a subscription. The first month is free, and nothing is charged if you cancel before it ends."
@@ -2948,6 +3059,9 @@
  "Tendances": {
   "en": "Trends"
  },
+ "Terminer": {
+  "en": "Finish"
+ },
  "Terminez un livre pour le retrouver ici.": {
   "en": "Finish a book to find it here."
  },
@@ -3042,6 +3156,12 @@
  "Tous les narrateurs": {
   "en": "All narrators"
  },
+ "Tous les titres de votre bibliothèque Audible.": {
+  "en": "Every title in your Audible library."
+ },
+ "Tous les titres de votre bibliothèque Kindle.": {
+  "en": "Every title in your Kindle library."
+ },
  "Tous vos livres,\nau même endroit": {
   "en": "All your books,\nin one place"
  },
@@ -3111,11 +3231,17 @@
  "Un export plus récent ajoute vos nouveaux livres et met à jour statuts, notes et dates, sans créer de doublon.": {
   "en": "A newer export adds your new books and updates statuses, ratings and dates, without duplicates."
  },
+ "Un fichier, une fois": {
+  "en": "One file, once"
+ },
  "Un lecteur": {
   "en": "A reader"
  },
  "Un livre a besoin d'un titre.": {
   "en": "A book needs a title."
+ },
+ "Un livre que vous avez aussi en papier garde une seule fiche.": {
+  "en": "A book you also own in print keeps one record."
  },
  "Un mois offert": {
   "en": "One month free"
@@ -3195,8 +3321,20 @@
  "Vos coups de cœur d'abord": {
   "en": "Your favorites first"
  },
+ "Vos dates de lecture": {
+  "en": "Your reading dates"
+ },
+ "Vos livres arrivent : Shiori lit le fichier pendant que vous continuez.": {
+  "en": "Your books are on their way: Shiori reads the file while you carry on."
+ },
  "Vos livres arrivent dans la bibliothèque au fil de l'import. Vous pouvez fermer cet écran : l'import continue.": {
   "en": "Your books arrive in the library as the import goes. You can close this screen: the import goes on."
+ },
+ "Vos livres audio": {
+  "en": "Your audiobooks"
+ },
+ "Vos livres audio arrivent : Shiori les range pendant que vous continuez.": {
+  "en": "Your audiobooks are on their way: Shiori shelves them while you carry on."
  },
  "Vos livres audio, avec ce que vous avez déjà écouté.": {
   "en": "Your audiobooks, with what you’ve already listened to."
@@ -3216,14 +3354,32 @@
  "Vos livres lus et en cours, marqués comme tels.": {
   "en": "Your books read and in progress, marked as such."
  },
+ "Vos livres numériques": {
+  "en": "Your ebooks"
+ },
+ "Vos livres numériques arrivent : Shiori les range pendant que vous continuez.": {
+  "en": "Your ebooks are on their way: Shiori shelves them while you carry on."
+ },
  "Vos livres numériques, avec ceux que vous avez finis.": {
   "en": "Your ebooks, with the ones you’ve finished."
  },
  "Vos livres n’ont pas pu être chargés.": {
   "en": "Your books couldn’t be loaded."
  },
+ "Vos livres s'écoutent dans Shiori, là où vous en étiez.": {
+  "en": "Your books play in Shiori, right where you left off."
+ },
  "Vos livres, vos séries et vos notes sont gardés. Abonnez-vous pour retrouver votre bibliothèque.": {
   "en": "Your books, your series and your notes are kept. Subscribe to get your library back."
+ },
+ "Vos notes": {
+  "en": "Your ratings"
+ },
+ "Vos nouveaux achats et votre lecture suivent, sans rien faire.": {
+  "en": "New purchases and your reading follow, with nothing to do."
+ },
+ "Vos nouveaux achats et votre écoute suivent, sans rien faire.": {
+  "en": "New purchases and your listening follow, with nothing to do."
  },
  "Vos scans de bienvenue": {
   "en": "Your welcome scans"
@@ -3273,6 +3429,9 @@
  "Votre mois offert": {
   "en": "Your free month"
  },
+ "Votre mot de passe reste chez Amazon": {
+  "en": "Your password stays with Amazon"
+ },
  "Votre note sera perdue. Cette action est définitive.": {
   "en": "Your rating will be lost. This can’t be undone."
  },
@@ -3281,6 +3440,9 @@
  },
  "Votre profil": {
   "en": "Your profile"
+ },
+ "Votre progression": {
+  "en": "Your progress"
  },
  "Votre signature": {
   "en": "Your signature"
@@ -3299,6 +3461,9 @@
  },
  "Vous pouvez l'ajouter une seconde fois, pour une autre édition par exemple.": {
   "en": "You can add it a second time, for another edition for example."
+ },
+ "Vous vous connectez sur sa page : Shiori ne le voit pas, et ne change rien à votre compte.": {
+  "en": "You sign in on its page: Shiori never sees it, and changes nothing on your account."
  },
  "Voyage": {
   "en": "Travel"
@@ -3454,6 +3619,10 @@
  "sorti": {
   "en": "out"
  },
+ "sur %@ · étape %lld sur %lld": {
+  "fr": "sur %1$@ · étape %2$lld sur %3$lld",
+  "en": "on %@ · step %lld of %lld"
+ },
  "sur **%lld** pages": {
   "en": "of **%lld** pages"
  },
@@ -3498,6 +3667,9 @@
  },
  "À finir": {
   "en": "To finish"
+ },
+ "À jour chaque nuit": {
+  "en": "Updated every night"
  },
  "À la une": {
   "en": "Featured"
@@ -3558,6 +3730,10 @@
  },
  "Étagères": {
   "en": "Shelves"
+ },
+ "Étape %lld sur %lld": {
+  "fr": "Étape %1$lld sur %2$lld",
+  "en": "Step %lld of %lld"
  },
  "Être prévenu de la sortie": {
   "en": "Alert me on release"

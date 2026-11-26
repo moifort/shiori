@@ -1,5 +1,6 @@
 package com.polyforms.shiori.shared.platform
 
+import com.polyforms.shiori.features.import.ImportSource
 import android.annotation.SuppressLint
 import android.net.Uri
 import android.webkit.CookieManager
@@ -56,13 +57,22 @@ fun AmazonSignInWebView(login: AmazonLogin, modifier: Modifier = Modifier, onCod
     })
 }
 
-/** The sign-in page in a full-screen cover, with a way out. */
+/**
+ * The sign-in page in a full-screen cover, with a way out. [source] names the library it signs in
+ * to, so the reader knows which one Amazon's page is for; [subtitle] gives the store and the step
+ * during the onboarding.
+ */
 @Composable
-fun AmazonSignInSheet(login: AmazonLogin, onCode: (String) -> Unit, onCancel: () -> Unit) {
+fun AmazonSignInSheet(login: AmazonLogin, onCode: (String) -> Unit, onCancel: () -> Unit, source: ImportSource? = null, subtitle: String? = null) {
+    val title = when (source) {
+        ImportSource.AUDIBLE -> L("Connexion Audible")
+        ImportSource.KINDLE -> L("Connexion Kindle")
+        null -> L("Connexion Amazon")
+    }
     FullScreenCover(onCancel) {
         Column(Modifier.fillMaxSize().background(Shiori.colors.background)) {
             Box(Modifier.statusBarsPadding()) {
-                SheetBar(L("Connexion Amazon"), leading = { ToolbarIconButton(L("Annuler"), "xmark", onClick = onCancel) })
+                SheetBar(title, subtitle, leading = { ToolbarIconButton(L("Annuler"), "xmark", onClick = onCancel) })
             }
             AmazonSignInWebView(login, Modifier.fillMaxSize(), onCode)
         }

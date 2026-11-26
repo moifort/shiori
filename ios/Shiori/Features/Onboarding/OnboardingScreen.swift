@@ -3,9 +3,9 @@ import SwiftUI
 
 /// The wizard shown once, before the library exists. Two steps, not Vinarium's
 /// five: there is no cellar to size, so all it collects is a first name and an
-/// avatar — and
-/// then it offers to bring an Audible library, a Kindle library or both in,
-/// which a reader can skip. Saying what the app is for is the sign-in screen's
+/// avatar — and then it offers to bring the reader's Audible, Kindle and
+/// Goodreads libraries in, which a reader can skip. Each library ticked gets a
+/// step of its own, which says what it is for before Amazon's page opens. Saying what the app is for is the sign-in screen's
 /// job, just before.
 ///
 /// It is kept as a wizard rather than a single field because of what completing
@@ -37,19 +37,18 @@ struct OnboardingScreen: View {
     /// The store the reader signs in on, for both, proposed from the device
     /// region.
     @State private var marketplace: AmazonMarketplace = .suggested
-    /// The sources still to sign in, in order, and the one Amazon's page is
-    /// open for.
-    @State private var pendingSources: [ImportSource] = []
+    /// One step per library the reader ticked, each said before its sign-in;
+    /// none while the libraries page is on screen.
+    @State private var steps: OnboardingLibrarySteps?
+    /// The Amazon library whose page is open.
     @State private var signingIn: ImportSource?
     /// The sources linked, which the preparation screen goes on to wait for.
     @State private var linkedSources: [ImportSource] = []
     /// Amazon's sign-in page, while it is on screen.
     @State private var signIn: AmazonLogin?
     /// Between tapping "Connecter" and Amazon's page, and between the page
-    /// closing and the next one — or the app — opening.
+    /// closing and the confirmation.
     @State private var isConnecting = false
-    /// A sign-in that failed, said before moving on to the next source.
-    @State private var connectionError: String?
 
     private enum Step {
         case firstName
@@ -68,51 +67,57 @@ struct OnboardingScreen: View {
                     onNext: { Task { await complete() } }
                 )
             case .libraries:
-                LibrariesOfferPage(
-                    connectsAudible: $connectsAudible,
-                    connectsKindle: $connectsKindle,
-                    importsGoodreads: $importsGoodreads,
-                    marketplace: $marketplace,
-                    isWorking: isConnecting,
-                    onConnect: connectChosenSources,
-                    onSkip: enterApp
-                )
+                if let steps, let library = steps.current {
+                    LibraryStepPage(
+                        library: library,
+                        number: steps.number,
+                        count: steps.count,
+                        phase: steps.phase,
+                        next: steps.next,
+                        isWorking: isConnecting,
+                        onPrimary: { primaryAction(on: library) },
+                        onSecondary: moveOn
+                    )
+                    .id("\(library.rawValue)-\(steps.phase)")
+                    .transition(.opacity)
+                } else {
+                    LibrariesOfferPage(
+                        connectsAudible: $connectsAudible,
+                        connectsKindle: $connectsKindle,
+                        importsGoodreads: $importsGoodreads,
+                        marketplace: $marketplace,
+                        isWorking: isConnecting,
+                        onConnect: beginSteps,
+                        onSkip: enterApp
+                    )
+                }
             }
         }
         .background { CoverVeil(covering: true) }
         .environment(\.colorScheme, .dark)
-        // Straight to Amazon's page for each source, and from the last one
-        // straight into the app: every library is imported in the background,
-        // the app waiting on the passes behind the preparation screen,
-        // with no picker in between.
+        // Amazon's page, named after the library it is for: the step said
+        // what it brings before it opened. Closing it goes back to that step.
         .sheet(item: $signIn) { login in
-            AmazonSignInSheet(login: login, onCode: { code in
-                Task { await finishSignIn(code: code) }
-            }, onCancel: {
-                // A source abandoned is a source skipped: on to the next one.
-                signIn = nil
-                Task { await connectNextSource() }
-            })
+            AmazonSignInSheet(
+                login: login,
+                onCode: { code in Task { await finishSignIn(code: code) } },
+                onCancel: { signIn = nil },
+                source: signingIn,
+                subtitle: steps.map {
+                    String(localized: "sur \(marketplace.amazonLabel) · étape \($0.number) sur \($0.count)")
+                }
+            )
         }
-        // After Amazon's pages, the export file: the import starts in the
-        // background and the preparation screen shows it going on.
+        // The export file: the import starts in the background, and the step
+        // confirms it.
         .fullScreenCover(isPresented: $goodreadsShown) {
             GoodreadsImportScreen(mode: .onboarding) { started in
-                startedGoodreads = started
                 goodreadsShown = false
-                enterApp()
+                if started {
+                    startedGoodreads = true
+                    withAnimation { steps?.connected() }
+                }
             }
-        }
-        .alert(
-            "Connexion impossible",
-            isPresented: .init(get: { connectionError != nil }, set: { if !$0 { connectionError = nil } })
-        ) {
-            Button("OK", role: .cancel) {
-                connectionError = nil
-                Task { await connectNextSource() }
-            }
-        } message: {
-            Text("\(connectionError ?? "") Vous pourrez réessayer depuis les réglages.")
         }
         .disabled(isSaving)
         .overlay { if isSaving { ProgressView().controlSize(.large) } }
@@ -133,57 +138,66 @@ struct OnboardingScreen: View {
         }
     }
 
-    /// Audible first, then Kindle: the order the page lists them in.
-    private func connectChosenSources() {
-        pendingSources = ImportSource.allCases.filter { source in
-            switch source {
-            case .audible: connectsAudible
-            case .kindle: connectsKindle
-            }
-        }
-        Task { await connectNextSource() }
+    /// One step per library ticked, Audible, then Kindle, then Goodreads.
+    private func beginSteps() {
+        var chosen: Set<OnboardingLibrary> = []
+        if connectsAudible { chosen.insert(.audible) }
+        if connectsKindle { chosen.insert(.kindle) }
+        if importsGoodreads { chosen.insert(.goodreads) }
+        let steps = OnboardingLibrarySteps(chosen: chosen)
+        guard !steps.isFinished else { return enterApp() }
+        withAnimation { self.steps = steps }
     }
 
-    /// Opens Amazon's page for the next source, or goes in once none is left.
-    /// A source whose page cannot be opened is said, then stepped over.
-    private func connectNextSource() async {
-        guard !pendingSources.isEmpty else {
-            signingIn = nil
-            if importsGoodreads, !startedGoodreads {
-                goodreadsShown = true
-            } else {
-                enterApp()
-            }
+    /// Connect from the step's page or after a failure, go on once connected.
+    private func primaryAction(on library: OnboardingLibrary) {
+        switch steps?.phase {
+        case .connected: moveOn()
+        case .intro, .failed, nil: connect(library)
+        }
+    }
+
+    /// Amazon's page for an Amazon library, the export screen for Goodreads.
+    private func connect(_ library: OnboardingLibrary) {
+        guard let source = library.amazonSource else {
+            goodreadsShown = true
             return
         }
-        let source = pendingSources.removeFirst()
-        signingIn = source
-        isConnecting = true
-        defer { isConnecting = false }
-        do {
-            signIn = try await client.startSignIn(source, marketplace)
-        } catch {
-            connectionError = reportError(error)
+        Task {
+            signingIn = source
+            isConnecting = true
+            defer { isConnecting = false }
+            do {
+                signIn = try await client.startSignIn(source, marketplace)
+            } catch {
+                _ = reportError(error)
+                withAnimation { steps?.failed() }
+            }
         }
     }
 
-    /// The code Amazon handed back: the library is linked, its pass starts in
-    /// the background, and the next source is opened. A failed link is said,
-    /// then stepped over — the reader can connect it again from the settings.
+    /// The code Amazon handed back: the library is linked and its pass starts
+    /// in the background, then the step confirms it. A failed link is said on
+    /// the step, which offers to try again or move on.
     private func finishSignIn(code: String) async {
         signIn = nil
         guard let source = signingIn else { return }
         isConnecting = true
+        defer { isConnecting = false }
         do {
             try await client.completeSignIn(source, code)
             linkedSources.append(source)
+            withAnimation { steps?.connected() }
         } catch {
-            isConnecting = false
-            connectionError = reportError(error)
-            return
+            _ = reportError(error)
+            withAnimation { steps?.failed() }
         }
-        isConnecting = false
-        await connectNextSource()
+    }
+
+    /// The next library's step, or the app once none is left.
+    private func moveOn() {
+        withAnimation { steps?.advance() }
+        if steps?.isFinished == true { enterApp() }
     }
 
     /// Into the app by way of the preparation screen, drawn until the library

@@ -18,6 +18,8 @@
 #              | kindle-library | audible-library | kindle-source | audible-source
 #              | review | scan-no-result | scan-failed | shelf-checklist
 #              | settings-blocked | premium-spent | book | author-work | reading-progress
+#              onboarding steps: onboarding-audible | onboarding-kindle | onboarding-goodreads
+#              | onboarding-audible-connected | onboarding-audible-failed | onboarding-amazon
 #              site extras: site-book | series | shelf | scan-review | player | wishlist
 #              | pile | agenda | news-full | suggestion
 #   -- -showcase-anchor center|bottom  opens a long page scrolled, for a stitched capture
@@ -40,7 +42,7 @@
 set -euo pipefail
 
 usage() {
-  sed -n '8,25p' "$0" >  sed -n '8,26p' "$0" >&22
+  sed -n '8,28p' "$0" >&2
   exit 2
 }
 
@@ -65,6 +67,8 @@ case "$SCREEN" in
     | settings | preparation | kindle | audible | kindle-library | audible-library | kindle-source \
     | audible-source | review | scan-no-result | scan-failed | shelf-checklist | settings-blocked \
     | premium-spent | book | author-work | reading-progress \
+    | onboarding-audible | onboarding-kindle | onboarding-goodreads | onboarding-audible-connected \
+    | onboarding-audible-failed | onboarding-amazon \
     | site-book | series | shelf | scan-review | player | wishlist | pile | agenda | news-full | suggestion)
     SCREEN_FLAG=-showcase-screen ;;
   *) echo "error: unknown screen '$SCREEN' (home, library, news, friends, goodreads…)" >&2; exit 2 ;;

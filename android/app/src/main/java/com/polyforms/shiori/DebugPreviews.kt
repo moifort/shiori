@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 
 import com.polyforms.shiori.shared.BookFormat
 
@@ -130,6 +131,29 @@ fun DebugPreviews(name: String) {
                     androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize()) {
                         com.polyforms.shiori.shared.shell.CoverWall()
                         com.polyforms.shiori.features.onboarding.OnboardingScreen({ _, _ -> })
+                    }
+                }
+            }
+            "onboarding-audible", "onboarding-kindle", "onboarding-goodreads",
+            "onboarding-audible-connected", "onboarding-audible-failed" -> com.polyforms.shiori.shared.components.styles.ShioriTheme(dark = true) {
+                val library = when {
+                    name.startsWith("onboarding-kindle") -> com.polyforms.shiori.features.onboarding.OnboardingLibrary.KINDLE
+                    name.startsWith("onboarding-goodreads") -> com.polyforms.shiori.features.onboarding.OnboardingLibrary.GOODREADS
+                    else -> com.polyforms.shiori.features.onboarding.OnboardingLibrary.AUDIBLE
+                }
+                val phase = when {
+                    name.endsWith("connected") -> com.polyforms.shiori.features.onboarding.OnboardingLibrarySteps.Phase.CONNECTED
+                    name.endsWith("failed") -> com.polyforms.shiori.features.onboarding.OnboardingLibrarySteps.Phase.FAILED
+                    else -> com.polyforms.shiori.features.onboarding.OnboardingLibrarySteps.Phase.INTRO
+                }
+                val entries = com.polyforms.shiori.features.onboarding.OnboardingLibrary.entries
+                androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize()) {
+                    com.polyforms.shiori.shared.shell.CoverVeil(covering = true)
+                    androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().padding(16.dp)) {
+                        com.polyforms.shiori.features.onboarding.components.pages.LibraryStepPage(
+                            library, library.ordinal + 1, entries.size, phase, entries.getOrNull(library.ordinal + 1),
+                            onPrimary = {}, onSecondary = {},
+                        )
                     }
                 }
             }
