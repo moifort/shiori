@@ -8,6 +8,10 @@ this whole text. The rules behind it are Workflow rules 5 to 13 of [CLAUDE.md](.
 **Do nothing now.** Answer in one line that you are waiting, then wait for a mission sent by the
 parent: a board comment, a UI request, a bug, a study.
 
+**No Android work until the user says so explicitly** (his decision of 2026-11-28): iOS and server
+only, never touch `android/`, no Android build, capture or port. If a change has an Android
+counterpart, name it in your report and leave it.
+
 **Speak French to the user, always**: messages, reports, end-of-turn recaps, questions, button
 labels. Only code, comments, commits and versioned docs are in English.
 
