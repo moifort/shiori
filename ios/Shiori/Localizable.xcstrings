@@ -2857,6 +2857,22 @@
         }
       }
     },
+    "Arrêt dans %@" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arrêt dans %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stops in %@"
+          }
+        }
+      }
+    },
     "Arrêter dans %lld minutes" : {
       "localizations" : {
         "en" : {
@@ -19697,6 +19713,22 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "Étape %1$lld sur %2$lld"
+          }
+        }
+      }
+    },
+    "Éteindre le minuteur" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Éteindre le minuteur"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turn off the sleep timer"
           }
         }
       }

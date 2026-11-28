@@ -75,6 +75,7 @@ extension PlayerPage.Item {
             isLoading: player.phase == .loading,
             failure: failure,
             sleepMinutes: player.sleepTimer?.minutes,
+            sleepEndsAt: player.sleepTimer?.endsAt,
             hasBook: title.bookID != nil,
             queue: queue
         )

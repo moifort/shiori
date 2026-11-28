@@ -33,6 +33,8 @@ struct PlayerPage: View {
         let failure: String?
         /// The sleep timer's choice, while it runs.
         var sleepMinutes: Int?
+        /// When the sleep timer pauses the listening, while it runs.
+        var sleepEndsAt: Date? = nil
         /// Whether the title has a book in the library to open.
         var hasBook = true
         /// What follows this title; nil while it loads.
@@ -493,7 +495,23 @@ struct PlayerPage: View {
         .accessibilityLabel(Text(label))
     }
 
+    /// Off, the moon and the three choices; on, one white capsule counting
+    /// down to the pause, which turns the timer off when touched.
+    @ViewBuilder
     private var sleepTimer: some View {
+        Group {
+            if let minutes = item.sleepMinutes, let endsAt = item.sleepEndsAt {
+                sleepCountdown(minutes: minutes, endsAt: endsAt)
+                    .transition(.blurReplace)
+            } else {
+                sleepChoices
+                    .transition(.blurReplace)
+            }
+        }
+        .animation(.snappy, value: item.sleepMinutes)
+    }
+
+    private var sleepChoices: some View {
         HStack(spacing: 12) {
             Image(systemName: "moon")
                 .font(.system(size: 20, weight: .medium))
@@ -501,17 +519,33 @@ struct PlayerPage: View {
                 .padding(.trailing, 4)
                 .accessibilityHidden(true)
             ForEach(AudiblePlayer.sleepChoices, id: \.self) { minutes in
-                let isOn = item.sleepMinutes == minutes
                 Button { onAction(.sleep(minutes: minutes)) } label: {
                     Text("\(minutes) min")
                         .font(.subheadline.weight(.semibold))
                 }
-                .buttonStyle(.action(isOn ? .white : .glass, height: 40))
-                .animation(.snappy, value: isOn)
+                .buttonStyle(.action(.glass, height: 40))
                 .accessibilityLabel(Text("Arrêter dans \(minutes) minutes"))
-                .accessibilityAddTraits(isOn ? .isSelected : [])
             }
         }
+    }
+
+    private func sleepCountdown(minutes: Int, endsAt: Date) -> some View {
+        // Counts itself down: no timer drives the page.
+        let left = Text(timerInterval: Date.now...max(Date.now, endsAt), countsDown: true)
+        return Button { onAction(.sleep(minutes: minutes)) } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "moon.fill")
+                Text("Arrêt dans \(left)")
+                    .monospacedDigit()
+                Image(systemName: "xmark")
+                    .font(.caption.weight(.bold))
+            }
+            .font(.subheadline.weight(.semibold))
+            .padding(.horizontal, 4)
+        }
+        .buttonStyle(.action(.white, height: 40))
+        .accessibilityLabel(Text("Éteindre le minuteur"))
+        .accessibilityValue(left)
     }
 }
 
@@ -629,9 +663,10 @@ extension PlayerPage.Item {
         sleepMinutes: nil
     )
 
-    func withSleep(_ minutes: Int?) -> Self {
+    func withSleep(_ minutes: Int?, left: TimeInterval = 12 * 60 + 34) -> Self {
         var item = self
         item.sleepMinutes = minutes
+        item.sleepEndsAt = minutes.map { _ in Date.now.addingTimeInterval(left) }
         return item
     }
 
@@ -683,7 +718,8 @@ extension PlayerPage.Item {
             isPlaying: true,
             isLoading: false,
             failure: nil,
-            sleepMinutes: 20
+            sleepMinutes: 20,
+            sleepEndsAt: .now.addingTimeInterval(12 * 60 + 34)
         )
     ) { _ in }
 }
