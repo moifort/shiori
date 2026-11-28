@@ -200,6 +200,29 @@ final class ScanViewModel {
         }
     }
 
+    /// Adds the scanned volume, then every volume of its saga the reader
+    /// lacks that is out already, on the pile beside it: the catalogue's
+    /// title and cover, filed at their numbers, nothing looked up. A volume
+    /// that fails is said and the others go on: the saga's page adds it later.
+    func saveSeries(_ draft: BookDraft) async -> Book? {
+        let volumes = sagaVolumes.volumesToComplete(besides: draft.series?.volume)
+        guard let book = await save(draft) else { return nil }
+        isSaving = true
+        defer { isSaving = false }
+        var added = draft
+        added.origin = BookOrigin(origin)
+        for volume in volumes {
+            guard let sibling = added.sibling(volume) else { break }
+            do {
+                _ = try await client.add(sibling)
+                track(.bookAdded(source: .scan))
+            } catch {
+                self.error = reportError(error)
+            }
+        }
+        return book
+    }
+
     /// Puts the book on the wishlist rather than the shelf. Says whether the
     /// server took it: the review stays open otherwise, its error said.
     func wish(_ draft: BookDraft) async -> Bool {

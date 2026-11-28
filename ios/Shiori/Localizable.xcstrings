@@ -2153,6 +2153,22 @@
         }
       }
     },
+    "Ajouter la série" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add series"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajouter la série"
+          }
+        }
+      }
+    },
     "Ajouter un livre" : {
       "localizations" : {
         "en" : {
@@ -7461,22 +7477,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Goodreads réserve cette page à l'ordinateur. Si son site mobile s'affiche, touchez aA › Version pour ordinateur. Depuis Fichiers, Partager › Shiori fonctionne aussi."
-          }
-        }
-      }
-    },
-    "Guetter" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Watch"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Guetter"
           }
         }
       }

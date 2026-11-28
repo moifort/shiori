@@ -460,9 +460,18 @@ struct ShowcaseScreen: View {
                         firstPublishedIn: 2007, synopsis: "Kvothe raconte sa propre légende.",
                         genre: .fantasy, subgenres: ["Roman initiatique"], pageCount: 662,
                         isbn13: "9782352943556",
+                        coverURL: Showcase.cover("nom-du-vent"),
                         series: SeriesMembership(id: "kkc", name: "Chronique du tueur de roi", volume: 1, kind: .main)
                     ),
-                    isSaving: false, awaitable: [.audiobook]
+                    isSaving: false, awaitable: [.audiobook],
+                    // A volume out that the reader lacks: "Ajouter la série" shows.
+                    sagaVolumes: [
+                        .missing(key: "kkc-1", number: 1, title: "Le Nom du vent", forthcoming: false),
+                        .missing(
+                            key: "kkc-2", number: 2, title: "La Peur du sage", forthcoming: false,
+                            coverURL: Showcase.cover("peur-du-sage")
+                        ),
+                    ]
                 ) { _ in }
             }
         case "book":

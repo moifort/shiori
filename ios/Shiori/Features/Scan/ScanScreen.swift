@@ -140,6 +140,10 @@ struct ScanScreen: View {
                         if let book = await viewModel.save(approved, series: series) {
                             await confirm(.addedToLibrary) { onAdded(book) }
                         }
+                    case let .saveSeries(approved):
+                        if let book = await viewModel.saveSeries(approved) {
+                            await confirm(.addedToLibrary) { onAdded(book) }
+                        }
                     case .retake: viewModel.retake()
                     case let .awaitEdition(draft, format):
                         await confirm(.awaited) { onAwait(draft, format) }

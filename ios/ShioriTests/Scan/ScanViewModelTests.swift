@@ -94,6 +94,80 @@ struct ScanViewModelTests {
         #expect(viewModel.error != nil)
     }
 
+    @Test func seriesAddsTheVolumesOutThatAreLacking() async throws {
+        let calls = Calls()
+        var client = ScanClient.preview
+        client.add = { draft in
+            calls.record("add \(draft.title) #\(draft.series?.volume ?? 0) \(draft.language?.rawValue ?? "-")")
+            return .preview
+        }
+        client.sagaVolumes = { _, _ in
+            [
+                .missing(key: "1", number: 1, title: "Tome 1", forthcoming: false),
+                .missing(key: "3", number: 3, title: "Tome 3", forthcoming: false),
+                .missing(key: "2", number: 2, title: "Tome 2", forthcoming: false),
+                .missing(key: "4", number: 4, title: "Tome 4", forthcoming: true),
+            ]
+        }
+        client.scan = { _ in
+            ScannedBook(
+                recognized: true, title: "Tome 2", authors: ["A"],
+                series: SeriesMembership(id: "s", name: "Saga", volume: 2, kind: .main)
+            )
+        }
+        let viewModel = ScanViewModel(client: client)
+        await viewModel.capture(Data([1]))
+        await viewModel.loadSagaVolumes(language: .fr)
+        var draft = try #require(viewModel.draft)
+        draft.language = .fr
+
+        let book = await viewModel.saveSeries(draft)
+
+        #expect(book != nil)
+        #expect(calls.all == ["add Tome 2 #2 fr", "add Tome 1 #1 fr", "add Tome 3 #3 fr"])
+    }
+
+    @Test func aSagaAlreadyInTheLibraryIsNotCompletedFromTheScan() {
+        let row: [SeriesStripItem] = [
+            .owned(Book(id: "t1", title: "Tome 1", authors: [], series: SeriesMembership(id: "s", name: "Saga", volume: 1, kind: .main), status: .read)),
+            .missing(key: "2", number: 2, title: "Tome 2", forthcoming: false),
+        ]
+
+        #expect(row.volumesToComplete(besides: 3).isEmpty)
+    }
+
+    @Test func aFailedVolumeIsSaidAndTheOthersGoOn() async throws {
+        let calls = Calls()
+        var client = ScanClient.preview
+        client.add = { draft in
+            calls.record(draft.title)
+            if draft.title == "Tome 2" { throw Boom() }
+            return .preview
+        }
+        client.sagaVolumes = { _, _ in
+            [
+                .missing(key: "2", number: 2, title: "Tome 2", forthcoming: false),
+                .missing(key: "3", number: 3, title: "Tome 3", forthcoming: false),
+            ]
+        }
+        client.scan = { _ in
+            ScannedBook(
+                recognized: true, title: "Tome 1", authors: ["A"],
+                series: SeriesMembership(id: "s", name: "Saga", volume: 1, kind: .main)
+            )
+        }
+        let viewModel = ScanViewModel(client: client)
+        await viewModel.capture(Data([1]))
+        await viewModel.loadSagaVolumes(language: nil)
+        let draft = try #require(viewModel.draft)
+
+        let book = await viewModel.saveSeries(draft)
+
+        #expect(book != nil)
+        #expect(calls.all == ["Tome 1", "Tome 2", "Tome 3"])
+        #expect(viewModel.error != nil)
+    }
+
     @Test func nothingToAwaitWithoutALanguage() async {
         let viewModel = ScanViewModel(client: .preview)
 

@@ -16,19 +16,23 @@ import SwiftUI
 /// A book the reader already keeps is flagged over the summary, with the way
 /// to their copy: a second edition stays theirs to add, so nothing is refused.
 ///
-/// Where the book goes is the hero's to say: "Ajouter" puts it on the pile on
-/// a tap and offers "En cours" and "Déjà lu" on a long press, each asking for
-/// its day; "Envie" puts it on the wishlist; "Guetter", when its edition in
-/// the app's language may be awaited, translated or recorded, awaits it
+/// Where the book goes is the hero's to say, in one button: "Ajouter" puts it
+/// on the pile on a tap, and its menu offers every way in — "En cours" and
+/// "Déjà lu", each asking for its day, the wishlist, and, when its edition in
+/// the app's language may be awaited, translated or recorded, awaiting it
 /// instead. The last two close the scan at once, the server told behind it: a
-/// reader who scanned it in a shop only wants to know when it comes out. The
-/// "+" of the bar offers all of it again, within reach once the hero has
-/// scrolled away. What may be awaited follows the language and the format as
-/// they are corrected.
+/// reader who scanned it in a shop only wants to know when it comes out.
+/// "Ajouter la série" beside it, when the saga has volumes out that the reader
+/// lacks, puts them on the pile with this one. The "+" of the bar offers the
+/// same menu, within reach once the hero has scrolled away. What may be
+/// awaited follows the language and the format as they are corrected.
 /// Everything the review can ask for.
 enum ScanReviewAction {
     /// The draft, and the saga as the reader renamed it, if they did.
     case save(BookDraft, SeriesPlacement?)
+    /// The book on the pile, with every volume of its saga out already that
+    /// the reader lacks.
+    case saveSeries(BookDraft)
     case retake
     /// The edition in the app's language awaited instead of the book added:
     /// the scan is then over.
@@ -146,16 +150,33 @@ struct ScanReviewPage: View {
         }
     }
 
-    /// Saves the book in the status picked, with the day the reader gave it:
-    /// the start of a book under way, the finish of one read — the server
-    /// stamps the start of a read book on its finish.
-    private func save(as status: ReadingStatus, on day: Date?) {
+    /// The volumes "Ajouter la série" adds beside this one. None once the
+    /// saga was renamed here: the catalogue read is no longer its own.
+    private var lackingVolumes: [LackingVolume] {
+        guard renamedSeries == nil, book.series != nil else { return [] }
+        return sagaVolumes.volumesToComplete(besides: book.series?.volume)
+    }
+
+    private func saveSeries() {
+        Task { await onAction(.saveSeries(approved(as: .toRead, on: nil))) }
+    }
+
+    /// The draft as the reader approves it, in the status picked.
+    private func approved(as status: ReadingStatus, on day: Date?) -> BookDraft {
         var approved = draft
         approved.status = status
         approved.rating = 0
         approved.favorite = false
         approved.startedAt = status == .reading ? day : nil
         approved.finishedAt = status == .read ? day : nil
+        return approved
+    }
+
+    /// Saves the book in the status picked, with the day the reader gave it:
+    /// the start of a book under way, the finish of one read — the server
+    /// stamps the start of a read book on its finish.
+    private func save(as status: ReadingStatus, on day: Date?) {
+        let approved = approved(as: status, on: day)
         Task { await onAction(.save(approved, renamedSeries)) }
     }
 
@@ -189,18 +210,24 @@ struct ScanReviewPage: View {
         }
     }
 
+    /// Every way in, under "Ajouter" and under the bar's "+": the shelf,
+    /// the wishlist, and the editions that may be awaited.
+    @ViewBuilder private var addChoices: some View {
+        shelfChoices
+        Section {
+            Button("Liste d'envies", systemImage: "bookmark") { wish() }
+                .disabled(!canSave)
+                .accessibilityIdentifier("review-wish")
+        }
+        if !awaitable.isEmpty {
+            Section { awaitChoices }
+        }
+    }
+
     /// Everything the hero offers, in the bar.
     private var addMenu: some View {
         Menu {
-            shelfChoices
-            Section {
-                Button("Liste d'envies", systemImage: "bookmark") { wish() }
-                    .disabled(!canSave)
-                    .accessibilityIdentifier("review-wish")
-            }
-            if !awaitable.isEmpty {
-                Section { awaitChoices }
-            }
+            addChoices
         } label: {
             Label("Ajouter", systemImage: "plus")
                 .labelStyle(.iconOnly)
@@ -307,13 +334,14 @@ struct ScanReviewPage: View {
 
     // MARK: - Hero
 
-    /// "Ajouter" white, as the book's page sets its next step, "Envie" and
-    /// "Guetter" on glass beside it. No GlassEffectContainer: a menu opened
-    /// from inside one loses a moving tap on a row over a neighbouring button.
+    /// "Ajouter" white, as the book's page sets its next step, every way in
+    /// under its menu; "Ajouter la série" on glass beside it when the saga has
+    /// volumes to add. No GlassEffectContainer: a menu opened from inside one
+    /// loses a moving tap on a row over a neighbouring button.
     private var heroButtons: some View {
         HStack(spacing: 8) {
             Menu {
-                shelfChoices
+                addChoices
             } label: {
                 ReviewButtonLabel(title: "Ajouter", systemImage: "plus", showsMenu: true)
             } primaryAction: {
@@ -324,30 +352,13 @@ struct ScanReviewPage: View {
             .disabled(!canSave)
             .accessibilityIdentifier("review-hero-add")
 
-            Button(action: wish) {
-                ReviewButtonLabel(title: "Envie", systemImage: "bookmark")
-            }
-            .buttonStyle(.actionGlass)
-            .disabled(!canSave)
-            .accessibilityIdentifier("review-hero-wish")
-
-            if let format = awaitable.first {
-                Group {
-                    if awaitable.count > 1 {
-                        Menu {
-                            awaitChoices
-                        } label: {
-                            ReviewButtonLabel(title: "Guetter", systemImage: "binoculars", showsMenu: true)
-                        }
-                        .menuStyle(.button)
-                    } else {
-                        Button { awaitEdition(format) } label: {
-                            ReviewButtonLabel(title: "Guetter", systemImage: "binoculars")
-                        }
-                    }
+            if !lackingVolumes.isEmpty {
+                Button(action: saveSeries) {
+                    ReviewButtonLabel(title: "Ajouter la série", systemImage: "books.vertical")
                 }
                 .buttonStyle(.actionGlass)
-                .accessibilityIdentifier("review-hero-await")
+                .disabled(!canSave)
+                .accessibilityIdentifier("review-hero-add-series")
             }
         }
         .font(.subheadline.weight(.semibold))
@@ -597,7 +608,11 @@ private extension BookCorrection.Change {
                 series: SeriesMembership(id: "kkc", name: "Chronique du tueur de roi", volume: 1, kind: .main)
             ),
             isSaving: false,
-            awaitable: [.audiobook]
+            awaitable: [.audiobook],
+            sagaVolumes: [
+                .missing(key: "kkc-1", number: 1, title: "Le Nom du vent", forthcoming: false),
+                .missing(key: "kkc-2", number: 2, title: "La Peur du sage", forthcoming: false),
+            ]
         ) { _ in }
     }
 }
