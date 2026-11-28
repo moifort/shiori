@@ -9,6 +9,7 @@ import {
   isPortraitWorthSeeking,
   mainLanguageOf,
   matchingAuthorFilter,
+  mayRecatalogue,
   shelvedAuthorsOf,
   standaloneBooksOf,
   unshelvedAuthorOf,
@@ -231,7 +232,9 @@ export namespace AuthorUseCase {
 
   /** The author's catalogue asked of the world again, at the reader's request:
    *  a catalogue the model could not build on the first opening is never asked
-   *  for again otherwise, and one built thin can be rebuilt.
+   *  for again otherwise, and one built thin can be rebuilt. Once a day per
+   *  author at most: within a day of the last call, built or missed, the stored
+   *  catalogue answers and nothing is billed.
    *
    *  Null when the reader holds no book of the author, and when the model
    *  failed or found nothing — the stored catalogue, if any, is then kept. */
@@ -239,9 +242,13 @@ export namespace AuthorUseCase {
     userId: UserId,
     key: AuthorKey,
     language: Language,
+    now = new Date(),
   ): Promise<Author | undefined> => {
     const shelved = (await shelvedAuthors(userId)).find((author) => author.key === key)
-    return shelved ? askTheWeb(shelved, language) : undefined
+    if (!shelved) return undefined
+    const [known, miss] = await Promise.all([AuthorQuery.byKey(key), AuthorQuery.lastMiss(key)])
+    if (!mayRecatalogue([known?.cataloguedAt, miss?.missedAt], now)) return known
+    return askTheWeb(shelved, language)
   }
 
   /** The stored catalogue, else one built now — unless the model already

@@ -1,6 +1,6 @@
 import type { WriteBatch } from 'firebase-admin/firestore'
 import { freshQuota, noCredit } from '~/domain/quota/business-rules'
-import type { Quota, QuotaMonth, ScanCredit } from '~/domain/quota/types'
+import type { Quota, QuotaMonth, ScanCredit, ScanDebit } from '~/domain/quota/types'
 import type { UserId } from '~/domain/shared/types'
 import { db } from '~/system/firebase'
 import { evictFromRequestCache, memoizedPerRequest } from '~/system/request-cache'
@@ -38,27 +38,31 @@ export const findBy = (userId: UserId, month: QuotaMonth): Promise<Quota> =>
     return doc.data() ?? freshQuota(userId, month)
   })
 
-// Spend against the month's counter, atomically. The read has to happen inside
-// the transaction — the memoized one is the pre-call value the caller already
-// checked the limit against, and reusing it is exactly how two scans landing
-// together would both write "one spent" and record only one.
-export const consume = async (
+// Spend one scan, choosing the counter and spending it in one transaction: both documents are
+// read inside it, so two scans landing together at the month's last scan cannot both take it
+// from the month — the second sees it gone and draws on the granted balance, or on nothing.
+// `debitOf` picks the counter; `spendMonth` / `spendCredit` say what each becomes.
+export const spendOne = async (
   userId: UserId,
   month: QuotaMonth,
-  spend: (quota: Quota) => Quota,
-): Promise<Quota> => {
-  const ref = quotas().doc(quotaDocId(userId, month))
-  const spent = await transactionally(async (tx) => {
-    const doc = await tx.get(ref)
-    // Same storage boundary as `findBy`: an absent document is a fresh month.
-    const spent = spend(doc.data() ?? freshQuota(userId, month))
-    tx.set(ref, withoutAbsentFields(spent))
-    return spent
+  debitOf: (quota: Quota, credit: ScanCredit) => ScanDebit,
+  spendMonth: (quota: Quota) => Quota,
+  spendCredit: (credit: ScanCredit) => ScanCredit,
+): Promise<ScanDebit> => {
+  const quotaRef = quotas().doc(quotaDocId(userId, month))
+  const creditRef = credits().doc(userId)
+  const debit = await transactionally(async (tx) => {
+    const [quotaDoc, creditDoc] = await Promise.all([tx.get(quotaRef), tx.get(creditRef)])
+    const quota = quotaDoc.data() ?? freshQuota(userId, month)
+    const credit = creditDoc.data() ?? noCredit(userId)
+    const debit = debitOf(quota, credit)
+    if (debit.on === 'monthly') tx.set(quotaRef, withoutAbsentFields(spendMonth(quota)))
+    if (debit.on === 'credit') tx.set(creditRef, withoutAbsentFields(spendCredit(credit)))
+    return debit
   })
-  // Drop the memoized pre-write value so anything reading the quota later in the
-  // same request (the `me` query alongside a scan) sees what was just spent.
   evictFromRequestCache(cacheKey(userId, month))
-  return spent
+  evictFromRequestCache(creditCacheKey(userId))
+  return debit
 }
 
 // The scans the account was granted. Memoized for the same reason as the month's
@@ -69,23 +73,6 @@ export const findCredit = (userId: UserId): Promise<ScanCredit> =>
     const doc = await credits().doc(userId).get()
     return doc.data() ?? noCredit(userId)
   })
-
-// Draw the balance down, atomically and for the same reason as `consume`: two
-// scans landing together must spend two granted scans, not one.
-export const consumeCredit = async (
-  userId: UserId,
-  spend: (credit: ScanCredit) => ScanCredit,
-): Promise<ScanCredit> => {
-  const ref = credits().doc(userId)
-  const spent = await transactionally(async (tx) => {
-    const doc = await tx.get(ref)
-    const spent = spend(doc.data() ?? noCredit(userId))
-    tx.set(ref, withoutAbsentFields(spent))
-    return spent
-  })
-  evictFromRequestCache(creditCacheKey(userId))
-  return spent
-}
 
 // Add to the balance, atomically and at most once: `topUp` answers nothing when
 // the grant was handed already, and nothing is written then. The read is inside

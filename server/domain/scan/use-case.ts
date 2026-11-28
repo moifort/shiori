@@ -3,7 +3,7 @@ import { keepsStory } from '~/domain/book/business-rules'
 import { BookQuery } from '~/domain/book/query'
 import { watchKeyOf } from '~/domain/discovery/business-rules'
 import { DiscoveryQuery } from '~/domain/discovery/query'
-import { exhausted } from '~/domain/quota/business-rules'
+import { exhausted, refusalOf } from '~/domain/quota/business-rules'
 import { QuotaCommand } from '~/domain/quota/command'
 import { QuotaQuery } from '~/domain/quota/query'
 import { ScanCommand } from '~/domain/scan/command'
@@ -23,19 +23,21 @@ import { BookTitle } from '~/domain/shared/primitives'
 import type { BookTitle as BookTitleValue, Plan, UserId } from '~/domain/shared/types'
 import { isSpendCapReached } from '~/system/gemini/spend-cap'
 import { createLogger } from '~/system/logger'
+import { isSubscriptionRequired } from '~/system/subscriber-gate'
 import { slugify } from '~/utils/slug'
 
 const logger = createLogger('scan')
 
 /** Why the model gave no answer: out of credit — our bill, nothing the reader
- *  can act on but wait — or any other failure, named. */
-export type ModelFailure = 'ai-unavailable' | { failed: string }
+ *  can act on but wait —, refused because the caller holds no Premium (a path the
+ *  allowance gate does not stand in front of), or any other failure, named. */
+export type ModelFailure = 'ai-unavailable' | 'premium-required' | { failed: string }
 
 /** What a metered scan answers: the record to review, or why there is none. */
 export type ScanOutcome = ScanResult | 'quota-exhausted' | ModelFailure
 
 /** What a shelf photo answers: its books, or why there are none. */
-export type ShelfOutcome = DetectedBook[] | 'premium-required' | 'quota-exhausted' | ModelFailure
+export type ShelfOutcome = DetectedBook[] | 'quota-exhausted' | ModelFailure
 
 /** Every way a reader asks the model for a book — a cover, a typed title, a
  *  shared link — metered the same way: the allowance is checked before the
@@ -105,7 +107,7 @@ export namespace ScanUseCase {
       )
       return result
     } catch (error) {
-      logger.error('shelf book description failed', { error, userId })
+      reportFailure('shelf book description failed', error, userId)
       return failureOf(error, 'Scan failed')
     }
   }
@@ -177,7 +179,7 @@ export namespace ScanUseCase {
       )
       return result
     } catch (error) {
-      logger.error('shown book description failed', { error, userId })
+      reportFailure('shown book description failed', error, userId)
       return failureOf(error, 'Scan failed')
     }
   }
@@ -208,7 +210,7 @@ export namespace ScanUseCase {
         )
       return candidates
     } catch (error) {
-      logger.error('title search failed', { error, userId })
+      reportFailure('title search failed', error, userId)
       return failureOf(error, 'Search failed')
     }
   }
@@ -223,7 +225,9 @@ export namespace ScanUseCase {
     image: Buffer,
     language: ScanLanguage,
   ): Promise<ShelfOutcome> => {
-    const { plan, quota, credit } = await QuotaQuery.allowanceOf(userId)
+    const allowance = await QuotaQuery.allowanceOf(userId)
+    const { plan, quota, credit } = allowance
+    if (exhausted(plan, quota, credit)) logRefusal(userId, allowance)
     if (plan !== 'premium') return 'premium-required'
     if (exhausted(plan, quota, credit)) return 'quota-exhausted'
     try {
@@ -242,7 +246,7 @@ export namespace ScanUseCase {
           keepsStory(owned, { title: book.title, author: book.authors[0] }),
       }))
     } catch (error) {
-      logger.error('shelf detection failed', { error, userId })
+      reportFailure('shelf detection failed', error, userId)
       return failureOf(error, 'Detection failed')
     }
   }
@@ -263,9 +267,25 @@ export namespace ScanUseCase {
 }
 
 const planIfAllowed = async (userId: UserId): Promise<Plan | undefined> => {
-  const { plan, quota, credit } = await QuotaQuery.allowanceOf(userId)
-  return exhausted(plan, quota, credit) ? undefined : plan
+  const allowance = await QuotaQuery.allowanceOf(userId)
+  if (!exhausted(allowance.plan, allowance.quota, allowance.credit)) return allowance.plan
+  logRefusal(userId, allowance)
+  return undefined
 }
+
+/** One line per refused scan, at info: a refusal is the gate working, never a Sentry
+ *  issue, and this is where they are counted — who, why, and what was left. */
+export const logRefusal = (
+  userId: UserId,
+  { plan, quota, credit }: Awaited<ReturnType<typeof QuotaQuery.allowanceOf>>,
+) =>
+  logger.info('scan refused', {
+    userId,
+    reason: refusalOf(plan),
+    plan,
+    used: quota.scans,
+    credit: credit.scans,
+  })
 
 // The reads are memoized for the request, so checking twice — once before a
 // link is fetched, once before the model is called — costs one set of reads.
@@ -291,9 +311,16 @@ const metered = async (
     return result
   } catch (error) {
     // The reader is told the scan failed; we are told why.
-    logger.error(failure, { error, userId })
+    reportFailure(failure, error, userId)
     return failureOf(error, 'Scan failed')
   }
+}
+
+/** A failed model call, reported: an error for Sentry, except a refusal for want of
+ *  Premium, which is the gate working and is logged as information. */
+const reportFailure = (message: string, error: unknown, userId: UserId) => {
+  if (isSubscriptionRequired(error)) logger.info('paid call refused', { userId, reason: message })
+  else logger.error(message, { error, userId })
 }
 
 /** What a reader is told of a model call that threw. Still logged by the
@@ -301,4 +328,6 @@ const metered = async (
 export const failureOf = (error: unknown, fallback: string): ModelFailure =>
   isSpendCapReached(error)
     ? 'ai-unavailable'
-    : { failed: error instanceof Error ? error.message : fallback }
+    : isSubscriptionRequired(error)
+      ? 'premium-required'
+      : { failed: error instanceof Error ? error.message : fallback }

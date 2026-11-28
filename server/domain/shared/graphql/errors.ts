@@ -17,3 +17,9 @@ export const aiUnavailable = (): never =>
 export const forbidden = (message: string): never => domainError('FORBIDDEN', message)
 
 export const badUserInput = (message: string): never => domainError('BAD_USER_INPUT', message)
+
+/** A paid call refused because the caller holds no Premium. Its own code, so the app
+ *  offers the subscription rather than saying the book was not found; the app words it
+ *  in the reader's language. */
+export const premiumRequired = (): never =>
+  domainError('PREMIUM_REQUIRED', 'This needs an active subscription')

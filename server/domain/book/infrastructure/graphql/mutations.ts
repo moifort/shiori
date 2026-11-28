@@ -14,7 +14,13 @@ import type { BookId } from '~/domain/book/types'
 import { BookUseCase } from '~/domain/book/use-case'
 import { seriesReferenceOf } from '~/domain/series/primitives'
 import { builder } from '~/domain/shared/graphql/builder'
-import { aiUnavailable, badUserInput, domainError, notFound } from '~/domain/shared/graphql/errors'
+import {
+  aiUnavailable,
+  badUserInput,
+  domainError,
+  notFound,
+  premiumRequired,
+} from '~/domain/shared/graphql/errors'
 import { languageOf } from '~/domain/shared/language'
 import type { UserId } from '~/domain/shared/types'
 
@@ -238,6 +244,7 @@ builder.mutationFields((t) => ({
         .with('not-found', () => notFound('Book not found'))
         .with('quota-exhausted', () => domainError('QUOTA_EXHAUSTED', 'Scan allowance is used up'))
         .with('ai-unavailable', aiUnavailable)
+        .with('premium-required', premiumRequired)
         .with({ failed: P.string }, ({ failed }) => domainError('SCAN_FAILED', failed))
         .with('no-author', 'bad-dates', () => {
           throw new Error('a refresh touches neither the saga nor the dates')
@@ -266,6 +273,7 @@ builder.mutationFields((t) => ({
           throw new Error('a description is free and touches neither the saga nor the dates')
         })
         .with('ai-unavailable', aiUnavailable)
+        .with('premium-required', premiumRequired)
         .with({ failed: P.string }, ({ failed }) => domainError('SCAN_FAILED', failed))
         .otherwise((book) => readBack(context.userId, book.id)),
   }),

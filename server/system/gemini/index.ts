@@ -80,8 +80,9 @@ type GenerateOptions = {
 export const generate = async <T>(
   options: GenerateOptions,
 ): Promise<{ value: T; usage?: AiStepUsage }> => {
-  // A grounded step bills searches: a subscriber's only, inside a request.
-  if (options.grounded) await requireSubscriber()
+  // Every step is billed, a grounded one its searches too: a subscriber's only, inside a
+  // request. The passes outside one choose their readers themselves.
+  await requireSubscriber()
   if (options.grounded && (await searchesOnClaude())) {
     try {
       return await searchedWithClaude<T>({

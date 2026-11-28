@@ -15,6 +15,7 @@ mock.module('~/system/gemini', () => ({
     calls.push(step)
     const value = answers.shift()
     if (value === undefined) throw new Error(`no queued answer for step "${step}"`)
+    if (value instanceof Error) throw value
     return { value, usage: { promptTokens: 10, outputTokens: 5, thinkingTokens: 20, searches: 1 } }
   },
 }))
@@ -468,6 +469,20 @@ describe('an author’s page', () => {
     expect(fake.snapshot('authors').size).toBe(0)
   })
 
+  test('remembers no miss when the caller without Premium is refused the model', async () => {
+    const { SubscriptionRequired } = await import('~/system/subscriber-gate')
+    await holdSanderson()
+    answers = [new SubscriptionRequired(), sanderson]
+
+    await AuthorUseCase.page(reader, authorKeyOf('Brandon Sanderson'), 'fr')
+    // A subscriber opening the same shared author next is not stopped by a miss.
+    const page = await AuthorUseCase.page(reader, authorKeyOf('Brandon Sanderson'), 'fr')
+
+    expect(fake.snapshot('author-misses').size).toBe(0)
+    expect(page?.catalogue?.biography).toBeDefined()
+    expect(calls).toEqual(['author', 'author'])
+  })
+
   test('does not ask again after a failed call either', async () => {
     await holdSanderson()
 
@@ -482,10 +497,12 @@ describe('an author’s page', () => {
     answers = [{ name: 'Brandon Sanderson', series: [], books: [] }, sanderson]
     await AuthorUseCase.page(reader, authorKeyOf('Brandon Sanderson'), 'fr')
 
+    // A day after the miss: a refresh asks again once the day is out.
     const refreshed = await AuthorUseCase.recatalogue(
       reader,
       authorKeyOf('Brandon Sanderson'),
       'fr',
+      new Date(Date.now() + 24 * 60 * 60 * 1000),
     )
     const page = await AuthorUseCase.page(reader, authorKeyOf('Brandon Sanderson'), 'fr')
 
@@ -503,11 +520,27 @@ describe('an author’s page', () => {
       reader,
       authorKeyOf('Brandon Sanderson'),
       'fr',
+      new Date(Date.now() + 24 * 60 * 60 * 1000),
     )
     const page = await AuthorUseCase.page(reader, authorKeyOf('Brandon Sanderson'), 'fr')
 
     expect(refreshed).toBeUndefined()
     expect(page?.catalogue?.biography).toBe(built?.catalogue?.biography)
+  })
+
+  test('asks the model once a day at most, however often the reader refreshes', async () => {
+    await holdSanderson()
+    answers = [sanderson, sanderson, sanderson]
+    const key = authorKeyOf('Brandon Sanderson')
+    await AuthorUseCase.page(reader, key, 'fr')
+
+    const again = await AuthorUseCase.recatalogue(reader, key, 'fr')
+    await AuthorUseCase.recatalogue(reader, key, 'fr', new Date(Date.now() + 60 * 60 * 1000))
+
+    expect(again?.biography).toBeDefined()
+    expect(calls).toEqual(['author'])
+    await AuthorUseCase.recatalogue(reader, key, 'fr', new Date(Date.now() + 25 * 60 * 60 * 1000))
+    expect(calls).toEqual(['author', 'author'])
   })
 
   test('keeps the portrait when a refresh finds no photograph', async () => {
@@ -517,7 +550,12 @@ describe('an author’s page', () => {
     const built = await AuthorUseCase.page(reader, key, 'fr')
 
     faceless.add('Brandon Sanderson')
-    const refreshed = await AuthorUseCase.recatalogue(reader, key, 'fr')
+    const refreshed = await AuthorUseCase.recatalogue(
+      reader,
+      key,
+      'fr',
+      new Date(Date.now() + 25 * 60 * 60 * 1000),
+    )
 
     expect(String(refreshed?.portraitUrl)).toBe(String(built?.catalogue?.portraitUrl))
     expect(refreshed?.portraitSoughtAt).toBeUndefined()

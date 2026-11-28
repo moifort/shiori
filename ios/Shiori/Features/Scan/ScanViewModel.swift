@@ -66,7 +66,7 @@ final class ScanViewModel {
             draft = scanned.asDraft
             ownedCopy = scanned.ownedCopy
             step = .review
-        } catch let APIError.domain(code, _) where code == "QUOTA_EXHAUSTED" {
+        } catch let error as APIError where error.opensSubscription {
             track(.scanBlockedByQuota)
             step = .camera
             paywallShown = true
@@ -95,7 +95,7 @@ final class ScanViewModel {
             draft = scanned.asDraft
             ownedCopy = scanned.ownedCopy
             step = .review
-        } catch let APIError.domain(code, _) where code == "QUOTA_EXHAUSTED" {
+        } catch let error as APIError where error.opensSubscription {
             track(.scanBlockedByQuota)
             step = .camera
             paywallShown = true
@@ -124,7 +124,7 @@ final class ScanViewModel {
             draft = scanned.asDraft
             ownedCopy = scanned.ownedCopy
             step = .review
-        } catch let APIError.domain(code, _) where code == "QUOTA_EXHAUSTED" {
+        } catch let error as APIError where error.opensSubscription {
             track(.scanBlockedByQuota)
             step = .camera
             paywallShown = true

@@ -73,7 +73,7 @@ final class ShelfImportViewModel {
             ticked = Set(books.filter { !$0.owned && $0.isNamed }.map(\.id))
             crops = await Self.cut(books, from: photo)
             step = books.isEmpty ? .noResult : .checklist
-        } catch let APIError.domain(code, _) where code == "PREMIUM_REQUIRED" || code == "QUOTA_EXHAUSTED" {
+        } catch let error as APIError where error.opensSubscription {
             step = .camera
             paywallShown = true
         } catch {
@@ -167,7 +167,7 @@ final class ShelfImportViewModel {
             _ = try await client.addDetected(book)
             track(.bookAdded(source: .shelf))
             progress[book.id] = .added
-        } catch let APIError.domain(code, _) where code == "QUOTA_EXHAUSTED" {
+        } catch let error as APIError where error.opensSubscription {
             progress[book.id] = .failed(String(localized: "Scans épuisés"))
         } catch {
             progress[book.id] = .failed(reportError(error))

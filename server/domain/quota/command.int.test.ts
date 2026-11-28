@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, mock, test } from 'bun:test'
 import type { UserId } from '~/domain/shared/types'
-import { fakeDb, resetFakeFirestore } from '~/test/fake-firestore'
+import { fakeDb, resetFakeFirestore, startFakeRequest } from '~/test/fake-firestore'
 
 mock.module('~/system/firebase', () => ({ db: fakeDb }))
 
@@ -86,6 +86,35 @@ describe('which counter a scan is taken from', () => {
     await spend(user('u1'), 3)
 
     expect((await QuotaQuery.creditOf(user('u1'))).scans as number).toBe(WELCOME_SCANS - 3)
+  })
+})
+
+describe('the month s last scan, two landing together', () => {
+  test('is taken once: the second draws on the granted scans', async () => {
+    await QuotaCommand.grantWelcomeCredit(user('u1'))
+    await spend(user('u1'), PREMIUM_MONTHLY_SCANS - 1)
+    startFakeRequest()
+    // Both requests checked the allowance before the model answered: one scan left in the month.
+    await Promise.all([QuotaQuery.ofCurrentMonth(user('u1')), QuotaQuery.creditOf(user('u1'))])
+
+    const debits = await spend(user('u1'), 2)
+
+    expect(debits).toEqual([{ on: 'monthly' }, { on: 'credit' }])
+    expect((await QuotaQuery.ofCurrentMonth(user('u1'))).scans as number).toBe(
+      PREMIUM_MONTHLY_SCANS,
+    )
+    expect((await QuotaQuery.creditOf(user('u1'))).scans as number).toBe(WELCOME_SCANS - 1)
+  })
+
+  test('costs two document reads per scan, both inside its one transaction', async () => {
+    startFakeRequest()
+    const [docReads, queryReads] = [fake.docReads, fake.queryReads]
+
+    await QuotaCommand.record(user('u1'), 'premium')
+
+    expect(fake.docReads - docReads).toBe(2)
+    expect(fake.queryReads - queryReads).toBe(0)
+    expect(fake.transactions).toHaveLength(1)
   })
 })
 

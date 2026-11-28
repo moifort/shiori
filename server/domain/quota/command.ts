@@ -1,5 +1,4 @@
 import type { WriteBatch } from 'firebase-admin/firestore'
-import { match } from 'ts-pattern'
 import {
   consumed,
   consumedCredit,
@@ -15,35 +14,23 @@ import type { Plan, UserId } from '~/domain/shared/types'
 export namespace QuotaCommand {
   // Write down one scan that actually happened, against whichever counter owes
   // it. Called AFTER Gemini answered, never before: a failed scan must not cost
-  // anyone a quota, and a refused request never reaches this point. Each counter
-  // increments in its own transaction — two scans finishing together must count
-  // two, and a plain read-then-set counted one.
+  // anyone a quota, and a refused request never reaches this point. The counter is
+  // chosen and spent in one transaction that reads both: two scans finishing
+  // together count two, and the month's last scan is taken once — a choice made on
+  // the reads from before the call let both take it and left the grant untouched.
   //
   // Returns what was debited, so the caller can tell a spent month from a spent
-  // grant without reading the counters back.
-  export const record = async (userId: UserId, plan: Plan): Promise<ScanDebit> => {
-    const [quota, credit] = await Promise.all([
-      repository.findBy(userId, monthOf(new Date())),
-      repository.findCredit(userId),
-    ])
-    const debit = debitFor(plan, quota, credit)
-    return (
-      match(debit)
-        .with({ on: 'monthly' }, async (debit) => {
-          await repository.consume(userId, monthOf(new Date()), consumed)
-          return debit
-        })
-        .with({ on: 'credit' }, async (debit) => {
-          await repository.consumeCredit(userId, consumedCredit)
-          return debit
-        })
-        // Nothing left to debit. Unreachable through the scan gate, which refuses
-        // the request first; recorded as a no-op rather than an error so a race
-        // between two last scans never fails the one that already got its answer.
-        .with({ on: 'nothing' }, async (debit) => debit)
-        .exhaustive()
+  // grant without reading the counters back. `nothing` is a no-op rather than an
+  // error, so a race between two last scans never fails the one that already got its
+  // answer: the overshoot is bounded by the scans in flight at the gate, each answered.
+  export const record = async (userId: UserId, plan: Plan): Promise<ScanDebit> =>
+    repository.spendOne(
+      userId,
+      monthOf(new Date()),
+      (quota, credit) => debitFor(plan, quota, credit),
+      consumed,
+      consumedCredit,
     )
-  }
 
   // Hand a brand-new account the scans it needs for its first shelf. Called once,
   // from the onboarding that creates the profile, in that same batch.

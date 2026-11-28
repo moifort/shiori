@@ -45,7 +45,8 @@ export const QuotaType = builder.objectRef<QuotaState>('Quota').implement({
     totalRemaining: t.int({
       description:
         'Everything the account can still scan: the month plus what it was granted, e.g. `17`. ' +
-        'This is the number a screen should show — the one the scan gate refuses at `0`.',
+        'This is the number a screen should show — the one the scan gate refuses at `0`. ' +
+        'Always `0` without a subscription: the granted scans wait for one.',
       resolve: (state) => totalRemaining(state.plan, state.quota, state.credit),
     }),
     renewsOn: t.field({

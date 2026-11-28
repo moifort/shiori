@@ -4361,6 +4361,22 @@
         }
       }
     },
+    "Cette fonction demande un abonnement Shiori en cours." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This needs a running Shiori subscription."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cette fonction demande un abonnement Shiori en cours."
+          }
+        }
+      }
+    },
     "Cette page se remplit toute seule à partir de votre bibliothèque et de vos amis." : {
       "localizations" : {
         "en" : {

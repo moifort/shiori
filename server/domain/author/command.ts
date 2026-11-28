@@ -24,6 +24,7 @@ import type { AuthorName as AuthorNameValue, UserId } from '~/domain/shared/type
 import { generate } from '~/system/gemini'
 import type { AiStepUsage } from '~/system/gemini/usage'
 import { createLogger } from '~/system/logger'
+import { isSubscriptionRequired } from '~/system/subscriber-gate'
 import { isTimeout } from '~/utils/fetch'
 import { isPresent, optionally } from '~/utils/input'
 
@@ -165,6 +166,9 @@ export namespace AuthorCommand {
       })
       return { author, usage }
     } catch (error) {
+      // A caller without Premium was refused before anything was asked: no miss is
+      // remembered, since the author is shared and a subscriber's opening must still ask.
+      if (isSubscriptionRequired(error)) return {}
       logger.error('author catalogue generation failed', { error, key })
       await repository
         .saveMiss({ key, missedAt: new Date() })

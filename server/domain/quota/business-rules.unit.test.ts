@@ -124,6 +124,10 @@ describe('everything that can still be scanned', () => {
   it('is only the month for an account holding no grant', () => {
     expect(totalRemaining('premium', quotaOf(0), empty)).toBe(PREMIUM_MONTHLY_SCANS)
   })
+
+  it('is nothing without a subscription, the granted scans waiting for one', () => {
+    expect(totalRemaining('free', quotaOf(0), creditOf(200))).toBe(Count(0))
+  })
 })
 
 describe('which counter the next scan comes out of', () => {

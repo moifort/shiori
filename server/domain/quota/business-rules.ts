@@ -90,9 +90,11 @@ export const limitOf = (plan: Plan): CountType =>
 export const monthlyRemaining = (plan: Plan, quota: Quota): CountType =>
   Count(Math.max(0, limitOf(plan) - quota.scans))
 
-// Everything the account can still scan: the month plus what it was granted.
+// Everything the account can still scan: the month plus what it was granted, for a
+// subscriber. Nothing without Premium: the scans it was granted wait for its subscription,
+// and the gate refuses at zero, so a gauge must not show them as available.
 export const totalRemaining = (plan: Plan, quota: Quota, credit: ScanCredit): CountType =>
-  Count(monthlyRemaining(plan, quota) + credit.scans)
+  plan === 'premium' ? Count(monthlyRemaining(plan, quota) + credit.scans) : Count(0)
 
 // Which counter the next scan comes out of.
 export const debitFor = (plan: Plan, quota: Quota, credit: ScanCredit): ScanDebit =>
@@ -116,3 +118,8 @@ export const consumedCredit = (credit: ScanCredit): ScanCredit => ({
   ...credit,
   scans: Count(Math.max(0, credit.scans - 1)),
 })
+
+// Why a scan is refused, for the log that counts refusals: no subscription, or a subscriber
+// with nothing left.
+export const refusalOf = (plan: Plan): 'no-subscription' | 'allowance-spent' =>
+  plan === 'premium' ? 'allowance-spent' : 'no-subscription'

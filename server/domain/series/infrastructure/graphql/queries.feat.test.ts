@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, mock, test } from 'bun:test'
+import { afterEach, beforeEach, describe, expect, mock, setSystemTime, test } from 'bun:test'
 import { graphql } from 'graphql'
 import type { UserId } from '~/domain/shared/types'
 import { fakeDb, resetFakeFirestore } from '~/test/fake-firestore'
@@ -554,11 +554,17 @@ describe('refreshing a saga catalogue', () => {
   // A catalogue is written once and read by everyone, so a volume announced
   // after that first call never appears — nor does a wrong-language catalogue
   // ever get another chance. The reader can ask the world again.
+  // The clock moves a day on between a catalogue and its refresh: a refresh within the
+  // day answers the stored catalogue without asking the model.
+  const aDayLater = () => setSystemTime(new Date(Date.now() + 25 * 60 * 60 * 1000))
+  afterEach(() => setSystemTime())
+
   test('replaces the stored catalogue with a fresh model call', async () => {
     await addVolume('Dune', 1, { language: 'FR' })
     answers = [stale]
     await spineOf()
 
+    aDayLater()
     answers = [fresh]
     expect(await refresh()).toEqual({
       spine: [{ title: 'Dune' }, { title: 'Le Messie de Dune' }],
@@ -576,6 +582,7 @@ describe('refreshing a saga catalogue', () => {
     answers = [stale]
     await spineOf()
 
+    aDayLater()
     answers = [new Error('grounding is down')]
     expect(await refresh()).toBeNull()
     answers = [{ ...stale, volumes: [] }]
@@ -593,6 +600,16 @@ describe('refreshing a saga catalogue', () => {
     answers = [stale]
     expect(await refresh()).toEqual({ spine: [{ title: 'Dune' }] })
     expect(await spineOf()).toEqual([{ title: 'Dune' }])
+  })
+
+  test('asks the model once a day at most, answering the stored catalogue within the day', async () => {
+    await addVolume('Dune', 1, { language: 'FR' })
+    answers = [stale]
+    await spineOf()
+
+    answers = [fresh]
+    expect(await refresh()).toEqual({ spine: [{ title: 'Dune' }] })
+    expect(calls).toEqual(['catalogue'])
   })
 
   test('refreshes nothing for a saga the reader holds no volume of', async () => {

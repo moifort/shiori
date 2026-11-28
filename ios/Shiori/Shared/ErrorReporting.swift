@@ -3,9 +3,11 @@ import Sentry
 
 func reportError(_ error: Error) -> String {
     let nsError = error as NSError
-    // An AI out of credit is reported by the server, once, where it is fixed.
+    // An AI out of credit is reported by the server, once, where it is fixed; a refusal the
+    // subscription answers is the paywall working, not a fault.
     let isIgnored = isCancellation(error) || isConnectivityLoss(nsError)
         || (error as? APIError)?.domainCode == "AI_UNAVAILABLE"
+        || (error as? APIError)?.opensSubscription == true
     if !isIgnored {
         SentrySDK.capture(error: error)
     }

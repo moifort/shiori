@@ -15,7 +15,13 @@ import { DiscoveryUseCase } from '~/domain/discovery/use-case'
 import { DEPRECATED_EDITION_LANGUAGE } from '~/domain/series/infrastructure/graphql/types'
 import { ReleaseDate, seriesReferenceOf } from '~/domain/series/primitives'
 import { builder } from '~/domain/shared/graphql/builder'
-import { aiUnavailable, badUserInput, domainError, notFound } from '~/domain/shared/graphql/errors'
+import {
+  aiUnavailable,
+  badUserInput,
+  domainError,
+  notFound,
+  premiumRequired,
+} from '~/domain/shared/graphql/errors'
 import { languageOf } from '~/domain/shared/language'
 
 /** A book Découvrir shows, as the app names it. */
@@ -72,9 +78,10 @@ builder.mutationFields((t) => ({
       'web-grounded model fills in its summary, genre, pages and publisher, and Audible the ' +
       'narrators and running time of a recording. About ten seconds the first time.\n\n' +
       'Kept for every reader who opens the same book in the same language, for sixty ' +
-      'days: the call is paid once and spends nobody’s scan. Refused with ' +
+      'days: a kept description is free, and the call that writes one spends one scan of ' +
+      'the caller’s allowance. Refused with ' +
       '`QUOTA_EXHAUSTED` when the reader’s allowance is used up and nobody described it ' +
-      'yet, `SCAN_FAILED` ' +
+      'yet, `PREMIUM_REQUIRED` without a subscription, `SCAN_FAILED` ' +
       '(`AI_UNAVAILABLE` while the AI is out of credit) when the model call errors.',
     deprecationReason:
       'Use `describeReleaseOf`, which names the item and answers the release every list draws.',
@@ -107,6 +114,7 @@ builder.mutationFields((t) => ({
       )
         .with('quota-exhausted', () => domainError('QUOTA_EXHAUSTED', 'Scan allowance is used up'))
         .with('ai-unavailable', aiUnavailable)
+        .with('premium-required', premiumRequired)
         .with({ failed: P.string }, ({ failed }) => domainError('SCAN_FAILED', failed))
         .with({ book: P.any }, (description) => description)
         .exhaustive(),
@@ -180,6 +188,7 @@ builder.mutationFields((t) => ({
         .with('not-found', () => notFound('No such volume announced'))
         .with('quota-exhausted', () => domainError('QUOTA_EXHAUSTED', 'Scan allowance is used up'))
         .with('ai-unavailable', aiUnavailable)
+        .with('premium-required', premiumRequired)
         .with({ failed: P.string }, ({ failed }) => domainError('SCAN_FAILED', failed))
         .with({ book: P.any }, (preview) => preview)
         .exhaustive()

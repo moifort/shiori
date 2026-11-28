@@ -355,3 +355,32 @@ describe('a call Google could not serve', () => {
     })
   })
 })
+
+describe('a call made inside a request whose caller holds no Premium', () => {
+  const globals = globalThis as { useEvent?: () => unknown }
+  afterEach(() => {
+    delete globals.useEvent
+  })
+
+  test('is refused before anything is sent, an ungrounded step too', async () => {
+    globals.useEvent = () => ({ context: { _isSubscriber: async () => false } })
+    const sent: unknown[] = []
+    const realFetch = globalThis.fetch
+    globalThis.fetch = (async (...args: unknown[]) => {
+      sent.push(args)
+      throw new Error('no network in a unit test')
+    }) as unknown as typeof fetch
+    try {
+      const refusal = await generate({
+        step: 'kindle-titles',
+        parts: [{ text: 'Dune' }],
+        responseSchema: {},
+      }).catch((error) => error)
+      const { isSubscriptionRequired } = await import('~/system/subscriber-gate')
+      expect(isSubscriptionRequired(refusal)).toBe(true)
+      expect(sent).toEqual([])
+    } finally {
+      globalThis.fetch = realFetch
+    }
+  })
+})

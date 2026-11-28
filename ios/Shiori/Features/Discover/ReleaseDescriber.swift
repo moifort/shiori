@@ -43,7 +43,7 @@ final class ReleaseDescriber {
             let answered = try await describeRelease()
             withAnimation(.smooth) { release = answered }
         } catch {
-            guard !isCancellation(error), (error as? APIError)?.domainCode != "QUOTA_EXHAUSTED" else { return }
+            guard !isCancellation(error), (error as? APIError)?.opensSubscription != true else { return }
             _ = reportError(error)
         }
     }

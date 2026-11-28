@@ -43,9 +43,23 @@ export namespace ReleaseUseCase {
     appLanguage: Language,
     now = new Date(),
   ): Promise<Release | DescribeRefusal> => {
+    const told = await describeTelling(userId, identity, seed, appLanguage, now)
+    return typeof told === 'string' || 'failed' in told ? told : told.release
+  }
+
+  /** `describe`, saying whether this call asked the model (`described`) or answered a
+   *  description already kept — what a caller that meters the call needs to know. */
+  export const describeTelling = async (
+    userId: UserId,
+    identity: ReleaseIdentity,
+    seed: ReleaseSeed,
+    appLanguage: Language,
+    now = new Date(),
+  ): Promise<{ release: Release; described: boolean } | DescribeRefusal> => {
     const release = (await ReleaseQuery.byKeys([identity.key])).get(identity.key)
     const kept = keptDescriptionOf(release, seed, appLanguage)
-    if (release && kept && isDescriptionFresh(kept, now, seed.releasedOn)) return release
+    if (release && kept && isDescriptionFresh(kept, now, seed.releasedOn))
+      return { release, described: false }
     const edition = seed.language
     const [described, heard] = await Promise.all([
       ScanUseCase.describeShown(userId, releaseEditionOf(seed), appLanguage, {
@@ -63,11 +77,14 @@ export namespace ReleaseUseCase {
       described,
       typeof heard === 'object' ? heard : undefined,
     )
-    return ReleaseCommand.keepDescription(identity, appLanguage, {
-      description,
-      describedAt: now,
-      describedFrom: describedFromOf(seed),
-    })
+    return {
+      release: await ReleaseCommand.keepDescription(identity, appLanguage, {
+        description,
+        describedAt: now,
+        describedFrom: describedFromOf(seed),
+      }),
+      described: true,
+    }
   }
 
   /** Describe what a list shows — an awaited edition, a winner, a discovery,

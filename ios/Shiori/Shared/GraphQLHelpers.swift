@@ -165,6 +165,13 @@ enum APIError: LocalizedError {
         return nil
     }
 
+    /// A refusal the subscription answers: the allowance used up (`QUOTA_EXHAUSTED`), or a
+    /// paid call refused for want of Premium (`PREMIUM_REQUIRED`). Screens offer the
+    /// subscription for both rather than showing an error.
+    var opensSubscription: Bool {
+        domainCode == "QUOTA_EXHAUSTED" || domainCode == "PREMIUM_REQUIRED"
+    }
+
     var errorDescription: String? {
         switch self {
         case .invalidResponse:
@@ -175,6 +182,10 @@ enum APIError: LocalizedError {
         // the same words on every screen that asks the model.
         case .domain(let code, _) where code == "AI_UNAVAILABLE":
             return String(localized: "L'IA de Shiori est momentanément indisponible. Rien n'a été décompté ; réessayez dans un moment.")
+        // A paid call refused for want of Premium: the server's words are English, the
+        // reader's are said here.
+        case .domain(let code, _) where code == "PREMIUM_REQUIRED":
+            return String(localized: "Cette fonction demande un abonnement Shiori en cours.")
         case .graphQL(let messages), .domain(_, let messages):
             return messages.joined(separator: " — ")
         }

@@ -25,6 +25,7 @@ mock.module('~/system/gemini', () => ({
 }))
 
 const { schema } = await import('~/domain/shared/graphql/schema')
+const { SubscriptionRequired } = await import('~/system/subscriber-gate')
 const { monthOf } = await import('~/domain/quota/business-rules')
 
 const userId = 'reader-1' as UserId
@@ -125,6 +126,14 @@ describe('searchTitle', () => {
     const result = await searchTitle('Dune')
 
     expect(result.errors?.[0]?.extensions?.code).toBe('AI_UNAVAILABLE')
+  })
+
+  test('fails with PREMIUM_REQUIRED when the subscriber gate refuses the model', async () => {
+    answers = [new SubscriptionRequired()]
+
+    const result = await searchTitle('Dune')
+
+    expect(result.errors?.[0]?.extensions?.code).toBe('PREMIUM_REQUIRED')
   })
 })
 
@@ -300,6 +309,18 @@ describe('adding a shelf book, then opening it', () => {
     const result = await describeBook(id)
 
     expect(result.errors?.[0]?.extensions?.code).toBe('AI_UNAVAILABLE')
+    expect(fake.data('books', id)).toMatchObject({ awaitingDescription: true })
+  })
+
+  // A lapsed account opening a book it added while subscribed: told to subscribe, not that
+  // the scan failed, and the book still waits for its description.
+  test('answers PREMIUM_REQUIRED and keeps the book awaiting without a subscription', async () => {
+    const id = idOf(await addDetectedBook())
+    answers = [new SubscriptionRequired()]
+
+    const result = await describeBook(id)
+
+    expect(result.errors?.[0]?.extensions?.code).toBe('PREMIUM_REQUIRED')
     expect(fake.data('books', id)).toMatchObject({ awaitingDescription: true })
   })
 })

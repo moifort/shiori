@@ -47,6 +47,7 @@ import { SeriesUseCase } from '~/domain/series/use-case'
 import type { UserId } from '~/domain/shared/types'
 import { config } from '~/system/config'
 import { createLogger } from '~/system/logger'
+import { isSubscriptionRequired } from '~/system/subscriber-gate'
 import { openedConnection } from '~/utils/amazon-connection'
 import { eachWithAtMostInFlight } from '~/utils/concurrency'
 import { bulkSave } from '~/utils/firestore'
@@ -456,7 +457,10 @@ const readingsOf = async (
           )
         return value.books ?? []
       } catch (error) {
-        logger.warn('Kindle titles could not be read', { error, titles: batch.length })
+        // A caller without Premium is refused the model: its titles fall back on the
+        // patterns, as a failed call's do, and nothing is reported.
+        if (!isSubscriptionRequired(error))
+          logger.warn('Kindle titles could not be read', { error, titles: batch.length })
         return []
       }
     }),

@@ -774,3 +774,11 @@ export const withCorrection = (series: Series, correction: SeriesCorrection): Se
   if ('description' in correction && !correction.description) delete written.description
   return written
 }
+
+// How long a refresh at a reader's request waits after an edition's catalogue was built: one
+// grounded call per edition and per day, however often it is asked for.
+export const RECATALOGUE_COOLDOWN_MS = 24 * 60 * 60 * 1000
+
+// Whether a reader's refresh may ask the model for this edition's catalogue again.
+export const mayRecatalogue = (catalogedAt: Date | undefined, now: Date): boolean =>
+  catalogedAt === undefined || now.getTime() - catalogedAt.getTime() >= RECATALOGUE_COOLDOWN_MS

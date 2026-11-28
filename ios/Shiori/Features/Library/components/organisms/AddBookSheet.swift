@@ -434,7 +434,7 @@ struct AddBookSheet: View {
                     onChoose(.title(candidates[0].lookUpQuery))
                 default: search = .candidates(candidates)
                 }
-            } catch let APIError.domain(code, _) where code == "QUOTA_EXHAUSTED" {
+            } catch let error as APIError where error.opensSubscription {
                 search = .idle
                 onChoose(.title(typed))
             } catch {

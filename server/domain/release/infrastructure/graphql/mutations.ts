@@ -8,7 +8,13 @@ import type { ReleaseView } from '~/domain/release/types'
 import { type DescribeRefusal, ReleaseUseCase } from '~/domain/release/use-case'
 import { seriesReferenceOf } from '~/domain/series/primitives'
 import { builder } from '~/domain/shared/graphql/builder'
-import { aiUnavailable, badUserInput, domainError, notFound } from '~/domain/shared/graphql/errors'
+import {
+  aiUnavailable,
+  badUserInput,
+  domainError,
+  notFound,
+  premiumRequired,
+} from '~/domain/shared/graphql/errors'
 import { languageOf } from '~/domain/shared/language'
 import { SuggestionUseCase } from '~/domain/suggestion/use-case'
 import { WishUseCase } from '~/domain/wish/use-case'
@@ -56,6 +62,7 @@ const answered = (outcome: ReleaseView | DescribeRefusal | 'not-found') =>
     .with('not-found', () => notFound('No such release among what the reader is shown'))
     .with('quota-exhausted', () => domainError('QUOTA_EXHAUSTED', 'Scan allowance is used up'))
     .with('ai-unavailable', aiUnavailable)
+    .with('premium-required', premiumRequired)
     .with({ failed: P.string }, ({ failed }) => domainError('SCAN_FAILED', failed))
     .with({ key: P.string }, (view) => view)
     .exhaustive()

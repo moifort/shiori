@@ -102,6 +102,7 @@ import { EntitlementQuery } from '~/domain/entitlement/query'
 import { shelvedNarratorsOf } from '~/domain/narrator/business-rules'
 import { NarratorQuery } from '~/domain/narrator/query'
 import { NotificationUseCase } from '~/domain/notification/use-case'
+import { QuotaCommand } from '~/domain/quota/command'
 import { releaseKeyOf } from '~/domain/release/business-rules'
 import { ReleaseQuery } from '~/domain/release/query'
 import type { ReleaseView } from '~/domain/release/types'
@@ -465,9 +466,15 @@ export namespace DiscoveryUseCase {
    *  an award winner — for its page, as a scan describes a book: the grounded
    *  model fills in its summary, genre, pages and publisher, and Audible its
    *  narrators and running time for a recording. Kept for every reader who
-   *  opens the same book in the same language, so the call is paid once and
-   *  spends nobody's scan; a reader whose allowance is used up is refused one
-   *  nobody described yet, and keeps the plain page. */
+   *  opens the same book in the same language, so the call is paid once; a
+   *  reader whose allowance is used up is refused one nobody described yet,
+   *  and keeps the plain page.
+   *
+   *  Deprecated, and unlike `describeReleaseOf` it takes the book as the app
+   *  names it, so any title and author can be sent: the call it makes spends
+   *  one scan of the caller's allowance, as a typed title's lookup does, or a
+   *  script could buy grounded calls outside the quota. A kept description is
+   *  still free. */
   export const describeRelease = async (
     userId: UserId,
     seed: ReleaseSeed,
@@ -476,7 +483,7 @@ export namespace DiscoveryUseCase {
   ): Promise<ReleaseDescription | Exclude<ScanOutcome, ScanResult>> => {
     const format = releaseFormatOf(seed.format)
     const language = seed.language ?? appLanguage
-    const release = await ReleaseUseCase.describe(
+    const told = await ReleaseUseCase.describeTelling(
       userId,
       {
         key: releaseKeyOf(seed.title, seed.authors[0], format, language),
@@ -498,9 +505,11 @@ export namespace DiscoveryUseCase {
       appLanguage,
       now,
     )
-    if (typeof release === 'string' || 'failed' in release) return release
-    const kept = release.descriptions?.[appLanguage]
+    if (typeof told === 'string' || 'failed' in told) return told
+    const kept = told.release.descriptions?.[appLanguage]
     if (!kept) throw new Error('A release just described holds no description')
+    // Described by this very call: the model was asked, and the caller pays its scan.
+    if (told.described) await QuotaCommand.record(userId, await EntitlementQuery.planOf(userId))
     return kept.description
   }
 

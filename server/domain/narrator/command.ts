@@ -20,6 +20,7 @@ import type { AuthorName, UserId } from '~/domain/shared/types'
 import { generate } from '~/system/gemini'
 import type { AiStepUsage } from '~/system/gemini/usage'
 import { createLogger } from '~/system/logger'
+import { isSubscriptionRequired } from '~/system/subscriber-gate'
 import { optionally } from '~/utils/input'
 
 const logger = createLogger('narrator')
@@ -128,6 +129,9 @@ export namespace NarratorCommand {
       }
       return { narrator: await save(key, narratorFrom, known), usage }
     } catch (error) {
+      // A caller without Premium was refused before anything was asked: no miss is
+      // remembered, since the narrator is shared and a subscriber's opening must still ask.
+      if (isSubscriptionRequired(error)) return { narrator: known ?? { key, name } }
       logger.error('narrator catalogue generation failed', { error, key })
       const portraitUrl = known?.portraitUrl ?? (await faceOf(name))
       const missedFrom = (previous: Narrator | undefined): Narrator => {

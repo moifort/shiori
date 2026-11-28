@@ -32,6 +32,7 @@ import {
   inTabOrder,
   isRecentMiss,
   matchingFilter,
+  mayRecatalogue,
   numberInCatalogue,
   progressOf,
   provisionalCatalogueOf,
@@ -530,15 +531,22 @@ export namespace SeriesUseCase {
    *
    *  Null when the reader holds no volume of the saga, and when the model fails
    *  or finds no volumes — the previous catalogue is then left untouched, so a
-   *  refresh never costs the reader what they had. */
+   *  refresh never costs the reader what they had. Asked once a day per edition
+   *  at most: within a day of the last build the stored catalogue answers. */
   export const recatalogue = async (
     userId: UserId,
     saga: SagaKey,
     language: ScanLanguage,
     edition?: BookLanguage,
+    now = new Date(),
   ): Promise<Series | undefined> => {
     const shelf = await BookQuery.bySaga(userId, saga)
     const opened = editionOpened(shelf, language, edition)
+    // Once a day per edition: a catalogue built within the day answers as it is.
+    if (shelf.length > 0) {
+      const stored = await SeriesQuery.byId({ saga, language: opened })
+      if (stored && !mayRecatalogue(stored.catalogedAt, now)) return stored
+    }
     return catalogueFromLibrary(
       userId,
       saga,

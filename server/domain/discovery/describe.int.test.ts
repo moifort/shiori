@@ -94,7 +94,7 @@ beforeEach(() => {
 })
 
 describe('a shown book’s page', () => {
-  test('is described by the model and keeps the book the app named, spending no scan', async () => {
+  test('is described by the model and keeps the book the app named, spending one scan', async () => {
     const description = await DiscoveryUseCase.describeRelease(reader, volume, 'fr')
 
     expect(description).toMatchObject({
@@ -112,7 +112,8 @@ describe('a shown book’s page', () => {
       narrators: [],
     })
     expect(asked).toHaveLength(1)
-    expect(spent(reader)).toBe(0)
+    // Any title can be sent, so the call it pays is the caller's scan.
+    expect(spent(reader)).toBe(1)
     expect(searchedAudible).toEqual([])
   })
 
@@ -124,6 +125,7 @@ describe('a shown book’s page', () => {
 
     expect(description).toMatchObject({ book: { synopsis: 'Carl descend au quatrième étage.' } })
     expect(asked).toHaveLength(1)
+    expect(spent(other)).toBe(0)
     expect(fake.docReads - docReads).toBe(1)
     expect(fake.queryReads - queryReads).toBe(0)
   })

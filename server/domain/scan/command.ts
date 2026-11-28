@@ -73,6 +73,7 @@ import { config } from '~/system/config'
 import { generate } from '~/system/gemini'
 import { type AiStepUsage, summedUsage } from '~/system/gemini/usage'
 import { createLogger } from '~/system/logger'
+import { isSubscriptionRequired } from '~/system/subscriber-gate'
 import { isPresent, optionally as optional } from '~/utils/input'
 import { slugify } from '~/utils/slug'
 
@@ -221,6 +222,8 @@ export namespace ScanCommand {
       const found = libraryDescriptionFrom(value, seen, editions)
       return found ? { usage, found: { ...found, usage } } : { usage }
     } catch (error) {
+      // A caller without Premium is refused here first, and told so.
+      if (isSubscriptionRequired(error)) throw error
       // The grounded step is asked next; a refusal it shares, it reports.
       logger.warn('library description failed', { error, title: seen.title })
       return {}
@@ -426,6 +429,8 @@ export namespace ScanCommand {
       await nameBooksAfter(series)
       return { series, usage }
     } catch (error) {
+      // A caller without Premium was refused before anything was asked: the gate working.
+      if (isSubscriptionRequired(error)) return {}
       logger.error('series catalogue generation failed', { error, series: name })
       return {}
     }

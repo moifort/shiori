@@ -19,13 +19,19 @@ import { ScanUseCase } from '~/domain/scan/use-case'
 import { VolumeKindEnum } from '~/domain/series/infrastructure/graphql/enums'
 import { seriesReferenceOf } from '~/domain/series/primitives'
 import { builder } from '~/domain/shared/graphql/builder'
-import { aiUnavailable, domainError, notFound } from '~/domain/shared/graphql/errors'
+import {
+  aiUnavailable,
+  domainError,
+  notFound,
+  premiumRequired,
+} from '~/domain/shared/graphql/errors'
 import { languageFrom, languageOf } from '~/domain/shared/language'
 
 const answered = (outcome: ScanOutcome) =>
   match(outcome)
     .with('quota-exhausted', () => domainError('QUOTA_EXHAUSTED', 'Scan allowance is used up'))
     .with('ai-unavailable', aiUnavailable)
+    .with('premium-required', premiumRequired)
     .with({ failed: P.string }, ({ failed }) => domainError('SCAN_FAILED', failed))
     .with({ recognized: P.boolean }, (result) => result)
     .exhaustive()
@@ -110,6 +116,7 @@ builder.mutationField('searchTitle', (t) =>
       )
         .with('quota-exhausted', () => domainError('QUOTA_EXHAUSTED', 'Scan allowance is used up'))
         .with('ai-unavailable', aiUnavailable)
+        .with('premium-required', premiumRequired)
         .with({ failed: P.string }, ({ failed }) => domainError('SCAN_FAILED', failed))
         .with(P.array(), (candidates) => candidates)
         .exhaustive(),

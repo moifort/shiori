@@ -3569,7 +3569,7 @@ type Mutation {
   """
   Describe a book Découvrir shows, for its page, as a scan describes one: the web-grounded model fills in its summary, genre, pages and publisher, and Audible the narrators and running time of a recording. About ten seconds the first time.
   
-  Kept for every reader who opens the same book in the same language, for sixty days: the call is paid once and spends nobody’s scan. Refused with `QUOTA_EXHAUSTED` when the reader’s allowance is used up and nobody described it yet, `SCAN_FAILED` (`AI_UNAVAILABLE` while the AI is out of credit) when the model call errors.
+  Kept for every reader who opens the same book in the same language, for sixty days: a kept description is free, and the call that writes one spends one scan of the caller’s allowance. Refused with `QUOTA_EXHAUSTED` when the reader’s allowance is used up and nobody described it yet, `PREMIUM_REQUIRED` without a subscription, `SCAN_FAILED` (`AI_UNAVAILABLE` while the AI is out of credit) when the model call errors.
   """
   describeRelease(book: ReleaseInput!): ReleaseDescription! @deprecated(reason: "Use `describeReleaseOf`, which names the item and answers the release every list draws.")
 
@@ -5121,7 +5121,7 @@ type Quota {
   renewsOn: DateTime!
 
   """
-  Everything the account can still scan: the month plus what it was granted, e.g. `17`. This is the number a screen should show — the one the scan gate refuses at `0`.
+  Everything the account can still scan: the month plus what it was granted, e.g. `17`. This is the number a screen should show — the one the scan gate refuses at `0`. Always `0` without a subscription: the granted scans wait for one.
   """
   totalRemaining: Int!
 

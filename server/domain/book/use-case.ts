@@ -40,7 +40,7 @@ import { QuotaQuery } from '~/domain/quota/query'
 import { releaseKeyOf } from '~/domain/release/business-rules'
 import { ReleaseQuery } from '~/domain/release/query'
 import type { ScanResult } from '~/domain/scan/types'
-import { ScanUseCase } from '~/domain/scan/use-case'
+import { logRefusal, ScanUseCase } from '~/domain/scan/use-case'
 import { numberInCatalogue } from '~/domain/series/business-rules'
 import { seriesKeyOf } from '~/domain/series/primitives'
 import type { Series, SeriesId, SeriesName, VolumeNumber } from '~/domain/series/types'
@@ -125,8 +125,12 @@ export namespace BookUseCase {
    *  is left. Like any addition, a book the reader keeps on another medium
    *  joins that record. */
   export const addFromShelf = async (userId: UserId, pick: ShelfPick) => {
-    const { plan, quota, credit } = await QuotaQuery.allowanceOf(userId)
-    if (exhausted(plan, quota, credit)) return 'quota-exhausted' as const
+    const allowance = await QuotaQuery.allowanceOf(userId)
+    const { plan, quota, credit } = allowance
+    if (exhausted(plan, quota, credit)) {
+      logRefusal(userId, allowance)
+      return 'quota-exhausted' as const
+    }
     const format = pick.format ?? 'book'
     const author = pick.authors[0]
     // Without an author a title alone is too loose a search to trust a cover from.

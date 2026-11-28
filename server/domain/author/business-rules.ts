@@ -431,3 +431,16 @@ export const keepingCorrections = (fresh: Author, previous: Author | undefined):
  *  names marked as corrected for good. */
 export const withCorrection = (author: Author, correction: AuthorCorrection): Author =>
   withCorrectionOf(AUTHOR_CORRECTABLE_FIELDS, author, correction)
+
+// How long a refresh at a reader's request waits after the model was last asked about an
+// author: one grounded call per author and per day, however often the button is pressed.
+export const RECATALOGUE_COOLDOWN_MS = 24 * 60 * 60 * 1000
+
+// Whether a reader's refresh may ask the model again: never asked, or asked — built or
+// missed — a day ago or more.
+export const mayRecatalogue = (lastAskedAt: readonly (Date | undefined)[], now: Date): boolean => {
+  const asked = lastAskedAt.filter((date): date is Date => date !== undefined)
+  if (asked.length === 0) return true
+  const latest = Math.max(...asked.map((date) => date.getTime()))
+  return now.getTime() - latest >= RECATALOGUE_COOLDOWN_MS
+}
