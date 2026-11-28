@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'bun:test'
-import { appAccountToken, isActive, planOf } from '~/domain/entitlement/business-rules'
+import {
+  appAccountToken,
+  isActive,
+  planOf,
+  reconciled,
+  runningEntitlementOf,
+} from '~/domain/entitlement/business-rules'
 import { AppAccountToken, OriginalTransactionId, ProductId } from '~/domain/entitlement/primitives'
 import type { Entitlement } from '~/domain/entitlement/types'
 import { UserId } from '~/domain/shared/primitives'
@@ -63,17 +69,92 @@ describe('the plan an account is on', () => {
   const now = new Date('2026-07-21T00:00:00.000Z')
 
   it('is free without an entitlement', () => {
-    expect(planOf(undefined, now)).toBe('free')
+    expect(planOf([], now)).toBe('free')
   })
 
   it('is premium while the entitlement is active', () => {
-    expect(planOf(anEntitlement(), now)).toBe('premium')
+    expect(planOf([anEntitlement()], now)).toBe('premium')
   })
 
   it('is free once it has expired or been revoked', () => {
-    expect(planOf(anEntitlement({ expiresAt: new Date('2026-01-01T00:00:00.000Z') }), now)).toBe(
+    expect(planOf([anEntitlement({ expiresAt: new Date('2026-01-01T00:00:00.000Z') })], now)).toBe(
       'free',
     )
-    expect(planOf(anEntitlement({ revokedAt: now }), now)).toBe('free')
+    expect(planOf([anEntitlement({ revokedAt: now })], now)).toBe('free')
+  })
+
+  it('is premium while either store s entitlement is active, the other lapsed', () => {
+    const lapsedAppStore = anEntitlement({ expiresAt: new Date('2026-01-01T00:00:00.000Z') })
+    const activePlay = anEntitlement({ store: 'google-play' })
+    expect(planOf([lapsedAppStore, activePlay], now)).toBe('premium')
+  })
+})
+
+describe('the entitlement the screens describe', () => {
+  const now = new Date('2026-07-21T00:00:00.000Z')
+
+  it('is the active one, whatever ended later elsewhere', () => {
+    const refunded = anEntitlement({ revokedAt: now, expiresAt: new Date('2030-01-01T00:00:00Z') })
+    const active = anEntitlement({ store: 'google-play' })
+    expect(runningEntitlementOf([refunded, active], now)).toBe(active)
+  })
+
+  it('is the one that ended last when none runs', () => {
+    const older = anEntitlement({ expiresAt: new Date('2026-01-01T00:00:00.000Z') })
+    const newer = anEntitlement({ expiresAt: new Date('2026-06-01T00:00:00.000Z') })
+    expect(runningEntitlementOf([older, newer], now)).toBe(newer)
+    expect(runningEntitlementOf([], now)).toBeUndefined()
+  })
+})
+
+describe('what is recorded when a store vouches again', () => {
+  const signed = (iso: string) => new Date(iso)
+
+  it('records a first entitlement as it is', () => {
+    const incoming = anEntitlement({ signedAt: signed('2026-07-01T00:00:00Z') })
+    expect(reconciled(undefined, incoming)).toBe(incoming)
+  })
+
+  it('keeps the stored one over a payload signed before it', () => {
+    const stored = anEntitlement({ signedAt: signed('2026-07-10T00:00:00Z') })
+    const replayed = anEntitlement({ signedAt: signed('2026-07-01T00:00:00Z') })
+    expect(reconciled(stored, replayed)).toBe('stale')
+  })
+
+  it('keeps the stored one over a payload that carries no signing date', () => {
+    const stored = anEntitlement({ signedAt: signed('2026-07-10T00:00:00Z') })
+    expect(reconciled(stored, anEntitlement())).toBe('stale')
+  })
+
+  it('takes a payload signed later, a renewal', () => {
+    const stored = anEntitlement({ signedAt: signed('2026-07-01T00:00:00Z') })
+    const renewal = anEntitlement({ signedAt: signed('2026-08-01T00:00:00Z') })
+    expect(reconciled(stored, renewal)).toBe(renewal)
+  })
+
+  it('keeps a refund over a payload of the same chain signed before it', () => {
+    const revokedAt = signed('2026-07-10T00:00:00Z')
+    const stored = anEntitlement({ revokedAt, signedAt: revokedAt })
+    // Recorded before the signing dates were kept: only the refund date orders it.
+    const legacy = { ...stored, signedAt: undefined }
+    const replayed = anEntitlement({ signedAt: signed('2026-07-01T00:00:00Z') })
+    expect(reconciled(stored, replayed)).toBe('stale')
+    expect(reconciled(legacy, replayed)).toEqual({ ...replayed, revokedAt })
+  })
+
+  it('lifts a refund only for a payload signed after it, a refund reversed', () => {
+    const revokedAt = signed('2026-07-10T00:00:00Z')
+    const stored = anEntitlement({ revokedAt })
+    const reversed = anEntitlement({ signedAt: signed('2026-07-12T00:00:00Z') })
+    expect(reconciled(stored, reversed)).toBe(reversed)
+  })
+
+  it('does not carry a refund over to another chain', () => {
+    const stored = anEntitlement({ revokedAt: signed('2026-07-10T00:00:00Z') })
+    const resubscribed = anEntitlement({
+      originalTransactionId: OriginalTransactionId('2000000900000999'),
+      signedAt: signed('2026-07-01T00:00:00Z'),
+    })
+    expect(reconciled(stored, resubscribed)).toBe(resubscribed)
   })
 })

@@ -1,14 +1,24 @@
-import { appAccountToken, isActive, planOf as planFrom } from '~/domain/entitlement/business-rules'
+import {
+  appAccountToken,
+  isActive,
+  planOf as planFrom,
+  runningEntitlementOf,
+} from '~/domain/entitlement/business-rules'
 import * as repository from '~/domain/entitlement/infrastructure/repository'
 import type { AppAccountToken, Entitlement } from '~/domain/entitlement/types'
 import type { Plan, UserId } from '~/domain/shared/types'
 import { config } from '~/system/config/index'
 
 export namespace EntitlementQuery {
-  // What the App Store sold this account, if anything. Absent is the normal
+  // Every entitlement this account holds, one per store at most. Empty is the normal
   // state: most people never subscribe.
+  export const allOf = async (userId: UserId): Promise<Entitlement[]> =>
+    repository.findAllBy(userId)
+
+  // The entitlement the account's screens describe: the active one that runs longest, else
+  // the one that ended last. Absent when nothing was ever sold.
   export const of = async (userId: UserId): Promise<Entitlement | undefined> =>
-    repository.findBy(userId)
+    runningEntitlementOf(await allOf(userId), new Date())
 
   // Whose entitlement carries that account token. The way in for the App Store
   // notifications, which name an account only through the token they carry.
@@ -23,7 +33,7 @@ export namespace EntitlementQuery {
   // source: a real entitlement is a verified App Store transaction, nothing else.
   export const planOf = async (userId: UserId): Promise<Plan> => {
     if (config().premiumUserIds.includes(userId)) return 'premium'
-    return planFrom(await of(userId), new Date())
+    return planFrom(await allOf(userId), new Date())
   }
 
   // Who is Premium right now: every active entitlement, and the comped accounts. The
@@ -42,8 +52,8 @@ export namespace EntitlementQuery {
     return userIds.filter((userId) => premium.has(userId))
   }
 
-  // Every entitlement ever recorded, active or not — the admin metrics refresh
-  // streams them to count who is Premium right now.
+  // Every entitlement ever recorded, active or not, one per account and store — the admin
+  // metrics refresh streams them to count who is Premium right now.
   export const all = async (): Promise<Entitlement[]> => repository.findAll()
 
   // The UUID the app must hand StoreKit when it starts a purchase, so the signed

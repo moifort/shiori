@@ -17,6 +17,9 @@ export type PlaySubscription = {
   /** True while the running period is a free trial: nothing has been paid yet. Absent on a
    *  paid period. */
   freeTrial?: boolean
+  /** When Google answered for the token. Google answers with the purchase as it stands now, so
+   *  this is what orders it against what was recorded before. */
+  signedAt: Date
   /** Play cancels and refunds a purchase not acknowledged within three days. */
   needsAcknowledgement: boolean
 }

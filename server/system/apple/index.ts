@@ -106,6 +106,7 @@ const toTransaction = (payload: JWSTransactionDecodedPayload): AppleTransaction 
           ? { startedAt: new Date(payload.originalPurchaseDate) }
           : {}),
         ...(isFreeTrial(payload) ? { freeTrial: true } : {}),
+        ...(payload.signedDate ? { signedAt: new Date(payload.signedDate) } : {}),
       }
     : undefined
 

@@ -62,6 +62,7 @@ export const parseSubscription = (
     ...(endedEarly ? { revokedAt: now } : {}),
     ...(startedAt ? { startedAt } : {}),
     ...(latest.freeTrial ? { freeTrial: true } : {}),
+    signedAt: now,
     needsAcknowledgement: purchase.acknowledgementState === 'ACKNOWLEDGEMENT_STATE_PENDING',
   }
 }

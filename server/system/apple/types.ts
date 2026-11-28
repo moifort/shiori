@@ -28,6 +28,9 @@ export type AppleTransaction = {
   /** True while the period this transaction covers is a free trial: nothing has been paid
    *  yet. Absent on a paid period. */
   freeTrial?: boolean
+  /** When Apple signed this payload (`signedDate`): what orders two payloads of one chain, so
+   *  an old one handed over again never overrides what a newer one said. */
+  signedAt?: Date
 }
 
 /** What Apple tells us happened, from an App Store Server Notification. The

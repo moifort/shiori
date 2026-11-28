@@ -44,7 +44,40 @@ export const isActive = (entitlement: Entitlement, now: Date): boolean =>
 export const earnsPremiumWelcome = (entitlement: Entitlement, now: Date): boolean =>
   isActive(entitlement, now) && entitlement.freeTrial !== true
 
-// The plan an account is on. Absent entitlement, expired entitlement, revoked
-// entitlement: all three are `free`. There is no other way to be Premium.
-export const planOf = (entitlement: Entitlement | undefined, now: Date): Plan =>
-  entitlement && isActive(entitlement, now) ? 'premium' : 'free'
+// The plan an account is on: Premium while any of its entitlements — one per store — is
+// active. None, expired, revoked: all are `free`. There is no other way to be Premium.
+export const planOf = (entitlements: readonly Entitlement[], now: Date): Plan =>
+  entitlements.some((entitlement) => isActive(entitlement, now)) ? 'premium' : 'free'
+
+// The entitlement an account's screens describe: the active one that runs longest, else the
+// one that ended last.
+export const runningEntitlementOf = (
+  entitlements: readonly Entitlement[],
+  now: Date,
+): Entitlement | undefined => {
+  const latestFirst = [...entitlements].sort(
+    (a, b) => b.expiresAt.getTime() - a.expiresAt.getTime(),
+  )
+  return latestFirst.find((entitlement) => isActive(entitlement, now)) ?? latestFirst[0]
+}
+
+// What to record when a store vouches for a purchase again, or `stale` to keep what is stored.
+// - A payload signed before the stored one is stale: an old transaction replayed, or a
+//   notification Apple delivered late, must not move an expiry back or lift a refund.
+// - A refund stays a refund: on the same chain, `revokedAt` is lifted only by a payload signed
+//   after it (Apple reversing the refund). A payload with no signing date never lifts it.
+export const reconciled = (
+  stored: Entitlement | undefined,
+  incoming: Entitlement,
+): Entitlement | 'stale' => {
+  if (!stored) return incoming
+  if (stored.signedAt && (!incoming.signedAt || incoming.signedAt < stored.signedAt)) return 'stale'
+  const sameChain = stored.originalTransactionId === incoming.originalTransactionId
+  const refundLifted =
+    incoming.signedAt !== undefined &&
+    stored.revokedAt !== undefined &&
+    incoming.signedAt > stored.revokedAt
+  if (sameChain && stored.revokedAt && !incoming.revokedAt && !refundLifted)
+    return { ...incoming, revokedAt: stored.revokedAt }
+  return incoming
+}

@@ -323,17 +323,18 @@ describe('reading the plan', () => {
     expect(await EntitlementQuery.planOf(user('u2'))).toBe('free')
   })
 
-  test('costs one document read, however many times it is asked in a request', async () => {
+  test('costs one query, however many times it is asked in a request', async () => {
     verifiedTransaction = aTransaction()
     await EntitlementUseCase.sync(user('u1'), 'signed-jws')
     startFakeRequest()
 
-    const before = fake.docReads
+    const docsBefore = fake.docReads
+    const queriesBefore = fake.queryReads
     await EntitlementQuery.planOf(user('u1'))
     await EntitlementQuery.planOf(user('u1'))
 
-    expect(fake.docReads - before).toBe(1)
-    expect(fake.queryReads).toBe(0)
+    expect(fake.docReads - docsBefore).toBe(0)
+    expect(fake.queryReads - queriesBefore).toBe(1)
   })
 })
 
@@ -342,6 +343,7 @@ const aPlayPurchase = (overrides: Partial<PlaySubscription> = {}): PlaySubscript
   purchaseToken: 'play-token-1',
   accountToken: tokenOf('u1'),
   expiresAt: new Date('2099-01-01T00:00:00.000Z'),
+  signedAt: new Date('2026-11-01T00:00:00.000Z'),
   needsAcknowledgement: true,
   ...overrides,
 })
@@ -426,5 +428,111 @@ describe('syncing a Google Play purchase the Android app hands over', () => {
     await EntitlementUseCase.syncPlay(user('u1'), 'play-token-1')
 
     expect(await EntitlementQuery.planOf(user('u1'))).toBe('free')
+  })
+})
+
+describe('a transaction handed over again', () => {
+  const at = (iso: string) => new Date(iso)
+
+  test('an older one replayed after a refund leaves the refund standing', async () => {
+    verifiedTransaction = aTransaction({ signedAt: at('2026-11-01T00:00:00Z') })
+    await EntitlementUseCase.sync(user('u1'), 'jws-before-refund')
+    verifiedNotification = {
+      type: 'REFUND',
+      transaction: aTransaction({
+        revokedAt: at('2026-11-10T00:00:00Z'),
+        signedAt: at('2026-11-10T00:00:00Z'),
+      }),
+    }
+    await EntitlementUseCase.applyNotification('refund')
+
+    verifiedTransaction = aTransaction({ signedAt: at('2026-11-01T00:00:00Z') })
+    await EntitlementUseCase.sync(user('u1'), 'jws-before-refund')
+
+    startFakeRequest()
+    expect(await EntitlementQuery.planOf(user('u1'))).toBe('free')
+    expect((await EntitlementQuery.of(user('u1')))?.revokedAt).toEqual(at('2026-11-10T00:00:00Z'))
+  })
+
+  test('a notification delivered late does not move the expiry back', async () => {
+    verifiedTransaction = aTransaction({
+      expiresAt: at('2027-11-01T00:00:00Z'),
+      signedAt: at('2026-11-01T00:00:00Z'),
+    })
+    await EntitlementUseCase.sync(user('u1'), 'renewed')
+    verifiedNotification = {
+      type: 'DID_RENEW',
+      transaction: aTransaction({
+        expiresAt: at('2026-11-02T00:00:00Z'),
+        signedAt: at('2025-11-01T00:00:00Z'),
+      }),
+    }
+
+    expect(await EntitlementUseCase.applyNotification('late')).toBe('applied')
+    startFakeRequest()
+    expect((await EntitlementQuery.of(user('u1')))?.expiresAt).toEqual(at('2027-11-01T00:00:00Z'))
+  })
+
+  test('a refund reversed by a later signed transaction is Premium again', async () => {
+    verifiedTransaction = aTransaction({
+      revokedAt: at('2026-11-10T00:00:00Z'),
+      signedAt: at('2026-11-10T00:00:00Z'),
+    })
+    await EntitlementUseCase.sync(user('u1'), 'refunded')
+    verifiedTransaction = aTransaction({ signedAt: at('2026-11-12T00:00:00Z') })
+    await EntitlementUseCase.sync(user('u1'), 'reversed')
+
+    startFakeRequest()
+    expect(await EntitlementQuery.planOf(user('u1'))).toBe('premium')
+  })
+})
+
+describe('one entitlement per store', () => {
+  const at = (iso: string) => new Date(iso)
+
+  test('an App Store subscription lapsing leaves a running Play one Premium', async () => {
+    verifiedPlay = aPlayPurchase()
+    await EntitlementUseCase.syncPlay(user('u1'), 'play-token-1')
+    verifiedTransaction = aTransaction({
+      expiresAt: at('2026-01-01T00:00:00Z'),
+      signedAt: at('2026-01-01T00:00:00Z'),
+    })
+    await EntitlementUseCase.sync(user('u1'), 'expired-apple')
+
+    startFakeRequest()
+    expect(await EntitlementQuery.planOf(user('u1'))).toBe('premium')
+    expect((await EntitlementQuery.of(user('u1')))?.store).toBe('google-play')
+    expect(await EntitlementQuery.subscribers()).toEqual(new Set([user('u1')]))
+  })
+
+  test('a Play entitlement recorded under the account s id moves to its own', async () => {
+    fake.seed('entitlements', 'u1', {
+      userId: 'u1',
+      productId: 'com.polyforms.shiori.app.premium.yearly',
+      originalTransactionId: 'play-token-1',
+      appAccountToken: tokenOf('u1'),
+      expiresAt: at('2099-01-01T00:00:00Z'),
+      updatedAt: at('2026-11-01T00:00:00Z'),
+      store: 'google-play',
+    })
+    verifiedTransaction = aTransaction({ signedAt: at('2026-11-20T00:00:00Z') })
+    await EntitlementUseCase.sync(user('u1'), 'apple')
+
+    startFakeRequest()
+    const stores = (await EntitlementQuery.allOf(user('u1'))).map((one) => one.store ?? 'app-store')
+    expect(stores.sort()).toEqual(['app-store', 'google-play'])
+  })
+
+  test('account deletion forgets every store s entitlement', async () => {
+    verifiedPlay = aPlayPurchase()
+    await EntitlementUseCase.syncPlay(user('u1'), 'play-token-1')
+    verifiedTransaction = aTransaction({ signedAt: at('2026-11-20T00:00:00Z') })
+    await EntitlementUseCase.sync(user('u1'), 'apple')
+    const { EntitlementCommand } = await import('~/domain/entitlement/command')
+
+    await EntitlementCommand.deleteForUser(user('u1'))
+
+    startFakeRequest()
+    expect(await EntitlementQuery.allOf(user('u1'))).toEqual([])
   })
 })

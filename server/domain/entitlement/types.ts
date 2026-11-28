@@ -18,8 +18,10 @@ export type AppAccountToken = Brand<string, 'AppAccountToken'>
  *  sold any: those were all the App Store's. */
 export type EntitlementStore = 'app-store' | 'google-play'
 
-/** What the App Store or Google Play sold, as we recorded it. One document per account: an
- *  account has at most one entitlement, and a renewal overwrites it in place.
+/** What the App Store or Google Play sold, as we recorded it. One document per account and per
+ *  store: an account holds at most one entitlement in each, a renewal overwrites it in place,
+ *  and the account is Premium while either is active — an App Store subscription lapsing
+ *  never erases a Play one still running.
  *  `revokedAt` is set on a refund or a family-sharing removal — Premium ends then
  *  and there, whatever `expiresAt` still says. `startedAt` is when the chain
  *  began (Apple's `originalPurchaseDate`, a free trial's start included), stable
@@ -39,4 +41,8 @@ export type Entitlement = {
   /** True while the period running is a free trial: the account is Premium but has paid
    *  nothing yet. Absent on a paid period, and on entitlements recorded before it was kept. */
   freeTrial?: boolean
+  /** When the store vouched for what is recorded: Apple's `signedDate`, or when Google answered.
+   *  A payload signed before it is ignored, so an old transaction handed over again cannot
+   *  undo a renewal or a refund. Absent on an entitlement recorded before it was kept. */
+  signedAt?: Date
 }
