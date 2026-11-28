@@ -11,9 +11,7 @@ struct AwaitedEditionScreen: View {
     private let coverClient: ReleaseCoverClient
     @State private var choosesCover = false
     @State private var viewModel: AwaitedEditionViewModel
-    @State private var openedVolume: Book?
-    @State private var openedSaga: SeriesDestination?
-    @State private var openedLacking: DiscoveredVolume?
+    @State private var openedFromSaga: ReleaseSagaDestination?
     @Environment(\.dismiss) private var dismissPresentation
     @Environment(\.detailClosing) private var closing
 
@@ -41,7 +39,8 @@ struct AwaitedEditionScreen: View {
             added: viewModel.added,
             taken: viewModel.taken,
             refusals: viewModel.refusals,
-            sagaVolumes: viewModel.sagaVolumes,
+            sagaVolumes: viewModel.saga.volumes,
+            sagaCurrentId: viewModel.saga.currentId,
             showsClose: closing.showsCloseButton
         ) { action in
             switch action {
@@ -59,11 +58,11 @@ struct AwaitedEditionScreen: View {
                     dismiss()
                 }
             case let .openVolume(book):
-                openedVolume = book
+                openedFromSaga = .volume(book)
             case let .openLacking(volume):
-                openedLacking = volume
-            case let .openSaga(seriesId):
-                openedSaga = SeriesDestination(seriesId: seriesId)
+                openedFromSaga = .lacking(volume)
+            case .openSaga:
+                openedFromSaga = viewModel.saga.destination.map { .saga($0) }
             case .chooseCover:
                 choosesCover = true
             }
@@ -76,22 +75,9 @@ struct AwaitedEditionScreen: View {
             client: coverClient,
             onChosen: viewModel.drawCover
         )
-        .task { await viewModel.loadSaga() }
+        .task(id: viewModel.namedSeriesId) { await viewModel.loadSaga() }
         .reloadsOnWideChange { await viewModel.loadSaga() }
-        .navigationDestination(item: $openedVolume) { book in
-            BookScreen(bookId: book.id)
-                .closesAsPushed()
-        }
-        .navigationDestination(item: $openedLacking) { volume in
-            if let saga = viewModel.lackingSaga {
-                AnnouncedVolumeScreen(saga: saga, volume: volume)
-                    .closesAsPushed()
-            }
-        }
-        .navigationDestination(item: $openedSaga) { destination in
-            SeriesScreen(seriesId: destination.seriesId)
-                .closesAsPushed()
-        }
+        .releaseSagaDestinations($openedFromSaga, saga: viewModel.saga)
         .alert(
             "Action impossible",
             isPresented: .init(get: { viewModel.actionError != nil }, set: { if !$0 { viewModel.actionError = nil } })

@@ -1,11 +1,12 @@
 import type { EditionWatch } from '~/domain/awaited-edition/types'
 import { type CoversFound, coverSourceOfAddress } from '~/domain/book/business-rules'
 import { shelfKeyOf } from '~/domain/book/copies'
-import type { BookLanguage, CoverChoice, CoverUrl, Isbn13 } from '~/domain/book/types'
+import type { BookFormat, BookLanguage, CoverChoice, CoverUrl, Isbn13 } from '~/domain/book/types'
 import { lastDayOf } from '~/domain/discovery/business-rules'
 import type { ReleaseFormat, ReleaseSeed } from '~/domain/discovery/types'
 import type { KeptDescription, Release, ReleaseShown, ReleaseView } from '~/domain/release/types'
-import type { ReleaseDate } from '~/domain/series/types'
+import { seriesIdOf, seriesKeyOf } from '~/domain/series/primitives'
+import type { ReleaseDate, SeriesId, SeriesName, VolumeNumber } from '~/domain/series/types'
 import type { Language } from '~/domain/shared/language'
 import { slugify } from '~/utils/slug'
 
@@ -79,9 +80,12 @@ export const releaseViewOf = (
   const coverUrl = found?.coverUrl ?? seed.coverUrl
   const date = found?.date ?? seed.releasedOn
   const isbn13 = heard ? undefined : (found?.isbn13 ?? seed.isbn13 ?? book?.isbn13)
-  const series =
+  const named =
     shown.series ??
     (book?.series ? { name: book.series.name, volume: book.series.volume } : undefined)
+  const author = seed.authors[0] ?? book?.authors[0]
+  const series =
+    named && seriesOfEdition(named, author, heard ? 'audiobook' : seed.format, shown.language)
   return {
     key: shown.key,
     title: seed.title,
@@ -114,6 +118,21 @@ export const releaseViewOf = (
     described: kept !== undefined && isDescriptionFresh(kept, now, date),
     ...(found ? { found } : {}),
   }
+}
+
+/** The saga a release is a volume of, in the edition shown: its id built from
+ *  the name and first author as a scanned volume's would be, in the edition's
+ *  format and language, so its page opens that saga's row and page — the
+ *  catalogue already built, or built on first sight from that name and author.
+ *  The id stays unknown without an author to key it on. */
+export const seriesOfEdition = (
+  series: { seriesId?: SeriesId; name: SeriesName; volume?: VolumeNumber },
+  author: string | undefined,
+  format: BookFormat,
+  language: BookLanguage,
+): { seriesId?: SeriesId; name: SeriesName; volume?: VolumeNumber } => {
+  if (series.seriesId || !author) return series
+  return { ...series, seriesId: seriesIdOf(seriesKeyOf(series.name, author, format), language) }
 }
 
 /** The covers a release already knows: the one picked for it, its edition's,

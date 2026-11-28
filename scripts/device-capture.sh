@@ -21,7 +21,7 @@
 #              onboarding steps: onboarding-audible | onboarding-kindle | onboarding-goodreads
 #              | onboarding-audible-connected | onboarding-audible-failed | onboarding-amazon
 #              site extras: site-book | series | shelf | scan-review | player | wishlist
-#              | pile | agenda | news-full | suggestion
+#              | pile | agenda | news-full | suggestion | awaited-series
 #   -- -showcase-anchor center|bottom  opens a long page scrolled, for a stitched capture
 #   [light|dark]  the appearance, whatever the phone is set to (default: the phone's)
 #   -- …       more launch arguments for the app, e.g. -- -showcase-prompts audible
@@ -69,7 +69,8 @@ case "$SCREEN" in
     | premium-spent | book | author-work | reading-progress \
     | onboarding-audible | onboarding-kindle | onboarding-goodreads | onboarding-audible-connected \
     | onboarding-audible-failed | onboarding-amazon \
-    | site-book | series | shelf | scan-review | player | wishlist | pile | agenda | news-full | suggestion)
+    | site-book | series | shelf | scan-review | player | wishlist | pile | agenda | news-full | suggestion \
+    | awaited-series)
     SCREEN_FLAG=-showcase-screen ;;
   *) echo "error: unknown screen '$SCREEN' (home, library, news, friends, goodreads…)" >&2; exit 2 ;;
 esac

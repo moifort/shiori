@@ -9,6 +9,7 @@ final class AwaitedEditionViewModel {
         self.edition = edition
         self.client = client
         let item = ReleaseItem.awaitedEdition(id: edition.id)
+        saga = ReleaseSaga(sagaVolumes: client.sagaVolumes)
         describer = ReleaseDescriber(release: edition.release) { try await client.describe(item) }
     }
 
@@ -16,31 +17,22 @@ final class AwaitedEditionViewModel {
     private let client: DiscoverClient
     private let describer: ReleaseDescriber
 
-    /// The saga of the reader's copy, and its volumes held or lacking, its
-    /// copy among them. Empty for a book on its own.
-    private(set) var sagaVolumes: [SeriesStripItem] = []
-    /// The saga and the place in it of the reader's copy: the edition's own,
-    /// over its title.
-    private(set) var series: SeriesMembership?
-    var sagaName: String? { series?.name }
-    /// The reader's copy, read for its saga's row.
+    /// The saga of the reader's copy, else the saga the server names on the
+    /// edition: its row, this edition or the copy ringed in it.
+    let saga: ReleaseSaga
+    /// The reader's copy, read once for its saga's row.
     private var copy: Book?
 
-    /// The saga of the reader's copy, as the page of a volume of it they lack
-    /// reads it.
-    var lackingSaga: SagaDiscovery? {
-        guard let copy, let series else { return nil }
-        let owned = sagaVolumes.count { if case .owned = $0 { true } else { false } }
-        return SagaDiscovery(holding: copy, in: series, ownedCount: owned)
-    }
-
     /// The edition as its list drew it, then as the server described it, in
-    /// the saga of the reader's copy.
+    /// the saga of the row.
     var shown: Book {
         var book = describer.release.book(id: "awaited-\(edition.id)")
-        if book.series == nil { book.series = series }
+        if let series = saga.series { book.series = series }
         return book
     }
+    /// The saga the server names on the edition, which its description may
+    /// only bring: its row is read again when it changes.
+    var namedSeriesId: String? { describer.release.series?.id }
     var isDescribing: Bool { describer.isDescribing }
     /// The release the page shows: its cover is picked for every reader.
     var releaseKey: String { describer.release.key }
@@ -65,18 +57,12 @@ final class AwaitedEditionViewModel {
     func describe() async { await describer.describe() }
 
     /// The reader's copy, then its saga's row off the catalogue already
-    /// built. Nothing when either fails, the page whole without it.
+    /// built; the saga named on the edition when no copy is on the reader's
+    /// shelf — one awaited from a scan, or at a friend's. Nothing when neither
+    /// can be read, the page whole without it.
     func loadSaga() async {
-        guard let bookId = edition.bookId,
-              let book = try? await client.book(bookId),
-              let series = book.series,
-              let volumes = try? await client.sagaVolumes(series.id, book.language)
-        else { return }
-        withAnimation(.snappy) {
-            self.series = series
-            copy = book
-            sagaVolumes = volumes
-        }
+        if copy == nil, let bookId = edition.bookId { copy = try? await client.book(bookId) }
+        await saga.load(shown: describer.release.book(id: "awaited-\(edition.id)"), copy: copy)
     }
 
     /// Onto the pile, as the page shows it, filed in the saga of the reader's

@@ -9,6 +9,7 @@ final class SuggestionViewModel {
         self.suggestion = suggestion
         self.client = client
         let item = ReleaseItem.suggestion(id: suggestion.id, format: suggestion.format)
+        saga = ReleaseSaga(sagaVolumes: client.sagaVolumes)
         describer = ReleaseDescriber(release: suggestion.release) { try await client.describe(item) }
     }
 
@@ -26,6 +27,14 @@ final class SuggestionViewModel {
     func drawCover(_ url: URL) { describer.drawCover(url) }
 
     func describe() async { await describer.describe() }
+
+    /// Its saga's row, read once the server names the saga.
+    let saga: ReleaseSaga
+    /// The saga the server names on it, which its description may only
+    /// bring: the row is read again when it changes.
+    var namedSeriesId: String? { describer.release.series?.id }
+
+    func loadSaga() async { await saga.load(shown: shown) }
 
     /// The book said read here, which the check pressed again takes off the
     /// shelf.

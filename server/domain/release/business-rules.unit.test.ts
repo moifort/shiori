@@ -101,6 +101,34 @@ describe('keptDescriptionOf', () => {
 })
 
 describe('releaseViewOf', () => {
+  test('keys its saga in the edition shown, so its page opens the row and the saga', () => {
+    const view = releaseViewOf(
+      shown({ series: { name: 'The Sun Eater', volume: 4 } } as never),
+      undefined,
+      'fr',
+      now,
+    )
+    expect(view.series).toEqual({
+      seriesId: 'sun-eater--donato-carrisi--audio~fr',
+      name: 'The Sun Eater',
+      volume: 4,
+    } as never)
+  })
+
+  test('keeps the saga a printed edition is a volume of, in the language awaited', () => {
+    const view = releaseViewOf(
+      shown({
+        releaseFormat: 'book',
+        seed: { title: 'Silo', authors: ['Hugh Howey'], format: 'book', language: 'en' },
+        series: { name: 'Silo', volume: 1 },
+      } as never),
+      undefined,
+      'fr',
+      now,
+    )
+    expect(view.series?.seriesId).toBe('silo--hugh-howey~fr' as never)
+  })
+
   test('completes the book shown with its description, kept the book shown', () => {
     const view = releaseViewOf(shown(), { descriptions: { fr: kept() } }, 'fr', now)
     expect(view).toMatchObject({

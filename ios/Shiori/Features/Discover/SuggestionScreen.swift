@@ -9,6 +9,7 @@ struct SuggestionScreen: View {
 
     private let coverClient: ReleaseCoverClient
     @State private var choosesCover = false
+    @State private var openedFromSaga: ReleaseSagaDestination?
     @State private var viewModel: SuggestionViewModel
     @State private var choices: DiscoveryChoices
     @State private var openReference: SuggestionReference?
@@ -38,6 +39,8 @@ struct SuggestionScreen: View {
             suggestion: viewModel.suggestion,
             shown: viewModel.shown,
             isDescribing: viewModel.isDescribing,
+            sagaVolumes: viewModel.saga.volumes,
+            sagaCurrentId: viewModel.saga.currentId,
             showsClose: closing.showsCloseButton,
             choices: choices,
             onChoice: onChoice ?? viewModel.choose
@@ -49,6 +52,12 @@ struct SuggestionScreen: View {
                 openReference = reference
             case .chooseCover:
                 choosesCover = true
+            case .openSaga:
+                openedFromSaga = viewModel.saga.destination.map { .saga($0) }
+            case let .openSagaVolume(book):
+                openedFromSaga = .volume(book)
+            case let .openSagaLacking(volume):
+                openedFromSaga = .lacking(volume)
             }
         }
         .alert(
@@ -60,6 +69,8 @@ struct SuggestionScreen: View {
             Text(viewModel.actionError ?? "")
         }
         .task { await viewModel.describe() }
+        .task(id: viewModel.namedSeriesId) { await viewModel.loadSaga() }
+        .releaseSagaDestinations($openedFromSaga, saga: viewModel.saga)
         .releaseCoverPicker(
             isPresented: $choosesCover,
             book: viewModel.shown,

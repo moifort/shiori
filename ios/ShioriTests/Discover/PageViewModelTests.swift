@@ -256,7 +256,7 @@ struct AwaitedEditionSagaTests {
 
         #expect(viewModel.shown.series?.name == "Les Salauds Gentilshommes")
         #expect(viewModel.shown.series?.volume == 1)
-        #expect(viewModel.sagaVolumes.map(\.id) == ["missing-sg-2-fr"])
+        #expect(viewModel.saga.volumes.map(\.id) == ["missing-sg-2-fr"])
     }
 
     @Test func aBookOnItsOwnHasNoRow() async {
@@ -266,8 +266,29 @@ struct AwaitedEditionSagaTests {
 
         await viewModel.loadSaga()
 
-        #expect(viewModel.sagaName == nil)
-        #expect(viewModel.sagaVolumes.isEmpty)
+        #expect(viewModel.saga.name == nil)
+        #expect(viewModel.saga.volumes.isEmpty)
+    }
+
+    @Test func awaitedFromAScanItsSagaComesFromTheEdition() async {
+        var edition = AwaitedEdition.preview
+        edition = AwaitedEdition(
+            id: edition.id, format: .audiobook, release: edition.release, awaitedAt: nil, bookId: nil, ownerId: "me"
+        )
+        edition.release.series = SeriesMembership(
+            id: "sun-eater--christopher-ruocchio--audio~fr", name: "The Sun Eater", volume: 4, kind: .main
+        )
+        var client = DiscoverClient.preview
+        client.sagaVolumes = { seriesId, language in
+            [.missing(key: "\(seriesId)-1-\(language?.rawValue ?? "none")", number: 1, title: "Empire of Silence", forthcoming: false)]
+        }
+        let viewModel = AwaitedEditionViewModel(edition: edition, client: client)
+
+        await viewModel.loadSaga()
+
+        #expect(viewModel.shown.series?.name == "The Sun Eater")
+        #expect(viewModel.saga.volumes.map(\.id) == ["missing-sun-eater--christopher-ruocchio--audio~fr-1-fr", viewModel.shown.id])
+        #expect(viewModel.saga.currentId == viewModel.shown.id)
     }
 }
 

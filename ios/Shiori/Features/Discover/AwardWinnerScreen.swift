@@ -10,6 +10,7 @@ struct AwardWinnerScreen: View {
 
     private let coverClient: ReleaseCoverClient
     @State private var choosesCover = false
+    @State private var openedFromSaga: ReleaseSagaDestination?
     @State private var viewModel: AwardWinnerViewModel
     @State private var choices = DiscoveryChoices()
     @State private var openWinner: AwardWinner?
@@ -38,6 +39,8 @@ struct AwardWinnerScreen: View {
             shown: viewModel.shown,
             others: others.filter { $0.id != viewModel.winner.id },
             isDescribing: viewModel.isDescribing,
+            sagaVolumes: viewModel.saga.volumes,
+            sagaCurrentId: viewModel.saga.currentId,
             showsClose: closing.showsCloseButton,
             choices: choices,
             onChoice: viewModel.choose
@@ -46,6 +49,9 @@ struct AwardWinnerScreen: View {
             case .close: dismiss()
             case let .openWinner(winner): openWinner = winner
             case .chooseCover: choosesCover = true
+            case .openSaga: openedFromSaga = viewModel.saga.destination.map { .saga($0) }
+            case let .openSagaVolume(book): openedFromSaga = .volume(book)
+            case let .openSagaLacking(volume): openedFromSaga = .lacking(volume)
             }
         }
         .alert(
@@ -57,6 +63,8 @@ struct AwardWinnerScreen: View {
             Text(viewModel.actionError ?? "")
         }
         .task { await viewModel.describe() }
+        .task(id: viewModel.namedSeriesId) { await viewModel.loadSaga() }
+        .releaseSagaDestinations($openedFromSaga, saga: viewModel.saga)
         .releaseCoverPicker(
             isPresented: $choosesCover,
             book: viewModel.shown,

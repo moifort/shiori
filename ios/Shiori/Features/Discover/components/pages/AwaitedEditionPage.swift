@@ -12,7 +12,7 @@ enum AwaitedEditionAction {
     case stopAwaiting
     /// The reader's copy, or another of their volumes, in the saga's row.
     case openVolume(Book)
-    case openSaga(String)
+    case openSaga
     /// A volume of the saga the reader lacks, in the saga's row.
     case openLacking(DiscoveredVolume)
     /// Another cover picked for it, for every reader.
@@ -23,7 +23,8 @@ enum AwaitedEditionAction {
 /// holds — opened from "Nouveautés", Découvrir or the book's page, drawn as a
 /// book to come is (`UnownedBookPage`): the reader's own book page, its day
 /// pinned in the hero's corner, the saga of their copy under it, their copy
-/// ringed. Only what is known is drawn. The bell gives the wait up, asked for
+/// ringed — or, with no copy on their shelf, the saga named on the edition,
+/// the edition ringed in its place. Only what is known is drawn. The bell gives the wait up, asked for
 /// twice as a saga's deletion is, and "Retirer" once the edition is
 /// out and nothing is left to alert on; the Audible sync brings a recording bought
 /// into the library by itself, which ends the wait. No "Envies": an edition
@@ -39,6 +40,8 @@ struct AwaitedEditionPage: View {
     var taken: TakenState? = nil
     var refusals = 0
     var sagaVolumes: [SeriesStripItem] = []
+    /// The cover ringed in the saga's row: the reader's copy, or this edition.
+    var sagaCurrentId: String? = nil
     /// False when the page is pushed: Back closes it, not a Close button.
     var showsClose = true
     let onAction: (AwaitedEditionAction) async -> Void
@@ -62,7 +65,7 @@ struct AwaitedEditionPage: View {
             leadingTiles: originalTitleTile,
             sagaName: shown.series?.name,
             sagaVolumes: sagaVolumes,
-            currentVolumeId: edition.bookId,
+            currentVolumeId: sagaCurrentId ?? edition.bookId,
             showsClose: showsClose,
             onClose: { act(.close) },
             additions: [.pile, .read],
@@ -71,7 +74,7 @@ struct AwaitedEditionPage: View {
             onUndo: { await onAction(.undoAdd) },
             refusals: refusals,
             onToggleBell: { act(.stopAwaiting) },
-            onOpenSaga: { if let id = shown.series?.id { act(.openSaga(id)) } },
+            onOpenSaga: { act(.openSaga) },
             onOpenVolume: { act(.openVolume($0)) },
             onOpenLacking: { act(.openLacking($0)) },
             // Once out, no bell is left to give the wait up: the button says it.

@@ -4,7 +4,7 @@ import SwiftUI
 /// hero over the cover's colours, where it came from on the detail line, the
 /// white button that orders it from its store and the "+" that puts it on
 /// the pile or among the books read, and the "Envie" capsule beside it,
-/// which asks before taking the book off the list. Then its summary and its facts. No bell: nothing is awaited. Pure and previewable.
+/// which asks before taking the book off the list. Then its summary, its saga and its facts. No bell: nothing is awaited. Pure and previewable.
 struct WishPage: View {
     let wish: Wish
     /// The wish once described, as a book's page draws it.
@@ -18,6 +18,13 @@ struct WishPage: View {
     let onRemove: () async -> Void
     /// Another cover picked for the book, for every reader.
     var onChooseCover: (() -> Void)? = nil
+    /// Its saga's volumes, this book in its place; empty draws no row.
+    var sagaVolumes: [SeriesStripItem] = []
+    /// The cover ringed in the saga's row.
+    var sagaCurrentId = ""
+    var onOpenSaga: () -> Void = {}
+    var onOpenSagaVolume: (Book) -> Void = { _ in }
+    var onOpenSagaLacking: (DiscoveredVolume) -> Void = { _ in }
 
     var body: some View {
         UnownedBookPage(
@@ -29,6 +36,9 @@ struct WishPage: View {
             state: BookState(text: wish.originLine, tint: .gray),
             isOut: true,
             isAdded: false,
+            sagaName: shown.series?.name,
+            sagaVolumes: sagaVolumes,
+            currentVolumeId: sagaCurrentId,
             showsClose: showsClose,
             onClose: onClose,
             additions: [.pile, .read],
@@ -38,6 +48,9 @@ struct WishPage: View {
             isWished: true,
             onToggleWish: onRemove,
             onToggleBell: {},
+            onOpenSaga: onOpenSaga,
+            onOpenVolume: onOpenSagaVolume,
+            onOpenLacking: onOpenSagaLacking,
             onChooseCover: onChooseCover,
             recommendedBy: wish.origin == .friend ? wish.originLabel : nil
         )

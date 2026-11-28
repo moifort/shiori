@@ -10,6 +10,7 @@ final class WishViewModel {
         self.wish = wish
         self.client = client
         let item = ReleaseItem.wish(id: wish.id)
+        saga = ReleaseSaga(sagaVolumes: discover.sagaVolumes)
         describer = ReleaseDescriber(release: wish.release) { try await discover.describe(item) }
     }
 
@@ -31,6 +32,14 @@ final class WishViewModel {
     var actionError: String?
 
     func describe() async { await describer.describe() }
+
+    /// Its saga's row, read once the server names the saga.
+    let saga: ReleaseSaga
+    /// The saga the server names on it, which its description may only
+    /// bring: the row is read again when it changes.
+    var namedSeriesId: String? { describer.release.series?.id }
+
+    func loadSaga() async { await saga.load(shown: shown) }
 
     /// Onto the shelf: the wish then goes on its own. Says whether it went.
     func add(status: ReadingStatus) async -> Bool {

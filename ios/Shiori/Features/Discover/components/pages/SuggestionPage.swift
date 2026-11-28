@@ -7,6 +7,12 @@ enum SuggestionAction {
     case openReference(SuggestionReference)
     /// Another cover picked for it, for every reader.
     case chooseCover
+    /// The saga's screen, from the name over its row.
+    case openSaga
+    /// A volume of its saga the reader holds.
+    case openSagaVolume(Book)
+    /// A volume of its saga the reader lacks.
+    case openSagaLacking(DiscoveredVolume)
 }
 
 /// A suggestion's page, in the reader's own book page's grammar: the hero over
@@ -21,6 +27,10 @@ struct SuggestionPage: View {
     /// The suggestion once described, as a book's page draws it.
     let shown: Book
     let isDescribing: Bool
+    /// Its saga's volumes, this book in its place; empty draws no row.
+    var sagaVolumes: [SeriesStripItem] = []
+    /// The cover ringed in the saga's row.
+    var sagaCurrentId = ""
     /// False when the page is pushed: Back closes it, not a Close button.
     var showsClose = true
     let choices: DiscoveryChoices
@@ -37,6 +47,7 @@ struct SuggestionPage: View {
                         act(.openReference($0))
                     }
                     synopsis
+                    saga
                     facts
                 }
                 .padding(.horizontal, 20)
@@ -95,6 +106,21 @@ struct SuggestionPage: View {
     }
 
     // MARK: - Blocks
+
+    /// Its saga, as a book's page draws its own: this book ringed in its
+    /// place, the volumes opening their pages, the name the saga's screen.
+    @ViewBuilder private var saga: some View {
+        if let name = shown.series?.name, !sagaVolumes.isEmpty {
+            SeriesVolumesRow(
+                name: name,
+                volumes: sagaVolumes,
+                currentId: sagaCurrentId,
+                onOpenSeries: { act(.openSaga) },
+                onOpenVolume: { act(.openSagaVolume($0)) },
+                onOpenLacking: { act(.openSagaLacking($0)) }
+            )
+        }
+    }
 
     /// The summary once the model wrote it; nothing while it writes, the bar
     /// saying so.

@@ -6,6 +6,7 @@ import SwiftUI
 struct WishScreen: View {
     private let coverClient: ReleaseCoverClient
     @State private var choosesCover = false
+    @State private var openedFromSaga: ReleaseSagaDestination?
     @State private var viewModel: WishViewModel
     @Environment(\.dismiss) private var dismissPresentation
     @Environment(\.detailClosing) private var closing
@@ -34,9 +35,16 @@ struct WishScreen: View {
             onClose: dismiss,
             onAdd: { status in if await viewModel.add(status: status) { dismiss() } },
             onRemove: { if await viewModel.remove() { dismiss() } },
-            onChooseCover: { choosesCover = true }
+            onChooseCover: { choosesCover = true },
+            sagaVolumes: viewModel.saga.volumes,
+            sagaCurrentId: viewModel.saga.currentId,
+            onOpenSaga: { openedFromSaga = viewModel.saga.destination.map { .saga($0) } },
+            onOpenSagaVolume: { openedFromSaga = .volume($0) },
+            onOpenSagaLacking: { openedFromSaga = .lacking($0) }
         )
         .task { await viewModel.describe() }
+        .task(id: viewModel.namedSeriesId) { await viewModel.loadSaga() }
+        .releaseSagaDestinations($openedFromSaga, saga: viewModel.saga)
         .releaseCoverPicker(
             isPresented: $choosesCover,
             book: viewModel.shown,

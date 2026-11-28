@@ -7,6 +7,12 @@ enum AwardWinnerAction {
     case openWinner(AwardWinner)
     /// Another cover picked for it, for every reader.
     case chooseCover
+    /// The saga's screen, from the name over its row.
+    case openSaga
+    /// A volume of its saga the reader holds.
+    case openSagaVolume(Book)
+    /// A volume of its saga the reader lacks.
+    case openSagaLacking(DiscoveredVolume)
 }
 
 /// One winner, in the suggestion's page's grammar: the hero over the cover's
@@ -22,6 +28,10 @@ struct AwardWinnerPage: View {
     /// The winners listed beside it.
     var others: [AwardWinner] = []
     let isDescribing: Bool
+    /// Its saga's volumes, this book in its place; empty draws no row.
+    var sagaVolumes: [SeriesStripItem] = []
+    /// The cover ringed in the saga's row.
+    var sagaCurrentId = ""
     /// False when the page is pushed: Back closes it, not a Close button.
     var showsClose = true
     let choices: DiscoveryChoices
@@ -35,6 +45,7 @@ struct AwardWinnerPage: View {
                 hero
                 VStack(alignment: .leading, spacing: 28) {
                     synopsis
+                    saga
                     facts
                     otherWinners
                 }
@@ -103,6 +114,21 @@ struct AwardWinnerPage: View {
     }
 
     // MARK: - Blocks
+
+    /// Its saga, as a book's page draws its own: this book ringed in its
+    /// place, the volumes opening their pages, the name the saga's screen.
+    @ViewBuilder private var saga: some View {
+        if let name = shown.series?.name, !sagaVolumes.isEmpty {
+            SeriesVolumesRow(
+                name: name,
+                volumes: sagaVolumes,
+                currentId: sagaCurrentId,
+                onOpenSeries: { act(.openSaga) },
+                onOpenVolume: { act(.openSagaVolume($0)) },
+                onOpenLacking: { act(.openSagaLacking($0)) }
+            )
+        }
+    }
 
     /// The summary once the model wrote it; nothing while it writes, the bar
     /// saying so.

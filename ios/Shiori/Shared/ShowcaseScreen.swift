@@ -18,7 +18,7 @@ struct ShowcaseScreen: View {
         "scan-no-result", "scan-failed", "shelf-checklist", "settings-blocked", "premium-spent",
         "book", "author-work", "reading-progress",
                 "site-book", "series", "shelf", "scan-review", "player", "wishlist", "pile",
-        "agenda", "news-full", "suggestion",
+        "agenda", "news-full", "suggestion", "awaited-series",
         "onboarding-audible", "onboarding-kindle", "onboarding-goodreads",
         "onboarding-audible-connected", "onboarding-audible-failed", "onboarding-amazon",
     ]
@@ -563,6 +563,21 @@ struct ShowcaseScreen: View {
                     genres: pile.genres, isLoading: false, errorMessage: nil
                 ) { _ in }
             } }
+        case "awaited-series":
+            // An edition awaited from a scan, with no copy on the shelf: the
+            // saga's row still comes, from the saga the server names on it.
+            let edition = Self.awaitedWithSaga
+            let shown = Self.awaitedWithSagaShown
+            let row = ReleaseSaga.row(Self.dungeonCrawlerCarlLacking, placing: shown)
+            inTab(.library) { NavigationStack {
+                AwaitedEditionPage(
+                    edition: edition,
+                    shown: shown,
+                    isDescribing: false,
+                    sagaVolumes: row.volumes,
+                    sagaCurrentId: row.currentId
+                ) { _ in }
+            } }
         case "suggestion":
             if let suggestion = Showcase.monthlyDiscoveries.suggestions.first {
                 inTab(.home) { NavigationStack {
@@ -589,6 +604,57 @@ struct ShowcaseScreen: View {
             NavigationStack {
                 GoodreadsSourcePage(summary: .preview, isLoading: false, onImport: {}, onHowTo: {})
             }
+        }
+    }
+}
+#endif
+
+#if DEBUG
+extension ShowcaseScreen {
+    /// Dungeon Crawler Carl's sixth volume awaited as a recording from a scan,
+    /// no copy on the shelf.
+    static var awaitedWithSaga: AwaitedEdition {
+        var edition = AwaitedEdition(
+            id: "dcc-06-audio", format: .audiobook, state: .unannounced,
+            title: Showcase.local("L'Œil de la Veuve du Chaos", "The Eye of the Bedlam Bride"),
+            originalTitle: "The Eye of the Bedlam Bride", originalLanguage: .en,
+            authors: ["Matt Dinniman"], date: nil, coverURL: Showcase.cover("dcc-06"), storeURL: nil,
+            awaitedAt: .now, bookId: nil, ownerId: "me"
+        )
+        edition.release.series = SeriesMembership(
+            id: "dungeon-crawler-carl--matt-dinniman--audio~fr", name: "Dungeon Crawler Carl",
+            volume: 6, kind: .main
+        )
+        return edition
+    }
+
+    /// The edition as its page draws it once described.
+    static var awaitedWithSagaShown: Book {
+        var shown = awaitedWithSaga.cover
+        shown.synopsis = Showcase.local(
+            "Septième étage du donjon : Carl et Princesse Beignet affrontent un immense jeu de chasse.",
+            "The dungeon's next floor: Carl and Princess Donut face a vast hunting game."
+        )
+        return shown
+    }
+
+    /// The saga as its catalogue lists it, none of it held.
+    static var dungeonCrawlerCarlLacking: [SeriesStripItem] {
+        let titles = Showcase.local(
+            ["Dungeon Crawler Carl", "Carl's Doomsday Scenario", "The Dungeon Anarchist's Cookbook",
+             "The Gate of the Feral Gods", "The Butcher's Masquerade", "L'Œil de la Veuve du Chaos",
+             "This Inevitable Ruin"],
+            ["Dungeon Crawler Carl", "Carl's Doomsday Scenario", "The Dungeon Anarchist's Cookbook",
+             "The Gate of the Feral Gods", "The Butcher's Masquerade", "The Eye of the Bedlam Bride",
+             "This Inevitable Ruin"]
+        )
+        return titles.enumerated().map { index, title in
+            let number = index + 1
+            return .missing(
+                key: "dcc-\(number)", number: number, title: title, forthcoming: number == 7,
+                date: number == 7 ? "2026-12-11" : nil,
+                coverURL: number <= 6 ? Showcase.cover(String(format: "dcc-%02d", number)) : nil
+            )
         }
     }
 }
