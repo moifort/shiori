@@ -4,8 +4,7 @@ import * as repository from '~/domain/user/infrastructure/repository'
 import type { Avatar, HomePrompt, UserProfile } from '~/domain/user/types'
 
 export namespace UserCommand {
-  // Persist the profile that marks onboarding done. The welcome scans are
-  // granted separately by UserUseCase.completeOnboarding, in the same batch.
+  // Persist the profile that marks onboarding done.
   // Called again on a finished profile it changes the first name alone: the
   // avatar, the admin flag and the date onboarding was completed stay.
   export const completeOnboarding = async (

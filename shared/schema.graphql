@@ -3466,9 +3466,9 @@ type Mutation {
   ): KindleAccount!
 
   """
-  Finish onboarding: save the profile and grant the welcome scans.
+  Finish onboarding: save the profile.
   
-  Returns the updated `Me`, with `onboardingCompleted` now true. The welcome scans are granted only on the first call for an account: the mutation stays reachable afterwards so a reader can change the name they are addressed by, and re-granting there would make a one-off gift renewable.
+  Returns the updated `Me`, with `onboardingCompleted` now true. The mutation stays reachable afterwards so a reader can change the name they are addressed by. It grants no scans: a trial lives on the monthly allowance.
   """
   completeOnboarding(
     """The first name to persist."""

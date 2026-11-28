@@ -33,18 +33,8 @@ import type { Avatar, AvatarColor, AvatarHero, HomePrompt, MeView } from '~/doma
 import { WishCommand } from '~/domain/wish/command'
 import { objectStore } from '~/system/object-store'
 import { ContentType } from '~/system/object-store/primitives'
-import { atomically } from '~/utils/firestore'
 
 export namespace UserUseCase {
-  // Finish onboarding: persist the profile and the scans the account starts
-  // with, in one batch, so a partial failure never leaves a user "half
-  // onboarded" — either all of it lands or none of it does.
-  //
-  // The welcome scans are granted only the FIRST time, on an account with no
-  // profile yet. The mutation stays reachable afterwards (a reader changing the
-  // name they are addressed by), and re-granting there would turn a one-off gift
-  // into a renewable one. The read is the one the auth gate already did,
-  // memoized, so it costs nothing.
   // What the home hero asks the reader to set up: their Audible and Kindle
   // libraries until each is connected, a first friend until they have one,
   // less what they turned down. Three reads: both connections and the
@@ -63,13 +53,11 @@ export namespace UserUseCase {
     })
   }
 
-  export const completeOnboarding = async (userId: UserId, input: { firstName: PersonName }) => {
-    const firstTime = (await UserQuery.me(userId)).onboardingCompletedAt === undefined
-    return atomically(async (batch) => {
-      if (firstTime) await QuotaCommand.grantWelcomeCredit(userId, batch)
-      return UserCommand.completeOnboarding(userId, input.firstName, batch)
-    })
-  }
+  // Finish onboarding: persist the profile. It grants no scans since 2026-11-28: a trial
+  // lives on the monthly allowance alone, and the 200 handed at the first payment
+  // (QuotaCommand.grantPremiumWelcome) are the only one-off grant.
+  export const completeOnboarding = (userId: UserId, input: { firstName: PersonName }) =>
+    UserCommand.completeOnboarding(userId, input.firstName)
 
   // Change what stands for the reader: a hero, a photo of their own, their
   // initials on a colour, or nothing, which draws their initials on slate. A new photo lands in the bucket before

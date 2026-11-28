@@ -1,4 +1,3 @@
-import type { WriteBatch } from 'firebase-admin/firestore'
 import { freshQuota, noCredit } from '~/domain/quota/business-rules'
 import type { Quota, QuotaMonth, ScanCredit, ScanDebit } from '~/domain/quota/types'
 import type { UserId } from '~/domain/shared/types'
@@ -92,16 +91,6 @@ export const topUpCredit = async (
     return toppedUp
   })
   evictFromRequestCache(creditCacheKey(userId))
-  return credit
-}
-
-// Hand an account its granted scans. Takes the caller's batch so the grant lands
-// with the profile that earns it, or neither does.
-export const saveCredit = async (credit: ScanCredit, batch?: WriteBatch): Promise<ScanCredit> => {
-  const ref = credits().doc(credit.userId)
-  if (batch) batch.set(ref, withoutAbsentFields(credit))
-  else await ref.set(withoutAbsentFields(credit))
-  evictFromRequestCache(creditCacheKey(credit.userId))
   return credit
 }
 

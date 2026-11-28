@@ -1,10 +1,8 @@
-import type { WriteBatch } from 'firebase-admin/firestore'
 import {
   consumed,
   consumedCredit,
   debitFor,
   monthOf,
-  welcomeCredit,
   withPremiumWelcome,
 } from '~/domain/quota/business-rules'
 import * as repository from '~/domain/quota/infrastructure/repository'
@@ -31,11 +29,6 @@ export namespace QuotaCommand {
       consumed,
       consumedCredit,
     )
-
-  // Hand a brand-new account the scans it needs for its first shelf. Called once,
-  // from the onboarding that creates the profile, in that same batch.
-  export const grantWelcomeCredit = (userId: UserId, batch?: WriteBatch): Promise<ScanCredit> =>
-    repository.saveCredit(welcomeCredit(userId), batch)
 
   // Hand an account turning Premium the scans to bring its whole library in, on
   // top of what it holds. Safe to call on every sync: only the first lands.

@@ -28,19 +28,6 @@ export const SCAN_COST_EUR = { withFreeSearches: 0.03, allSearchesPaid: 0.15 } a
 // printed books a month; Kindle and Audible imports cost no scan and are not counted.
 export const PREMIUM_MONTHLY_SCANS: CountType = Count(30)
 
-// What a new account is handed when it finishes onboarding, once and for good.
-// Books are catalogued in bursts: a new reader empties a shelf in one evening
-// rather than adding a book at a time. Five a month would put the wall
-// in the middle of that first session, which is the worst possible moment — the
-// app has taken effort and returned nothing yet. Fifty covers a real shelf
-// without covering a whole library: the wall still arrives, but after the value
-// rather than before it.
-//
-// Provisional, like the rest of the numbers here: they are sized on an estimate
-// of what a scan costs and will be recalibrated against the usageMetadata the
-// pipeline captures on every call.
-export const WELCOME_SCANS: CountType = Count(50)
-
 // What an account is handed at its first paid Premium period, once and for good, on top of
 // whatever it still holds. Subscribing is when a reader brings in the printed library rather
 // than a shelf, and the monthly ceiling alone would refuse that evening. Two hundred since
@@ -70,9 +57,6 @@ export const freshQuota = (userId: UserId, month: QuotaMonth): Quota => ({
 
 // An account holding no granted scans — what an absent document means.
 export const noCredit = (userId: UserId): ScanCredit => ({ userId, scans: Count(0) })
-
-// The grant itself, handed once at the end of onboarding.
-export const welcomeCredit = (userId: UserId): ScanCredit => ({ userId, scans: WELCOME_SCANS })
 
 // The balance once the Premium welcome is handed, or nothing when the account
 // already had it: renewing, cancelling and subscribing again never hand it twice.

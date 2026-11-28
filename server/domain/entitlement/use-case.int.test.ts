@@ -52,9 +52,10 @@ mock.module('~/system/config/index', () => ({
 
 const { EntitlementUseCase } = await import('~/domain/entitlement/use-case')
 const { EntitlementQuery } = await import('~/domain/entitlement/query')
-const { QuotaCommand } = await import('~/domain/quota/command')
 const { QuotaQuery } = await import('~/domain/quota/query')
-const { PREMIUM_WELCOME_SCANS, WELCOME_SCANS } = await import('~/domain/quota/business-rules')
+const { PREMIUM_WELCOME_SCANS } = await import('~/domain/quota/business-rules')
+// Welcome scans handed before 2026-11-28, still held.
+const HELD = 50
 
 const user = (id: string) => id as UserId
 
@@ -143,12 +144,12 @@ describe('the scans handed to an account turning Premium', () => {
   const creditOf = async (id: string) => (await QuotaQuery.creditOf(user(id))).scans as number
 
   test('lands on top of what the account still held from its welcome', async () => {
-    await QuotaCommand.grantWelcomeCredit(user('u1'))
+    fake.seed('ai-credits', 'u1', { userId: user('u1'), scans: HELD })
     verifiedTransaction = aTransaction()
 
     await EntitlementUseCase.sync(user('u1'), 'signed-jws')
 
-    expect(await creditOf('u1')).toBe(WELCOME_SCANS + PREMIUM_WELCOME_SCANS)
+    expect(await creditOf('u1')).toBe(HELD + PREMIUM_WELCOME_SCANS)
   })
 
   test('is handed once, however many launches sync the subscription again', async () => {
@@ -179,13 +180,13 @@ describe('the scans handed to an account turning Premium', () => {
   })
 
   test('is not handed for a Sandbox purchase, which still turns the account Premium', async () => {
-    await QuotaCommand.grantWelcomeCredit(user('u1'))
+    fake.seed('ai-credits', 'u1', { userId: user('u1'), scans: HELD })
     verifiedTransaction = aTransaction({ sandbox: true })
 
     await EntitlementUseCase.sync(user('u1'), 'signed-jws')
 
     expect(await EntitlementQuery.planOf(user('u1'))).toBe('premium')
-    expect(await creditOf('u1')).toBe(WELCOME_SCANS)
+    expect(await creditOf('u1')).toBe(HELD)
   })
 
   test('is not handed for a subscription that has already run out', async () => {

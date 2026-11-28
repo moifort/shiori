@@ -15,11 +15,10 @@ builder.mutationField('completeOnboarding', (t) =>
   t.field({
     type: MeType,
     description:
-      'Finish onboarding: save the profile and grant the welcome scans.\n\n' +
-      'Returns the updated `Me`, with `onboardingCompleted` now true. The welcome ' +
-      'scans are granted only on the first call for an account: the mutation stays ' +
-      'reachable afterwards so a reader can change the name they are addressed by, ' +
-      'and re-granting there would make a one-off gift renewable.',
+      'Finish onboarding: save the profile.\n\n' +
+      'Returns the updated `Me`, with `onboardingCompleted` now true. The mutation stays ' +
+      'reachable afterwards so a reader can change the name they are addressed by. It ' +
+      'grants no scans: a trial lives on the monthly allowance.',
     args: {
       input: t.arg({
         type: CompleteOnboardingInput,

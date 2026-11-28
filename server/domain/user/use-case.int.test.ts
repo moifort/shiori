@@ -155,6 +155,12 @@ describe('completing onboarding again', () => {
     expect(fake.data('users', reader)?.firstName).toBe('Alice')
     expect(fake.data('users', reader)?.onboardingCompletedAt).toBeInstanceOf(Date)
   })
+
+  test('grants no scans: a trial lives on the monthly allowance', async () => {
+    await UserUseCase.completeOnboarding(reader, { firstName: PersonName('Alice') })
+
+    expect(fake.data('ai-credits', reader)).toBeNull()
+  })
 })
 
 describe('changing the avatar', () => {

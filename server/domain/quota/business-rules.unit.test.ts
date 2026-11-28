@@ -14,8 +14,6 @@ import {
   PREMIUM_WELCOME_SCANS,
   renewsOn,
   totalRemaining,
-  WELCOME_SCANS,
-  welcomeCredit,
   withPremiumWelcome,
 } from '~/domain/quota/business-rules'
 import { QuotaMonth } from '~/domain/quota/primitives'
@@ -76,14 +74,6 @@ describe('what is left this month', () => {
 })
 
 describe('what a new account is granted', () => {
-  it('holds the welcome scans, and nothing else', () => {
-    expect(welcomeCredit(UserId('u1'))).toEqual({ userId: UserId('u1'), scans: WELCOME_SCANS })
-  })
-
-  it('is enough to stock a shelf, which the monthly allowance alone is not', () => {
-    expect(WELCOME_SCANS).toBeGreaterThan(PREMIUM_MONTHLY_SCANS)
-  })
-
   it('reads as nothing left when the account was never granted any', () => {
     expect(empty.scans).toBe(Count(0))
   })

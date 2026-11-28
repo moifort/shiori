@@ -68,13 +68,18 @@ discoveries) serve subscribers only (`EntitlementQuery.subscribers`).
 
 | Allowance | Scans | Cost if used |
 |---|---|---|
-| Welcome credit, once, at the end of onboarding (`WELCOME_SCANS`), spent during the trial | 50 | 1.50 to 7.50 € |
+| Welcome credit at the end of onboarding | none since 2026-11-28 (50 until then) | nothing |
 | Without Premium (`FREE_MONTHLY_SCANS`) | 0 (5 a month until 2026-11-25) | nothing |
 | Premium welcome credit, once, first paid period (`PREMIUM_WELCOME_SCANS`) | 200 (500 until 2026-11-25) | 6 to 30 € |
 | Premium monthly ceiling (`PREMIUM_MONTHLY_SCANS`) | 30 a month (100 until 2026-11-25) | 0.90 to 4.50 € a month |
 
-A trial costs at most its 50 welcome scans and 30 monthly ones, 2.40 to 12 €, plus the page
-lookups it opens; it earns nothing if cancelled, which the conversion rate has to pay for.
+A trial costs at most its 30 monthly scans, 0.90 to 4.50 €, plus the page lookups it opens; it
+earns nothing if cancelled, which the conversion rate has to pay for.
+
+**Decided by the owner on 2026-11-28:** the 50 welcome scans handed at the end of onboarding
+are gone. They were spent during the trial, before any payment, and took a trial's cost to
+2.40 to 12 €. The 200 handed at the first paid period are now the only one-off grant. Balances
+already handed out were left alone: they are spent like any granted scans.
 
 The Premium welcome credit was handed at the start of a free trial until 2026-11-25, and a
 credit outlives the subscription: a trial started and cancelled could keep 500 scans worth 15
