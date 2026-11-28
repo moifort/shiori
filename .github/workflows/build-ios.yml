@@ -1,12 +1,22 @@
 name: Build
 
-# Runs at release only: the iOS release workflow calls it before anything is
-# archived, and a failure there stops the release — no upload, no submission. A
-# push to main builds no app, so the backend ships without waiting on a macOS
-# runner. A manual run checks the app at any time.
+# Runs on every pull request that touches the app, and at release: the iOS release
+# workflow calls it before anything is archived, and a failure there stops the
+# release — no upload, no submission. A pull request proves the app compiles before
+# it reaches main, so main is never the place a compile error is found. A push to
+# main builds no app, so the backend ships without waiting on a macOS runner. A
+# manual run checks the app at any time.
 on:
   workflow_call:
   workflow_dispatch:
+  pull_request:
+    paths: ['ios/**', 'shared/schema.graphql', '.github/workflows/build-ios.yml']
+
+# A newer push to the same pull request cancels the build of the previous one. A
+# release or a manual run gets its own group and is never cancelled.
+concurrency:
+  group: build-ios-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
