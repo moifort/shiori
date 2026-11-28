@@ -85,7 +85,7 @@ jobs:
       - name: Components stay pure and previewed
         run: bun scripts/check-android-components.ts
 
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
 
       - name: Write the Firebase config and the upload key
         env:
