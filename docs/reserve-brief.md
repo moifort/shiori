@@ -10,7 +10,9 @@ parent: a board comment, a UI request, a bug, a study.
 
 **No Android work until the user says so explicitly** (his decision of 2026-11-28): iOS and server
 only, never touch `android/`, no Android build, capture or port. If a change has an Android
-counterpart, name it in your report and leave it.
+counterpart, name it in your report and leave it: the nightly catch-up on pi6
+(`shiori-android-catch-up`, 4:00) ports every iOS commit of `main` to Android in one pull
+request, so no Android patch needs saving either.
 
 **Speak French to the user, always**: messages, reports, end-of-turn recaps, questions, button
 labels. Only code, comments, commits and versioned docs are in English.
