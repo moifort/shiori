@@ -26,6 +26,11 @@ When a mission arrives, read CLAUDE.md (Workflow rules 5 to 13) and docs/board.m
   (the iPhone section of [ios-guide.md](ios-guide.md#captures-the-iphone-first-the-simulator-as-fallback)),
   iOS unit tests run on the iPhone as well (`-destination 'id=<udid>' -only-testing:ShioriTests`,
   same section), under both locks.
+- **An iOS build in a worktree** needs two gitignored things first: copy
+  `ios/Shiori/GoogleService-Info.plist` from the main checkout (without it the app crashes at
+  launch), and regenerate the Apollo code with the CLI that matches the Apollo package (2.2.0):
+  `cd ios && ~/.cache/apollo-cli/apollo-ios-cli generate` — `apollo-ios-cli` is not on PATH, and
+  `build/apollo-cli/` holds 2.5.0, which Apollo 2.2.0 refuses.
 - **Never boot the iOS simulator.** Since 2026-11-25 it crashes SpringBoard at boot or at app
   launch, even started through DeviceHub (16 crash reports on 2026-11-26 alone). Until the user
   says otherwise: iPhone only. iPhone unplugged → verify by build, unit-test compilation and
