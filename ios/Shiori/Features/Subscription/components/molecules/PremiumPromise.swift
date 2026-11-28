@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// What Premium gives, in the same three lines wherever it is offered: the wall that stands
+/// What Premium gives, in the same four lines wherever it is offered: the wall that stands
 /// in for the app without a subscription, and the Premium sheet. Shiori has no free plan, so
 /// these are what the app is: kept in step with the board's « Premium — plus de compte
 /// gratuit » artboards.
@@ -17,6 +17,12 @@ struct PremiumPromise: View {
                 icon: "bell",
                 title: "Alertes de sortie",
                 detail: "Le prochain tome de vos séries, dès que sa date est connue."
+            )
+            Divider().padding(.leading, 44)
+            row(
+                icon: "sparkles",
+                title: "Des découvertes sur mesure",
+                detail: "Chaque mois, des livres choisis pour vous d'après vos lectures et vos envies."
             )
             Divider().padding(.leading, 44)
             row(

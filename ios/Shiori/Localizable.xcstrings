@@ -4521,6 +4521,22 @@
         }
       }
     },
+    "Chaque mois, des livres choisis pour vous d'après vos lectures et vos envies." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Every month, books picked for you from what you read and what you're in the mood for."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chaque mois, des livres choisis pour vous d'après vos lectures et vos envies."
+          }
+        }
+      }
+    },
     "Chargement de la suite" : {
       "localizations" : {
         "en" : {
@@ -6149,6 +6165,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dernière synchronisation"
+          }
+        }
+      }
+    },
+    "Des découvertes sur mesure" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Discoveries made for you"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Des découvertes sur mesure"
           }
         }
       }

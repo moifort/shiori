@@ -24,6 +24,8 @@ struct AuthRoot: View {
     /// reader is in the app.
     @State private var goodreadsFile: GoodreadsFile?
     @Environment(\.scenePhase) private var scenePhase
+    /// The library steps still ahead of the account, read when it signs in.
+    @State private var librariesPending = false
 
     var body: some View {
         // A ZStack, not a Group: a Group hands its modifiers to whichever
@@ -63,6 +65,7 @@ struct AuthRoot: View {
         // One request routes the launch and carries the plan along: it needs a
         // signed-in caller, and the plan is the server's answer.
         .task(id: session.user?.uid) {
+            librariesPending = !isShowcase && OnboardingLibrariesPending.isPending(session.user?.uid)
             if session.user != nil || isShowcase {
                 await gate.refresh(subscriptions: subscriptions, expectsNewReader: session.isFirstAuthorization)
             } else {
@@ -109,12 +112,19 @@ struct AuthRoot: View {
         guard !isShowcase else { return false }
         if session.user == nil { return true }
         return gate.state == .loading || gate.state == .required || preparation.isActive
+            || (gate.state == .ready && readyRoute == .libraries)
     }
 
     /// Whether the account must subscribe before the app opens: the server said it holds no
     /// Premium. Unknown is not a no: the app opens, and the wall comes once the plan is read.
     private var requiresSubscription: Bool {
         !isShowcase && subscriptions.isPremium == false
+    }
+
+    /// Where an account whose onboarding the server holds opens: the wall, the library
+    /// steps it has not seen yet, or the app.
+    private var readyRoute: OnboardingOrder.Ready {
+        OnboardingOrder.ready(requiresSubscription: requiresSubscription, librariesPending: librariesPending)
     }
 
     /// A new reader goes straight to the wizard, from the very first frame
@@ -134,6 +144,7 @@ struct AuthRoot: View {
             .environment(\.colorScheme, .dark)
         case .required:
             OnboardingScreen(onCompleted: {
+                librariesPending = false
                 gate.markCompleted(firstName: $0, avatar: $1)
                 // A new reader who did not arrive on a link may have one
                 // waiting, copied by the invitation page before the install.
@@ -141,10 +152,14 @@ struct AuthRoot: View {
                     UserDefaults.standard.set(true, forKey: PastedInvitation.pendingKey)
                 }
             })
-        case .ready where requiresSubscription:
+        case .ready where readyRoute == .wall:
             // No free plan: the wall stands in for the app until the account subscribes,
             // the library's preparation going on behind it.
             SubscriptionWallScreen()
+        case .ready where readyRoute == .libraries:
+            // Left the wizard on the free month and subscribed since: the library steps
+            // they have not seen, then the app.
+            OnboardingScreen(onCompleted: { _, _ in librariesPending = false }, startsAtLibraries: true)
         case .ready:
             ZStack {
                 // Kept running out of sight: the checklist's last line is its

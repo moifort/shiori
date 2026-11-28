@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// What stands in for the app while the account holds no subscription. Shiori has no free
-/// plan: a new reader meets it at the end of the onboarding, as the free month to start, and
+/// plan: a new reader meets it in the onboarding, after their first name and before their
+/// libraries, as the free month to start, and
 /// a reader whose trial or subscription ended meets it at launch, as the offer to come back.
 /// The library is kept in both cases. Account deletion stays one tap away, as App Review
 /// requires of an app that creates accounts.
@@ -46,7 +47,7 @@ struct SubscriptionWallPage: View {
         }
         .scrollBounceBehavior(.basedOnSize)
         .safeAreaInset(edge: .bottom) {
-            // The free month ends the onboarding as its other pages do: the
+            // The free month sits in the onboarding as its other pages do: the
             // terms, then the button, held at the foot of the screen.
             if kind == .trial {
                 VStack(spacing: 14) {

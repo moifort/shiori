@@ -16,8 +16,13 @@ struct OnboardingScreen: View {
     var onCompleted: (String, AccountAvatar) -> Void
     var client: OnboardingClient = .live
 
+    /// Straight to the library steps: a reader who left the wizard on the free month and
+    /// subscribed later, whose profile the server already holds.
+    var startsAtLibraries = false
+
     @Environment(AuthSession.self) private var session
-    @State private var step: Step = .firstName
+    @Environment(SubscriptionStore.self) private var subscriptions
+    @State private var step: OnboardingOrder.Step = .firstName
     @State private var firstName = ""
     /// Their initials on a colour drawn at random, which the reader keeps or
     /// changes: iOS hands the iCloud photo to no app, and bare slate looks like
@@ -50,13 +55,6 @@ struct OnboardingScreen: View {
     /// closing and the confirmation.
     @State private var isConnecting = false
 
-    private enum Step {
-        case firstName
-        /// After `completeOnboarding`, so the welcome scans are granted even
-        /// when the reader abandons the Amazon sign-in halfway.
-        case libraries
-    }
-
     var body: some View {
         Group {
             switch step {
@@ -66,6 +64,10 @@ struct OnboardingScreen: View {
                     avatar: $avatar,
                     onNext: { Task { await complete() } }
                 )
+            case .trial:
+                // Buying through it syncs the purchase with the server before the plan
+                // flips, so the library imports that follow run with the trial active.
+                SubscriptionWallScreen()
             case .libraries:
                 if let steps, let library = steps.current {
                     LibraryStepPage(
@@ -129,7 +131,15 @@ struct OnboardingScreen: View {
         } message: {
             Text(errorMessage ?? "")
         }
+        // The free month taken, or a purchase restored: on to the libraries.
+        .onChange(of: subscriptions.isPremium) { _, isPremium in
+            if step == .trial, isPremium == true { withAnimation { step = .libraries } }
+        }
         .onAppear {
+            if startsAtLibraries {
+                step = .libraries
+                return
+            }
             track(.onboardingStarted)
             // Proposed, not imposed: the field stays editable.
             if firstName.isEmpty, let suggested = session.suggestedFirstName {
@@ -203,6 +213,7 @@ struct OnboardingScreen: View {
     /// Into the app by way of the preparation screen, drawn until the library
     /// is ready to be shown.
     private func enterApp() {
+        OnboardingLibrariesPending.set(false, for: session.user?.uid)
         client.beginPreparation(linkedSources, startedGoodreads)
         onCompleted(firstName.trimmingCharacters(in: .whitespacesAndNewlines), avatar)
     }
@@ -229,7 +240,8 @@ struct OnboardingScreen: View {
             try await client.complete(name)
             track(.onboardingCompleted)
             await keepAvatar()
-            withAnimation { step = .libraries }
+            OnboardingLibrariesPending.set(true, for: session.user?.uid)
+            withAnimation { step = OnboardingOrder.afterProfile(isPremium: subscriptions.isPremium) }
         } catch {
             // Stays on the step rather than dropping the reader into an empty
             // app: the welcome scans are granted by this call, and letting it
@@ -243,5 +255,7 @@ struct OnboardingScreen: View {
     // `AuthSession` reads `Auth.auth()` on init, which traps when Firebase was
     // never configured: the canvas does not run `ShioriApp.init`.
     if FirebaseApp.app() == nil { FirebaseApp.configure() }
-    return OnboardingScreen(onCompleted: { _, _ in }, client: .preview).environment(AuthSession())
+    return OnboardingScreen(onCompleted: { _, _ in }, client: .preview)
+        .environment(AuthSession())
+        .environment(SubscriptionStore())
 }
