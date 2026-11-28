@@ -3,7 +3,7 @@ import Foundation
 /// What the onboarding asks of the server and of the background passes, as
 /// closures: `.live` goes through the APIs, a test or a preview builds its own.
 struct OnboardingClient: Sendable {
-    /// Saves the first name and grants the welcome scans.
+    /// Saves the first name.
     var complete: @Sendable (_ firstName: String) async throws -> Void
     /// Keeps the avatar the reader chose, and answers what the server keeps.
     var changeAvatar: @Sendable (AccountAvatar) async throws -> AccountAvatar

@@ -101,7 +101,6 @@ struct PreparationChecklist: View {
         CoverVeil(covering: true)
         PreparationChecklist(lines: [
             PreparationLine(id: "profile", label: "Votre profil", state: .done),
-            PreparationLine(id: "scans", label: "Vos scans de bienvenue", state: .done),
             PreparationLine(id: "audible", label: "Votre bibliothèque Audible", state: .continuing),
             PreparationLine(id: "kindle", label: "Votre bibliothèque Kindle", state: .failed),
             PreparationLine(id: "home", label: "Votre accueil", state: .working),

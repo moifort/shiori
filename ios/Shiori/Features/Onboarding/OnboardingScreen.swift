@@ -7,9 +7,6 @@ import SwiftUI
 /// Goodreads libraries in, which a reader can skip. Each library ticked gets a
 /// step of its own, which says what it is for before Amazon's page opens. Saying what the app is for is the sign-in screen's
 /// job, just before.
-///
-/// It is kept as a wizard rather than a single field because of what completing
-/// it does: it grants the welcome scans.
 struct OnboardingScreen: View {
     /// Handed the first name and the avatar the reader gave, so the app knows
     /// them without asking the server.
@@ -244,8 +241,8 @@ struct OnboardingScreen: View {
             withAnimation { step = OnboardingOrder.afterProfile(isPremium: subscriptions.isPremium) }
         } catch {
             // Stays on the step rather than dropping the reader into an empty
-            // app: the welcome scans are granted by this call, and letting it
-            // fail silently would cost them 50 scans they never learn about.
+            // app: this call saves the profile, and without it the app has no
+            // name to address the reader by.
             errorMessage = reportError(error)
         }
     }

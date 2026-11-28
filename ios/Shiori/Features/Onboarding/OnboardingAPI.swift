@@ -40,7 +40,7 @@ enum OnboardingAPI {
         )
     }
 
-    /// Finishes onboarding and grants the welcome scans. Vinarium also sizes a
+    /// Finishes onboarding: saves the profile. Vinarium also sizes a
     /// cellar grid here; a library has no shape to declare up front, so a first
     /// name is all this asks for.
     static func completeOnboarding(firstName: String) async throws {

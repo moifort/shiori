@@ -399,7 +399,6 @@ struct ShowcaseScreen: View {
                         .padding(.bottom, 20)
                     PreparationChecklist(lines: [
                         PreparationLine(id: "profile", label: "Votre profil", state: .done),
-                        PreparationLine(id: "scans", label: "Vos scans de bienvenue", state: .done),
                         PreparationLine(id: "audible", label: "Votre bibliothèque Audible", state: .done),
                         PreparationLine(
                             id: "goodreads", label: "Votre bibliothèque Goodreads", state: .working,

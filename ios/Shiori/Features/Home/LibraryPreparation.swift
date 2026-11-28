@@ -33,7 +33,7 @@ final class LibraryPreparation {
 }
 
 /// A checklist of what is really being done. Each line ticks
-/// off once its work is over: the profile and the welcome scans exist before
+/// off once its work is over: the profile exists before
 /// this screen opens, a library when its pass has landed, the home when the
 /// dashboard has loaded.
 ///
@@ -52,7 +52,6 @@ struct LibraryPreparationView: View {
 
     private enum Step: Hashable {
         case profile
-        case welcomeScans
         case library(ImportSource)
         case goodreads
         case home
@@ -77,7 +76,7 @@ struct LibraryPreparationView: View {
     }
 
     private var steps: [Step] {
-        [.profile, .welcomeScans] + preparation.sources.map(Step.library)
+        [.profile] + preparation.sources.map(Step.library)
             + (preparation.importsGoodreads ? [.goodreads] : []) + [.home]
     }
 
@@ -95,7 +94,6 @@ struct LibraryPreparationView: View {
     private func label(of step: Step) -> LocalizedStringKey {
         switch step {
         case .profile: "Votre profil"
-        case .welcomeScans: "Vos scans de bienvenue"
         case .library(.audible): "Votre bibliothèque Audible"
         case .library(.kindle): "Votre bibliothèque Kindle"
         case .goodreads: "Votre bibliothèque Goodreads"
@@ -119,8 +117,8 @@ struct LibraryPreparationView: View {
     /// Waits for the step's work and answers how it ended.
     private func outcome(of step: Step, deadline: ContinuousClock.Instant) async -> PreparationLine.State {
         switch step {
-        // `completeOnboarding` did both before the wizard moved on.
-        case .profile, .welcomeScans:
+        // `completeOnboarding` saved it before the wizard moved on.
+        case .profile:
             return .done
         case .library(.audible):
             return await passOutcome(deadline: deadline, isSyncing: { audibleSync.isSyncing }, error: { audibleSync.errorMessage })

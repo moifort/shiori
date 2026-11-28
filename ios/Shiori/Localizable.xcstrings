@@ -2859,16 +2859,16 @@
     },
     "Arrêt dans %@" : {
       "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Arrêt dans %@"
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Stops in %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arrêt dans %@"
           }
         }
       }
@@ -17845,22 +17845,6 @@
         }
       }
     },
-    "Vos scans de bienvenue" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your welcome scans"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vos scans de bienvenue"
-          }
-        }
-      }
-    },
     "Vos tomes prendront leur place dans la série, et ceux qui vous manquent seront listés par leur numéro. Le catalogue complet remplacera ce décompte dès que Shiori pourra le constituer." : {
       "localizations" : {
         "en" : {
@@ -19719,16 +19703,16 @@
     },
     "Éteindre le minuteur" : {
       "localizations" : {
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Éteindre le minuteur"
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Turn off the sleep timer"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Éteindre le minuteur"
           }
         }
       }
