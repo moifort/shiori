@@ -1175,9 +1175,14 @@ describe('a position saved by Shiori’s player', () => {
     })
   })
 
-  // Half a minute is the first save of any listen, and as far as a wrong tap goes.
-  test('leaves a book on the pile for a wrong tap', () => {
-    expect(playerMoveOf(onThePile, 30_000, now)).toBe(undefined)
+  // The first save lands as the title starts to sound, at its very first second.
+  test('opens a book on the pile from the first save, at its first second', () => {
+    expect(playerMoveOf(onThePile, 0, now)).toEqual({
+      status: 'reading',
+      listenedMinutes: undefined,
+      listenedAt: now,
+    })
+    expect(playerMoveOf(onThePile, 30_000, now)?.status).toBe('reading')
   })
 
   test('moves the progress of a book under way', () => {

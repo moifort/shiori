@@ -596,7 +596,15 @@ final class AudiblePlayer {
         guard phase == .ready, time.isNumeric, pendingSeeks == 0 else { return }
         // Over the half second to the next tick, so the bar glides.
         withAnimation(isPlaying ? .linear(duration: 0.5) : nil) { elapsed = time.seconds }
-        if isPlaying { hasPlayed = true }
+        // The first tick of sound sends the position at once: the server takes
+        // the book off the pile with it, and Accueil hears of it then, not
+        // half a minute later.
+        if isPlaying, !hasPlayed {
+            hasPlayed = true
+            lastSaved = nil
+            saveNow()
+            return
+        }
         if isPlaying, Date.now.timeIntervalSince(lastSaveAt) >= Self.saveInterval {
             saveNow(periodic: true)
         }

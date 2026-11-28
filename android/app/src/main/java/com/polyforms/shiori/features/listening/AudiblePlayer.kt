@@ -581,7 +581,14 @@ class AudiblePlayer(
     private fun tick(player: Player) {
         if (phase != Phase.Ready || player.playbackState == Player.STATE_IDLE) return
         elapsed = player.currentPosition / 1000.0
-        if (player.isPlaying) hasPlayed = true
+        // The first tick of sound sends the position at once: the server takes the book off the
+        // pile with it, and Accueil hears of it then, not half a minute later.
+        if (player.isPlaying && !hasPlayed) {
+            hasPlayed = true
+            lastSaved = null
+            saveNow()
+            return
+        }
         if (isPlaying && Duration.between(lastSaveAt, Instant.now()).seconds >= SAVE_INTERVAL) saveNow(periodic = true)
     }
 

@@ -259,7 +259,18 @@ describe('the book a saved position plays', () => {
 
   // The bug of 2026-11-26: a title played in Shiori stayed on the pile until a
   // nightly sync, which only subscribers get.
-  test('takes a book off the pile as soon as the player has heard a minute of it', async () => {
+  test('takes a book off the pile with the first save, sent as the title starts', async () => {
+    await connect()
+    await shelve()
+
+    expect(await save(0)).toBe('saved')
+    const started = await bookNow()
+    expect(started?.status).toBe('reading')
+    expect(started?.startedAt).toEqual(NOW)
+    expect(started?.listenedMinutes).toBe(undefined)
+  })
+
+  test('takes a book off the pile with its minutes when the first save is further in', async () => {
     await connect()
     await shelve()
 

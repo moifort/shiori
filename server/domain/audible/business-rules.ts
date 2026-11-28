@@ -205,12 +205,6 @@ const heardToTheEnd = (item: AudibleItem, heard?: LastPosition): boolean =>
   item.durationMinutes > 0 &&
   heard.positionMs >= item.durationMinutes * 60 * 1000 - FINISHED_WITHIN_MS
 
-/** How far into a title Shiori's own player must have got for the reader to
- *  be in it. Lower than `STARTED_AFTER_MS`: there the sync guesses from
- *  Audible's figures, here the reader pressed play in Shiori, and a minute is
- *  past a wrong tap (the first save lands at half a minute). */
-const STARTED_IN_PLAYER_AFTER_MS = 60 * 1000
-
 /** What a position saved by Shiori's player moves on the book it plays: the
  *  minutes heard, and the status they imply. A book on the pile is opened by
  *  it, a book heard to its last minutes is read — the same rule `statusOf`
@@ -233,7 +227,7 @@ export const playerMoveOf = (
       ? book.status
       : finished
         ? 'read'
-        : book.status === 'to-read' && positionMs >= STARTED_IN_PLAYER_AFTER_MS
+        : book.status === 'to-read'
           ? 'reading'
           : book.status
   if (status === book.status && listenedMinutes === book.listenedMinutes) return undefined
