@@ -121,12 +121,14 @@ Runtime: always `bun` / `bunx`, never `npm` / `npx`.
    the changed screen (`SendUserFile`), and wait for a second validation. Two separate asks,
    in that order; a change in the prototyping zone stops after the board step. Board-comment
    child sessions follow this too, and their wrap-up question (rule 7) is asked once per step.
-10. **Android follows iOS, and catches up before every release.** Features are designed,
-   built and validated on iOS only; `android/` is never where a feature starts, and is never
-   edited during feature or fix work, even once the iOS change is validated: no Kotlin port, no
-   string regeneration (building Android to check a shared `.graphql` edit is fine). Android code
-   is written only when a release is asked for, before tagging `v<version>`: list the iOS commits
-   since the previous release (`git log <previous tag>..HEAD -- ios shared`), port each one to
+10. **Android follows iOS, catches up every night and before every release.** Features are
+   designed, built and validated on iOS only; `android/` is never where a feature starts, and is
+   never edited during feature or fix work, even once the iOS change is validated: no Kotlin port,
+   no string regeneration (building Android to check a shared `.graphql` edit is fine). Android
+   code is written by the nightly catch-up on pi6 (`shiori-android-catch-up`, 4:00: the iOS
+   commits of `main` ported in one pull request, merged once CI is green) and when a release is
+   asked for, before tagging `v<version>`: list the iOS commits since the previous release
+   (`git log <previous tag>..HEAD -- ios shared`), port each one the catch-up has not to
    the Kotlin file of the same name, regenerate the strings (`bun scripts/android-strings.ts`),
    build and test Android, capture the changed screens on the emulator, then install the build
    on the user's Pixel 8 and wait for them to test it and validate. Only after that yes are both
