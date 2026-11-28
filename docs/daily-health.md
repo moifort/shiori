@@ -19,7 +19,7 @@ The final report is written in **French**.
 | Billing export  | `vinarium-prod.billing_export.gcp_billing_export_v1_01B9B2_D51D23_1EF14D` |
 
 **Error logs are out of scope.** Every `warn` / `error` is reported to Sentry and handled by the
-separate 6-hourly `sentry-autofix-6h` routine. Never triage error logs or Sentry issues here.
+separate nightly `sentry-autofix` routine on pi6. Never triage error logs or Sentry issues here.
 **App Store / TestFlight is out of scope.**
 
 ## Ground rules
