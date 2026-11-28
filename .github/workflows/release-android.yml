@@ -75,7 +75,7 @@ jobs:
           notes CHANGELOG.fr.md > "$RUNNER_TEMP/whatsnew/whatsnew-fr-FR"
           cat "$RUNNER_TEMP"/whatsnew/*
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '21'
