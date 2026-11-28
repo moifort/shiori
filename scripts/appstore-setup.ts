@@ -40,17 +40,28 @@ const VINARIUM_APP_ID = '6789688303'
 const metadata = join(import.meta.dir, '../infra/fastlane/metadata')
 const paywall = join(import.meta.dir, '../screenshots/captures/fr/paywall.png')
 
-const REVIEW_NOTES =
-  "L'application nécessite Sign in with Apple. Les évaluateurs peuvent se connecter avec leur " +
-  'propre identifiant Apple : un compte est créé automatiquement, aucun compte de démonstration ' +
-  "n'est nécessaire. Le backend est en production. Fonctionnalité principale : photographier la " +
-  'couverture d’un livre (appareil photo requis) pour créer sa fiche. Abonnement Shiori Premium ' +
-  '(achat intégré) : Shiori s’utilise avec un abonnement : sans abonnement actif, l’écran ' +
-  'd’abonnement s’ouvre à la fin de la configuration, premier mois offert sur l’offre annuelle.'
+// In English: App Review reads it. It walks a reviewer to the subscription, which stands at
+// the door since Shiori has no free plan, and to everything Guideline 3.1.2 and 5.1.1(v) ask
+// to find without subscribing.
+const REVIEW_NOTES = [
+  'Sign in with Apple is the only sign-in. Use your own Apple ID: an account is created on ' +
+    'the spot, no demo account is needed. The backend is in production.',
+  'Shiori is used with a subscription (no free plan). During the short setup, the ' +
+    'subscription screen offers the yearly plan with its first month free, or the monthly ' +
+    'plan without a trial. To review the app: sign in with Apple, then tap "Commencer le mois ' +
+    'offert" (Start the free month). In the sandbox the free month costs nothing, and the ' +
+    'whole app opens.',
+  'On the subscription screen, without subscribing: the price and period of each plan, the ' +
+    'auto-renewal terms, the Terms of Use (Apple standard EULA) and Privacy Policy links, ' +
+    '"Restaurer mes achats" (Restore Purchases), and "Supprimer mon compte", which opens the ' +
+    'account page with Sign Out and Delete Account. Subscribed, the same page is in Settings.',
+  'Main feature: photograph a book cover (camera required) to create its record.',
+].join('\n\n')
 
 const SUBSCRIPTION_REVIEW_NOTE =
-  'Kindle et Audible à jour chaque nuit, les alertes de sortie, et 30 scans par mois d’une ' +
-  'couverture ou d’une étagère entière. L’écran d’abonnement s’ouvre à la fin de la configuration.'
+  'Kindle and Audible kept up to date nightly, release alerts, and 30 scans a month of a ' +
+  'cover or a whole shelf. The subscription screen opens during the setup, right after ' +
+  'Sign in with Apple; the free month costs nothing in the sandbox.'
 
 type Plan = {
   productId: string

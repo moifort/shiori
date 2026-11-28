@@ -125,9 +125,10 @@ struct SubscriptionWallPage: View {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(yearly.trial ?? String(localized: "1 mois offert"))
                                 .font(.headline)
+                            // The amount billed once the month is over, as prominent as the
+                            // free month itself: App Review's rule for a free trial.
                             Text("puis \(yearly.displayPrice) par an")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                                .font(.subheadline.weight(.semibold))
                         }
                         Spacer()
                         Text("Résiliable à tout moment")
@@ -174,7 +175,7 @@ struct SubscriptionWallPage: View {
                     }
                 }
                 Spacer()
-                Text(offer.displayPrice).font(.headline)
+                Text(offer.billedPrice).font(.headline)
             }
             .padding(.vertical, 14)
             .padding(.horizontal, 16)
@@ -229,7 +230,7 @@ struct SubscriptionWallPage: View {
 
     private var legal: some View {
         VStack(spacing: 8) {
-            Text("Renouvellement automatique, résiliable à tout moment dans les réglages du compte App Store.")
+            Text("L’abonnement se renouvelle automatiquement sauf résiliation au moins 24 heures avant la fin de la période en cours. La gestion et la résiliation se font dans les réglages du compte App Store.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)

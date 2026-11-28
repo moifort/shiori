@@ -28,7 +28,7 @@ struct PremiumPromise: View {
             row(
                 icon: "camera.viewfinder",
                 title: "Une couverture ou une étagère en photo",
-                detail: "Chaque livre reconnu, avec son résumé et sa série. 30 scans par mois."
+                detail: "Chaque livre reconnu, avec son résumé et sa série. 30 scans par mois, et 200 au premier paiement."
             )
         }
     }

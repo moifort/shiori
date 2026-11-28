@@ -222,6 +222,16 @@ struct PremiumOffer: Identifiable {
         self.product = product
     }
 
+    /// What a period of the plan bills, its period said beside the price: `34,99 € / an`.
+    /// App Review wants the renewal price and its period read before the purchase.
+    var billedPrice: String {
+        switch id {
+        case SubscriptionProducts.yearly: String(localized: "\(displayPrice) / an")
+        case SubscriptionProducts.monthly: String(localized: "\(displayPrice) / mois")
+        default: displayPrice
+        }
+    }
+
     /// The free period, in the unit the App Store declares it in: reading every
     /// period as days or months called a week a month.
     static func trialLabel(_ period: Product.SubscriptionPeriod) -> String {
@@ -281,7 +291,7 @@ private struct OfferButton: View {
                 if isBuying {
                     ProgressView()
                 } else {
-                    Text(offer.displayPrice)
+                    Text(offer.billedPrice)
                         .font(.headline)
                 }
             }

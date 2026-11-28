@@ -49,6 +49,38 @@
         }
       }
     },
+    "%@ / an" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ / year"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ / an"
+          }
+        }
+      }
+    },
+    "%@ / mois" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ / month"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ / mois"
+          }
+        }
+      }
+    },
     "%@ : %@ ★ en moyenne, sur %lld livres seulement." : {
       "localizations" : {
         "en" : {
@@ -4521,18 +4553,18 @@
         }
       }
     },
-    "Chaque livre reconnu, avec son résumé et sa série. 30 scans par mois." : {
+    "Chaque livre reconnu, avec son résumé et sa série. 30 scans par mois, et 200 au premier paiement." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Every book recognized, with its summary and its series. 30 scans a month."
+            "value" : "Every book recognized, with its summary and its series. 30 scans a month, and 200 with the first payment."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Chaque livre reconnu, avec son résumé et sa série. 30 scans par mois."
+            "value" : "Chaque livre reconnu, avec son résumé et sa série. 30 scans par mois, et 200 au premier paiement."
           }
         }
       }
@@ -13825,22 +13857,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Remarques"
-          }
-        }
-      }
-    },
-    "Renouvellement automatique, résiliable à tout moment dans les réglages du compte App Store." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Renews automatically, cancel anytime in your App Store account settings."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Renouvellement automatique, résiliable à tout moment dans les réglages du compte App Store."
           }
         }
       }
