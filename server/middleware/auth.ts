@@ -63,6 +63,9 @@ export default defineEventHandler(async (event) => {
   try {
     const decoded = await getAuth().verifyIdToken(token)
     event.context.userId = UserId(decoded.uid)
+    // The sign-in's email, when the provider gave one (Apple's may be a relay): what
+    // tells a TestFlight tester's account apart.
+    if (decoded.email) event.context.userEmail = decoded.email
   } catch {
     throw createError({ statusCode: 401, statusMessage: 'Invalid token' })
   }
@@ -71,5 +74,6 @@ export default defineEventHandler(async (event) => {
 declare module 'h3' {
   interface H3EventContext {
     userId?: ReturnType<typeof UserId>
+    userEmail?: string
   }
 }

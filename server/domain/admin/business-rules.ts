@@ -111,8 +111,11 @@ export const searchesOf = (usage: AiUsage): CountType =>
 // of them are still in a free trial rather than paying.
 // `total` counts every active entitlement, so an unexpected product id still
 // shows up there even if it lands in neither split.
+// A Sandbox purchase (TestFlight, App Review) is nobody's subscription: left out.
 export const premiumBreakdown = (entitlements: Entitlement[], now: Date): PremiumBreakdown => {
-  const active = entitlements.filter((entitlement) => isActive(entitlement, now))
+  const active = entitlements.filter(
+    (entitlement) => isActive(entitlement, now) && entitlement.sandbox !== true,
+  )
   const of = (suffix: string) =>
     Count(active.filter(({ productId }) => (productId as string).endsWith(suffix)).length)
   return {

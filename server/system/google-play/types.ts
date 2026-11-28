@@ -20,6 +20,9 @@ export type PlaySubscription = {
   /** When Google answered for the token. Google answers with the purchase as it stands now, so
    *  this is what orders it against what was recorded before. */
   signedAt: Date
+  /** True on a license tester's purchase, which Play charges nothing for. Absent on a paid
+   *  one. */
+  sandbox?: boolean
   /** Play cancels and refunds a purchase not acknowledged within three days. */
   needsAcknowledgement: boolean
 }

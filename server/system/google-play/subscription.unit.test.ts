@@ -123,4 +123,21 @@ describe('reading what Google answered for a purchase token', () => {
   test('reads an offer that does not say its phase as a trial, to grant nothing too early', () => {
     expect(inFreeTrial({ productId: 'yearly', offerDetails: { offerId: 'free-month' } })).toBe(true)
   })
+
+  test('marks a license tester’s purchase, which Play charges nothing for', () => {
+    const subscription = parseSubscription(
+      'token',
+      {
+        testPurchase: {},
+        lineItems: [
+          {
+            productId: 'com.polyforms.shiori.app.premium.yearly',
+            expiryTime: '2099-01-01T00:00:00Z',
+          },
+        ],
+      },
+      new Date('2026-11-28T00:00:00Z'),
+    )
+    expect(subscription?.sandbox).toBe(true)
+  })
 })

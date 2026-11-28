@@ -145,6 +145,17 @@ describe('counting who is Premium', () => {
     expect(breakdown.yearly as number).toBe(2)
   })
 
+  test('leaves out a Sandbox purchase, which nobody paid', () => {
+    const breakdown = premiumBreakdown(
+      [
+        { ...entitlement('u1', 'com.polyforms.shiori.app.premium.yearly', future), sandbox: true },
+        entitlement('u2', 'com.polyforms.shiori.app.premium.yearly', future),
+      ],
+      now,
+    )
+    expect(breakdown.total as number).toBe(1)
+  })
+
   test('counts the active subscribers still in a free trial apart', () => {
     const breakdown = premiumBreakdown(
       [

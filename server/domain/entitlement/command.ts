@@ -1,7 +1,7 @@
 import { reconciled } from '~/domain/entitlement/business-rules'
 import * as repository from '~/domain/entitlement/infrastructure/repository'
 import { AppAccountToken, OriginalTransactionId, ProductId } from '~/domain/entitlement/primitives'
-import type { Entitlement } from '~/domain/entitlement/types'
+import type { Entitlement, PremiumGrant } from '~/domain/entitlement/types'
 import type { UserId } from '~/domain/shared/types'
 import type { AppleTransaction } from '~/system/apple/types'
 import type { PlaySubscription } from '~/system/google-play/types'
@@ -26,6 +26,7 @@ export namespace EntitlementCommand {
         ...(transaction.revokedAt ? { revokedAt: transaction.revokedAt } : {}),
         ...(transaction.startedAt ? { startedAt: transaction.startedAt } : {}),
         ...(transaction.freeTrial ? { freeTrial: true } : {}),
+        ...(transaction.sandbox ? { sandbox: true } : {}),
         ...(transaction.signedAt ? { signedAt: transaction.signedAt } : {}),
         updatedAt: new Date(),
       },
@@ -49,6 +50,7 @@ export namespace EntitlementCommand {
         ...(subscription.revokedAt ? { revokedAt: subscription.revokedAt } : {}),
         ...(subscription.startedAt ? { startedAt: subscription.startedAt } : {}),
         ...(subscription.freeTrial ? { freeTrial: true } : {}),
+        ...(subscription.sandbox ? { sandbox: true } : {}),
         signedAt: subscription.signedAt,
         updatedAt: new Date(),
         store: 'google-play',
@@ -60,6 +62,22 @@ export namespace EntitlementCommand {
   // record: the App Store subscription keeps its own lifecycle and must be
   // cancelled in the App Store, which the app tells the user before deleting.
   export const deleteForUser = async (userId: UserId) => {
-    await repository.removeAll(userId)
+    await Promise.all([repository.removeAll(userId), repository.removeGrant(userId)])
   }
+
+  // Write down what App Store Connect answered: Premium while the account is a tester, with
+  // the day it became one kept across checks, and the answer's time either way.
+  export const recordTesterCheck = async (
+    userId: UserId,
+    isTester: boolean,
+    now: Date,
+    previous: PremiumGrant | undefined,
+  ): Promise<PremiumGrant> =>
+    repository.saveGrant({
+      userId,
+      source: 'testflight',
+      active: isTester,
+      checkedAt: now,
+      ...(isTester ? { grantedAt: previous?.active ? (previous.grantedAt ?? now) : now } : {}),
+    })
 }

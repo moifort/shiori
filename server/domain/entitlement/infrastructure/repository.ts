@@ -1,4 +1,9 @@
-import type { AppAccountToken, Entitlement, EntitlementStore } from '~/domain/entitlement/types'
+import type {
+  AppAccountToken,
+  Entitlement,
+  EntitlementStore,
+  PremiumGrant,
+} from '~/domain/entitlement/types'
 import type { UserId } from '~/domain/shared/types'
 import { db } from '~/system/firebase'
 import { evictFromRequestCache, memoizedPerRequest } from '~/system/request-cache'
@@ -9,6 +14,7 @@ import {
   transactionally,
   withoutAbsentFields,
 } from '~/utils/firestore'
+import { oneDocumentPerUser } from '~/utils/user-documents'
 
 const entitlements = () =>
   db().collection('entitlements').withConverter(genericDataConverter<Entitlement>())
@@ -89,3 +95,18 @@ export const findByAppAccountToken = async (
 // per subscriber and store ever, so streaming it stays a small, single query.
 export const findAll = async (): Promise<Entitlement[]> =>
   (await entitlements().get()).docs.map((doc) => doc.data())
+
+const grants = () =>
+  db().collection('premium-grants').withConverter(genericDataConverter<PremiumGrant>())
+
+// Premium given rather than sold, keyed by account like the entitlement it stands beside:
+// read only when the account holds no active entitlement, memoized for the request.
+const grantByAccount = oneDocumentPerUser({
+  collection: grants,
+  cacheKeyOf: (userId) => `premium-grant:${userId}`,
+})
+
+export const saveGrant = grantByAccount.save
+export const removeGrant = grantByAccount.remove
+export const findGrantBy = grantByAccount.findByUser
+export const findAllGrants = grantByAccount.findAll

@@ -37,6 +37,39 @@ export namespace AppStoreConnect {
     return totals
   }
 
+  // Shiori's record on App Store Connect, whose TestFlight testers a sign-in is checked against.
+  const SHIORI_APP_ID = '6811938144'
+
+  // The email of every TestFlight tester of the app, internal and external groups alike,
+  // as App Store Connect holds it. Undefined when the API key is not configured. Throws on
+  // any failed page rather than answering a partial list: a list short of a tester would
+  // end that tester's Premium.
+  export const testerEmails = async (): Promise<string[] | undefined> => {
+    const { ascIssuerId, ascKeyId, ascPrivateKey } = config()
+    if (!ascIssuerId || !ascKeyId || !ascPrivateKey) return undefined
+
+    const jwt = apiToken(ascIssuerId, ascKeyId, ascPrivateKey)
+    const emails: string[] = []
+    let next: string | undefined =
+      `https://api.appstoreconnect.apple.com/v1/betaTesters?filter[apps]=${SHIORI_APP_ID}` +
+      '&fields[betaTesters]=email&limit=200'
+    while (next) {
+      const response = await fetch(next, { headers: { authorization: `Bearer ${jwt}` } })
+      if (!response.ok) {
+        logger.error('betaTesters request failed', { status: response.status })
+        throw new Error(`App Store Connect betaTesters answered ${response.status}`)
+      }
+      const page = (await response.json()) as {
+        data: { attributes: { email?: string | null } }[]
+        links?: { next?: string }
+      }
+      for (const tester of page.data)
+        if (tester.attributes.email) emails.push(tester.attributes.email)
+      next = page.links?.next
+    }
+    return emails
+  }
+
   // The days of the month a daily report can exist for: from the 1st through
   // yesterday (UTC) — today's report is never ready, and a fully elapsed month
   // contributes every day it had.

@@ -1,4 +1,8 @@
-import { earnsPremiumWelcome } from '~/domain/entitlement/business-rules'
+import {
+  earnsPremiumWelcome,
+  needsTesterCheck,
+  normalizedEmail,
+} from '~/domain/entitlement/business-rules'
 import { EntitlementCommand } from '~/domain/entitlement/command'
 import { AppAccountToken } from '~/domain/entitlement/primitives'
 import { EntitlementQuery } from '~/domain/entitlement/query'
@@ -7,8 +11,12 @@ import { QuotaCommand } from '~/domain/quota/command'
 import type { UserId } from '~/domain/shared/types'
 import { Apple } from '~/system/apple'
 import type { AppleTransaction } from '~/system/apple/types'
+import { AppStoreConnect } from '~/system/appstore-connect'
 import { GooglePlay } from '~/system/google-play'
 import type { PlaySubscription } from '~/system/google-play/types'
+import { createLogger } from '~/system/logger'
+
+const logger = createLogger('entitlement')
 
 // A transaction we can act on: signed by Apple, naming an account, and granting
 // time (a one-off purchase would carry no expiry — there is none in this app, but
@@ -103,5 +111,35 @@ export namespace EntitlementUseCase {
 
     await recordAndWelcome(known.userId, transaction)
     return 'applied'
+  }
+
+  // Whether the caller is a TestFlight tester, asked of App Store Connect when the account
+  // holds no store subscription and the last answer is a day old or absent: a tester signing
+  // in is Premium on their first request, one removed loses it within a day, and a subscriber
+  // costs nothing. Free calls only (App Store Connect, the email the sign-in token carries).
+  // An account signed in through Apple's email relay cannot match; the comp list covers it.
+  // App Store Connect failing leaves the last answer standing, and is reported.
+  export const checkTestFlightTester = async (
+    userId: UserId,
+    email: string | undefined,
+    now = new Date(),
+  ): Promise<void> => {
+    if (!email || (await EntitlementQuery.holdsStorePremium(userId))) return
+    const grant = await EntitlementQuery.grantOf(userId)
+    if (!needsTesterCheck(grant, now)) return
+
+    let emails: string[] | undefined
+    try {
+      emails = await AppStoreConnect.testerEmails()
+    } catch (error) {
+      logger.warn('testflight tester check failed', { error, userId })
+      return
+    }
+    if (!emails) return
+    const isTester = emails.map(normalizedEmail).includes(normalizedEmail(email))
+    await EntitlementCommand.recordTesterCheck(userId, isTester, now, grant)
+    if (isTester !== (grant?.active ?? false)) {
+      logger.info('testflight tester grant changed', { userId, isTester })
+    }
   }
 }

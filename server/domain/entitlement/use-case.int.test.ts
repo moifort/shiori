@@ -31,6 +31,19 @@ mock.module('~/system/google-play', () => ({
   },
 }))
 
+// The app's TestFlight testers as App Store Connect lists them; 'down' makes the call fail.
+let testerEmails: string[] | undefined | 'down' = []
+let testerCalls = 0
+mock.module('~/system/appstore-connect', () => ({
+  AppStoreConnect: {
+    testerEmails: async () => {
+      testerCalls += 1
+      if (testerEmails === 'down') throw new Error('App Store Connect answered 500')
+      return testerEmails
+    },
+  },
+}))
+
 // `config()` reads Nitro's runtime config, which only exists inside a request.
 let compedUserIds: string[] = []
 mock.module('~/system/config/index', () => ({
@@ -66,6 +79,8 @@ beforeEach(() => {
   compedUserIds = []
   verifiedPlay = 'invalid-token'
   acknowledged = []
+  testerEmails = []
+  testerCalls = 0
 })
 
 describe('syncing a purchase the app hands over', () => {
@@ -161,6 +176,16 @@ describe('the scans handed to an account turning Premium', () => {
     await EntitlementUseCase.sync(user('u1'), 'signed-jws')
 
     expect(await creditOf('u1')).toBe(PREMIUM_WELCOME_SCANS)
+  })
+
+  test('is not handed for a Sandbox purchase, which still turns the account Premium', async () => {
+    await QuotaCommand.grantWelcomeCredit(user('u1'))
+    verifiedTransaction = aTransaction({ sandbox: true })
+
+    await EntitlementUseCase.sync(user('u1'), 'signed-jws')
+
+    expect(await EntitlementQuery.planOf(user('u1'))).toBe('premium')
+    expect(await creditOf('u1')).toBe(WELCOME_SCANS)
   })
 
   test('is not handed for a subscription that has already run out', async () => {
@@ -534,5 +559,108 @@ describe('one entitlement per store', () => {
 
     startFakeRequest()
     expect(await EntitlementQuery.allOf(user('u1'))).toEqual([])
+  })
+})
+
+describe('a TestFlight tester signing in', () => {
+  const now = new Date('2026-11-28T10:15:00.000Z')
+  const later = (hours: number) => new Date(now.getTime() + hours * 60 * 60 * 1000)
+
+  test('is Premium from the first request, whatever the email’s case', async () => {
+    testerEmails = ['Reader@Example.com']
+
+    await EntitlementUseCase.checkTestFlightTester(user('u1'), 'reader@example.com', now)
+
+    expect(await EntitlementQuery.planOf(user('u1'))).toBe('premium')
+    expect(await EntitlementQuery.subscribers()).toEqual(new Set([user('u1')]))
+  })
+
+  test('leaves an account that is no tester on the wall, and asks once a day', async () => {
+    testerEmails = ['someone@example.com']
+
+    await EntitlementUseCase.checkTestFlightTester(user('u1'), 'reader@example.com', now)
+    await EntitlementUseCase.checkTestFlightTester(user('u1'), 'reader@example.com', later(1))
+
+    expect(await EntitlementQuery.planOf(user('u1'))).toBe('free')
+    expect(testerCalls).toBe(1)
+  })
+
+  test('loses Premium within a day of leaving TestFlight', async () => {
+    testerEmails = ['reader@example.com']
+    await EntitlementUseCase.checkTestFlightTester(user('u1'), 'reader@example.com', now)
+    testerEmails = []
+
+    await EntitlementUseCase.checkTestFlightTester(user('u1'), 'reader@example.com', later(25))
+
+    startFakeRequest()
+    expect(await EntitlementQuery.planOf(user('u1'))).toBe('free')
+  })
+
+  test('keeps the day it became a tester across checks', async () => {
+    testerEmails = ['reader@example.com']
+    await EntitlementUseCase.checkTestFlightTester(user('u1'), 'reader@example.com', now)
+    await EntitlementUseCase.checkTestFlightTester(user('u1'), 'reader@example.com', later(25))
+
+    expect((await EntitlementQuery.grantOf(user('u1')))?.grantedAt).toEqual(now)
+  })
+
+  test('asks nothing for a subscriber or a comped account', async () => {
+    verifiedTransaction = aTransaction()
+    await EntitlementUseCase.sync(user('u1'), 'signed-jws')
+    compedUserIds = ['u2']
+
+    await EntitlementUseCase.checkTestFlightTester(user('u1'), 'a@example.com', now)
+    await EntitlementUseCase.checkTestFlightTester(user('u2'), 'b@example.com', now)
+
+    expect(testerCalls).toBe(0)
+    expect(fake.snapshot('premium-grants').size).toBe(0)
+  })
+
+  test('asks nothing without an email, nor without the App Store Connect key', async () => {
+    await EntitlementUseCase.checkTestFlightTester(user('u1'), undefined, now)
+    testerEmails = undefined
+    await EntitlementUseCase.checkTestFlightTester(user('u2'), 'b@example.com', now)
+
+    expect(fake.snapshot('premium-grants').size).toBe(0)
+  })
+
+  test('keeps the last answer when App Store Connect fails', async () => {
+    testerEmails = ['reader@example.com']
+    await EntitlementUseCase.checkTestFlightTester(user('u1'), 'reader@example.com', now)
+    testerEmails = 'down'
+
+    await EntitlementUseCase.checkTestFlightTester(user('u1'), 'reader@example.com', later(25))
+
+    startFakeRequest()
+    expect(await EntitlementQuery.planOf(user('u1'))).toBe('premium')
+  })
+
+  test('costs a subscriber’s request nothing beyond its entitlements query', async () => {
+    verifiedTransaction = aTransaction()
+    await EntitlementUseCase.sync(user('u1'), 'signed-jws')
+    startFakeRequest()
+
+    const docsBefore = fake.docReads
+    const queriesBefore = fake.queryReads
+    await EntitlementUseCase.checkTestFlightTester(user('u1'), 'a@example.com', now)
+    await EntitlementQuery.planOf(user('u1'))
+
+    expect(fake.docReads - docsBefore).toBe(0)
+    expect(fake.queryReads - queriesBefore).toBe(1)
+  })
+
+  test('costs an account without a subscription one grant read a request, the check included', async () => {
+    testerEmails = []
+    await EntitlementUseCase.checkTestFlightTester(user('u1'), 'a@example.com', now)
+    startFakeRequest()
+
+    const docsBefore = fake.docReads
+    const queriesBefore = fake.queryReads
+    await EntitlementUseCase.checkTestFlightTester(user('u1'), 'a@example.com', later(1))
+    await EntitlementQuery.planOf(user('u1'))
+    await EntitlementQuery.planOf(user('u1'))
+
+    expect(fake.docReads - docsBefore).toBe(1)
+    expect(fake.queryReads - queriesBefore).toBe(1)
   })
 })

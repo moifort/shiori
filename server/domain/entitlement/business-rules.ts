@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 import { AppAccountToken as toAppAccountToken } from '~/domain/entitlement/primitives'
-import type { AppAccountToken, Entitlement } from '~/domain/entitlement/types'
+import type { AppAccountToken, Entitlement, PremiumGrant } from '~/domain/entitlement/types'
 import type { Plan, UserId } from '~/domain/shared/types'
 
 // The namespace the account token is derived in. Arbitrary but frozen forever:
@@ -40,9 +40,11 @@ export const isActive = (entitlement: Entitlement, now: Date): boolean =>
 // A free trial is Premium without a payment, and the credit outlives the subscription, so
 // handing it at the trial's start let anyone scan a whole library for nothing and cancel.
 // The first paid period earns it; the grant's own once-only guard keeps every later renewal
-// from earning it again.
+// from earning it again. A Sandbox purchase (TestFlight, App Review) never earns it: it is
+// Premium, so a reviewer meets the app a subscriber gets, but nothing was paid, and the
+// Sandbox renews a month in minutes — 200 scans of Gemini for anyone who taps « buy ».
 export const earnsPremiumWelcome = (entitlement: Entitlement, now: Date): boolean =>
-  isActive(entitlement, now) && entitlement.freeTrial !== true
+  isActive(entitlement, now) && entitlement.freeTrial !== true && entitlement.sandbox !== true
 
 // The plan an account is on: Premium while any of its entitlements — one per store — is
 // active. None, expired, revoked: all are `free`. There is no other way to be Premium.
@@ -81,3 +83,19 @@ export const reconciled = (
     return { ...incoming, revokedAt: stored.revokedAt }
   return incoming
 }
+
+// A TestFlight grant is Premium while App Store Connect last said the account is a tester.
+export const isGrantActive = (grant: PremiumGrant | undefined): grant is PremiumGrant =>
+  grant?.active === true
+
+// How long App Store Connect's answer holds: a new tester waits for nothing (never asked yet),
+// a tester removed from TestFlight keeps Premium a day at most.
+export const TESTER_CHECK_TTL_MS = 24 * 60 * 60 * 1000
+
+// Whether App Store Connect must be asked again for this account.
+export const needsTesterCheck = (grant: PremiumGrant | undefined, now: Date): boolean =>
+  !grant || now.getTime() - grant.checkedAt.getTime() >= TESTER_CHECK_TTL_MS
+
+// The TestFlight testers' emails as App Store Connect and the sign-in token hold them, compared
+// without case or surrounding space.
+export const normalizedEmail = (email: string): string => email.trim().toLowerCase()

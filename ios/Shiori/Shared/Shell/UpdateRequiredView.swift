@@ -20,5 +20,5 @@ struct UpdateRequiredView: View {
 }
 
 #Preview {
-    UpdateRequiredView(appStoreURL: URL(string: "https://apps.apple.com/app/id6789688303")!)
+    UpdateRequiredView(appStoreURL: URL(string: "https://apps.apple.com/app/id6811938144")!)
 }

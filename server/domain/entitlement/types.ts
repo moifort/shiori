@@ -45,4 +45,28 @@ export type Entitlement = {
    *  A payload signed before it is ignored, so an old transaction handed over again cannot
    *  undo a renewal or a refund. Absent on an entitlement recorded before it was kept. */
   signedAt?: Date
+  /** True when nothing was paid for it: the App Store's Sandbox (TestFlight, App Review)
+   *  or a Google Play license tester's purchase. Premium all the same. Absent on a paid
+   *  purchase, and on entitlements recorded before it was kept. */
+  sandbox?: boolean
+}
+
+/** Why an account holds Premium without a store having sold it. `testflight`: the account's
+ *  email is one of the app's TestFlight testers on App Store Connect. */
+export type PremiumGrantSource = 'testflight'
+
+/** Whether an account holds Premium as a TestFlight tester, as App Store Connect last
+ *  answered, one document per account. Written for every account without a store
+ *  subscription that reaches the server, tester or not, so the answer is asked at most once a
+ *  day. App Review accounts are never TestFlight testers, so a reviewer always meets the
+ *  subscription as a reader does. */
+export type PremiumGrant = {
+  userId: UserId
+  source: PremiumGrantSource
+  /** True while the account's email is a tester's. */
+  active: boolean
+  /** When App Store Connect was last asked. */
+  checkedAt: Date
+  /** Since when the account has been a tester without a break. Absent when it is not one. */
+  grantedAt?: Date
 }

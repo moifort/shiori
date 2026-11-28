@@ -6,8 +6,10 @@ export const BUNDLE_ID = 'com.polyforms.shiori.app'
  *  Production signature. Printed on the store page, assigned once and never
  *  changed, so it belongs next to the bundle id rather than in a deployment
  *  setting: an unset setting would pin verification to Sandbox and turn away
- *  every real purchase. */
-export const APP_STORE_ID = 6789688303
+ *  every real purchase. It was Vinarium's (6789688303) from the scaffold until
+ *  2026-11-28: Apple's verifier checks it on every Production notification, so
+ *  each renewal, expiry and refund Apple pushed would have been refused. */
+export const APP_STORE_ID = 6811938144
 
 /** A purchase, once Apple's signature has been checked and the payload decoded.
  *  Only the fields the subscription domain acts on; everything else in Apple's
@@ -31,6 +33,9 @@ export type AppleTransaction = {
   /** When Apple signed this payload (`signedDate`): what orders two payloads of one chain, so
    *  an old one handed over again never overrides what a newer one said. */
   signedAt?: Date
+  /** True when Apple's Sandbox signed it: a TestFlight or App Review purchase, or a
+   *  development build's, none of which is paid. Absent on a Production purchase. */
+  sandbox?: boolean
 }
 
 /** What Apple tells us happened, from an App Store Server Notification. The

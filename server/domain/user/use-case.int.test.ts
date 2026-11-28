@@ -26,6 +26,7 @@ const perReader: Record<string, (userId: UserId) => string> = {
   analytics: (userId) => userId,
   'shared-hearts': (userId) => userId,
   entitlements: (userId) => userId,
+  'premium-grants': (userId) => userId,
   'ai-quotas': (userId) => `${userId}~2026-11`,
   'ai-credits': (userId) => userId,
   'audible-connections': (userId) => userId,

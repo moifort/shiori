@@ -5,6 +5,8 @@ export type SubscriptionPurchaseV2 = {
   startTime?: string
   subscriptionState?: string
   acknowledgementState?: string
+  /** Present, as an empty object, on a license tester's purchase: Play charges nothing. */
+  testPurchase?: object
   externalAccountIdentifiers?: { obfuscatedExternalAccountId?: string }
   lineItems?: {
     productId?: string
@@ -63,6 +65,7 @@ export const parseSubscription = (
     ...(startedAt ? { startedAt } : {}),
     ...(latest.freeTrial ? { freeTrial: true } : {}),
     signedAt: now,
+    ...(purchase.testPurchase ? { sandbox: true } : {}),
     needsAcknowledgement: purchase.acknowledgementState === 'ACKNOWLEDGEMENT_STATE_PENDING',
   }
 }

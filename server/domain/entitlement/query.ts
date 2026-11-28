@@ -1,11 +1,12 @@
 import {
   appAccountToken,
   isActive,
+  isGrantActive,
   planOf as planFrom,
   runningEntitlementOf,
 } from '~/domain/entitlement/business-rules'
 import * as repository from '~/domain/entitlement/infrastructure/repository'
-import type { AppAccountToken, Entitlement } from '~/domain/entitlement/types'
+import type { AppAccountToken, Entitlement, PremiumGrant } from '~/domain/entitlement/types'
 import type { Plan, UserId } from '~/domain/shared/types'
 import { config } from '~/system/config/index'
 
@@ -29,22 +30,40 @@ export namespace EntitlementQuery {
   // through here.
   //
   // `NITRO_PREMIUM_USER_IDS` is a comp list — the accounts granted Premium
-  // outright (the maker's own, a reviewer's). It is an override, never the
-  // source: a real entitlement is a verified App Store transaction, nothing else.
+  // outright (the maker's own). It is an override, never the source: a real
+  // entitlement is a verified store transaction. A TestFlight tester's grant is
+  // the other way in, read only when the account holds no active entitlement, so
+  // a subscriber's request costs no more than it did.
   export const planOf = async (userId: UserId): Promise<Plan> => {
-    if (config().premiumUserIds.includes(userId)) return 'premium'
-    return planFrom(await allOf(userId), new Date())
+    if (await holdsStorePremium(userId)) return 'premium'
+    return isGrantActive(await repository.findGrantBy(userId)) ? 'premium' : 'free'
   }
 
-  // Who is Premium right now: every active entitlement, and the comped accounts. The
-  // scheduled passes read it once to serve subscribers only, since there is no free plan.
-  export const subscribers = async (now = new Date()): Promise<Set<UserId>> =>
-    new Set([
+  // Premium without any TestFlight grant: comped, or sold by a store.
+  export const holdsStorePremium = async (userId: UserId): Promise<boolean> =>
+    config().premiumUserIds.includes(userId) ||
+    planFrom(await allOf(userId), new Date()) === 'premium'
+
+  // What App Store Connect last said of this account as a TestFlight tester, if it was asked.
+  export const grantOf = async (userId: UserId): Promise<PremiumGrant | undefined> =>
+    repository.findGrantBy(userId)
+
+  // Who is Premium right now: every active entitlement, every active grant, and the
+  // comped accounts. The scheduled passes read it once to serve subscribers only, since
+  // there is no free plan.
+  export const subscribers = async (now = new Date()): Promise<Set<UserId>> => {
+    const [entitlements, grants] = await Promise.all([
+      repository.findAll(),
+      repository.findAllGrants(),
+    ])
+    return new Set([
       ...config().premiumUserIds.map((id) => id as UserId),
-      ...(await repository.findAll())
+      ...entitlements
         .filter((entitlement) => isActive(entitlement, now))
         .map((entitlement) => entitlement.userId),
+      ...grants.filter((grant) => isGrantActive(grant)).map((grant) => grant.userId),
     ])
+  }
 
   // The subscribers among these accounts, in the same order.
   export const subscribersAmong = async (userIds: readonly UserId[]): Promise<UserId[]> => {
